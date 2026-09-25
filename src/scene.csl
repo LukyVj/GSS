@@ -1,0 +1,40 @@
+/* Ma première scène compilée par CSL */
+
+@scene {
+  cube#left.corner;
+  cube#right.corner;
+  cube#top.corner;
+  cube#bottom.corner;
+  torus#hero;
+}
+
+#right {
+  color: #ff5a36;
+}
+
+.corner {
+  translate: 0 0.5 0;
+  color: #4a90d9;
+}
+
+#left {
+  translate: -2.5 0.5 0;
+}
+
+#right {
+  translate: 2.5 0.5 0;
+}
+
+#top {
+  translate:  0 0.5 2.5;
+  color: #BADA55
+}
+
+#bottom {
+  translate:  0 0.5 -2.5;
+}
+
+#hero {
+  translate: 0 1 0;
+  color: #d4af37;
+}

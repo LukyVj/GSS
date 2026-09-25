@@ -1,4 +1,8 @@
-import fragSource from "./scene.frag.glsl?raw";
+import cslSource from "./scene.csl?raw";
+import { compileCSL } from "./compiler";
+
+const fragSource = compileCSL(cslSource);
+console.log(fragSource); // pour voir le shader généré dans la console
 
 // --- 1. Le vertex shader : un triangle géant qui couvre tout l'écran ---
 // Le vrai travail se fait dans le fragment shader, pixel par pixel.
