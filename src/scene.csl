@@ -23,6 +23,7 @@
 
 #right {
   translate: 2.5 0.5 0;
+  rotate-y: 45deg;
 }
 
 #top {
@@ -37,4 +38,6 @@
 #hero {
   translate: 0 1 0;
   color: #d4af37;
+  rotate-x: 70deg;
+
 }

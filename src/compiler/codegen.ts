@@ -57,6 +57,54 @@ function readColor(value: Token[] | undefined): string {
   return `vec3(${hexToRgb(token.value).map(glslFloat).join(", ")})`;
 }
 
+// ⬇️ TA MISSION : convertir un angle CSL en radians
+export function readAngle(value: Token[]): number {
+  const [token] = value;
+
+  // Un seul token attendu
+  if (value.length !== 1) {
+    throw new Error("Un angle est attendu, comme : 70deg");
+  }
+
+  // Cas spécial : 0 sans unité est accepté, comme en CSS
+  if (token.type === "NUMBER" && token.value === 0) {
+    return 0;
+  }
+
+  // Tout le reste doit avoir une unité
+  if (token.type !== "DIMENSION") {
+    throw new Error("Un angle doit avoir une unité, comme : 70deg");
+  }
+
+  // Les unités
+  if (token.unit === "deg") return (token.value * Math.PI) / 180;
+  if (token.unit === "rad") return token.value;
+  if (token.unit === "turn") return token.value * 2 * Math.PI;
+
+  throw new Error(
+    `Unité d'angle inconnue : "${token.unit}". Utilise deg, rad ou turn.`,
+  );
+}
+
+// rotate-x fait tourner y et z, rotate-y fait tourner x et z, rotate-z fait tourner x et y
+const ROTATIONS: [string, string][] = [
+  ["rotate-x", "yz"],
+  ["rotate-y", "xz"],
+  ["rotate-z", "xy"],
+];
+
+function rotationLines(instance: StyledInstance): string[] {
+  const lines: string[] = [];
+  for (const [property, axes] of ROTATIONS) {
+    const value = instance.styles[property];
+    if (!value) continue; // pas de rotation sur cet axe
+    const angle = readAngle(value);
+    const rounded = Math.round(angle * 10000) / 10000;
+    lines.push(`  q.${axes} *= rot(${glslFloat(rounded)});`);
+  }
+  return lines;
+}
+
 function label(instance: StyledInstance): string {
   const id = instance.id ? `#${instance.id}` : "";
   const classes = instance.classes.map((c) => `.${c}`).join("");
@@ -74,6 +122,7 @@ export function generateShader(instances: StyledInstance[]): string {
     return [
       `  // ${label(instance)}`,
       `  q = p - ${readTranslate(instance.styles["translate"])};`,
+      ...rotationLines(instance),
       `  res = opU(res, vec2(${shape}, ${glslFloat(instance.index)}));`,
     ].join("\n");
   });
@@ -112,6 +161,12 @@ float sdRoundBox(vec3 p, vec3 b, float r) {
 float sdTorus(vec3 p, vec2 t) {
   vec2 q = vec2(length(p.xz) - t.x, p.y);
   return length(q) - t.y;
+}
+
+// ----- Rotations -----
+mat2 rot(float a) {
+  float c = cos(a), s = sin(a);
+  return mat2(c, -s, s, c);
 }
 
 vec2 opU(vec2 a, vec2 b) {
