@@ -2,10 +2,23 @@ import type { Token } from "./tokenizer";
 import type { StyledInstance, Styles } from "./resolve";
 
 // The GLSL shape of each type of object. "q" is the point, already moved.
-const SHAPES: Record<string, string> = {
-  cube: "sdRoundBox(q, vec3(0.5), 0.08)",
-  sphere: "sdSphere(q, 0.5)",
-  torus: "sdTorus(q, vec2(1.0, 0.28))",
+// Each shape turns the object's styles into GLSL. "q" is the point, already moved.
+const SHAPES: Record<string, (styles: Styles) => string> = {
+  cube: (styles) => {
+    const half = readSize(styles["size"]).map((n) => n / 2);
+    const corner = Math.min(
+      readNumber(styles["corner-radius"], "corner-radius", 0.08, true),
+      ...half,
+    );
+    return `sdRoundBox(q, ${vec3(half)}, ${glslFloat(corner)})`;
+  },
+  sphere: (styles) =>
+    `sdSphere(q, ${glslFloat(readNumber(styles["radius"], "radius", 0.5))})`,
+  torus: (styles) => {
+    const radius = readNumber(styles["radius"], "radius", 1);
+    const thickness = readNumber(styles["thickness"], "thickness", 0.28);
+    return `sdTorus(q, vec2(${glslFloat(radius)}, ${glslFloat(thickness)}))`;
+  },
 };
 
 // GLSL requires "1.0" and rejects "1" where it expects a float
@@ -43,16 +56,50 @@ function readTranslate(value: Token[] | undefined): string {
   return `vec3(${numbers.map(glslFloat).join(", ")})`;
 }
 
-function readScale(value: Token[] | undefined): string {
-  if (!value) return "1.0";
-
+// Reads one number, or returns the fallback when the property is not set
+function readNumber(
+  value: Token[] | undefined,
+  property: string,
+  fallback: number,
+  allowZero = false,
+): number {
+  if (!value) return fallback;
   const [token] = value;
-
-  if (value.length !== 1 || token.type !== "NUMBER" || token.value <= 0) {
-    throw new Error("scale expects one positive number, like: scale: 2;");
+  if (
+    value.length !== 1 ||
+    token.type !== "NUMBER" ||
+    token.value < 0 ||
+    (token.value === 0 && !allowZero)
+  ) {
+    throw new Error(
+      `${property} expects one positive number, like: ${property}: 2;`,
+    );
   }
+  return token.value;
+}
 
-  return glslFloat(token.value);
+// Reads "2" or "2 1 1" and returns the full size on x, y and z
+function readSize(value: Token[] | undefined): number[] {
+  const errorMessage =
+    "size expects one or three positive numbers, like: size: 2 1 1;";
+  if (!value) return [1, 1, 1];
+  const numbers = value.map((token) => {
+    if (token.type !== "NUMBER" || token.value <= 0)
+      throw new Error(errorMessage);
+    return token.value;
+  });
+
+  if (numbers.length === 1) return [numbers[0], numbers[0], numbers[0]];
+  if (numbers.length === 3) return numbers;
+  throw new Error(errorMessage);
+}
+
+function readScale(value: Token[] | undefined): string {
+  return glslFloat(readNumber(value, "scale", 1));
+}
+
+function vec3(values: number[]): string {
+  return `vec3(${values.map(glslFloat).join(", ")})`;
 }
 
 function readColor(value: Token[] | undefined, fallback = "vec3(0.9)"): string {
@@ -127,6 +174,7 @@ export function generateShader(
         `Unknown object: "${instance.tag}". Available: ${Object.keys(SHAPES).join(", ")}`,
       );
     }
+    const shapeCode = shape(instance.styles);
     const scale = readScale(instance.styles["scale"]);
 
     return [
@@ -134,7 +182,7 @@ export function generateShader(
       ` q = p - ${readTranslate(instance.styles["translate"])};`,
       ...rotationLines(instance),
       ` q /= ${scale};`,
-      ` res = opU(res, vec2(${shape} * ${scale}, ${glslFloat(instance.index)}));`,
+      ` res = opU(res, vec2(${shapeCode} * ${scale}, ${glslFloat(instance.index)}));`,
     ].join("\n");
   });
 

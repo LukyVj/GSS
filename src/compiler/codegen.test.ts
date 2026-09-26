@@ -85,3 +85,56 @@ describe("decor", () => {
     expect(shader).toContain("vec3 col = vec3(0.03);");
   });
 });
+
+describe("shape dimensions", () => {
+  it("uses the default cube size", () => {
+    expect(compileGSS("@scene { cube; }")).toContain(
+      "sdRoundBox(q, vec3(0.5, 0.5, 0.5), 0.08)",
+    );
+  });
+
+  it("halves the size of the cube", () => {
+    expect(compileGSS("@scene { cube; } cube { size: 2 1 1; }")).toContain(
+      "sdRoundBox(q, vec3(1.0, 0.5, 0.5), 0.08)",
+    );
+  });
+
+  it("accepts a single size value", () => {
+    expect(compileGSS("@scene { cube; } cube { size: 2; }")).toContain(
+      "sdRoundBox(q, vec3(1.0, 1.0, 1.0), 0.08)",
+    );
+  });
+
+  it("rejects an invalid size", () => {
+    expect(() => compileGSS("@scene { cube; } cube { size: 1 2; }")).toThrow(
+      "size expects",
+    );
+    expect(() => compileGSS("@scene { cube; } cube { size: -1; }")).toThrow(
+      "size expects",
+    );
+  });
+
+  it("sets the corner radius", () => {
+    expect(
+      compileGSS("@scene { cube; } cube { corner-radius: 0.2; }"),
+    ).toContain("sdRoundBox(q, vec3(0.5, 0.5, 0.5), 0.2)");
+  });
+
+  it("keeps the corner radius inside the cube", () => {
+    expect(
+      compileGSS("@scene { cube; } cube { size: 0.4; corner-radius: 1; }"),
+    ).toContain("sdRoundBox(q, vec3(0.2, 0.2, 0.2), 0.2)");
+  });
+
+  it("sets the sphere radius", () => {
+    expect(compileGSS("@scene { sphere; } sphere { radius: 1; }")).toContain(
+      "sdSphere(q, 1.0)",
+    );
+  });
+
+  it("sets the torus radius and thickness", () => {
+    expect(
+      compileGSS("@scene { torus; } torus { radius: 2; thickness: 0.5; }"),
+    ).toContain("sdTorus(q, vec2(2.0, 0.5))");
+  });
+});
