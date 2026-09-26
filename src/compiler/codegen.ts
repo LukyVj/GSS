@@ -1,6 +1,11 @@
 import type { Token } from "./tokenizer";
 import type { StyledInstance, Styles } from "./resolve";
 
+// Utility functions
+function round(n: number): number {
+  return Math.round(n * 1000) / 1000;
+}
+
 // The GLSL shape of each type of object. "q" is the point, already moved.
 // Each shape turns the object's styles into GLSL. "q" is the point, already moved.
 const SHAPES: Record<string, (styles: Styles) => string> = {
@@ -146,7 +151,7 @@ function readLight(value: Token[] | undefined): number[] {
   }
   const azimuth = readAngle([value[0]]);
   const elevation = readAngle([value[1]]);
-  const round = (n: number) => Math.round(n * 1000) / 1000;
+
   return [
     round(Math.cos(elevation) * Math.sin(azimuth)),
     round(Math.sin(elevation)),
@@ -167,8 +172,7 @@ function rotationLines(instance: StyledInstance): string[] {
     const value = instance.styles[property];
     if (!value) continue; // no rotation on this axis
     const angle = readAngle(value);
-    const rounded = Math.round(angle * 10000) / 10000;
-    lines.push(`  q.${axes} *= rot(${glslFloat(rounded)});`);
+    lines.push(`  q.${axes} *= rot(${glslFloat(round(angle))});`);
   }
   return lines;
 }
@@ -221,7 +225,7 @@ export function generateShader(
       "ambient expects a number between 0 and 1, like: ambient: 0.3;",
     );
   }
-  const direct = Math.round((1 - ambient) * 1000) / 1000;
+  const direct = round(1 - ambient);
 
   return TEMPLATE.replace("/*@MAP*/", mapLines.join("\n\n"))
     .replace("/*@COLORS*/", colorLines.join("\n"))
@@ -233,6 +237,12 @@ export function generateShader(
     .replace("/*@LIGHT*/", vec3(readLight(sceneStyles["light"])))
     .replace("/*@AMBIENT*/", glslFloat(ambient))
     .replace("/*@DIRECT*/", glslFloat(direct))
+    .replace(
+      "/*@CAMERA_TARGET*/",
+      sceneStyles["camera-target"]
+        ? readTranslate(sceneStyles["camera-target"])
+        : "vec3(0.0, 0.5, 0.0)",
+    )
     .replace(
       "/*@BACKGROUND*/",
       readColor(sceneStyles["background"], "vec3(0.03)"),
@@ -302,7 +312,7 @@ vec3 calcNormal(vec3 p) {
 void main() {
   vec2 uv = (gl_FragCoord.xy - 0.5 * iResolution.xy) / iResolution.y;
 
-  vec3 target = vec3(0.0, 0.5, 0.0);
+  vec3 target = /*@CAMERA_TARGET*/;
   float yaw = uCamera.x;
   float pitch = uCamera.y;
   vec3 ro = target + uDist * vec3(cos(pitch) * sin(yaw), sin(pitch), cos(pitch) * cos(yaw));

@@ -124,6 +124,16 @@ export const PROPERTIES: PropertyDef[] = [
     ],
   },
   {
+    name: "camera-target",
+    appliesTo: "scene",
+    syntax: "<number>{3}",
+    initial: "0 0.5 0",
+    description: "Sets the point the camera looks at and orbits around.",
+    examples: [
+      "@scene { cube; } cube { translate: 0 2 0; } scene { camera-target: 0 2 0; }",
+    ],
+  },
+  {
     name: "floor",
     appliesTo: "scene",
     syntax: "<hex-color>",

@@ -14,6 +14,7 @@ scene {
   background:#42429f;
   light: 200deg 10deg;
   ambient: 0.4;
+  camera-target: 0 2.5 0; 
 }
 
 #right {

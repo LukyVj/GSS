@@ -133,6 +133,20 @@ describe("lighting", () => {
   });
 });
 
+describe("camera", () => {
+  it("sets the camera target", () => {
+    expect(
+      compileGSS("@scene { cube; } scene { camera-target: 0 2 0; }"),
+    ).toContain("vec3 target = vec3(0.0, 2.0, 0.0);");
+  });
+
+  it("keeps the default camera target", () => {
+    expect(compileGSS("@scene { cube; }")).toContain(
+      "vec3 target = vec3(0.0, 0.5, 0.0);",
+    );
+  });
+});
+
 describe("shape dimensions", () => {
   it("uses the default cube size", () => {
     expect(compileGSS("@scene { cube; }")).toContain(
