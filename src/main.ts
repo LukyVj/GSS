@@ -1,7 +1,7 @@
-import cslSource from "./scene.csl?raw";
-import { compileCSL } from "./compiler";
+import gssSource from "./scene.gss?raw";
+import { compileGSS } from "./compiler";
 
-const fragSource = compileCSL(cslSource);
+const fragSource = compileGSS(gssSource);
 console.log(fragSource); // pour voir le shader généré dans la console
 
 // --- 1. Le vertex shader : un triangle géant qui couvre tout l'écran ---
@@ -16,7 +16,7 @@ void main() {
 const canvas = document.querySelector<HTMLCanvasElement>("#scene")!;
 const gl = canvas.getContext("webgl2")!;
 
-function compile(type: number, source: string): WebGLShader {
+function compileShader(type: number, source: string): WebGLShader {
   const shader = gl.createShader(type)!;
   gl.shaderSource(shader, source);
   gl.compileShader(shader);
@@ -29,8 +29,8 @@ function compile(type: number, source: string): WebGLShader {
 }
 
 const program = gl.createProgram()!;
-gl.attachShader(program, compile(gl.VERTEX_SHADER, vertSource));
-gl.attachShader(program, compile(gl.FRAGMENT_SHADER, fragSource));
+gl.attachShader(program, compileShader(gl.VERTEX_SHADER, vertSource));
+gl.attachShader(program, compileShader(gl.FRAGMENT_SHADER, fragSource));
 gl.linkProgram(program);
 if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
   throw new Error(

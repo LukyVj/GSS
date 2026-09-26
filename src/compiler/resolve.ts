@@ -102,3 +102,21 @@ export function resolveStyles(
     return { ...instance, styles };
   });
 }
+
+// Les styles de la scène elle-même : scene { floor: ...; background: ...; }
+export function resolveSceneStyles(rules: Rule[]): Styles {
+  const styles: Styles = {};
+  for (const rule of rules) {
+    const selector = parseSelector(rule.selector);
+    if (
+      selector.tag === "scene" &&
+      selector.id === null &&
+      selector.classes.length === 0
+    ) {
+      for (const declaration of rule.declarations) {
+        styles[declaration.property] = declaration.value;
+      }
+    }
+  }
+  return styles;
+}

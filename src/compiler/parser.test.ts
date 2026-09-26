@@ -2,18 +2,18 @@ import { describe, it, expect } from "vitest";
 import { tokenize } from "./tokenizer";
 import { parse } from "./parser";
 
-const parseCsl = (source: string) => parse(tokenize(source));
+const parseGSS = (source: string) => parse(tokenize(source));
 
 describe("parse", () => {
   it("lit le contenu de @scene", () => {
-    expect(parseCsl("@scene { cube.corner * 4; torus#hero; }").scene).toEqual([
+    expect(parseGSS("@scene { cube.corner * 4; torus#hero; }").scene).toEqual([
       { tag: "cube", id: null, classes: ["corner"], count: 4 },
       { tag: "torus", id: "hero", classes: [], count: 1 },
     ]);
   });
 
   it("lit une règle et ses déclarations", () => {
-    const { rules } = parseCsl(
+    const { rules } = parseGSS(
       "torus#hero { radius: 1 0.28; rotate-x: 70deg; }",
     );
     expect(rules).toHaveLength(1);
@@ -37,12 +37,12 @@ describe("parse", () => {
   });
 
   it("accepte une dernière déclaration sans point-virgule", () => {
-    expect(parseCsl("cube { size: 1 }").rules[0].declarations).toEqual([
+    expect(parseGSS("cube { size: 1 }").rules[0].declarations).toEqual([
       { property: "size", value: [{ type: "NUMBER", value: 1 }] },
     ]);
   });
 
   it("signale une accolade manquante", () => {
-    expect(() => parseCsl("cube { size: 1;")).toThrow("Règle jamais fermée");
+    expect(() => parseGSS("cube { size: 1;")).toThrow("Règle jamais fermée");
   });
 });

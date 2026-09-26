@@ -57,7 +57,7 @@ function readColor(value: Token[] | undefined): string {
   return `vec3(${hexToRgb(token.value).map(glslFloat).join(", ")})`;
 }
 
-// ⬇️ TA MISSION : convertir un angle CSL en radians
+// ⬇️ TA MISSION : convertir un angle GSS en radians
 export function readAngle(value: Token[]): number {
   const [token] = value;
 
@@ -173,7 +173,7 @@ vec2 opU(vec2 a, vec2 b) {
   return (a.x < b.x) ? a : b;
 }
 
-// ----- Généré par CSL -----
+// ----- Généré par GSS -----
 vec2 map(vec3 p) {
   vec2 res = vec2(p.y, 0.0);  // le sol : id 0
   vec3 q;

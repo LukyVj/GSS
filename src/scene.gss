@@ -1,4 +1,4 @@
-/* Ma première scène compilée par CSL */
+/* Ma première scène compilée par GSS */
 
 @scene {
   cube#left.corner;
@@ -36,7 +36,7 @@
 }
 
 #hero {
-  translate: 0 1 0;
+  translate: 0 1.5 0;
   color: #d4af37;
   rotate-x: 70deg;
 
