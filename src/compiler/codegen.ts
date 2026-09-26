@@ -48,9 +48,13 @@ function readTranslate(value: Token[] | undefined): string {
 
 function readScale(value: Token[] | undefined): string {
   if (!value) return "1.0";
+
   const [token] = value;
-  if (token.type !== "NUMBER")
-    throw new Error("scale attend un nombre, comme : scale: 2.0;");
+
+  if (value.length !== 1 || token.type !== "NUMBER" || token.value <= 0) {
+    throw new Error("scale expects one positive number, like: scale: 2;");
+  }
+
   return glslFloat(token.value);
 }
 
@@ -130,12 +134,14 @@ export function generateShader(
         `Objet inconnu : "${instance.tag}". Disponibles : ${Object.keys(SHAPES).join(", ")}`,
       );
     }
+    const scale = readScale(instance.styles["scale"]);
+
     return [
-      `  // ${label(instance)}`,
-      `  q = p - ${readTranslate(instance.styles["translate"])};`,
-      `  q *= ${readScale(instance.styles["scale"])};`,
+      ` // ${label(instance)}`,
+      ` q = p - ${readTranslate(instance.styles["translate"])};`,
       ...rotationLines(instance),
-      `  res = opU(res, vec2(${shape}, ${glslFloat(instance.index)}));`,
+      ` q /= ${scale};`,
+      ` res = opU(res, vec2(${shape} * ${scale}, ${glslFloat(instance.index)}));`,
     ].join("\n");
   });
 

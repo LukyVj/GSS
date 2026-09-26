@@ -36,6 +36,31 @@ describe("readAngle", () => {
   });
 });
 
+describe("scale", () => {
+  it("divides the point and multiplies the distance back", () => {
+    const shader = compileGSS("@scene { sphere; } sphere { scale: 4; }");
+    expect(shader).toContain("q /= 4.0;");
+    expect(shader).toContain("sdSphere(q, 0.5) * 4.0");
+  });
+  it("rejects several values", () => {
+    expect(() =>
+      compileGSS("@scene { sphere; } sphere { scale: 2 3; }"),
+    ).toThrow("scale expects");
+  });
+
+  it("rejects zero", () => {
+    expect(() => compileGSS("@scene { sphere; } sphere { scale: 0; }")).toThrow(
+      "scale expects",
+    );
+  });
+
+  it("rejects negative numbers", () => {
+    expect(() =>
+      compileGSS("@scene { sphere; } sphere { scale: -1; }"),
+    ).toThrow("scale expects");
+  });
+});
+
 describe("generateShader", () => {
   it("applique la rotation avant de mesurer la distance", () => {
     const shader = compileGSS("@scene { torus; } torus { rotate-x: 90deg; }");
