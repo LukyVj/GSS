@@ -102,6 +102,28 @@ export const PROPERTIES: PropertyDef[] = [
     ],
   },
   {
+    name: "light",
+    appliesTo: "scene",
+    syntax: "<angle> <angle>",
+    initial: "45deg 54.7deg",
+    description:
+      "Sets the direction of the sun: first its azimuth around the vertical axis (0deg points to +z, 90deg to +x), then its elevation above the horizon (90deg is straight overhead).",
+    examples: [
+      "@scene { cube; } cube { translate: 0 0.5 0; } scene { light: 120deg 30deg; }",
+    ],
+  },
+  {
+    name: "ambient",
+    appliesTo: "scene",
+    syntax: "<number>",
+    initial: "0.1",
+    description:
+      "Sets the minimum light received by surfaces facing away from the sun, from 0 (black shadows) to 1 (no shadows).",
+    examples: [
+      "@scene { cube; } cube { translate: 0 0.5 0; } scene { ambient: 0.4; }",
+    ],
+  },
+  {
     name: "floor",
     appliesTo: "scene",
     syntax: "<hex-color>",

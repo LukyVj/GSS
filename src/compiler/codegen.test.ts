@@ -86,6 +86,53 @@ describe("decor", () => {
   });
 });
 
+describe("lighting", () => {
+  it("points the light from two angles", () => {
+    expect(
+      compileGSS("@scene { cube; } scene { light: 0deg 90deg; }"),
+    ).toContain("vec3 lightDir = vec3(0.0, 1.0, 0.0);");
+    expect(
+      compileGSS("@scene { cube; } scene { light: 90deg 0deg; }"),
+    ).toContain("vec3 lightDir = vec3(1.0, 0.0, 0.0);");
+  });
+
+  it("keeps the default light direction", () => {
+    expect(compileGSS("@scene { cube; }")).toContain(
+      "vec3 lightDir = vec3(0.408, 0.816, 0.408);",
+    );
+  });
+
+  it("rejects a light without two angles", () => {
+    expect(() =>
+      compileGSS("@scene { cube; } scene { light: 45deg; }"),
+    ).toThrow("light expects");
+  });
+
+  it("sets the ambient light", () => {
+    expect(compileGSS("@scene { cube; } scene { ambient: 0.3; }")).toContain(
+      "getColor(id) * (0.3 + 0.7 * diff)",
+    );
+  });
+
+  it("keeps the default ambient light", () => {
+    expect(compileGSS("@scene { cube; }")).toContain(
+      "getColor(id) * (0.1 + 0.9 * diff)",
+    );
+  });
+
+  it("rejects an ambient light above 1", () => {
+    expect(() => compileGSS("@scene { cube; } scene { ambient: 2; }")).toThrow(
+      "ambient expects",
+    );
+  });
+
+  it("removes the floor", () => {
+    expect(compileGSS("@scene { cube; } scene { floor: none; }")).toContain(
+      "vec2 res = vec2(1e10, 0.0);",
+    );
+  });
+});
+
 describe("shape dimensions", () => {
   it("uses the default cube size", () => {
     expect(compileGSS("@scene { cube; }")).toContain(
