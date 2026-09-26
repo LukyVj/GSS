@@ -34,7 +34,8 @@ scene {
 
 #top {
   translate:  0 0.5 2.5;
-  color: #BADA55
+  color: #BADA55;
+  size: 2;
 }
 
 #bottom {

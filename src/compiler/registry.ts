@@ -2,13 +2,15 @@
 // Every property must be registered here: the documentation is generated
 // from this list, and every example is compiled by the tests.
 
+export type Shape = "cube" | "sphere" | "torus"; // Later "cone" | "cylinder" | "line" | "plane" | "mesh" ...
+
 export type PropertyDef = {
-  name: string; // "rotate-x"
-  appliesTo: "object" | "scene"; // styles an object, or the scene itself
-  syntax: string; // CSS-like value syntax, e.g. "<angle>"
-  initial: string; // the value used when the property is not set
-  description: string; // one or two sentences
-  examples: string[]; // complete GSS sources, compiled by the tests
+  name: string;
+  appliesTo: "object" | "scene" | Shape[]; // Shape[]: only these shapes
+  syntax: string;
+  initial: string;
+  description: string;
+  examples: string[];
 };
 
 export const PROPERTIES: PropertyDef[] = [
@@ -60,6 +62,44 @@ export const PROPERTIES: PropertyDef[] = [
     initial: "1.0",
     description: "Scales the object along the x, y and z axes.",
     examples: ["@scene { cube; } cube { scale: 2.0; }"],
+  },
+  {
+    name: "size",
+    appliesTo: ["cube"],
+    syntax: "<number> | <number>{3}",
+    initial: "1",
+    description:
+      "Sets the size of the cube along the x, y and z axes. One value makes a cube, three values make a box.",
+    examples: ["@scene { cube; } cube { translate: 0 0.5 0; size: 2 1 1; }"],
+  },
+  {
+    name: "corner-radius",
+    appliesTo: ["cube"],
+    syntax: "<number>",
+    initial: "0.08",
+    description: "Rounds the edges of the cube. 0 gives sharp edges.",
+    examples: [
+      "@scene { cube; } cube { translate: 0 0.5 0; corner-radius: 0.3; }",
+    ],
+  },
+  {
+    name: "radius",
+    appliesTo: ["sphere", "torus"],
+    syntax: "<number>",
+    initial: "0.5 (sphere), 1 (torus)",
+    description:
+      "Sets the radius of the sphere, or the radius of the torus ring, measured to the center of its tube.",
+    examples: ["@scene { sphere; } sphere { translate: 0 1 0; radius: 1; }"],
+  },
+  {
+    name: "thickness",
+    appliesTo: ["torus"],
+    syntax: "<number>",
+    initial: "0.28",
+    description: "Sets the radius of the torus tube.",
+    examples: [
+      "@scene { torus; } torus { translate: 0 0.5 0; thickness: 0.5; }",
+    ],
   },
   {
     name: "floor",

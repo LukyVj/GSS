@@ -73,6 +73,13 @@ The reference documentation is generated from the registry, and every example is
 **Decision**: `scale` takes a single positive number, applied on all three axes.
 **Why**: a uniform scale keeps distances exact (the distance is multiplied back by the scale). A non-uniform scale would distort the distance field and cause rendering artifacts.
 
+## 14. Shape-specific properties
+
+**Decision**: some properties only apply to some shapes (`size` to `cube`, `radius` to `sphere` and `torus`).
+Using one with an explicit, incompatible tag is an error (`sphere { size: 2; }`).
+Through a class or an id, it applies to compatible shapes and is ignored by the others, as in CSS.
+**Why**: clear errors when the intent is obviously wrong, without breaking classes shared by several shapes.
+
 ## Open questions
 
 - **Targeting multiplied ids**: should `#hero` target `hero-1`, `hero-2` and `hero-3`?

@@ -11,7 +11,12 @@ export function escapeHtml(text: string): string {
 
 // ⬇️ YOUR MISSION: the HTML of one property
 export function renderProperty(property: PropertyDef): string {
-  const appliesTo = property.appliesTo === "object" ? "objects" : "the scene";
+  const appliesTo =
+    property.appliesTo === "object"
+      ? "objects"
+      : property.appliesTo === "scene"
+        ? "the scene"
+        : property.appliesTo.join(", ");
 
   const examples = property.examples
     .map((example) => `<pre><code>${escapeHtml(example)}</code></pre>`)
@@ -35,13 +40,13 @@ export function renderProperty(property: PropertyDef): string {
 
 // The whole page: one section for object properties, one for scene properties
 export function renderDocs(properties: PropertyDef[]): string {
-  const section = (title: string, appliesTo: PropertyDef["appliesTo"]) => `
+  const section = (
+    title: string,
+    belongs: (property: PropertyDef) => boolean,
+  ) => `
     <section>
       <h2>${title}</h2>
-      ${properties
-        .filter((property) => property.appliesTo === appliesTo)
-        .map(renderProperty)
-        .join("\n")}
+      ${properties.filter(belongs).map(renderProperty).join("\n")}
     </section>`;
 
   return `
@@ -49,6 +54,6 @@ export function renderDocs(properties: PropertyDef[]): string {
       <h1>GSS — GPU Style Sheets</h1>
       <p>Property reference, generated from the registry.</p>
     </header>
-    ${section("Object properties", "object")}
-    ${section("Scene properties", "scene")}`;
+    ${section("Object properties", (property) => property.appliesTo !== "scene")}
+    ${section("Scene properties", (property) => property.appliesTo === "scene")}`;
 }

@@ -37,4 +37,26 @@ describe("validateProperties", () => {
       "colr",
     );
   });
+
+  it("rejects a shape property on another shape", () => {
+    expect(() => validate("sphere { size: 2; }")).toThrow(
+      '"size" only applies to cube',
+    );
+  });
+
+  it("lists every compatible shape in the error", () => {
+    expect(() => validate("cube { radius: 1; }")).toThrow(
+      '"radius" only applies to sphere, torus',
+    );
+  });
+
+  it("accepts a shape property through a class", () => {
+    expect(() => validate(".big { size: 2; }")).not.toThrow();
+  });
+
+  it("rejects a shape property on the scene", () => {
+    expect(() => validate("scene { radius: 1; }")).toThrow(
+      '"radius" only applies to objects',
+    );
+  });
 });

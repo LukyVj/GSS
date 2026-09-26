@@ -16,12 +16,23 @@ export function validateProperties(rules: Rule[]): void {
         throw new Error(`Unknown property "${declaration.property}"`);
       }
 
-      if (isScene && property.appliesTo === "object") {
+      if (isScene && property.appliesTo !== "scene") {
         throw new Error(`"${declaration.property}" only applies to objects.`);
       }
 
       if (!isScene && property.appliesTo === "scene") {
         throw new Error(`"${declaration.property}" only applies to the scene.`);
+      }
+
+      // Shape-specific property on an explicit, incompatible tag
+      if (
+        Array.isArray(property.appliesTo) &&
+        selector.tag !== null &&
+        !(property.appliesTo as string[]).includes(selector.tag)
+      ) {
+        throw new Error(
+          `"${property.name}" only applies to ${property.appliesTo.join(", ")}.`,
+        );
       }
     }
   }
