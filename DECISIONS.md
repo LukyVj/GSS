@@ -1,52 +1,80 @@
-# Décisions de design
+# Design decisions
 
-## 1. Rendu par raymarching, sans Three.js
+## 1. Raymarching, no Three.js
 
-**Décision** : toute la scène est compilée en un seul fragment shader GLSL, rendu par raymarching de SDF (WebGL2).
-**Pourquoi** : pas de dépendance, runtime minuscule, formes organiques (union lisse) impossibles en raster simple.
-**Limite assumée** : pas de modèles importés (GLTF), coût qui monte avec le nombre d'objets.
-**Plus tard** : un backend WGSL/WebGPU, grâce à une étape intermédiaire séparée du GLSL.
+**Decision**: the whole scene compiles to a single GLSL fragment shader, rendered by raymarching signed distance fields (WebGL2).
+**Why**: no dependency, a tiny runtime, and organic shapes (smooth unions) that plain rasterization cannot do.
+**Accepted limits**: no imported models (GLTF); the cost grows with the number of objects.
+**Later**: a WGSL/WebGPU backend, made possible by an intermediate step separate from GLSL.
 
-## 2. La structure dans `@scene`, pas en HTML
+## 2. Structure lives in `@scene`, not in HTML
 
-**Décision** : les objets sont déclarés dans un bloc `@scene { cube.corner * 4; }`.
-**Pourquoi** : un seul fichier autonome, facile à partager et à générer par un LLM. Pas de web components.
+**Decision**: objects are declared in a `@scene { cube.corner * 4; }` block.
+**Why**: one self-contained file, easy to share and easy for an LLM to generate. No web components.
 
-## 3. Les ids multipliés sont numérotés automatiquement
+## 3. Multiplied ids are numbered automatically
 
-**Décision** : `torus#hero * 3` crée `hero-1`, `hero-2`, `hero-3`. Sans multiplicateur, l'id reste `hero`.
-**Pourquoi** : pratique, jamais d'erreur bloquante, chaque objet reste ciblable.
-**Question ouverte** : `#hero` doit-il cibler les trois instances ?
+**Decision**: `torus#hero * 3` creates `hero-1`, `hero-2`, `hero-3`. Without a multiplier, the id stays `hero`.
+**Why**: practical, never a blocking error, and every object stays targetable.
 
-## 4. Spécificité : id 10 000, classe 100, tag 1
+## 4. Specificity: id 10,000, class 100, tag 1
 
-**Décision** : la spécificité est un seul nombre, avec des poids très écartés.
-**Pourquoi** : comme en CSS, aucun nombre réaliste de classes ne bat un id, et `#hero.big` bat `#hero`.
-À spécificité égale, la dernière règle du fichier gagne.
+**Decision**: specificity is a single number with widely spaced weights.
+**Why**: as in CSS, no realistic number of classes beats an id, and `#hero.big` beats `#hero`.
+With equal specificity, the last rule in the file wins.
 
-## 5. Tout ce qui peut être calculé à la compilation l'est
+## 5. Everything that can be computed at compile time is
 
-**Décision** : la cascade, les sélecteurs et les unités (`70deg` → radians) sont résolus par le compilateur.
-Le shader ne reçoit que des valeurs finales.
-**Pourquoi** : shader plus simple et plus rapide ; le GPU ne sait rien du CSS.
+**Decision**: the cascade, selectors and units (`70deg` → radians) are resolved by the compiler.
+The shader only receives final values.
+**Why**: a simpler, faster shader; the GPU knows nothing about CSS.
 
-## 6. JavaScript garde l'état, le shader dessine
+## 6. JavaScript holds the state, the shader draws
 
-**Décision** : la caméra, le temps et, plus tard, le survol et les animations vivent en TypeScript,
-et sont envoyés au shader sous forme d'uniforms à chaque image.
-**Pourquoi** : un shader n'a aucune mémoire d'une image à l'autre.
+**Decision**: the camera, time and, later, hover and animations live in TypeScript
+and are sent to the shader as uniforms on every frame.
+**Why**: a shader has no memory from one frame to the next.
 
-## 7. Un numéro de matériau par objet
+## 7. One material number per object
 
-**Décision** : chaque instance a son propre numéro (son index dans la scène), utilisé par `getColor`.
-**Pourquoi** : les numéros sont toujours cohérents, et chaque objet reste identifiable, ce qui sera nécessaire pour `:hover`.
+**Decision**: each instance has its own number (its index in the scene), used by `getColor`.
+**Why**: numbers are always consistent, and every object stays identifiable, which `:hover` will need.
 
-## 8. L'AST garde les valeurs brutes
+## 8. The AST keeps raw values
 
-**Décision** : le parser stocke les sélecteurs et les valeurs sous forme de tokens, sans les interpréter.
-**Pourquoi** : le parser ne comprend que la structure ; le sens est donné plus tard, par la cascade et la génération.
+**Decision**: the parser stores selectors and values as tokens, without interpreting them.
+**Why**: the parser only understands structure; meaning is given later, by the cascade and code generation.
 
-## Questions ouvertes
+## 9. Angles always have a unit
 
-- **Le nom** : « CSL » est déjà pris par le Citation Style Language, y compris l'extension `.csl`. Il faut un nom court unique.
-- **Le décor** : le sol et le fond sont codés en dur dans le template. Prévu : `scene { floor: ...; background: ...; }`.
+**Decision**: angles accept `deg`, `rad` and `turn`. Only `0` is accepted without a unit.
+**Why**: as in CSS. Without a unit, `1.5` could mean degrees or radians.
+
+## 10. Behavior changes are explicit
+
+**Decision**: any change to how the language behaves comes with an updated test and an entry in this file.
+**Why**: the language must never change as a side effect of a code change.
+
+## 11. `@scene` declares, `scene` styles
+
+**Decision**: `@scene { }` declares which objects exist; the `scene { }` rule styles the scene itself (floor, background, and later lights and fog).
+Only the exact selector `scene` targets the scene: `.scene`, `#scene` and `scene.big` do not.
+**Why**: structure and appearance stay separate, and scene styles benefit from the cascade (`@media`, `var()`, animations).
+
+## 12. Every property is registered
+
+**Decision**: every GSS property is described once, in `src/compiler/registry.ts`.
+The compiler rejects unknown properties and properties used in the wrong place.
+The reference documentation is generated from the registry, and every example is compiled by the tests.
+**Why**: a feature cannot exist without its documentation, and typos are never silently ignored.
+
+## 13. `scale` is uniform
+
+**Decision**: `scale` takes a single positive number, applied on all three axes.
+**Why**: a uniform scale keeps distances exact (the distance is multiplied back by the scale). A non-uniform scale would distort the distance field and cause rendering artifacts.
+
+## Open questions
+
+- **Targeting multiplied ids**: should `#hero` target `hero-1`, `hero-2` and `hero-3`?
+- **Non-uniform scale**: is `scale: 1 2 1` worth supporting, with an approximate distance?
+- **Scene styling**: `:root` could replace `scene { }`, as in CSS, where the root background paints the whole canvas.
