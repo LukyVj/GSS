@@ -46,6 +46,14 @@ function readTranslate(value: Token[] | undefined): string {
   return `vec3(${numbers.map(glslFloat).join(", ")})`;
 }
 
+function readScale(value: Token[] | undefined): string {
+  if (!value) return "1.0";
+  const [token] = value;
+  if (token.type !== "NUMBER")
+    throw new Error("scale attend un nombre, comme : scale: 2.0;");
+  return glslFloat(token.value);
+}
+
 function readColor(value: Token[] | undefined, fallback = "vec3(0.9)"): string {
   if (!value) return fallback;
   const [token] = value;
@@ -125,6 +133,7 @@ export function generateShader(
     return [
       `  // ${label(instance)}`,
       `  q = p - ${readTranslate(instance.styles["translate"])};`,
+      `  q *= ${readScale(instance.styles["scale"])};`,
       ...rotationLines(instance),
       `  res = opU(res, vec2(${shape}, ${glslFloat(instance.index)}));`,
     ].join("\n");

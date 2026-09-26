@@ -103,16 +103,20 @@ export function resolveStyles(
   });
 }
 
+export function isSceneSelector(selector: SimpleSelector): boolean {
+  return (
+    selector.tag === "scene" &&
+    selector.id === null &&
+    selector.classes.length === 0
+  );
+}
+
 // Les styles de la scène elle-même : scene { floor: ...; background: ...; }
 export function resolveSceneStyles(rules: Rule[]): Styles {
   const styles: Styles = {};
   for (const rule of rules) {
     const selector = parseSelector(rule.selector);
-    if (
-      selector.tag === "scene" &&
-      selector.id === null &&
-      selector.classes.length === 0
-    ) {
+    if (isSceneSelector(selector)) {
       for (const declaration of rule.declarations) {
         styles[declaration.property] = declaration.value;
       }

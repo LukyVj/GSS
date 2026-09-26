@@ -6,6 +6,7 @@
   cube#top.corner;
   cube#bottom.corner;
   torus#hero;
+  sphere#big;
 }
 
 scene {
@@ -44,5 +45,11 @@ scene {
   translate: 0 1.5 0;
   color: #d4af37;
   rotate-x: 70deg;
+}
 
+#big {
+  translate: 0 4.5 0;
+  color: #d4af37;
+  rotate-x: 70deg;
+  scale: 4;
 }

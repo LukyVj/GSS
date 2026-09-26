@@ -3,10 +3,12 @@ import { parse } from "./parser";
 import { expandScene } from "./expand";
 import { resolveStyles, resolveSceneStyles } from "./resolve";
 import { generateShader } from "./codegen";
+import { validateProperties } from "./validate";
 
 // Texte GSS → shader GLSL
 export function compileGSS(source: string): string {
   const stylesheet = parse(tokenize(source));
+  validateProperties(stylesheet.rules);
   const instances = expandScene(stylesheet.scene);
   const styled = resolveStyles(instances, stylesheet.rules);
   const sceneStyles = resolveSceneStyles(stylesheet.rules);

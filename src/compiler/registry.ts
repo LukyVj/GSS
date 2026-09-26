@@ -54,6 +54,14 @@ export const PROPERTIES: PropertyDef[] = [
     examples: ["@scene { cube; } cube { rotate-z: 45deg; }"],
   },
   {
+    name: "scale",
+    appliesTo: "object",
+    syntax: "<number>",
+    initial: "1.0",
+    description: "Scales the object along the x, y and z axes.",
+    examples: ["@scene { cube; } cube { scale: 2.0; }"],
+  },
+  {
     name: "floor",
     appliesTo: "scene",
     syntax: "<hex-color>",
