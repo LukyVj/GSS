@@ -9,7 +9,7 @@
 }
 
 scene {
-  floor: #1a1a1f;
+  floor: #fefefe;
   background:#42429f;
 }
 
