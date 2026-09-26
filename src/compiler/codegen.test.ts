@@ -45,3 +45,18 @@ describe("generateShader", () => {
     expect(rotation).toBeLessThan(distance); // et elle vient avant
   });
 });
+
+describe("décor", () => {
+  it("utilise les couleurs du décor", () => {
+    const shader = compileGSS(
+      "@scene { cube; } scene { floor: #111; background: #000; }",
+    );
+    expect(shader).toContain("return vec3(0.067, 0.067, 0.067);  // le sol");
+    expect(shader).toContain("vec3 col = vec3(0.0, 0.0, 0.0);");
+  });
+
+  it("garde le décor par défaut sans règle scene", () => {
+    const shader = compileGSS("@scene { cube; }");
+    expect(shader).toContain("vec3 col = vec3(0.03);");
+  });
+});

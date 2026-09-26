@@ -1,5 +1,5 @@
 import type { Token } from "./tokenizer";
-import type { StyledInstance } from "./resolve";
+import type { StyledInstance, Styles } from "./resolve";
 
 // La forme GLSL de chaque type d'objet. "q" est le point, déjà déplacé.
 const SHAPES: Record<string, string> = {
@@ -46,8 +46,8 @@ function readTranslate(value: Token[] | undefined): string {
   return `vec3(${numbers.map(glslFloat).join(", ")})`;
 }
 
-function readColor(value: Token[] | undefined): string {
-  if (!value) return "vec3(0.9)";
+function readColor(value: Token[] | undefined, fallback = "vec3(0.9)"): string {
+  if (!value) return fallback;
   const [token] = value;
   if (value.length !== 1 || token.type !== "HASH") {
     throw new Error(
@@ -111,7 +111,10 @@ function label(instance: StyledInstance): string {
   return `${instance.tag}${id}${classes}`;
 }
 
-export function generateShader(instances: StyledInstance[]): string {
+export function generateShader(
+  instances: StyledInstance[],
+  sceneStyles: Styles = {},
+): string {
   const mapLines = instances.map((instance) => {
     const shape = SHAPES[instance.tag];
     if (!shape) {
@@ -132,10 +135,16 @@ export function generateShader(instances: StyledInstance[]): string {
       `  if (id == ${glslFloat(instance.index)}) return ${readColor(instance.styles["color"])};  // ${label(instance)}`,
   );
 
-  return TEMPLATE.replace("/*@MAP*/", mapLines.join("\n\n")).replace(
-    "/*@COLORS*/",
-    colorLines.join("\n"),
-  );
+  return TEMPLATE.replace("/*@MAP*/", mapLines.join("\n\n"))
+    .replace("/*@COLORS*/", colorLines.join("\n"))
+    .replace(
+      "/*@FLOOR*/",
+      readColor(sceneStyles["floor"], "vec3(0.91, 0.89, 0.86)"),
+    )
+    .replace(
+      "/*@BACKGROUND*/",
+      readColor(sceneStyles["background"], "vec3(0.03)"),
+    );
 }
 
 // Le squelette du shader. Seules les parties /*@...*/ changent d'une scène à l'autre.
@@ -185,7 +194,7 @@ vec2 map(vec3 p) {
 
 vec3 getColor(float id) {
 /*@COLORS*/
-  return vec3(0.91, 0.89, 0.86);  // le sol
+  return /*@FLOOR*/;  // le sol
 }
 // ----- Fin du code généré -----
 
@@ -219,8 +228,8 @@ void main() {
     if (res.x < 0.001 || t > 20.0) break;
   }
 
-  vec3 col = vec3(0.03);
-  if (t < 20.0) {
+  vec3 col = /*@BACKGROUND*/;
+    if (t < 20.0) {
     vec3 p = ro + rd * t;
     vec3 n = calcNormal(p);
     vec3 lightDir = normalize(vec3(1.0, 2.0, 1.0));

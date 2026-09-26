@@ -8,6 +8,11 @@
   torus#hero;
 }
 
+scene {
+  floor: #1a1a1f;
+  background:#42429f;
+}
+
 #right {
   color: #ff5a36;
 }
