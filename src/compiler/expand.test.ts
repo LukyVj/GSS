@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { expandScene } from "./expand";
 
 describe("expandScene", () => {
-  it("déplie les éléments multipliés, avec un index global", () => {
+  it("expands multiplied elements, with a global index", () => {
     expect(
       expandScene([
         { tag: "cube", id: null, classes: ["corner"], count: 2 },
@@ -15,7 +15,7 @@ describe("expandScene", () => {
     ]);
   });
 
-  it("numérote les ids multipliés (décision B)", () => {
+  it("numbers multiplied ids", () => {
     const ids = expandScene([
       { tag: "torus", id: "hero", classes: [], count: 3 },
     ]).map((instance) => instance.id);

@@ -2,13 +2,13 @@ import type { Rule } from "./ast";
 import type { Token } from "./tokenizer";
 import type { SceneInstance } from "./expand";
 
-// Les propriétés d'une instance après la cascade : { translate: [...], color: [...] }
+// The properties of an instance after the cascade: { translate: [...], color: [...] }
 export type Styles = Record<string, Token[]>;
 
-// Une instance + ses styles finaux
+// An instance + its final styles
 export type StyledInstance = SceneInstance & { styles: Styles };
 
-// Un sélecteur simple : cube, .corner, #hero, ou une combinaison comme cube#left.corner
+// A simple selector: cube, .corner, #hero, or a combination like cube#left.corner
 export type SimpleSelector = {
   tag: string | null;
   id: string | null;
@@ -22,7 +22,7 @@ function tokenToText(token: Token): string {
   return String(token.value);
 }
 
-// Transforme les tokens d'un sélecteur en objet { tag, id, classes }
+// Transform the tokens of a selector into an object { tag, id, classes }
 export function parseSelector(tokens: Token[]): SimpleSelector {
   const selector: SimpleSelector = { tag: null, id: null, classes: [] };
   let i = 0;
@@ -46,14 +46,14 @@ export function parseSelector(tokens: Token[]): SimpleSelector {
       i += 2;
     } else {
       const text = tokens.map(tokenToText).join("");
-      throw new Error(`Sélecteur pas encore supporté : "${text}"`);
+      throw new Error(`Selector not supported: "${text}"`);
     }
   }
 
   return selector;
 }
 
-// Est-ce que ce sélecteur cible cette instance ?
+// Does this selector target this instance?
 export function matches(
   selector: SimpleSelector,
   instance: SceneInstance,
@@ -65,7 +65,7 @@ export function matches(
   );
 }
 
-// ⬇️ TA MISSION : renvoyer un nombre d'autant plus grand que le sélecteur est spécifique
+// ⬇️ TA MISSION : return a number as big as the selector is specific
 export function specificity(selector: SimpleSelector): number {
   return (
     (selector.id ? 10_000 : 0) +
@@ -78,8 +78,8 @@ export function resolveStyles(
   instances: SceneInstance[],
   rules: Rule[],
 ): StyledInstance[] {
-  // On trie les règles de la moins spécifique à la plus spécifique.
-  // À spécificité égale, l'ordre du fichier décide : la dernière gagne.
+  // We sort the rules from the least specific to the most specific.
+  // At equal specificity, the file order decides: the last one wins.
   const sortedRules = rules
     .map((rule, order) => ({
       rule,
@@ -96,7 +96,7 @@ export function resolveStyles(
     for (const { rule, selector } of sortedRules) {
       if (!matches(selector, instance)) continue;
       for (const declaration of rule.declarations) {
-        styles[declaration.property] = declaration.value; // la règle suivante écrase la précédente
+        styles[declaration.property] = declaration.value; // the next rule overwrites the previous one
       }
     }
     return { ...instance, styles };
@@ -111,7 +111,7 @@ export function isSceneSelector(selector: SimpleSelector): boolean {
   );
 }
 
-// Les styles de la scène elle-même : scene { floor: ...; background: ...; }
+// The styles of the scene itself: scene { floor: ...; background: ...; }
 export function resolveSceneStyles(rules: Rule[]): Styles {
   const styles: Styles = {};
   for (const rule of rules) {

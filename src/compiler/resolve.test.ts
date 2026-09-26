@@ -12,19 +12,19 @@ const colorOf = (source: string, index: number) => {
 };
 
 describe("resolveStyles", () => {
-  it("applique une règle par classe", () => {
+  it("applies a rule by class", () => {
     expect(
       colorOf("@scene { cube.corner; } .corner { color: #ff0000; }", 0),
     ).toEqual([{ type: "HASH", value: "ff0000" }]);
   });
 
-  it("ignore une règle qui ne cible pas l'objet", () => {
+  it("ignores a rule that does not target the object", () => {
     expect(
       colorOf("@scene { cube; } .corner { color: #ff0000; }", 0),
     ).toBeUndefined();
   });
 
-  it("à spécificité égale, la dernière règle gagne", () => {
+  it("the last rule with equal specificity wins", () => {
     expect(
       colorOf(
         "@scene { cube.corner; } .corner { color: #111; } .corner { color: #222; }",
@@ -33,7 +33,7 @@ describe("resolveStyles", () => {
     ).toEqual([{ type: "HASH", value: "222" }]);
   });
 
-  it("un id bat une classe, même placé avant", () => {
+  it("an id beats a class, even if placed before", () => {
     expect(
       colorOf(
         "@scene { cube#a.corner; } #a { color: #111; } .corner { color: #222; }",
@@ -44,7 +44,7 @@ describe("resolveStyles", () => {
 });
 
 describe("specificity", () => {
-  it("classe les sélecteurs du plus faible au plus fort", () => {
+  it("sorts selectors from weakest to strongest", () => {
     const tag = specificity({ tag: "cube", id: null, classes: [] });
     const oneClass = specificity({ tag: null, id: null, classes: ["corner"] });
     const twoClasses = specificity({
@@ -59,7 +59,7 @@ describe("specificity", () => {
     expect(twoClasses).toBeLessThan(id);
   });
 
-  it("un id avec une classe bat un id seul", () => {
+  it("an id with a class beats an id alone", () => {
     const idOnly = specificity({ tag: null, id: "hero", classes: [] });
     const idAndClass = specificity({ tag: null, id: "hero", classes: ["big"] });
     expect(idOnly).toBeLessThan(idAndClass);

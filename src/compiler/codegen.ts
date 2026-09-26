@@ -1,14 +1,14 @@
 import type { Token } from "./tokenizer";
 import type { StyledInstance, Styles } from "./resolve";
 
-// La forme GLSL de chaque type d'objet. "q" est le point, déjà déplacé.
+// The GLSL shape of each type of object. "q" is the point, already moved.
 const SHAPES: Record<string, string> = {
   cube: "sdRoundBox(q, vec3(0.5), 0.08)",
   sphere: "sdSphere(q, 0.5)",
   torus: "sdTorus(q, vec2(1.0, 0.28))",
 };
 
-// GLSL exige "1.0" et refuse "1" là où il attend un float
+// GLSL requires "1.0" and rejects "1" where it expects a float
 function glslFloat(n: number): string {
   const text = String(n);
   return text.includes(".") || text.includes("e") ? text : `${text}.0`;
@@ -22,8 +22,7 @@ export function hexToRgb(hex: string): [number, number, number] {
           .map((c) => c + c)
           .join("")
       : hex;
-  if (!/^[0-9a-fA-F]{6}$/.test(full))
-    throw new Error(`Couleur invalide : #${hex}`);
+  if (!/^[0-9a-fA-F]{6}$/.test(full)) throw new Error(`Invalid color: #${hex}`);
   const channel = (start: number) =>
     Math.round((parseInt(full.slice(start, start + 2), 16) / 255) * 1000) /
     1000;
@@ -35,14 +34,12 @@ function readTranslate(value: Token[] | undefined): string {
   const numbers = value.map((token) => {
     if (token.type !== "NUMBER")
       throw new Error(
-        "translate attend trois nombres, comme : translate: 0 1 0;",
+        "translate expects three numbers, like: translate: 0 1 0;",
       );
     return token.value;
   });
   if (numbers.length !== 3)
-    throw new Error(
-      "translate attend trois nombres, comme : translate: 0 1 0;",
-    );
+    throw new Error("translate expects three numbers, like: translate: 0 1 0;");
   return `vec3(${numbers.map(glslFloat).join(", ")})`;
 }
 
@@ -62,43 +59,39 @@ function readColor(value: Token[] | undefined, fallback = "vec3(0.9)"): string {
   if (!value) return fallback;
   const [token] = value;
   if (value.length !== 1 || token.type !== "HASH") {
-    throw new Error(
-      "color attend une couleur hexadécimale, comme : color: #ff5a36;",
-    );
+    throw new Error("color expects a hexadecimal color, like: color: #ff5a36;");
   }
   return `vec3(${hexToRgb(token.value).map(glslFloat).join(", ")})`;
 }
 
-// ⬇️ TA MISSION : convertir un angle GSS en radians
+// ⬇️ TA MISSION : convert a GSS angle to radians
 export function readAngle(value: Token[]): number {
   const [token] = value;
 
-  // Un seul token attendu
+  // One token expected
   if (value.length !== 1) {
-    throw new Error("Un angle est attendu, comme : 70deg");
+    throw new Error("An angle is expected, like: 70deg");
   }
 
-  // Cas spécial : 0 sans unité est accepté, comme en CSS
+  // Special case: 0 without unit is accepted, like in CSS
   if (token.type === "NUMBER" && token.value === 0) {
     return 0;
   }
 
-  // Tout le reste doit avoir une unité
+  // Everything else must have a unit
   if (token.type !== "DIMENSION") {
-    throw new Error("Un angle doit avoir une unité, comme : 70deg");
+    throw new Error("An angle must have a unit, like: 70deg");
   }
 
-  // Les unités
+  // The units
   if (token.unit === "deg") return (token.value * Math.PI) / 180;
   if (token.unit === "rad") return token.value;
   if (token.unit === "turn") return token.value * 2 * Math.PI;
 
-  throw new Error(
-    `Unité d'angle inconnue : "${token.unit}". Utilise deg, rad ou turn.`,
-  );
+  throw new Error(`Unknown angle unit: "${token.unit}". Use deg, rad or turn.`);
 }
 
-// rotate-x fait tourner y et z, rotate-y fait tourner x et z, rotate-z fait tourner x et y
+// rotate-x rotates y and z, rotate-y rotates x and z, rotate-z rotates x and y
 const ROTATIONS: [string, string][] = [
   ["rotate-x", "yz"],
   ["rotate-y", "xz"],
@@ -109,7 +102,7 @@ function rotationLines(instance: StyledInstance): string[] {
   const lines: string[] = [];
   for (const [property, axes] of ROTATIONS) {
     const value = instance.styles[property];
-    if (!value) continue; // pas de rotation sur cet axe
+    if (!value) continue; // no rotation on this axis
     const angle = readAngle(value);
     const rounded = Math.round(angle * 10000) / 10000;
     lines.push(`  q.${axes} *= rot(${glslFloat(rounded)});`);
@@ -131,7 +124,7 @@ export function generateShader(
     const shape = SHAPES[instance.tag];
     if (!shape) {
       throw new Error(
-        `Objet inconnu : "${instance.tag}". Disponibles : ${Object.keys(SHAPES).join(", ")}`,
+        `Unknown object: "${instance.tag}". Available: ${Object.keys(SHAPES).join(", ")}`,
       );
     }
     const scale = readScale(instance.styles["scale"]);
@@ -162,7 +155,7 @@ export function generateShader(
     );
 }
 
-// Le squelette du shader. Seules les parties /*@...*/ changent d'une scène à l'autre.
+// The shader skeleton. Only the /*@...*/ parts change from one scene to the next.
 const TEMPLATE = `#version 300 es
 precision highp float;
 
@@ -197,9 +190,9 @@ vec2 opU(vec2 a, vec2 b) {
   return (a.x < b.x) ? a : b;
 }
 
-// ----- Généré par GSS -----
+// ----- Generated by GSS -----
 vec2 map(vec3 p) {
-  vec2 res = vec2(p.y, 0.0);  // le sol : id 0
+  vec2 res = vec2(p.y, 0.0);  // the floor: id 0
   vec3 q;
 
 /*@MAP*/
@@ -209,9 +202,9 @@ vec2 map(vec3 p) {
 
 vec3 getColor(float id) {
 /*@COLORS*/
-  return /*@FLOOR*/;  // le sol
+  return /*@FLOOR*/;  // the floor
 }
-// ----- Fin du code généré -----
+// ----- End of generated code -----
 
 vec3 calcNormal(vec3 p) {
   vec2 e = vec2(0.001, 0.0);

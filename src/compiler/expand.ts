@@ -1,11 +1,11 @@
 import type { SceneElement } from "./ast";
 
-// Un objet réel de la scène, après dépliage
+// A real object in the scene, after expansion
 export type SceneInstance = {
   tag: string;
   id: string | null;
   classes: string[];
-  index: number; // sa position dans la scène, à partir de 1 : ce sera sibling-index()
+  index: number; // its position in the scene, starting from 1: this will be sibling-index()
 };
 
 export function expandScene(elements: SceneElement[]): SceneInstance[] {
@@ -15,11 +15,11 @@ export function expandScene(elements: SceneElement[]): SceneInstance[] {
     for (let n = 1; n <= element.count; n++) {
       let id: string | null;
       if (element.id === null) {
-        id = null; // pas d'id : on n'en invente pas
+        id = null; // no id: we don't invent one
       } else if (element.count === 1) {
-        id = element.id; // un seul objet : on garde "hero"
+        id = element.id; // one object: we keep "hero"
       } else {
-        id = `${element.id}-${n}`; // plusieurs : "hero-1", "hero-2"...
+        id = `${element.id}-${n}`; // several: "hero-1", "hero-2"...
       }
       instances.push({
         tag: element.tag,

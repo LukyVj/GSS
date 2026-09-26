@@ -5,14 +5,14 @@ import { parse } from "./parser";
 const parseGSS = (source: string) => parse(tokenize(source));
 
 describe("parse", () => {
-  it("lit le contenu de @scene", () => {
+  it("parses the content of @scene", () => {
     expect(parseGSS("@scene { cube.corner * 4; torus#hero; }").scene).toEqual([
       { tag: "cube", id: null, classes: ["corner"], count: 4 },
       { tag: "torus", id: "hero", classes: [], count: 1 },
     ]);
   });
 
-  it("lit une règle et ses déclarations", () => {
+  it("parses a rule and its declarations", () => {
     const { rules } = parseGSS(
       "torus#hero { radius: 1 0.28; rotate-x: 70deg; }",
     );
@@ -36,13 +36,13 @@ describe("parse", () => {
     ]);
   });
 
-  it("accepte une dernière déclaration sans point-virgule", () => {
+  it("accepts a last declaration without semicolon", () => {
     expect(parseGSS("cube { size: 1 }").rules[0].declarations).toEqual([
       { property: "size", value: [{ type: "NUMBER", value: 1 }] },
     ]);
   });
 
-  it("signale une accolade manquante", () => {
-    expect(() => parseGSS("cube { size: 1;")).toThrow("Règle jamais fermée");
+  it("signals a missing brace", () => {
+    expect(() => parseGSS("cube { size: 1;")).toThrow("Rule never closed");
   });
 });

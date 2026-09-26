@@ -3,35 +3,35 @@ import { readAngle } from "./codegen";
 import { compileGSS } from "./index";
 
 describe("readAngle", () => {
-  it("convertit les degrés en radians", () => {
+  it("converts degrees to radians", () => {
     expect(
       readAngle([{ type: "DIMENSION", value: 180, unit: "deg" }]),
     ).toBeCloseTo(Math.PI);
   });
 
-  it("garde les radians", () => {
+  it("keeps radians", () => {
     expect(readAngle([{ type: "DIMENSION", value: 1.5, unit: "rad" }])).toBe(
       1.5,
     );
   });
 
-  it("convertit les tours", () => {
+  it("converts turns", () => {
     expect(
       readAngle([{ type: "DIMENSION", value: 0.25, unit: "turn" }]),
     ).toBeCloseTo(Math.PI / 2);
   });
 
-  it("accepte 0 sans unité", () => {
+  it("accepts 0 without unit", () => {
     expect(readAngle([{ type: "NUMBER", value: 0 }])).toBe(0);
   });
 
-  it("refuse une unité inconnue", () => {
+  it("rejects an unknown unit", () => {
     expect(() =>
       readAngle([{ type: "DIMENSION", value: 3, unit: "px" }]),
     ).toThrow("px");
   });
 
-  it("refuse un nombre sans unité", () => {
+  it("rejects a number without unit", () => {
     expect(() => readAngle([{ type: "NUMBER", value: 45 }])).toThrow();
   });
 });
@@ -62,25 +62,25 @@ describe("scale", () => {
 });
 
 describe("generateShader", () => {
-  it("applique la rotation avant de mesurer la distance", () => {
+  it("applies the rotation before measuring the distance", () => {
     const shader = compileGSS("@scene { torus; } torus { rotate-x: 90deg; }");
     const rotation = shader.indexOf("q.yz *= rot(");
     const distance = shader.indexOf("sdTorus(q");
-    expect(rotation).toBeGreaterThan(-1); // la rotation existe
-    expect(rotation).toBeLessThan(distance); // et elle vient avant
+    expect(rotation).toBeGreaterThan(-1); // the rotation exists
+    expect(rotation).toBeLessThan(distance); // and it comes before
   });
 });
 
-describe("décor", () => {
-  it("utilise les couleurs du décor", () => {
+describe("decor", () => {
+  it("uses the decor colors", () => {
     const shader = compileGSS(
       "@scene { cube; } scene { floor: #111; background: #000; }",
     );
-    expect(shader).toContain("return vec3(0.067, 0.067, 0.067);  // le sol");
+    expect(shader).toContain("return vec3(0.067, 0.067, 0.067);  // the floor");
     expect(shader).toContain("vec3 col = vec3(0.0, 0.0, 0.0);");
   });
 
-  it("garde le décor par défaut sans règle scene", () => {
+  it("keeps the decor default without scene rule", () => {
     const shader = compileGSS("@scene { cube; }");
     expect(shader).toContain("vec3 col = vec3(0.03);");
   });

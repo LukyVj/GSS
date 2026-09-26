@@ -2,15 +2,15 @@ import type { Token } from "./tokenizer";
 import type { Stylesheet, SceneElement, Rule, Declaration } from "./ast";
 
 export function parse(tokens: Token[]): Stylesheet {
-  let pos = 0; // notre position dans la liste de tokens
+  let pos = 0; // our position in the list of tokens
 
-  // Regarde le token actuel, sans avancer
+  // Looks at the current token, without advancing
   const peek = (): Token | undefined => tokens[pos];
 
-  // Prend le token actuel et avance
+  // Takes the current token and advances
   const next = (): Token => {
     const token = tokens[pos];
-    if (!token) throw new Error("Fin du fichier inattendue");
+    if (!token) throw new Error("Unexpected end of file");
     pos++;
     return token;
   };
@@ -18,11 +18,11 @@ export function parse(tokens: Token[]): Stylesheet {
   const isPunct = (token: Token | undefined, value: string): boolean =>
     token?.type === "PUNCT" && token.value === value;
 
-  // Exige une ponctuation précise, sinon erreur
+  // Expects a precise punctuation, otherwise error
   const expectPunct = (value: string): void => {
     const token = next();
     if (!isPunct(token, value)) {
-      throw new Error(`"${value}" attendu, mais trouvé "${token.value}"`);
+      throw new Error(`"${value}" expected, but found "${token.value}"`);
     }
   };
 
@@ -31,7 +31,7 @@ export function parse(tokens: Token[]): Stylesheet {
     const tagToken = next();
     if (tagToken.type !== "IDENT") {
       throw new Error(
-        `Nom d'objet attendu dans @scene, mais trouvé "${tagToken.value}"`,
+        `Object name expected in @scene, but found "${tagToken.value}"`,
       );
     }
     const element: SceneElement = {
@@ -41,7 +41,7 @@ export function parse(tokens: Token[]): Stylesheet {
       count: 1,
     };
 
-    // Autant de #id et de .classe qu'il y en a
+    // As many #id and .classes as there are
     while (true) {
       const token = peek();
       if (token?.type === "HASH") {
@@ -51,14 +51,14 @@ export function parse(tokens: Token[]): Stylesheet {
         next();
         const className = next();
         if (className.type !== "IDENT")
-          throw new Error('Nom de classe attendu après "."');
+          throw new Error('Class name expected after "."');
         element.classes.push(className.value);
       } else {
         break;
       }
     }
 
-    // Le multiplicateur optionnel : * 4
+    // The optional multiplier: * 4
     if (isPunct(peek(), "*")) {
       next();
       const count = next();
@@ -67,7 +67,7 @@ export function parse(tokens: Token[]): Stylesheet {
         !Number.isInteger(count.value) ||
         count.value < 1
       ) {
-        throw new Error('Un nombre entier positif est attendu après "*"');
+        throw new Error('A positive integer is expected after "*"');
       }
       element.count = count.value;
     }
@@ -81,10 +81,10 @@ export function parse(tokens: Token[]): Stylesheet {
     expectPunct("{");
     const elements: SceneElement[] = [];
     while (!isPunct(peek(), "}")) {
-      if (!peek()) throw new Error('@scene n\'est jamais fermé : "}" manquant');
+      if (!peek()) throw new Error('@scene never closed: "}" missing');
       elements.push(parseSceneElement());
     }
-    next(); // on consomme le "}"
+    next(); // we consume the "}"
     return elements;
   }
 
@@ -92,9 +92,7 @@ export function parse(tokens: Token[]): Stylesheet {
   function parseDeclaration(): Declaration {
     const property = next();
     if (property.type !== "IDENT") {
-      throw new Error(
-        `Nom de propriété attendu, mais trouvé "${property.value}"`,
-      );
+      throw new Error(`Property name expected, but found "${property.value}"`);
     }
     expectPunct(":");
     const value: Token[] = [];
@@ -102,8 +100,8 @@ export function parse(tokens: Token[]): Stylesheet {
       value.push(next());
     }
     if (value.length === 0)
-      throw new Error(`La propriété "${property.value}" n'a pas de valeur`);
-    if (isPunct(peek(), ";")) next(); // le ";" est optionnel avant "}", comme en CSS
+      throw new Error(`The property "${property.value}" has no value`);
+    if (isPunct(peek(), ";")) next(); // the ";" is optional before "}", like in CSS
     return { property: property.value, value };
   }
 
@@ -116,14 +114,14 @@ export function parse(tokens: Token[]): Stylesheet {
     expectPunct("{");
     const declarations: Declaration[] = [];
     while (!isPunct(peek(), "}")) {
-      if (!peek()) throw new Error('Règle jamais fermée : "}" manquant');
+      if (!peek()) throw new Error('Rule never closed: "}" missing');
       declarations.push(parseDeclaration());
     }
     next();
     return { selector, declarations };
   }
 
-  // Le fichier entier : une suite de @scene et de règles
+  // The whole file: a sequence of @scene and rules
   const stylesheet: Stylesheet = { scene: [], rules: [] };
 
   while (peek()) {
@@ -133,7 +131,7 @@ export function parse(tokens: Token[]): Stylesheet {
       if (token.value === "scene") {
         stylesheet.scene.push(...parseScene());
       } else {
-        throw new Error(`@${token.value} n'est pas encore supporté`);
+        throw new Error(`@${token.value} isn't supported yet`);
       }
     } else {
       stylesheet.rules.push(parseRule());

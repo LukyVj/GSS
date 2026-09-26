@@ -1,5 +1,5 @@
-// Un token = un "mot" du langage, avec son type.
-// Le "|" veut dire "ou" : un Token est l'une de ces cinq formes.
+// A token = a "word" of the language, with its type.
+// The "|" means "or": a Token is one of these five forms.
 export type Token =
   | { type: "IDENT"; value: string } // torus, radius, --gap
   | { type: "HASH"; value: string } // #hero, #ff5a36
@@ -18,7 +18,7 @@ function isIdentChar(char: string): boolean {
   return /^[a-zA-Z0-9_-]$/.test(char);
 }
 
-// Un nom commence par une lettre, ou par "-" suivi d'une lettre ou d'un autre "-" (--gap)
+// A name starts with a letter, or by "-" followed by a letter or another "-" (--gap)
 function isIdentStart(char: string, next: string): boolean {
   if (/^[a-zA-Z_]$/.test(char)) return true;
   return char === "-" && /^[a-zA-Z_-]$/.test(next);
@@ -26,12 +26,12 @@ function isIdentStart(char: string, next: string): boolean {
 
 export function tokenize(source: string): Token[] {
   const tokens: Token[] = [];
-  let i = 0; // notre position dans le texte
+  let i = 0; // our position in the text
 
-  // Renvoie le caractère à une position, ou "" si on dépasse la fin
+  // Returns the character at a position, or "" if we exceed the end
   const charAt = (index: number): string => source[index] ?? "";
 
-  // Avance tant qu'on lit des caractères de nom, et renvoie le nom lu
+  // Advance while reading name characters, and return the name read
   const readIdent = (): string => {
     const start = i;
     while (isIdentChar(charAt(i))) i++;
@@ -42,31 +42,30 @@ export function tokenize(source: string): Token[] {
     const char = charAt(i);
     const next = charAt(i + 1);
 
-    // 1. Les espaces : on les saute
+    // 1. The spaces: we skip them
     if (/\s/.test(char)) {
       i++;
       continue;
     }
 
-    // 2. Les commentaires /* ... */ : on saute jusqu'à la fin
+    // 2. The comments /* ... */ : we skip until the end
     if (char === "/" && next === "*") {
       const end = source.indexOf("*/", i + 2);
-      if (end === -1)
-        throw new Error(`Commentaire jamais fermé (position ${i})`);
+      if (end === -1) throw new Error(`Comment never closed (position ${i})`);
       i = end + 2;
       continue;
     }
 
-    // 3. Les nombres : 1, 0.28, -2.5
+    // 3. The numbers: 1, 0.28, -2.5
     if (isDigit(char) || ((char === "-" || char === ".") && isDigit(next))) {
       const start = i;
       i++;
       while (isDigit(charAt(i)) || charAt(i) === ".") i++;
-      const value = parseFloat(source.slice(start, i)); // le nombre : 70
+      const value = parseFloat(source.slice(start, i)); // the number: 70
 
-      // Est-ce qu'une lettre est collée juste après le nombre ?
+      // Is a letter stuck just after the number?
       if (isIdentStart(charAt(i), charAt(i + 1))) {
-        const unit = readIdent(); // lit "deg" et avance i
+        const unit = readIdent(); // read "deg" and advance i
         tokens.push({ type: "DIMENSION", value, unit });
       } else {
         tokens.push({ type: "NUMBER", value });
@@ -74,31 +73,31 @@ export function tokenize(source: string): Token[] {
       continue;
     }
 
-    // 4. @scene et #hero : un symbole suivi d'un nom
+    // 4. @scene and #hero: a symbol followed by a name
     if (char === "@" || char === "#") {
       i++;
       const name = readIdent();
       if (name === "")
-        throw new Error(`"${char}" doit être suivi d'un nom (position ${i})`);
+        throw new Error(`"${char}" must be followed by a name (position ${i})`);
       tokens.push({ type: char === "@" ? "AT_KEYWORD" : "HASH", value: name });
       continue;
     }
 
-    // 5. Les noms : torus, radius, nth-child, --gap
+    // 5. The names: torus, radius, nth-child, --gap
     if (isIdentStart(char, next)) {
       tokens.push({ type: "IDENT", value: readIdent() });
       continue;
     }
 
-    // 6. La ponctuation
+    // 6. The punctuation
     if (PUNCTUATION.includes(char)) {
       tokens.push({ type: "PUNCT", value: char });
       i++;
       continue;
     }
 
-    // 7. Rien ne correspond : erreur claire, avec la position
-    throw new Error(`Caractère inattendu "${char}" (position ${i})`);
+    // 7. Nothing matches: clear error, with the position
+    throw new Error(`Unexpected character "${char}" (position ${i})`);
   }
 
   return tokens;

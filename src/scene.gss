@@ -1,4 +1,4 @@
-/* Ma première scène compilée par GSS */
+/* My first scene compiled by GSS */
 
 @scene {
   cube#left.corner;
@@ -51,5 +51,5 @@ scene {
   translate: 0 4.5 0;
   color: #d4af37;
   rotate-x: 70deg;
-  scale: 4;
+  scale: 2.0;
 }
