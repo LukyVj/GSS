@@ -1,62 +1,43 @@
-/* My first scene compiled by GSS */
+/* GSS test scene
+   One zone per feature, placed apart so they never overlap:
+     Zone 1 (center)  transforms: translate, rotate, scale, size, classes
+     Zone 2 (back)    operations: blend, subtract
+     Zone 3 (front)   animations: @keyframes */
 
 @scene {
+  /* Zone 1: transforms */
   cube#left.corner;
   cube#right.corner;
   cube#top.corner;
   cube#bottom.corner;
   torus#hero;
-  sphere#big;
+  torus#big;
 
-  /* box and hole */
-  cube#box; sphere#hole;
+  /* Zone 2: operations */
+  sphere#drop-a; sphere#drop-b;
+  cube#box-smooth; sphere#hole-smooth;
+  cube#box-sharp;  sphere#hole-sharp;
 
-  /* two drops that merge */
-  sphere#a; sphere#b; cube#box; sphere#hole;
+  /* Zone 3: animations */
+  cube#spinner;
+  sphere#ball;
 }
 
-@scene { cube; }
-cube {
-  translate: 0 1 0;
-  color: #ff5a36;
-  animation: show 3s ease-in-out alternate;
-}
-@keyframes show {
-  from { rotate-y: 0deg;   scale: 1;   }
-  to   { rotate-y: 180deg; scale: 1.4; color: #3a7bff; }
-}
 
-@scene { sphere#ball; }
-#ball { color: #ff5a36; animation: float 2s ease-in-out infinite alternate; }
-@keyframes float {
-  0% { translate: 1 0.5 0; }
-  20%   { translate: 3 2 0; }
-}
-
-/* 1. Two drops that merge */
-#a { translate: -3.4 1 0; }
-#b { translate: -2.6 1.2 0; blend: 0.05; }
-
-/* 2. A hole with smooth edges */
-#box  { translate: 0 1 0; size: 1.5; }
-#hole { translate: 0 1 0; radius: 0.95; operation: subtract; blend: 0.15; color: #ff5a36; }
-
-#box  { translate: 2 1 0; size: 1.5; color: #e8e4dc; }
-#hole { translate: 2 1 0; radius: 0.95; color:#14bc55; operation: subtract; }
+/* ===== Scene settings ===== */
 
 scene {
   floor: #fefefe;
-  background:#42429f;
+  background: #42429f;
   light: 200deg 10deg;
   ambient: 0.4;
-  camera-distance: 12;
+  camera-distance: 14;
   camera-angle: 180deg 45deg;
   camera-spin: 100s;
 }
 
-#right {
-  color: #ff5a36;
-}
+
+/* ===== Zone 1: transforms (center) ===== */
 
 .corner {
   translate: 0 0.5 0;
@@ -70,27 +51,69 @@ scene {
 #right {
   translate: 2.5 0.5 0;
   rotate-y: 45deg;
+  color: #ff5a36;
 }
 
 #top {
-  translate:  0 0.5 2.5;
-  color: #BADA55;
+  translate: 0 0.5 2.5;
   size: 1 4 2;
+  color: #BADA55;
 }
 
 #bottom {
-  translate:  0 0.5 -2.5;
+  translate: 0 0.5 -2.5;
 }
 
 #hero {
   translate: 0 1.5 0;
-  color: #d4af37;
   rotate-x: 70deg;
+  color: #d4af37;
 }
 
 #big {
   translate: 0 4.5 0;
-  color: #d4af37;
   rotate-x: 70deg;
   scale: 2.0;
+  color: #d4af37;
+}
+
+
+/* ===== Zone 2: operations (back, z = -6) ===== */
+
+/* Two drops that merge */
+#drop-a { translate: -3.4 1 -6; }
+#drop-b { translate: -2.6 1.2 -6; blend: 0.05; }
+
+/* A hole with smooth edges */
+#box-smooth  { translate: 0 1 -6; size: 1.5; }
+#hole-smooth { translate: 0 1 -6; radius: 0.95; operation: subtract; blend: 0.15; color: #ff5a36; }
+
+/* A hole with sharp edges */
+#box-sharp  { translate: 3 1 -6; size: 1.5; color: #e8e4dc; }
+#hole-sharp { translate: 3 1 -6; radius: 0.95; operation: subtract; color: #14bc55; }
+
+
+/* ===== Zone 3: animations (front, z = 6) ===== */
+
+/* Rotation, scale and color with from / to */
+#spinner {
+  translate: -1.5 1 6;
+  color: #ff5a36;
+  animation: show 3s ease-in-out alternate;
+}
+@keyframes show {
+  from { rotate-y: 0deg;   scale: 1;   }
+  to   { rotate-y: 180deg; scale: 1.4; color: #3a7bff; }
+}
+
+/* Translate with percentages */
+#ball {
+  translate: 1.5 0.5 6;
+  color: #ff5a36;
+  animation: float 2s ease-in-out infinite;
+}
+@keyframes float {
+  0%   { translate: 1.5 0.5 6; }
+  50%  { translate: 1.5 2 6; }
+  100% { translate: 1.5 0.5 6; }
 }
