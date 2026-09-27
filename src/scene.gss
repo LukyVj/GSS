@@ -15,6 +15,17 @@
   sphere#a; sphere#b; cube#box; sphere#hole;
 }
 
+@scene { cube; }
+cube {
+  translate: 0 1 0;
+  color: #ff5a36;
+  animation: show 3s ease-in-out alternate;
+}
+@keyframes show {
+  from { rotate-y: 0deg;   scale: 1;   }
+  to   { rotate-y: 180deg; scale: 1.4; color: #3a7bff; }
+}
+
 @scene { sphere#ball; }
 #ball { color: #ff5a36; animation: float 2s ease-in-out infinite alternate; }
 @keyframes float {

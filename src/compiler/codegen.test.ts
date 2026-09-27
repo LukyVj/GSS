@@ -325,4 +325,41 @@ describe("animation", () => {
     `);
     expect(shader).toContain("mix(vec3(0.0, 1.0, 0.0), vec3(0.0, 3.0, 0.0),");
   });
+  it("animates rotation", () => {
+    const shader = compileGSS(`
+      @scene { cube; }
+      cube { animation: spin 4s; }
+      @keyframes spin { to { rotate-y: 1turn; } }
+    `);
+    expect(shader).toContain("q.xz *= rot(mix(0.0, 6.283,");
+  });
+
+  it("animates scale", () => {
+    const shader = compileGSS(`
+      @scene { sphere; }
+      sphere { animation: pulse 1s alternate; }
+      @keyframes pulse { to { scale: 1.5; } }
+    `);
+    expect(shader).toContain("q /= mix(1.0, 1.5,");
+  });
+
+  it("animates color", () => {
+    const shader = compileGSS(`
+      @scene { sphere; }
+      sphere { color: #ff0000; animation: fade 2s alternate; }
+      @keyframes fade { to { color: #0000ff; } }
+    `);
+    expect(shader).toContain(
+      "return mix(vec3(1.0, 0.0, 0.0), vec3(0.0, 0.0, 1.0),",
+    );
+  });
+
+  it("leaves alone the properties the animation does not touch", () => {
+    const shader = compileGSS(`
+      @scene { sphere; }
+      sphere { translate: 0 1 0; animation: pulse 1s; }
+      @keyframes pulse { to { scale: 2; } }
+    `);
+    expect(shader).toContain("q = p - vec3(0.0, 1.0, 0.0);");
+  });
 });

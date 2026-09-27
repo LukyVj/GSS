@@ -201,13 +201,25 @@ const ROTATIONS: [string, string][] = [
   ["rotate-z", "xy"],
 ];
 
-function rotationLines(instance: StyledInstance): string[] {
+// An angle in radians for GLSL, or "0.0" when there is no rotation
+function readRotation(value: Token[] | undefined): string {
+  return value ? glslFloat(round(readAngle(value))) : "0.0";
+}
+
+function rotationLines(
+  instance: StyledInstance,
+  keyframes: Keyframes[],
+): string[] {
   const lines: string[] = [];
   for (const [property, axes] of ROTATIONS) {
-    const value = instance.styles[property];
-    if (!value) continue; // no rotation on this axis
-    const angle = readAngle(value);
-    lines.push(`  q.${axes} *= rot(${glslFloat(round(angle))});`);
+    const angle = animatedValue(
+      instance.styles,
+      keyframes,
+      property,
+      readRotation,
+    );
+    if (angle === "0.0") continue; // no rotation on this axis
+    lines.push(`  q.${axes} *= rot(${angle});`);
   }
   return lines;
 }
@@ -259,57 +271,52 @@ function readOffset(token: Token, name: string): number {
   );
 }
 
-// Every moment where the animation sets translate, sorted in time
-function translateStops(
-  keyframes: Keyframes,
+// A property's value: fixed, or changing over time with the animation.
+// "read" turns the GSS value into GLSL (readTranslate, readScale, readColor…)
+function animatedValue(
   styles: Styles,
-): { offset: number; value: string }[] {
-  const byOffset = new Map<number, string>();
-  for (const frame of keyframes.frames) {
-    const translate = frame.declarations.find(
-      (d) => d.property === "translate",
-    );
-    if (!translate) continue; // this frame animates something else
-    for (const token of frame.offsets) {
-      // Same offset twice: the last one wins, like in CSS
-      byOffset.set(
-        readOffset(token, keyframes.name),
-        readTranslate(translate.value),
-      );
-    }
-  }
-  // Like in CSS, a missing 0% or 100% uses the object's own translate
-  const own = readTranslate(styles["translate"]);
-  if (!byOffset.has(0)) byOffset.set(0, own);
-  if (!byOffset.has(1)) byOffset.set(1, own);
-
-  return [...byOffset]
-    .map(([offset, value]) => ({ offset, value }))
-    .sort((a, b) => a.offset - b.offset);
-}
-
-// The position of an object: fixed, or moving with its animation
-function positionOf(styles: Styles, keyframes: Keyframes[]): string {
+  keyframes: Keyframes[],
+  property: string,
+  read: (value: Token[] | undefined) => string,
+): string {
+  const own = read(styles[property]);
   const animation = styles["animation"];
-  if (!animation) return readTranslate(styles["translate"]);
+  if (!animation) return own;
 
   const [name] = animation;
   // Like in CSS, if two @keyframes have the same name, the last one wins
   const found = keyframes.findLast((k) => k.name === name.value);
   if (!found) throw new Error(`No @keyframes named "${name.value}"`);
 
-  const progress = animationProgress(animation);
-  const stops = translateStops(found, styles);
+  // Every moment where the animation sets this property
+  const byOffset = new Map<number, string>();
+  for (const frame of found.frames) {
+    const declaration = frame.declarations.find((d) => d.property === property);
+    if (!declaration) continue; // this frame animates something else
+    for (const token of frame.offsets) {
+      // Same offset twice: the last one wins, like in CSS
+      byOffset.set(readOffset(token, found.name), read(declaration.value));
+    }
+  }
+  if (byOffset.size === 0) return own; // this animation does not touch this property
+
+  // Like in CSS, a missing 0% or 100% uses the object's own value
+  if (!byOffset.has(0)) byOffset.set(0, own);
+  if (!byOffset.has(1)) byOffset.set(1, own);
+  const stops = [...byOffset]
+    .map(([offset, value]) => ({ offset, value }))
+    .sort((a, b) => a.offset - b.offset);
 
   // Chain of mix: each segment takes over when the previous one is done
-  let position = stops[0].value;
+  const progress = animationProgress(animation);
+  let result = stops[0].value;
   for (let i = 1; i < stops.length; i++) {
     const start = stops[i - 1].offset;
     const length = round(stops[i].offset - start);
     const local = `clamp((${progress} - ${glslFloat(start)}) / ${glslFloat(length)}, 0.0, 1.0)`;
-    position = `mix(${position}, ${stops[i].value}, ${easing(animation, local)})`;
+    result = `mix(${result}, ${stops[i].value}, ${easing(animation, local)})`;
   }
-  return position;
+  return result;
 }
 
 export function generateShader(
@@ -325,7 +332,7 @@ export function generateShader(
       );
     }
     const shapeCode = shape(instance.styles);
-    const scale = readScale(instance.styles["scale"]);
+    const scale = animatedValue(instance.styles, keyframes, "scale", readScale);
 
     const operation = readOperation(instance.styles["operation"]);
     const blend = readNumber(instance.styles["blend"], "blend", 0, true);
@@ -338,8 +345,8 @@ export function generateShader(
 
     return [
       ` // ${label(instance)}`,
-      ` q = p - ${positionOf(instance.styles, keyframes)};`,
-      ...rotationLines(instance),
+      ` q = p - ${animatedValue(instance.styles, keyframes, "translate", readTranslate)};`,
+      ...rotationLines(instance, keyframes),
       ` q /= ${scale};`,
       ` res = ${combine};`,
     ].join("\n");
@@ -347,7 +354,7 @@ export function generateShader(
 
   const colorLines = instances.map(
     (instance) =>
-      `  if (id == ${glslFloat(instance.index)}) return ${readColor(instance.styles["color"])};  // ${label(instance)}`,
+      `  if (id == ${glslFloat(instance.index)}) return ${animatedValue(instance.styles, keyframes, "color", readColor)};  // ${label(instance)}`,
   );
 
   // floor: none moves the floor infinitely far away
