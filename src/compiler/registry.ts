@@ -91,9 +91,11 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "<keyframes-name> <time> [linear | ease-in-out] [alternate]",
     initial: "none",
     description:
-      "Plays a @keyframes animation on the object, in a loop. For now, only translate is animated, between from and to.",
+      "Plays a @keyframes animation on the object, in a loop. The duration is in s or ms. alternate plays it forward then backward. ease-in-out slows down each step at both ends; linear, the default, keeps a constant speed. Animatable properties: translate, rotate-x, rotate-y, rotate-z, scale and color.",
     examples: [
       "@scene { sphere; } sphere { animation: float 2s ease-in-out alternate; } @keyframes float { from { translate: 0 1 0; } to { translate: 0 2 0; } }",
+      "@scene { cube; } cube { translate: 0 0.5 0; animation: bounce 1s; } @keyframes bounce { 0%, 100% { translate: 0 0.5 0; } 50% { translate: 0 1.5 0; scale: 1.2; } }",
+      "@scene { cube; } cube { translate: 0 0.5 0; color: #ff5a36; animation: turn 4s linear; } @keyframes turn { to { rotate-y: 1turn; color: #3a7bff; } }",
     ],
   },
   {

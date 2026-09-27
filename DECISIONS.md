@@ -31,9 +31,10 @@ The shader only receives final values.
 
 ## 6. JavaScript holds the state, the shader draws
 
-**Decision**: the camera, time and, later, hover and animations live in TypeScript
+**Decision**: the camera, time and, later, hover and transitions live in TypeScript
 and are sent to the shader as uniforms on every frame.
 **Why**: a shader has no memory from one frame to the next.
+**Update**: `@keyframes` animations are the exception, see decision 21. They only depend on time, so the shader computes them from `iTime`.
 
 ## 7. One material number per object
 
@@ -109,8 +110,48 @@ The floor is added last and is never affected. The walls of a hole take the mate
 **Limit**: in the blend zone, the color switches from one object to the other halfway, without a gradient.
 **Why**: smooth blending is the signature of signed distance fields; no other web 3D tool offers it in one property.
 
+## 20. Percentages are their own token
+
+**Decision**: `50%` is a `PERCENTAGE` token, not a `DIMENSION` with the unit `%`. A `%` separated from its number (`50 %`) is an error.
+**Why**: as in the CSS tokenizer. A percentage is not a unit like `deg`, and a distinct type prevents `50%` from ever reaching `readAngle` by mistake.
+
+## 21. `@keyframes` animations are computed in the shader
+
+**Decision**: `animation: float 2s` compiles to a GLSL expression that uses `iTime`, for example `mix(vec3(…), vec3(…), progress)`. Nothing changes in `main.ts`.
+**Why**: a keyframes animation only depends on time, which the shader already receives. Everything else is resolved at compile time (decision 5).
+**Accepted limits**: an animation cannot be paused, restarted or started on an event.
+**Later**: `:hover` and `transition` depend on events, so they will go through JavaScript and uniforms (decision 6).
+
+## 22. Keyframes follow the CSS rules
+
+**Decision**:
+- `from` means `0%` and `to` means `100%`. `0%, 100% { … }` sets both offsets.
+- A missing `0%` or `100%` uses the object's own value (`translate`, `color`…).
+- A frame only animates the properties it declares. A property that no frame declares keeps its own value.
+- The same offset twice, or two `@keyframes` with the same name: the last one wins.
+**Why**: people and LLMs already know these rules from CSS.
+
+## 23. Several keyframes make a chain of `mix`
+
+**Decision**: each pair of neighbouring frames becomes one `mix()`, and each `mix()` takes over when the previous one ends. The timing function (`ease-in-out`) applies to each segment, not to the whole animation, as in CSS.
+**Why**: one method works for any number of frames and for any value that `mix()` accepts (`float` or `vec3`).
+**Accepted limits**: the progress expression is repeated in every segment, so the generated GLSL gets long. The GPU does not mind.
+
+## 24. Animatable properties
+
+**Decision**: `translate`, `rotate-x`, `rotate-y`, `rotate-z`, `scale` and `color` can be animated. The other properties keep their fixed value.
+**Why**: they are the ones that already produce a GLSL `float` or `vec3`, so `mix()` works on them directly.
+
+## 25. The test scene has one zone per feature
+
+**Decision**: `src/scene.gss` groups features into zones, separated in the file and in space: transforms at the center, operations behind (z = -6), animations in front (z = 6). Every object has its own id.
+**Why**: a shared scene quickly becomes chaotic. A rule like `cube { … }` or a reused id silently changes another feature's objects.
+
 ## Open questions
 
 - **Targeting multiplied ids**: should `#hero` target `hero-1`, `hero-2` and `hero-3`?
 - **Non-uniform scale**: is `scale: 1 2 1` worth supporting, with an approximate distance?
 - **Scene styling**: `:root` could replace `scene { }`, as in CSS, where the root background paints the whole canvas.
+- **Validation inside `@keyframes`**: declarations in frames are not checked yet. An unknown or non-animatable property is silently ignored.
+- **Animation keywords**: every animation loops. `infinite` is accepted but changes nothing, and there is no iteration count, `animation-delay` or `animation-direction: reverse` yet.
+- **Colors in operations**: blended objects switch color halfway instead of mixing (decision 19).
