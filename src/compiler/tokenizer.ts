@@ -6,7 +6,8 @@ export type Token =
   | { type: "AT_KEYWORD"; value: string } // @scene, @keyframes
   | { type: "NUMBER"; value: number } // 1, 0.28, -2.5
   | { type: "PUNCT"; value: string } // { } : ; , ( ) . * + - /
-  | { type: "DIMENSION"; value: number; unit: string }; // 70deg, 24s
+  | { type: "DIMENSION"; value: number; unit: string } // 70deg, 24s
+  | { type: "PERCENTAGE"; value: number }; // 50%, 12.5%
 
 const PUNCTUATION = "{}:;,().*+-/";
 
@@ -62,6 +63,13 @@ export function tokenize(source: string): Token[] {
       i++;
       while (isDigit(charAt(i)) || charAt(i) === ".") i++;
       const value = parseFloat(source.slice(start, i)); // the number: 70
+
+      // Is a "%" stuck just after the number?
+      if (charAt(i) === "%") {
+        i++;
+        tokens.push({ type: "PERCENTAGE", value });
+        continue;
+      }
 
       // Is a letter stuck just after the number?
       if (isIdentStart(charAt(i), charAt(i + 1))) {

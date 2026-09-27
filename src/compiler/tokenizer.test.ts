@@ -48,4 +48,23 @@ describe("tokenize", () => {
       { type: "DIMENSION", value: 24, unit: "s" },
     ]);
   });
+
+  it("tokenizes a percentage", () => {
+    expect(tokenize("50%")[0]).toMatchObject({ type: "PERCENTAGE", value: 50 });
+  });
+
+  it("rejects a percent sign separated from its number", () => {
+    expect(() => tokenize("50 %")).toThrow('Unexpected character "%"');
+  });
+
+  it("tokenizes decimal and negative percentages", () => {
+    expect(tokenize("12.5%")[0]).toMatchObject({
+      type: "PERCENTAGE",
+      value: 12.5,
+    });
+    expect(tokenize("-25%")[0]).toMatchObject({
+      type: "PERCENTAGE",
+      value: -25,
+    });
+  });
 });
