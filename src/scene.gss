@@ -7,7 +7,12 @@
   cube#bottom.corner;
   torus#hero;
   sphere#big;
+  /* box and hole */
+  cube#box; sphere#hole;
 }
+
+#box  { translate: 2 1 0; size: 1.5; color: #e8e4dc; }
+#hole { translate: 2 1 0; radius: 0.95; color: #ff5a36; operation: subtract; }
 
 scene {
   floor: #fefefe;

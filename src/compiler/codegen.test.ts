@@ -128,7 +128,7 @@ describe("lighting", () => {
 
   it("removes the floor", () => {
     expect(compileGSS("@scene { cube; } scene { floor: none; }")).toContain(
-      "vec2 res = vec2(1e10, 0.0);",
+      "res = opU(res, vec2(1e10, 0.0)); // the floor",
     );
   });
 });
@@ -197,5 +197,45 @@ describe("shape dimensions", () => {
     expect(
       compileGSS("@scene { torus; } torus { radius: 2; thickness: 0.5; }"),
     ).toContain("sdTorus(q, vec2(2.0, 0.5))");
+  });
+});
+
+describe("operation", () => {
+  it("adds objects by default", () => {
+    expect(compileGSS("@scene { cube; }")).toContain(
+      "res = opU(res, vec2(sdRoundBox",
+    );
+  });
+
+  it("subtracts an object", () => {
+    expect(
+      compileGSS("@scene { cube; sphere; } sphere { operation: subtract; }"),
+    ).toContain("res = opS(res, vec2(sdSphere");
+  });
+
+  it("intersects an object", () => {
+    expect(
+      compileGSS("@scene { cube; sphere; } sphere { operation: intersect; }"),
+    ).toContain("res = opI(res, vec2(sdSphere");
+  });
+
+  it("rejects an unknown operation", () => {
+    expect(() =>
+      compileGSS("@scene { cube; } cube { operation: merge; }"),
+    ).toThrow("operation expects");
+  });
+
+  it("adds the floor after the objects", () => {
+    const shader = compileGSS(
+      "@scene { sphere; } sphere { operation: subtract; }",
+    );
+    expect(shader.indexOf("// the floor")).toBeGreaterThan(
+      shader.indexOf("sdSphere(q"),
+    );
+  });
+  it("returns the result after adding the floor", () => {
+    expect(compileGSS("@scene { cube; }")).toMatch(
+      /the floor: id 0\n\s*return res;/,
+    );
   });
 });

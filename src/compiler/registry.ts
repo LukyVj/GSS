@@ -64,6 +64,17 @@ export const PROPERTIES: PropertyDef[] = [
     examples: ["@scene { cube; } cube { scale: 2.0; }"],
   },
   {
+    name: "operation",
+    appliesTo: "object",
+    syntax: "union | subtract | intersect",
+    initial: "union",
+    description:
+      "Sets how the object combines with the objects declared before it in @scene: union adds it, subtract carves it out of them, intersect keeps only their common part. The floor is never affected.",
+    examples: [
+      "@scene { cube; sphere; } cube { translate: 0 1 0; } sphere { translate: 0 1 0; radius: 0.65; operation: subtract; }",
+    ],
+  },
+  {
     name: "size",
     appliesTo: ["cube"],
     syntax: "<number> | <number>{3}",
