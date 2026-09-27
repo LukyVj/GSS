@@ -7,12 +7,26 @@
   cube#bottom.corner;
   torus#hero;
   sphere#big;
+
   /* box and hole */
   cube#box; sphere#hole;
+
+  /* two drops that merge */
+  sphere#a; sphere#b; cube#box; sphere#hole;
 }
 
+
+
+/* 1. Two drops that merge */
+#a { translate: -3.4 1 0; }
+#b { translate: -2.6 1.2 0; blend: 0.05; }
+
+/* 2. A hole with smooth edges */
+#box  { translate: 0 1 0; size: 1.5; }
+#hole { translate: 0 1 0; radius: 0.95; operation: subtract; blend: 0.15; color: #ff5a36; }
+
 #box  { translate: 2 1 0; size: 1.5; color: #e8e4dc; }
-#hole { translate: 2 1 0; radius: 0.95; color: #ff5a36; operation: subtract; }
+#hole { translate: 2 1 0; radius: 0.95; color:#14bc55; operation: subtract; }
 
 scene {
   floor: #fefefe;

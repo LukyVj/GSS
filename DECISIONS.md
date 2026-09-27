@@ -97,6 +97,18 @@ The bare name (`camera`) is reserved for a future shorthand.
 **Decision**: `camera-spin` takes the duration of one full turn (`20s`, `500ms`) or `none`, not an angle per second.
 **Why**: as in CSS (`animation-duration`), a duration reads naturally and uses units everyone already knows.
 
+## 18. Operations apply in declaration order
+
+**Decision**: `operation` combines an object with every object declared before it in `@scene` (union, subtract, intersect).
+The floor is added last and is never affected. The walls of a hole take the material of the object that carves it.
+**Why**: it reads like drawing, then erasing, and needs no grouping syntax yet.
+
+## 19. blend smooths any operation
+
+**Decision**: `blend: <distance>` turns the object's operation into its smooth version (Inigo Quilez's smooth union, subtraction and intersection). `blend: 0` keeps the sharp version.
+**Limit**: in the blend zone, the color switches from one object to the other halfway, without a gradient.
+**Why**: smooth blending is the signature of signed distance fields; no other web 3D tool offers it in one property.
+
 ## Open questions
 
 - **Targeting multiplied ids**: should `#hero` target `hero-1`, `hero-2` and `hero-3`?

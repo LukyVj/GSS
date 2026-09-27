@@ -75,6 +75,17 @@ export const PROPERTIES: PropertyDef[] = [
     ],
   },
   {
+    name: "blend",
+    appliesTo: "object",
+    syntax: "<number>",
+    initial: "0",
+    description:
+      "Smooths the junction between the object and the objects declared before it, over the given distance. 0 keeps a sharp junction. Works with every operation.",
+    examples: [
+      "@scene { sphere#a; sphere#b; } #a { translate: -0.4 1 0; } #b { translate: 0.4 1 0; blend: 0.4; }",
+    ],
+  },
+  {
     name: "size",
     appliesTo: ["cube"],
     syntax: "<number> | <number>{3}",

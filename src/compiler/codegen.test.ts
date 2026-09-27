@@ -239,3 +239,45 @@ describe("operation", () => {
     );
   });
 });
+
+describe("blend", () => {
+  it("keeps sharp junctions by default", () => {
+    expect(compileGSS("@scene { cube; sphere; }")).toContain(
+      "res = opU(res, vec2(sdSphere(q, 0.5) * 1.0, 2.0));",
+    );
+  });
+
+  it("smooths a union", () => {
+    expect(
+      compileGSS("@scene { cube; sphere; } sphere { blend: 0.3; }"),
+    ).toContain(
+      "res = opSmoothU(res, vec2(sdSphere(q, 0.5) * 1.0, 2.0), 0.3);",
+    );
+  });
+
+  it("smooths a subtraction", () => {
+    expect(
+      compileGSS(
+        "@scene { cube; sphere; } sphere { operation: subtract; blend: 0.3; }",
+      ),
+    ).toContain(
+      "res = opSmoothS(res, vec2(sdSphere(q, 0.5) * 1.0, 2.0), 0.3);",
+    );
+  });
+
+  it("smooths an intersection", () => {
+    expect(
+      compileGSS(
+        "@scene { cube; sphere; } sphere { operation: intersect; blend: 0.3; }",
+      ),
+    ).toContain(
+      "res = opSmoothI(res, vec2(sdSphere(q, 0.5) * 1.0, 2.0), 0.3);",
+    );
+  });
+
+  it("rejects a negative blend", () => {
+    expect(() => compileGSS("@scene { cube; } cube { blend: -1; }")).toThrow(
+      "blend expects",
+    );
+  });
+});
