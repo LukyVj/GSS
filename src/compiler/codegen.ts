@@ -574,6 +574,9 @@ Material getMaterial(float id) {
   return matte(/*@FLOOR*/);  // the floor
 }
 // ----- End of generated code -----
+const float MAX_DIST = 20.0;
+const vec3 BACKGROUND = /*@BACKGROUND*/;
+const vec3 LIGHT_DIR = /*@LIGHT*/;
 
 vec2 march(vec3 ro, vec3 rd) {
   float t = 0.0;
@@ -582,7 +585,7 @@ vec2 march(vec3 ro, vec3 rd) {
     vec2 res = map(ro + rd * t);
     id = res.y;
     t += res.x;
-    if (res.x < 0.001 || t > 20.0) break;
+    if (res.x < 0.001 || t > MAX_DIST) break;
   }
 
   return vec2(t,id);
@@ -599,9 +602,19 @@ vec3 calcNormal(vec3 p) {
 
 // The sun and the ambient light on a surface
 vec3 diffuse(vec3 n, vec3 color) {
-  vec3 lightDir = /*@LIGHT*/;
-  float diff = max(dot(n, lightDir), 0.0);
+  float diff = max(dot(n, LIGHT_DIR), 0.0);
   return color * (/*@AMBIENT*/ + /*@DIRECT*/ * diff);
+}
+
+// What a ray sees, with diffuse lighting only.
+// Reflections use it: one bounce, never more.
+vec3 trace(vec3 ro, vec3 rd) {
+  vec2 hit = march(ro, rd);
+  if (hit.x > MAX_DIST) return BACKGROUND;  // the ray hit nothing
+
+  vec3 p = ro + rd * hit.x;  // the point that was hit
+  vec3 n = calcNormal(p);
+  return diffuse(n, getMaterial(hit.y).color);  // its color, lit
 }
 
 void main() {
@@ -620,8 +633,8 @@ void main() {
   float t = hit.x;
   float id = hit.y;
 
-  vec3 col = /*@BACKGROUND*/;
-    if (t < 20.0) {
+  vec3 col = BACKGROUND;
+    if (t < MAX_DIST) {
     vec3 p = ro + rd * t;
     vec3 n = calcNormal(p);
     col = diffuse(n, getMaterial(id).color);

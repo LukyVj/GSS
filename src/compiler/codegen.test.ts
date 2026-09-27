@@ -79,12 +79,12 @@ describe("decor", () => {
     expect(shader).toContain(
       "return matte(vec3(0.067, 0.067, 0.067));  // the floor",
     );
-    expect(shader).toContain("vec3 col = vec3(0.0, 0.0, 0.0);");
+    expect(shader).toContain("const vec3 BACKGROUND = vec3(0.0, 0.0, 0.0);");
   });
 
   it("keeps the decor default without scene rule", () => {
     const shader = compileGSS("@scene { cube; }");
-    expect(shader).toContain("vec3 col = vec3(0.03);");
+    expect(shader).toContain("const vec3 BACKGROUND = vec3(0.03);");
   });
 });
 
@@ -92,15 +92,15 @@ describe("lighting", () => {
   it("points the light from two angles", () => {
     expect(
       compileGSS("@scene { cube; } scene { light: 0deg 90deg; }"),
-    ).toContain("vec3 lightDir = vec3(0.0, 1.0, 0.0);");
+    ).toContain("const vec3 LIGHT_DIR = vec3(0.0, 1.0, 0.0);");
     expect(
       compileGSS("@scene { cube; } scene { light: 90deg 0deg; }"),
-    ).toContain("vec3 lightDir = vec3(1.0, 0.0, 0.0);");
+    ).toContain("const vec3 LIGHT_DIR = vec3(1.0, 0.0, 0.0);");
   });
 
   it("keeps the default light direction", () => {
     expect(compileGSS("@scene { cube; }")).toContain(
-      "vec3 lightDir = vec3(0.408, 0.816, 0.408);",
+      "const vec3 LIGHT_DIR = vec3(0.408, 0.816, 0.408);",
     );
   });
 
@@ -384,6 +384,20 @@ describe("shader structure", () => {
   it("lights a surface in a function", () => {
     expect(compileGSS("@scene { cube; }")).toContain(
       "vec3 diffuse(vec3 n, vec3 color)",
+    );
+  });
+
+  it("shares the background and the light with the whole shader", () => {
+    const shader = compileGSS("@scene { cube; }");
+    expect(shader).toContain("const vec3 BACKGROUND = vec3(0.03);");
+    expect(shader).toContain(
+      "const vec3 LIGHT_DIR = vec3(0.408, 0.816, 0.408);",
+    );
+  });
+
+  it("can tell what any ray sees", () => {
+    expect(compileGSS("@scene { cube; }")).toContain(
+      "vec3 trace(vec3 ro, vec3 rd)",
     );
   });
 });
