@@ -43,6 +43,17 @@ export const PROPERTIES: PropertyDef[] = [
     examples: ["@scene { sphere; } sphere { color: #ff5a36; }"],
   },
   {
+    name: "material",
+    appliesTo: "object",
+    syntax: "matte([<hex-color>])",
+    initial: "matte()",
+    description:
+      "Sets how the surface of the object reacts to light. matte() only scatters light, like chalk. Without a color, the material uses the color property, like currentColor in CSS.",
+    examples: [
+      "@scene { sphere; } sphere { color: #ff5a36; material: matte(); }",
+    ],
+  },
+  {
     name: "rotate-x",
     appliesTo: "object",
     animatable: true,

@@ -1,6 +1,7 @@
 import type { Token } from "./tokenizer";
 import type { StyledInstance, Styles } from "./resolve";
 import type { Keyframes } from "./ast";
+import { readFunction } from "./values";
 
 // Utility functions
 function round(n: number): number {
@@ -151,7 +152,33 @@ function readColor(value: Token[] | undefined, fallback = "vec3(0.9)"): string {
   return `vec3(${hexToRgb(token.value).map(glslFloat).join(", ")})`;
 }
 
-// ⬇️ TA MISSION : convert a GSS angle to radians
+// Turns the material value into GLSL.
+// "color" is the object's GLSL color: a material without its own color uses it,
+// like currentColor in CSS.
+function readMaterial(value: Token[] | undefined, color: string): string {
+  // 1. Nothing written → matte, with the color of color
+  if (!value) return `matte(${color})`;
+
+  // 2. It must be a function
+  const call = readFunction(value);
+  if (!call) {
+    throw new Error("material expects a function, like: material: matte();");
+  }
+
+  // 3. Only matte exists for now
+  if (call.name !== "matte") {
+    throw new Error(`Unknown material "${call.name}". Available: matte()`);
+  }
+
+  // 4. The material's own color, if it has one
+  let ownColor = color;
+  if (call.args.length > 0) {
+    ownColor = readColor(call.args[0]);
+  }
+
+  return `matte(${ownColor})`;
+}
+
 export function readAngle(value: Token[]): number {
   const [token] = value;
 
@@ -352,10 +379,11 @@ export function generateShader(
     ].join("\n");
   });
 
-  const colorLines = instances.map(
-    (instance) =>
-      `  if (id == ${glslFloat(instance.index)}) return matte(${animatedValue(instance.styles, keyframes, "color", readColor)});  // ${label(instance)}`,
-  );
+  const materialLines = instances.map((instance) => {
+    const color = animatedValue(instance.styles, keyframes, "color", readColor);
+    const material = readMaterial(instance.styles["material"], color);
+    return `  if (id == ${glslFloat(instance.index)}) return ${material};  // ${label(instance)}`;
+  });
 
   // floor: none moves the floor infinitely far away
   const floor = sceneStyles["floor"];
@@ -374,7 +402,7 @@ export function generateShader(
   const direct = round(1 - ambient);
 
   return TEMPLATE.replace("/*@MAP*/", mapLines.join("\n\n"))
-    .replace("/*@MATERIALS*/", colorLines.join("\n"))
+    .replace("/*@MATERIALS*/", materialLines.join("\n"))
     .replace(
       "/*@FLOOR*/",
       noFloor ? "vec3(0.0)" : readColor(floor, "vec3(0.91, 0.89, 0.86)"),
