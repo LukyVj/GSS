@@ -70,3 +70,25 @@ describe("material: metal()", () => {
     ).toThrow("metal() expects an optional color and a roughness");
   });
 });
+
+describe("material keywords", () => {
+  it("gold is metal(#d4af37, 0.2)", () => {
+    expect(materialOf("sphere { material: gold; }")).toBe(
+      materialOf("sphere { material: metal(#d4af37, 0.2); }"),
+    );
+  });
+
+  it("chrome is metal(#ffffff, 0.05)", () => {
+    expect(materialOf("sphere { material: chrome; }")).toBe(
+      materialOf("sphere { material: metal(#ffffff, 0.05); }"),
+    );
+  });
+
+  it("lists every material for an unknown keyword", () => {
+    expect(() =>
+      compileGSS("@scene { sphere; } sphere { material: wood; }"),
+    ).toThrow(
+      'Unknown material "wood". Available: matte(), metal(), gold, chrome',
+    );
+  });
+});

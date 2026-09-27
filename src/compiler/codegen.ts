@@ -1,4 +1,5 @@
 import type { Token } from "./tokenizer";
+import { tokenize } from "./tokenizer";
 import type { StyledInstance, Styles } from "./resolve";
 import type { Keyframes } from "./ast";
 import { readFunction } from "./values";
@@ -152,12 +153,33 @@ function readColor(value: Token[] | undefined, fallback = "vec3(0.9)"): string {
   return `vec3(${hexToRgb(token.value).map(glslFloat).join(", ")})`;
 }
 
+// Material keywords: shortcuts written in GSS
+const MATERIAL_KEYWORDS: Record<string, string> = {
+  gold: "metal(#d4af37, 0.2)",
+  chrome: "metal(#ffffff, 0.05)",
+};
+
+// "matte(), metal(), gold, chrome"
+function availableMaterials(): string {
+  return ["matte()", "metal()", ...Object.keys(MATERIAL_KEYWORDS)].join(", ");
+}
 // Turns the material value into GLSL.
 // "color" is the object's GLSL color: a material without its own color uses it,
 // like currentColor in CSS.
 function readMaterial(value: Token[] | undefined, color: string): string {
   // 1. Nothing written → matte, with the color of color
   if (!value) return `matte(${color})`;
+
+  // 1b. A keyword: replace it with its function, then read that
+  if (value.length === 1 && value[0].type === "IDENT") {
+    const name = value[0].value;
+    if (!Object.hasOwn(MATERIAL_KEYWORDS, name)) {
+      throw new Error(
+        `Unknown material "${name}". Available: ${availableMaterials()}`,
+      );
+    }
+    return readMaterial(tokenize(MATERIAL_KEYWORDS[name]), color);
+  }
 
   // 2. It must be a function
   const call = readFunction(value);
@@ -168,7 +190,7 @@ function readMaterial(value: Token[] | undefined, color: string): string {
   // 3. Known names
   if (call.name !== "matte" && call.name !== "metal") {
     throw new Error(
-      `Unknown material "${call.name}". Available: matte(), metal()`,
+      `Unknown material "${call.name}". Available: ${availableMaterials()}`,
     );
   }
 
