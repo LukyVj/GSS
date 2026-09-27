@@ -80,6 +80,23 @@ Using one with an explicit, incompatible tag is an error (`sphere { size: 2; }`)
 Through a class or an id, it applies to compatible shapes and is ignored by the others, as in CSS.
 **Why**: clear errors when the intent is obviously wrong, without breaking classes shared by several shapes.
 
+## 15. Property families share a prefix
+
+**Decision**: related properties share a prefix (`camera-target`, `camera-distance`…), as in CSS (`border-width`, `border-color`).
+The bare name (`camera`) is reserved for a future shorthand.
+**Why**: families are easy to read and document, and shorthands stay possible without breaking existing files.
+
+## 16. The compiler also returns runtime settings
+
+**Decision**: `compileScene()` returns the shader and the settings the runtime needs (the starting camera).
+`compileGSS()` stays a shortcut that only returns the shader.
+**Why**: some values are starting points that the mouse then changes; they belong to the runtime, not to the shader.
+
+## 17. Speeds are written as durations
+
+**Decision**: `camera-spin` takes the duration of one full turn (`20s`, `500ms`) or `none`, not an angle per second.
+**Why**: as in CSS (`animation-duration`), a duration reads naturally and uses units everyone already knows.
+
 ## Open questions
 
 - **Targeting multiplied ids**: should `#hero` target `hero-1`, `hero-2` and `hero-3`?
