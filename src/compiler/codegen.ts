@@ -42,12 +42,11 @@ export function hexToRgb(hex: string): [number, number, number] {
       : hex;
   if (!/^[0-9a-fA-F]{6}$/.test(full)) throw new Error(`Invalid color: #${hex}`);
   const channel = (start: number) =>
-    Math.round((parseInt(full.slice(start, start + 2), 16) / 255) * 1000) /
-    1000;
+    round(parseInt(full.slice(start, start + 2), 16) / 255);
   return [channel(0), channel(2), channel(4)];
 }
 
-function readTranslate(value: Token[] | undefined): string {
+export function readTranslate(value: Token[] | undefined): string {
   if (!value) return "vec3(0.0)";
   const numbers = value.map((token) => {
     if (token.type !== "NUMBER")
@@ -60,7 +59,6 @@ function readTranslate(value: Token[] | undefined): string {
     throw new Error("translate expects three numbers, like: translate: 0 1 0;");
   return `vec3(${numbers.map(glslFloat).join(", ")})`;
 }
-
 // Reads one number, or returns the fallback when the property is not set
 export function readNumber(
   value: Token[] | undefined,
