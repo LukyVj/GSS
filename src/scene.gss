@@ -16,7 +16,7 @@ scene {
   ambient: 0.4;
   camera-distance: 12;
   camera-angle: 180deg 45deg;
-  camera-spin: 100deg;
+  camera-spin: 100s;
 }
 
 #right {

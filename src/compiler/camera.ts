@@ -1,4 +1,5 @@
 import type { Styles } from "./resolve";
+import type { Token } from "./tokenizer";
 import { readAngle, readNumber } from "./codegen";
 
 // The camera settings the runtime needs. They are not written in the shader:
@@ -9,8 +10,6 @@ export type CameraSettings = {
   pitch: number; // height above the horizon, in radians
   spin: number; // automatic rotation, in radians per second
 };
-
-import type { Token } from "./tokenizer"; // ← add this import at the top of the file
 
 // Reads "20s", "500ms" or "none" and returns a speed in radians per second
 function readSpin(value: Token[] | undefined): number {
