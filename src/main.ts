@@ -1,7 +1,7 @@
 import gssSource from "./scene.gss?raw";
-import { compileGSS } from "./compiler";
+import { compileScene } from "./compiler";
 
-const fragSource = compileGSS(gssSource);
+const { shader: fragSource, camera: settings } = compileScene(gssSource);
 console.log(fragSource); // to see the generated shader in the console
 
 // --- 1. The vertex shader: a giant triangle that covers the whole screen ---
@@ -44,10 +44,10 @@ const uDist = gl.getUniformLocation(program, "uDist");
 
 // --- 3. The camera state: this is where the memory lives ---
 const camera = {
-  yaw: 0,
-  pitch: 0.4,
+  yaw: settings.yaw,
+  pitch: settings.pitch,
   dragging: false,
-  dist: 8,
+  dist: settings.distance,
 };
 
 canvas.addEventListener("pointerdown", (e) => {
@@ -92,7 +92,7 @@ function frame(now: number) {
   lastTime = now;
 
   // Automatic rotation, except during the drag
-  if (!camera.dragging) camera.yaw += dt * 0.3;
+  if (!camera.dragging) camera.yaw += dt * settings.spin;
 
   resize();
   gl.viewport(0, 0, canvas.width, canvas.height);

@@ -62,7 +62,7 @@ function readTranslate(value: Token[] | undefined): string {
 }
 
 // Reads one number, or returns the fallback when the property is not set
-function readNumber(
+export function readNumber(
   value: Token[] | undefined,
   property: string,
   fallback: number,

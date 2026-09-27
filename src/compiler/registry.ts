@@ -134,6 +134,39 @@ export const PROPERTIES: PropertyDef[] = [
     ],
   },
   {
+    name: "camera-distance",
+    appliesTo: "scene",
+    syntax: "<number>",
+    initial: "8",
+    description:
+      "Sets the starting distance between the camera and its target, from 3 to 15. The mouse wheel changes it.",
+    examples: [
+      "@scene { cube; } cube { translate: 0 0.5 0; } scene { camera-distance: 5; }",
+    ],
+  },
+  {
+    name: "camera-angle",
+    appliesTo: "scene",
+    syntax: "<angle> <angle>",
+    initial: "0deg 22.9deg",
+    description:
+      "Sets the starting position of the camera around its target: first the angle around the vertical axis, then the height above the horizon, from 0deg to 80deg. Dragging with the mouse changes it.",
+    examples: [
+      "@scene { cube; } cube { translate: 0 0.5 0; } scene { camera-angle: 45deg 60deg; }",
+    ],
+  },
+  {
+    name: "camera-spin",
+    appliesTo: "scene",
+    syntax: "<time> | none",
+    initial: "21s",
+    description:
+      "Sets how long the camera takes to turn once around its target, in s or ms. none stops the automatic rotation.",
+    examples: [
+      "@scene { cube; } cube { translate: 0 0.5 0; } scene { camera-spin: 40s; }",
+    ],
+  },
+  {
     name: "floor",
     appliesTo: "scene",
     syntax: "<hex-color>",
