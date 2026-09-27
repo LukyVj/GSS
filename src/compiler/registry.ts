@@ -86,6 +86,17 @@ export const PROPERTIES: PropertyDef[] = [
     ],
   },
   {
+    name: "animation",
+    appliesTo: "object",
+    syntax: "<keyframes-name> <time> [linear | ease-in-out] [alternate]",
+    initial: "none",
+    description:
+      "Plays a @keyframes animation on the object, in a loop. For now, only translate is animated, between from and to.",
+    examples: [
+      "@scene { sphere; } sphere { animation: float 2s ease-in-out alternate; } @keyframes float { from { translate: 0 1 0; } to { translate: 0 2 0; } }",
+    ],
+  },
+  {
     name: "size",
     appliesTo: ["cube"],
     syntax: "<number> | <number>{3}",

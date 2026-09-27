@@ -15,7 +15,12 @@
   sphere#a; sphere#b; cube#box; sphere#hole;
 }
 
-
+@scene { sphere#ball; }
+#ball { color: #ff5a36; animation: float 2s ease-in-out infinite alternate; }
+@keyframes float {
+  from { translate: 1 0.5 0; }
+  to   { translate: 3 2 0; }
+}
 
 /* 1. Two drops that merge */
 #a { translate: -3.4 1 0; }

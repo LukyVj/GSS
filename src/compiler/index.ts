@@ -20,7 +20,7 @@ export function compileScene(source: string): CompiledScene {
   const styled = resolveStyles(instances, stylesheet.rules);
   const sceneStyles = resolveSceneStyles(stylesheet.rules);
   return {
-    shader: generateShader(styled, sceneStyles),
+    shader: generateShader(styled, sceneStyles, stylesheet.keyframes),
     camera: readCamera(sceneStyles),
   };
 }

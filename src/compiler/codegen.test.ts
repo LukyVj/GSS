@@ -281,3 +281,26 @@ describe("blend", () => {
     );
   });
 });
+
+describe("animation", () => {
+  const source = `
+    @scene { sphere#ball; }
+    #ball { animation: float 2s ease-in-out infinite alternate; }
+    @keyframes float {
+      from { translate: 0 1 0; }
+      to   { translate: 0 2 0; }
+    }
+  `;
+
+  it("moves the object between from and to over time", () => {
+    const shader = compileGSS(source);
+    expect(shader).toContain("mix(vec3(0.0, 1.0, 0.0), vec3(0.0, 2.0, 0.0),");
+    expect(shader).toContain("iTime / 2.0");
+  });
+
+  it("rejects an unknown animation name", () => {
+    expect(() =>
+      compileGSS("@scene { sphere; } sphere { animation: nope 2s; }"),
+    ).toThrow('No @keyframes named "nope"');
+  });
+});

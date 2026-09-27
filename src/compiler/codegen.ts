@@ -1,5 +1,6 @@
 import type { Token } from "./tokenizer";
 import type { StyledInstance, Styles } from "./resolve";
+import type { Keyframes } from "./ast";
 
 // Utility functions
 function round(n: number): number {
@@ -217,9 +218,63 @@ function label(instance: StyledInstance): string {
   return `${instance.tag}${id}${classes}`;
 }
 
+// "2s" or "500ms" → seconds
+function readDuration(value: Token[]): number {
+  for (const token of value) {
+    if (token.type === "DIMENSION" && token.unit === "s") return token.value;
+    if (token.type === "DIMENSION" && token.unit === "ms")
+      return token.value / 1000;
+  }
+  throw new Error("animation needs a duration, like: animation: float 2s;");
+}
+
+function hasKeyword(value: Token[], word: string): boolean {
+  return value.some((token) => token.type === "IDENT" && token.value === word);
+}
+
+// A GLSL expression that goes from 0 to 1 over time
+function animationProgress(value: Token[]): string {
+  const time = `iTime / ${glslFloat(readDuration(value))}`;
+  let progress = hasKeyword(value, "alternate")
+    ? `(1.0 - abs(mod(${time}, 2.0) - 1.0))` // 0 → 1 → 0 → 1 …
+    : `fract(${time})`; // 0 → 1, 0 → 1 …
+  if (hasKeyword(value, "ease-in-out")) {
+    progress = `smoothstep(0.0, 1.0, ${progress})`; // slow at both ends
+  }
+  return progress;
+}
+
+// The translate of the "from" or "to" frame
+function frameTranslate(keyframes: Keyframes, offset: "from" | "to"): string {
+  const frame = keyframes.frames.find((f) =>
+    f.offsets.some((t) => t.type === "IDENT" && t.value === offset),
+  );
+  if (!frame) {
+    throw new Error(`@keyframes ${keyframes.name} needs a "${offset}" frame`);
+  }
+  const translate = frame.declarations.find((d) => d.property === "translate");
+  return readTranslate(translate?.value);
+}
+
+// The position of an object: fixed, or moving with its animation
+function positionOf(styles: Styles, keyframes: Keyframes[]): string {
+  const animation = styles["animation"];
+  if (!animation) return readTranslate(styles["translate"]);
+
+  const [name] = animation;
+  // Like in CSS, if two @keyframes have the same name, the last one wins
+  const found = keyframes.findLast((k) => k.name === name.value);
+  if (!found) throw new Error(`No @keyframes named "${name.value}"`);
+
+  const from = frameTranslate(found, "from");
+  const to = frameTranslate(found, "to");
+  return `mix(${from}, ${to}, ${animationProgress(animation)})`;
+}
+
 export function generateShader(
   instances: StyledInstance[],
   sceneStyles: Styles = {},
+  keyframes: Keyframes[] = [],
 ): string {
   const mapLines = instances.map((instance) => {
     const shape = SHAPES[instance.tag];
@@ -242,7 +297,7 @@ export function generateShader(
 
     return [
       ` // ${label(instance)}`,
-      ` q = p - ${readTranslate(instance.styles["translate"])};`,
+      ` q = p - ${positionOf(instance.styles, keyframes)};`,
       ...rotationLines(instance),
       ` q /= ${scale};`,
       ` res = ${combine};`,
