@@ -508,6 +508,13 @@ vec3 calcNormal(vec3 p) {
   ));
 }
 
+// The sun and the ambient light on a surface
+vec3 diffuse(vec3 n, vec3 color) {
+  vec3 lightDir = /*@LIGHT*/;
+  float diff = max(dot(n, lightDir), 0.0);
+  return color * (/*@AMBIENT*/ + /*@DIRECT*/ * diff);
+}
+
 void main() {
   vec2 uv = (gl_FragCoord.xy - 0.5 * iResolution.xy) / iResolution.y;
 
@@ -528,9 +535,7 @@ void main() {
     if (t < 20.0) {
     vec3 p = ro + rd * t;
     vec3 n = calcNormal(p);
-    vec3 lightDir = /*@LIGHT*/;
-    float diff = max(dot(n, lightDir), 0.0);
-    col = getMaterial(id).color * (/*@AMBIENT*/ + /*@DIRECT*/ * diff);
+    col = diffuse(n, getMaterial(id).color);
   }
 
   outColor = vec4(col, 1.0);

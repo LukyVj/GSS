@@ -112,13 +112,13 @@ describe("lighting", () => {
 
   it("sets the ambient light", () => {
     expect(compileGSS("@scene { cube; } scene { ambient: 0.3; }")).toContain(
-      "getMaterial(id).color * (0.3 + 0.7 * diff)",
+      "color * (0.3 + 0.7 * diff)",
     );
   });
 
   it("keeps the default ambient light", () => {
     expect(compileGSS("@scene { cube; }")).toContain(
-      "getMaterial(id).color * (0.1 + 0.9 * diff)",
+      "color * (0.1 + 0.9 * diff)",
     );
   });
 
@@ -378,6 +378,12 @@ describe("shader structure", () => {
     expect(shader).toContain("Material getMaterial(float id)");
     expect(shader).toContain(
       "if (id == 1.0) return matte(vec3(1.0, 0.0, 0.0));  // cube",
+    );
+  });
+
+  it("lights a surface in a function", () => {
+    expect(compileGSS("@scene { cube; }")).toContain(
+      "vec3 diffuse(vec3 n, vec3 color)",
     );
   });
 });
