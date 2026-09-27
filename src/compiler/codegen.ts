@@ -617,6 +617,31 @@ vec3 trace(vec3 ro, vec3 rd) {
   return diffuse(n, getMaterial(hit.y).color);  // its color, lit
 }
 
+// Schlick's approximation of Fresnel: surfaces reflect more at grazing angles.
+// f0 = the color of the reflection seen from the front.
+vec3 fresnel(vec3 f0, vec3 rd, vec3 n) {
+  float c = 1.0 - max(dot(-rd, n), 0.0); // 0 = seen from the front, 1 = grazing
+  return f0 + (1.0 - f0) * pow(c, 5.0);
+}
+
+// A metal reflects the scene, tinted by its color.
+// Roughness mixes the sharp reflection with diffuse light: a cheap blur.
+vec3 shadeMetal(vec3 p, vec3 n, vec3 rd, Material m) {
+  // 1. The reflection
+  vec3 r = reflect(rd, n);
+  vec3 reflected = trace(p + n * 0.01, r);
+
+  // 2. Roughness: from sharp (0) to blurry (1)
+  vec3 blurry = diffuse(n, vec3(0.6));
+  vec3 env = mix(reflected, blurry, m.roughness);
+
+  // 3. The sun's highlight: small when smooth, wide when rough
+  float shine = pow(max(dot(r, LIGHT_DIR), 0.0), mix(200.0, 8.0, m.roughness));
+
+  // 4. Everything together
+  return env * fresnel(m.color, rd, n) + diffuse(n, m.color) * 0.3 + shine * (1.0 - m.roughness);
+}
+
 void main() {
   vec2 uv = (gl_FragCoord.xy - 0.5 * iResolution.xy) / iResolution.y;
 
@@ -637,7 +662,9 @@ void main() {
     if (t < MAX_DIST) {
     vec3 p = ro + rd * t;
     vec3 n = calcNormal(p);
-    col = diffuse(n, getMaterial(id).color);
+    Material m = getMaterial(id);
+    col = diffuse(n, m.color);
+    if (m.kind == METAL) col = shadeMetal(p, n, rd, m);
   }
 
   outColor = vec4(col, 1.0);

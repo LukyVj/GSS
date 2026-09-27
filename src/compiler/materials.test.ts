@@ -91,4 +91,20 @@ describe("material keywords", () => {
       'Unknown material "wood". Available: matte(), metal(), gold, chrome',
     );
   });
+
+  describe("material: metal lighting", () => {
+    it("has the functions that light a metal", () => {
+      const shader = compileGSS("@scene { sphere; }");
+      expect(shader).toContain("vec3 fresnel(vec3 f0, vec3 rd, vec3 n)");
+      expect(shader).toContain(
+        "vec3 shadeMetal(vec3 p, vec3 n, vec3 rd, Material m)",
+      );
+    });
+  });
+
+  it("lights metals with shadeMetal in main()", () => {
+    expect(compileGSS("@scene { sphere; }")).toContain(
+      "if (m.kind == METAL) col = shadeMetal(p, n, rd, m);",
+    );
+  });
 });
