@@ -165,18 +165,47 @@ function readMaterial(value: Token[] | undefined, color: string): string {
     throw new Error("material expects a function, like: material: matte();");
   }
 
-  // 3. Only matte exists for now
-  if (call.name !== "matte") {
-    throw new Error(`Unknown material "${call.name}". Available: matte()`);
+  // 3. Known names
+  if (call.name !== "matte" && call.name !== "metal") {
+    throw new Error(
+      `Unknown material "${call.name}". Available: matte(), metal()`,
+    );
   }
 
-  // 4. The material's own color, if it has one
+  // 4. The optional color comes first: if it's there, take it out of the list
+  const args = [...call.args]; // a copy, so shift() does not touch call.args
   let ownColor = color;
-  if (call.args.length > 0) {
-    ownColor = readColor(call.args[0]);
+  if (args.length > 0 && args[0][0].type === "HASH") {
+    ownColor = readColor(args.shift());
   }
 
-  return `matte(${ownColor})`;
+  // 5. matte: nothing may be left
+  if (call.name === "matte") {
+    if (args.length > 0) {
+      throw new Error(
+        "matte() expects only an optional color, like: material: matte(#ff5a36);",
+      );
+    }
+    return `matte(${ownColor})`;
+  }
+
+  // 6. metal: what's left is the roughness, 0.2 when missing
+  if (args.length > 1) {
+    throw new Error(
+      "metal() expects an optional color and a roughness, like: material: metal(#d4af37, 0.2);",
+    );
+  }
+  let roughness = 0.2;
+  if (args.length === 1) {
+    const [token] = args[0];
+    if (token.type !== "NUMBER" || token.value < 0 || token.value > 1) {
+      throw new Error(
+        "metal(): roughness expects a number between 0 and 1, like: material: metal(#d4af37, 0.2);",
+      );
+    }
+    roughness = token.value;
+  }
+  return `metal(${ownColor}, ${glslFloat(roughness)})`;
 }
 
 export function readAngle(value: Token[]): number {

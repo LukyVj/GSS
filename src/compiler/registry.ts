@@ -45,12 +45,13 @@ export const PROPERTIES: PropertyDef[] = [
   {
     name: "material",
     appliesTo: "object",
-    syntax: "matte([<hex-color>])",
+    syntax: "matte([<hex-color>]) | metal([<hex-color>,] [<roughness>])",
     initial: "matte()",
     description:
       "Sets how the surface of the object reacts to light. matte() only scatters light, like chalk. Without a color, the material uses the color property, like currentColor in CSS.",
     examples: [
       "@scene { sphere; } sphere { color: #ff5a36; material: matte(); }",
+      "@scene { sphere; } sphere { translate: 0 0.5 0; color: #d4af37; material: metal(0.2); }",
     ],
   },
   {
