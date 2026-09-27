@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { PROPERTIES } from "./registry";
+import { PROPERTIES, AT_RULES } from "./registry";
 import { compileGSS } from "./index";
 
 describe("registry", () => {
@@ -27,6 +27,67 @@ describe("registry", () => {
     for (const property of PROPERTIES) {
       for (const example of property.examples) {
         it(`${property.name}: ${example}`, () => {
+          expect(() => compileGSS(example)).not.toThrow();
+        });
+      }
+    }
+  });
+
+  describe("animatable properties", () => {
+    const animatable = PROPERTIES.filter((property) => property.animatable);
+
+    it("marks the properties the compiler can animate", () => {
+      expect(animatable.map((property) => property.name)).toEqual([
+        "translate",
+        "color",
+        "rotate-x",
+        "rotate-y",
+        "rotate-z",
+        "scale",
+      ]);
+    });
+
+    // If a property is marked animatable, the compiler must really animate it
+    for (const property of animatable) {
+      it(`animates ${property.name}`, () => {
+        const shader = compileGSS(
+          `@scene { cube; } cube { animation: k 1s; } @keyframes k { to { ${property.name}: ${property.initial}; } }`,
+        );
+        expect(shader).toContain("mix(");
+      });
+    }
+  });
+});
+
+describe("at-rules", () => {
+  it("has no duplicate at-rule names", () => {
+    const names = AT_RULES.map((atRule) => atRule.name);
+    expect(new Set(names).size).toBe(names.length);
+  });
+
+  it("documents @scene and @keyframes", () => {
+    expect(AT_RULES.map((atRule) => atRule.name)).toEqual(["scene", "keyframes"]);
+  });
+
+  it("gives every at-rule a description and at least one example", () => {
+    for (const atRule of AT_RULES) {
+      expect(atRule.description, atRule.name).not.toBe("");
+      expect(atRule.examples.length, atRule.name).toBeGreaterThan(0);
+    }
+  });
+
+  it("uses the at-rule in each of its examples", () => {
+    for (const atRule of AT_RULES) {
+      for (const example of atRule.examples) {
+        expect(example, atRule.name).toContain(`@${atRule.name}`);
+      }
+    }
+  });
+
+  describe("every documented example compiles", () => {
+    for (const atRule of AT_RULES) {
+      for (const example of atRule.examples) {
+        it(`@${atRule.name}: ${example}`, () => {
           expect(() => compileGSS(example)).not.toThrow();
         });
       }

@@ -3,7 +3,7 @@ import { parse } from "./parser";
 import { expandScene } from "./expand";
 import { resolveStyles, resolveSceneStyles } from "./resolve";
 import { generateShader } from "./codegen";
-import { validateProperties } from "./validate";
+import { validateProperties, validateKeyframes } from "./validate";
 import { readCamera, type CameraSettings } from "./camera";
 
 // Everything the runtime needs to display a scene
@@ -16,6 +16,7 @@ export type CompiledScene = {
 export function compileScene(source: string): CompiledScene {
   const stylesheet = parse(tokenize(source));
   validateProperties(stylesheet.rules);
+  validateKeyframes(stylesheet.keyframes);
   const instances = expandScene(stylesheet.scene);
   const styled = resolveStyles(instances, stylesheet.rules);
   const sceneStyles = resolveSceneStyles(stylesheet.rules);

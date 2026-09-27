@@ -60,3 +60,32 @@ describe("validateProperties", () => {
     );
   });
 });
+
+describe("validateKeyframes", () => {
+  it("accepts animatable properties", () => {
+    expect(() =>
+      compileGSS(
+        "@scene { cube; } cube { animation: k 1s; } @keyframes k { to { translate: 0 1 0; color: #fff; } }",
+      ),
+    ).not.toThrow();
+  });
+
+  it("rejects an unknown property in a frame", () => {
+    expect(() =>
+      compileGSS("@scene { cube; } @keyframes k { to { colr: #fff; } }"),
+    ).toThrow('Unknown property "colr" in @keyframes k');
+  });
+
+  it("rejects a property that cannot be animated", () => {
+    expect(() =>
+      compileGSS("@scene { cube; } @keyframes k { to { size: 2; } }"),
+    ).toThrow('"size" cannot be animated (in @keyframes k)');
+  });
+
+  it("lists the animatable properties in the error", () => {
+    expect(() =>
+      compileGSS("@scene { cube; } @keyframes k { to { size: 2; } }"),
+    ).toThrow("translate, color, rotate-x, rotate-y, rotate-z, scale");
+  });
+});
+

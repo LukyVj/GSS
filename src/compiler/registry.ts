@@ -11,12 +11,22 @@ export type PropertyDef = {
   initial: string;
   description: string;
   examples: string[];
+  animatable?: boolean; // can be changed by @keyframes (decision 24)
+};
+
+// A block of the language: @scene, @keyframes
+export type AtRuleDef = {
+  name: string; // without the @: "keyframes"
+  syntax: string;
+  description: string;
+  examples: string[];
 };
 
 export const PROPERTIES: PropertyDef[] = [
   {
     name: "translate",
     appliesTo: "object",
+    animatable: true,
     syntax: "<number>{3}",
     initial: "0 0 0",
     description:
@@ -26,6 +36,7 @@ export const PROPERTIES: PropertyDef[] = [
   {
     name: "color",
     appliesTo: "object",
+    animatable: true,
     syntax: "<hex-color>",
     initial: "#e6e6e6",
     description: "Sets the base color of the object's surface.",
@@ -34,6 +45,7 @@ export const PROPERTIES: PropertyDef[] = [
   {
     name: "rotate-x",
     appliesTo: "object",
+    animatable: true,
     syntax: "<angle>",
     initial: "0deg",
     description: "Rotates the object around the x axis.",
@@ -42,6 +54,7 @@ export const PROPERTIES: PropertyDef[] = [
   {
     name: "rotate-y",
     appliesTo: "object",
+    animatable: true,
     syntax: "<angle>",
     initial: "0deg",
     description: "Rotates the object around the y axis.",
@@ -50,6 +63,7 @@ export const PROPERTIES: PropertyDef[] = [
   {
     name: "rotate-z",
     appliesTo: "object",
+    animatable: true,
     syntax: "<angle>",
     initial: "0deg",
     description: "Rotates the object around the z axis.",
@@ -58,6 +72,7 @@ export const PROPERTIES: PropertyDef[] = [
   {
     name: "scale",
     appliesTo: "object",
+    animatable: true,
     syntax: "<number>",
     initial: "1.0",
     description: "Scales the object along the x, y and z axes.",
@@ -221,6 +236,29 @@ export const PROPERTIES: PropertyDef[] = [
       "Sets the color of the background, visible wherever there is no object and no floor.",
     examples: [
       "@scene { cube; } cube { translate: 0 0.5 0; } scene { background: #42429f; }",
+    ],
+  },
+];
+
+export const AT_RULES: AtRuleDef[] = [
+  {
+    name: "scene",
+    syntax: "@scene { <shape>[#<id>][.<class>]* [* <integer>]; … }",
+    description:
+      "Declares the objects of the scene, one per line: a shape (cube, sphere or torus), an optional #id, any number of .classes, and an optional * n to create n copies. Multiplied ids are numbered: torus#ring * 3 creates ring-1, ring-2 and ring-3. Objects are combined in this order (see operation).",
+    examples: [
+      "@scene { cube; }",
+      "@scene { cube#base; sphere.ball * 3; } #base { translate: 0 0.5 0; } .ball { translate: 0 1.5 0; radius: 0.3; }",
+    ],
+  },
+  {
+    name: "keyframes",
+    syntax: "@keyframes <name> { <offset>[, <offset>]* { <declaration>* } … }",
+    description:
+      "Defines the steps of an animation, played by the animation property. An offset is from (0%), to (100%) or a percentage. A missing 0% or 100% uses the object's own value, and a frame only changes the properties it declares. Only animatable properties can be used in a frame.",
+    examples: [
+      "@scene { sphere; } sphere { animation: float 2s ease-in-out alternate; } @keyframes float { from { translate: 0 1 0; } to { translate: 0 2 0; } }",
+      "@scene { cube; } cube { translate: 0 0.5 0; animation: pulse 1s; } @keyframes pulse { 0%, 100% { scale: 1; } 50% { scale: 1.3; color: #ff5a36; } }",
     ],
   },
 ];

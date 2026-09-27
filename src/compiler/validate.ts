@@ -1,4 +1,4 @@
-import type { Rule } from "./ast";
+import type { Rule, Keyframes } from "./ast";
 import { PROPERTIES } from "./registry";
 import { parseSelector, isSceneSelector } from "./resolve";
 
@@ -37,3 +37,29 @@ export function validateProperties(rules: Rule[]): void {
     }
   }
 }
+
+// Throws if a @keyframes frame uses a property that is unknown or cannot be animated
+export function validateKeyframes(keyframes: Keyframes[]): void {
+  const animatable = PROPERTIES.filter((p) => p.animatable).map((p) => p.name);
+
+  for (const animation of keyframes) {
+    for (const frame of animation.frames) {
+      for (const declaration of frame.declarations) {
+        const property = PROPERTIES.find((p) => p.name === declaration.property);
+
+        if (!property) {
+          throw new Error(
+            `Unknown property "${declaration.property}" in @keyframes ${animation.name}`,
+          );
+        }
+
+        if (!property.animatable) {
+          throw new Error(
+            `"${declaration.property}" cannot be animated (in @keyframes ${animation.name}). Animatable properties: ${animatable.join(", ")}.`,
+          );
+        }
+      }
+    }
+  }
+}
+

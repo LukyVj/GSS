@@ -1,6 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { escapeHtml, renderProperty, renderDocs } from "./render";
-import { PROPERTIES, type PropertyDef } from "../compiler/registry";
+import { escapeHtml, renderProperty, renderAtRule, renderDocs } from "./render";
+import {
+  PROPERTIES,
+  AT_RULES,
+  type PropertyDef,
+  type AtRuleDef,
+} from "../compiler/registry";
 
 const rotateX: PropertyDef = {
   name: "rotate-x",
@@ -37,6 +42,14 @@ describe("renderProperty", () => {
     expect(html).toContain("<code>0deg</code>");
   });
 
+  it("says whether the property is animatable", () => {
+    expect(html).toContain("<dt>Animatable</dt>");
+    expect(html).toContain("<dd>no</dd>");
+    expect(renderProperty({ ...rotateX, animatable: true })).toContain(
+      "<dd>yes</dd>",
+    );
+  });
+
   it("shows each example in a code block", () => {
     expect(html).toContain(
       "<pre><code>@scene { cube; } cube { rotate-x: 45deg; }</code></pre>",
@@ -44,11 +57,55 @@ describe("renderProperty", () => {
   });
 });
 
+const keyframes: AtRuleDef = {
+  name: "keyframes",
+  syntax: "@keyframes <name> { <offset> { <declaration>* } }",
+  description: "Defines the steps of an animation.",
+  examples: ["@keyframes k { to { scale: 2; } }"],
+};
+
+describe("renderAtRule", () => {
+  const html = renderAtRule(keyframes);
+
+  it("gives the at-rule an anchor that cannot clash with a property", () => {
+    expect(html).toContain('id="at-keyframes"');
+  });
+
+  it("shows the name with its @", () => {
+    expect(html).toContain("<code>@keyframes</code>");
+  });
+
+  it("escapes the syntax", () => {
+    expect(html).toContain("&lt;name&gt;");
+  });
+
+  it("shows each example in a code block", () => {
+    expect(html).toContain("<pre><code>@keyframes k { to { scale: 2; } }</code></pre>");
+  });
+});
+
 describe("renderDocs", () => {
+  const html = renderDocs(PROPERTIES, AT_RULES);
+
   it("documents every registered property", () => {
-    const html = renderDocs(PROPERTIES);
     for (const property of PROPERTIES) {
       expect(html, property.name).toContain(`id="${property.name}"`);
+    }
+  });
+
+  it("documents every at-rule", () => {
+    for (const atRule of AT_RULES) {
+      expect(html, atRule.name).toContain(`id="at-${atRule.name}"`);
+    }
+  });
+
+  it("links every property and at-rule from the table of contents", () => {
+    const toc = html.slice(html.indexOf('<nav class="toc">'), html.indexOf("</nav>"));
+    for (const property of PROPERTIES) {
+      expect(toc, property.name).toContain(`href="#${property.name}"`);
+    }
+    for (const atRule of AT_RULES) {
+      expect(toc, atRule.name).toContain(`href="#at-${atRule.name}"`);
     }
   });
 });
