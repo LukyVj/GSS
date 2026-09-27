@@ -43,6 +43,37 @@ describe("parse", () => {
   });
 
   it("signals a missing brace", () => {
-    expect(() => parseGSS("cube { size: 1;")).toThrow("Rule never closed");
+    expect(() => parseGSS("cube { size: 1;")).toThrow("Block never closed");
+  });
+
+  it("parses a @keyframes block", () => {
+    const { keyframes } = parseGSS(`
+      @keyframes float {
+        from { translate: 0 1 0; }
+        50%  { translate: 0 2 0; }
+        to   { translate: 0 1.4 0; }
+      }
+    `);
+    expect(keyframes).toHaveLength(1);
+    expect(keyframes[0].name).toBe("float");
+    expect(keyframes[0].frames).toHaveLength(3);
+    expect(keyframes[0].frames[1].offsets).toEqual([
+      { type: "PERCENTAGE", value: 50 },
+    ]);
+    expect(keyframes[0].frames[1].declarations[0].property).toBe("translate");
+  });
+
+  it("splits comma-separated offsets", () => {
+    const { keyframes } = parseGSS(
+      "@keyframes pulse { 0%, 100% { scale: 1; } }",
+    );
+    expect(keyframes[0].frames[0].offsets).toEqual([
+      { type: "PERCENTAGE", value: 0 },
+      { type: "PERCENTAGE", value: 100 },
+    ]);
+  });
+
+  it("rejects @keyframes without a name", () => {
+    expect(() => parseGSS("@keyframes { from {} }")).toThrow();
   });
 });

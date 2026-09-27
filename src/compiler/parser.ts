@@ -1,5 +1,12 @@
 import type { Token } from "./tokenizer";
-import type { Stylesheet, SceneElement, Rule, Declaration } from "./ast";
+import type {
+  Stylesheet,
+  SceneElement,
+  Rule,
+  Declaration,
+  Keyframes,
+  Keyframe,
+} from "./ast";
 
 export function parse(tokens: Token[]): Stylesheet {
   let pos = 0; // our position in the list of tokens
@@ -105,24 +112,54 @@ export function parse(tokens: Token[]): Stylesheet {
     return { property: property.value, value };
   }
 
+  // { radius: 1; color: #fff; } : shared by rules and keyframes
+  function parseDeclarationBlock(): Declaration[] {
+    expectPunct("{");
+    const declarations: Declaration[] = [];
+    while (!isPunct(peek(), "}")) {
+      if (!peek()) throw new Error('Block never closed: "}" missing');
+      declarations.push(parseDeclaration());
+    }
+    next(); // we consume the "}"
+    return declarations;
+  }
+
   // torus#hero { ... }
   function parseRule(): Rule {
     const selector: Token[] = [];
     while (peek() && !isPunct(peek(), "{")) {
       selector.push(next());
     }
-    expectPunct("{");
-    const declarations: Declaration[] = [];
-    while (!isPunct(peek(), "}")) {
-      if (!peek()) throw new Error('Rule never closed: "}" missing');
-      declarations.push(parseDeclaration());
+    return { selector, declarations: parseDeclarationBlock() };
+  }
+
+  // @keyframes float { from { ... } 50% { ... } to { ... } }
+  function parseKeyframes(): Keyframes {
+    const name = next();
+    if (name.type !== "IDENT") {
+      throw new Error(
+        `Animation name expected after @keyframes, but found "${name.value}"`,
+      );
     }
-    next();
-    return { selector, declarations };
+    expectPunct("{");
+    const frames: Keyframe[] = [];
+    while (!isPunct(peek(), "}")) {
+      if (!peek()) throw new Error('@keyframes never closed: "}" missing');
+
+      // The offsets before "{": from, to, 50%, or 0%, 100%
+      const offsets: Token[] = [];
+      while (peek() && !isPunct(peek(), "{")) {
+        const token = next();
+        if (!isPunct(token, ",")) offsets.push(token); // we skip the commas
+      }
+      frames.push({ offsets, declarations: parseDeclarationBlock() });
+    }
+    next(); // we consume the "}"
+    return { name: name.value, frames };
   }
 
   // The whole file: a sequence of @scene and rules
-  const stylesheet: Stylesheet = { scene: [], rules: [] };
+  const stylesheet: Stylesheet = { scene: [], rules: [], keyframes: [] };
 
   while (peek()) {
     const token = peek()!;
@@ -130,6 +167,8 @@ export function parse(tokens: Token[]): Stylesheet {
       next();
       if (token.value === "scene") {
         stylesheet.scene.push(...parseScene());
+      } else if (token.value === "keyframes") {
+        stylesheet.keyframes.push(parseKeyframes());
       } else {
         throw new Error(`@${token.value} isn't supported yet`);
       }
