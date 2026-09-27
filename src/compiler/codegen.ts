@@ -449,14 +449,24 @@ float sdTorus(vec3 p, vec2 t) {
 }
 
 // ----- Materials -----
+// Which lighting main() uses for the surface
+const int MATTE = 0;
+const int METAL = 1;
+
 struct Material {
   vec3 color;
+  int kind;        // MATTE or METAL
+  float roughness; // 0 = mirror, 1 = brushed metal
 };
 
 Material matte(vec3 color) {
-  return Material(color);
+  return Material(color, MATTE, 0.0);
 }
-  
+
+Material metal(vec3 color, float roughness) {
+  return Material(color, METAL, roughness);
+}
+
 // ----- Rotations -----
 mat2 rot(float a) {
   float c = cos(a), s = sin(a);

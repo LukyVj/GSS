@@ -28,4 +28,11 @@ describe("material: matte()", () => {
       compileGSS("@scene { sphere; } sphere { material: wood(); }"),
     ).toThrow('Unknown material "wood". Available: matte()');
   });
+
+  describe("material: the shader", () => {
+    it("knows the metal material", () => {
+      const shader = compileGSS("@scene { sphere; }");
+      expect(shader).toContain("Material metal(vec3 color, float roughness)");
+    });
+  });
 });
