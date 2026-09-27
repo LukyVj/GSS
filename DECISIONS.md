@@ -38,7 +38,7 @@ and are sent to the shader as uniforms on every frame.
 
 ## 7. One material number per object
 
-**Decision**: each instance has its own number (its index in the scene), used by `getColor`.
+**Decision**: each instance has its own number (its index in the scene), used by `getMaterial`.
 **Why**: numbers are always consistent, and every object stays identifiable, which `:hover` will need.
 
 ## 8. The AST keeps raw values
@@ -125,11 +125,12 @@ The floor is added last and is never affected. The walls of a hole take the mate
 ## 22. Keyframes follow the CSS rules
 
 **Decision**:
+
 - `from` means `0%` and `to` means `100%`. `0%, 100% { … }` sets both offsets.
 - A missing `0%` or `100%` uses the object's own value (`translate`, `color`…).
 - A frame only animates the properties it declares. A property that no frame declares keeps its own value.
 - The same offset twice, or two `@keyframes` with the same name: the last one wins.
-**Why**: people and LLMs already know these rules from CSS.
+  **Why**: people and LLMs already know these rules from CSS.
 
 ## 23. Several keyframes make a chain of `mix`
 
@@ -146,6 +147,37 @@ The floor is added last and is never affected. The walls of a hole take the mate
 
 **Decision**: `src/scene.gss` groups features into zones, separated in the file and in space: transforms at the center, operations behind (z = -6), animations in front (z = 6). Every object has its own id.
 **Why**: a shared scene quickly becomes chaotic. A rule like `cube { … }` or a reused id silently changes another feature's objects.
+
+## 26. `material` and `color` stay separate
+
+**Decision**: `color` keeps the base color of the object. `material` says how its surface reacts to light. A material without its own color uses `color`, like `currentColor` in CSS.
+**Why**: `color` stays animatable with `@keyframes`, even on a metal. And `color: #ff5a36; material: gold;` keeps a single, readable meaning: the material's own color wins.
+**Accepted limits**: `material` cannot be animated.
+
+## 27. Materials are functions, keywords are shortcuts
+
+**Decision**: a material is a function with its settings, like `rgb()` in CSS: `matte()`, `metal(#d4af37, 0.2)`. The color is optional and always comes first. Keywords (`gold`, `chrome`) are shortcuts written in GSS: the compiler tokenizes their text and reads it again as a function.
+**Why**: functions hold the settings, keywords are easy to guess for people and LLMs. A keyword adds no code: its checks and errors are the ones of its function.
+
+## 28. Function arguments follow modern CSS
+
+**Decision**: `readFunction` splits arguments on commas when there are some, otherwise on spaces. `metal(#fff, 0.2)` and `metal(#fff 0.2)` are the same, like `rgb(255, 90, 54)` and `rgb(255 90 54)`.
+**Later**: nested functions such as `calc(var(--x) / 2)` are not supported yet (session 3).
+
+## 29. One bounce for reflections
+
+**Decision**: a reflection is one more ray, marched by `trace()`. What it hits gets diffuse lighting only: a metal seen in another metal looks matte.
+**Why**: each bounce costs a full march per pixel.
+**Accepted limits**:
+
+- Roughness does not blur the reflection. It mixes the sharp reflection with diffuse light, because a real blur needs dozens of rays per pixel.
+- Metals get a bit of diffuse light (0.3) so they stay readable on a dark background. It is a visual choice, not physics.
+- The reflected ray starts 0.01 above the surface, otherwise it hits its own starting point.
+
+## 30. Shader structure: reusable functions, one placeholder each
+
+**Decision**: the shader is split into functions that can be called again: `march()` follows a ray, `trace()` tells what a ray sees, `diffuse()` lights a surface, `getMaterial()` returns a `Material` struct (color, kind, roughness). Values the whole shader needs are constants at the top: `MAX_DIST`, `BACKGROUND`, `LIGHT_DIR`.
+**Why**: reflections, and later refractions, reuse the same functions. And `.replace()` only replaces the first occurrence: every `/*@…*/` placeholder must appear exactly once in the template.
 
 ## Open questions
 
