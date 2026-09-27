@@ -303,4 +303,26 @@ describe("animation", () => {
       compileGSS("@scene { sphere; } sphere { animation: nope 2s; }"),
     ).toThrow('No @keyframes named "nope"');
   });
+
+  it("goes through percentage frames", () => {
+    const shader = compileGSS(`
+      @scene { sphere; }
+      sphere { animation: bounce 2s; }
+      @keyframes bounce {
+        0%   { translate: 0 0 0; }
+        50%  { translate: 0 2 0; }
+        100% { translate: 0 0 0; }
+      }
+    `);
+    expect(shader).toContain("- 0.5) / 0.5");
+  });
+
+  it("uses the object's own translate when from is missing", () => {
+    const shader = compileGSS(`
+      @scene { sphere; }
+      sphere { translate: 0 1 0; animation: up 2s; }
+      @keyframes up { to { translate: 0 3 0; } }
+    `);
+    expect(shader).toContain("mix(vec3(0.0, 1.0, 0.0), vec3(0.0, 3.0, 0.0),");
+  });
 });

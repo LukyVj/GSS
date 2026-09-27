@@ -233,27 +233,59 @@ function hasKeyword(value: Token[], word: string): boolean {
 }
 
 // A GLSL expression that goes from 0 to 1 over time
+// A GLSL expression that goes from 0 to 1 over time, at constant speed
 function animationProgress(value: Token[]): string {
   const time = `iTime / ${glslFloat(readDuration(value))}`;
-  let progress = hasKeyword(value, "alternate")
+  return hasKeyword(value, "alternate")
     ? `(1.0 - abs(mod(${time}, 2.0) - 1.0))` // 0 → 1 → 0 → 1 …
     : `fract(${time})`; // 0 → 1, 0 → 1 …
-  if (hasKeyword(value, "ease-in-out")) {
-    progress = `smoothstep(0.0, 1.0, ${progress})`; // slow at both ends
-  }
-  return progress;
+}
+// Applies the timing curve to a progress between 0 and 1
+function easing(value: Token[], progress: string): string {
+  if (hasKeyword(value, "ease-in-out"))
+    return `smoothstep(0.0, 1.0, ${progress})`;
+  return progress; // linear
 }
 
-// The translate of the "from" or "to" frame
-function frameTranslate(keyframes: Keyframes, offset: "from" | "to"): string {
-  const frame = keyframes.frames.find((f) =>
-    f.offsets.some((t) => t.type === "IDENT" && t.value === offset),
-  );
-  if (!frame) {
-    throw new Error(`@keyframes ${keyframes.name} needs a "${offset}" frame`);
+// from → 0, to → 1, 50% → 0.5
+function readOffset(token: Token, name: string): number {
+  if (token.type === "IDENT" && token.value === "from") return 0;
+  if (token.type === "IDENT" && token.value === "to") return 1;
+  if (token.type === "PERCENTAGE" && token.value >= 0 && token.value <= 100) {
+    return token.value / 100;
   }
-  const translate = frame.declarations.find((d) => d.property === "translate");
-  return readTranslate(translate?.value);
+  throw new Error(
+    `@keyframes ${name}: expected from, to or a percentage between 0% and 100%`,
+  );
+}
+
+// Every moment where the animation sets translate, sorted in time
+function translateStops(
+  keyframes: Keyframes,
+  styles: Styles,
+): { offset: number; value: string }[] {
+  const byOffset = new Map<number, string>();
+  for (const frame of keyframes.frames) {
+    const translate = frame.declarations.find(
+      (d) => d.property === "translate",
+    );
+    if (!translate) continue; // this frame animates something else
+    for (const token of frame.offsets) {
+      // Same offset twice: the last one wins, like in CSS
+      byOffset.set(
+        readOffset(token, keyframes.name),
+        readTranslate(translate.value),
+      );
+    }
+  }
+  // Like in CSS, a missing 0% or 100% uses the object's own translate
+  const own = readTranslate(styles["translate"]);
+  if (!byOffset.has(0)) byOffset.set(0, own);
+  if (!byOffset.has(1)) byOffset.set(1, own);
+
+  return [...byOffset]
+    .map(([offset, value]) => ({ offset, value }))
+    .sort((a, b) => a.offset - b.offset);
 }
 
 // The position of an object: fixed, or moving with its animation
@@ -266,9 +298,18 @@ function positionOf(styles: Styles, keyframes: Keyframes[]): string {
   const found = keyframes.findLast((k) => k.name === name.value);
   if (!found) throw new Error(`No @keyframes named "${name.value}"`);
 
-  const from = frameTranslate(found, "from");
-  const to = frameTranslate(found, "to");
-  return `mix(${from}, ${to}, ${animationProgress(animation)})`;
+  const progress = animationProgress(animation);
+  const stops = translateStops(found, styles);
+
+  // Chain of mix: each segment takes over when the previous one is done
+  let position = stops[0].value;
+  for (let i = 1; i < stops.length; i++) {
+    const start = stops[i - 1].offset;
+    const length = round(stops[i].offset - start);
+    const local = `clamp((${progress} - ${glslFloat(start)}) / ${glslFloat(length)}, 0.0, 1.0)`;
+    position = `mix(${position}, ${stops[i].value}, ${easing(animation, local)})`;
+  }
+  return position;
 }
 
 export function generateShader(
