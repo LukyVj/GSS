@@ -45,13 +45,14 @@ export const PROPERTIES: PropertyDef[] = [
   {
     name: "material",
     appliesTo: "object",
-    syntax: "matte([<hex-color>]) | metal([<hex-color>,] [<roughness>])",
+    syntax:
+      "matte([<hex-color>]) | metal([<hex-color>,] [<roughness>]) | gold | chrome",
     initial: "matte()",
     description:
-      "Sets how the surface of the object reacts to light. matte() only scatters light, like chalk. Without a color, the material uses the color property, like currentColor in CSS.",
+      "Sets how the surface of the object reacts to light. matte() only scatters light, like chalk. metal() reflects the scene: roughness goes from 0, a mirror, to 1, a brushed metal (0.2 by default). Without a color, the material uses the color property, like currentColor in CSS, so color stays animatable. gold and chrome are shortcuts for metal(#d4af37, 0.2) and metal(#ffffff, 0.05).",
     examples: [
       "@scene { sphere; } sphere { color: #ff5a36; material: matte(); }",
-      "@scene { sphere; } sphere { translate: 0 0.5 0; color: #d4af37; material: metal(0.2); }",
+      "@scene { sphere#a; sphere#b; sphere#c; } #a { translate: -1.3 0.6 0; radius: 0.6; material: gold; } #b { translate: 0 0.6 0; radius: 0.6; material: chrome; } #c { translate: 1.3 0.6 0; radius: 0.6; color: #d4af37; material: metal(0.7); }",
     ],
   },
   {
