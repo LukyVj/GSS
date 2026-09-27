@@ -1,4 +1,5 @@
 import type { PropertyDef, AtRuleDef } from "../compiler/registry";
+import { formatGss } from "./format";
 
 // Makes a text safe to insert in HTML: "<angle>" must be shown, not read as a tag.
 export function escapeHtml(text: string): string {
@@ -9,10 +10,17 @@ export function escapeHtml(text: string): string {
     .replaceAll('"', "&quot;");
 }
 
-// Each example in its own code block
+// Each example in its own code block, indented, with a button to try it live.
+// The button carries the code, so the page script needs nothing else.
 function renderExamples(examples: string[]): string {
   return examples
-    .map((example) => `<pre><code>${escapeHtml(example)}</code></pre>`)
+    .map(
+      (example) => `
+      <div class="example">
+        <pre><code>${escapeHtml(formatGss(example))}</code></pre>
+        <button type="button" class="try" data-example="${escapeHtml(example)}">Try it</button>
+      </div>`,
+    )
     .join("\n");
 }
 

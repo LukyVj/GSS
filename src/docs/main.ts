@@ -1,5 +1,7 @@
 import { PROPERTIES, AT_RULES } from "../compiler/registry";
 import { renderDocs } from "./render";
+import { enableTryIt } from "./playground";
 
-document.querySelector<HTMLElement>("#docs")!.innerHTML =
-  renderDocs(PROPERTIES, AT_RULES);
+const docs = document.querySelector<HTMLElement>("#docs")!;
+docs.innerHTML = renderDocs(PROPERTIES, AT_RULES);
+enableTryIt(docs);

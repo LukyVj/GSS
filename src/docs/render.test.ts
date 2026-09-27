@@ -52,7 +52,13 @@ describe("renderProperty", () => {
 
   it("shows each example in a code block", () => {
     expect(html).toContain(
-      "<pre><code>@scene { cube; } cube { rotate-x: 45deg; }</code></pre>",
+      "<pre><code>@scene {\n  cube;\n}\n\ncube {\n  rotate-x: 45deg;\n}\n</code></pre>",
+    );
+  });
+
+  it("gives each example a Try it button that carries its code", () => {
+    expect(html).toContain(
+      '<button type="button" class="try" data-example="@scene { cube; } cube { rotate-x: 45deg; }">Try it</button>',
     );
   });
 });
@@ -80,7 +86,9 @@ describe("renderAtRule", () => {
   });
 
   it("shows each example in a code block", () => {
-    expect(html).toContain("<pre><code>@keyframes k { to { scale: 2; } }</code></pre>");
+    expect(html).toContain(
+      "<pre><code>@keyframes k {\n  to {\n    scale: 2;\n  }\n}\n</code></pre>",
+    );
   });
 });
 
