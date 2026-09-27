@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "test": "vitest"
+    "test": "vitest",
+    "generate-vscode-extension": "cd editors/vscode && npm run package"
   },
   "devDependencies": {
     "typescript": "~6.0.2",

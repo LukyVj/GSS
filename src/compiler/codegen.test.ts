@@ -76,7 +76,9 @@ describe("decor", () => {
     const shader = compileGSS(
       "@scene { cube; } scene { floor: #111; background: #000; }",
     );
-    expect(shader).toContain("return vec3(0.067, 0.067, 0.067);  // the floor");
+    expect(shader).toContain(
+      "return matte(vec3(0.067, 0.067, 0.067));  // the floor",
+    );
     expect(shader).toContain("vec3 col = vec3(0.0, 0.0, 0.0);");
   });
 
@@ -110,13 +112,13 @@ describe("lighting", () => {
 
   it("sets the ambient light", () => {
     expect(compileGSS("@scene { cube; } scene { ambient: 0.3; }")).toContain(
-      "getColor(id) * (0.3 + 0.7 * diff)",
+      "getMaterial(id).color * (0.3 + 0.7 * diff)",
     );
   });
 
   it("keeps the default ambient light", () => {
     expect(compileGSS("@scene { cube; }")).toContain(
-      "getColor(id) * (0.1 + 0.9 * diff)",
+      "getMaterial(id).color * (0.1 + 0.9 * diff)",
     );
   });
 
@@ -350,7 +352,7 @@ describe("animation", () => {
       @keyframes fade { to { color: #0000ff; } }
     `);
     expect(shader).toContain(
-      "return mix(vec3(1.0, 0.0, 0.0), vec3(0.0, 0.0, 1.0),",
+      "return matte(mix(vec3(1.0, 0.0, 0.0), vec3(0.0, 0.0, 1.0),",
     );
   });
 
@@ -361,5 +363,21 @@ describe("animation", () => {
       @keyframes pulse { to { scale: 2; } }
     `);
     expect(shader).toContain("q = p - vec3(0.0, 1.0, 0.0);");
+  });
+});
+
+describe("shader structure", () => {
+  it("marches in a function that can be called again", () => {
+    const shader = compileGSS("@scene { cube; }");
+    expect(shader).toContain("vec2 march(vec3 ro, vec3 rd)");
+    expect(shader).toContain("vec2 hit = march(ro, rd);");
+  });
+
+  it("gives each object a material, matte by default", () => {
+    const shader = compileGSS("@scene { cube; } cube { color: #ff0000; }");
+    expect(shader).toContain("Material getMaterial(float id)");
+    expect(shader).toContain(
+      "if (id == 1.0) return matte(vec3(1.0, 0.0, 0.0));  // cube",
+    );
   });
 });

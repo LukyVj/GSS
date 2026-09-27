@@ -354,7 +354,7 @@ export function generateShader(
 
   const colorLines = instances.map(
     (instance) =>
-      `  if (id == ${glslFloat(instance.index)}) return ${animatedValue(instance.styles, keyframes, "color", readColor)};  // ${label(instance)}`,
+      `  if (id == ${glslFloat(instance.index)}) return matte(${animatedValue(instance.styles, keyframes, "color", readColor)});  // ${label(instance)}`,
   );
 
   // floor: none moves the floor infinitely far away
@@ -374,7 +374,7 @@ export function generateShader(
   const direct = round(1 - ambient);
 
   return TEMPLATE.replace("/*@MAP*/", mapLines.join("\n\n"))
-    .replace("/*@COLORS*/", colorLines.join("\n"))
+    .replace("/*@MATERIALS*/", colorLines.join("\n"))
     .replace(
       "/*@FLOOR*/",
       noFloor ? "vec3(0.0)" : readColor(floor, "vec3(0.91, 0.89, 0.86)"),
@@ -420,6 +420,15 @@ float sdTorus(vec3 p, vec2 t) {
   return length(q) - t.y;
 }
 
+// ----- Materials -----
+struct Material {
+  vec3 color;
+};
+
+Material matte(vec3 color) {
+  return Material(color);
+}
+  
 // ----- Rotations -----
 mat2 rot(float a) {
   float c = cos(a), s = sin(a);
@@ -471,11 +480,24 @@ vec2 map(vec3 p) {
   return res;
 }
 
-vec3 getColor(float id) {
-/*@COLORS*/
-  return /*@FLOOR*/;  // the floor
+Material getMaterial(float id) {
+  /*@MATERIALS*/
+  return matte(/*@FLOOR*/);  // the floor
 }
 // ----- End of generated code -----
+
+vec2 march(vec3 ro, vec3 rd) {
+  float t = 0.0;
+  float id = 0.0;
+  for (int i = 0; i < 100; i++) {
+    vec2 res = map(ro + rd * t);
+    id = res.y;
+    t += res.x;
+    if (res.x < 0.001 || t > 20.0) break;
+  }
+
+  return vec2(t,id);
+}
 
 vec3 calcNormal(vec3 p) {
   vec2 e = vec2(0.001, 0.0);
@@ -498,14 +520,9 @@ void main() {
   vec3 up = cross(forward, right);
   vec3 rd = normalize(uv.x * right + uv.y * up + 1.5 * forward);
 
-  float t = 0.0;
-  float id = 0.0;
-  for (int i = 0; i < 100; i++) {
-    vec2 res = map(ro + rd * t);
-    id = res.y;
-    t += res.x;
-    if (res.x < 0.001 || t > 20.0) break;
-  }
+  vec2 hit = march(ro, rd);
+  float t = hit.x;
+  float id = hit.y;
 
   vec3 col = /*@BACKGROUND*/;
     if (t < 20.0) {
@@ -513,7 +530,7 @@ void main() {
     vec3 n = calcNormal(p);
     vec3 lightDir = /*@LIGHT*/;
     float diff = max(dot(n, lightDir), 0.0);
-    col = getColor(id) * (/*@AMBIENT*/ + /*@DIRECT*/ * diff);
+    col = getMaterial(id).color * (/*@AMBIENT*/ + /*@DIRECT*/ * diff);
   }
 
   outColor = vec4(col, 1.0);
