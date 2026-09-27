@@ -11,16 +11,112 @@
         height: 100%;
         background: #080808;
       }
+      body {
+        display: grid;
+        grid-template-columns: minmax(300px, 36%) 1fr;
+      }
+
+      /* ----- The editor, docked on the left ----- */
+      .editor {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        background: #111114;
+        color: #e6e6e6;
+        border-right: 1px solid #26262c;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      }
+      .editor header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.6rem 1rem;
+        font-size: 12px;
+        color: #9a9aa3;
+        border-bottom: 1px solid #26262c;
+      }
+      .status {
+        padding: 2px 8px;
+        border-radius: 999px;
+        font-size: 11px;
+      }
+      .status.ok {
+        background: #12351f;
+        color: #5fd38d;
+      }
+      .status.error {
+        background: #3d1515;
+        color: #ff7a7a;
+      }
+      .editor textarea {
+        flex: 1;
+        min-height: 0;
+        margin: 0;
+        padding: 1rem;
+        border: 0;
+        outline: none;
+        resize: none;
+        background: transparent;
+        color: inherit;
+        font: inherit;
+        font-size: 13px;
+        line-height: 1.6;
+        tab-size: 2;
+        white-space: pre;
+        overflow: auto;
+      }
+      .editor .error {
+        margin: 0;
+        max-height: 30%;
+        overflow: auto;
+        padding: 0.75rem 1rem;
+        border-top: 1px solid #4a1f1f;
+        background: #2a1212;
+        color: #ff9b9b;
+        font: inherit;
+        font-size: 12px;
+        white-space: pre-wrap;
+      }
+
+      /* ----- The scene ----- */
       canvas {
         display: block;
         width: 100%;
         height: 100%;
+        min-width: 0;
         touch-action: none;
         cursor: grab;
+      }
+
+      /* On a phone: the scene on top, the editor below */
+      @media (max-width: 720px) {
+        body {
+          grid-template-columns: 1fr;
+          grid-template-rows: 1fr 40vh;
+        }
+        .editor {
+          order: 2;
+          border-right: 0;
+          border-top: 1px solid #26262c;
+        }
       }
     </style>
   </head>
   <body>
+    <aside class="editor">
+      <header>
+        <span>scene.gss</span>
+        <span id="status" class="status ok">OK</span>
+      </header>
+      <textarea
+        id="code"
+        spellcheck="false"
+        autocomplete="off"
+        autocapitalize="off"
+        aria-label="GSS code"
+      ></textarea>
+      <pre id="error" class="error" hidden></pre>
+    </aside>
     <canvas id="scene"></canvas>
     <script type="module" src="/src/main.ts"></script>
   </body>
