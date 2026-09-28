@@ -131,6 +131,18 @@ const SHAPES: Record<
     const height = readNumber(styles["height"], "height", 1);
     return `sdCappedCone(q, ${glslFloat(height / 2)}, ${glslFloat(bottom)}, ${glslFloat(top)})`;
   },
+  capsule: (styles) => {
+    const radius = readNumber(styles["radius"], "radius", 0.25);
+    const height = readNumber(styles["height"], "height", 1);
+    const half = height / 2 - radius; // half of the straight part
+    if (half < 0) {
+      throw errorAt(
+        styles["height"],
+        `capsule height must be at least twice its radius (${glslFloat(radius * 2)}), like: height: ${radius * 2};`,
+      );
+    }
+    return `sdCapsule(q, ${glslFloat(half)}, ${glslFloat(radius)})`;
+  },
   // A tube along an SVG path (decision 35)
   path: (styles, context) => {
     const d = readD(styles["d"]);
@@ -750,6 +762,12 @@ float sdCappedCone(vec3 p, float h, float r1, float r2) {
   vec2 cb = q - k1 + k2 * clamp(dot(k1 - q, k2) / dot(k2, k2), 0.0, 1.0);
   float s = (cb.x < 0.0 && ca.y < 0.0) ? -1.0 : 1.0;
   return s * sqrt(min(dot(ca, ca), dot(cb, cb)));
+}
+
+// h = half of the straight part
+float sdCapsule(vec3 p, float h, float r) {
+  p.y -= clamp(p.y, -h, h);
+  return length(p) - r;
 }
 
 // For path objects: squared distances to a segment and to a box, in 2D

@@ -236,6 +236,24 @@ describe("shape dimensions", () => {
       compileGSS("@scene { sphere; } sphere { radius: 1 2; }"),
     ).toThrow("radius expects one positive number");
   });
+
+  it("uses the default capsule dimensions", () => {
+    expect(compileGSS("@scene { capsule; }")).toContain(
+      "sdCapsule(q, 0.25, 0.25)",
+    );
+  });
+
+  it("measures the capsule height with its round ends", () => {
+    expect(
+      compileGSS("@scene { capsule; } capsule { radius: 0.25; height: 1.5; }"),
+    ).toContain("sdCapsule(q, 0.5, 0.25)");
+  });
+
+  it("rejects a capsule shorter than its diameter", () => {
+    expect(() =>
+      compileGSS("@scene { capsule; } capsule { radius: 1; height: 1; }"),
+    ).toThrow("capsule height must be at least twice its radius");
+  });
 });
 
 describe("operation", () => {
