@@ -25,21 +25,31 @@ function isIdentStart(char: string, next: string): boolean {
   return char === "-" && /^[a-zA-Z_-]$/.test(next);
 }
 
-export function tokenize(source: string): Token[] {
-  const tokens: Token[] = [];
+export type Comment = { type: "COMMENT"; value: string }; // "/* hi */", with the /* */
+export type Located = { token: Token | Comment; start: number; end: number };
+
+// Reads the whole text, comments included, and remembers where each token is.
+// The formatter and the highlighter need this; the parser only needs tokenize().
+export function scan(source: string): Located[] {
+  const located: Located[] = [];
   let i = 0; // our position in the text
+  let start = 0; // where the token being read begins
+
+  // Records a token that runs from `start` to the current position
+  const push = (token: Token | Comment) => located.push({ token, start, end: i });
 
   // Returns the character at a position, or "" if we exceed the end
   const charAt = (index: number): string => source[index] ?? "";
 
   // Advance while reading name characters, and return the name read
   const readIdent = (): string => {
-    const start = i;
+    const from = i;
     while (isIdentChar(charAt(i))) i++;
-    return source.slice(start, i);
+    return source.slice(from, i);
   };
 
   while (i < source.length) {
+    start = i;
     const char = charAt(i);
     const next = charAt(i + 1);
 
@@ -49,17 +59,17 @@ export function tokenize(source: string): Token[] {
       continue;
     }
 
-    // 2. The comments /* ... */ : we skip until the end
+    // 2. The comments /* ... */ : kept, with their text (the parser never sees them)
     if (char === "/" && next === "*") {
       const end = source.indexOf("*/", i + 2);
       if (end === -1) throw new Error(`Comment never closed (position ${i})`);
       i = end + 2;
+      push({ type: "COMMENT", value: source.slice(start, i) });
       continue;
     }
 
     // 3. The numbers: 1, 0.28, -2.5
     if (isDigit(char) || ((char === "-" || char === ".") && isDigit(next))) {
-      const start = i;
       i++;
       while (isDigit(charAt(i)) || charAt(i) === ".") i++;
       const value = parseFloat(source.slice(start, i)); // the number: 70
@@ -67,16 +77,16 @@ export function tokenize(source: string): Token[] {
       // Is a "%" stuck just after the number?
       if (charAt(i) === "%") {
         i++;
-        tokens.push({ type: "PERCENTAGE", value });
+        push({ type: "PERCENTAGE", value });
         continue;
       }
 
       // Is a letter stuck just after the number?
       if (isIdentStart(charAt(i), charAt(i + 1))) {
         const unit = readIdent(); // read "deg" and advance i
-        tokens.push({ type: "DIMENSION", value, unit });
+        push({ type: "DIMENSION", value, unit });
       } else {
-        tokens.push({ type: "NUMBER", value });
+        push({ type: "NUMBER", value });
       }
       continue;
     }
@@ -87,20 +97,20 @@ export function tokenize(source: string): Token[] {
       const name = readIdent();
       if (name === "")
         throw new Error(`"${char}" must be followed by a name (position ${i})`);
-      tokens.push({ type: char === "@" ? "AT_KEYWORD" : "HASH", value: name });
+      push({ type: char === "@" ? "AT_KEYWORD" : "HASH", value: name });
       continue;
     }
 
     // 5. The names: torus, radius, nth-child, --gap
     if (isIdentStart(char, next)) {
-      tokens.push({ type: "IDENT", value: readIdent() });
+      push({ type: "IDENT", value: readIdent() });
       continue;
     }
 
     // 6. The punctuation
     if (PUNCTUATION.includes(char)) {
-      tokens.push({ type: "PUNCT", value: char });
       i++;
+      push({ type: "PUNCT", value: char });
       continue;
     }
 
@@ -108,5 +118,12 @@ export function tokenize(source: string): Token[] {
     throw new Error(`Unexpected character "${char}" (position ${i})`);
   }
 
-  return tokens;
+  return located;
+}
+
+// The tokens the parser needs: everything except comments
+export function tokenize(source: string): Token[] {
+  return scan(source)
+    .map((l) => l.token)
+    .filter((t): t is Token => t.type !== "COMMENT");
 }

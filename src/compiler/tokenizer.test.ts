@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { tokenize } from "./tokenizer";
+import { tokenize, scan } from "./tokenizer";
 
 describe("tokenize", () => {
   it("splits a simple rule", () => {
@@ -66,5 +66,47 @@ describe("tokenize", () => {
       type: "PERCENTAGE",
       value: -25,
     });
+  });
+});
+
+describe("scan", () => {
+  it("gives the position of each token", () => {
+    expect(scan("cube { }")).toEqual([
+      { token: { type: "IDENT", value: "cube" }, start: 0, end: 4 },
+      { token: { type: "PUNCT", value: "{" }, start: 5, end: 6 },
+      { token: { type: "PUNCT", value: "}" }, start: 7, end: 8 },
+    ]);
+  });
+
+  it("keeps comments, with their full text", () => {
+    expect(scan("/* hi */ cube")).toEqual([
+      { token: { type: "COMMENT", value: "/* hi */" }, start: 0, end: 8 },
+      { token: { type: "IDENT", value: "cube" }, start: 9, end: 13 },
+    ]);
+  });
+
+  it("start/end cut out exactly each token's text", () => {
+    const source =
+      "#hero { rotate-x: 70deg; translate: -2.5 50% 0; } /* end */";
+    const texts = scan(source).map(
+      ({ start, end }: { start: number; end: number }) =>
+        source.slice(start, end),
+    );
+    expect(texts).toEqual([
+      "#hero",
+      "{",
+      "rotate-x",
+      ":",
+      "70deg",
+      ";",
+      "translate",
+      ":",
+      "-2.5",
+      "50%",
+      "0",
+      ";",
+      "}",
+      "/* end */",
+    ]);
   });
 });
