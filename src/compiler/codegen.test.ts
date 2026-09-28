@@ -212,6 +212,30 @@ describe("shape dimensions", () => {
       compileGSS("@scene { cylinder; } cylinder { radius: 0.4; height: 2; }"),
     ).toContain("sdCylinder(q, 1.0, 0.4)");
   });
+
+  it("uses the default cone dimensions", () => {
+    expect(compileGSS("@scene { cone; }")).toContain(
+      "sdCappedCone(q, 0.5, 0.5, 0.0)",
+    );
+  });
+
+  it("reads the bottom and top radii of a cone", () => {
+    expect(
+      compileGSS("@scene { cone; } cone { radius: 0.5 0.2; height: 1.5; }"),
+    ).toContain("sdCappedCone(q, 0.75, 0.5, 0.2)");
+  });
+
+  it("rejects three radii on a cone", () => {
+    expect(() =>
+      compileGSS("@scene { cone; } cone { radius: 1 2 3; }"),
+    ).toThrow("radius expects one or two");
+  });
+
+  it("still rejects two radii on a sphere", () => {
+    expect(() =>
+      compileGSS("@scene { sphere; } sphere { radius: 1 2; }"),
+    ).toThrow("radius expects one positive number");
+  });
 });
 
 describe("operation", () => {

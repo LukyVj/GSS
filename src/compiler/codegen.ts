@@ -126,6 +126,11 @@ const SHAPES: Record<
     const height = readNumber(styles["height"], "height", 1);
     return `sdCylinder(q, ${glslFloat(height / 2)}, ${glslFloat(radius)})`;
   },
+  cone: (styles) => {
+    const [bottom, top] = readRadii(styles["radius"]);
+    const height = readNumber(styles["height"], "height", 1);
+    return `sdCappedCone(q, ${glslFloat(height / 2)}, ${glslFloat(bottom)}, ${glslFloat(top)})`;
+  },
   // A tube along an SVG path (decision 35)
   path: (styles, context) => {
     const d = readD(styles["d"]);
@@ -214,6 +219,22 @@ function readSize(value: Token[] | undefined): number[] {
 
   if (numbers.length === 1) return [numbers[0], numbers[0], numbers[0]];
   if (numbers.length === 3) return numbers;
+  throw errorAt(value, errorMessage);
+}
+
+// Reads "0.5" or "0.5 0.2" and returns the bottom and top radii of a cone
+function readRadii(value: Token[] | undefined): number[] {
+  const errorMessage =
+    "radius expects one or two positive numbers, like: radius: 0.5 0.2;";
+  if (!value) return [0.5, 0];
+  const numbers = value.map((token) => {
+    if (token.type !== "NUMBER" || token.value < 0)
+      throw errorAt(token, errorMessage);
+    return token.value;
+  });
+
+  if (numbers.length === 1) return [numbers[0], 0];
+  if (numbers.length === 2) return numbers;
   throw errorAt(value, errorMessage);
 }
 
@@ -718,6 +739,17 @@ float sdTorus(vec3 p, vec2 t) {
 float sdCylinder(vec3 p, float h, float r) {
   vec2 d = abs(vec2(length(p.xz), p.y)) - vec2(r, h);
   return min(max(d.x, d.y), 0.0) + length(max(d, 0.0));
+}
+
+// r1 = radius at the bottom, r2 = radius at the top, h = half the height
+float sdCappedCone(vec3 p, float h, float r1, float r2) {
+  vec2 q = vec2(length(p.xz), p.y);
+  vec2 k1 = vec2(r2, h);
+  vec2 k2 = vec2(r2 - r1, 2.0 * h);
+  vec2 ca = vec2(q.x - min(q.x, (q.y < 0.0) ? r1 : r2), abs(q.y) - h);
+  vec2 cb = q - k1 + k2 * clamp(dot(k1 - q, k2) / dot(k2, k2), 0.0, 1.0);
+  float s = (cb.x < 0.0 && ca.y < 0.0) ? -1.0 : 1.0;
+  return s * sqrt(min(dot(ca, ca), dot(cb, cb)));
 }
 
 // For path objects: squared distances to a segment and to a box, in 2D

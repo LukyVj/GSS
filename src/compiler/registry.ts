@@ -2,7 +2,7 @@
 // Every property must be registered here: the documentation is generated
 // from this list, and every example is compiled by the tests.
 
-export type Shape = "cube" | "sphere" | "torus" | "path" | "cylinder"; // Later "cone" | "plane" | "mesh" ...
+export type Shape = "cube" | "sphere" | "torus" | "path" | "cylinder" | "cone"; // Later "plane" | "mesh" ...
 
 export type PropertyDef = {
   name: string;
@@ -153,12 +153,15 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "radius",
-    appliesTo: ["sphere", "torus", "cylinder"],
-    syntax: "<number>",
-    initial: "0.5 (sphere), 1 (torus), 0.5 (cylinder)",
+    appliesTo: ["sphere", "torus", "cylinder", "cone"],
+    syntax: "<number> | <number> <number> (cone: bottom top)",
+    initial: "0.5 (sphere), 1 (torus), 0.5 (cylinder), 0.5 0 (cone)",
     description:
-      "Sets the radius of the sphere or the cylinder, or the radius of the torus ring, measured to the center of its tube.",
-    examples: ["@scene { sphere; } sphere { translate: 0 1 0; radius: 1; }"],
+      "Sets the radius of the sphere or the cylinder, or the radius of the torus ring, measured to the center of its tube. A cone takes a bottom and a top radius, like border-radius takes several values: the top one is 0 by default, which makes a point, and a positive top radius makes a truncated cone.",
+    examples: [
+      "@scene { sphere; } sphere { translate: 0 1 0; radius: 1; }",
+      "@scene { cone; } cone { translate: 0 0.75 0; radius: 0.5 0.2; height: 1.5; }",
+    ],
   },
   {
     name: "thickness",
@@ -172,11 +175,11 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "height",
-    appliesTo: ["cylinder"],
+    appliesTo: ["cylinder", "cone"],
     syntax: "<number>",
     initial: "1",
     description:
-      "Sets the full height of the cylinder, along the y axis. The shape is centered on its origin: to stand it on the floor, set its y to half its height.",
+      "Sets the full height of the cylinder or the cone, along the y axis. The shape is centered on its origin: to stand it on the floor, set its y to half its height.",
     examples: [
       "@scene { cylinder; } cylinder { translate: 0 1 0; radius: 0.4; height: 2; }",
     ],
