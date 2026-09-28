@@ -6,11 +6,13 @@ import { oneDark } from "@codemirror/theme-one-dark";
 import { createRenderer } from "./runtime/renderer";
 import { connectEditor } from "./runtime/editor";
 import { encodeCode, decodeCode } from "./runtime/share";
-import { compileGSS } from "./compiler";
+import { compileGSS, compileScene } from "./compiler";
+import { toShadertoy } from "./compiler/shadertoy";
 import { EXAMPLES, renderExampleOptions } from "./playground/examples";
 
 // The playground: the GSS editor (or the GLSL it becomes) on the left, the scene on the right.
-const $ = <T extends HTMLElement>(selector: string) => document.querySelector<T>(selector)!;
+const $ = <T extends HTMLElement>(selector: string) =>
+  document.querySelector<T>(selector)!;
 
 const renderer = createRenderer($<HTMLCanvasElement>("#scene"));
 
@@ -53,6 +55,19 @@ examples.addEventListener("change", () => {
   examples.value = ""; // back to "Examples…", so the same example can be picked again
 });
 
+// ----- The export to Shadertoy button -----
+
+// Shadertoy cannot receive code from a link (and the shader is too long for a URL):
+// we copy it, in Shadertoy's format, and open a new shader where it can be pasted.
+const exportToShadertoyButton = $<HTMLButtonElement>("#export-to-shadertoy");
+exportToShadertoyButton.addEventListener("click", async () => {
+  const shader = toShadertoy(compileScene(editor.getCode()));
+  await navigator.clipboard.writeText(shader);
+  window.open("https://www.shadertoy.com/new", "_blank");
+  exportToShadertoyButton.textContent = "Copied: paste it in Shadertoy";
+  setTimeout(() => (exportToShadertoyButton.textContent = "Export to Shadertoy"), 4000);
+});
+
 // ----- The GLSL tab: the shader the GSS becomes, read-only -----
 
 const glsl = new EditorView({
@@ -63,14 +78,18 @@ const glsl = new EditorView({
       cpp(), // GLSL is close enough to C for the colors
       oneDark,
       EditorState.readOnly.of(true),
-      EditorView.theme({ "&": { height: "100%", backgroundColor: "transparent" } }),
+      EditorView.theme({
+        "&": { height: "100%", backgroundColor: "transparent" },
+      }),
     ],
   }),
 });
 
 function showGlsl(code: string): void {
   const shader = compileGSS(code);
-  glsl.dispatch({ changes: { from: 0, to: glsl.state.doc.length, insert: shader } });
+  glsl.dispatch({
+    changes: { from: 0, to: glsl.state.doc.length, insert: shader },
+  });
 }
 
 let tab: "gss" | "glsl" = "gss";
@@ -78,7 +97,9 @@ editor.onCompile((code) => {
   if (tab === "glsl") showGlsl(code);
 });
 
-for (const button of document.querySelectorAll<HTMLButtonElement>("[data-tab]")) {
+for (const button of document.querySelectorAll<HTMLButtonElement>(
+  "[data-tab]",
+)) {
   button.addEventListener("click", () => {
     tab = button.dataset.tab as "gss" | "glsl";
     $("#code").hidden = tab !== "gss";

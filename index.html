@@ -45,7 +45,8 @@
       }
       .tabs button,
       .editor select,
-      #share {
+      #share,
+      #export-to-shadertoy {
         padding: 4px 10px;
         border: 0;
         border-radius: 6px;
@@ -62,7 +63,8 @@
         background: #1b1b20;
         max-width: 11rem;
       }
-      #share {
+      #share,
+      #export-to-shadertoy {
         background: #e6e6e6;
         color: #111114;
       }
@@ -132,12 +134,25 @@
     <aside class="editor">
       <header>
         <div class="tabs" role="tablist">
-          <button type="button" role="tab" data-tab="gss" aria-selected="true">GSS</button>
-          <button type="button" role="tab" data-tab="glsl" aria-selected="false">GLSL</button>
+          <button type="button" role="tab" data-tab="gss" aria-selected="true">
+            GSS
+          </button>
+          <button
+            type="button"
+            role="tab"
+            data-tab="glsl"
+            aria-selected="false"
+          >
+            GLSL
+          </button>
         </div>
         <select id="examples" aria-label="Examples">
           <option value="" selected disabled>Examples…</option>
         </select>
+        <span class="spacer"></span>
+        <button id="export-to-shadertoy" class="button">
+          Export to Shadertoy
+        </button>
         <span class="spacer"></span>
         <span id="status" class="status ok">OK</span>
         <button type="button" id="share">Share</button>

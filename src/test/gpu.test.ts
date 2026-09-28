@@ -1,6 +1,7 @@
 import { describe, it, expect, afterAll } from "vitest";
 import { compileOnGpu, closeGpu } from "./gpu";
-import { compileGSS } from "../compiler";
+import { compileGSS, compileScene } from "../compiler";
+import { toShadertoy } from "../compiler/shadertoy";
 import { PROPERTIES } from "../compiler/registry";
 import sceneSource from "../scene.gss?raw";
 import { FIRST_SCENE } from "../docs/guide";
@@ -37,4 +38,19 @@ it("the GSS logo compiles on the GPU", async () => {
 
 it("the test scene compiles on the GPU", async () => {
   expect(await compileOnGpu(compileGSS(sceneSource))).toBe("");
+});
+
+// What Shadertoy puts around the code we paste (the part that matters to compile)
+const SHADERTOY_HEADER = `#version 300 es
+precision highp float;
+uniform vec3 iResolution;
+uniform float iTime;
+uniform vec4 iMouse;
+out vec4 fragColor;
+`;
+
+it("the Shadertoy export compiles once Shadertoy wraps it", async () => {
+  const code = toShadertoy(compileScene(sceneSource));
+  const wrapped = `${SHADERTOY_HEADER}\n${code}\nvoid main() { mainImage(fragColor, gl_FragCoord.xy); }`;
+  expect(await compileOnGpu(wrapped)).toBe("");
 });
