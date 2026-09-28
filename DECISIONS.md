@@ -218,11 +218,17 @@ The floor is added last and is never affected. The walls of a hole take the mate
 **Why**: in CSS, `width` and `height` are full sizes; nobody writes half a height. Keeping one rule for every shape means a reader never has to know how a GLSL function counts. Centered shapes rotate and scale around their middle, which is what `rotate-*` and `scale` already do for cubes, spheres and tori.
 **Accepted limits**: a shape does not stand on the floor at `translate: 0 0 0`: its y must be half its height (`translate: 0 1 0` for `height: 2`). A `transform-origin` could change that later.
 
-## 37. The universal selector *
+## 37. The universal selector \*
 
 **Decision**: `*` targets every object of the scene, never the `scene` settings. Its specificity is 0, as in CSS: a tag (1), a class (100) or an id (10000) always beats it, wherever it is written. `*` can only start a selector and can be followed by classes or an id: `*.big` is the same as `.big`. In the compiler, `*` is a selector with no tag, no id and no class, which `matches()` already accepted for every object: `parseSelector` only learns to read it.
 **Why**: CSS does the same, so every front-end developer (and every LLM) already knows what it means. It gives one place for scene-wide defaults (`* { material: matte(); }`) and is needed later for `@media (prefers-reduced-motion) { * { animation: none; } }`.
 **Accepted limits**: the cascade picks one value, it never combines them: `* { scale: 0.5; }` only changes the objects that have no `scale` of their own, and a `path.logo { scale: 0.1; }` keeps 0.1. `scale` also shrinks each object around its own center, so `* { scale: 0.5; }` makes objects smaller but does not bring them closer: to shrink the whole scene, positions included, use a scene-level scale.
+
+## 38. !important: two passes in the cascade
+
+**Decision**: a declaration ending with `!important` wins against every declaration without it, whatever their selectors. Between two `!important` declarations, specificity decides again, then the order of the file. The parser takes `! important` out of the value and marks the declaration (`important: true`, a field normal declarations do not have). `resolveStyles` walks the sorted rules twice: first the normal declarations, then the `!important` ones, which overwrite them. A `!` not followed by `important` is an error.
+**Why**: CSS does the same, so front-end developers and LLMs already know it. It is the classic tool for accessibility overrides: `@media (prefers-reduced-motion) { * { animation: none !important; } }`. Two passes keep the sort by specificity untouched: `!important` is a second cascade on top of the first.
+**Accepted limits**: the cascade still picks one value and never combines them: `* { scale: 0.5 !important; }` gives every object a scale of 0.5, it does not halve their own (the logo, scaled 0.1, becomes 5 times bigger). In `@keyframes` and in `scene { }`, `!important` is read but has no effect: the declaration counts as a normal one (CSS ignores `!important` declarations in keyframes). An animation still beats an `!important` value, where CSS would let `!important` win.
 
 ## Open questions
 

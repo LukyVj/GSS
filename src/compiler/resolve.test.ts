@@ -71,6 +71,18 @@ describe("resolveStyles", () => {
     expect(colorOf(source, 0)).toEqual([{ type: "HASH", value: "111" }]);
     expect(colorOf(source, 1)).toBeUndefined();
   });
+
+  it("!important beats an id", () => {
+    const source =
+      "@scene { cube#a; } * { color: #111 !important; } #a { color: #222; }";
+    expect(colorOf(source, 0)).toEqual([{ type: "HASH", value: "111" }]);
+  });
+
+  it("between two !important, specificity decides again", () => {
+    const source =
+      "@scene { cube#a; } * { color: #111 !important; } #a { color: #222 !important; }";
+    expect(colorOf(source, 0)).toEqual([{ type: "HASH", value: "222" }]);
+  });
 });
 
 describe("specificity", () => {

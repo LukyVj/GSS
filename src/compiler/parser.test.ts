@@ -92,4 +92,17 @@ describe("parse", () => {
       "Selector expected",
     );
   });
+
+  it("reads !important and removes it from the value", () => {
+    const [declaration] = parse(tokenize("cube { scale: 0.5 !important; }"))
+      .rules[0].declarations;
+    expect(declaration.value).toEqual([{ type: "NUMBER", value: 0.5 }]);
+    expect(declaration.important).toBe(true);
+  });
+
+  it("rejects a ! without important", () => {
+    expect(() => parse(tokenize("cube { scale: 0.5 !; }"))).toThrow(
+      '"!" must be followed by "important"',
+    );
+  });
 });

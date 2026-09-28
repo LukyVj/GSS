@@ -113,10 +113,25 @@ export function parse(tokens: Token[]): Stylesheet {
     while (peek() && !isPunct(peek(), ";") && !isPunct(peek(), "}")) {
       value.push(next());
     }
+
+    // "!important" at the end: we take it out of the value and remember it
+    const bang = value[value.length - 2];
+    const word = value[value.length - 1];
+    const important =
+      isPunct(bang, "!") &&
+      word?.type === "IDENT" &&
+      word.value === "important";
+    if (important) value.splice(value.length - 2, 2);
+    else if (value.some((token) => isPunct(token, "!")))
+      throw errorAt(value, '"!" must be followed by "important"');
+
     if (value.length === 0)
       throw errorAt(property, `The property "${property.value}" has no value`);
     if (isPunct(peek(), ";")) next(); // the ";" is optional before "}", like in CSS
-    const declaration = { property: property.value, value };
+    const declaration: Declaration = important
+      ? { property: property.value, value, important: true }
+      : { property: property.value, value };
+
     // From the name to the last value: where errors about this declaration point
     const span = spanAcross([property, ...value]);
     if (span) rememberSpan(declaration, span);

@@ -25,6 +25,7 @@ export type Rule = {
 export type Declaration = {
   property: string; // "radius"
   value: Token[]; // [NUMBER 1, NUMBER 0.28]
+  important?: boolean; // false (optional)
 };
 
 // @keyframes float { from { … } to { … } }

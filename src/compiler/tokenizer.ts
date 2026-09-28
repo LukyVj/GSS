@@ -12,7 +12,7 @@ export type Token =
 
 import { GssError, rememberSpan } from "./errors";
 
-const PUNCTUATION = "{}:;,().*+-/";
+const PUNCTUATION = "{}:;,().*+-/!";
 
 function isDigit(char: string): boolean {
   return char >= "0" && char <= "9";
@@ -31,7 +31,11 @@ function isIdentStart(char: string, next: string): boolean {
 export type Comment = { type: "COMMENT"; value: string }; // "/* hi */", with the /* */
 // Only with { recover: true }: a piece of text that is not GSS
 export type Invalid = { type: "INVALID"; value: string };
-export type Located = { token: Token | Comment | Invalid; start: number; end: number };
+export type Located = {
+  token: Token | Comment | Invalid;
+  start: number;
+  end: number;
+};
 
 // Reads the whole text, comments included, and remembers where each token is.
 // The formatter and the highlighter need this; the parser only needs tokenize().
@@ -73,7 +77,10 @@ export function scan(source: string, { recover = false } = {}): Located[] {
     if (char === "/" && next === "*") {
       const end = source.indexOf("*/", i + 2);
       if (end === -1 && !recover)
-        throw new GssError("Comment never closed", { start: i, end: source.length });
+        throw new GssError("Comment never closed", {
+          start: i,
+          end: source.length,
+        });
       i = end === -1 ? source.length : end + 2; // recovering: the comment runs to the end
       push({ type: "COMMENT", value: source.slice(start, i) });
       continue;
@@ -91,7 +98,10 @@ export function scan(source: string, { recover = false } = {}): Located[] {
       if (charAt(i) !== char) {
         // Recovering, an unclosed string runs to the end of the line
         if (!recover)
-          throw new GssError("String never closed: a quote is missing", { start, end: i });
+          throw new GssError("String never closed: a quote is missing", {
+            start,
+            end: i,
+          });
       } else {
         i++; // the closing quote
       }
@@ -131,7 +141,10 @@ export function scan(source: string, { recover = false } = {}): Located[] {
         continue;
       }
       if (name === "")
-        throw new GssError(`"${char}" must be followed by a name`, { start, end: i });
+        throw new GssError(`"${char}" must be followed by a name`, {
+          start,
+          end: i,
+        });
       push({ type: char === "@" ? "AT_KEYWORD" : "HASH", value: name });
       continue;
     }
@@ -155,7 +168,10 @@ export function scan(source: string, { recover = false } = {}): Located[] {
       push({ type: "INVALID", value: char });
       continue;
     }
-    throw new GssError(`Unexpected character "${char}"`, { start: i, end: i + 1 });
+    throw new GssError(`Unexpected character "${char}"`, {
+      start: i,
+      end: i + 1,
+    });
   }
 
   return located;

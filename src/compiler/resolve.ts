@@ -98,10 +98,14 @@ export function resolveStyles(
 
   return instances.map((instance) => {
     const styles: Styles = {};
-    for (const { rule, selector } of sortedRules) {
-      if (!matches(selector, instance)) continue;
-      for (const declaration of rule.declarations) {
-        styles[declaration.property] = declaration.value; // the next rule overwrites the previous one
+    for (const important of [false, true]) {
+      for (const { rule, selector } of sortedRules) {
+        if (!matches(selector, instance)) continue;
+        for (const declaration of rule.declarations) {
+          if ((declaration.important ?? false) !== important) continue;
+
+          styles[declaration.property] = declaration.value; // the next rule overwrites the previous one
+        }
       }
     }
     return { ...instance, styles };
