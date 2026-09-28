@@ -8,6 +8,8 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "test": "vitest",
+    "format": "node scripts/format-gss.mjs",
+    "format:check": "node scripts/format-gss.mjs --check",
     "generate-vscode-extension": "cd editors/vscode && npm run package"
   },
   "devDependencies": {

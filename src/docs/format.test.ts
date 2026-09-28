@@ -88,6 +88,10 @@ describe("formatGss with comments", () => {
     expect(compileGSS(formatGss(scene))).toBe(compileGSS(scene));
   });
 
+  it("scene.gss is already formatted (run npm run format)", () => {
+    expect(formatGss(scene)).toBe(scene);
+  });
+
   it("gives the same result when run twice", () => {
     expect(formatGss(formatGss(scene))).toBe(formatGss(scene));
   });

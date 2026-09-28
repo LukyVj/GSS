@@ -16,18 +16,25 @@
   torus#big;
 
   /* Zone 2: operations */
-  sphere#drop-a; sphere#drop-b;
-  cube#box-smooth; sphere#hole-smooth;
-  cube#box-sharp;  sphere#hole-sharp;
+  sphere#drop-a;
+  sphere#drop-b;
+  cube#box-smooth;
+  sphere#hole-smooth;
+  cube#box-sharp;
+  sphere#hole-sharp;
 
   /* Zone 3: animations */
   cube#spinner;
   sphere#ball;
 
   /* Zone 4: materials */
-  sphere#m-matte; sphere#m-gold; sphere#m-chrome; sphere#m-jelly; sphere#m-glass; cube#m-ice;
+  sphere#m-matte;
+  sphere#m-gold;
+  sphere#m-chrome;
+  sphere#m-jelly;
+  sphere#m-glass;
+  cube#m-ice;
 }
-
 
 /* ===== Scene settings ===== */
 
@@ -40,7 +47,6 @@ scene {
   camera-angle: 180deg 45deg;
   camera-spin: 100s;
 }
-
 
 /* ===== Zone 1: transforms (center) ===== */
 
@@ -82,21 +88,45 @@ scene {
   color: #d4af37;
 }
 
-
 /* ===== Zone 2: operations (back, z = -6) ===== */
 
 /* Two drops that merge */
-#drop-a { translate: -3.4 1 -6; }
-#drop-b { translate: -2.6 1.2 -6; blend: 0.05; }
+#drop-a {
+  translate: -3.4 1 -6;
+}
+
+#drop-b {
+  translate: -2.6 1.2 -6;
+  blend: 0.05;
+}
 
 /* A hole with smooth edges */
-#box-smooth  { translate: 0 1 -6; size: 1.5; }
-#hole-smooth { translate: 0 1 -6; radius: 0.95; operation: subtract; blend: 0.15; color: #ff5a36; }
+#box-smooth {
+  translate: 0 1 -6;
+  size: 1.5;
+}
+
+#hole-smooth {
+  translate: 0 1 -6;
+  radius: 0.95;
+  operation: subtract;
+  blend: 0.15;
+  color: #ff5a36;
+}
 
 /* A hole with sharp edges */
-#box-sharp  { translate: 3 1 -6; size: 1.5; color: #e8e4dc; }
-#hole-sharp { translate: 3 1 -6; radius: 0.95; operation: subtract; color: #14bc55; }
+#box-sharp {
+  translate: 3 1 -6;
+  size: 1.5;
+  color: #e8e4dc;
+}
 
+#hole-sharp {
+  translate: 3 1 -6;
+  radius: 0.95;
+  operation: subtract;
+  color: #14bc55;
+}
 
 /* ===== Zone 3: animations (front, z = 6) ===== */
 
@@ -106,9 +136,17 @@ scene {
   color: #ff5a36;
   animation: show 3s ease-in-out alternate;
 }
+
 @keyframes show {
-  from { rotate-y: 0deg;   scale: 1;   }
-  to   { rotate-y: 180deg; scale: 1.4; color: #3a7bff; }
+  from {
+    rotate-y: 0deg;
+    scale: 1;
+  }
+  to {
+    rotate-y: 180deg;
+    scale: 1.4;
+    color: #3a7bff;
+  }
 }
 
 /* Translate with percentages */
@@ -117,17 +155,54 @@ scene {
   color: #ff5a36;
   animation: float 2s ease-in-out infinite;
 }
+
 @keyframes float {
-  0%   { translate: 1.5 0.5 6; }
-  50%  { translate: 1.5 2 6; }
-  100% { translate: 1.5 0.5 6; }
+  0% {
+    translate: 1.5 0.5 6;
+  }
+  50% {
+    translate: 1.5 2 6;
+  }
+  100% {
+    translate: 1.5 0.5 6;
+  }
 }
 
 /* ===== Zone 4: materials (left, x = -7) ===== */
 
-#m-matte  { translate: -7 0.5 -3;  radius: 0.5; color: #ff5a36; }
-#m-gold   { translate: -7 0.5 -1.8; radius: 0.5; material: gold; }
-#m-chrome { translate: -7 0.5 -0.6; radius: 0.5; material: chrome; }
-#m-jelly  { translate: -7 0.5 0.6;  radius: 0.5; color: #ff5a36; material: jelly; }
-#m-glass  { translate: -7 0.6 1.8;  radius: 0.5; material: glass(1.5, hammered 0.3); }
-#m-ice    { translate: -7 0.6 3;    size: 0.9; material: ice; }
+#m-matte {
+  translate: -7 0.5 -3;
+  radius: 0.5;
+  color: #ff5a36;
+}
+
+#m-gold {
+  translate: -7 0.5 -1.8;
+  radius: 0.5;
+  material: gold;
+}
+
+#m-chrome {
+  translate: -7 0.5 -0.6;
+  radius: 0.5;
+  material: chrome;
+}
+
+#m-jelly {
+  translate: -7 0.5 0.6;
+  radius: 0.5;
+  color: #ff5a36;
+  material: jelly;
+}
+
+#m-glass {
+  translate: -7 0.6 1.8;
+  radius: 0.5;
+  material: glass(1.5, hammered 0.3);
+}
+
+#m-ice {
+  translate: -7 0.6 3;
+  size: 0.9;
+  material: ice;
+}
