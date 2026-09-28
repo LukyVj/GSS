@@ -159,7 +159,7 @@ const MATERIAL_KEYWORDS: Record<string, string> = {
   chrome: "metal(#ffffff, 0.05)",
   jelly: "jelly()",
   glass: "glass()",
-  ice: "glass(#cfeaff, 1.31, 0.25)",
+  ice: "glass(#cfeaff, 1.31, frosted 0.25)",
 };
 
 // "matte(), metal(), jelly(), gold, chrome, jelly"
@@ -171,6 +171,45 @@ function availableMaterials(): string {
     "glass()",
     ...Object.keys(MATERIAL_KEYWORDS),
   ].join(", ");
+}
+
+// The frost styles of glass(). Each one is a GLSL constant: HAMMERED…
+const FROST_STYLES = ["frosted", "wavy", "hammered", "blurred"];
+
+// Reads the frost argument of glass(): "0.4", "hammered 0.4", "0.4 hammered" or "hammered".
+// Returns the GLSL for the last two values of glass(): "0.4, HAMMERED"
+function readFrost(arg: Token[] | undefined): string {
+  // 1. No frost written → clear glass
+  if (!arg) return "0.0, FROSTED";
+
+  // 2. Read the tokens, in any order: at most one style and one amount
+  let style = "frosted";
+  let amount: number | null = null; // null = not written yet
+  for (const token of arg) {
+    if (token.type === "IDENT") {
+      if (!FROST_STYLES.includes(token.value)) {
+        throw new Error(
+          `Unknown frost style "${token.value}". Available: ${FROST_STYLES.join(", ")}`,
+        );
+      }
+      style = token.value;
+    } else if (
+      token.type === "NUMBER" &&
+      token.value >= 0 &&
+      token.value <= 1
+    ) {
+      amount = token.value;
+    } else {
+      throw new Error(
+        "glass(): frost expects a number between 0 and 1 and an optional style, like: material: glass(#ffffff, 1.5, hammered 0.4);",
+      );
+    }
+  }
+
+  // 3. A style without an amount → 0.5
+  if (amount === null) amount = 0.5;
+
+  return `${glslFloat(amount)}, ${style.toUpperCase()}`; // "frosted" → "FROSTED"
 }
 
 type Setting = { name: string; min: number; max: number; fallback: number };
@@ -281,11 +320,16 @@ function readMaterial(value: Token[] | undefined, color: string): string {
   }
 
   if (call.name === "glass") {
-    const [ior, frost] = readSettings(args, "glass", [
+    if (args.length > 2) {
+      throw new Error(
+        "glass() expects an optional color and a refraction index and a frost, like: material: glass(#ffffff, 1.5, hammered 0.4);",
+      );
+    }
+    const [ior] = readSettings(args.slice(0, 1), "glass", [
       { name: "refraction index", min: 1, max: 3, fallback: 1.5 },
-      { name: "frost", min: 0, max: 1, fallback: 0.0 },
     ]);
-    return `glass(${ownColor}, ${glslFloat(ior)}, ${glslFloat(frost)})`;
+    const frost = readFrost(args[1]);
+    return `glass(${ownColor}, ${glslFloat(ior)}, ${frost})`;
   }
 
   return `matte(${ownColor})`;
@@ -567,28 +611,35 @@ const int METAL = 1;
 const int JELLY = 2;
 const int GLASS = 3;
 
+// The frost styles of glass
+const int FROSTED = 0;
+const int WAVY = 1;
+const int HAMMERED = 2;
+const int BLURRED = 3;
+
 struct Material {
   vec3 color;
-  int kind;        // MATTE or METAL or JELLY
+  int kind;        // MATTE or METAL or JELLY or GLASS
   float roughness;
   float density;
   float ior;
+  int frostStyle;
 };
 
 Material matte(vec3 color) {
-  return Material(color, MATTE, 0.0, 0.0, 1.0);
+  return Material(color, MATTE, 0.0, 0.0, 1.0, FROSTED);
 }
 
 Material metal(vec3 color, float roughness) {
-  return Material(color, METAL, roughness, 0.0, 1.0);
+  return Material(color, METAL, roughness, 0.0, 1.0, FROSTED);
 }
 
 Material jelly(vec3 color, float density) {
-  return Material(color, JELLY, 0.0, density, 1.0);
+  return Material(color, JELLY, 0.0, density, 1.0, FROSTED);
 }
 
-Material glass(vec3 color, float ior, float frost) {
-  return Material(color, GLASS, frost, 0.0, ior);
+Material glass(vec3 color, float ior, float frost, int frostStyle) {
+  return Material(color, GLASS, frost, 0.0, ior, frostStyle);
 }
 
 // ----- Rotations -----

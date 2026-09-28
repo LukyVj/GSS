@@ -160,13 +160,13 @@ describe("material: jelly lighting", () => {
 describe("material: glass()", () => {
   it("writes the tint, the refraction index and the frost", () => {
     expect(materialOf("sphere { material: glass(#ffffff, 1.5, 0.3); }")).toBe(
-      "if (id == 1.0) return glass(vec3(1.0, 1.0, 1.0), 1.5, 0.3);  // sphere",
+      "if (id == 1.0) return glass(vec3(1.0, 1.0, 1.0), 1.5, 0.3, FROSTED);  // sphere",
     );
   });
 
   it("is clear glass by default", () => {
     expect(materialOf("sphere { color: #ff0000; material: glass(); }")).toBe(
-      "if (id == 1.0) return glass(vec3(1.0, 0.0, 0.0), 1.5, 0.0);  // sphere",
+      "if (id == 1.0) return glass(vec3(1.0, 0.0, 0.0), 1.5, 0.0, FROSTED);  // sphere",
     );
   });
 
@@ -184,15 +184,15 @@ describe("material: glass()", () => {
     );
   });
 
-  it("ice is glass(#cfeaff, 1.31, 0.25)", () => {
+  it("ice is glass(#cfeaff, 1.31, frosted 0.25)", () => {
     expect(materialOf("sphere { material: ice; }")).toBe(
-      materialOf("sphere { material: glass(#cfeaff, 1.31, 0.25); }"),
+      materialOf("sphere { material: glass(#cfeaff, 1.31, frosted 0.25); }"),
     );
   });
 
   it("knows the glass material", () => {
     expect(compileGSS("@scene { sphere; }")).toContain(
-      "Material glass(vec3 color, float ior, float frost)",
+      "Material glass(vec3 color, float ior, float frost, int frostStyle)",
     );
   });
 });
@@ -201,6 +201,52 @@ describe("material: glass lighting", () => {
   it("can march inside an object", () => {
     expect(compileGSS("@scene { sphere; }")).toContain(
       "float marchInside(vec3 ro, vec3 rd)",
+    );
+  });
+});
+
+describe("material: glass() frost styles", () => {
+  it("reads a style with its amount", () => {
+    expect(
+      materialOf("sphere { material: glass(#ffffff, 1.5, hammered 0.4); }"),
+    ).toBe(
+      "if (id == 1.0) return glass(vec3(1.0, 1.0, 1.0), 1.5, 0.4, HAMMERED);  // sphere",
+    );
+  });
+
+  it("accepts the amount before the style, like CSS", () => {
+    expect(materialOf("sphere { material: glass(1.5, 0.4 hammered); }")).toBe(
+      materialOf("sphere { material: glass(1.5, hammered 0.4); }"),
+    );
+  });
+
+  it("is frosted when no style is written", () => {
+    expect(materialOf("sphere { material: glass(#ffffff, 1.5, 0.3); }")).toBe(
+      "if (id == 1.0) return glass(vec3(1.0, 1.0, 1.0), 1.5, 0.3, FROSTED);  // sphere",
+    );
+  });
+
+  it("uses 0.5 for a style without an amount", () => {
+    expect(materialOf("sphere { material: glass(1.5, wavy); }")).toContain(
+      "0.5, WAVY)",
+    );
+  });
+
+  it("rejects an unknown style", () => {
+    expect(() =>
+      compileGSS(
+        "@scene { sphere; } sphere { material: glass(1.5, bumpy 0.4); }",
+      ),
+    ).toThrow(
+      'Unknown frost style "bumpy". Available: frosted, wavy, hammered, blurred',
+    );
+  });
+
+  it("knows the frost styles in the shader", () => {
+    const shader = compileGSS("@scene { sphere; }");
+    expect(shader).toContain("const int HAMMERED = 2;");
+    expect(shader).toContain(
+      "Material glass(vec3 color, float ior, float frost, int frostStyle)",
     );
   });
 });
