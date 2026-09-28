@@ -88,7 +88,7 @@ describe("material keywords", () => {
     expect(() =>
       compileGSS("@scene { sphere; } sphere { material: wood; }"),
     ).toThrow(
-      'Unknown material "wood". Available: matte(), metal(), jelly(), gold, chrome, jelly',
+      'Unknown material "wood". Available: matte(), metal(), jelly(), glass(), gold, chrome, jelly, glass, ice',
     );
   });
 
@@ -153,6 +153,46 @@ describe("material: jelly lighting", () => {
   it("lights jellies with shadeJelly in main()", () => {
     expect(compileGSS("@scene { sphere; }")).toContain(
       "if (m.kind == JELLY) col = shadeJelly(p, n, rd, m);",
+    );
+  });
+});
+
+describe("material: glass()", () => {
+  it("writes the tint, the refraction index and the frost", () => {
+    expect(materialOf("sphere { material: glass(#ffffff, 1.5, 0.3); }")).toBe(
+      "if (id == 1.0) return glass(vec3(1.0, 1.0, 1.0), 1.5, 0.3);  // sphere",
+    );
+  });
+
+  it("is clear glass by default", () => {
+    expect(materialOf("sphere { color: #ff0000; material: glass(); }")).toBe(
+      "if (id == 1.0) return glass(vec3(1.0, 0.0, 0.0), 1.5, 0.0);  // sphere",
+    );
+  });
+
+  it("rejects a refraction index outside [1, 3]", () => {
+    expect(() =>
+      compileGSS("@scene { sphere; } sphere { material: glass(0.5); }"),
+    ).toThrow("glass(): refraction index expects a number between 1 and 3");
+  });
+
+  it("rejects too many arguments", () => {
+    expect(() =>
+      compileGSS("@scene { sphere; } sphere { material: glass(1.5, 0.2, 3); }"),
+    ).toThrow(
+      "glass() expects an optional color and a refraction index and a frost",
+    );
+  });
+
+  it("ice is glass(#cfeaff, 1.31, 0.25)", () => {
+    expect(materialOf("sphere { material: ice; }")).toBe(
+      materialOf("sphere { material: glass(#cfeaff, 1.31, 0.25); }"),
+    );
+  });
+
+  it("knows the glass material", () => {
+    expect(compileGSS("@scene { sphere; }")).toContain(
+      "Material glass(vec3 color, float ior, float frost)",
     );
   });
 });
