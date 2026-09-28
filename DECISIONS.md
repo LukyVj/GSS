@@ -212,6 +212,12 @@ The floor is added last and is never affected. The walls of a hole take the mate
 **Why**: SVG paths are what front-end developers already copy from their design tools, and a tube is enough for icons and logos (the GSS logo is drawn in GSS: `src/playground/logo.gss`).
 **Accepted limits**: no arcs (A) yet, no filled shapes (fill + extrusion comes later). A path costs more than a sphere: the logo renders about 10 times slower than the same scene with spheres in software rendering. Up to 512 segments per path.
 
+## 36. Dimensions are full sizes, shapes are centered
+
+**Decision**: every dimension a shape reads is a full size, and every shape is centered on its origin, like `size` for the cube. `height: 2` goes from y = -1 to y = 1 around the object's `translate`. The compiler halves the value before writing the GLSL, because Inigo Quilez's distance functions expect half sizes (`sdCylinder(q, 1.0, r)` for `height: 2`). `radius` stays a radius, as its name says.
+**Why**: in CSS, `width` and `height` are full sizes; nobody writes half a height. Keeping one rule for every shape means a reader never has to know how a GLSL function counts. Centered shapes rotate and scale around their middle, which is what `rotate-*` and `scale` already do for cubes, spheres and tori.
+**Accepted limits**: a shape does not stand on the floor at `translate: 0 0 0`: its y must be half its height (`translate: 0 1 0` for `height: 2`). A `transform-origin` could change that later.
+
 ## Open questions
 
 - **Targeting multiplied ids**: should `#hero` target `hero-1`, `hero-2` and `hero-3`?

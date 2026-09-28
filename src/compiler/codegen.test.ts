@@ -200,6 +200,18 @@ describe("shape dimensions", () => {
       compileGSS("@scene { torus; } torus { radius: 2; thickness: 0.5; }"),
     ).toContain("sdTorus(q, vec2(2.0, 0.5))");
   });
+
+  it("uses the default cylinder dimensions", () => {
+    expect(compileGSS("@scene { cylinder; }")).toContain(
+      "sdCylinder(q, 0.5, 0.5)",
+    );
+  });
+
+  it("halves the height of the cylinder", () => {
+    expect(
+      compileGSS("@scene { cylinder; } cylinder { radius: 0.4; height: 2; }"),
+    ).toContain("sdCylinder(q, 1.0, 0.4)");
+  });
 });
 
 describe("operation", () => {

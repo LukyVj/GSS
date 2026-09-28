@@ -2,7 +2,7 @@
 // Every property must be registered here: the documentation is generated
 // from this list, and every example is compiled by the tests.
 
-export type Shape = "cube" | "sphere" | "torus" | "path"; // Later "cone" | "cylinder" | "plane" | "mesh" ...
+export type Shape = "cube" | "sphere" | "torus" | "path" | "cylinder"; // Later "cone" | "plane" | "mesh" ...
 
 export type PropertyDef = {
   name: string;
@@ -153,11 +153,11 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "radius",
-    appliesTo: ["sphere", "torus"],
+    appliesTo: ["sphere", "torus", "cylinder"],
     syntax: "<number>",
-    initial: "0.5 (sphere), 1 (torus)",
+    initial: "0.5 (sphere), 1 (torus), 0.5 (cylinder)",
     description:
-      "Sets the radius of the sphere, or the radius of the torus ring, measured to the center of its tube.",
+      "Sets the radius of the sphere or the cylinder, or the radius of the torus ring, measured to the center of its tube.",
     examples: ["@scene { sphere; } sphere { translate: 0 1 0; radius: 1; }"],
   },
   {
@@ -171,12 +171,23 @@ export const PROPERTIES: PropertyDef[] = [
     ],
   },
   {
+    name: "height",
+    appliesTo: ["cylinder"],
+    syntax: "<number>",
+    initial: "1",
+    description:
+      "Sets the full height of the cylinder, along the y axis. The shape is centered on its origin: to stand it on the floor, set its y to half its height.",
+    examples: [
+      "@scene { cylinder; } cylinder { translate: 0 1 0; radius: 0.4; height: 2; }",
+    ],
+  },
+  {
     name: "d",
     appliesTo: ["path"],
     syntax: 'path("<svg path>")',
     initial: "none (required)",
     description:
-      'The line a path object follows, written like the d of an SVG path, or CSS path(): M moves, L H V draw lines, C S Q T draw curves, Z closes, in capitals (absolute) or lowercase (relative). Arcs (A) are not supported yet. A path copied from an SVG keeps its way up: y goes up in the scene, down in SVG, and GSS flips it. One path unit is one scene unit, so an icon drawn in a 24 or 32 box usually needs a scale.',
+      "The line a path object follows, written like the d of an SVG path, or CSS path(): M moves, L H V draw lines, C S Q T draw curves, Z closes, in capitals (absolute) or lowercase (relative). Arcs (A) are not supported yet. A path copied from an SVG keeps its way up: y goes up in the scene, down in SVG, and GSS flips it. One path unit is one scene unit, so an icon drawn in a 24 or 32 box usually needs a scale.",
     examples: [
       '@scene { path; } path { translate: 0 1 0; d: path("M-1 0.5 C-1 -1 1 -1 1 0.5"); stroke-width: 0.25; color: #ff5a36; }',
       '@scene { path; } path { translate: 0 1.2 0; d: path("M0 0 L1 1.5 L2 0 L3 1.5 L4 0"); stroke-width: 0.3; scale: 0.5; material: gold; }',

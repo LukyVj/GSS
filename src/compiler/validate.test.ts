@@ -50,6 +50,12 @@ describe("validateProperties", () => {
     );
   });
 
+  it("rejects height on a sphere", () => {
+    expect(() => validate("sphere { height: 2; }")).toThrow(
+      '"height" only applies to cylinder',
+    );
+  });
+
   it("accepts a shape property through a class", () => {
     expect(() => validate(".big { size: 2; }")).not.toThrow();
   });
@@ -88,4 +94,3 @@ describe("validateKeyframes", () => {
     ).toThrow("translate, color, rotate-x, rotate-y, rotate-z, scale");
   });
 });
-

@@ -40,7 +40,8 @@ function readOperation(value: Token[] | undefined): string {
 
   // 3. Not found, or not exactly one value → error
   if (value.length !== 1 || !operation) {
-    throw errorAt(value, 
+    throw errorAt(
+      value,
       "operation expects union, subtract or intersect, like: operation: subtract;",
     );
   }
@@ -67,7 +68,12 @@ function readD(value: Token[] | undefined): Token & { type: "STRING" } {
   if (!value) throw new Error(`path needs a d, like: ${example}`);
   const call = readFunction(value);
   const [arg] = call?.args ?? [];
-  if (call?.name !== "path" || call.args.length !== 1 || arg.length !== 1 || arg[0].type !== "STRING") {
+  if (
+    call?.name !== "path" ||
+    call.args.length !== 1 ||
+    arg.length !== 1 ||
+    arg[0].type !== "STRING"
+  ) {
     throw errorAt(value, `d expects path("…"), like: ${example}`);
   }
   return arg[0];
@@ -76,9 +82,19 @@ function readD(value: Token[] | undefined): Token & { type: "STRING" } {
 // Reads "0 0 32 32": min-x, min-y, width, height, like the viewBox of an SVG
 function readViewBox(value: Token[] | undefined): ViewBox | null {
   if (!value) return null;
-  const numbers = value.map((token) => (token.type === "NUMBER" ? token.value : NaN));
-  if (numbers.length !== 4 || numbers.some(Number.isNaN) || numbers[2] <= 0 || numbers[3] <= 0) {
-    throw errorAt(value, "view-box expects four numbers: x, y, width and height, like: view-box: 0 0 32 32;");
+  const numbers = value.map((token) =>
+    token.type === "NUMBER" ? token.value : NaN,
+  );
+  if (
+    numbers.length !== 4 ||
+    numbers.some(Number.isNaN) ||
+    numbers[2] <= 0 ||
+    numbers[3] <= 0
+  ) {
+    throw errorAt(
+      value,
+      "view-box expects four numbers: x, y, width and height, like: view-box: 0 0 32 32;",
+    );
   }
   const [x, y, width, height] = numbers;
   return { x, y, width, height };
@@ -86,7 +102,10 @@ function readViewBox(value: Token[] | undefined): ViewBox | null {
 
 // The GLSL shape of each type of object. "q" is the point, already moved.
 // Each shape turns the object's styles into GLSL. "q" is the point, already moved.
-const SHAPES: Record<string, (styles: Styles, context: ShapeContext) => string> = {
+const SHAPES: Record<
+  string,
+  (styles: Styles, context: ShapeContext) => string
+> = {
   cube: (styles) => {
     const half = readSize(styles["size"]).map((n) => n / 2);
     const corner = Math.min(
@@ -102,6 +121,11 @@ const SHAPES: Record<string, (styles: Styles, context: ShapeContext) => string> 
     const thickness = readNumber(styles["thickness"], "thickness", 0.28);
     return `sdTorus(q, vec2(${glslFloat(radius)}, ${glslFloat(thickness)}))`;
   },
+  cylinder: (styles) => {
+    const radius = readNumber(styles["radius"], "radius", 0.5);
+    const height = readNumber(styles["height"], "height", 1);
+    return `sdCylinder(q, ${glslFloat(height / 2)}, ${glslFloat(radius)})`;
+  },
   // A tube along an SVG path (decision 35)
   path: (styles, context) => {
     const d = readD(styles["d"]);
@@ -109,7 +133,9 @@ const SHAPES: Record<string, (styles: Styles, context: ShapeContext) => string> 
     // Curves become segments that stay within a hundredth of the tube's width: smooth enough for the light
     const lines = locate(d, () => readSvgPath(d.value, width / 100)); // errors point at the path
     const viewBox = readViewBox(styles["view-box"]);
-    const code = locate(styles["d"], () => pathFunction("NAME", lines, width, viewBox));
+    const code = locate(styles["d"], () =>
+      pathFunction("NAME", lines, width, viewBox),
+    );
     const name = useFunction(context, code);
     return `${name}(q)`;
   },
@@ -139,13 +165,17 @@ export function readTranslate(value: Token[] | undefined): string {
   if (!value) return "vec3(0.0)";
   const numbers = value.map((token) => {
     if (token.type !== "NUMBER")
-      throw errorAt(value, 
+      throw errorAt(
+        value,
         "translate expects three numbers, like: translate: 0 1 0;",
       );
     return token.value;
   });
   if (numbers.length !== 3)
-    throw errorAt(value, "translate expects three numbers, like: translate: 0 1 0;");
+    throw errorAt(
+      value,
+      "translate expects three numbers, like: translate: 0 1 0;",
+    );
   return `vec3(${numbers.map(glslFloat).join(", ")})`;
 }
 // Reads one number, or returns the fallback when the property is not set
@@ -163,7 +193,8 @@ export function readNumber(
     token.value < 0 ||
     (token.value === 0 && !allowZero)
   ) {
-    throw errorAt(value, 
+    throw errorAt(
+      value,
       `${property} expects one positive number, like: ${property}: 2;`,
     );
   }
@@ -198,7 +229,10 @@ function readColor(value: Token[] | undefined, fallback = "vec3(0.9)"): string {
   if (!value) return fallback;
   const [token] = value;
   if (value.length !== 1 || token.type !== "HASH") {
-    throw errorAt(value, "color expects a hexadecimal color, like: color: #ff5a36;");
+    throw errorAt(
+      value,
+      "color expects a hexadecimal color, like: color: #ff5a36;",
+    );
   }
   const rgb = locate(token, () => hexToRgb(token.value));
   return `vec3(${rgb.map(glslFloat).join(", ")})`;
@@ -239,7 +273,8 @@ function readFrost(arg: Token[] | undefined): string {
   for (const token of arg) {
     if (token.type === "IDENT") {
       if (!FROST_STYLES.includes(token.value)) {
-        throw errorAt(token, 
+        throw errorAt(
+          token,
           `Unknown frost style "${token.value}". Available: ${FROST_STYLES.join(", ")}`,
         );
       }
@@ -251,7 +286,8 @@ function readFrost(arg: Token[] | undefined): string {
     ) {
       amount = token.value;
     } else {
-      throw errorAt(token, 
+      throw errorAt(
+        token,
         "glass(): frost expects a number between 0 and 1 and an optional style, like: material: glass(#ffffff, 1.5, hammered 0.4);",
       );
     }
@@ -279,7 +315,8 @@ function readSettings(
   // 2. Too many arguments
   if (args.length > settings.length) {
     const names = settings.map((setting) => `a ${setting.name}`).join(" and ");
-    throw errorAt(args.flat(), 
+    throw errorAt(
+      args.flat(),
       `${material}() expects an optional color and ${names}, like: ${example}`,
     );
   }
@@ -294,7 +331,8 @@ function readSettings(
       token.value < setting.min ||
       token.value > setting.max
     ) {
-      throw errorAt(args[i], 
+      throw errorAt(
+        args[i],
         `${material}(): ${setting.name} expects a number between ${setting.min} and ${setting.max}, like: ${example}`,
       );
     }
@@ -312,7 +350,8 @@ function readMaterial(value: Token[] | undefined, color: string): string {
   if (value.length === 1 && value[0].type === "IDENT") {
     const name = value[0].value;
     if (!Object.hasOwn(MATERIAL_KEYWORDS, name)) {
-      throw errorAt(value, 
+      throw errorAt(
+        value,
         `Unknown material "${name}". Available: ${availableMaterials()}`,
       );
     }
@@ -322,7 +361,10 @@ function readMaterial(value: Token[] | undefined, color: string): string {
   // 2. It must be a function
   const call = readFunction(value);
   if (!call) {
-    throw errorAt(value, "material expects a function, like: material: matte();");
+    throw errorAt(
+      value,
+      "material expects a function, like: material: matte();",
+    );
   }
 
   // 3. Known names
@@ -332,7 +374,8 @@ function readMaterial(value: Token[] | undefined, color: string): string {
     call.name !== "jelly" &&
     call.name !== "glass"
   ) {
-    throw errorAt(value, 
+    throw errorAt(
+      value,
       `Unknown material "${call.name}". Available: ${availableMaterials()}`,
     );
   }
@@ -347,7 +390,8 @@ function readMaterial(value: Token[] | undefined, color: string): string {
   // 5. matte: nothing may be left
   if (call.name === "matte") {
     if (args.length > 0) {
-      throw errorAt(value, 
+      throw errorAt(
+        value,
         "matte() expects only an optional color, like: material: matte(#ff5a36);",
       );
     }
@@ -372,7 +416,8 @@ function readMaterial(value: Token[] | undefined, color: string): string {
 
   if (call.name === "glass") {
     if (args.length > 2) {
-      throw errorAt(value, 
+      throw errorAt(
+        value,
         "glass() expects an optional color and a refraction index and a frost, like: material: glass(#ffffff, 1.5, hammered 0.4);",
       );
     }
@@ -409,7 +454,10 @@ export function readAngle(value: Token[]): number {
   if (token.unit === "rad") return token.value;
   if (token.unit === "turn") return token.value * 2 * Math.PI;
 
-  throw errorAt(value, `Unknown angle unit: "${token.unit}". Use deg, rad or turn.`);
+  throw errorAt(
+    value,
+    `Unknown angle unit: "${token.unit}". Use deg, rad or turn.`,
+  );
 }
 
 // Reads "azimuth elevation" and returns the direction toward the sun
@@ -471,7 +519,10 @@ function readDuration(value: Token[]): number {
     if (token.type === "DIMENSION" && token.unit === "ms")
       return token.value / 1000;
   }
-  throw errorAt(value, "animation needs a duration, like: animation: float 2s;");
+  throw errorAt(
+    value,
+    "animation needs a duration, like: animation: float 2s;",
+  );
 }
 
 function hasKeyword(value: Token[], word: string): boolean {
@@ -500,7 +551,8 @@ function readOffset(token: Token, name: string): number {
   if (token.type === "PERCENTAGE" && token.value >= 0 && token.value <= 100) {
     return token.value / 100;
   }
-  throw errorAt(token, 
+  throw errorAt(
+    token,
     `@keyframes ${name}: expected from, to or a percentage between 0% and 100%`,
   );
 }
@@ -603,7 +655,8 @@ export function generateShader(
   // ambient: the share of light received in the shadow; the sun gives the rest
   const ambient = readNumber(sceneStyles["ambient"], "ambient", 0.1, true);
   if (ambient > 1) {
-    throw errorAt(sceneStyles["ambient"], 
+    throw errorAt(
+      sceneStyles["ambient"],
       "ambient expects a number between 0 and 1, like: ambient: 0.3;",
     );
   }
@@ -660,6 +713,11 @@ float sdRoundBox(vec3 p, vec3 b, float r) {
 float sdTorus(vec3 p, vec2 t) {
   vec2 q = vec2(length(p.xz) - t.x, p.y);
   return length(q) - t.y;
+}
+
+float sdCylinder(vec3 p, float h, float r) {
+  vec2 d = abs(vec2(length(p.xz), p.y)) - vec2(r, h);
+  return min(max(d.x, d.y), 0.0) + length(max(d, 0.0));
 }
 
 // For path objects: squared distances to a segment and to a box, in 2D
