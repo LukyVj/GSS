@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { tokenize } from "./tokenizer";
-import { readFunction } from "./values";
+import { readFunction, readPolygon } from "./values";
 
 describe("readFunction", () => {
   it("reads a function without arguments", () => {
@@ -38,6 +38,39 @@ describe("readFunction", () => {
   it("rejects an empty argument", () => {
     expect(() => readFunction(tokenize("metal(#fff, , 0.2)"))).toThrow(
       "has an empty argument",
+    );
+  });
+});
+
+describe("readPolygon", () => {
+  it("reads one point per argument", () => {
+    expect(readPolygon(tokenize("polygon(0 1, 1 0, -1 0)"))).toEqual([
+      { x: 0, y: 1 },
+      { x: 1, y: 0 },
+      { x: -1, y: 0 },
+    ]);
+  });
+
+  it("returns null when the value is not a polygon", () => {
+    expect(readPolygon(tokenize('path("M0 0 L1 1")'))).toBeNull();
+    expect(readPolygon(tokenize("2"))).toBeNull();
+  });
+
+  it("rejects a point that is not two numbers", () => {
+    expect(() => readPolygon(tokenize("polygon(0 1, 1, -1 0)"))).toThrow(
+      "each point of polygon() needs two numbers",
+    );
+  });
+
+  it("rejects points written without commas", () => {
+    expect(() => readPolygon(tokenize("polygon(0 1 1 0 -1 0)"))).toThrow(
+      "each point of polygon() needs two numbers",
+    );
+  });
+
+  it("needs at least three points", () => {
+    expect(() => readPolygon(tokenize("polygon(0 1, 1 0)"))).toThrow(
+      "polygon() needs at least 3 points",
     );
   });
 });

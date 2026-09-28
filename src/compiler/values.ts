@@ -1,5 +1,7 @@
 // Reads values written as CSS functions: metal(#d4af37, 0.2), rgb(255 90 54)…
 import type { Token } from "./tokenizer";
+import type { Point } from "./svgpath";
+import { errorAt } from "./errors";
 
 export type FunctionCall = {
   name: string; // "metal"
@@ -39,4 +41,28 @@ export function readFunction(value: Token[]): FunctionCall | null {
     throw new Error(`${name.value}( … ) has an empty argument`);
   }
   return { name: name.value, args };
+}
+
+// Reads polygon(0 1, 1 0, -1 0), like CSS clip-path: one point per argument.
+// Returns null when the value is not a polygon.
+export function readPolygon(value: Token[]): Point[] | null {
+  const example = "like: polygon(0 1, 1 0, -1 0)";
+  const call = readFunction(value);
+  if (call?.name !== "polygon") return null;
+
+  const points = call.args.map((arg) => {
+    const [x, y] = arg;
+    if (arg.length !== 2 || x.type !== "NUMBER" || y.type !== "NUMBER") {
+      throw errorAt(
+        arg,
+        `each point of polygon() needs two numbers, ${example}`,
+      );
+    }
+    return { x: x.value, y: y.value };
+  });
+
+  if (points.length < 3) {
+    throw errorAt(value, `polygon() needs at least 3 points, ${example}`);
+  }
+  return points;
 }
