@@ -2,7 +2,14 @@
 // Every property must be registered here: the documentation is generated
 // from this list, and every example is compiled by the tests.
 
-export type Shape = "cube" | "sphere" | "torus" | "path" | "cylinder" | "cone" | "capsule"; // Later "plane" | "mesh" ...
+export type Shape =
+  | "cube"
+  | "sphere"
+  | "torus"
+  | "path"
+  | "cylinder"
+  | "cone"
+  | "capsule"; // Later "plane" | "mesh" ...
 
 export type PropertyDef = {
   name: string;
@@ -18,6 +25,23 @@ export type PropertyDef = {
 export type AtRuleDef = {
   name: string; // without the @: "keyframes"
   syntax: string;
+  description: string;
+  examples: string[];
+};
+
+// A shape that can be declared in @scene. Its own properties are not listed here:
+// the docs find them in PROPERTIES, through appliesTo.
+export type ShapeDef = {
+  name: Shape; // the Shape type checks the spelling
+  description: string;
+  examples: string[];
+};
+
+// A way to target objects, or to win the cascade: cube, .class, #id, *, a, b, !important
+export type SelectorDef = {
+  name: string; // what the reader writes: "*", ".class"
+  anchor: string; // its id in the docs: "selector-universal" (a name like "*" cannot be an id)
+  specificity: string; // shown as is: "0", "100", or a sentence
   description: string;
   examples: string[];
 };
@@ -155,7 +179,8 @@ export const PROPERTIES: PropertyDef[] = [
     name: "radius",
     appliesTo: ["sphere", "torus", "cylinder", "cone", "capsule"],
     syntax: "<number> | <number> <number> (cone: bottom top)",
-    initial: "0.5 (sphere), 1 (torus), 0.5 (cylinder), 0.5 0 (cone), 0.25 (capsule)",
+    initial:
+      "0.5 (sphere), 1 (torus), 0.5 (cylinder), 0.5 0 (cone), 0.25 (capsule)",
     description:
       "Sets the radius of the sphere, the cylinder or the capsule, or the radius of the torus ring, measured to the center of its tube. A cone takes a bottom and a top radius, like border-radius takes several values: the top one is 0 by default, which makes a point, and a positive top radius makes a truncated cone.",
     examples: [
@@ -328,6 +353,116 @@ export const AT_RULES: AtRuleDef[] = [
     examples: [
       "@scene { sphere; } sphere { animation: float 2s ease-in-out alternate; } @keyframes float { from { translate: 0 1 0; } to { translate: 0 2 0; } }",
       "@scene { cube; } cube { translate: 0 0.5 0; animation: pulse 1s; } @keyframes pulse { 0%, 100% { scale: 1; } 50% { scale: 1.3; color: #ff5a36; } }",
+    ],
+  },
+];
+
+export const SELECTORS: SelectorDef[] = [
+  {
+    name: "<shape>",
+    anchor: "selector-type",
+    specificity: "1",
+    description:
+      "A shape name targets every object of that shape. Every shape is listed in the Shapes section.",
+    examples: [
+      "@scene { cube; sphere; } cube { translate: -0.8 0.5 0; color: #ff5a36; } sphere { translate: 0.8 0.5 0; }",
+    ],
+  },
+  {
+    name: ".class",
+    anchor: "selector-class",
+    specificity: "100 per class",
+    description:
+      "Targets every object that has this class in @scene. An object can have several classes, and a selector can ask for several: .a.b.",
+    examples: [
+      "@scene { cube#a.red; cube#b; } #a { translate: -0.8 0.5 0; } #b { translate: 0.8 0.5 0; } .red { color: #ff5a36; }",
+    ],
+  },
+  {
+    name: "#id",
+    anchor: "selector-id",
+    specificity: "10000",
+    description:
+      "Targets the object with this id. An id multiplied in @scene (torus#hero * 3) is numbered: hero-1, hero-2, hero-3.",
+    examples: [
+      "@scene { sphere#hero; sphere; } sphere { translate: 0.8 0.5 0; } #hero { translate: -0.8 0.5 0; color: #ff5a36; }",
+    ],
+  },
+  {
+    name: "*",
+    anchor: "selector-universal",
+    specificity: "0",
+    description:
+      "Targets every object, never the scene settings. Any other selector beats it, wherever it is written: use it for defaults.",
+    examples: [
+      "@scene { cube; sphere; } * { color: #ff5a36; } cube { translate: -0.8 0.5 0; } sphere { translate: 0.8 0.5 0; color: #3ad16b; }",
+    ],
+  },
+  {
+    name: "a, b",
+    anchor: "selector-list",
+    specificity: "Each selector keeps its own",
+    description:
+      "A selector list gives the same declarations to every selector it names, like writing the rule once for each.",
+    examples: [
+      "@scene { cube#a; cube#b; sphere; } #a, #b { color: #ff5a36; } #a { translate: -1.2 0.5 0; } #b { translate: 0 0.5 0; } sphere { translate: 1.2 0.5 0; }",
+    ],
+  },
+  {
+    name: "!important",
+    anchor: "selector-important",
+    specificity: "Beats every declaration without it",
+    description:
+      "Written after a value, it makes the declaration win against every normal one, whatever their selectors. Between two !important declarations, specificity decides again. The cascade picks one value and never combines them: * { scale: 0.5 !important; } gives every object a scale of 0.5, it does not halve their own.",
+    examples: [
+      "@scene { cube#a; sphere; } * { color: #ff5a36 !important; } #a { translate: -0.8 0.5 0; color: #3ad16b; } sphere { translate: 0.8 0.5 0; }",
+    ],
+  },
+];
+
+// Every shape of SHAPES in codegen.ts must be documented here: a test checks it
+export const SHAPE_DOCS: ShapeDef[] = [
+  {
+    name: "cube",
+    description:
+      "A box with slightly rounded edges, centered on its origin: 1 × 1 × 1 by default.",
+    examples: ["@scene { cube; } cube { translate: 0 0.5 0; }"],
+  },
+  {
+    name: "sphere",
+    description: "A ball centered on its origin, with a radius of 0.5 by default.",
+    examples: ["@scene { sphere; } sphere { translate: 0 0.5 0; }"],
+  },
+  {
+    name: "torus",
+    description:
+      "A ring lying flat around the y axis: a radius of 1 to the center of its tube, and a tube of 0.28 by default.",
+    examples: ["@scene { torus; } torus { translate: 0 0.28 0; }"],
+  },
+  {
+    name: "cylinder",
+    description:
+      "A cylinder standing on the y axis, centered on its origin: a radius of 0.5 and a height of 1 by default.",
+    examples: ["@scene { cylinder; } cylinder { translate: 0 0.5 0; }"],
+  },
+  {
+    name: "cone",
+    description:
+      "A cone standing on the y axis, centered on its origin, pointing up: a radius of 0.5 and a height of 1 by default. A second radius makes a truncated cone.",
+    examples: ["@scene { cone; } cone { translate: 0 0.5 0; }"],
+  },
+  {
+    name: "capsule",
+    description:
+      "A cylinder with round ends, standing on the y axis and centered on its origin. Its height counts the round ends: a radius of 0.25 and a height of 1 by default.",
+    examples: ["@scene { capsule; } capsule { translate: 0 0.5 0; }"],
+  },
+  {
+    name: "path",
+    description:
+      "A tube with round ends that follows an SVG path. It needs a d; stroke-width and view-box work like in SVG.",
+    examples: [
+      '@scene { path; } path { translate: 0 1 0; d: path("M-1 0.5 C-1 -1 1 -1 1 0.5"); stroke-width: 0.25; color: #ff5a36; }',
     ],
   },
 ];

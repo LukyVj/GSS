@@ -1,4 +1,9 @@
-import type { PropertyDef, AtRuleDef } from "../compiler/registry";
+import type {
+  PropertyDef,
+  AtRuleDef,
+  SelectorDef,
+  ShapeDef,
+} from "../compiler/registry";
 import { formatGss } from "./format";
 import { escapeHtml } from "./escape";
 import { highlightGss } from "./highlight";
@@ -59,6 +64,47 @@ export function renderAtRule(atRule: AtRuleDef): string {
         <dd><code>${escapeHtml(atRule.syntax)}</code></dd>
       </dl>
       ${renderExamples(atRule.examples)}
+    </article>`;
+}
+
+// The HTML of one selector. Its anchor is not its name: "*" or ".class" cannot be an id
+export function renderSelector(selector: SelectorDef): string {
+  return `
+    <article class="property" id="${escapeHtml(selector.anchor)}">
+      <h3><code>${escapeHtml(selector.name)}</code></h3>
+      <p>${escapeHtml(selector.description)}</p>
+      <dl>
+        <dt>Specificity</dt>
+        <dd>${escapeHtml(selector.specificity)}</dd>
+      </dl>
+      ${renderExamples(selector.examples)}
+    </article>`;
+}
+
+// The HTML of one shape. Its own properties come from the registry (appliesTo),
+// so a new shape property shows up here without touching this list.
+export function renderShape(shape: ShapeDef, properties: PropertyDef[]): string {
+  const own = properties.filter(
+    (property) =>
+      Array.isArray(property.appliesTo) && property.appliesTo.includes(shape.name),
+  );
+  const links = own
+    .map(
+      (property) =>
+        `<a href="#${escapeHtml(property.name)}"><code>${escapeHtml(property.name)}</code></a>`,
+    )
+    .join(", ");
+  return `
+    <article class="property" id="shape-${escapeHtml(shape.name)}">
+      <h3><code>${escapeHtml(shape.name)}</code></h3>
+      <p>${escapeHtml(shape.description)}</p>
+      <dl>
+        <dt>Own properties</dt>
+        <dd>${links || "none"}</dd>
+        <dt>Also</dt>
+        <dd><a href="#object-properties">every object property</a></dd>
+      </dl>
+      ${renderExamples(shape.examples)}
     </article>`;
 }
 
@@ -123,7 +169,8 @@ function renderTocTimelines(sections: Section[]): string {
 
 // One hand-written entry of "Getting started"
 function renderGuideEntry(entry: GuideEntry): string {
-  const paragraphs = (list: string[] = []) => list.map((text) => `<p>${text}</p>`).join("\n      ");
+  const paragraphs = (list: string[] = []) =>
+    list.map((text) => `<p>${text}</p>`).join("\n      ");
   return `
     <article class="guide" id="${escapeHtml(entry.anchor)}">
       <h3>${escapeHtml(entry.label)}</h3>
@@ -145,6 +192,8 @@ function renderSection(section: Section): string {
 export function renderDocs(
   properties: PropertyDef[],
   atRules: AtRuleDef[] = [],
+  selectors: SelectorDef[] = [],
+  shapes: ShapeDef[] = [],
 ): string {
   const propertyEntries = (belongs: (property: PropertyDef) => boolean) =>
     properties.filter(belongs).map((property) => ({
@@ -170,6 +219,24 @@ export function renderDocs(
         anchor: `at-${atRule.name}`,
         label: `@${atRule.name}`,
         html: renderAtRule(atRule),
+      })),
+    },
+    {
+      id: "selectors",
+      title: "Selectors and cascade",
+      entries: selectors.map((selector) => ({
+        anchor: selector.anchor,
+        label: selector.name,
+        html: renderSelector(selector),
+      })),
+    },
+    {
+      id: "shapes",
+      title: "Shapes",
+      entries: shapes.map((shape) => ({
+        anchor: `shape-${shape.name}`,
+        label: shape.name,
+        html: renderShape(shape, properties),
       })),
     },
     {

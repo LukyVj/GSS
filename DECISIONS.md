@@ -230,6 +230,12 @@ The floor is added last and is never affected. The walls of a hole take the mate
 **Why**: CSS does the same, so front-end developers and LLMs already know it. It is the classic tool for accessibility overrides: `@media (prefers-reduced-motion) { * { animation: none !important; } }`. Two passes keep the sort by specificity untouched: `!important` is a second cascade on top of the first.
 **Accepted limits**: the cascade still picks one value and never combines them: `* { scale: 0.5 !important; }` gives every object a scale of 0.5, it does not halve their own (the logo, scaled 0.1, becomes 5 times bigger). In `@keyframes` and in `scene { }`, `!important` is read but has no effect: the declaration counts as a normal one (CSS ignores `!important` declarations in keyframes). An animation still beats an `!important` value, where CSS would let `!important` win.
 
+## 39. Selectors and shapes are documented from the registry
+
+**Decision**: the docs have two new sections, generated like the others: "Selectors and cascade" (`SELECTORS`: `<shape>`, `.class`, `#id`, `*`, `a, b`, `!important`, each with its specificity) and "Shapes" (`SHAPE_DOCS`: one entry per shape, with a description and its default dimensions). A shape does not list its own properties: `renderShape` finds them in `PROPERTIES` through `appliesTo`. `codegen.ts` exports `shapeNames()`, and a test checks that `SHAPE_DOCS` documents exactly those shapes. Selector anchors are written by hand (`selector-universal`), shape anchors are prefixed (`shape-cone`).
+**Why**: selectors and the cascade are the heart of "the CSS of the 3D web", and they were documented nowhere. The registry stays the single source (decision 12): every example compiles on the CPU and on the GPU, and a new shape cannot ship without its entry. Reading the properties from `appliesTo` means a new shape property shows up on its shape without touching the docs. A name like `*` or `.class` cannot be an HTML id or a CSS timeline name, hence the anchors.
+**Accepted limits**: the specificity of a selector is written as text, not computed by `specificity()`: nothing checks they agree. Descriptions are plain text (escaped), so they cannot link to another section.
+
 ## Open questions
 
 - **Targeting multiplied ids**: should `#hero` target `hero-1`, `hero-2` and `hero-3`?
@@ -238,3 +244,6 @@ The floor is added last and is never affected. The walls of a hole take the mate
 - **Validation inside `@keyframes`**: declarations in frames are not checked yet. An unknown or non-animatable property is silently ignored.
 - **Animation keywords**: every animation loops. `infinite` is accepted but changes nothing, and there is no iteration count, `animation-delay` or `animation-direction: reverse` yet.
 - **Colors in operations**: blended objects switch color halfway instead of mixing (decision 19).
+
+git add src/compiler/tokenizer.ts src/compiler/ast.ts src/compiler/parser.ts src/compiler/resolve.ts src/compiler/parser.test.ts src/compiler/resolve.test.ts DECISIONS.md
+git commit -m "\!important: beats every normal declaration"

@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { PROPERTIES, AT_RULES } from "./registry";
+import { PROPERTIES, AT_RULES, SELECTORS, SHAPE_DOCS } from "./registry";
+import { shapeNames } from "./codegen";
 import { compileGSS } from "./index";
 
 describe("registry", () => {
@@ -66,7 +67,10 @@ describe("at-rules", () => {
   });
 
   it("documents @scene and @keyframes", () => {
-    expect(AT_RULES.map((atRule) => atRule.name)).toEqual(["scene", "keyframes"]);
+    expect(AT_RULES.map((atRule) => atRule.name)).toEqual([
+      "scene",
+      "keyframes",
+    ]);
   });
 
   it("gives every at-rule a description and at least one example", () => {
@@ -88,6 +92,62 @@ describe("at-rules", () => {
     for (const atRule of AT_RULES) {
       for (const example of atRule.examples) {
         it(`@${atRule.name}: ${example}`, () => {
+          expect(() => compileGSS(example)).not.toThrow();
+        });
+      }
+    }
+  });
+});
+
+describe("selectors", () => {
+  it("has no duplicate anchors", () => {
+    const anchors = SELECTORS.map((selector) => selector.anchor);
+    expect(new Set(anchors).size).toBe(anchors.length);
+  });
+
+  it("gives every selector a description and at least one example", () => {
+    for (const selector of SELECTORS) {
+      expect(selector.description, selector.name).not.toBe("");
+      expect(selector.examples.length, selector.name).toBeGreaterThan(0);
+    }
+  });
+
+  describe("every documented example compiles", () => {
+    for (const selector of SELECTORS) {
+      for (const example of selector.examples) {
+        it(`${selector.name}: ${example}`, () => {
+          expect(() => compileGSS(example)).not.toThrow();
+        });
+      }
+    }
+  });
+});
+
+describe("shapes", () => {
+  it("documents every shape the compiler can draw, and only those", () => {
+    const documented = SHAPE_DOCS.map((shape) => shape.name).sort();
+    expect(documented).toEqual(shapeNames().sort());
+  });
+
+  it("gives every shape a description and at least one example", () => {
+    for (const shape of SHAPE_DOCS) {
+      expect(shape.description, shape.name).not.toBe("");
+      expect(shape.examples.length, shape.name).toBeGreaterThan(0);
+    }
+  });
+
+  it("uses the shape in each of its examples", () => {
+    for (const shape of SHAPE_DOCS) {
+      for (const example of shape.examples) {
+        expect(example, shape.name).toContain(`@scene { ${shape.name}`);
+      }
+    }
+  });
+
+  describe("every documented example compiles", () => {
+    for (const shape of SHAPE_DOCS) {
+      for (const example of shape.examples) {
+        it(`${shape.name}: ${example}`, () => {
           expect(() => compileGSS(example)).not.toThrow();
         });
       }

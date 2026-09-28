@@ -158,6 +158,11 @@ const SHAPES: Record<
   },
 };
 
+// The names of the shapes the compiler can draw: the docs must list them all
+export function shapeNames(): string[] {
+  return Object.keys(SHAPES);
+}
+
 // GLSL requires "1.0" and rejects "1" where it expects a float
 function glslFloat(n: number): string {
   const text = String(n);
