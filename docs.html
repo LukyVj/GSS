@@ -58,6 +58,7 @@
       }
       .toc a {
         color: inherit;
+        text-decoration: none; /* the underline marks the link of what is being read */
       }
 
       /* animation-timeline: scroll; */
@@ -76,8 +77,8 @@
         margin-top: 0.75rem;
       }
 
-      /* Active le comportement si le navigateur le supporte
-   et si l'écran offre assez de place à gauche. */
+      /* Docks the table of contents on the left once it scrolls out,
+         when the browser supports it and the screen is wide enough */
       @supports (animation-timeline: view()) {
         @media (min-width: 90rem) {
           .toc-slot {
@@ -89,7 +90,7 @@
           .toc {
             animation: dock-toc 1ms steps(1, end) both;
 
-            /* À déclarer APRÈS le shorthand animation. */
+            /* after the animation shorthand, which resets it */
             animation-timeline: --toc;
             animation-range: exit 0% exit 100%;
           }
@@ -114,9 +115,36 @@
         }
       }
 
-      .TOC {
+      .toc {
         overflow: auto;
         z-index: 10;
+      }
+
+      /* ----- The link of what is being read -----
+         Each section and each entry has a view timeline, and its link follows it.
+         renderDocs() generates the names from the registry (a <style> after the
+         table of contents), so a new property is highlighted with no change here. */
+      @supports (timeline-scope: --a) and (animation-timeline: view()) {
+        /* "Being read" = crossing a thin band at 25% of the screen height,
+           so only one entry (and its section) is highlighted at a time */
+        #docs section[id],
+        #docs article[id] {
+          view-timeline-inset: 25% 74%;
+        }
+        .toc a {
+          animation: toc-reading 1ms linear none;
+          animation-range: cover 0% cover 100%; /* after the shorthand, which resets it */
+          /* animation-timeline: set per link by the generated <style> */
+        }
+      }
+
+      @keyframes toc-reading {
+        from,
+        to {
+          color: #b4235a;
+          text-decoration: underline 2px;
+          text-underline-offset: 3px;
+        }
       }
 
       /* ----- Examples and their "Try it" button ----- */

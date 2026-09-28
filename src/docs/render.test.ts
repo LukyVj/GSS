@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { escapeHtml, renderProperty, renderAtRule, renderDocs } from "./render";
+import {
+  escapeHtml,
+  renderProperty,
+  renderAtRule,
+  renderDocs,
+  timelineName,
+} from "./render";
 import { highlightGss } from "./highlight";
 import {
   PROPERTIES,
@@ -105,6 +111,22 @@ describe("renderDocs", () => {
   it("documents every at-rule", () => {
     for (const atRule of AT_RULES) {
       expect(html, atRule.name).toContain(`id="at-${atRule.name}"`);
+    }
+  });
+
+  it("lets every section, property and at-rule highlight its link while it is read", () => {
+    const anchors = [
+      "at-rules",
+      "object-properties",
+      "scene-properties",
+      ...PROPERTIES.map((property) => property.name),
+      ...AT_RULES.map((atRule) => `at-${atRule.name}`),
+    ];
+    for (const anchor of anchors) {
+      const name = timelineName(anchor);
+      expect(html, anchor).toContain(`#${anchor} { view-timeline: ${name} block; }`);
+      expect(html, anchor).toContain(`.toc a[href="#${anchor}"] { animation-timeline: ${name}; }`);
+      expect(html, anchor).toMatch(new RegExp(`timeline-scope:[^;]*${name}[,;]`));
     }
   });
 

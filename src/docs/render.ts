@@ -91,6 +91,35 @@ function renderToc(sections: Section[]): string {
     </div>`;
 }
 
+// The name of the scroll timeline of a section or an entry: "translate" → "--toc-translate"
+export function timelineName(id: string): string {
+  return `--toc-${id}`;
+}
+
+// Highlights the table of contents link of what is being read, in pure CSS.
+// Each section and each entry exposes a view timeline, and its link in the table of contents
+// follows it. Only the names are generated here, from the same list as the page, so a new
+// property is highlighted without touching the CSS; the look lives in docs.html.
+function renderTocTimelines(sections: Section[]): string {
+  const ids = sections.flatMap((section) => [
+    section.id,
+    ...section.entries.map((entry) => entry.anchor),
+  ]);
+  const rules = ids.map(
+    (id) =>
+      `#${id} { view-timeline: ${timelineName(id)} block; }\n` +
+      `.toc a[href="#${id}"] { animation-timeline: ${timelineName(id)}; }`,
+  );
+  return `
+    <style>
+      @supports (timeline-scope: --a) and (animation-timeline: view()) {
+        /* The links and the sections are far apart: the root makes the names visible to both */
+        :root { timeline-scope: ${ids.map(timelineName).join(", ")}; }
+        ${rules.join("\n        ")}
+      }
+    </style>`;
+}
+
 function renderSection(section: Section): string {
   return `
     <section id="${section.id}">
@@ -139,5 +168,6 @@ export function renderDocs(
       <p>Language reference, generated from the registry.</p>
     </header>
     ${renderToc(sections)}
+    ${renderTocTimelines(sections)}
     ${sections.map(renderSection).join("\n")}`;
 }
