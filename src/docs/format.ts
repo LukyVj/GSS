@@ -58,7 +58,9 @@ export function formatGss(code: string): string {
 
     if (token.type !== "COMMENT") {
       afterColon = isDeclarationColon;
-      if (headLength === 0) startsWithScene = token.type === "AT_KEYWORD" && token.value === "scene";
+      if (headLength === 0)
+        startsWithScene =
+          token.type === "AT_KEYWORD" && token.value === "scene";
       headLength++;
     }
 
@@ -70,6 +72,7 @@ export function formatGss(code: string): string {
     if (is("}")) blocks.pop();
     if (is(";") || is("}") || is("{")) headLength = 0;
     if (is(";") || is("}")) needBreak = true;
+    if (is(",") && depth === 0) needBreak = true;
   });
 
   return out.trim() + "\n";

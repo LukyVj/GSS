@@ -41,6 +41,19 @@ describe("resolveStyles", () => {
       ),
     ).toEqual([{ type: "HASH", value: "111" }]);
   });
+
+  it("a selector list styles every object it names", () => {
+    const source = "@scene { cube#a; cube#b; } #a, #b { color: #111; }";
+    expect(colorOf(source, 0)).toEqual([{ type: "HASH", value: "111" }]);
+    expect(colorOf(source, 1)).toEqual([{ type: "HASH", value: "111" }]);
+  });
+
+  it("each selector of a list keeps its own specificity", () => {
+    // #a (id) beats .c, even though the .c rule comes later
+    const source =
+      "@scene { cube#a.c; } .c, #a { color: #111; } .c { color: #222; }";
+    expect(colorOf(source, 0)).toEqual([{ type: "HASH", value: "111" }]);
+  });
 });
 
 describe("specificity", () => {

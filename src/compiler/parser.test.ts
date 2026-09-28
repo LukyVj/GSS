@@ -76,4 +76,20 @@ describe("parse", () => {
   it("rejects @keyframes without a name", () => {
     expect(() => parseGSS("@keyframes { from {} }")).toThrow();
   });
+
+  it("splits a selector list into one rule per selector, sharing the declarations", () => {
+    const { rules } = parseGSS("#a, #b { color: #fff; }");
+    expect(rules.map((rule) => rule.selector)).toEqual([
+      [{ type: "HASH", value: "a" }],
+      [{ type: "HASH", value: "b" }],
+    ]);
+    expect(rules[0].declarations).toBe(rules[1].declarations); // the same array, not a copy
+  });
+
+  it("refuses an empty selector in a list", () => {
+    expect(() => parseGSS("#a, { color: #fff; }")).toThrow("Selector expected");
+    expect(() => parseGSS(", #a { color: #fff; }")).toThrow(
+      "Selector expected",
+    );
+  });
 });

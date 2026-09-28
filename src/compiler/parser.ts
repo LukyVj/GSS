@@ -18,7 +18,8 @@ export function parse(tokens: Token[]): Stylesheet {
   // Takes the current token and advances
   const next = (): Token => {
     const token = tokens[pos];
-    if (!token) throw errorAt(tokens[tokens.length - 1], "Unexpected end of file");
+    if (!token)
+      throw errorAt(tokens[tokens.length - 1], "Unexpected end of file");
     pos++;
     return token;
   };
@@ -102,7 +103,10 @@ export function parse(tokens: Token[]): Stylesheet {
   function parseDeclaration(): Declaration {
     const property = next();
     if (property.type !== "IDENT") {
-      throw errorAt(property, `Property name expected, but found "${property.value}"`);
+      throw errorAt(
+        property,
+        `Property name expected, but found "${property.value}"`,
+      );
     }
     expectPunct(":");
     const value: Token[] = [];
@@ -132,13 +136,24 @@ export function parse(tokens: Token[]): Stylesheet {
     return declarations;
   }
 
-  // torus#hero { ... }
-  function parseRule(): Rule {
-    const selector: Token[] = [];
+  // #a, #b { ... }: one rule per selector, sharing the same declarations, like CSS
+  function parseRules(): Rule[] {
+    const selectors: Token[][] = [[]]; // the last one is the selector being read
     while (peek() && !isPunct(peek(), "{")) {
-      selector.push(next());
+      const token = next();
+      if (isPunct(token, ",")) {
+        if (selectors[selectors.length - 1].length === 0)
+          throw errorAt(token, 'Selector expected before ","');
+        selectors.push([]); // a new, empty selector starts
+      } else {
+        selectors[selectors.length - 1].push(token); // the token goes into the current selector
+      }
     }
-    return { selector, declarations: parseDeclarationBlock() };
+    if (selectors[selectors.length - 1].length === 0)
+      throw errorAt(peek(), 'Selector expected before "{"');
+
+    const declarations = parseDeclarationBlock();
+    return selectors.map((selector) => ({ selector, declarations }));
   }
 
   // @keyframes float { from { ... } 50% { ... } to { ... } }
@@ -183,7 +198,7 @@ export function parse(tokens: Token[]): Stylesheet {
         throw errorAt(token, `@${token.value} isn't supported yet`);
       }
     } else {
-      stylesheet.rules.push(parseRule());
+      stylesheet.rules.push(...parseRules());
     }
   }
 

@@ -52,6 +52,20 @@ cube {
   });
 });
 
+describe("multiple selectors", () => {
+  it("puts each selector of a list on its own line", () => {
+    expect(formatGss("#a,#b{color:#fff;}")).toBe(
+      "#a,\n#b {\n  color: #fff;\n}\n",
+    );
+  });
+
+  it("keeps the offsets of @keyframes on one line", () => {
+    expect(formatGss("@keyframes k { 0%, 100% { scale: 1; } }")).toContain(
+      "  0%, 100% {\n",
+    );
+  });
+});
+
 describe("formatGss with comments", () => {
   it("keeps a comment on its own line", () => {
     expect(formatGss("@scene {\n/* shapes */\ncube; }")).toBe(
