@@ -1,8 +1,8 @@
 {
   "name": "gss-language",
-  "displayName": "GSS — GPU Style Sheets",
-  "description": "Syntax highlighting and formatting for GSS",
-  "version": "0.1.0",
+  "displayName": "GSS \u2014 GPU Style Sheets",
+  "description": "Syntax highlighting, file icon and formatting for GSS",
+  "version": "0.2.0",
   "publisher": "lukyvj",
   "engines": {
     "vscode": "^1.80.0"
@@ -26,7 +26,11 @@
         "extensions": [
           ".gss"
         ],
-        "configuration": "./language-configuration.json"
+        "configuration": "./language-configuration.json",
+        "icon": {
+          "light": "./icons/gss-light.svg",
+          "dark": "./icons/gss-dark.svg"
+        }
       }
     ],
     "grammars": [
@@ -53,5 +57,6 @@
     "@types/vscode": "^1.80.0",
     "@vscode/vsce": "^3.2.0",
     "esbuild": "^0.25.0"
-  }
+  },
+  "icon": "icon.png"
 }
