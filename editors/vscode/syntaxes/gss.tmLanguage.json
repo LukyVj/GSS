@@ -1,0 +1,27 @@
+{
+  "scopeName": "source.gss",
+  "name": "GSS",
+  "patterns": [
+    { "include": "#comment" },
+    { "include": "#at-rule" },
+    { "include": "#number" }
+  ],
+  "repository": {
+    "comment": {
+      "name": "comment.block.gss",
+      "begin": "/\\*",
+      "end": "\\*/"
+    },
+    "at-rule": {
+      "match": "@(scene|keyframes)\\b",
+      "name": "keyword.control.at-rule.gss"
+    },
+    "number": {
+      "match": "(?<![\\w#.-])(-?(?:\\d+\\.?\\d*|\\.\\d+))(deg|rad|turn|ms|s|%)?",
+      "captures": {
+        "1": { "name": "constant.numeric.gss" },
+        "2": { "name": "keyword.other.unit.gss" }
+      }
+    }
+  }
+}

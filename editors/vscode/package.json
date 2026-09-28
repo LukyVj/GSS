@@ -1,0 +1,38 @@
+{
+  "name": "gss-language",
+  "displayName": "GSS — GPU Style Sheets",
+  "description": "Syntax highlighting for GSS",
+  "version": "0.0.1",
+  "publisher": "lukyvj",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "gss",
+        "aliases": [
+          "GSS",
+          "gss"
+        ],
+        "extensions": [
+          ".gss"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "gss",
+        "scopeName": "source.gss",
+        "path": "./syntaxes/gss.tmLanguage.json"
+      }
+    ]
+  },
+  "scripts": {
+    "package": "npx @vscode/vsce package --allow-missing-repository --skip-license"
+  }
+}
