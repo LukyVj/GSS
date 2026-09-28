@@ -254,6 +254,30 @@ describe("shape dimensions", () => {
       compileGSS("@scene { capsule; } capsule { radius: 1; height: 1; }"),
     ).toThrow("capsule height must be at least twice its radius");
   });
+
+  it("uses the default plane dimensions", () => {
+    expect(compileGSS("@scene { plane; }")).toContain(
+      "sdRoundBox(q, vec3(0.5, 0.01, 0.5), 0.0)",
+    );
+  });
+
+  it("reads the width and the depth of a plane", () => {
+    expect(compileGSS("@scene { plane; } plane { size: 4 2; }")).toContain(
+      "sdRoundBox(q, vec3(2.0, 0.01, 1.0), 0.0)",
+    );
+  });
+
+  it("makes a square plane with one size", () => {
+    expect(compileGSS("@scene { plane; } plane { size: 3; }")).toContain(
+      "sdRoundBox(q, vec3(1.5, 0.01, 1.5), 0.0)",
+    );
+  });
+
+  it("rejects three sizes on a plane", () => {
+    expect(() =>
+      compileGSS("@scene { plane; } plane { size: 1 2 3; }"),
+    ).toThrow("size expects one or two positive numbers on a plane");
+  });
 });
 
 describe("operation", () => {

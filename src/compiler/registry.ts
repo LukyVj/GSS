@@ -9,7 +9,8 @@ export type Shape =
   | "path"
   | "cylinder"
   | "cone"
-  | "capsule"; // Later "plane" | "mesh" ...
+  | "capsule"
+  | "plane"; // Later "mesh" ...
 
 export type PropertyDef = {
   name: string;
@@ -158,12 +159,15 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "size",
-    appliesTo: ["cube"],
-    syntax: "<number> | <number>{3}",
-    initial: "1",
+    appliesTo: ["cube", "plane"],
+    syntax: "<number>{1,3} (cube) | <number>{1,2} (plane: width depth)",
+    initial: "1 (cube), 1 (plane)",
     description:
       "Sets the size of the cube along the x, y and z axes. One value makes a cube, three values make a box.",
-    examples: ["@scene { cube; } cube { translate: 0 0.5 0; size: 2 1 1; }"],
+    examples: [
+      "@scene { cube; } cube { translate: 0 0.5 0; size: 2 1 1; }",
+      "@scene { plane; } plane { translate: 0 1 0; rotate-x: 90deg; size: 2 1.5; color: #ff5a36; }",
+    ],
   },
   {
     name: "corner-radius",
@@ -430,7 +434,8 @@ export const SHAPE_DOCS: ShapeDef[] = [
   },
   {
     name: "sphere",
-    description: "A ball centered on its origin, with a radius of 0.5 by default.",
+    description:
+      "A ball centered on its origin, with a radius of 0.5 by default.",
     examples: ["@scene { sphere; } sphere { translate: 0 0.5 0; }"],
   },
   {
@@ -464,5 +469,11 @@ export const SHAPE_DOCS: ShapeDef[] = [
     examples: [
       '@scene { path; } path { translate: 0 1 0; d: path("M-1 0.5 C-1 -1 1 -1 1 0.5"); stroke-width: 0.25; color: #ff5a36; }',
     ],
+  },
+  {
+    name: "plane",
+    description:
+      "An infinite plane, lying flat on the y axis, centered on its origin. Its width and depth are 1 by default.",
+    examples: ["@scene { plane; } plane { translate: 0 1 0; size: 3 2; }"],
   },
 ];

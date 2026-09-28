@@ -156,6 +156,11 @@ const SHAPES: Record<
     const name = useFunction(context, code);
     return `${name}(q)`;
   },
+  // A thin box: the ray could jump over a surface with no thickness
+  plane: (styles) => {
+    const [width, depth] = readFlatSize(styles["size"]);
+    return `sdRoundBox(q, ${vec3([width / 2, 0.01, depth / 2])}, 0.0)`;
+  },
 };
 
 // The names of the shapes the compiler can draw: the docs must list them all
@@ -251,6 +256,22 @@ function readRadii(value: Token[] | undefined): number[] {
   });
 
   if (numbers.length === 1) return [numbers[0], 0];
+  if (numbers.length === 2) return numbers;
+  throw errorAt(value, errorMessage);
+}
+
+// Reads "2" or "2 1" and returns the full width and depth of a plane
+function readFlatSize(value: Token[] | undefined): number[] {
+  const errorMessage =
+    "size expects one or two positive numbers on a plane, like: size: 2 1;";
+  if (!value) return [1, 1];
+  const numbers = value.map((token) => {
+    if (token.type !== "NUMBER" || token.value <= 0)
+      throw errorAt(token, errorMessage);
+    return token.value;
+  });
+
+  if (numbers.length === 1) return [numbers[0], numbers[0]];
   if (numbers.length === 2) return numbers;
   throw errorAt(value, errorMessage);
 }
