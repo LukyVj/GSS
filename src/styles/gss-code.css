@@ -15,6 +15,7 @@
   --gss-function: #8a3fc2;
   --gss-keyword: #3d6b00;
   --gss-punct: #6b6b76;
+  --gss-string: #2f7d32;
 }
 
 .gss-dark {
@@ -30,6 +31,7 @@
   --gss-function: #d29bff;
   --gss-keyword: #a8e070;
   --gss-punct: #8a8a96;
+  --gss-string: #c3e88d;
 }
 
 .gss,
@@ -47,4 +49,5 @@
 .gss-function { color: var(--gss-function); }
 .gss-keyword { color: var(--gss-keyword); }
 .gss-punct { color: var(--gss-punct); }
+.gss-string { color: var(--gss-string); }
 .gss-invalid { color: #ff6b6b; text-decoration: underline wavy #ff6b6b; }

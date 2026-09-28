@@ -20,6 +20,8 @@ function tokenToText(token: Token): string {
   if (token.type === "HASH") return `#${token.value}`;
   if (token.type === "AT_KEYWORD") return `@${token.value}`;
   if (token.type === "DIMENSION") return `${token.value}${token.unit}`;
+  if (token.type === "PERCENTAGE") return `${token.value}%`;
+  if (token.type === "STRING") return JSON.stringify(token.value);
   return String(token.value);
 }
 

@@ -4,6 +4,8 @@ import { tokenize } from "./tokenizer";
 import type { StyledInstance, Styles } from "./resolve";
 import type { Keyframes } from "./ast";
 import { readFunction } from "./values";
+import { readSvgPath } from "./svgpath";
+import { pathFunction, type ViewBox } from "./path";
 
 // Utility functions
 function round(n: number): number {
@@ -46,9 +48,45 @@ function readOperation(value: Token[] | undefined): string {
   return operation;
 }
 
+// Shapes that need their own GLSL function (like path) add it here.
+// The same code is only written once, whatever the number of objects using it.
+type ShapeContext = { functions: Map<string, string> }; // GLSL code → function name
+
+// "code" names its function NAME; returns the real name, shared with identical code
+function useFunction(context: ShapeContext, code: string): string {
+  const known = context.functions.get(code);
+  if (known) return known;
+  const name = `sdShape${context.functions.size}`;
+  context.functions.set(code, name);
+  return name;
+}
+
+// Reads d: path("M0 0 L1 1") and returns the string token of the path
+function readD(value: Token[] | undefined): Token & { type: "STRING" } {
+  const example = 'd: path("M0 0 C0 1 1 1 1 0");';
+  if (!value) throw new Error(`path needs a d, like: ${example}`);
+  const call = readFunction(value);
+  const [arg] = call?.args ?? [];
+  if (call?.name !== "path" || call.args.length !== 1 || arg.length !== 1 || arg[0].type !== "STRING") {
+    throw errorAt(value, `d expects path("…"), like: ${example}`);
+  }
+  return arg[0];
+}
+
+// Reads "0 0 32 32": min-x, min-y, width, height, like the viewBox of an SVG
+function readViewBox(value: Token[] | undefined): ViewBox | null {
+  if (!value) return null;
+  const numbers = value.map((token) => (token.type === "NUMBER" ? token.value : NaN));
+  if (numbers.length !== 4 || numbers.some(Number.isNaN) || numbers[2] <= 0 || numbers[3] <= 0) {
+    throw errorAt(value, "view-box expects four numbers: x, y, width and height, like: view-box: 0 0 32 32;");
+  }
+  const [x, y, width, height] = numbers;
+  return { x, y, width, height };
+}
+
 // The GLSL shape of each type of object. "q" is the point, already moved.
 // Each shape turns the object's styles into GLSL. "q" is the point, already moved.
-const SHAPES: Record<string, (styles: Styles) => string> = {
+const SHAPES: Record<string, (styles: Styles, context: ShapeContext) => string> = {
   cube: (styles) => {
     const half = readSize(styles["size"]).map((n) => n / 2);
     const corner = Math.min(
@@ -63,6 +101,17 @@ const SHAPES: Record<string, (styles: Styles) => string> = {
     const radius = readNumber(styles["radius"], "radius", 1);
     const thickness = readNumber(styles["thickness"], "thickness", 0.28);
     return `sdTorus(q, vec2(${glslFloat(radius)}, ${glslFloat(thickness)}))`;
+  },
+  // A tube along an SVG path (decision 35)
+  path: (styles, context) => {
+    const d = readD(styles["d"]);
+    const width = readNumber(styles["stroke-width"], "stroke-width", 1);
+    // Curves become segments that stay within a hundredth of the tube's width: smooth enough for the light
+    const lines = locate(d, () => readSvgPath(d.value, width / 100)); // errors point at the path
+    const viewBox = readViewBox(styles["view-box"]);
+    const code = locate(styles["d"], () => pathFunction("NAME", lines, width, viewBox));
+    const name = useFunction(context, code);
+    return `${name}(q)`;
   },
 };
 
@@ -509,6 +558,7 @@ export function generateShader(
   sceneStyles: Styles = {},
   keyframes: Keyframes[] = [],
 ): string {
+  const context: ShapeContext = { functions: new Map() };
   const mapLines = instances.map((instance) => {
     const shape = SHAPES[instance.tag];
     if (!shape) {
@@ -516,7 +566,7 @@ export function generateShader(
         `Unknown object: "${instance.tag}". Available: ${Object.keys(SHAPES).join(", ")}`,
       );
     }
-    const shapeCode = shape(instance.styles);
+    const shapeCode = shape(instance.styles, context);
     const scale = animatedValue(instance.styles, keyframes, "scale", readScale);
 
     const operation = readOperation(instance.styles["operation"]);
@@ -559,7 +609,13 @@ export function generateShader(
   }
   const direct = round(1 - ambient);
 
-  return TEMPLATE.replace("/*@MAP*/", mapLines.join("\n\n"))
+  // The functions of the shapes, each with its own name
+  const functions = [...context.functions]
+    .map(([code, name]) => code.replaceAll("NAME", name))
+    .join("\n\n");
+
+  return TEMPLATE.replace("/*@SHAPES*/", functions)
+    .replace("/*@MAP*/", mapLines.join("\n\n"))
     .replace("/*@MATERIALS*/", materialLines.join("\n"))
     .replace(
       "/*@FLOOR*/",
@@ -605,6 +661,21 @@ float sdTorus(vec3 p, vec2 t) {
   vec2 q = vec2(length(p.xz) - t.x, p.y);
   return length(q) - t.y;
 }
+
+// For path objects: squared distances to a segment and to a box, in 2D
+float segment2(vec2 p, vec2 a, vec2 b) {
+  vec2 ap = p - a, ab = b - a;
+  vec2 v = ap - ab * clamp(dot(ap, ab) / dot(ab, ab), 0.0, 1.0);
+  return dot(v, v);
+}
+
+float box2(vec2 p, vec2 center, vec2 halfSize) {
+  vec2 v = max(abs(p - center) - halfSize, 0.0);
+  return dot(v, v);
+}
+
+// Shapes written by GSS (path…)
+/*@SHAPES*/
 
 // ----- Materials -----
 // Which lighting main() uses for the surface

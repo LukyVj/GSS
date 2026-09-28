@@ -2,7 +2,7 @@
 // Every property must be registered here: the documentation is generated
 // from this list, and every example is compiled by the tests.
 
-export type Shape = "cube" | "sphere" | "torus"; // Later "cone" | "cylinder" | "line" | "plane" | "mesh" ...
+export type Shape = "cube" | "sphere" | "torus" | "path"; // Later "cone" | "cylinder" | "plane" | "mesh" ...
 
 export type PropertyDef = {
   name: string;
@@ -168,6 +168,40 @@ export const PROPERTIES: PropertyDef[] = [
     description: "Sets the radius of the torus tube.",
     examples: [
       "@scene { torus; } torus { translate: 0 0.5 0; thickness: 0.5; }",
+    ],
+  },
+  {
+    name: "d",
+    appliesTo: ["path"],
+    syntax: 'path("<svg path>")',
+    initial: "none (required)",
+    description:
+      'The line a path object follows, written like the d of an SVG path, or CSS path(): M moves, L H V draw lines, C S Q T draw curves, Z closes, in capitals (absolute) or lowercase (relative). Arcs (A) are not supported yet. A path copied from an SVG keeps its way up: y goes up in the scene, down in SVG, and GSS flips it. One path unit is one scene unit, so an icon drawn in a 24 or 32 box usually needs a scale.',
+    examples: [
+      '@scene { path; } path { translate: 0 1 0; d: path("M-1 0.5 C-1 -1 1 -1 1 0.5"); stroke-width: 0.25; color: #ff5a36; }',
+      '@scene { path; } path { translate: 0 1.2 0; d: path("M0 0 L1 1.5 L2 0 L3 1.5 L4 0"); stroke-width: 0.3; scale: 0.5; material: gold; }',
+    ],
+  },
+  {
+    name: "stroke-width",
+    appliesTo: ["path"],
+    syntax: "<number>",
+    initial: "1",
+    description:
+      "The thickness of the tube that follows the path, in path units, like the stroke-width of an SVG. The ends of the tube are round.",
+    examples: [
+      '@scene { path; } path { translate: 0 1 0; d: path("M-1 0 L1 0"); stroke-width: 0.6; color: #3a7bff; }',
+    ],
+  },
+  {
+    name: "view-box",
+    appliesTo: ["path"],
+    syntax: "<number>{4}",
+    initial: "the box of the path itself",
+    description:
+      "The drawing area of the path: x, y, width and height, like the viewBox of an SVG. Its center becomes the origin of the object. Without it, each path is centered on itself; with the same view-box, paths copied from one SVG stay in place relative to each other.",
+    examples: [
+      '@scene { path#left; path#right; } path { translate: 0 1.6 0; view-box: 0 0 32 32; stroke-width: 2.4; scale: 0.1; color: #e6e6e6; } #left { d: path("M12.5 4.5C9.5 4.5 9 6 9 8.5v4c0 2-1 3.5-3.5 3.5C8 16 9 17.5 9 19.5v4c0 2.5.5 4 3.5 4"); } #right { d: path("M19.5 4.5C22.5 4.5 23 6 23 8.5v4c0 2 1 3.5 3.5 3.5C24 16 23 17.5 23 19.5v4c0 2.5-.5 4-3.5 4"); }',
     ],
   },
   {

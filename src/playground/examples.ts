@@ -1,4 +1,5 @@
 import sceneSource from "../scene.gss?raw";
+import logoSource from "./logo.gss?raw";
 import { FIRST_SCENE } from "../docs/guide";
 import { formatGss } from "../docs/format";
 import { PROPERTIES, AT_RULES } from "../compiler/registry";
@@ -17,6 +18,7 @@ function fromReference(name: string, examples: string[]): Example[] {
 
 export const EXAMPLES: Example[] = [
   { group: "Start here", name: "First scene", code: formatGss(FIRST_SCENE) },
+  { group: "Start here", name: "GSS logo", code: logoSource },
   { group: "Start here", name: "Test scene (every feature)", code: sceneSource },
   ...AT_RULES.flatMap((atRule) => fromReference(`@${atRule.name}`, atRule.examples)),
   ...PROPERTIES.flatMap((property) => fromReference(property.name, property.examples)),

@@ -4,6 +4,7 @@ import { compileGSS } from "../compiler";
 import { PROPERTIES } from "../compiler/registry";
 import sceneSource from "../scene.gss?raw";
 import { FIRST_SCENE } from "../docs/guide";
+import logoSource from "../playground/logo.gss?raw";
 
 afterAll(closeGpu); // close Chromium when every test of this file is done
 
@@ -28,6 +29,10 @@ describe("every documented example compiles on the GPU", () => {
 
 it("the first scene of Getting started compiles on the GPU", async () => {
   expect(await compileOnGpu(compileGSS(FIRST_SCENE))).toBe("");
+});
+
+it("the GSS logo compiles on the GPU", async () => {
+  expect(await compileOnGpu(compileGSS(logoSource))).toBe("");
 });
 
 it("the test scene compiles on the GPU", async () => {

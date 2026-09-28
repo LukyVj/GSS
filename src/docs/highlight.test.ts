@@ -40,6 +40,7 @@ describe("highlightGss", () => {
     expect(kind(html, "deg")).toBe("unit");
     expect(kind(html, "glass")).toBe("function");
     expect(kind(html, "ease-in-out")).toBe("keyword");
+    expect(kind(highlightGss('path { d: path("M0 0"); }'), "&quot;M0 0&quot;")).toBe("string");
   });
 
   it("colors the frames of @keyframes as selectors", () => {

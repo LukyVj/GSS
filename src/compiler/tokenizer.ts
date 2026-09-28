@@ -7,7 +7,8 @@ export type Token =
   | { type: "NUMBER"; value: number } // 1, 0.28, -2.5
   | { type: "PUNCT"; value: string } // { } : ; , ( ) . * + - /
   | { type: "DIMENSION"; value: number; unit: string } // 70deg, 24s
-  | { type: "PERCENTAGE"; value: number }; // 50%, 12.5%
+  | { type: "PERCENTAGE"; value: number } // 50%, 12.5%
+  | { type: "STRING"; value: string }; // "M0 0 L1 1", without the quotes
 
 import { GssError, rememberSpan } from "./errors";
 
@@ -78,7 +79,27 @@ export function scan(source: string, { recover = false } = {}): Located[] {
       continue;
     }
 
-    // 3. The numbers: 1, 0.28, -2.5
+    // 3. The strings: "M0 0 L1 1" or 'M0 0 L1 1'. A \ keeps the next character as it is.
+    if (char === '"' || char === "'") {
+      i++;
+      let value = "";
+      while (i < source.length && charAt(i) !== char && charAt(i) !== "\n") {
+        if (charAt(i) === "\\") i++; // \" is a quote inside the string
+        value += charAt(i);
+        i++;
+      }
+      if (charAt(i) !== char) {
+        // Recovering, an unclosed string runs to the end of the line
+        if (!recover)
+          throw new GssError("String never closed: a quote is missing", { start, end: i });
+      } else {
+        i++; // the closing quote
+      }
+      push({ type: "STRING", value });
+      continue;
+    }
+
+    // 3b. The numbers: 1, 0.28, -2.5
     if (isDigit(char) || ((char === "-" || char === ".") && isDigit(next))) {
       i++;
       while (isDigit(charAt(i)) || charAt(i) === ".") i++;

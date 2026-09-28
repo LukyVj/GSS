@@ -68,6 +68,8 @@ function kindOf(
       return "comment";
     case "INVALID":
       return "invalid";
+    case "STRING":
+      return "string";
     case "AT_KEYWORD":
       return "at-rule";
     case "NUMBER":

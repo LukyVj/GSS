@@ -205,6 +205,13 @@ The floor is added last and is never affected. The walls of a hole take the mate
 **Why**: the playground is what people open from a link, so sharing comes first. A textarea could not grow into line numbers, error marks, undo and later autocomplete from the registry. Keeping one classifier keeps the colors identical in the docs and the editor. The GLSL tab is the "readable path toward the shader" of Getting started.
 **Accepted limits**: errors that are not about a written value (an unknown shape in `@scene`, a GPU compile error) have no position yet, only a message. CodeMirror adds about 120 kB (gzip) to the playground and to the docs' "Try it".
 
+## 35. Custom shapes: path, a tube along an SVG path
+
+**Decision**: a `path` object follows `d: path("…")`, written like the `d` of an SVG path (and CSS `path()`): M, L, H, V, C, S, Q, T, Z, absolute and relative. `stroke-width` is the thickness of the tube, in path units, with round ends. `view-box: x y width height` works like an SVG viewBox: its center is the origin of the object, so paths copied from one SVG stay aligned. y is flipped, so a path copied from Figma or an SVG keeps its way up. One path unit is one scene unit: an icon needs a `scale`.
+**How**: strings are a new token (`STRING`). At compile time, curves are cut into segments that never stray more than 1/100 of the stroke width from the curve (fewer segments on gentle curves). Each path becomes a GLSL function written segment by segment (no array, no loop: much faster), with segments grouped by 8 behind a bounding box test, and the whole path behind its own box. Objects sharing the same path share the function.
+**Why**: SVG paths are what front-end developers already copy from their design tools, and a tube is enough for icons and logos (the GSS logo is drawn in GSS: `src/playground/logo.gss`).
+**Accepted limits**: no arcs (A) yet, no filled shapes (fill + extrusion comes later). A path costs more than a sphere: the logo renders about 10 times slower than the same scene with spheres in software rendering. Up to 512 segments per path.
+
 ## Open questions
 
 - **Targeting multiplied ids**: should `#hero` target `hero-1`, `hero-2` and `hero-3`?

@@ -47,6 +47,10 @@ describe("errors point at the code they are about", () => {
     expect(pointedAt(source)).toBe("big");
   });
 
+  it("a wrong path: the text of the path", () => {
+    expect(pointedAt('@scene { path; } path { d: path("M0 0 A1 1 0 0 1 2 0"); }')).toBe('"M0 0 A1 1 0 0 1 2 0"');
+  });
+
   it("a scene setting", () => {
     expect(pointedAt("@scene { cube; } scene { camera-distance: 30; }")).toBe("30");
   });

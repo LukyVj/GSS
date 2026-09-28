@@ -125,3 +125,31 @@ describe("scan with recover", () => {
     expect(() => scan("/* open")).toThrow("Comment never closed");
   });
 });
+
+describe("strings", () => {
+  it("reads double and single quotes, without the quotes", () => {
+    expect(tokenize(`d: path("M0 0 L1 1") 'a'`)).toEqual([
+      { type: "IDENT", value: "d" },
+      { type: "PUNCT", value: ":" },
+      { type: "IDENT", value: "path" },
+      { type: "PUNCT", value: "(" },
+      { type: "STRING", value: "M0 0 L1 1" },
+      { type: "PUNCT", value: ")" },
+      { type: "STRING", value: "a" },
+    ]);
+  });
+
+  it("keeps an escaped quote", () => {
+    expect(tokenize(`"a\\"b"`)).toEqual([{ type: "STRING", value: 'a"b' }]);
+  });
+
+  it("says when a string is never closed, and where", () => {
+    expect(() => tokenize(`path("M0 0`)).toThrow("String never closed");
+  });
+
+  it("recovering, runs an unclosed string to the end of the line", () => {
+    const parts = scan(`"M0 0\ncube`, { recover: true });
+    expect(parts[0]).toEqual({ token: { type: "STRING", value: "M0 0" }, start: 0, end: 5 });
+    expect(parts[1].token).toEqual({ type: "IDENT", value: "cube" });
+  });
+});
