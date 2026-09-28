@@ -236,6 +236,19 @@ The floor is added last and is never affected. The walls of a hole take the mate
 **Why**: selectors and the cascade are the heart of "the CSS of the 3D web", and they were documented nowhere. The registry stays the single source (decision 12): every example compiles on the CPU and on the GPU, and a new shape cannot ship without its entry. Reading the properties from `appliesTo` means a new shape property shows up on its shape without touching the docs. A name like `*` or `.class` cannot be an HTML id or a CSS timeline name, hence the anchors.
 **Accepted limits**: the specificity of a selector is written as text, not computed by `specificity()`: nothing checks they agree. Descriptions are plain text (escaped), so they cannot link to another section.
 
+## 40. plane: a finite, flat, thin box
+
+**Decision**: `plane` is a finite rectangle lying flat in the xz plane, centered on its origin, 1 × 1 by default. `size` takes one value (a square) or two (width and depth), as full sizes (decision 36). It is drawn with `sdRoundBox`, a fixed thickness of 0.02 and no rounded corners: no new GLSL function. `rotate-x: 90deg` stands it up like a wall.
+**Why**: a flat surface to place and style (a mat, a wall, a card, a shelf) is what a front-end developer expects from the word, like a div in 3D. An infinite plane would duplicate the floor; as a cutting tool, it can come later under another name. A surface with no thickness would be jumped over by the ray and flicker.
+**Accepted limits**: the thickness cannot be changed. A plane lying on the floor needs `translate: 0 0.01 0`, half its thickness.
+
+## 41. prism: a polygon(), filled and given a depth
+
+**Decision**: `prism` fills a contour and gives it a depth. The contour is `d: polygon(x y, x y, …)`, written like CSS `clip-path: polygon()`: commas between points, at least 3 points, the polygon closes itself. It follows the rules of `path` (decision 35): the prism stands in the xy plane facing the camera, is centered on its polygon or its `view-box`, and y is flipped so a polygon copied from SVG or CSS keeps its way up. `depth` is its full thickness along z, 0.2 by default (decision 36). `readPolygon` (values.ts) returns `null` when the value is not a `polygon()`, so `d` can later accept `path()` too.
+**How**: `polygonFunction` (path.ts) writes one GLSL function per polygon, side by side, with no array and no loop: `segment2()` gives the distance to each side, and `crosses()` flips a sign each time a horizontal line from the point crosses a side (an odd count means inside). `extrude()` turns the signed 2D distance into a 3D one. Objects sharing the same polygon share the function (`useFunction`).
+**Why**: `polygon()` is known by every front-end developer and every LLM, and it gives stars, arrows and letters with a few points. A real triangle mesh would cost one distance per triangle at every step of every ray: too slow beyond a few dozen triangles. The word "mesh" stays out of the language: `prism` says what it does, like `lathe` later.
+**Accepted limits**: no `path()` contour yet (curves), no holes (the even-odd rule would allow them with several contours), no bevel. The cost grows with the number of sides.
+
 ## Open questions
 
 - **Targeting multiplied ids**: should `#hero` target `hero-1`, `hero-2` and `hero-3`?
