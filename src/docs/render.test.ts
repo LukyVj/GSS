@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { escapeHtml, renderProperty, renderAtRule, renderDocs } from "./render";
+import { highlightGss } from "./highlight";
 import {
   PROPERTIES,
   AT_RULES,
@@ -52,7 +53,7 @@ describe("renderProperty", () => {
 
   it("shows each example in a code block", () => {
     expect(html).toContain(
-      "<pre><code>@scene {\n  cube;\n}\n\ncube {\n  rotate-x: 45deg;\n}\n</code></pre>",
+      `<pre><code class="gss">${highlightGss("@scene {\n  cube;\n}\n\ncube {\n  rotate-x: 45deg;\n}\n")}</code></pre>`,
     );
   });
 
@@ -87,7 +88,7 @@ describe("renderAtRule", () => {
 
   it("shows each example in a code block", () => {
     expect(html).toContain(
-      "<pre><code>@keyframes k {\n  to {\n    scale: 2;\n  }\n}\n</code></pre>",
+      `<pre><code class="gss">${highlightGss("@keyframes k {\n  to {\n    scale: 2;\n  }\n}\n")}</code></pre>`,
     );
   });
 });

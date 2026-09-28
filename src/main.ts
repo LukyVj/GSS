@@ -1,3 +1,4 @@
+import "./styles/gss-code.css";
 import gssSource from "./scene.gss?raw";
 import { createRenderer } from "./runtime/renderer";
 import { connectEditor } from "./runtime/editor";

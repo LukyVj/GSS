@@ -1,3 +1,4 @@
+import "../styles/gss-code.css";
 import { PROPERTIES, AT_RULES } from "../compiler/registry";
 import { renderDocs } from "./render";
 import { enableTryIt } from "./playground";

@@ -42,8 +42,6 @@
         background: #f4f1ea;
         padding: 1rem 1.25rem;
         border-radius: 8px;
-
-        /* use https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/animation-timeline/scroll */
       }
       .toc h2 {
         margin-top: 0;
@@ -60,6 +58,65 @@
       }
       .toc a {
         color: inherit;
+      }
+
+      /* animation-timeline: scroll; */
+      .toc {
+        box-sizing: border-box;
+        padding: 1rem;
+        background: #fff;
+        color: #171717;
+        border: 1px solid #ddd;
+        border-radius: 0.75rem;
+      }
+
+      .toc nav {
+        display: grid;
+        gap: 0.5rem;
+        margin-top: 0.75rem;
+      }
+
+      /* Active le comportement si le navigateur le supporte
+   et si l'écran offre assez de place à gauche. */
+      @supports (animation-timeline: view()) {
+        @media (min-width: 90rem) {
+          .toc-slot {
+            view-timeline-name: --toc;
+            view-timeline-axis: block;
+            view-timeline-inset: 0;
+          }
+
+          .toc {
+            animation: dock-toc 1ms steps(1, end) both;
+
+            /* À déclarer APRÈS le shorthand animation. */
+            animation-timeline: --toc;
+            animation-range: exit 0% exit 100%;
+          }
+        }
+      }
+
+      @keyframes dock-toc {
+        from {
+          position: static;
+          top: auto;
+          left: auto;
+          width: 100%;
+          max-height: none;
+        }
+
+        to {
+          position: fixed;
+          top: 2rem;
+          left: 1rem;
+          width: 14rem;
+          max-height: calc(100dvh - 4rem);
+        }
+      }
+
+      .TOC {
+        overflow: auto;
+        z-index: 10;
       }
 
       /* ----- Examples and their "Try it" button ----- */
@@ -116,21 +173,20 @@
         grid-template-columns: 1fr 1fr;
         height: 300px;
       }
-      .playground textarea {
-        min-width: 0;
-        margin: 0;
-        padding: 0.75rem;
-        border: 0;
+      /* The code: a textarea over its colored copy (src/styles/gss-code.css).
+         Both get the same metrics here, or the caret drifts from the letters. */
+      .playground .code-area {
         border-right: 1px solid #26262c;
+      }
+      .playground .code-area textarea,
+      .playground .code-area .code-layer {
+        padding: 0.75rem;
         outline: none;
         resize: none;
-        background: transparent;
-        color: inherit;
         font: inherit;
         font-size: 13px;
         line-height: 1.6;
         tab-size: 2;
-        white-space: pre;
       }
       .playground canvas {
         display: block;
@@ -168,7 +224,7 @@
           grid-template-rows: auto 240px;
           height: auto;
         }
-        .playground textarea {
+        .playground .code-area {
           height: 180px;
           border-right: 0;
           border-bottom: 1px solid #26262c;

@@ -1,14 +1,9 @@
 import type { PropertyDef, AtRuleDef } from "../compiler/registry";
 import { formatGss } from "./format";
+import { escapeHtml } from "./escape";
+import { highlightGss } from "./highlight";
 
-// Makes a text safe to insert in HTML: "<angle>" must be shown, not read as a tag.
-export function escapeHtml(text: string): string {
-  return text
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;");
-}
+export { escapeHtml }; // the tests and other pages import it from here
 
 // Each example in its own code block, indented, with a button to try it live.
 // The button carries the code, so the page script needs nothing else.
@@ -17,7 +12,7 @@ function renderExamples(examples: string[]): string {
     .map(
       (example) => `
       <div class="example">
-        <pre><code>${escapeHtml(formatGss(example))}</code></pre>
+        <pre><code class="gss">${highlightGss(formatGss(example))}</code></pre>
         <button type="button" class="try" data-example="${escapeHtml(example)}">Try it</button>
       </div>`,
     )
@@ -88,10 +83,12 @@ function renderToc(sections: Section[]): string {
       </ul>`,
   );
   return `
-    <nav class="toc">
-      <h2>Contents</h2>
-      ${groups.join("\n")}
-    </nav>`;
+     <div class="toc-slot">
+      <div class="toc" aria-label="Sommaire">
+        <h2>Contents</h2>
+        <nav class="toc-nav"> ${groups.join("\n")}</nav>
+      </div>
+    </div>`;
 }
 
 function renderSection(section: Section): string {

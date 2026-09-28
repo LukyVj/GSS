@@ -1,0 +1,88 @@
+/* Colors of GSS code: the docs (light) and the editors (dark).
+   highlightGss() gives each token a class, this file gives each class a color. */
+
+.gss {
+  --gss-text: #1a1a1f;
+  --gss-comment: #8a8577;
+  --gss-at-rule: #b4235a;
+  --gss-selector: #1f5fbf;
+  --gss-id: #8a3fc2;
+  --gss-property: #0f6e62;
+  --gss-number: #b85c00;
+  --gss-unit: #d4843a;
+  --gss-color: #c2410c;
+  --gss-function: #8a3fc2;
+  --gss-keyword: #3d6b00;
+  --gss-punct: #6b6b76;
+}
+
+.gss-dark,
+.code-layer {
+  --gss-text: #e6e6e6;
+  --gss-comment: #6e6e7a;
+  --gss-at-rule: #ff7aa8;
+  --gss-selector: #7cb4ff;
+  --gss-id: #d29bff;
+  --gss-property: #6fe0cf;
+  --gss-number: #ffb86b;
+  --gss-unit: #ffcf99;
+  --gss-color: #ff9a6b;
+  --gss-function: #d29bff;
+  --gss-keyword: #a8e070;
+  --gss-punct: #8a8a96;
+}
+
+.gss,
+.code-layer {
+  color: var(--gss-text);
+}
+.gss-comment { color: var(--gss-comment); font-style: italic; }
+.gss-at-rule { color: var(--gss-at-rule); }
+.gss-selector { color: var(--gss-selector); }
+.gss-id { color: var(--gss-id); }
+.gss-property { color: var(--gss-property); }
+.gss-number { color: var(--gss-number); }
+.gss-unit { color: var(--gss-unit); }
+.gss-color { color: var(--gss-color); }
+.gss-function { color: var(--gss-function); }
+.gss-keyword { color: var(--gss-keyword); }
+.gss-punct { color: var(--gss-punct); }
+
+/* ----- The editor: a colored <pre> under a transparent <textarea> -----
+   Both must have exactly the same font, size, line height and padding,
+   otherwise the caret and the colors drift apart. The pages set those
+   on ".code-area textarea, .code-area .code-layer" together. */
+
+.code-area {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+.code-area > textarea,
+.code-area > .code-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  white-space: pre;
+  overflow-wrap: normal;
+}
+.code-area > .code-layer {
+  overflow: hidden; /* scrolled by the script, in step with the textarea */
+  pointer-events: none;
+  background: none;
+}
+.code-area > textarea {
+  overflow: auto;
+  color: transparent; /* the letters we see are the ones of the layer */
+  caret-color: #e6e6e6;
+  background: transparent;
+}
+.code-area > textarea::selection {
+  background: rgba(124, 180, 255, 0.3);
+}
