@@ -46,14 +46,18 @@ export const PROPERTIES: PropertyDef[] = [
     name: "material",
     appliesTo: "object",
     syntax:
-      "matte([<hex-color>]) | metal([<hex-color>,] [<roughness>]) | jelly([<hex-color>,] [<density>]) | gold | chrome | jelly",
+      "matte([<hex-color>]) | metal([<hex-color>,] [<roughness>]) | jelly([<hex-color>,] [<density>]) | gold | chrome | jelly | glass([<hex-color>,] [<refraction-index>] [, <frost>]) | glass | ice",
     initial: "matte()",
     description:
-      "Sets how the surface of the object reacts to light. matte() only scatters light, like chalk. metal() reflects the scene: roughness goes from 0, a mirror, to 1, a brushed metal (0.2 by default). Without a color, the material uses the color property, like currentColor in CSS, so color stays animatable. jelly() lets light through its thin parts, like a gummy candy: density goes from 0, clear, to 1, deep (0.5 by default). gold, chrome and jelly are shortcuts for metal(#d4af37, 0.2), metal(#ffffff, 0.05) and jelly().",
+      "Sets how the surface of the object reacts to light. matte() only scatters light, like chalk. metal() reflects the scene: roughness goes from 0, a mirror, to 1, a brushed metal (0.2 by default). Without a color, the material uses the color property, like currentColor in CSS, so color stays animatable. jelly() lets light through its thin parts, like a gummy candy: density goes from 0, clear, to 1, deep (0.5 by default). gold, chrome and jelly are shortcuts for metal(#d4af37, 0.2), metal(#ffffff, 0.05) and jelly(). glass() lets you see through the object, bent by its refraction index (1 to 3, 1.5 by default: 1.33 is water, 2.4 is diamond); frost blurs what's behind. glass is glass(), ice is glass(#cfeaff, 1.31, 0.25).",
     examples: [
       "@scene { sphere; } sphere { color: #ff5a36; material: matte(); }",
       "@scene { sphere#a; sphere#b; sphere#c; } #a { translate: -1.3 0.6 0; radius: 0.6; material: gold; } #b { translate: 0 0.6 0; radius: 0.6; material: chrome; } #c { translate: 1.3 0.6 0; radius: 0.6; color: #d4af37; material: metal(0.7); }",
       "@scene { sphere; cube; } sphere { translate: -0.8 0.6 0; radius: 0.6; color: #ff5a36; material: jelly; } cube { translate: 0.8 0.5 0; rotate-y: 30deg; color: #3ad16b; material: jelly(0.3); }",
+      "@scene { sphere; } sphere { translate: 0 1 0; radius: 0.6; material: glass; }",
+      "@scene { sphere; } sphere { translate: 0 1 0; radius: 0.6; material: glass(#ffffff, 1.5, 0.3); }",
+      "@scene { sphere; } sphere { translate: 0 1 0; radius: 0.6; material: ice; }",
+      "@scene { sphere; cube; } sphere { translate: 0 0.7 0; radius: 0.6; material: glass; } cube { translate: 0.3 0.5 -1.5; color: #ff5a36; }",
     ],
   },
   {
