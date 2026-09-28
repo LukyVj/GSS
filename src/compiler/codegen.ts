@@ -677,6 +677,40 @@ vec3 shadeMetal(vec3 p, vec3 n, vec3 rd, Material m) {
   return env * fresnel(m.color, rd, n) + diffuse(n, m.color) * 0.3 + shine * (1.0 - m.roughness);
 }
 
+// How much matter is behind p? A few steps inside, along -n.
+// Inside an object, map() is negative. 0 = thin edge, 1 = deep inside.
+float thickness(vec3 p, vec3 n) {
+  float inside = 0.0;
+  for (int i = 1; i <= 5; i++) {
+    float h = 0.1 * float(i);
+    float d = map(p - n * h).x;
+    inside += clamp(-d / h, 0.0, 1.0);
+  }
+  return inside / 5.0;
+}
+
+// Jelly: light goes through its thin parts and glows.
+vec3 shadeJelly(vec3 p, vec3 n, vec3 rd, Material m) {
+  // 1. Light that goes through: strong where it's thin, weak where it's deep.
+  //    density makes the jelly darker faster.
+  float thick = thickness(p, n);
+  float through = exp(-thick * mix(0.5, 4.0, m.density));
+
+  // 2. Soft light that wraps around the object: no hard shadow side
+  float wrap = dot(n, LIGHT_DIR) * 0.5 + 0.5;
+  vec3 body = m.color * (0.2 + 0.5 * wrap);
+
+  // 3. The glow of the light scattered inside
+  vec3 glow = m.color * through * 1.1;
+
+  // 4. A soft highlight, and a bright rim on the edges
+  vec3 r = reflect(rd, n);
+  float shine = pow(max(dot(r, LIGHT_DIR), 0.0), 30.0) * 0.5;
+  float rim = pow(1.0 - max(dot(-rd, n), 0.0), 3.0);
+
+  return body + glow + shine + mix(m.color, vec3(1.0), 0.5) * rim * 0.4;
+}
+
 void main() {
   vec2 uv = (gl_FragCoord.xy - 0.5 * iResolution.xy) / iResolution.y;
 
@@ -700,6 +734,7 @@ void main() {
     Material m = getMaterial(id);
     col = diffuse(n, m.color);
     if (m.kind == METAL) col = shadeMetal(p, n, rd, m);
+    if (m.kind == JELLY) col = shadeJelly(p, n, rd, m);
   }
 
   outColor = vec4(col, 1.0);

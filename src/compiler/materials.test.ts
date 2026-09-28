@@ -140,3 +140,19 @@ describe("material: jelly()", () => {
     );
   });
 });
+
+describe("material: jelly lighting", () => {
+  it("has the functions that light a jelly", () => {
+    const shader = compileGSS("@scene { sphere; }");
+    expect(shader).toContain("float thickness(vec3 p, vec3 n)");
+    expect(shader).toContain(
+      "vec3 shadeJelly(vec3 p, vec3 n, vec3 rd, Material m)",
+    );
+  });
+
+  it("lights jellies with shadeJelly in main()", () => {
+    expect(compileGSS("@scene { sphere; }")).toContain(
+      "if (m.kind == JELLY) col = shadeJelly(p, n, rd, m);",
+    );
+  });
+});
