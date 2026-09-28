@@ -17,4 +17,4 @@ Formatting on save is on by default for `.gss` files. To turn it off:
 npm run generate-vscode-extension   # from the project root
 ```
 
-Then, in VS Code or Cursor: *Extensions: Install from VSIX…* and pick `editors/vscode/gss-language-0.2.0.vsix`.
+Then, in VS Code or Cursor: *Extensions: Install from VSIX…* and pick `editors/vscode/gss-language-0.3.0.vsix`.

@@ -232,6 +232,9 @@
           "include": "#comment"
         },
         {
+          "include": "#string"
+        },
+        {
           "match": "(#)[0-9a-fA-F]{3,8}\\b",
           "name": "constant.other.color.rgb-value.hex.gss",
           "captures": {
@@ -289,6 +292,32 @@
           "name": "keyword.other.unit.gss"
         }
       }
+    },
+    "string": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.gss",
+          "begin": "\"",
+          "end": "\"|$",
+          "patterns": [
+            {
+              "match": "\\\\.",
+              "name": "constant.character.escape.gss"
+            }
+          ]
+        },
+        {
+          "name": "string.quoted.single.gss",
+          "begin": "'",
+          "end": "'|$",
+          "patterns": [
+            {
+              "match": "\\\\.",
+              "name": "constant.character.escape.gss"
+            }
+          ]
+        }
+      ]
     }
   }
 }
