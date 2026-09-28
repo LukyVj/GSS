@@ -157,11 +157,48 @@ function readColor(value: Token[] | undefined, fallback = "vec3(0.9)"): string {
 const MATERIAL_KEYWORDS: Record<string, string> = {
   gold: "metal(#d4af37, 0.2)",
   chrome: "metal(#ffffff, 0.05)",
+  jelly: "jelly()",
 };
 
-// "matte(), metal(), gold, chrome"
+// "matte(), metal(), jelly(), gold, chrome, jelly"
 function availableMaterials(): string {
-  return ["matte()", "metal()", ...Object.keys(MATERIAL_KEYWORDS)].join(", ");
+  return [
+    "matte()",
+    "metal()",
+    "jelly()",
+    ...Object.keys(MATERIAL_KEYWORDS),
+  ].join(", ");
+}
+
+// Reads the one setting of a material, a number between 0 and 1.
+// args: what's left once the color is taken out.
+// Returns the fallback when the setting is missing.
+function readUnitSetting(
+  args: Token[][],
+  material: string, // "metal", for the error messages
+  setting: string, // "roughness"
+  fallback: number, // 0.2
+): number {
+  const example = `material: ${material}(#ff5a36, ${fallback});`;
+
+  // 1. Too many arguments
+  if (args.length > 1) {
+    throw new Error(
+      `${material}() expects an optional color and a ${setting}, like: ${example}`,
+    );
+  }
+
+  // 2. No argument → the fallback
+  if (args.length === 0) return fallback;
+
+  // 3. One argument: a number between 0 and 1
+  const [token] = args[0];
+  if (token.type !== "NUMBER" || token.value < 0 || token.value > 1) {
+    throw new Error(
+      `${material}(): ${setting} expects a number between 0 and 1, like: ${example}`,
+    );
+  }
+  return token.value;
 }
 // Turns the material value into GLSL.
 // "color" is the object's GLSL color: a material without its own color uses it,
@@ -188,7 +225,7 @@ function readMaterial(value: Token[] | undefined, color: string): string {
   }
 
   // 3. Known names
-  if (call.name !== "matte" && call.name !== "metal") {
+  if (call.name !== "matte" && call.name !== "metal" && call.name !== "jelly") {
     throw new Error(
       `Unknown material "${call.name}". Available: ${availableMaterials()}`,
     );
@@ -212,22 +249,14 @@ function readMaterial(value: Token[] | undefined, color: string): string {
   }
 
   // 6. metal: what's left is the roughness, 0.2 when missing
-  if (args.length > 1) {
-    throw new Error(
-      "metal() expects an optional color and a roughness, like: material: metal(#d4af37, 0.2);",
-    );
+  if (call.name === "metal") {
+    const roughness = readUnitSetting(args, "metal", "roughness", 0.2);
+    return `metal(${ownColor}, ${glslFloat(roughness)})`;
   }
-  let roughness = 0.2;
-  if (args.length === 1) {
-    const [token] = args[0];
-    if (token.type !== "NUMBER" || token.value < 0 || token.value > 1) {
-      throw new Error(
-        "metal(): roughness expects a number between 0 and 1, like: material: metal(#d4af37, 0.2);",
-      );
-    }
-    roughness = token.value;
-  }
-  return `metal(${ownColor}, ${glslFloat(roughness)})`;
+
+  // 7. jelly: what's left is the density, 0.5 when missing
+  const density = readUnitSetting(args, "jelly", "density", 0.5);
+  return `jelly(${ownColor}, ${glslFloat(density)})`;
 }
 
 export function readAngle(value: Token[]): number {
@@ -503,19 +532,25 @@ float sdTorus(vec3 p, vec2 t) {
 // Which lighting main() uses for the surface
 const int MATTE = 0;
 const int METAL = 1;
+const int JELLY = 2;
 
 struct Material {
   vec3 color;
-  int kind;        // MATTE or METAL
-  float roughness; // 0 = mirror, 1 = brushed metal
+  int kind;        // MATTE or METAL or JELLY
+  float roughness;
+  float density;
 };
 
 Material matte(vec3 color) {
-  return Material(color, MATTE, 0.0);
+  return Material(color, MATTE, 0.0, 0.0);
 }
 
 Material metal(vec3 color, float roughness) {
-  return Material(color, METAL, roughness);
+  return Material(color, METAL, roughness, 0.0);
+}
+
+Material jelly(vec3 color, float density) {
+  return Material(color, JELLY, 0.0, density);
 }
 
 // ----- Rotations -----

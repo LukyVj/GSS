@@ -46,13 +46,14 @@ export const PROPERTIES: PropertyDef[] = [
     name: "material",
     appliesTo: "object",
     syntax:
-      "matte([<hex-color>]) | metal([<hex-color>,] [<roughness>]) | gold | chrome",
+      "matte([<hex-color>]) | metal([<hex-color>,] [<roughness>]) | jelly([<hex-color>,] [<density>]) | gold | chrome | jelly",
     initial: "matte()",
     description:
-      "Sets how the surface of the object reacts to light. matte() only scatters light, like chalk. metal() reflects the scene: roughness goes from 0, a mirror, to 1, a brushed metal (0.2 by default). Without a color, the material uses the color property, like currentColor in CSS, so color stays animatable. gold and chrome are shortcuts for metal(#d4af37, 0.2) and metal(#ffffff, 0.05).",
+      "Sets how the surface of the object reacts to light. matte() only scatters light, like chalk. metal() reflects the scene: roughness goes from 0, a mirror, to 1, a brushed metal (0.2 by default). Without a color, the material uses the color property, like currentColor in CSS, so color stays animatable. jelly() lets light through its thin parts, like a gummy candy: density goes from 0, clear, to 1, deep (0.5 by default). gold, chrome and jelly are shortcuts for metal(#d4af37, 0.2), metal(#ffffff, 0.05) and jelly().",
     examples: [
       "@scene { sphere; } sphere { color: #ff5a36; material: matte(); }",
       "@scene { sphere#a; sphere#b; sphere#c; } #a { translate: -1.3 0.6 0; radius: 0.6; material: gold; } #b { translate: 0 0.6 0; radius: 0.6; material: chrome; } #c { translate: 1.3 0.6 0; radius: 0.6; color: #d4af37; material: metal(0.7); }",
+      "@scene { sphere; cube; } sphere { translate: -0.8 0.6 0; radius: 0.6; color: #ff5a36; material: jelly; } cube { translate: 0.8 0.5 0; rotate-y: 30deg; color: #3ad16b; material: jelly(0.3); }",
     ],
   },
   {

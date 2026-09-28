@@ -88,7 +88,7 @@ describe("material keywords", () => {
     expect(() =>
       compileGSS("@scene { sphere; } sphere { material: wood; }"),
     ).toThrow(
-      'Unknown material "wood". Available: matte(), metal(), gold, chrome',
+      'Unknown material "wood". Available: matte(), metal(), jelly(), gold, chrome, jelly',
     );
   });
 
@@ -105,6 +105,38 @@ describe("material keywords", () => {
   it("lights metals with shadeMetal in main()", () => {
     expect(compileGSS("@scene { sphere; }")).toContain(
       "if (m.kind == METAL) col = shadeMetal(p, n, rd, m);",
+    );
+  });
+});
+
+describe("material: jelly()", () => {
+  it("writes the color and the density", () => {
+    expect(materialOf("sphere { material: jelly(#00ff00, 0.8); }")).toBe(
+      "if (id == 1.0) return jelly(vec3(0.0, 1.0, 0.0), 0.8);  // sphere",
+    );
+  });
+
+  it("has a default density of 0.5", () => {
+    expect(materialOf("sphere { color: #ff0000; material: jelly(); }")).toBe(
+      "if (id == 1.0) return jelly(vec3(1.0, 0.0, 0.0), 0.5);  // sphere",
+    );
+  });
+
+  it("jelly is jelly() with the color of color", () => {
+    expect(materialOf("sphere { color: #ff0000; material: jelly; }")).toBe(
+      materialOf("sphere { color: #ff0000; material: jelly(); }"),
+    );
+  });
+
+  it("rejects a density outside [0, 1]", () => {
+    expect(() =>
+      compileGSS("@scene { sphere; } sphere { material: jelly(1.5); }"),
+    ).toThrow("jelly(): density expects a number between 0 and 1");
+  });
+
+  it("knows the jelly material", () => {
+    expect(compileGSS("@scene { sphere; }")).toContain(
+      "Material jelly(vec3 color, float density)",
     );
   });
 });
