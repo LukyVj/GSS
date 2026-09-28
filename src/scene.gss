@@ -2,7 +2,9 @@
    One zone per feature, placed apart so they never overlap:
      Zone 1 (center)  transforms: translate, rotate, scale, size, classes
      Zone 2 (back)    operations: blend, subtract
-     Zone 3 (front)   animations: @keyframes */
+     Zone 3 (front)   animations: @keyframes
+     Zone 4 (left)    materials: matte, metal, jelly, glass, ice
+ */
 
 @scene {
   /* Zone 1: transforms */
@@ -21,6 +23,9 @@
   /* Zone 3: animations */
   cube#spinner;
   sphere#ball;
+
+  /* Zone 4: materials */
+  sphere#m-matte; sphere#m-gold; sphere#m-chrome; sphere#m-jelly; sphere#m-glass; cube#m-ice;
 }
 
 
@@ -117,3 +122,12 @@ scene {
   50%  { translate: 1.5 2 6; }
   100% { translate: 1.5 0.5 6; }
 }
+
+/* ===== Zone 4: materials (left, x = -7) ===== */
+
+#m-matte  { translate: -7 0.5 -3;  radius: 0.5; color: #ff5a36; }
+#m-gold   { translate: -7 0.5 -1.8; radius: 0.5; material: gold; }
+#m-chrome { translate: -7 0.5 -0.6; radius: 0.5; material: chrome; }
+#m-jelly  { translate: -7 0.5 0.6;  radius: 0.5; color: #ff5a36; material: jelly; }
+#m-glass  { translate: -7 0.6 1.8;  radius: 0.5; material: glass; }
+#m-ice    { translate: -7 0.6 3;    size: 0.9; material: ice; }

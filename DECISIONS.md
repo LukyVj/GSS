@@ -179,6 +179,17 @@ The floor is added last and is never affected. The walls of a hole take the mate
 **Decision**: the shader is split into functions that can be called again: `march()` follows a ray, `trace()` tells what a ray sees, `diffuse()` lights a surface, `getMaterial()` returns a `Material` struct (color, kind, roughness). Values the whole shader needs are constants at the top: `MAX_DIST`, `BACKGROUND`, `LIGHT_DIR`.
 **Why**: reflections, and later refractions, reuse the same functions. And `.replace()` only replaces the first occurrence: every `/*@…*/` placeholder must appear exactly once in the template.
 
+## 31. Glass: one refraction in, one out
+
+**Decision**: a glass ray bends in with `refract()`, crosses the object with `marchInside()` (which marches with `-map()`), bends out, then `trace()` shows what's behind. When the light cannot get out (total internal reflection), the ray bounces back inside once.Frost averages 4 rays, each bent a little differently (jittered with `hash3()`), then adds a bit of milky white light. `ice` is `glass(#cfeaff, 1.31, 0.25)`.
+**Accepted limits**: glass seen through another glass object looks matte (one bounce, decision 29). Each glass pixel costs three more marches. Frosted glass is grainy, and the grain shimmers when the camera moves. More rays would smooth it, at a higher cost.
+
+## 32. Glass must not touch the floor
+
+**Decision**: glass objects float slightly above the floor in the examples.
+**Why**: when the bottom face of a glass object is exactly on the floor, both surfaces are at the same place and the ray exiting the object gets confused: the render shows stripes.
+**Later**: exclude the floor from `marchInside()`.
+
 ## Open questions
 
 - **Targeting multiplied ids**: should `#hero` target `hero-1`, `hero-2` and `hero-3`?
