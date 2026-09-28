@@ -11,6 +11,7 @@
     "generate-vscode-extension": "cd editors/vscode && npm run package"
   },
   "devDependencies": {
+    "playwright": "^1.63.0",
     "typescript": "~6.0.2",
     "vite": "^8.3.0",
     "vitest": "^5.0.2"
