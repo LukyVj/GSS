@@ -808,6 +808,37 @@ vec3 hash3(vec3 p) {
   return fract((p.xxy + p.yxx) * p.zyx);
 }
 
+// Smooth noise: random values on a grid, blended between the grid points.
+// Unlike hash3(), two points close together get close values.
+float noise(vec3 p) { 
+  vec3 i = floor(p);
+  vec3 f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  return mix(
+    mix(mix(hash3(i).x,                 hash3(i + vec3(1, 0, 0)).x, f.x),
+        mix(hash3(i + vec3(0, 1, 0)).x, hash3(i + vec3(1, 1, 0)).x, f.x), f.y),
+    mix(mix(hash3(i + vec3(0, 0, 1)).x, hash3(i + vec3(1, 0, 1)).x, f.x),
+        mix(hash3(i + vec3(0, 1, 1)).x, hash3(i + vec3(1, 1, 1)).x, f.x), f.y),
+    f.z);
+}
+
+// A smooth random vector between -0.5 and 0.5, with two sizes of bumps
+vec3 bump(vec3 p, float scale) { 
+  vec3 q = p * scale;
+    vec3 b = vec3(noise(q), noise(q + 17.0), noise(q + 41.0)) - 0.5;
+    b += (vec3(noise(q * 2.7), noise(q * 2.7 + 5.0), noise(q * 2.7 + 9.0)) - 0.5) * 0.5;
+    return b;
+}
+
+// The settings of each frost style:
+// x = size of the bumps, y = their strength, z = how much white frosted layer
+vec3 frostSettings(int style) {
+  if (style == WAVY)     return vec3(7.0, 0.45, 0.0);
+  if (style == HAMMERED) return vec3(20.0, 0.3, 0.0);
+  if (style == BLURRED)  return vec3(9.0, 0.35, 0.0);
+  return vec3(9.0, 0.6, 0.5);          // FROSTED, the default
+}
+
 // Like march(), but inside an object, where map() is negative.
 // Returns how far the ray goes before it comes out.
 float marchInside(vec3 ro, vec3 rd) {
@@ -821,9 +852,14 @@ float marchInside(vec3 ro, vec3 rd) {
 }
 
 // Glass: the ray bends in, crosses the object, bends out, and shows what's behind.
+// Frost bumps the normals with smooth noise: what's behind gets distorted.
 vec3 shadeGlass(vec3 p, vec3 n, vec3 rd, Material m) {
-  // 1. In: air → glass
-  vec3 inDir = refract(rd, n, 1.0 / m.ior);
+  float frost = m.roughness;
+  vec3 fs = frostSettings(m.frostStyle);
+
+  // 1. In: air → glass, through a bumped surface
+  vec3 fn = normalize(n + bump(p, fs.x) * frost * fs.y);
+  vec3 inDir = refract(rd, fn, 1.0 / m.ior);
 
   // 2. Through: start just inside, march to the other side
   vec3 start = p - n * 0.01;
@@ -831,39 +867,52 @@ vec3 shadeGlass(vec3 p, vec3 n, vec3 rd, Material m) {
   vec3 exitP = start + inDir * t;
   vec3 exitN = calcNormal(exitP);
 
-  // 3. Out: glass → air. The normal points outside, so we flip it:
-  //    refract() wants the normal that faces the ray.
-  vec3 outDir = refract(inDir, -exitN, m.ior);
-  // At a grazing angle, the light cannot get out: it bounces back inside
-  // ("total internal reflection"). refract() then returns vec3(0.0).
-  if (outDir == vec3(0.0)) outDir = reflect(inDir, -exitN);
+  // 3. Out: glass → air, through the bumped surface on the other side
+  vec3 exitFn = normalize(exitN + bump(exitP, fs.x) * frost * fs.y);
+  vec3 outDir = refract(inDir, -exitFn, m.ior);
+  // Total internal reflection: with bumped normals, bouncing back makes
+  // black spots, so the ray just goes on straight
+  if (outDir == vec3(0.0)) outDir = inDir;
 
   // 4. Behind: what the ray sees once it's out, tinted by the glass
-  vec3 behind = trace(exitP + exitN * 0.01, outDir);   // ← start just outside the exit point
+  vec3 behind = trace(exitP + exitN * 0.01, outDir);
   vec3 through = behind * m.color;
 
-  // 5. Frost: a few rays, each bent a little differently, then averaged.
-  //    The more frost, the wider they spread: what's behind gets blurry.
-  if (m.roughness > 0.0) {
-    vec3 sum = through;                      // the first ray, already traced
-    for (int k = 1; k < 4; k++) {            // 3 more rays
-      vec3 jitter = hash3(exitP * 57.0 + float(k) * 13.1) - 0.5;  // between -0.5 and 0.5
-      vec3 dir = normalize(outDir + jitter * m.roughness * 0.8);          // ← what makes them spread?
-      sum += trace(exitP + exitN * 0.01, dir) * m.color;
-    }
-    through = sum / 4.0;                     // ← the average of how many rays?
-    // Frosted glass is also a bit milky: it scatters some white light
-    through = mix(through, diffuse(n, vec3(1.0)), m.roughness * 0.35);
+  // 5a. frosted: a white, patchy layer over what's behind
+  if (fs.z > 0.0) {
+    float patches = noise(p * 6.0) * 0.6 + noise(p * 18.0) * 0.4;
+    vec3 frostLayer = diffuse(n, mix(m.color, vec3(1.0), 0.6)) * (0.7 + 0.6 * patches);
+    through = mix(through, frostLayer, frost * fs.z);
+  }
+
+  // 5b. blurred: 3 more rays in a fixed cross, a tint, light on the bumps, speckles
+  if (m.frostStyle == BLURRED && frost > 0.0) {
+    // Blur: the first ray plus 3 more, bent a little around outDir.
+    // Fixed offsets, not random: a smooth blur, no grain.
+    vec3 tangent = normalize(cross(outDir, vec3(0.0, 1.0, 0.0)) + vec3(1e-4));
+    vec3 bitangent = cross(outDir, tangent);
+    float spread = frost * 0.12;
+    vec3 sum = through;
+    sum += trace(exitP + exitN * 0.01, normalize(outDir + tangent * spread)) * m.color;
+    sum += trace(exitP + exitN * 0.01, normalize(outDir - tangent * spread + bitangent * spread)) * m.color;
+    sum += trace(exitP + exitN * 0.01, normalize(outDir - bitangent * spread)) * m.color;
+    through = sum / 4.0;
+    // Tint: a bit of light grey, like milky glass
+    through = mix(through, vec3(0.85, 0.88, 0.92), frost * 0.35);
+    // Light on the bumps (the "diff" of the Godot shader)
+    through += max(dot(bump(p, fs.x), LIGHT_DIR), 0.0) * frost * 0.6;
+    // Speckles, stuck to the surface
+    through += hash3(floor(p * 160.0)).x * frost * 0.12;
   }
 
   // 6. The reflection on the surface: weak from the front, strong at grazing angles
   vec3 r = reflect(rd, n);
   vec3 reflected = trace(p + n * 0.01, r);
-  float f = fresnel(vec3(0.04), rd, n).x;   // glass reflects 4% from the front
+  float f = fresnel(vec3(0.04), rd, n).x;
   vec3 col = mix(through, reflected, f);
 
-  // 7. Frosted glass (ice) glows a little, like jelly, and a sharp highlight
-  col += m.color * exp(-thickness(p, n) * 2.0) * m.roughness * 0.5;
+  // 7. Frosted glass glows a little, like jelly, and a sharp highlight
+  col += m.color * exp(-thickness(p, n) * 2.0) * frost * 0.5;
   col += pow(max(dot(r, LIGHT_DIR), 0.0), 120.0);
   return col;
 }

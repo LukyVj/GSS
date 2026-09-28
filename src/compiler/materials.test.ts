@@ -249,4 +249,16 @@ describe("material: glass() frost styles", () => {
       "Material glass(vec3 color, float ior, float frost, int frostStyle)",
     );
   });
+
+  it("reads the settings of each frost style", () => {
+    expect(compileGSS("@scene { sphere; }")).toContain(
+      "vec3 frostSettings(int style)",
+    );
+  });
+
+  it("blurs only the blurred style", () => {
+    expect(compileGSS("@scene { sphere; }")).toContain(
+      "if (m.frostStyle == BLURRED",
+    );
+  });
 });
