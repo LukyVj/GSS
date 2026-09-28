@@ -9,6 +9,8 @@ export type Token =
   | { type: "DIMENSION"; value: number; unit: string } // 70deg, 24s
   | { type: "PERCENTAGE"; value: number }; // 50%, 12.5%
 
+import { GssError, rememberSpan } from "./errors";
+
 const PUNCTUATION = "{}:;,().*+-/";
 
 function isDigit(char: string): boolean {
@@ -26,18 +28,24 @@ function isIdentStart(char: string, next: string): boolean {
 }
 
 export type Comment = { type: "COMMENT"; value: string }; // "/* hi */", with the /* */
-export type Located = { token: Token | Comment; start: number; end: number };
+// Only with { recover: true }: a piece of text that is not GSS
+export type Invalid = { type: "INVALID"; value: string };
+export type Located = { token: Token | Comment | Invalid; start: number; end: number };
 
 // Reads the whole text, comments included, and remembers where each token is.
 // The formatter and the highlighter need this; the parser only needs tokenize().
-export function scan(source: string): Located[] {
+// recover: never throws. The editor colors code while it is being typed,
+// so an unclosed comment or a stray character must not stop it.
+export function scan(source: string, { recover = false } = {}): Located[] {
   const located: Located[] = [];
   let i = 0; // our position in the text
   let start = 0; // where the token being read begins
 
   // Records a token that runs from `start` to the current position
-  const push = (token: Token | Comment) =>
+  const push = (token: Token | Comment | Invalid) => {
+    rememberSpan(token, { start, end: i }); // so that later errors can point at it
     located.push({ token, start, end: i });
+  };
 
   // Returns the character at a position, or "" if we exceed the end
   const charAt = (index: number): string => source[index] ?? "";
@@ -63,8 +71,9 @@ export function scan(source: string): Located[] {
     // 2. The comments /* ... */ : kept, with their text (the parser never sees them)
     if (char === "/" && next === "*") {
       const end = source.indexOf("*/", i + 2);
-      if (end === -1) throw new Error(`Comment never closed (position ${i})`);
-      i = end + 2;
+      if (end === -1 && !recover)
+        throw new GssError("Comment never closed", { start: i, end: source.length });
+      i = end === -1 ? source.length : end + 2; // recovering: the comment runs to the end
       push({ type: "COMMENT", value: source.slice(start, i) });
       continue;
     }
@@ -96,8 +105,12 @@ export function scan(source: string): Located[] {
     if (char === "@" || char === "#") {
       i++;
       const name = readIdent();
+      if (name === "" && recover) {
+        push({ type: "INVALID", value: char });
+        continue;
+      }
       if (name === "")
-        throw new Error(`"${char}" must be followed by a name (position ${i})`);
+        throw new GssError(`"${char}" must be followed by a name`, { start, end: i });
       push({ type: char === "@" ? "AT_KEYWORD" : "HASH", value: name });
       continue;
     }
@@ -116,7 +129,12 @@ export function scan(source: string): Located[] {
     }
 
     // 7. Nothing matches: clear error, with the position
-    throw new Error(`Unexpected character "${char}" (position ${i})`);
+    if (recover) {
+      i++;
+      push({ type: "INVALID", value: char });
+      continue;
+    }
+    throw new GssError(`Unexpected character "${char}"`, { start: i, end: i + 1 });
   }
 
   return located;
@@ -126,5 +144,5 @@ export function scan(source: string): Located[] {
 export function tokenize(source: string): Token[] {
   return scan(source)
     .map((l) => l.token)
-    .filter((t): t is Token => t.type !== "COMMENT");
+    .filter((t): t is Token => t.type !== "COMMENT" && t.type !== "INVALID");
 }

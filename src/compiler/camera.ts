@@ -1,4 +1,5 @@
 import type { Styles } from "./resolve";
+import { errorAt } from "./errors";
 import type { Token } from "./tokenizer";
 import { readAngle, readNumber } from "./codegen";
 
@@ -20,20 +21,20 @@ function readSpin(value: Token[] | undefined): number {
   if (!value) return 0.3;
 
   // Only one value is allowed
-  if (value.length !== 1) throw new Error(error);
+  if (value.length !== 1) throw errorAt(value, error);
   const [token] = value;
 
   // Case 2: "none" → no rotation
   if (token.type === "IDENT" && token.value === "none") return 0;
 
   // Case 3: anything that is not a duration → error
-  if (token.type !== "DIMENSION" || token.value <= 0) throw new Error(error);
+  if (token.type !== "DIMENSION" || token.value <= 0) throw errorAt(value, error);
 
   // Case 4: a duration → convert it to seconds, then to a speed
   let seconds: number;
   if (token.unit === "s") seconds = token.value;
   else if (token.unit === "ms") seconds = token.value / 1000;
-  else throw new Error(error);
+  else throw errorAt(value, error);
 
   return (2 * Math.PI) / seconds;
 }
@@ -47,7 +48,7 @@ export function readCamera(sceneStyles: Styles): CameraSettings {
     true,
   );
   if (distance < 3 || distance > 15) {
-    throw new Error(
+    throw errorAt(sceneStyles["camera-distance"], 
       "camera-distance expects a number from 3 to 15, like: camera-distance: 8;",
     );
   }
@@ -58,7 +59,7 @@ export function readCamera(sceneStyles: Styles): CameraSettings {
   const angle = sceneStyles["camera-angle"];
   if (angle) {
     if (angle.length !== 2) {
-      throw new Error(
+      throw errorAt(angle, 
         "camera-angle expects two angles, like: camera-angle: 45deg 60deg;",
       );
     }
@@ -67,7 +68,7 @@ export function readCamera(sceneStyles: Styles): CameraSettings {
   }
 
   if (pitch < 0 || pitch > 1.4) {
-    throw new Error("camera-angle expects a height from 0deg to 80deg.");
+    throw errorAt(sceneStyles["camera-angle"], "camera-angle expects a height from 0deg to 80deg.");
   }
 
   // 3. The spin

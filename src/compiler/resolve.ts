@@ -1,4 +1,5 @@
 import type { Rule } from "./ast";
+import { errorAt } from "./errors";
 import type { Token } from "./tokenizer";
 import type { SceneInstance } from "./expand";
 
@@ -46,7 +47,7 @@ export function parseSelector(tokens: Token[]): SimpleSelector {
       i += 2;
     } else {
       const text = tokens.map(tokenToText).join("");
-      throw new Error(`Selector not supported: "${text}"`);
+      throw errorAt(tokens, `Selector not supported: "${text}"`);
     }
   }
 

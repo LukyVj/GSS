@@ -110,3 +110,18 @@ describe("scan", () => {
     ]);
   });
 });
+
+describe("scan with recover", () => {
+  it("never throws, and marks what is not GSS", () => {
+    expect(scan("cube ~ { /* open", { recover: true })).toEqual([
+      { token: { type: "IDENT", value: "cube" }, start: 0, end: 4 },
+      { token: { type: "INVALID", value: "~" }, start: 5, end: 6 },
+      { token: { type: "PUNCT", value: "{" }, start: 7, end: 8 },
+      { token: { type: "COMMENT", value: "/* open" }, start: 9, end: 16 },
+    ]);
+  });
+
+  it("still throws without it", () => {
+    expect(() => scan("/* open")).toThrow("Comment never closed");
+  });
+});

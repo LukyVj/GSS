@@ -7,6 +7,7 @@ import type {
   Keyframes,
   Keyframe,
 } from "./ast";
+import { errorAt, rememberSpan, spanAcross } from "./errors";
 
 export function parse(tokens: Token[]): Stylesheet {
   let pos = 0; // our position in the list of tokens
@@ -17,7 +18,7 @@ export function parse(tokens: Token[]): Stylesheet {
   // Takes the current token and advances
   const next = (): Token => {
     const token = tokens[pos];
-    if (!token) throw new Error("Unexpected end of file");
+    if (!token) throw errorAt(tokens[tokens.length - 1], "Unexpected end of file");
     pos++;
     return token;
   };
@@ -29,7 +30,7 @@ export function parse(tokens: Token[]): Stylesheet {
   const expectPunct = (value: string): void => {
     const token = next();
     if (!isPunct(token, value)) {
-      throw new Error(`"${value}" expected, but found "${token.value}"`);
+      throw errorAt(token, `"${value}" expected, but found "${token.value}"`);
     }
   };
 
@@ -37,7 +38,8 @@ export function parse(tokens: Token[]): Stylesheet {
   function parseSceneElement(): SceneElement {
     const tagToken = next();
     if (tagToken.type !== "IDENT") {
-      throw new Error(
+      throw errorAt(
+        tagToken,
         `Object name expected in @scene, but found "${tagToken.value}"`,
       );
     }
@@ -58,7 +60,7 @@ export function parse(tokens: Token[]): Stylesheet {
         next();
         const className = next();
         if (className.type !== "IDENT")
-          throw new Error('Class name expected after "."');
+          throw errorAt(className, 'Class name expected after "."');
         element.classes.push(className.value);
       } else {
         break;
@@ -74,7 +76,7 @@ export function parse(tokens: Token[]): Stylesheet {
         !Number.isInteger(count.value) ||
         count.value < 1
       ) {
-        throw new Error('A positive integer is expected after "*"');
+        throw errorAt(count, 'A positive integer is expected after "*"');
       }
       element.count = count.value;
     }
@@ -85,10 +87,11 @@ export function parse(tokens: Token[]): Stylesheet {
 
   // @scene { ... }
   function parseScene(): SceneElement[] {
+    const open = peek(); // the "{", to point at it if it is never closed
     expectPunct("{");
     const elements: SceneElement[] = [];
     while (!isPunct(peek(), "}")) {
-      if (!peek()) throw new Error('@scene never closed: "}" missing');
+      if (!peek()) throw errorAt(open, '@scene never closed: "}" missing');
       elements.push(parseSceneElement());
     }
     next(); // we consume the "}"
@@ -99,7 +102,7 @@ export function parse(tokens: Token[]): Stylesheet {
   function parseDeclaration(): Declaration {
     const property = next();
     if (property.type !== "IDENT") {
-      throw new Error(`Property name expected, but found "${property.value}"`);
+      throw errorAt(property, `Property name expected, but found "${property.value}"`);
     }
     expectPunct(":");
     const value: Token[] = [];
@@ -107,17 +110,22 @@ export function parse(tokens: Token[]): Stylesheet {
       value.push(next());
     }
     if (value.length === 0)
-      throw new Error(`The property "${property.value}" has no value`);
+      throw errorAt(property, `The property "${property.value}" has no value`);
     if (isPunct(peek(), ";")) next(); // the ";" is optional before "}", like in CSS
-    return { property: property.value, value };
+    const declaration = { property: property.value, value };
+    // From the name to the last value: where errors about this declaration point
+    const span = spanAcross([property, ...value]);
+    if (span) rememberSpan(declaration, span);
+    return declaration;
   }
 
   // { radius: 1; color: #fff; } : shared by rules and keyframes
   function parseDeclarationBlock(): Declaration[] {
+    const open = peek();
     expectPunct("{");
     const declarations: Declaration[] = [];
     while (!isPunct(peek(), "}")) {
-      if (!peek()) throw new Error('Block never closed: "}" missing');
+      if (!peek()) throw errorAt(open, 'Block never closed: "}" missing');
       declarations.push(parseDeclaration());
     }
     next(); // we consume the "}"
@@ -137,14 +145,16 @@ export function parse(tokens: Token[]): Stylesheet {
   function parseKeyframes(): Keyframes {
     const name = next();
     if (name.type !== "IDENT") {
-      throw new Error(
+      throw errorAt(
+        name,
         `Animation name expected after @keyframes, but found "${name.value}"`,
       );
     }
+    const open = peek();
     expectPunct("{");
     const frames: Keyframe[] = [];
     while (!isPunct(peek(), "}")) {
-      if (!peek()) throw new Error('@keyframes never closed: "}" missing');
+      if (!peek()) throw errorAt(open, '@keyframes never closed: "}" missing');
 
       // The offsets before "{": from, to, 50%, or 0%, 100%
       const offsets: Token[] = [];
@@ -170,7 +180,7 @@ export function parse(tokens: Token[]): Stylesheet {
       } else if (token.value === "keyframes") {
         stylesheet.keyframes.push(parseKeyframes());
       } else {
-        throw new Error(`@${token.value} isn't supported yet`);
+        throw errorAt(token, `@${token.value} isn't supported yet`);
       }
     } else {
       stylesheet.rules.push(parseRule());

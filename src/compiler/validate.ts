@@ -1,6 +1,7 @@
 import type { Rule, Keyframes } from "./ast";
 import { PROPERTIES } from "./registry";
 import { parseSelector, isSceneSelector } from "./resolve";
+import { errorAt } from "./errors";
 
 // Throws if a rule uses a property that is not in the registry,
 // or a property that does not apply to what the rule targets.
@@ -13,15 +14,15 @@ export function validateProperties(rules: Rule[]): void {
       const property = PROPERTIES.find((p) => p.name === declaration.property);
 
       if (!property) {
-        throw new Error(`Unknown property "${declaration.property}"`);
+        throw errorAt(declaration, `Unknown property "${declaration.property}"`);
       }
 
       if (isScene && property.appliesTo !== "scene") {
-        throw new Error(`"${declaration.property}" only applies to objects.`);
+        throw errorAt(declaration, `"${declaration.property}" only applies to objects.`);
       }
 
       if (!isScene && property.appliesTo === "scene") {
-        throw new Error(`"${declaration.property}" only applies to the scene.`);
+        throw errorAt(declaration, `"${declaration.property}" only applies to the scene.`);
       }
 
       // Shape-specific property on an explicit, incompatible tag
@@ -30,7 +31,7 @@ export function validateProperties(rules: Rule[]): void {
         selector.tag !== null &&
         !(property.appliesTo as string[]).includes(selector.tag)
       ) {
-        throw new Error(
+        throw errorAt(declaration, 
           `"${property.name}" only applies to ${property.appliesTo.join(", ")}.`,
         );
       }
@@ -48,13 +49,13 @@ export function validateKeyframes(keyframes: Keyframes[]): void {
         const property = PROPERTIES.find((p) => p.name === declaration.property);
 
         if (!property) {
-          throw new Error(
+          throw errorAt(declaration, 
             `Unknown property "${declaration.property}" in @keyframes ${animation.name}`,
           );
         }
 
         if (!property.animatable) {
-          throw new Error(
+          throw errorAt(declaration, 
             `"${declaration.property}" cannot be animated (in @keyframes ${animation.name}). Animatable properties: ${animatable.join(", ")}.`,
           );
         }

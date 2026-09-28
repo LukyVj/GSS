@@ -1,4 +1,5 @@
 import type { Token } from "./tokenizer";
+import { errorAt, locate } from "./errors";
 import { tokenize } from "./tokenizer";
 import type { StyledInstance, Styles } from "./resolve";
 import type { Keyframes } from "./ast";
@@ -37,7 +38,7 @@ function readOperation(value: Token[] | undefined): string {
 
   // 3. Not found, or not exactly one value → error
   if (value.length !== 1 || !operation) {
-    throw new Error(
+    throw errorAt(value, 
       "operation expects union, subtract or intersect, like: operation: subtract;",
     );
   }
@@ -89,13 +90,13 @@ export function readTranslate(value: Token[] | undefined): string {
   if (!value) return "vec3(0.0)";
   const numbers = value.map((token) => {
     if (token.type !== "NUMBER")
-      throw new Error(
+      throw errorAt(value, 
         "translate expects three numbers, like: translate: 0 1 0;",
       );
     return token.value;
   });
   if (numbers.length !== 3)
-    throw new Error("translate expects three numbers, like: translate: 0 1 0;");
+    throw errorAt(value, "translate expects three numbers, like: translate: 0 1 0;");
   return `vec3(${numbers.map(glslFloat).join(", ")})`;
 }
 // Reads one number, or returns the fallback when the property is not set
@@ -113,7 +114,7 @@ export function readNumber(
     token.value < 0 ||
     (token.value === 0 && !allowZero)
   ) {
-    throw new Error(
+    throw errorAt(value, 
       `${property} expects one positive number, like: ${property}: 2;`,
     );
   }
@@ -127,13 +128,13 @@ function readSize(value: Token[] | undefined): number[] {
   if (!value) return [1, 1, 1];
   const numbers = value.map((token) => {
     if (token.type !== "NUMBER" || token.value <= 0)
-      throw new Error(errorMessage);
+      throw errorAt(token, errorMessage);
     return token.value;
   });
 
   if (numbers.length === 1) return [numbers[0], numbers[0], numbers[0]];
   if (numbers.length === 3) return numbers;
-  throw new Error(errorMessage);
+  throw errorAt(value, errorMessage);
 }
 
 function readScale(value: Token[] | undefined): string {
@@ -148,9 +149,10 @@ function readColor(value: Token[] | undefined, fallback = "vec3(0.9)"): string {
   if (!value) return fallback;
   const [token] = value;
   if (value.length !== 1 || token.type !== "HASH") {
-    throw new Error("color expects a hexadecimal color, like: color: #ff5a36;");
+    throw errorAt(value, "color expects a hexadecimal color, like: color: #ff5a36;");
   }
-  return `vec3(${hexToRgb(token.value).map(glslFloat).join(", ")})`;
+  const rgb = locate(token, () => hexToRgb(token.value));
+  return `vec3(${rgb.map(glslFloat).join(", ")})`;
 }
 
 // Material keywords: shortcuts written in GSS
@@ -188,7 +190,7 @@ function readFrost(arg: Token[] | undefined): string {
   for (const token of arg) {
     if (token.type === "IDENT") {
       if (!FROST_STYLES.includes(token.value)) {
-        throw new Error(
+        throw errorAt(token, 
           `Unknown frost style "${token.value}". Available: ${FROST_STYLES.join(", ")}`,
         );
       }
@@ -200,7 +202,7 @@ function readFrost(arg: Token[] | undefined): string {
     ) {
       amount = token.value;
     } else {
-      throw new Error(
+      throw errorAt(token, 
         "glass(): frost expects a number between 0 and 1 and an optional style, like: material: glass(#ffffff, 1.5, hammered 0.4);",
       );
     }
@@ -228,7 +230,7 @@ function readSettings(
   // 2. Too many arguments
   if (args.length > settings.length) {
     const names = settings.map((setting) => `a ${setting.name}`).join(" and ");
-    throw new Error(
+    throw errorAt(args.flat(), 
       `${material}() expects an optional color and ${names}, like: ${example}`,
     );
   }
@@ -243,7 +245,7 @@ function readSettings(
       token.value < setting.min ||
       token.value > setting.max
     ) {
-      throw new Error(
+      throw errorAt(args[i], 
         `${material}(): ${setting.name} expects a number between ${setting.min} and ${setting.max}, like: ${example}`,
       );
     }
@@ -261,7 +263,7 @@ function readMaterial(value: Token[] | undefined, color: string): string {
   if (value.length === 1 && value[0].type === "IDENT") {
     const name = value[0].value;
     if (!Object.hasOwn(MATERIAL_KEYWORDS, name)) {
-      throw new Error(
+      throw errorAt(value, 
         `Unknown material "${name}". Available: ${availableMaterials()}`,
       );
     }
@@ -271,7 +273,7 @@ function readMaterial(value: Token[] | undefined, color: string): string {
   // 2. It must be a function
   const call = readFunction(value);
   if (!call) {
-    throw new Error("material expects a function, like: material: matte();");
+    throw errorAt(value, "material expects a function, like: material: matte();");
   }
 
   // 3. Known names
@@ -281,7 +283,7 @@ function readMaterial(value: Token[] | undefined, color: string): string {
     call.name !== "jelly" &&
     call.name !== "glass"
   ) {
-    throw new Error(
+    throw errorAt(value, 
       `Unknown material "${call.name}". Available: ${availableMaterials()}`,
     );
   }
@@ -296,7 +298,7 @@ function readMaterial(value: Token[] | undefined, color: string): string {
   // 5. matte: nothing may be left
   if (call.name === "matte") {
     if (args.length > 0) {
-      throw new Error(
+      throw errorAt(value, 
         "matte() expects only an optional color, like: material: matte(#ff5a36);",
       );
     }
@@ -321,7 +323,7 @@ function readMaterial(value: Token[] | undefined, color: string): string {
 
   if (call.name === "glass") {
     if (args.length > 2) {
-      throw new Error(
+      throw errorAt(value, 
         "glass() expects an optional color and a refraction index and a frost, like: material: glass(#ffffff, 1.5, hammered 0.4);",
       );
     }
@@ -340,7 +342,7 @@ export function readAngle(value: Token[]): number {
 
   // One token expected
   if (value.length !== 1) {
-    throw new Error("An angle is expected, like: 70deg");
+    throw errorAt(value, "An angle is expected, like: 70deg");
   }
 
   // Special case: 0 without unit is accepted, like in CSS
@@ -350,7 +352,7 @@ export function readAngle(value: Token[]): number {
 
   // Everything else must have a unit
   if (token.type !== "DIMENSION") {
-    throw new Error("An angle must have a unit, like: 70deg");
+    throw errorAt(value, "An angle must have a unit, like: 70deg");
   }
 
   // The units
@@ -358,14 +360,14 @@ export function readAngle(value: Token[]): number {
   if (token.unit === "rad") return token.value;
   if (token.unit === "turn") return token.value * 2 * Math.PI;
 
-  throw new Error(`Unknown angle unit: "${token.unit}". Use deg, rad or turn.`);
+  throw errorAt(value, `Unknown angle unit: "${token.unit}". Use deg, rad or turn.`);
 }
 
 // Reads "azimuth elevation" and returns the direction toward the sun
 function readLight(value: Token[] | undefined): number[] {
   if (!value) return [0.408, 0.816, 0.408];
   if (value.length !== 2) {
-    throw new Error("light expects two angles, like: light: 45deg 60deg;");
+    throw errorAt(value, "light expects two angles, like: light: 45deg 60deg;");
   }
   const azimuth = readAngle([value[0]]);
   const elevation = readAngle([value[1]]);
@@ -420,7 +422,7 @@ function readDuration(value: Token[]): number {
     if (token.type === "DIMENSION" && token.unit === "ms")
       return token.value / 1000;
   }
-  throw new Error("animation needs a duration, like: animation: float 2s;");
+  throw errorAt(value, "animation needs a duration, like: animation: float 2s;");
 }
 
 function hasKeyword(value: Token[], word: string): boolean {
@@ -449,7 +451,7 @@ function readOffset(token: Token, name: string): number {
   if (token.type === "PERCENTAGE" && token.value >= 0 && token.value <= 100) {
     return token.value / 100;
   }
-  throw new Error(
+  throw errorAt(token, 
     `@keyframes ${name}: expected from, to or a percentage between 0% and 100%`,
   );
 }
@@ -469,7 +471,7 @@ function animatedValue(
   const [name] = animation;
   // Like in CSS, if two @keyframes have the same name, the last one wins
   const found = keyframes.findLast((k) => k.name === name.value);
-  if (!found) throw new Error(`No @keyframes named "${name.value}"`);
+  if (!found) throw errorAt(name, `No @keyframes named "${name.value}"`);
 
   // Every moment where the animation sets this property
   const byOffset = new Map<number, string>();
@@ -551,7 +553,7 @@ export function generateShader(
   // ambient: the share of light received in the shadow; the sun gives the rest
   const ambient = readNumber(sceneStyles["ambient"], "ambient", 0.1, true);
   if (ambient > 1) {
-    throw new Error(
+    throw errorAt(sceneStyles["ambient"], 
       "ambient expects a number between 0 and 1, like: ambient: 0.3;",
     );
   }
