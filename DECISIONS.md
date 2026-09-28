@@ -198,6 +198,13 @@ The floor is added last and is never affected. The walls of a hole take the mate
 **Where**: one function, used everywhere: the docs examples, the playground, `npm run format` (and `format:check`), and the VS Code / Cursor extension, which bundles the same file.
 **Why**: readable diffs, no style debates, and the same result in the docs, the playground and the editor.
 
+## 34. The playground: index.html, CodeMirror, the code in the URL
+
+**Decision**: `index.html` is the playground. The editor is CodeMirror 6, colored by our own `classifyGss()` (the same as the docs), not by a CodeMirror grammar. The code lives in the URL (`#code=` + deflate + base64url), so the address bar is always a share link; nothing goes to a server. An "Examples" menu lists the first scene, the test scene and every example of the registry. A GLSL tab shows the shader the code becomes, read-only.
+**Errors**: compile errors are `GssError`s with a `start` and an `end` in the source. Tokens get their position in `scan()`, kept in a WeakMap so the AST does not change; readers throw with `errorAt(tokens, message)`, and `locate()` gives a position to errors thrown deeper. The editor underlines the span and says "Line 6, column 14".
+**Why**: the playground is what people open from a link, so sharing comes first. A textarea could not grow into line numbers, error marks, undo and later autocomplete from the registry. Keeping one classifier keeps the colors identical in the docs and the editor. The GLSL tab is the "readable path toward the shader" of Getting started.
+**Accepted limits**: errors that are not about a written value (an unknown shape in `@scene`, a GPU compile error) have no position yet, only a message. CodeMirror adds about 120 kB (gzip) to the playground and to the docs' "Try it".
+
 ## Open questions
 
 - **Targeting multiplied ids**: should `#hero` target `hero-1`, `hero-2` and `hero-3`?

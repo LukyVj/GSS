@@ -1,13 +1,20 @@
 import { createRenderer, type Renderer } from "../runtime/renderer";
-import { connectEditor } from "../runtime/editor";
+import { connectEditor, type Editor } from "../runtime/editor";
+import { encodeCode } from "../runtime/share";
 import { formatGss } from "./format";
 
 // "Try it" opens a live editor under an example. Only one is open at a time:
 // browsers limit how many WebGL canvases a page can have.
-let open: { example: HTMLElement; panel: HTMLElement; renderer: Renderer } | null = null;
+let open: {
+  example: HTMLElement;
+  panel: HTMLElement;
+  renderer: Renderer;
+  editor: Editor;
+} | null = null;
 
 function close(): void {
   if (!open) return;
+  open.editor.destroy();
   open.renderer.destroy();
   open.panel.remove();
   open.example.classList.remove("is-open");
@@ -24,9 +31,10 @@ function openPlayground(example: HTMLElement, code: string): void {
     <div class="playground-bar">
       <span class="status ok">OK</span>
       <span class="hint">Edit the code, drag the scene to turn around it</span>
+      <a class="open-playground" href="./" target="_blank">Open in playground ↗</a>
     </div>
     <div class="playground-body">
-      <textarea spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="GSS code"></textarea>
+      <div class="code-host"></div>
       <canvas></canvas>
     </div>
     <pre class="error" hidden></pre>`;
@@ -35,16 +43,23 @@ function openPlayground(example: HTMLElement, code: string): void {
   example.querySelector("button.try")!.textContent = "Close";
 
   const renderer = createRenderer(panel.querySelector("canvas")!);
-  connectEditor(
+  const editor = connectEditor(
     {
-      textarea: panel.querySelector("textarea")!,
+      host: panel.querySelector(".code-host")!,
       status: panel.querySelector(".status")!,
       error: panel.querySelector(".error")!,
     },
     renderer,
     formatGss(code),
   );
-  open = { example, panel, renderer };
+
+  // The link carries the code as it is now, edits included
+  const link = panel.querySelector<HTMLAnchorElement>(".open-playground")!;
+  editor.onCompile(async (current) => {
+    link.href = `./${await encodeCode(current)}`;
+  });
+
+  open = { example, panel, renderer, editor };
 }
 
 // One listener for the whole page, whatever the number of examples

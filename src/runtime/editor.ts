@@ -1,71 +1,217 @@
+import { EditorState, RangeSetBuilder } from "@codemirror/state";
+import {
+  EditorView,
+  Decoration,
+  ViewPlugin,
+  keymap,
+  lineNumbers,
+  highlightActiveLine,
+  highlightActiveLineGutter,
+  drawSelection,
+  type DecorationSet,
+  type ViewUpdate,
+} from "@codemirror/view";
+import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
+import { bracketMatching, indentOnInput, indentService } from "@codemirror/language";
+import { closeBrackets, closeBracketsKeymap } from "@codemirror/autocomplete";
+import { setDiagnostics, lintGutter, type Diagnostic } from "@codemirror/lint";
 import type { Renderer } from "./renderer";
-import { highlightGss } from "../docs/highlight";
+import { classifyGss } from "../docs/highlight";
+import { formatGss } from "../docs/format";
+import { scan } from "../compiler/tokenizer";
+import { GssError } from "../compiler/errors";
 
-// The elements of an editor: the code, an OK / Error badge, and the error message
+// Where the editor goes, the OK / Error badge, and the error message
 export type EditorElements = {
-  textarea: HTMLTextAreaElement;
+  host: HTMLElement;
   status: HTMLElement;
   error: HTMLElement;
 };
 
-// Shows the code in the textarea, and recompiles the scene after each change
+// What the page can do with an editor once it is created
+export type Editor = {
+  getCode(): string;
+  setCode(code: string): void; // replaces everything (undoable with Cmd/Ctrl+Z)
+  onCompile(listener: (code: string) => void): void; // after each successful compile
+  destroy(): void;
+};
+
+// ----- Colors: our own classifier, turned into CodeMirror decorations -----
+
+const marks = new Map<string, Decoration>();
+function markFor(kind: string): Decoration {
+  if (!marks.has(kind)) marks.set(kind, Decoration.mark({ class: `gss-${kind}` }));
+  return marks.get(kind)!;
+}
+
+function colorize(view: EditorView): DecorationSet {
+  const builder = new RangeSetBuilder<Decoration>();
+  for (const { start, end, kind } of classifyGss(view.state.doc.toString())) {
+    if (end > start) builder.add(start, end, markFor(kind));
+  }
+  return builder.finish();
+}
+
+// The same classifier as the docs: the colors are identical everywhere
+const gssColors = ViewPlugin.fromClass(
+  class {
+    decorations: DecorationSet;
+    constructor(view: EditorView) {
+      this.decorations = colorize(view);
+    }
+    update(update: ViewUpdate) {
+      if (update.docChanged) this.decorations = colorize(update.view);
+    }
+  },
+  { decorations: (plugin) => plugin.decorations },
+);
+
+// ----- Indentation: two spaces per open block -----
+
+// How many blocks are open at a position ("{" not yet closed), comments aside
+function depthAt(code: string, position: number): number {
+  let depth = 0;
+  for (const { token } of scan(code.slice(0, position), { recover: true })) {
+    if (token.type !== "PUNCT") continue;
+    if (token.value === "{") depth++;
+    if (token.value === "}") depth = Math.max(0, depth - 1);
+  }
+  return depth;
+}
+
+const gssIndent = indentService.of((context, position) => {
+  const line = context.lineAt(position);
+  const closing = /^\s*\}/.test(line.text.slice(position - line.from)); // a line that starts with "}"
+  const depth = depthAt(context.state.doc.toString(), position);
+  return Math.max(0, depth - (closing ? 1 : 0)) * context.unit;
+});
+
+// Typing "}" at the start of a line re-indents it
+const reindentOnBrace = EditorState.languageData.of(() => [{ indentOnInput: /^\s*\}$/ }]);
+
+// ----- The editor -----
+
+const theme = EditorView.theme(
+  {
+    "&": { height: "100%", backgroundColor: "transparent", color: "var(--gss-text)" },
+    "&.cm-focused": { outline: "none" },
+    ".cm-scroller": { fontFamily: "inherit", lineHeight: "1.6" },
+    ".cm-content": { caretColor: "#e6e6e6", padding: "0.75rem 0" },
+    ".cm-cursor": { borderLeftColor: "#e6e6e6" },
+    ".cm-gutters": { backgroundColor: "transparent", color: "#55555f", border: "none" },
+    ".cm-activeLine": { backgroundColor: "rgba(255, 255, 255, 0.03)" },
+    ".cm-activeLineGutter": { backgroundColor: "transparent", color: "#9a9aa3" },
+    "&.cm-focused .cm-selectionBackground, .cm-selectionBackground": {
+      backgroundColor: "rgba(124, 180, 255, 0.25) !important",
+    },
+    ".cm-matchingBracket": { backgroundColor: "rgba(255, 255, 255, 0.12)", outline: "none" },
+    ".cm-lintRange-error": { backgroundImage: "none", textDecoration: "underline wavy #ff6b6b" },
+    ".cm-tooltip": { backgroundColor: "#1d1d22", border: "1px solid #33333a", color: "#e6e6e6" },
+  },
+  { dark: true },
+);
+
+// Shows the code in a CodeMirror editor, and recompiles the scene after each change
 export function connectEditor(
-  { textarea, status, error }: EditorElements,
+  { host, status, error }: EditorElements,
   renderer: Renderer,
   source: string,
-): void {
-  function tryLoad(code: string): void {
+): Editor {
+  const compileListeners: ((code: string) => void)[] = [];
+  let lastCompiled: string | null = null; // the last code that compiled
+  let typingTimer: number | undefined;
+
+  const view = new EditorView({
+    parent: host,
+    state: EditorState.create({
+      doc: source,
+      extensions: [
+        lineNumbers(),
+        highlightActiveLineGutter(),
+        highlightActiveLine(),
+        drawSelection(),
+        history(),
+        bracketMatching(),
+        closeBrackets(),
+        indentOnInput(),
+        gssIndent,
+        reindentOnBrace,
+        gssColors,
+        lintGutter(),
+        EditorState.tabSize.of(2),
+        keymap.of([
+          // Shift+Alt+F formats the code, like in VS Code
+          { key: "Shift-Alt-f", run: (v) => (setCode(formatGss(v.state.doc.toString())), true) },
+          ...closeBracketsKeymap,
+          ...defaultKeymap,
+          ...historyKeymap,
+          indentWithTab,
+        ]),
+        theme,
+        EditorView.updateListener.of((update) => {
+          if (!update.docChanged) return;
+          // We wait for a short pause in the typing before recompiling
+          clearTimeout(typingTimer);
+          typingTimer = window.setTimeout(() => tryLoad(), 250);
+        }),
+      ],
+    }),
+  });
+  host.classList.add("gss-dark"); // the dark palette of src/styles/gss-code.css
+
+  function showError(caught: unknown): void {
+    const message = caught instanceof Error ? caught.message : String(caught);
+    status.textContent = "Error";
+    status.className = "status error";
+    error.hidden = false;
+
+    // A compile error that knows its place: underline it, and say which line
+    const diagnostics: Diagnostic[] = [];
+    if (caught instanceof GssError && caught.start !== undefined) {
+      const length = view.state.doc.length;
+      const from = Math.min(caught.start, length);
+      const to = Math.min(Math.max(caught.end ?? from, from + 1), length);
+      const line = view.state.doc.lineAt(from);
+      error.textContent = `Line ${line.number}, column ${from - line.from + 1}: ${message}`;
+      diagnostics.push({ from, to, severity: "error", message });
+    } else {
+      error.textContent = message;
+    }
+    view.dispatch(setDiagnostics(view.state, diagnostics));
+  }
+
+  function tryLoad(): void {
+    const code = view.state.doc.toString();
     try {
       renderer.load(code);
-      status.textContent = "OK";
-      status.className = "status ok";
-      error.hidden = true;
     } catch (caught) {
-      status.textContent = "Error";
-      status.className = "status error";
-      error.hidden = false;
-      error.textContent = caught instanceof Error ? caught.message : String(caught);
+      showError(caught);
+      return;
     }
+    status.textContent = "OK";
+    status.className = "status ok";
+    error.hidden = true;
+    view.dispatch(setDiagnostics(view.state, []));
+    lastCompiled = code;
+    for (const listener of compileListeners) listener(code);
   }
 
-  // The colors: a <pre> under the textarea shows the same text, highlighted.
-  // The textarea stays on top (transparent letters, visible caret) and does the editing.
-  const area = document.createElement("div");
-  area.className = "code-area";
-  const layer = document.createElement("pre");
-  layer.className = "code-layer";
-  layer.setAttribute("aria-hidden", "true");
-  textarea.before(area);
-  area.append(layer, textarea);
-
-  function paint(): void {
-    // The extra "\n": a <pre> ignores a last empty line, the textarea does not
-    layer.innerHTML = highlightGss(textarea.value) + "\n";
-    layer.scrollTop = textarea.scrollTop;
-    layer.scrollLeft = textarea.scrollLeft;
+  function setCode(code: string): void {
+    view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: code } });
   }
-  textarea.addEventListener("scroll", () => {
-    layer.scrollTop = textarea.scrollTop;
-    layer.scrollLeft = textarea.scrollLeft;
-  });
 
-  textarea.value = source;
-  paint();
-  tryLoad(source);
+  tryLoad();
 
-  // We wait for a short pause in the typing before recompiling
-  let typingTimer: number | undefined;
-  textarea.addEventListener("input", () => {
-    paint(); // the colors follow at once, the scene after a pause
-    clearTimeout(typingTimer);
-    typingTimer = window.setTimeout(() => tryLoad(textarea.value), 250);
-  });
-
-  // Tab inserts two spaces instead of leaving the editor
-  textarea.addEventListener("keydown", (e) => {
-    if (e.key !== "Tab" || e.shiftKey) return;
-    e.preventDefault();
-    textarea.setRangeText("  ", textarea.selectionStart, textarea.selectionEnd, "end");
-    textarea.dispatchEvent(new Event("input")); // setRangeText does not fire "input" by itself
-  });
+  return {
+    getCode: () => view.state.doc.toString(),
+    setCode,
+    onCompile(listener) {
+      compileListeners.push(listener);
+      if (lastCompiled !== null) listener(lastCompiled); // the first compile already happened
+    },
+    destroy() {
+      clearTimeout(typingTimer);
+      view.destroy();
+    },
+  };
 }

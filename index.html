@@ -3,7 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>GSS - GPU Style Sheets</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>GSS Playground</title>
     <style>
       html,
       body {
@@ -28,12 +29,45 @@
       }
       .editor header {
         display: flex;
-        justify-content: space-between;
+        gap: 0.5rem;
         align-items: center;
-        padding: 0.6rem 1rem;
+        padding: 0.5rem 0.75rem;
         font-size: 12px;
         color: #9a9aa3;
         border-bottom: 1px solid #26262c;
+      }
+      .tabs {
+        display: flex;
+        gap: 2px;
+        padding: 2px;
+        border-radius: 8px;
+        background: #1b1b20;
+      }
+      .tabs button,
+      .editor select,
+      #share {
+        padding: 4px 10px;
+        border: 0;
+        border-radius: 6px;
+        background: transparent;
+        color: #9a9aa3;
+        font: inherit;
+        cursor: pointer;
+      }
+      .tabs button[aria-selected="true"] {
+        background: #2b2b33;
+        color: #e6e6e6;
+      }
+      .editor select {
+        background: #1b1b20;
+        max-width: 11rem;
+      }
+      #share {
+        background: #e6e6e6;
+        color: #111114;
+      }
+      .spacer {
+        flex: 1;
       }
       .status {
         padding: 2px 8px;
@@ -48,22 +82,16 @@
         background: #3d1515;
         color: #ff7a7a;
       }
-      /* The code: a textarea over its colored copy (src/styles/gss-code.css).
-         Both get the same metrics here, or the caret drifts from the letters. */
-      .editor .code-area {
+      /* The code: a CodeMirror editor (src/runtime/editor.ts), or the GLSL it becomes */
+      .code-host {
         flex: 1;
-      }
-      .editor .code-area textarea,
-      .editor .code-area .code-layer {
-        padding: 1rem;
-        outline: none;
-        resize: none;
-        font: inherit;
+        min-height: 0;
         font-size: 13px;
-        line-height: 1.6;
-        tab-size: 2;
       }
-      .editor .error {
+      .code-host[hidden] {
+        display: none;
+      }
+      .editor pre.error {
         margin: 0;
         max-height: 30%;
         overflow: auto;
@@ -103,16 +131,19 @@
   <body>
     <aside class="editor">
       <header>
-        <span>scene.gss</span>
+        <div class="tabs" role="tablist">
+          <button type="button" role="tab" data-tab="gss" aria-selected="true">GSS</button>
+          <button type="button" role="tab" data-tab="glsl" aria-selected="false">GLSL</button>
+        </div>
+        <select id="examples" aria-label="Examples">
+          <option value="" selected disabled>Examples…</option>
+        </select>
+        <span class="spacer"></span>
         <span id="status" class="status ok">OK</span>
+        <button type="button" id="share">Share</button>
       </header>
-      <textarea
-        id="code"
-        spellcheck="false"
-        autocomplete="off"
-        autocapitalize="off"
-        aria-label="GSS code"
-      ></textarea>
+      <div id="code" class="code-host"></div>
+      <div id="glsl" class="code-host" hidden></div>
       <pre id="error" class="error" hidden></pre>
     </aside>
     <canvas id="scene"></canvas>

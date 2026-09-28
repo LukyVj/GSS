@@ -1,21 +1,20 @@
 import { scan, type Located } from "../compiler/tokenizer";
 import { escapeHtml } from "./escape";
 
-// Turns GSS code into HTML where each token is a <span class="gss-…">.
-// The text itself never changes: remove the tags and you get the code back, exactly.
-// This is what lets the editor lay the colors under a transparent textarea.
-export function highlightGss(code: string): string {
-  const parts = scan(code);
-  let html = "";
+// One colored piece of code: [start, end) in the text, and what it is
+export type Piece = { start: number; end: number; kind: string };
+
+// What each piece of GSS code is: selector, property, number, color…
+// Used by highlightGss (the docs) and by the editor (CodeMirror decorations).
+// It never throws: code being typed is often unfinished.
+export function classifyGss(code: string): Piece[] {
+  const parts = scan(code, { recover: true });
+  const pieces: Piece[] = [];
   let depth = 0;
   let inValue = false; // between the ":" and the ";" of a declaration
-  let last = 0; // where the previous token ended
 
   parts.forEach((part, index) => {
     const { token, start, end } = part;
-    html += escapeHtml(code.slice(last, start)); // the spaces, as written
-    last = end;
-    const text = code.slice(start, end);
     const next = parts[index + 1]?.token;
     const nextIs = (p: string) => next?.type === "PUNCT" && next.value === p;
 
@@ -24,19 +23,32 @@ export function highlightGss(code: string): string {
       if (token.value === "}") depth = Math.max(0, depth - 1);
       if (token.value === "{" || token.value === "}" || token.value === ";") inValue = false;
       if (token.value === ":" && isProperty(parts[index - 1], depth)) inValue = true;
-      html += span("punct", text);
+      pieces.push({ start, end, kind: "punct" });
       return;
     }
 
     if (token.type === "DIMENSION") {
-      const number = text.slice(0, text.length - token.unit.length);
-      html += span("number", number) + span("unit", token.unit);
+      const split = end - token.unit.length; // 70deg → "70" and "deg"
+      pieces.push({ start, end: split, kind: "number" }, { start: split, end, kind: "unit" });
       return;
     }
 
-    html += span(kindOf(part, depth, inValue, nextIs), text);
+    pieces.push({ start, end, kind: kindOf(part, depth, inValue, nextIs) });
   });
 
+  return pieces;
+}
+
+// Turns GSS code into HTML where each token is a <span class="gss-…">.
+// The text itself never changes: remove the tags and you get the code back, exactly.
+export function highlightGss(code: string): string {
+  let html = "";
+  let last = 0; // where the previous piece ended
+  for (const { start, end, kind } of classifyGss(code)) {
+    html += escapeHtml(code.slice(last, start)); // the spaces, as written
+    html += span(kind, code.slice(start, end));
+    last = end;
+  }
   return html + escapeHtml(code.slice(last));
 }
 
@@ -54,6 +66,8 @@ function kindOf(
   switch (token.type) {
     case "COMMENT":
       return "comment";
+    case "INVALID":
+      return "invalid";
     case "AT_KEYWORD":
       return "at-rule";
     case "NUMBER":

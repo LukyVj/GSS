@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { highlightGss } from "./highlight";
+import { highlightGss, classifyGss } from "./highlight";
 import scene from "../scene.gss?raw";
 
 // Reads the HTML back as plain text, like a browser would show it
@@ -47,5 +47,12 @@ describe("highlightGss", () => {
     expect(kind(html, "from")).toBe("selector");
     expect(kind(html, "scale")).toBe("property");
     expect(kind(html, "50%")).toBe("number");
+  });
+});
+
+describe("classifyGss", () => {
+  it("never throws on unfinished code", () => {
+    expect(() => classifyGss("cube { color: # ~ /* not closed")).not.toThrow();
+    expect(classifyGss("a ~").at(-1)).toEqual({ start: 2, end: 3, kind: "invalid" });
   });
 });

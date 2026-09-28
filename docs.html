@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>GSS — Reference</title>
     <style>
       body {
@@ -222,20 +223,21 @@
         grid-template-columns: 1fr 1fr;
         height: 300px;
       }
-      /* The code: a textarea over its colored copy (src/styles/gss-code.css).
-         Both get the same metrics here, or the caret drifts from the letters. */
-      .playground .code-area {
+      /* The code: a CodeMirror editor (src/runtime/editor.ts) */
+      .playground .code-host {
+        min-width: 0;
+        min-height: 0;
+        overflow: hidden;
         border-right: 1px solid #26262c;
-      }
-      .playground .code-area textarea,
-      .playground .code-area .code-layer {
-        padding: 0.75rem;
-        outline: none;
-        resize: none;
-        font: inherit;
         font-size: 13px;
-        line-height: 1.6;
-        tab-size: 2;
+      }
+      .open-playground {
+        margin-left: auto;
+        color: #9a9aa3;
+        text-decoration: none;
+      }
+      .open-playground:hover {
+        color: #e6e6e6;
       }
       .playground canvas {
         display: block;
@@ -245,7 +247,7 @@
         touch-action: none;
         cursor: grab;
       }
-      .playground .error {
+      .playground pre.error {
         margin: 0;
         padding: 0.6rem 0.75rem;
         border-radius: 0;
@@ -273,7 +275,7 @@
           grid-template-rows: auto 240px;
           height: auto;
         }
-        .playground .code-area {
+        .playground .code-host {
           height: 180px;
           border-right: 0;
           border-bottom: 1px solid #26262c;
