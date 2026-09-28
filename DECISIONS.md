@@ -193,8 +193,10 @@ The floor is added last and is never affected. The walls of a hole take the mate
 
 ## 33. Code style: one formatter decides
 
-**Decision**: `formatGss` sets the style of every GSS file. One instance per line in `@scene`. Rules are always expanded, one declaration per line. **\_\_** space after `:`, no column alignment. Blank lines written by the author are kept, but never more than **\_\_**. Values are written as the author wrote them (`2.0`, `#BADA55`). Comments are **\_\_**.
-**Why**: **\_\_** (diffs, no style debates, the same result in the docs, the playground and VS Code).
+**Decision**: `formatGss` sets the style of every GSS file. One instance per line in `@scene`. Rules are always expanded, one declaration per line, indented with two spaces. One space after the `:` of a declaration and none before; the `:` of a selector stays stuck (`cube:nth-child`). No column alignment. Blank lines written by the author are kept, but never more than one, and top-level blocks are always separated by one. Values are written as the author wrote them (`2.0`, `#BADA55`). Comments are kept exactly as written, on their own line or at the end of a line.
+**How**: the formatter works on the tokens of `scan()`, which keeps comments and the position of each token. Between two tokens it only decides the whitespace: a line break after `{`, `;` and `}`, otherwise one space where the source had some and nothing where tokens touch. So it cannot change the meaning, and a test checks it on every documented example and on `scene.gss`.
+**Where**: one function, used everywhere: the docs examples, the playground, `npm run format` (and `format:check`), and the VS Code / Cursor extension, which bundles the same file.
+**Why**: readable diffs, no style debates, and the same result in the docs, the playground and the editor.
 
 ## Open questions
 

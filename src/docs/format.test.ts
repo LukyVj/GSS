@@ -80,7 +80,25 @@ describe("formatGss with comments", () => {
     expect(
       formatGss("@scene{cube#a.b;}#a{material:glass(1.5,   hammered 0.3);}"),
     ).toBe(
-      "@scene {\n  cube#a.b;\n}\n\n#a {\n  material:glass(1.5, hammered 0.3);\n}\n",
+      "@scene {\n  cube#a.b;\n}\n\n#a {\n  material: glass(1.5, hammered 0.3);\n}\n",
+    );
+  });
+
+  it("puts one space after the colon of a declaration, none before", () => {
+    expect(formatGss("cube{radius:1;material :glass(1.5);}")).toBe(
+      "cube {\n  radius: 1;\n  material: glass(1.5);\n}\n",
+    );
+  });
+
+  it("does the same in the frames of @keyframes", () => {
+    expect(formatGss("@keyframes k{to{scale:2;}}")).toBe(
+      "@keyframes k {\n  to {\n    scale: 2;\n  }\n}\n",
+    );
+  });
+
+  it("leaves the colons of selectors in @scene stuck", () => {
+    expect(formatGss("@scene { cube:nth-child(odd); }")).toBe(
+      "@scene {\n  cube:nth-child(odd);\n}\n",
     );
   });
 

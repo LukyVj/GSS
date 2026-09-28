@@ -109,7 +109,7 @@ describe("renderDocs", () => {
   });
 
   it("links every property and at-rule from the table of contents", () => {
-    const toc = html.slice(html.indexOf('<nav class="toc">'), html.indexOf("</nav>"));
+    const toc = html.slice(html.indexOf('<nav class="toc-nav">'), html.indexOf("</nav>"));
     for (const property of PROPERTIES) {
       expect(toc, property.name).toContain(`href="#${property.name}"`);
     }
