@@ -10,7 +10,7 @@
     "test": "vitest",
     "format": "node scripts/format-gss.mjs",
     "format:check": "node scripts/format-gss.mjs --check",
-    "generate-vscode-extension": "cd editors/vscode && npm run package"
+    "generate-vscode-extension": "cd editors/vscode && npm install && npm run package"
   },
   "devDependencies": {
     "playwright": "^1.63.0",

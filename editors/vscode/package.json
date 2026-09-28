@@ -1,14 +1,19 @@
 {
   "name": "gss-language",
   "displayName": "GSS — GPU Style Sheets",
-  "description": "Syntax highlighting for GSS",
-  "version": "0.0.1",
+  "description": "Syntax highlighting and formatting for GSS",
+  "version": "0.1.0",
   "publisher": "lukyvj",
   "engines": {
     "vscode": "^1.80.0"
   },
   "categories": [
-    "Programming Languages"
+    "Programming Languages",
+    "Formatters"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onLanguage:gss"
   ],
   "contributes": {
     "languages": [
@@ -30,9 +35,23 @@
         "scopeName": "source.gss",
         "path": "./syntaxes/gss.tmLanguage.json"
       }
-    ]
+    ],
+    "configurationDefaults": {
+      "[gss]": {
+        "editor.defaultFormatter": "lukyvj.gss-language",
+        "editor.formatOnSave": true,
+        "editor.tabSize": 2,
+        "editor.insertSpaces": true
+      }
+    }
   },
   "scripts": {
-    "package": "npx @vscode/vsce package --allow-missing-repository --skip-license"
+    "build": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --platform=node --format=cjs --target=node18 --external:vscode",
+    "package": "npm run build && vsce package --allow-missing-repository --skip-license"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.80.0",
+    "@vscode/vsce": "^3.2.0",
+    "esbuild": "^0.25.0"
   }
 }

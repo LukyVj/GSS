@@ -1,26 +1,293 @@
 {
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
   "scopeName": "source.gss",
   "name": "GSS",
   "patterns": [
-    { "include": "#comment" },
-    { "include": "#at-rule" },
-    { "include": "#number" }
+    {
+      "include": "#comment"
+    },
+    {
+      "include": "#at-scene"
+    },
+    {
+      "include": "#at-keyframes"
+    },
+    {
+      "include": "#selector"
+    },
+    {
+      "include": "#rule-block"
+    }
   ],
   "repository": {
     "comment": {
       "name": "comment.block.gss",
       "begin": "/\\*",
-      "end": "\\*/"
+      "end": "\\*/",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.definition.comment.begin.gss"
+        }
+      },
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.comment.end.gss"
+        }
+      }
     },
-    "at-rule": {
-      "match": "@(scene|keyframes)\\b",
-      "name": "keyword.control.at-rule.gss"
+    "at-scene": {
+      "comment": "@scene { cube#hero.big * 3; } : only selectors inside",
+      "begin": "(@)(scene)\\b",
+      "beginCaptures": {
+        "0": {
+          "name": "keyword.control.at-rule.scene.gss"
+        },
+        "1": {
+          "name": "punctuation.definition.keyword.gss"
+        }
+      },
+      "end": "(?<=\\})",
+      "patterns": [
+        {
+          "include": "#comment"
+        },
+        {
+          "begin": "\\{",
+          "end": "\\}",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.section.scene.begin.bracket.curly.gss"
+            }
+          },
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.section.scene.end.bracket.curly.gss"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#comment"
+            },
+            {
+              "include": "#selector"
+            },
+            {
+              "match": "\\*",
+              "name": "keyword.operator.arithmetic.multiply.gss"
+            },
+            {
+              "include": "#number"
+            },
+            {
+              "match": ";",
+              "name": "punctuation.terminator.instance.gss"
+            }
+          ]
+        }
+      ]
+    },
+    "at-keyframes": {
+      "comment": "@keyframes name { from { ... } 50% { ... } }",
+      "begin": "(@)(keyframes)\\b\\s*(-?[a-zA-Z_][\\w-]*|--[\\w-]+)?",
+      "beginCaptures": {
+        "1": {
+          "name": "punctuation.definition.keyword.gss"
+        },
+        "0": {
+          "name": "keyword.control.at-rule.keyframes.gss"
+        },
+        "3": {
+          "name": "entity.name.function.keyframes.gss"
+        }
+      },
+      "end": "(?<=\\})",
+      "patterns": [
+        {
+          "include": "#comment"
+        },
+        {
+          "begin": "\\{",
+          "end": "\\}",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.section.keyframes.begin.bracket.curly.gss"
+            }
+          },
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.section.keyframes.end.bracket.curly.gss"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#comment"
+            },
+            {
+              "match": "\\b(from|to)\\b",
+              "name": "entity.other.keyframe-offset.gss"
+            },
+            {
+              "match": "(?<![\\w-])\\d+(?:\\.\\d+)?%",
+              "name": "entity.other.keyframe-offset.percentage.gss"
+            },
+            {
+              "match": ",",
+              "name": "punctuation.separator.list.comma.gss"
+            },
+            {
+              "include": "#rule-block"
+            }
+          ]
+        }
+      ]
+    },
+    "selector": {
+      "patterns": [
+        {
+          "match": "(#)[\\w-]+",
+          "name": "entity.other.attribute-name.id.gss",
+          "captures": {
+            "1": {
+              "name": "punctuation.definition.entity.gss"
+            }
+          }
+        },
+        {
+          "match": "(\\.)[\\w-]+",
+          "name": "entity.other.attribute-name.class.gss",
+          "captures": {
+            "1": {
+              "name": "punctuation.definition.entity.gss"
+            }
+          }
+        },
+        {
+          "match": "(:)[\\w-]+",
+          "name": "entity.other.attribute-name.pseudo-class.gss",
+          "captures": {
+            "1": {
+              "name": "punctuation.definition.entity.gss"
+            }
+          }
+        },
+        {
+          "match": "(?<![\\w-])[a-zA-Z_][\\w-]*",
+          "name": "entity.name.tag.gss"
+        },
+        {
+          "match": ",",
+          "name": "punctuation.separator.list.comma.gss"
+        }
+      ]
+    },
+    "rule-block": {
+      "begin": "\\{",
+      "end": "\\}",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.section.property-list.begin.bracket.curly.gss"
+        }
+      },
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.section.property-list.end.bracket.curly.gss"
+        }
+      },
+      "name": "meta.property-list.gss",
+      "patterns": [
+        {
+          "include": "#comment"
+        },
+        {
+          "include": "#declaration"
+        }
+      ]
+    },
+    "declaration": {
+      "begin": "(-?[a-zA-Z_][\\w-]*|--[\\w-]+)\\s*(:)",
+      "beginCaptures": {
+        "1": {
+          "name": "support.type.property-name.gss"
+        },
+        "2": {
+          "name": "punctuation.separator.key-value.gss"
+        }
+      },
+      "end": "(;)|(?=\\})",
+      "endCaptures": {
+        "1": {
+          "name": "punctuation.terminator.rule.gss"
+        }
+      },
+      "contentName": "meta.property-value.gss",
+      "patterns": [
+        {
+          "include": "#value"
+        }
+      ]
+    },
+    "value": {
+      "patterns": [
+        {
+          "include": "#comment"
+        },
+        {
+          "match": "(#)[0-9a-fA-F]{3,8}\\b",
+          "name": "constant.other.color.rgb-value.hex.gss",
+          "captures": {
+            "1": {
+              "name": "punctuation.definition.constant.gss"
+            }
+          }
+        },
+        {
+          "include": "#number"
+        },
+        {
+          "begin": "(-?[a-zA-Z_][\\w-]*|--[\\w-]+)(\\()",
+          "end": "\\)",
+          "beginCaptures": {
+            "1": {
+              "name": "support.function.gss"
+            },
+            "2": {
+              "name": "punctuation.section.function.begin.bracket.round.gss"
+            }
+          },
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.section.function.end.bracket.round.gss"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#value"
+            }
+          ]
+        },
+        {
+          "match": "(?<![\\w-])(?:-?[a-zA-Z_][\\w-]*|--[\\w-]+)",
+          "name": "support.constant.property-value.gss"
+        },
+        {
+          "match": ",",
+          "name": "punctuation.separator.list.comma.gss"
+        },
+        {
+          "match": "[+*/]|(?<=\\s)-(?=\\s)",
+          "name": "keyword.operator.arithmetic.gss"
+        }
+      ]
     },
     "number": {
-      "match": "(?<![\\w#.-])(-?(?:\\d+\\.?\\d*|\\.\\d+))(deg|rad|turn|ms|s|%)?",
+      "match": "(?<![\\w#-])(-?(?:\\d+(?:\\.\\d+)?|\\.\\d+))([a-zA-Z]+|%)?",
       "captures": {
-        "1": { "name": "constant.numeric.gss" },
-        "2": { "name": "keyword.other.unit.gss" }
+        "1": {
+          "name": "constant.numeric.gss"
+        },
+        "2": {
+          "name": "keyword.other.unit.gss"
+        }
       }
     }
   }
