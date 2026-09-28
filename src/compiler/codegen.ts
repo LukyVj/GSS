@@ -749,6 +749,74 @@ vec3 shadeJelly(vec3 p, vec3 n, vec3 rd, Material m) {
   return body + glow + shine + mix(m.color, vec3(1.0), 0.5) * rim * 0.4;
 }
 
+// A pseudo-random vec3 between 0 and 1, from a position.
+// The same position always gives the same result.
+vec3 hash3(vec3 p) {
+  p = fract(p * vec3(0.1031, 0.1030, 0.0973));
+  p += dot(p, p.yxz + 33.33);
+  return fract((p.xxy + p.yxx) * p.zyx);
+}
+
+// Like march(), but inside an object, where map() is negative.
+// Returns how far the ray goes before it comes out.
+float marchInside(vec3 ro, vec3 rd) {
+  float t = 0.0;
+  for (int i = 0; i < 64; i++) {
+    float d = -map(ro + rd * t).x;                          // ← the distance to the edge, from inside
+    t += max(d, 0.002);                     // always move a little, even at the edge
+    if (d < 0.001 || t > MAX_DIST) break;   // reached the other side
+  }
+  return t;                               // ← how far the ray went
+}
+
+// Glass: the ray bends in, crosses the object, bends out, and shows what's behind.
+vec3 shadeGlass(vec3 p, vec3 n, vec3 rd, Material m) {
+  // 1. In: air → glass
+  vec3 inDir = refract(rd, n, 1.0 / m.ior);
+
+  // 2. Through: start just inside, march to the other side
+  vec3 start = p - n * 0.01;
+  float t = marchInside(start, inDir);
+  vec3 exitP = start + inDir * t;
+  vec3 exitN = calcNormal(exitP);
+
+  // 3. Out: glass → air. The normal points outside, so we flip it:
+  //    refract() wants the normal that faces the ray.
+  vec3 outDir = refract(inDir, -exitN, m.ior);
+  // At a grazing angle, the light cannot get out: it bounces back inside
+  // ("total internal reflection"). refract() then returns vec3(0.0).
+  if (outDir == vec3(0.0)) outDir = reflect(inDir, -exitN);
+
+  // 4. Behind: what the ray sees once it's out, tinted by the glass
+  vec3 behind = trace(exitP + exitN * 0.01, outDir);   // ← start just outside the exit point
+  vec3 through = behind * m.color;
+
+  // 5. Frost: a few rays, each bent a little differently, then averaged.
+  //    The more frost, the wider they spread: what's behind gets blurry.
+  if (m.roughness > 0.0) {
+    vec3 sum = through;                      // the first ray, already traced
+    for (int k = 1; k < 4; k++) {            // 3 more rays
+      vec3 jitter = hash3(exitP * 57.0 + float(k) * 13.1) - 0.5;  // between -0.5 and 0.5
+      vec3 dir = normalize(outDir + jitter * m.roughness * 0.8);          // ← what makes them spread?
+      sum += trace(exitP + exitN * 0.01, dir) * m.color;
+    }
+    through = sum / 4.0;                     // ← the average of how many rays?
+    // Frosted glass is also a bit milky: it scatters some white light
+    through = mix(through, diffuse(n, vec3(1.0)), m.roughness * 0.35);
+  }
+
+  // 6. The reflection on the surface: weak from the front, strong at grazing angles
+  vec3 r = reflect(rd, n);
+  vec3 reflected = trace(p + n * 0.01, r);
+  float f = fresnel(vec3(0.04), rd, n).x;   // glass reflects 4% from the front
+  vec3 col = mix(through, reflected, f);
+
+  // 7. Frosted glass (ice) glows a little, like jelly, and a sharp highlight
+  col += m.color * exp(-thickness(p, n) * 2.0) * m.roughness * 0.5;
+  col += pow(max(dot(r, LIGHT_DIR), 0.0), 120.0);
+  return col;
+}
+
 void main() {
   vec2 uv = (gl_FragCoord.xy - 0.5 * iResolution.xy) / iResolution.y;
 
@@ -773,6 +841,7 @@ void main() {
     col = diffuse(n, m.color);
     if (m.kind == METAL) col = shadeMetal(p, n, rd, m);
     if (m.kind == JELLY) col = shadeJelly(p, n, rd, m);
+    if (m.kind == GLASS) col = shadeGlass(p, n, rd, m);
   }
 
   outColor = vec4(col, 1.0);

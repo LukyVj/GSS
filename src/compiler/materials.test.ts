@@ -196,3 +196,11 @@ describe("material: glass()", () => {
     );
   });
 });
+
+describe("material: glass lighting", () => {
+  it("can march inside an object", () => {
+    expect(compileGSS("@scene { sphere; }")).toContain(
+      "float marchInside(vec3 ro, vec3 rd)",
+    );
+  });
+});
