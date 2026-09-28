@@ -1,9 +1,10 @@
 /* GSS test scene
-   One zone per feature, placed apart so they never overlap:
-     Zone 1 (center)  transforms: translate, rotate, scale, size, classes
-     Zone 2 (back)    operations: blend, subtract
-     Zone 3 (front)   animations: @keyframes
-     Zone 4 (left)    materials: matte, metal, jelly, glass, ice
+  One zone per feature, placed apart so they never overlap:
+    Zone 1 (center)  transforms: translate, rotate, scale, size, classes
+    Zone 2 (back)    operations: blend, subtract
+    Zone 3 (front)   animations: @keyframes
+    Zone 4 (left)    materials: matte, metal, jelly, glass, ice
+    Zone 5 (right)   shapes: cylinder, cone, capsule
  */
 
 @scene {
@@ -34,6 +35,13 @@
   sphere#m-jelly;
   sphere#m-glass;
   cube#m-ice;
+
+  /* Zone 5: shapes */
+  cylinder#s-cylinder;
+  cone#s-cone;
+  cone#s-shade;
+  capsule#s-pill;
+  capsule#s-bean;
 }
 
 /* ===== Scene settings ===== */
@@ -205,4 +213,42 @@ scene {
   translate: -7 0.6 3;
   size: 0.9;
   material: ice;
+}
+
+/* ===== Zone 5: shapes (right, x = 7) ===== */
+
+#s-cylinder {
+  translate: 7 0.5 -3;
+  radius: 0.4;
+  height: 1.6;
+}
+
+#s-cone {
+  translate: 7 0.5 -1.5;
+  radius: 0.5;
+  height: 1.2;
+  color: #3ad16b;
+}
+
+#s-shade {
+  translate: 7 0.5 0;
+  radius: 0.6 0.3;
+  height: 0.8;
+  material: gold;
+}
+
+#s-pill {
+  translate: 7 0.5 1.5;
+  radius: 0.25;
+  height: 1.4;
+  color: #ff5a36;
+  material: jelly;
+}
+
+#s-bean {
+  translate: 7 0.5 3;
+  radius: 0.35;
+  height: 1.2;
+  rotate-x: 90deg;
+  material: chrome;
 }
