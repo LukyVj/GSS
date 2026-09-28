@@ -191,6 +191,11 @@ The floor is added last and is never affected. The walls of a hole take the mate
 **Why**: when the bottom face of a glass object is exactly on the floor, both surfaces are at the same place and the ray exiting the object gets confused: the render shows stripes.
 **Later**: exclude the floor from `marchInside()`.
 
+## 33. Code style: one formatter decides
+
+**Decision**: `formatGss` sets the style of every GSS file. One instance per line in `@scene`. Rules are always expanded, one declaration per line. **\_\_** space after `:`, no column alignment. Blank lines written by the author are kept, but never more than **\_\_**. Values are written as the author wrote them (`2.0`, `#BADA55`). Comments are **\_\_**.
+**Why**: **\_\_** (diffs, no style debates, the same result in the docs, the playground and VS Code).
+
 ## Open questions
 
 - **Targeting multiplied ids**: should `#hero` target `hero-1`, `hero-2` and `hero-3`?

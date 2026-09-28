@@ -36,7 +36,8 @@ export function scan(source: string): Located[] {
   let start = 0; // where the token being read begins
 
   // Records a token that runs from `start` to the current position
-  const push = (token: Token | Comment) => located.push({ token, start, end: i });
+  const push = (token: Token | Comment) =>
+    located.push({ token, start, end: i });
 
   // Returns the character at a position, or "" if we exceed the end
   const charAt = (index: number): string => source[index] ?? "";
