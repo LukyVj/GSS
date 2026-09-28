@@ -131,6 +131,11 @@
         #docs article[id] {
           view-timeline-inset: 25% 74%;
         }
+        /* The last entry must be able to reach the band: without this room below it,
+           the page stops scrolling first and the entry above stays highlighted */
+        #docs section:last-of-type > article:last-of-type {
+          min-height: 80vh;
+        }
         .toc a {
           animation: toc-reading 1ms linear none;
           animation-range: cover 0% cover 100%; /* after the shorthand, which resets it */
@@ -144,6 +149,13 @@
           color: #b4235a;
           text-decoration: underline 2px;
           text-underline-offset: 3px;
+          padding-inline-start: 6px;
+          background: linear-gradient(
+            to right,
+            #b4235a 0%,
+            #b4235a 4px,
+            transparent 4px
+          );
         }
       }
 
