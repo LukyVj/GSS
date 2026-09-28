@@ -129,5 +129,5 @@ scene {
 #m-gold   { translate: -7 0.5 -1.8; radius: 0.5; material: gold; }
 #m-chrome { translate: -7 0.5 -0.6; radius: 0.5; material: chrome; }
 #m-jelly  { translate: -7 0.5 0.6;  radius: 0.5; color: #ff5a36; material: jelly; }
-#m-glass  { translate: -7 0.6 1.8;  radius: 0.5; material: glass; }
+#m-glass  { translate: -7 0.6 1.8;  radius: 0.5; material: glass(1.5, hammered 0.3); }
 #m-ice    { translate: -7 0.6 3;    size: 0.9; material: ice; }

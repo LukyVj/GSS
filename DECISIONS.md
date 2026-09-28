@@ -181,8 +181,9 @@ The floor is added last and is never affected. The walls of a hole take the mate
 
 ## 31. Glass: one refraction in, one out
 
-**Decision**: a glass ray bends in with `refract()`, crosses the object with `marchInside()` (which marches with `-map()`), bends out, then `trace()` shows what's behind. When the light cannot get out (total internal reflection), the ray bounces back inside once.Frost averages 4 rays, each bent a little differently (jittered with `hash3()`), then adds a bit of milky white light. `ice` is `glass(#cfeaff, 1.31, 0.25)`.
-**Accepted limits**: glass seen through another glass object looks matte (one bounce, decision 29). Each glass pixel costs three more marches. Frosted glass is grainy, and the grain shimmers when the camera moves. More rays would smooth it, at a higher cost.
+**Decision**: … Frost has four styles, all driven by one amount: the normals are bumped with smooth noise (`noise()`, stuck to the surface), like a normal map in a 2D glass shader. `frostSettings()` holds the size and strength of the bumps for each style. `frosted` adds a white patchy layer (the default), `wavy` and `hammered` only distort, `blurred` also averages 4 rays in a fixed cross, adds a tint, light on the bumps and speckles. Written `glass(1.5, hammered 0.4)`, style and amount in any order.
+**Why**: we compared six techniques side by side. Random jittered rays were grainy and shimmered; smooth noise stuck to the surface gives distortion without grain.
+**Accepted limits**: glass seen through another glass object looks matte (decision 29). Each glass pixel costs three more marches, six with `blurred`.
 
 ## 32. Glass must not touch the floor
 
