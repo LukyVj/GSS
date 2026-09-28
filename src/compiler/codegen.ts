@@ -3,9 +3,9 @@ import { errorAt, locate } from "./errors";
 import { tokenize } from "./tokenizer";
 import type { StyledInstance, Styles } from "./resolve";
 import type { Keyframes } from "./ast";
-import { readFunction } from "./values";
-import { readSvgPath } from "./svgpath";
-import { pathFunction, type ViewBox } from "./path";
+import { readFunction, readPolygon } from "./values";
+import { readSvgPath, type Point } from "./svgpath";
+import { pathFunction, polygonFunction, type ViewBox } from "./path";
 
 // Utility functions
 function round(n: number): number {
@@ -77,6 +77,16 @@ function readD(value: Token[] | undefined): Token & { type: "STRING" } {
     throw errorAt(value, `d expects path("…"), like: ${example}`);
   }
   return arg[0];
+}
+
+// Reads d: polygon(0 1, 1 -1, -1 -1) for a prism
+function readPrismD(value: Token[] | undefined): Point[] {
+  const example = "d: polygon(0 -1, 1 1, -1 1);";
+  if (!value) throw new Error(`prism needs a d, like: ${example}`);
+  const points = readPolygon(value);
+  if (!points)
+    throw errorAt(value, `d expects polygon(…) on a prism, like: ${example}`);
+  return points;
 }
 
 // Reads "0 0 32 32": min-x, min-y, width, height, like the viewBox of an SVG
@@ -155,6 +165,14 @@ const SHAPES: Record<
     );
     const name = useFunction(context, code);
     return `${name}(q)`;
+  },
+  // A polygon, filled, then given a depth
+  prism: (styles, context) => {
+    const points = readPrismD(styles["d"]);
+    const depth = readNumber(styles["depth"], "depth", 0.2);
+    const viewBox = readViewBox(styles["view-box"]);
+    const code = polygonFunction("NAME", points, depth, viewBox);
+    return `${useFunction(context, code)}(q)`;
   },
   // A thin box: the ray could jump over a surface with no thickness
   plane: (styles) => {
@@ -801,6 +819,20 @@ float segment2(vec2 p, vec2 a, vec2 b) {
   vec2 ap = p - a, ab = b - a;
   vec2 v = ap - ab * clamp(dot(ap, ab) / dot(ab, ab), 0.0, 1.0);
   return dot(v, v);
+}
+
+// For prism objects: does the horizontal line through p cross the side a-b?
+// Each crossing flips inside and outside.
+bool crosses(vec2 p, vec2 a, vec2 b) {
+  vec2 e = b - a, w = p - a;
+  bvec3 c = bvec3(p.y >= a.y, p.y < b.y, e.x * w.y > e.y * w.x);
+  return all(c) || all(not(c));
+}
+
+// Gives a 2D distance a depth along z: h is half the depth
+float extrude(float d, float z, float h) {
+  vec2 w = vec2(d, abs(z) - h);
+  return min(max(w.x, w.y), 0.0) + length(max(w, 0.0));
 }
 
 float box2(vec2 p, vec2 center, vec2 halfSize) {

@@ -10,7 +10,8 @@ export type Shape =
   | "cylinder"
   | "cone"
   | "capsule"
-  | "plane"; // Later "mesh" ...
+  | "plane"
+  | "prism";
 
 export type PropertyDef = {
   name: string;
@@ -217,11 +218,11 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "d",
-    appliesTo: ["path"],
-    syntax: 'path("<svg path>")',
+    appliesTo: ["path", "prism"],
+    syntax: 'path("<svg path>") (path) | polygon(<x> <y>, …) (prism)',
     initial: "none (required)",
     description:
-      "The line a path object follows, written like the d of an SVG path, or CSS path(): M moves, L H V draw lines, C S Q T draw curves, Z closes, in capitals (absolute) or lowercase (relative). Arcs (A) are not supported yet. A path copied from an SVG keeps its way up: y goes up in the scene, down in SVG, and GSS flips it. One path unit is one scene unit, so an icon drawn in a 24 or 32 box usually needs a scale.",
+      "The line a path object follows, written like the d of an SVG path, or CSS path(): M moves, L H V draw lines, C S Q T draw curves, Z closes, in capitals (absolute) or lowercase (relative). Arcs (A) are not supported yet. A path copied from an SVG keeps its way up: y goes up in the scene, down in SVG, and GSS flips it. One path unit is one scene unit, so an icon drawn in a 24 or 32 box usually needs a scale. On a prism, d takes a polygon(), written like the one of CSS clip-path: one point per comma, x and y separated by a space, y going down like in SVG. The polygon closes itself.",
     examples: [
       '@scene { path; } path { translate: 0 1 0; d: path("M-1 0.5 C-1 -1 1 -1 1 0.5"); stroke-width: 0.25; color: #ff5a36; }',
       '@scene { path; } path { translate: 0 1.2 0; d: path("M0 0 L1 1.5 L2 0 L3 1.5 L4 0"); stroke-width: 0.3; scale: 0.5; material: gold; }',
@@ -239,8 +240,19 @@ export const PROPERTIES: PropertyDef[] = [
     ],
   },
   {
+    name: "depth",
+    appliesTo: ["prism"],
+    syntax: "<number>",
+    initial: "0.2",
+    description:
+      "The full thickness of a prism along the z axis, centered on its origin: depth: 1 goes from z = -0.5 to z = 0.5.",
+    examples: [
+      "@scene { prism; } prism { translate: 0 1 0; d: polygon(0 -1, 1 1, -1 1); depth: 1; color: #ff5a36; }",
+    ],
+  },
+  {
     name: "view-box",
-    appliesTo: ["path"],
+    appliesTo: ["path", "prism"],
     syntax: "<number>{4}",
     initial: "the box of the path itself",
     description:
@@ -476,6 +488,14 @@ export const SHAPE_DOCS: ShapeDef[] = [
       "A thin, flat rectangle lying in the xz plane, centered on its origin: 1 × 1 by default. size sets its width and depth, rotate-x: 90deg stands it up like a wall.",
     examples: [
       "@scene { plane; } plane { translate: 0 0.01 0; size: 3 2; color: #3ad16b; }",
+    ],
+  },
+  {
+    name: "prism",
+    description:
+      "A polygon, filled, then given a depth: a star, a letter, an arrow. It stands in the xy plane, facing the camera, and is centered on its polygon (or its view-box), like a path.",
+    examples: [
+      "@scene { prism; } prism { translate: 0 1 0; d: polygon(0 -1, -0.25 -0.34, -0.95 -0.31, -0.4 0.13, -0.59 0.81, 0 0.42, 0.59 0.81, 0.4 0.13, 0.95 -0.31, 0.25 -0.34); depth: 0.3; material: gold; }",
     ],
   },
 ];
