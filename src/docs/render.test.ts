@@ -7,6 +7,8 @@ import {
   timelineName,
 } from "./render";
 import { highlightGss } from "./highlight";
+import { FIRST_SCENE, GETTING_STARTED } from "./guide";
+import { compileGSS } from "../compiler";
 import {
   PROPERTIES,
   AT_RULES,
@@ -112,6 +114,20 @@ describe("renderDocs", () => {
     for (const atRule of AT_RULES) {
       expect(html, atRule.name).toContain(`id="at-${atRule.name}"`);
     }
+  });
+
+  it("starts with Getting started, before the reference", () => {
+    expect(html.indexOf('id="getting-started"')).toBeGreaterThan(-1);
+    expect(html.indexOf('id="getting-started"')).toBeLessThan(html.indexOf('id="at-rules"'));
+    for (const entry of GETTING_STARTED) {
+      expect(html, entry.anchor).toContain(`href="#${entry.anchor}"`);
+      expect(html, entry.anchor).toContain(`#${entry.anchor} { view-timeline: `);
+    }
+  });
+
+  it("gives the first scene a Try it button, and it compiles", () => {
+    expect(html).toContain(`data-example="${escapeHtml(FIRST_SCENE)}"`);
+    expect(() => compileGSS(FIRST_SCENE)).not.toThrow();
   });
 
   it("lets every section, property and at-rule highlight its link while it is read", () => {

@@ -2,6 +2,7 @@ import type { PropertyDef, AtRuleDef } from "../compiler/registry";
 import { formatGss } from "./format";
 import { escapeHtml } from "./escape";
 import { highlightGss } from "./highlight";
+import { GETTING_STARTED, type GuideEntry } from "./guide";
 
 export { escapeHtml }; // the tests and other pages import it from here
 
@@ -120,6 +121,18 @@ function renderTocTimelines(sections: Section[]): string {
     </style>`;
 }
 
+// One hand-written entry of "Getting started"
+function renderGuideEntry(entry: GuideEntry): string {
+  const paragraphs = (list: string[] = []) => list.map((text) => `<p>${text}</p>`).join("\n      ");
+  return `
+    <article class="guide" id="${escapeHtml(entry.anchor)}">
+      <h3>${escapeHtml(entry.label)}</h3>
+      ${paragraphs(entry.paragraphs)}
+      ${entry.example ? renderExamples([entry.example]) : ""}
+      ${paragraphs(entry.after)}
+    </article>`;
+}
+
 function renderSection(section: Section): string {
   return `
     <section id="${section.id}">
@@ -141,6 +154,15 @@ export function renderDocs(
     }));
 
   const sections: Section[] = [
+    {
+      id: "getting-started",
+      title: "Getting started",
+      entries: GETTING_STARTED.map((entry) => ({
+        anchor: entry.anchor,
+        label: entry.label,
+        html: renderGuideEntry(entry),
+      })),
+    },
     {
       id: "at-rules",
       title: "At-rules",
@@ -165,7 +187,7 @@ export function renderDocs(
   return `
     <header>
       <h1>GSS — GPU Style Sheets</h1>
-      <p>Language reference, generated from the registry.</p>
+      <p class="tagline">A CSS-like language for 3D scenes, compiled to a GPU shader.</p>
     </header>
     ${renderToc(sections)}
     ${renderTocTimelines(sections)}
