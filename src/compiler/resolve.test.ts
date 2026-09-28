@@ -54,6 +54,23 @@ describe("resolveStyles", () => {
       "@scene { cube#a.c; } .c, #a { color: #111; } .c { color: #222; }";
     expect(colorOf(source, 0)).toEqual([{ type: "HASH", value: "111" }]);
   });
+
+  it("* styles every object", () => {
+    const source = "@scene { cube; sphere#b; } * { color: #111; }";
+    expect(colorOf(source, 0)).toEqual([{ type: "HASH", value: "111" }]);
+    expect(colorOf(source, 1)).toEqual([{ type: "HASH", value: "111" }]);
+  });
+
+  it("* loses against a tag, even placed after", () => {
+    const source = "@scene { cube; } cube { color: #111; } * { color: #222; }";
+    expect(colorOf(source, 0)).toEqual([{ type: "HASH", value: "111" }]);
+  });
+
+  it("*.big is the same as .big", () => {
+    const source = "@scene { cube.big; cube; } *.big { color: #111; }";
+    expect(colorOf(source, 0)).toEqual([{ type: "HASH", value: "111" }]);
+    expect(colorOf(source, 1)).toBeUndefined();
+  });
 });
 
 describe("specificity", () => {

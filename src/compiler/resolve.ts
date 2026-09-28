@@ -34,7 +34,9 @@ export function parseSelector(tokens: Token[]): SimpleSelector {
     const token = tokens[i];
     const next = tokens[i + 1];
 
-    if (i === 0 && token.type === "IDENT") {
+    if (i === 0 && token.type === "PUNCT" && token.value === "*") {
+      i++; // * targets every object: the selector keeps tag, id and classes empty
+    } else if (i === 0 && token.type === "IDENT") {
       selector.tag = token.value;
       i++;
     } else if (token.type === "HASH") {
