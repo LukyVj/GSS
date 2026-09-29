@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>GSS Playground</title>
+    <style>
+      /* The look comes from DESIGN.md; the values from src/styles/tokens.css */
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: var(--gss-void);
+        color: var(--gss-bone);
+        font-family: var(--gss-font-code);
+      }
+      body {
+        display: grid;
+        grid-template-columns: minmax(320px, 480px) 1fr;
+        grid-template-rows: 52px minmax(0, 1fr) 32px;
+        grid-template-areas:
+          "top top"
+          "editor scene"
+          "status status";
+      }
+      button,
+      select {
+        font: inherit;
+      }
+
+      /* ----- The top bar: the mark, the tabs, the actions ----- */
+      .topbar {
+        grid-area: top;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 0 18px;
+        border-bottom: 1px solid var(--gss-line);
+        font-size: 13px;
+      }
+      .mark {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        color: var(--gss-bone);
+        font-family: var(--gss-font-display);
+        font-weight: 600;
+        font-size: 15px;
+        text-decoration: none;
+      }
+      .mark .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--gss-signal);
+      }
+      .crumb {
+        color: var(--gss-dim);
+      }
+      .spacer {
+        flex: 1;
+      }
+
+      /* Tabs: a raised track, the active tab lit */
+      .tabs {
+        display: flex;
+        gap: 2px;
+        padding: 3px;
+        margin-left: 8px;
+        background: var(--gss-raised);
+        border-radius: var(--gss-radius-control);
+      }
+      .tabs button {
+        padding: 5px 12px;
+        border: 0;
+        border-radius: var(--gss-radius-control);
+        background: transparent;
+        color: var(--gss-dim);
+        cursor: pointer;
+        transition: color var(--gss-transition), background-color var(--gss-transition);
+      }
+      .tabs button:hover {
+        color: var(--gss-bone);
+      }
+      .tabs button[aria-selected="true"] {
+        background: var(--gss-isoline);
+        color: var(--gss-bone);
+      }
+
+      /* Buttons: secondary (outlined) and primary (signal, one per view) */
+      .button {
+        height: var(--gss-control-height);
+        padding: 0 14px;
+        border: 1px solid var(--gss-isoline);
+        border-radius: var(--gss-radius-control);
+        background: transparent;
+        color: var(--gss-ash);
+        cursor: pointer;
+        transition: color var(--gss-transition), border-color var(--gss-transition),
+          background-color var(--gss-transition);
+      }
+      .button:hover {
+        color: var(--gss-bone);
+        border-color: var(--gss-dim);
+      }
+      .button.primary {
+        border-color: var(--gss-signal);
+        background: var(--gss-signal);
+        color: var(--gss-void);
+        font-weight: 500;
+      }
+      .button.primary:hover {
+        border-color: var(--gss-signal-hover);
+        background: var(--gss-signal-hover);
+      }
+      select.button {
+        appearance: none;
+        padding-right: 30px;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23a09e99' stroke-width='1.5'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 12px center;
+        max-width: 12rem;
+      }
+      select.button option,
+      select.button optgroup {
+        background: var(--gss-surface);
+        color: var(--gss-bone);
+      }
+      :focus-visible {
+        outline: 1px solid var(--gss-signal);
+        outline-offset: 2px;
+      }
+
+      /* ----- The editor, docked on the left ----- */
+      .editor {
+        grid-area: editor;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        background: var(--gss-surface);
+        border-right: 1px solid var(--gss-line);
+      }
+      /* The code: a CodeMirror editor (src/runtime/editor.ts), or the GLSL it becomes */
+      .code-host {
+        flex: 1;
+        min-height: 0;
+        font-size: 13px;
+      }
+      .code-host[hidden] {
+        display: none;
+      }
+      /* An error with no place in the code (a GLSL error): under the editor.
+         Located errors are written under their line (src/runtime/editor.ts). */
+      .editor pre.error {
+        margin: 0;
+        max-height: 30%;
+        overflow: auto;
+        padding: 10px 14px;
+        border-left: 2px solid var(--gss-signal);
+        background: var(--gss-signal-wash);
+        color: var(--gss-error-text);
+        font: inherit;
+        font-size: 12px;
+        white-space: pre-wrap;
+      }
+
+      /* ----- The scene ----- */
+      canvas {
+        grid-area: scene;
+        display: block;
+        width: 100%;
+        height: 100%;
+        min-width: 0;
+        touch-action: none;
+        cursor: grab;
+      }
+      canvas:active {
+        cursor: grabbing;
+      }
+
+      /* ----- The status bar: real numbers only ----- */
+      .statusbar {
+        grid-area: status;
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        padding: 0 18px;
+        border-top: 1px solid var(--gss-line);
+        color: var(--gss-dim);
+        font-size: 11px;
+      }
+      .stats {
+        display: flex;
+        gap: 24px;
+      }
+      .stats > :first-child::before {
+        content: "● ";
+      }
+      .stats.error {
+        color: var(--gss-signal);
+      }
+
+      /* On a phone: the scene on top, the editor below */
+      @media (max-width: 720px) {
+        body {
+          grid-template-columns: 1fr;
+          grid-template-rows: 52px minmax(0, 1fr) 40vh 32px;
+          grid-template-areas: "top" "scene" "editor" "status";
+        }
+        .topbar {
+          padding: 0 12px;
+          gap: 8px;
+        }
+        .tabs {
+          margin-left: 0;
+        }
+        /* Share stays in view; the Shadertoy export is a desktop task */
+        #export-to-shadertoy {
+          display: none;
+        }
+        select.button {
+          min-width: 0;
+          max-width: 8rem;
+        }
+        .crumb,
+        .crumb + .name {
+          display: none;
+        }
+        .editor {
+          border-right: 0;
+          border-top: 1px solid var(--gss-line);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="mark" href="./" aria-label="GSS home">{<span class="dot"></span>}</a>
+      <span class="crumb">/</span>
+      <span class="name">playground</span>
+      <div class="tabs" role="tablist">
+        <button type="button" role="tab" data-tab="gss" aria-selected="true">gss</button>
+        <button type="button" role="tab" data-tab="glsl" aria-selected="false">glsl</button>
+      </div>
+      <span class="spacer"></span>
+      <select id="examples" class="button" aria-label="Examples">
+        <option value="" selected disabled>examples</option>
+      </select>
+      <button type="button" id="export-to-shadertoy" class="button">→ shadertoy</button>
+      <button type="button" id="share" class="button primary">share</button>
+    </header>
+    <aside class="editor">
+      <div id="code" class="code-host"></div>
+      <div id="glsl" class="code-host" hidden></div>
+      <pre id="error" class="error" hidden></pre>
+    </aside>
+    <canvas id="scene"></canvas>
+    <footer class="statusbar">
+      <span id="stats" class="stats" aria-live="polite"></span>
+      <span class="spacer"></span>
+      <span id="fps"></span>
+    </footer>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

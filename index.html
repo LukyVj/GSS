@@ -4,99 +4,142 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <title>GSS Playground</title>
+    <title>GSS — GPU Style Sheets</title>
+    <meta name="description" content="Selectors, the cascade and @keyframes, compiled into a single raymarching shader. The 3D language designers and AIs already speak." />
     <style>
-      /* The look comes from DESIGN.md; the values from src/styles/tokens.css */
-      html,
-      body {
+      /* The home page: design/reference/png/01-home.png. Values from src/styles/tokens.css */
+      html {
+        scroll-behavior: smooth;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+      }
+      body,
+      body.gss-dark {
         margin: 0;
-        height: 100%;
         background: var(--gss-void);
         color: var(--gss-bone);
+        font-family: var(--gss-font-body);
+        line-height: 1.5;
+      }
+      a {
+        color: var(--gss-signal);
+        text-decoration: none;
+      }
+      :focus-visible {
+        outline: 1px solid var(--gss-signal);
+        outline-offset: 2px;
+      }
+      code,
+      pre {
         font-family: var(--gss-font-code);
       }
-      body {
-        display: grid;
-        grid-template-columns: minmax(320px, 480px) 1fr;
-        grid-template-rows: 52px minmax(0, 1fr) 32px;
-        grid-template-areas:
-          "top top"
-          "editor scene"
-          "status status";
+      .wrap {
+        box-sizing: border-box;
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 0 56px;
       }
-      button,
-      select {
-        font: inherit;
+      .eyebrow {
+        font: 12px var(--gss-font-code);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--gss-dim);
       }
 
-      /* ----- The top bar: the mark, the tabs, the actions ----- */
+      /* ----- Top bar ----- */
       .topbar {
-        grid-area: top;
+        border-bottom: 1px solid var(--gss-line);
+      }
+      .topbar .wrap {
         display: flex;
         align-items: center;
-        gap: 12px;
-        padding: 0 18px;
-        border-bottom: 1px solid var(--gss-line);
-        font-size: 13px;
+        justify-content: space-between;
+        height: 72px;
       }
       .mark {
         display: flex;
         align-items: center;
-        gap: 5px;
+        gap: 6px;
         color: var(--gss-bone);
-        font-family: var(--gss-font-display);
-        font-weight: 600;
-        font-size: 15px;
-        text-decoration: none;
+        font: 600 15px var(--gss-font-display);
+        letter-spacing: -0.02em;
       }
       .mark .dot {
-        width: 8px;
-        height: 8px;
+        width: 10px;
+        height: 10px;
         border-radius: 50%;
         background: var(--gss-signal);
       }
-      .crumb {
-        color: var(--gss-dim);
-      }
-      .spacer {
-        flex: 1;
-      }
-
-      /* Tabs: a raised track, the active tab lit */
-      .tabs {
-        display: flex;
-        gap: 2px;
-        padding: 3px;
+      .mark .word {
         margin-left: 8px;
-        background: var(--gss-raised);
-        border-radius: var(--gss-radius-control);
       }
-      .tabs button {
-        padding: 5px 12px;
-        border: 0;
-        border-radius: var(--gss-radius-control);
-        background: transparent;
-        color: var(--gss-dim);
-        cursor: pointer;
-        transition: color var(--gss-transition), background-color var(--gss-transition);
+      .topbar nav {
+        display: flex;
+        gap: 32px;
+        font: 13px var(--gss-font-code);
       }
-      .tabs button:hover {
-        color: var(--gss-bone);
+      .topbar nav a {
+        color: var(--gss-ash);
+        transition: color var(--gss-transition);
       }
-      .tabs button[aria-selected="true"] {
-        background: var(--gss-isoline);
+      .topbar nav a:hover {
         color: var(--gss-bone);
       }
 
-      /* Buttons: secondary (outlined) and primary (signal, one per view) */
+      /* ----- Hero: the words on the left, the distance field on the right ----- */
+      .hero {
+        position: relative;
+        overflow: hidden;
+      }
+      .hero .wrap {
+        display: grid;
+        grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+        align-items: center;
+        gap: 32px;
+        min-height: 640px;
+      }
+      .hero .words {
+        display: flex;
+        flex-direction: column;
+        gap: 28px;
+        padding: 64px 0;
+      }
+      .hero .eyebrow {
+        color: var(--gss-signal);
+      }
+      h1 {
+        margin: 0;
+        font: 800 clamp(40px, 5vw, 68px) / 1.02 var(--gss-font-display);
+        letter-spacing: -0.05em;
+      }
+      .lead {
+        margin: 0;
+        max-width: 34rem;
+        font-size: 19px;
+        color: var(--gss-ash);
+      }
+      .lead code {
+        color: var(--gss-bone);
+        font-size: 0.92em;
+      }
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+        margin-top: 8px;
+      }
       .button {
-        height: var(--gss-control-height);
-        padding: 0 14px;
+        display: inline-flex;
+        align-items: center;
+        height: 48px;
+        padding: 0 22px;
         border: 1px solid var(--gss-isoline);
         border-radius: var(--gss-radius-control);
-        background: transparent;
         color: var(--gss-ash);
-        cursor: pointer;
+        font: 14px var(--gss-font-code);
         transition: color var(--gss-transition), border-color var(--gss-transition),
           background-color var(--gss-transition);
       }
@@ -114,60 +157,129 @@
         border-color: var(--gss-signal-hover);
         background: var(--gss-signal-hover);
       }
-      select.button {
-        appearance: none;
-        padding-right: 30px;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23a09e99' stroke-width='1.5'/%3E%3C/svg%3E");
-        background-repeat: no-repeat;
-        background-position: right 12px center;
-        max-width: 12rem;
+      .field {
+        width: 100%;
+        height: auto;
+        overflow: visible;
       }
-      select.button option,
-      select.button optgroup {
-        background: var(--gss-surface);
-        color: var(--gss-bone);
+      .field .rings circle {
+        fill: none;
+        stroke: var(--gss-bone);
       }
-      :focus-visible {
-        outline: 1px solid var(--gss-signal);
-        outline-offset: 2px;
+      .field .braces path {
+        fill: none;
+        stroke: var(--gss-bone);
+        stroke-width: 16;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .field text {
+        font: 11px var(--gss-font-code);
+        fill: var(--gss-dim);
+      }
+      /* The field breathes: the rings drift outward, like a distance growing */
+      @media (prefers-reduced-motion: no-preference) {
+        .field .rings {
+          animation: breathe 6s ease-in-out infinite alternate;
+          transform-origin: 300px 300px;
+        }
+      }
+      @keyframes breathe {
+        to {
+          transform: scale(1.06);
+        }
       }
 
-      /* ----- The editor, docked on the left ----- */
-      .editor {
-        grid-area: editor;
+      /* ----- Pillars ----- */
+      .pillars {
+        border-top: 1px solid var(--gss-line);
+      }
+      .pillars .wrap {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        padding: 0;
+      }
+      .pillar {
         display: flex;
         flex-direction: column;
-        min-height: 0;
-        background: var(--gss-surface);
+        gap: 14px;
+        padding: 40px;
         border-right: 1px solid var(--gss-line);
       }
-      /* The code: a CodeMirror editor (src/runtime/editor.ts), or the GLSL it becomes */
-      .code-host {
-        flex: 1;
-        min-height: 0;
-        font-size: 13px;
+      .pillar:first-child {
+        padding-left: 56px;
       }
-      .code-host[hidden] {
-        display: none;
+      .pillar:last-child {
+        padding-right: 56px;
+        border-right: 0;
       }
-      /* An error with no place in the code (a GLSL error): under the editor.
-         Located errors are written under their line (src/runtime/editor.ts). */
-      .editor pre.error {
+      .pillar h2 {
         margin: 0;
-        max-height: 30%;
-        overflow: auto;
-        padding: 10px 14px;
-        border-left: 2px solid var(--gss-signal);
-        background: var(--gss-signal-wash);
-        color: var(--gss-error-text);
-        font: inherit;
-        font-size: 12px;
-        white-space: pre-wrap;
+        font: 600 20px var(--gss-font-display);
+        letter-spacing: -0.03em;
+      }
+      .pillar p {
+        margin: 0;
+        color: var(--gss-ash);
+        font-size: 15px;
+      }
+      pre {
+        margin: 0;
+        padding: 16px 18px;
+        overflow-x: auto;
+        border: 1px solid var(--gss-line);
+        background: var(--gss-surface);
+        font-size: 13px;
+        line-height: 1.65;
+      }
+      .glsl {
+        color: var(--gss-ash);
+      }
+      .glsl .c {
+        color: var(--gss-comment, #6e6e7a);
+        font-style: italic;
       }
 
-      /* ----- The scene ----- */
-      canvas {
-        grid-area: scene;
+      /* ----- Live: the real compiler, in the page ----- */
+      .live {
+        border-top: 1px solid var(--gss-line);
+        background: var(--gss-surface);
+      }
+      .live .wrap {
+        padding-top: 72px;
+        padding-bottom: 72px;
+      }
+      .live header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: end;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 28px;
+      }
+      .live h2 {
+        margin: 8px 0 0;
+        font: 800 clamp(30px, 4vw, 40px) / 1.1 var(--gss-font-display);
+        letter-spacing: -0.05em;
+      }
+      .demo {
+        border: 1px solid var(--gss-line);
+        background: var(--gss-void);
+      }
+      .demo-body {
+        display: grid;
+        grid-template-columns: minmax(0, 440px) minmax(0, 1fr);
+        height: 420px;
+      }
+      .demo .code-host {
+        min-width: 0;
+        min-height: 0;
+        overflow: hidden;
+        border-right: 1px solid var(--gss-line);
+        background: var(--gss-surface);
+        font: 13px var(--gss-font-code);
+      }
+      .demo canvas {
         display: block;
         width: 100%;
         height: 100%;
@@ -175,92 +287,290 @@
         touch-action: none;
         cursor: grab;
       }
-      canvas:active {
-        cursor: grabbing;
-      }
-
-      /* ----- The status bar: real numbers only ----- */
-      .statusbar {
-        grid-area: status;
+      .demo-bar {
         display: flex;
         align-items: center;
         gap: 24px;
-        padding: 0 18px;
+        min-height: 36px;
+        padding: 0 16px;
         border-top: 1px solid var(--gss-line);
+        font: 11px var(--gss-font-code);
         color: var(--gss-dim);
-        font-size: 11px;
       }
-      .stats {
+      .demo-bar .stats {
         display: flex;
         gap: 24px;
       }
-      .stats > :first-child::before {
+      .demo-bar .stats > :first-child::before {
         content: "● ";
       }
-      .stats.error {
+      .demo-bar .stats.error {
+        color: var(--gss-signal);
+      }
+      .demo-bar .hint {
+        margin-left: auto;
+      }
+      .demo pre.error {
+        margin: 0;
+        border: 0;
+        border-left: 2px solid var(--gss-signal);
+        background: var(--gss-signal-wash);
+        color: var(--gss-error-text);
+        font-size: 12px;
+        white-space: pre-wrap;
+      }
+      .demo .poster {
+        display: grid;
+        place-items: center;
+        color: var(--gss-dim);
+        font: 12px var(--gss-font-code);
+      }
+
+      /* ----- Numbers, read from the registry ----- */
+      .numbers {
+        border-top: 1px solid var(--gss-line);
+      }
+      .numbers .wrap {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        padding: 0;
+      }
+      .number {
+        color: var(--gss-bone);
+        padding: 36px 40px;
+        border-right: 1px solid var(--gss-line);
+      }
+      .number:first-child {
+        padding-left: 56px;
+      }
+      .number:last-child {
+        border-right: 0;
+      }
+      .number strong {
+        display: block;
+        font: 800 44px / 1 var(--gss-font-display);
+        letter-spacing: -0.05em;
+      }
+      .number span {
+        font: 12px var(--gss-font-code);
+        color: var(--gss-dim);
+      }
+      a.number:hover strong {
         color: var(--gss-signal);
       }
 
-      /* On a phone: the scene on top, the editor below */
-      @media (max-width: 720px) {
-        body {
+      /* ----- Footer ----- */
+      footer {
+        border-top: 1px solid var(--gss-line);
+      }
+      footer .wrap {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding-top: 32px;
+        padding-bottom: 48px;
+        font: 12px var(--gss-font-code);
+        color: var(--gss-dim);
+      }
+      footer nav {
+        display: flex;
+        gap: 24px;
+      }
+      footer nav a {
+        color: var(--gss-ash);
+      }
+
+      /* ----- Smaller screens ----- */
+      @media (max-width: 960px) {
+        .wrap {
+          padding: 0 24px;
+        }
+        .hero .wrap {
           grid-template-columns: 1fr;
-          grid-template-rows: 52px minmax(0, 1fr) 40vh 32px;
-          grid-template-areas: "top" "scene" "editor" "status";
+          min-height: 0;
+          gap: 0;
         }
-        .topbar {
-          padding: 0 12px;
-          gap: 8px;
+        .hero .words {
+          padding: 48px 0 8px;
         }
-        .tabs {
-          margin-left: 0;
+        .field {
+          max-width: 420px;
+          margin: 0 auto 24px;
         }
-        /* Share stays in view; the Shadertoy export is a desktop task */
-        #export-to-shadertoy {
-          display: none;
+        .pillars .wrap,
+        .numbers .wrap {
+          grid-template-columns: 1fr 1fr;
         }
-        select.button {
-          min-width: 0;
-          max-width: 8rem;
-        }
-        .crumb,
-        .crumb + .name {
-          display: none;
-        }
-        .editor {
+        .pillar,
+        .pillar:first-child,
+        .pillar:last-child {
+          padding: 32px 24px;
           border-right: 0;
-          border-top: 1px solid var(--gss-line);
+          border-bottom: 1px solid var(--gss-line);
+        }
+        .pillar:last-child {
+          grid-column: 1 / -1;
+        }
+        .number,
+        .number:first-child {
+          padding: 28px 24px;
+        }
+        .number:nth-child(2) {
+          border-right: 0;
+        }
+        .number:nth-child(-n + 2) {
+          border-bottom: 1px solid var(--gss-line);
+        }
+        .demo-body {
+          grid-template-columns: 1fr;
+          grid-template-rows: 260px 240px;
+          height: auto;
+        }
+        .demo .code-host {
+          border-right: 0;
+          border-bottom: 1px solid var(--gss-line);
+        }
+        .demo-bar .hint {
+          display: none;
+        }
+      }
+      @media (max-width: 600px) {
+        .topbar nav {
+          gap: 20px;
+        }
+        .pillars .wrap {
+          grid-template-columns: 1fr;
         }
       }
     </style>
   </head>
-  <body>
+  <body class="gss-dark">
     <header class="topbar">
-      <a class="mark" href="/" aria-label="GSS playground">{<span class="dot"></span>}</a>
-      <span class="crumb">/</span>
-      <span class="name">playground</span>
-      <div class="tabs" role="tablist">
-        <button type="button" role="tab" data-tab="gss" aria-selected="true">gss</button>
-        <button type="button" role="tab" data-tab="glsl" aria-selected="false">glsl</button>
+      <div class="wrap">
+        <a class="mark" href="./" aria-label="GSS home">{<span class="dot"></span>}<span class="word">gss</span></a>
+        <nav aria-label="Main">
+          <a href="./playground.html">playground</a>
+          <a href="./docs.html">docs</a>
+          <a href="#live">try it</a>
+        </nav>
       </div>
-      <span class="spacer"></span>
-      <select id="examples" class="button" aria-label="Examples">
-        <option value="" selected disabled>examples</option>
-      </select>
-      <button type="button" id="export-to-shadertoy" class="button">→ shadertoy</button>
-      <button type="button" id="share" class="button primary">share</button>
     </header>
-    <aside class="editor">
-      <div id="code" class="code-host"></div>
-      <div id="glsl" class="code-host" hidden></div>
-      <pre id="error" class="error" hidden></pre>
-    </aside>
-    <canvas id="scene"></canvas>
-    <footer class="statusbar">
-      <span id="stats" class="stats" aria-live="polite"></span>
-      <span class="spacer"></span>
-      <span id="fps"></span>
+
+    <main>
+      <section class="hero">
+        <div class="wrap">
+          <div class="words">
+            <div class="eyebrow">GPU Style Sheets</div>
+            <h1>Style sheets<br />for the GPU.</h1>
+            <p class="lead">
+              Selectors, the cascade and <code>@keyframes</code>, compiled into a single
+              raymarching shader. No Three.js. No meshes. Just CSS you already know.
+            </p>
+            <div class="actions">
+              <a class="button primary" href="./playground.html">open the playground →</a>
+              <a class="button" href="./docs.html">read the docs</a>
+            </div>
+          </div>
+
+          <!-- The mark in its distance field: DESIGN.md § 4 and § 5 -->
+          <svg class="field" viewBox="0 0 600 600" role="img" aria-label="The GSS mark, a dot between two braces, inside the rings of its distance field">
+            <g class="rings">
+              <circle cx="300" cy="300" r="70" stroke-opacity="0.34" />
+              <circle cx="300" cy="300" r="110" stroke-opacity="0.26" />
+              <circle cx="300" cy="300" r="150" stroke-opacity="0.2" />
+              <circle cx="300" cy="300" r="190" stroke-opacity="0.15" />
+              <circle cx="300" cy="300" r="230" stroke-opacity="0.11" />
+              <circle cx="300" cy="300" r="270" stroke-opacity="0.08" />
+              <circle cx="300" cy="300" r="310" stroke-opacity="0.06" />
+              <circle cx="300" cy="300" r="350" stroke-opacity="0.04" />
+              <circle cx="300" cy="300" r="390" stroke-opacity="0.025" />
+            </g>
+            <g class="braces">
+              <path d="M170 140 C120 140 112 165 112 205 v55 c0 32 -16 40 -55 40 c39 0 55 8 55 40 v55 c0 40 8 65 58 65" />
+              <path d="M430 140 C480 140 488 165 488 205 v55 c0 32 16 40 55 40 c-39 0 -55 8 -55 40 v55 c0 40 -8 65 -58 65" />
+            </g>
+            <circle cx="300" cy="300" r="52" fill="#ff5a36" />
+            <circle cx="284" cy="284" r="16" fill="#ffb199" fill-opacity="0.55" />
+            <!-- labels on the lower-right diagonal, clear of the braces -->
+            <text x="352" y="358">d = 0.4</text>
+            <text x="410" y="412">0.8</text>
+            <text x="532" y="534">1.6</text>
+          </svg>
+        </div>
+      </section>
+
+      <section class="pillars" aria-label="What GSS is">
+        <div class="wrap">
+          <article class="pillar">
+            <div class="eyebrow">01</div>
+            <h2>Rules, not loops</h2>
+            <p>Style a thousand objects with one selector. The cascade decides, like on a web page.</p>
+            <pre><code data-gss>@scene { cube.corner * 4; }
+.corner { color: #ff5a36; }</code></pre>
+          </article>
+          <article class="pillar">
+            <div class="eyebrow">02</div>
+            <h2>One shader</h2>
+            <p>The compiler writes the GLSL: the whole scene becomes one fragment shader, raymarched on the GPU.</p>
+            <pre class="glsl"><code><span class="c">// GSS → AST → cascade → GLSL</span>
+vec2 map(vec3 p) { … }</code></pre>
+          </article>
+          <article class="pillar">
+            <div class="eyebrow">03</div>
+            <h2>LLMs already speak it</h2>
+            <p>Every model knows CSS by heart. It writes the style sheet; the compiler writes the shader.</p>
+            <pre><code data-gss>#dot {
+  material: jelly(0.6);
+}</code></pre>
+          </article>
+        </div>
+      </section>
+
+      <section class="live" id="live" aria-labelledby="live-title">
+        <div class="wrap">
+          <header>
+            <div>
+              <div class="eyebrow">Live</div>
+              <h2 id="live-title">Edit it. It compiles as you type.</h2>
+            </div>
+            <a class="button" id="open-demo" href="./playground.html">open in the playground →</a>
+          </header>
+          <div class="demo">
+            <div class="demo-body">
+              <div class="code-host" id="demo-code"></div>
+              <canvas id="demo-scene" aria-label="The scene, rendered live. Drag to turn around it."></canvas>
+            </div>
+            <pre class="error" id="demo-error" hidden></pre>
+            <div class="demo-bar">
+              <span class="stats" id="demo-stats" aria-live="polite"><span>loading</span></span>
+              <span class="hint">drag to orbit · scroll to zoom</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="numbers" aria-label="GSS in numbers">
+        <div class="wrap">
+          <a class="number" href="./docs.html#shapes"><strong id="count-shapes">–</strong><span>shapes</span></a>
+          <a class="number" href="./docs.html#object-properties"><strong id="count-properties">–</strong><span>properties</span></a>
+          <a class="number" href="./docs.html#selectors"><strong id="count-selectors">–</strong><span>selectors</span></a>
+          <div class="number"><strong>1</strong><span>shader</span></div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="wrap">
+        <span>GSS — GPU Style Sheets. CSS for 3D scenes, compiled to a shader.</span>
+        <nav aria-label="Footer">
+          <a href="./playground.html">playground</a>
+          <a href="./docs.html">docs</a>
+        </nav>
+      </div>
     </footer>
-    <script type="module" src="/src/main.ts"></script>
+
+    <script type="module" src="/src/home/main.ts"></script>
   </body>
 </html>

@@ -140,7 +140,7 @@ export function enablePages(root: HTMLElement): void {
       }
       inner.replaceChildren(...(parts.length ? [title, list] : []));
       const example = article.querySelector<HTMLButtonElement>(".example .try")?.dataset.example;
-      if (example) inner.append(link(`./${await encodeCode(example)}`, "try it in the playground →", "to-playground"));
+      if (example) inner.append(link(`./playground.html${await encodeCode(example)}`, "try it in the playground →", "to-playground"));
 
       document.title = `${titleOf(article)} — GSS`;
     }

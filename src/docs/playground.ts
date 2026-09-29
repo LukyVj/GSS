@@ -32,7 +32,7 @@ function openPlayground(example: HTMLElement, code: string): void {
     <div class="playground-bar">
       <span class="status ok">OK</span>
       <span class="hint">Edit the code, drag the scene to turn around it</span>
-      <a class="open-playground" href="./" target="_blank">Open in playground ↗</a>
+      <a class="open-playground" href="./playground.html" target="_blank">Open in playground ↗</a>
     </div>
     <div class="playground-body">
       <div class="code-host"></div>
@@ -57,7 +57,7 @@ function openPlayground(example: HTMLElement, code: string): void {
   // The link carries the code as it is now, edits included
   const link = panel.querySelector<HTMLAnchorElement>(".open-playground")!;
   editor.onCompile(async (current) => {
-    link.href = `./${await encodeCode(current)}`;
+    link.href = `./playground.html${await encodeCode(current)}`;
   });
 
   open = { example, panel, renderer, editor };
