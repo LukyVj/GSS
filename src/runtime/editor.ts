@@ -1,4 +1,4 @@
-import { EditorState, RangeSetBuilder } from "@codemirror/state";
+import { EditorState, RangeSetBuilder, StateEffect, StateField } from "@codemirror/state";
 import {
   EditorView,
   Decoration,
@@ -8,6 +8,7 @@ import {
   highlightActiveLine,
   highlightActiveLineGutter,
   drawSelection,
+  WidgetType,
   type DecorationSet,
   type ViewUpdate,
 } from "@codemirror/view";
@@ -29,11 +30,13 @@ import { classifyGss } from "../docs/highlight";
 import { formatGss } from "../docs/format";
 import { scan } from "../compiler/tokenizer";
 import { GssError } from "../compiler/errors";
+import type { Stats } from "./status";
 
-// Where the editor goes, the OK / Error badge, and the error message
+// Where the editor goes, the OK / Error badge (optional: the playground has a
+// status bar instead, fed by onStats), and the message of an error with no place
 export type EditorElements = {
   host: HTMLElement;
-  status: HTMLElement;
+  status?: HTMLElement;
   error: HTMLElement;
 };
 
@@ -42,6 +45,7 @@ export type Editor = {
   getCode(): string;
   setCode(code: string): void; // replaces everything (undoable with Cmd/Ctrl+Z)
   onCompile(listener: (code: string) => void): void; // after each successful compile
+  onStats(listener: (stats: Stats) => void): void; // after each compile, successful or not
   destroy(): void;
 };
 
@@ -101,9 +105,54 @@ const reindentOnBrace = EditorState.languageData.of(() => [
   { indentOnInput: /^\s*\}$/ },
 ]);
 
+// ----- A located error, shown under its line (DESIGN.md § 6) -----
+
+// "15:3  radius only applies to …", as a block between two lines of code
+class ErrorLine extends WidgetType {
+  readonly text: string;
+  constructor(text: string) {
+    super();
+    this.text = text;
+  }
+  eq(other: ErrorLine): boolean {
+    return other.text === this.text;
+  }
+  toDOM(): HTMLElement {
+    const line = document.createElement("div");
+    line.className = "gss-error-line";
+    line.setAttribute("role", "alert");
+    line.textContent = this.text;
+    return line;
+  }
+}
+
+// null removes the error line
+const setErrorLine = StateEffect.define<{ at: number; text: string } | null>();
+
+// Block widgets must come from a StateField (they change the height of the document)
+const errorLine = StateField.define<DecorationSet>({
+  create: () => Decoration.none,
+  update(lines, transaction) {
+    lines = lines.map(transaction.changes); // it follows the text while typing
+    for (const effect of transaction.effects) {
+      if (!effect.is(setErrorLine)) continue;
+      lines = effect.value
+        ? Decoration.set([
+            Decoration.widget({ widget: new ErrorLine(effect.value.text), block: true, side: 1 }).range(
+              effect.value.at,
+            ),
+          ])
+        : Decoration.none;
+    }
+    return lines;
+  },
+  provide: (field) => EditorView.decorations.from(field),
+});
+
 // ----- The editor -----
 
-const theme = EditorView.theme(
+// Shared with the GLSL tab (src/runtime/glsl.ts)
+export const theme = EditorView.theme(
   {
     "&": {
       height: "100%",
@@ -112,7 +161,7 @@ const theme = EditorView.theme(
     },
     "&.cm-focused": { outline: "none" },
     ".cm-scroller": { fontFamily: "inherit", lineHeight: "1.6" },
-    ".cm-content": { caretColor: "var(--gss-content)", padding: "0.75rem 0" },
+    ".cm-content": { caretColor: "var(--gss-signal)", padding: "0.75rem 0" },
     ".cm-cursor": {
       borderLeftColor: "var(--gss-signal)",
       borderLeftWidth: "2px",
@@ -139,6 +188,15 @@ const theme = EditorView.theme(
       backgroundImage: "none",
       textDecoration: "underline wavy var(--gss-signal)",
     },
+    ".gss-error-line": {
+      margin: "2px 0",
+      padding: "6px 10px",
+      borderLeft: "2px solid var(--gss-signal)",
+      backgroundColor: "var(--gss-signal-wash)",
+      color: "var(--gss-error-text)",
+      fontSize: "12px",
+      whiteSpace: "pre-wrap",
+    },
     ".cm-tooltip": {
       backgroundColor: "var(--gss-raised)",
       border: "1px solid var(--gss-isoline)",
@@ -155,6 +213,12 @@ export function connectEditor(
   source: string,
 ): Editor {
   const compileListeners: ((code: string) => void)[] = [];
+  const statsListeners: ((stats: Stats) => void)[] = [];
+  let lastStats: Stats | null = null;
+  function emitStats(stats: Stats): void {
+    lastStats = stats;
+    for (const listener of statsListeners) listener(stats);
+  }
   let lastCompiled: string | null = null; // the last code that compiled
   let typingTimer: number | undefined;
 
@@ -174,6 +238,7 @@ export function connectEditor(
         gssIndent,
         reindentOnBrace,
         gssColors,
+        errorLine,
         lintGutter(),
         EditorState.tabSize.of(2),
         keymap.of([
@@ -201,38 +266,55 @@ export function connectEditor(
 
   function showError(caught: unknown): void {
     const message = caught instanceof Error ? caught.message : String(caught);
-    status.textContent = "Error";
-    status.className = "status error";
-    error.hidden = false;
+    if (status) {
+      status.textContent = "Error";
+      status.className = "status error";
+    }
+    emitStats({ errors: 1, objects: 0, glslLines: 0, compileMs: 0 });
 
-    // A compile error that knows its place: underline it, and say which line
-    const diagnostics: Diagnostic[] = [];
+    // A compile error that knows its place: underline it, and write it under its line
     if (caught instanceof GssError && caught.start !== undefined) {
       const length = view.state.doc.length;
       const from = Math.min(caught.start, length);
       const to = Math.min(Math.max(caught.end ?? from, from + 1), length);
       const line = view.state.doc.lineAt(from);
-      error.textContent = `Line ${line.number}, column ${from - line.from + 1}: ${message}`;
-      diagnostics.push({ from, to, severity: "error", message });
+      const diagnostics: Diagnostic[] = [{ from, to, severity: "error", message }];
+      error.hidden = true;
+      view.dispatch(setDiagnostics(view.state, diagnostics), {
+        effects: setErrorLine.of({ at: line.to, text: `${line.number}:${from - line.from + 1}  ${message}` }),
+      });
     } else {
+      // No place (a GLSL error, for instance): the message goes under the editor
       error.textContent = message;
+      error.hidden = false;
+      view.dispatch(setDiagnostics(view.state, []), { effects: setErrorLine.of(null) });
     }
-    view.dispatch(setDiagnostics(view.state, diagnostics));
   }
 
   function tryLoad(): void {
     const code = view.state.doc.toString();
+    const start = performance.now();
+    let compiled;
     try {
-      renderer.load(code);
+      compiled = renderer.load(code);
     } catch (caught) {
       showError(caught);
       return;
     }
-    status.textContent = "OK";
-    status.className = "status ok";
+    const compileMs = performance.now() - start;
+    if (status) {
+      status.textContent = "OK";
+      status.className = "status ok";
+    }
     error.hidden = true;
-    view.dispatch(setDiagnostics(view.state, []));
+    view.dispatch(setDiagnostics(view.state, []), { effects: setErrorLine.of(null) });
     lastCompiled = code;
+    emitStats({
+      errors: 0,
+      objects: compiled.objects,
+      glslLines: compiled.shader.split("\n").length,
+      compileMs,
+    });
     for (const listener of compileListeners) listener(code);
   }
 
@@ -250,6 +332,10 @@ export function connectEditor(
     onCompile(listener) {
       compileListeners.push(listener);
       if (lastCompiled !== null) listener(lastCompiled); // the first compile already happened
+    },
+    onStats(listener) {
+      statsListeners.push(listener);
+      if (lastStats !== null) listener(lastStats);
     },
     destroy() {
       clearTimeout(typingTimer);

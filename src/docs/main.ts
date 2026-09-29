@@ -1,3 +1,4 @@
+import "../styles/tokens.css";
 import "../styles/gss-code.css";
 import {
   PROPERTIES,
@@ -7,7 +8,9 @@ import {
 } from "../compiler/registry";
 import { renderDocs } from "./render";
 import { enableTryIt } from "./playground";
+import { enablePages } from "./pages";
 
 const docs = document.querySelector<HTMLElement>("#docs")!;
 docs.innerHTML = renderDocs(PROPERTIES, AT_RULES, SELECTORS, SHAPE_DOCS);
 enableTryIt(docs);
+enablePages(docs);

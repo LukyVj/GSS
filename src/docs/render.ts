@@ -131,8 +131,8 @@ function renderToc(sections: Section[]): string {
   );
   return `
      <div class="toc-slot">
-      <div class="toc" aria-label="Sommaire">
-        <h2>Contents</h2>
+      <div class="toc" aria-label="Contents">
+        <h2><button type="button" class="toc-toggle" aria-expanded="false">Contents</button></h2>
         <nav class="toc-nav"> ${groups.join("\n")}</nav>
       </div>
     </div>`;

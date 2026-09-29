@@ -1,12 +1,16 @@
 import { compileScene } from "../compiler";
 import type { CameraSettings } from "../compiler/camera";
+import type { CompiledScene } from "../compiler";
 
 // Draws GSS scenes in a canvas, with a camera the mouse can move.
 // Used by the home page and by every "Try it" in the docs.
 export type Renderer = {
   // GSS text → scene on screen. Throws on the first error, before touching
   // the current scene: if the new code is invalid, the old scene stays visible.
-  load(source: string): void;
+  // Returns what the compiler produced (shader, camera, object count).
+  load(source: string): CompiledScene;
+  // Images drawn since the previous call, and over how many milliseconds (for "60 fps")
+  sampleFrames(): { frames: number; ms: number };
   // Stops the loop and frees the GPU (browsers limit the number of WebGL canvases)
   destroy(): void;
 };
@@ -130,8 +134,11 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
   // --- 5. The render loop: once per image ---
   let lastTime = performance.now();
   let frameId = 0;
+  let framesSinceSample = 0;
+  let sampleStart = performance.now();
 
   function frame(now: number) {
+    framesSinceSample++;
     const dt = (now - lastTime) / 1000; // seconds elapsed since the previous image
     lastTime = now;
 
@@ -161,6 +168,14 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
       if (scene) gl.deleteProgram(scene.program);
       scene = next;
       applyCameraSettings(compiled.camera);
+      return compiled;
+    },
+    sampleFrames() {
+      const now = performance.now();
+      const sample = { frames: framesSinceSample, ms: now - sampleStart };
+      framesSinceSample = 0;
+      sampleStart = now;
+      return sample;
     },
     destroy() {
       cancelAnimationFrame(frameId);

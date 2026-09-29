@@ -12,7 +12,8 @@ let open: {
   editor: Editor;
 } | null = null;
 
-function close(): void {
+// Also called when the docs change page (src/docs/pages.ts)
+export function closePlayground(): void {
   if (!open) return;
   open.editor.destroy();
   open.renderer.destroy();
@@ -23,7 +24,7 @@ function close(): void {
 }
 
 function openPlayground(example: HTMLElement, code: string): void {
-  close();
+  closePlayground();
 
   const panel = document.createElement("div");
   panel.className = "playground";
@@ -68,7 +69,7 @@ export function enableTryIt(root: HTMLElement): void {
     const button = (event.target as HTMLElement).closest<HTMLButtonElement>("button.try");
     if (!button) return;
     const example = button.closest<HTMLElement>(".example")!;
-    if (open?.example === example) close();
+    if (open?.example === example) closePlayground();
     else openPlayground(example, button.dataset.example ?? "");
   });
 }

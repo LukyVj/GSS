@@ -18,7 +18,9 @@
   --gss-string: #2f7d32;
 }
 
-.gss-dark {
+/* A dark page (the docs) darkens every code block inside it */
+.gss-dark,
+.gss-dark .gss {
   --gss-text: #e6e6e6;
   --gss-comment: #6e6e7a;
   --gss-at-rule: #ff7aa8;

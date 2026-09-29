@@ -150,7 +150,8 @@
       .code-host[hidden] {
         display: none;
       }
-      /* The error, until it moves under its line (step 6) */
+      /* An error with no place in the code (a GLSL error): under the editor.
+         Located errors are written under their line (src/runtime/editor.ts). */
       .editor pre.error {
         margin: 0;
         max-height: 30%;
@@ -189,13 +190,14 @@
         color: var(--gss-dim);
         font-size: 11px;
       }
-      .status {
-        text-transform: lowercase;
+      .stats {
+        display: flex;
+        gap: 24px;
       }
-      .status::before {
+      .stats > :first-child::before {
         content: "● ";
       }
-      .status.error {
+      .stats.error {
         color: var(--gss-signal);
       }
 
@@ -255,7 +257,9 @@
     </aside>
     <canvas id="scene"></canvas>
     <footer class="statusbar">
-      <span id="status" class="status ok">OK</span>
+      <span id="stats" class="stats" aria-live="polite"></span>
+      <span class="spacer"></span>
+      <span id="fps"></span>
     </footer>
     <script type="module" src="/src/main.ts"></script>
   </body>

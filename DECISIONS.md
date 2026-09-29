@@ -249,6 +249,24 @@ The floor is added last and is never affected. The walls of a hole take the mate
 **Why**: `polygon()` is known by every front-end developer and every LLM, and it gives stars, arrows and letters with a few points. A real triangle mesh would cost one distance per triangle at every step of every ray: too slow beyond a few dozen triangles. The word "mesh" stays out of the language: `prism` says what it does, like `lathe` later.
 **Accepted limits**: no `path()` contour yet (curves), no holes (the even-odd rule would allow them with several contours), no bevel. The cost grows with the number of sides.
 
+## 42. The status bar shows real numbers from the compiler
+
+**Decision**: the playground ends with a status bar (DESIGN.md § 6): `ok · 3 objects · glsl 412 lines · compiled in 4 ms`, then the frame rate on the right; after an error, only `1 error`. `compileScene` also returns `objects`, the number of instances (like the camera settings, decision 16); `renderer.load` returns the whole `CompiledScene`, and `renderer.sampleFrames()` gives the images drawn since its previous call. The texts come from pure functions in `runtime/status.ts` (`plural`, `statusParts`, `fpsText`), tested without a browser. The editor reports the numbers through `onStats`; its `status` badge becomes optional (the docs keep it).
+**Why**: "honest numbers" is a rule of the design language, and these ones teach what GSS does: the GLSL line count grows with the scene, the compile time stays short. The object count is known only inside the compiler, hence the extra field.
+**Accepted limits**: the compile time includes the GPU program creation (it is what the user waits for). A compile stops at the first error, so the count is always 1 for now.
+
+## 43. A located error is written under its line
+
+**Decision**: when a `GssError` knows its position, the editor underlines it (as before) and inserts a block under its line: `15:3  "height" only applies to …`, on the signal wash with a 2px signal rule. It is a CodeMirror block widget kept in a `StateField` (block widgets change the height of the document, which a view plugin may not do); it follows the text while typing and disappears at the next successful compile. An error with no position (a GLSL error) is still shown under the editor.
+**Why**: the error sits where the eye already is, as in the design reference (`design/reference/png/02-playground.png`). line:column is the format of every compiler and of our own errors.
+**Accepted limits**: one error line at a time, like one compile error at a time.
+
+## 44. The docs show one entry per page
+
+**Decision**: the reference is still generated as one HTML page (`renderDocs`), but `docs/pages.ts` shows one entry at a time, chosen by the hash: `#material` shows `material`, `#material--example-2` scrolls to its second example, a section (`#shapes`) opens at its first entry, anything else at the very first one (`resolvePage`). The layout follows `design/reference/png/03-docs.png`: the contents on the left (the current entry marked with `aria-current`), the entry in the middle with a breadcrumb and previous / next links (`neighbors`, across sections), "On this page" on the right (the value table, each example, and a link that opens the first example in the playground). The contents fold away on a small screen.
+**Why**: one long page buried each entry among fifty others, and the design reference is a page per entry, like MDN. Keeping the whole reference in the HTML means every existing link (`#material`, `#object-properties`) still works, the tests of `render.ts` are unchanged, and the change of page is instant.
+**Accepted limits**: "find in page" only searches the entry on screen. The highlight of what is being read (view timelines) is gone: with one entry on screen, `aria-current` says it. An open "Try it" is closed when the page changes (one WebGL canvas at a time).
+
 ## Open questions
 
 - **Targeting multiplied ids**: should `#hero` target `hero-1`, `hero-2` and `hero-3`?

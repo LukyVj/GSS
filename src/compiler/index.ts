@@ -10,6 +10,7 @@ import { readCamera, type CameraSettings } from "./camera";
 export type CompiledScene = {
   shader: string;
   camera: CameraSettings;
+  objects: number; // instances drawn, for the status bar (decision 42)
 };
 
 // GSS text → shader + camera settings
@@ -23,6 +24,7 @@ export function compileScene(source: string): CompiledScene {
   return {
     shader: generateShader(styled, sceneStyles, stylesheet.keyframes),
     camera: readCamera(sceneStyles),
+    objects: instances.length,
   };
 }
 

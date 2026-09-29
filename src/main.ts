@@ -2,14 +2,14 @@ import "./styles/tokens.css";
 import "./styles/gss-code.css";
 import { EditorState } from "@codemirror/state";
 import { EditorView, lineNumbers } from "@codemirror/view";
-import { cpp } from "@codemirror/lang-cpp";
-import { oneDark } from "@codemirror/theme-one-dark";
 import { createRenderer } from "./runtime/renderer";
-import { connectEditor } from "./runtime/editor";
+import { connectEditor, theme } from "./runtime/editor";
+import { glslLanguage } from "./runtime/glsl";
 import { encodeCode, decodeCode } from "./runtime/share";
 import { compileGSS, compileScene } from "./compiler";
 import { toShadertoy } from "./compiler/shadertoy";
 import { EXAMPLES, renderExampleOptions } from "./playground/examples";
+import { statusParts, fpsText } from "./runtime/status";
 
 // The playground: the GSS editor (or the GLSL it becomes) on the left, the scene on the right.
 const $ = <T extends HTMLElement>(selector: string) =>
@@ -21,10 +21,30 @@ const renderer = createRenderer($<HTMLCanvasElement>("#scene"));
 const start = (await decodeCode(location.hash)) ?? EXAMPLES[0].code;
 
 const editor = connectEditor(
-  { host: $("#code"), status: $("#status"), error: $("#error") },
+  { host: $("#code"), error: $("#error") },
   renderer,
   start,
 );
+
+// ----- The status bar: the numbers of the last compile, and the frame rate -----
+
+const stats = $("#stats");
+editor.onStats((current) => {
+  const parts = statusParts(current).map((text) => {
+    const part = document.createElement("span");
+    part.textContent = text;
+    return part;
+  });
+  stats.replaceChildren(...parts);
+  stats.classList.toggle("error", current.errors > 0);
+});
+
+const fps = $("#fps");
+renderer.sampleFrames(); // start counting now
+setInterval(() => {
+  const { frames, ms } = renderer.sampleFrames();
+  fps.textContent = fpsText(frames, ms);
+}, 1000);
 
 // ----- The URL follows the code, so the address bar is always a share link -----
 
@@ -76,15 +96,14 @@ const glsl = new EditorView({
   state: EditorState.create({
     extensions: [
       lineNumbers(),
-      cpp(), // GLSL is close enough to C for the colors
-      oneDark,
+      glslLanguage, // the palette of GSS code, so both tabs look alike
+      theme, // the same editor chrome as the GSS tab
       EditorState.readOnly.of(true),
-      EditorView.theme({
-        "&": { height: "100%", backgroundColor: "transparent" },
-      }),
     ],
   }),
 });
+
+$("#glsl").classList.add("gss-dark"); // the color variables of src/styles/gss-code.css
 
 function showGlsl(code: string): void {
   const shader = compileGSS(code);
