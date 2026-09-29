@@ -18,7 +18,7 @@ function readSpin(value: Token[] | undefined): number {
     "camera-spin expects a duration or none, like: camera-spin: 20s;";
 
   // Case 1: nothing written → the default speed
-  if (!value) return 0.3;
+  if (!value) return 0;
 
   // Only one value is allowed
   if (value.length !== 1) throw errorAt(value, error);
@@ -28,7 +28,8 @@ function readSpin(value: Token[] | undefined): number {
   if (token.type === "IDENT" && token.value === "none") return 0;
 
   // Case 3: anything that is not a duration → error
-  if (token.type !== "DIMENSION" || token.value <= 0) throw errorAt(value, error);
+  if (token.type !== "DIMENSION" || token.value <= 0)
+    throw errorAt(value, error);
 
   // Case 4: a duration → convert it to seconds, then to a speed
   let seconds: number;
@@ -48,7 +49,8 @@ export function readCamera(sceneStyles: Styles): CameraSettings {
     true,
   );
   if (distance < 3 || distance > 15) {
-    throw errorAt(sceneStyles["camera-distance"], 
+    throw errorAt(
+      sceneStyles["camera-distance"],
       "camera-distance expects a number from 3 to 15, like: camera-distance: 8;",
     );
   }
@@ -59,7 +61,8 @@ export function readCamera(sceneStyles: Styles): CameraSettings {
   const angle = sceneStyles["camera-angle"];
   if (angle) {
     if (angle.length !== 2) {
-      throw errorAt(angle, 
+      throw errorAt(
+        angle,
         "camera-angle expects two angles, like: camera-angle: 45deg 60deg;",
       );
     }
@@ -68,7 +71,10 @@ export function readCamera(sceneStyles: Styles): CameraSettings {
   }
 
   if (pitch < 0 || pitch > 1.4) {
-    throw errorAt(sceneStyles["camera-angle"], "camera-angle expects a height from 0deg to 80deg.");
+    throw errorAt(
+      sceneStyles["camera-angle"],
+      "camera-angle expects a height from 0deg to 80deg.",
+    );
   }
 
   // 3. The spin

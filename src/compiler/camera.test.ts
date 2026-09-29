@@ -14,7 +14,7 @@ describe("readCamera", () => {
       distance: 8,
       yaw: 0,
       pitch: 0.4,
-      spin: 0.3,
+      spin: 0,
     });
   });
 
@@ -57,6 +57,10 @@ describe("readCamera", () => {
     expect(() => cameraOf("scene { camera-spin: 20; }")).toThrow(
       "camera-spin expects",
     );
+  });
+
+  it("does not spin when camera-spin is not written", () => {
+    expect(cameraOf("scene { }").spin).toBe(0);
   });
 });
 

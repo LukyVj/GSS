@@ -335,7 +335,7 @@ export const PROPERTIES: PropertyDef[] = [
     name: "camera-spin",
     appliesTo: "scene",
     syntax: "<time> | none",
-    initial: "21s",
+    initial: "none",
     description:
       "Sets how long the camera takes to turn once around its target, in s or ms. none stops the automatic rotation.",
     examples: [
@@ -448,7 +448,7 @@ export const SELECTORS: SelectorDef[] = [
     anchor: "selector-descendant",
     specificity: "The sum of its parts",
     description:
-      "A space means \"inside\": #letters cube targets the cubes that are in the group #letters, at any depth. It reads from right to left, like CSS: the last part is the object, each part before it is one of its groups, further out each time. #letters#S would ask for one object with two ids, which never happens: that is an error.",
+      'A space means "inside": #letters cube targets the cubes that are in the group #letters, at any depth. It reads from right to left, like CSS: the last part is the object, each part before it is one of its groups, further out each time. #letters#S would ask for one object with two ids, which never happens: that is an error.',
     examples: [
       "@scene { cube#a; group#letters { cube#b; cube#c; } } cube { translate: -1.2 0.5 0; } #letters cube { color: #ff5a36; } #b { translate: 0 0.5 0; } #c { translate: 1.2 0.5 0; }",
     ],
@@ -532,7 +532,14 @@ export const SHAPE_DOCS: ShapeDef[] = [
     name: "group",
     description:
       "Not a shape: it holds objects and other groups, like <g> in SVG, and draws nothing itself. Its translate, rotations and scale apply to everything inside it, and the positions of its children become relative to it: move the group, everything follows. Other properties (color, material, size…) are not passed down to its children; to style them, use a descendant selector: #letters cube.",
-    takes: ["translate", "rotate-x", "rotate-y", "rotate-z", "scale", "animation"],
+    takes: [
+      "translate",
+      "rotate-x",
+      "rotate-y",
+      "rotate-z",
+      "scale",
+      "animation",
+    ],
     examples: [
       "@scene { group#letters { cube#l; cube#u; cube#c; } } #letters { translate: -1 0.5 0; rotate-y: 20deg; } #letters cube { size: 0.3 1 0.3; color: #ff5a36; } #u { translate: 1 0 0; } #c { translate: 2 0 0; }",
       "@scene { group#spin { sphere#a; sphere#b; } } #spin { translate: 0 0.6 0; animation: turn 4s linear; } #a { translate: -0.8 0 0; radius: 0.4; } #b { translate: 0.8 0 0; radius: 0.4; } @keyframes turn { to { rotate-y: 1turn; } }",
