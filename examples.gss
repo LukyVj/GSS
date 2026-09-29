@@ -1,0 +1,29 @@
+/* Tree */
+@scene {
+  cone#tree * 10 cylinder#trunk
+}
+
+#trunk {
+  radius: 0.04;
+  height: 0.5;
+  color: #826032
+}
+
+cone {
+  radius: calc(sibling-index()/10 * 0.2);
+  height: calc(sibling-index()/10 * 0.2);
+  translate: 0 calc(0.8 - 0.005 * sibling-index() * (sibling-index() + 1)) 0;
+  color: #BADA55;
+}
+
+/* City */
+@scene {
+  box#building * 10;
+  cylinder#tower
+}
+
+#tower {
+  radius: 0.04;
+  height: 0.5;
+  color: #826032
+}
