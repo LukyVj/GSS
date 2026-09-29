@@ -104,6 +104,12 @@ describe("generateShader", () => {
     expect(rotation).toBeGreaterThan(-1); // the rotation exists
     expect(rotation).toBeLessThan(distance); // and it comes before
   });
+
+  it("shows the value calc() computed when the radius is negative", () => {
+    expect(() =>
+      compileGSS("@scene { cone } cone { radius: calc(-1 * 0.5); }"),
+    ).toThrow("got -0.5");
+  });
 });
 
 describe("decor", () => {
@@ -740,7 +746,10 @@ describe("only the GLSL the scene uses", () => {
     });
 
     it("has no line made only of spaces", () => {
-      for (const source of ["", "@scene { sphere; } sphere { material: gold; }"])
+      for (const source of [
+        "",
+        "@scene { sphere; } sphere { material: gold; }",
+      ])
         expect(compileGSS(source)).not.toMatch(/\n[ \t]+\n/);
     });
 
