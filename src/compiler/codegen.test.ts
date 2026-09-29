@@ -717,4 +717,51 @@ describe("only the GLSL the scene uses", () => {
     ])
       expect(compileGSS(source)).not.toMatch(twoBlankLines);
   });
+
+  describe("a tidy shader", () => {
+    const SECTION_COMMENTS = [
+      "// Shapes written by GSS",
+      "// The metal, jelly and glass materials",
+      "// Rotations and the other operations",
+      "// The lighting of metal, jelly and glass",
+    ];
+
+    it("leaves out the comment of a section that has nothing in it", () => {
+      const shader = compileGSS("");
+      for (const comment of SECTION_COMMENTS)
+        expect(shader).not.toContain(comment);
+    });
+
+    it("keeps the comment of a section that has something in it", () => {
+      const shader = compileGSS(
+        '@scene { path; sphere; } path { d: path("M0 0 L1 1"); rotate-y: 30deg; } sphere { material: glass; }',
+      );
+      for (const comment of SECTION_COMMENTS) expect(shader).toContain(comment);
+    });
+
+    it("has no line made only of spaces", () => {
+      for (const source of ["", "@scene { sphere; } sphere { material: gold; }"])
+        expect(compileGSS(source)).not.toMatch(/\n[ \t]+\n/);
+    });
+
+    it("indents main() like the rest", () => {
+      expect(compileGSS("")).toContain("\n  if (t < MAX_DIST) {\n");
+    });
+
+    it("closes the if of main() right after the diffuse light when no material needs more", () => {
+      expect(compileGSS("")).toContain("col = diffuse(n, m.color);\n  }");
+    });
+
+    it("starts getMaterial() with the floor when there is no object", () => {
+      expect(compileGSS("")).toContain(
+        "Material getMaterial(float id) {\n  return matte(",
+      );
+    });
+
+    it("indents the material lines like the floor line", () => {
+      expect(compileGSS("@scene { sphere; }")).toContain(
+        "Material getMaterial(float id) {\n  if (id == 1.0)",
+      );
+    });
+  });
 });
