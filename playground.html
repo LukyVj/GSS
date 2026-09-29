@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>GSS Playground</title>
+    <meta
+      name="description"
+      content="GSS Playground: a sandbox for experimenting with GSS (Selectors, the cascade and @keyframes, compiled into a single raymarching shader). The 3D language designers and AIs already speak."
+    />
     <style>
       /* The look comes from DESIGN.md; the values from src/styles/tokens.css */
       html,
@@ -78,7 +82,9 @@
         background: transparent;
         color: var(--gss-dim);
         cursor: pointer;
-        transition: color var(--gss-transition), background-color var(--gss-transition);
+        transition:
+          color var(--gss-transition),
+          background-color var(--gss-transition);
       }
       .tabs button:hover {
         color: var(--gss-bone);
@@ -97,7 +103,9 @@
         background: transparent;
         color: var(--gss-ash);
         cursor: pointer;
-        transition: color var(--gss-transition), border-color var(--gss-transition),
+        transition:
+          color var(--gss-transition),
+          border-color var(--gss-transition),
           background-color var(--gss-transition);
       }
       .button:hover {
@@ -236,18 +244,26 @@
   </head>
   <body>
     <header class="topbar">
-      <a class="mark" href="./" aria-label="GSS home">{<span class="dot"></span>}</a>
+      <a class="mark" href="./" aria-label="GSS home"
+        >{<span class="dot"></span>}</a
+      >
       <span class="crumb">/</span>
       <span class="name">playground</span>
       <div class="tabs" role="tablist">
-        <button type="button" role="tab" data-tab="gss" aria-selected="true">gss</button>
-        <button type="button" role="tab" data-tab="glsl" aria-selected="false">glsl</button>
+        <button type="button" role="tab" data-tab="gss" aria-selected="true">
+          gss
+        </button>
+        <button type="button" role="tab" data-tab="glsl" aria-selected="false">
+          glsl
+        </button>
       </div>
       <span class="spacer"></span>
       <select id="examples" class="button" aria-label="Examples">
         <option value="" selected disabled>examples</option>
       </select>
-      <button type="button" id="export-to-shadertoy" class="button">→ shadertoy</button>
+      <button type="button" id="export-to-shadertoy" class="button">
+        → shadertoy
+      </button>
       <button type="button" id="share" class="button primary">share</button>
     </header>
     <aside class="editor">
