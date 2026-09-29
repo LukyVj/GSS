@@ -286,6 +286,12 @@ The floor is added last and is never affected. The walls of a hole take the mate
 **Why**: styling "every cube of the letters" or "the left bar of the S" without an id on each object is what groups are for, and every CSS developer reads a space this way.
 **Accepted limits**: no child combinator (`>`), no sibling combinators (`+`, `~`). A comment between two parts of a selector counts as a space. A selector made in code (without positions) is read as one compound.
 
+## 48. group is documented next to the shapes
+
+**Decision**: `group` has its own entry in the Shapes section of the docs, even though it draws nothing: that is where a reader looks for what can be written in `@scene`. `ShapeDef` gets an optional `takes`, the only properties that have an effect (translate, the rotations, scale and animation); the page lists them instead of "every object property". The test that compares the documented shapes with the compiler's now expects `group` on top of them. `@scene`, translate, the rotations, scale, animation and the `<shape>` selector say what they do on a group, and `@scene` has an example with a group.
+**Why**: every feature gets its entry as soon as it exists (decision 12), and a group without docs is a group nobody finds.
+**Accepted limits**: a property a group does not take (`color: red` on `#letters`) is silently ignored; an error or a warning would be better.
+
 ## Open questions
 
 - **Targeting multiplied ids**: should `#hero` target `hero-1`, `hero-2` and `hero-3`?

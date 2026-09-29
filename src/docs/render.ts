@@ -86,7 +86,8 @@ export function renderSelector(selector: SelectorDef): string {
 export function renderShape(shape: ShapeDef, properties: PropertyDef[]): string {
   const own = properties.filter(
     (property) =>
-      Array.isArray(property.appliesTo) && property.appliesTo.includes(shape.name),
+      Array.isArray(property.appliesTo) &&
+      (property.appliesTo as string[]).includes(shape.name),
   );
   const links = own
     .map(
@@ -94,15 +95,25 @@ export function renderShape(shape: ShapeDef, properties: PropertyDef[]): string 
         `<a href="#${escapeHtml(property.name)}"><code>${escapeHtml(property.name)}</code></a>`,
     )
     .join(", ");
+  // A group only takes a few properties: they are listed instead of "every object property"
+  const takes = (shape.takes ?? [])
+    .map(
+      (name) => `<a href="#${escapeHtml(name)}"><code>${escapeHtml(name)}</code></a>`,
+    )
+    .join(", ");
+  const propertyList = shape.takes
+    ? `<dt>Takes</dt>
+        <dd>${takes}</dd>`
+    : `<dt>Own properties</dt>
+        <dd>${links || "none"}</dd>
+        <dt>Also</dt>
+        <dd><a href="#object-properties">every object property</a></dd>`;
   return `
     <article class="property" id="shape-${escapeHtml(shape.name)}">
       <h3><code>${escapeHtml(shape.name)}</code></h3>
       <p>${escapeHtml(shape.description)}</p>
       <dl>
-        <dt>Own properties</dt>
-        <dd>${links || "none"}</dd>
-        <dt>Also</dt>
-        <dd><a href="#object-properties">every object property</a></dd>
+        ${propertyList}
       </dl>
       ${renderExamples(shape.examples)}
     </article>`;

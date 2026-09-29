@@ -124,9 +124,16 @@ describe("selectors", () => {
 });
 
 describe("shapes", () => {
-  it("documents every shape the compiler can draw, and only those", () => {
+  it("documents every shape the compiler can draw, and only those (plus group)", () => {
     const documented = SHAPE_DOCS.map((shape) => shape.name).sort();
-    expect(documented).toEqual(shapeNames().sort());
+    expect(documented).toEqual([...shapeNames(), "group"].sort());
+  });
+
+  it("lists only real properties in takes", () => {
+    const names = PROPERTIES.map((property) => property.name);
+    for (const shape of SHAPE_DOCS) {
+      for (const name of shape.takes ?? []) expect(names, shape.name).toContain(name);
+    }
   });
 
   it("gives every shape a description and at least one example", () => {

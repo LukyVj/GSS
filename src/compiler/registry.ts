@@ -34,9 +34,10 @@ export type AtRuleDef = {
 // A shape that can be declared in @scene. Its own properties are not listed here:
 // the docs find them in PROPERTIES, through appliesTo.
 export type ShapeDef = {
-  name: Shape; // the Shape type checks the spelling
+  name: Shape | "group"; // the Shape type checks the spelling; group is drawn by its children
   description: string;
   examples: string[];
+  takes?: string[]; // only these properties have an effect (a group); otherwise every object property
 };
 
 // A way to target objects, or to win the cascade: cube, .class, #id, *, a, b, !important
@@ -56,7 +57,7 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "<number>{3}",
     initial: "0 0 0",
     description:
-      "Moves the object along the x, y and z axes. The y axis points up, and the floor is at y = 0.",
+      "Moves the object along the x, y and z axes. The y axis points up, and the floor is at y = 0. On a group, it moves everything inside it, and the positions of its children become relative to the group.",
     examples: ["@scene { cube; } cube { translate: 0 0.5 0; }"],
   },
   {
@@ -93,7 +94,8 @@ export const PROPERTIES: PropertyDef[] = [
     animatable: true,
     syntax: "<angle>",
     initial: "0deg",
-    description: "Rotates the object around the x axis.",
+    description:
+      "Rotates the object around the x axis. On a group, it turns everything inside it around the group's origin.",
     examples: ["@scene { cube; } cube { rotate-x: 45deg; }"],
   },
   {
@@ -102,7 +104,8 @@ export const PROPERTIES: PropertyDef[] = [
     animatable: true,
     syntax: "<angle>",
     initial: "0deg",
-    description: "Rotates the object around the y axis.",
+    description:
+      "Rotates the object around the y axis. On a group, it turns everything inside it around the group's origin.",
     examples: ["@scene { cube; } cube { rotate-y: 45deg; }"],
   },
   {
@@ -111,7 +114,8 @@ export const PROPERTIES: PropertyDef[] = [
     animatable: true,
     syntax: "<angle>",
     initial: "0deg",
-    description: "Rotates the object around the z axis.",
+    description:
+      "Rotates the object around the z axis. On a group, it turns everything inside it around the group's origin.",
     examples: ["@scene { cube; } cube { rotate-z: 45deg; }"],
   },
   {
@@ -120,7 +124,8 @@ export const PROPERTIES: PropertyDef[] = [
     animatable: true,
     syntax: "<number>",
     initial: "1.0",
-    description: "Scales the object along the x, y and z axes.",
+    description:
+      "Scales the object along the x, y and z axes. On a group, it scales everything inside it, the positions of its children included.",
     examples: ["@scene { cube; } cube { scale: 2.0; }"],
   },
   {
@@ -151,7 +156,7 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "<keyframes-name> <time> [linear | ease-in-out] [alternate]",
     initial: "none",
     description:
-      "Plays a @keyframes animation on the object, in a loop. The duration is in s or ms. alternate plays it forward then backward. ease-in-out slows down each step at both ends; linear, the default, keeps a constant speed. Animatable properties: translate, rotate-x, rotate-y, rotate-z, scale and color.",
+      "Plays a @keyframes animation on the object, in a loop. The duration is in s or ms. alternate plays it forward then backward. ease-in-out slows down each step at both ends; linear, the default, keeps a constant speed. Animatable properties: translate, rotate-x, rotate-y, rotate-z, scale and color. On a group, it animates translate, the rotations and scale of the whole group.",
     examples: [
       "@scene { sphere; } sphere { animation: float 2s ease-in-out alternate; } @keyframes float { from { translate: 0 1 0; } to { translate: 0 2 0; } }",
       "@scene { cube; } cube { translate: 0 0.5 0; animation: bounce 1s; } @keyframes bounce { 0%, 100% { translate: 0 0.5 0; } 50% { translate: 0 1.5 0; scale: 1.2; } }",
@@ -353,12 +358,14 @@ export const PROPERTIES: PropertyDef[] = [
 export const AT_RULES: AtRuleDef[] = [
   {
     name: "scene",
-    syntax: "@scene { <shape>[#<id>][.<class>]* [* <integer>]; … }",
+    syntax:
+      "@scene { <shape>[#<id>][.<class>]* [* <integer>][;] … group[#<id>][.<class>]* [* <integer>] { … } }",
     description:
-      "Declares the objects of the scene, one per line: a shape (cube, sphere or torus), an optional #id, any number of .classes, and an optional * n to create n copies. Multiplied ids are numbered: torus#ring * 3 creates ring-1, ring-2 and ring-3. Objects are combined in this order (see operation).",
+      "Declares the objects of the scene, one per line: a shape (see the Shapes section), an optional #id (only one), any number of .classes, and an optional * n to create n copies. Multiplied ids are numbered: torus#ring * 3 creates ring-1, ring-2 and ring-3. The ; after an object is optional: a new object or a } is enough. A group { … } holds objects and other groups, to move, turn or scale them together; a multiplied group copies everything inside it. Objects are combined in this order (see operation).",
     examples: [
       "@scene { cube; }",
       "@scene { cube#base; sphere.ball * 3; } #base { translate: 0 0.5 0; } .ball { translate: 0 1.5 0; radius: 0.3; }",
+      "@scene {\n  cube#base\n  group#tower {\n    cube#a\n    cube#b\n  }\n}\n#base { translate: -1 0.5 0; }\n#tower { translate: 1 0 0; rotate-y: 30deg; }\n#a { translate: 0 0.5 0; }\n#b { translate: 0 1.5 0; scale: 0.7; }",
     ],
   },
   {
@@ -379,7 +386,7 @@ export const SELECTORS: SelectorDef[] = [
     anchor: "selector-type",
     specificity: "1",
     description:
-      "A shape name targets every object of that shape. Every shape is listed in the Shapes section.",
+      "A shape name targets every object of that shape. Every shape is listed in the Shapes section. group targets every group.",
     examples: [
       "@scene { cube; sphere; } cube { translate: -0.8 0.5 0; color: #ff5a36; } sphere { translate: 0.8 0.5 0; }",
     ],
@@ -506,6 +513,16 @@ export const SHAPE_DOCS: ShapeDef[] = [
       "A polygon, filled, then given a depth: a star, a letter, an arrow. It stands in the xy plane, facing the camera, and is centered on its polygon (or its view-box), like a path.",
     examples: [
       "@scene { prism; } prism { translate: 0 1 0; d: polygon(0 -1, -0.25 -0.34, -0.95 -0.31, -0.4 0.13, -0.59 0.81, 0 0.42, 0.59 0.81, 0.4 0.13, 0.95 -0.31, 0.25 -0.34); depth: 0.3; material: gold; }",
+    ],
+  },
+  {
+    name: "group",
+    description:
+      "Not a shape: it holds objects and other groups, like <g> in SVG, and draws nothing itself. Its translate, rotations and scale apply to everything inside it, and the positions of its children become relative to it: move the group, everything follows. Other properties (color, material, size…) are not passed down to its children; to style them, use a descendant selector: #letters cube.",
+    takes: ["translate", "rotate-x", "rotate-y", "rotate-z", "scale", "animation"],
+    examples: [
+      "@scene { group#letters { cube#l; cube#u; cube#c; } } #letters { translate: -1 0.5 0; rotate-y: 20deg; } #letters cube { size: 0.3 1 0.3; color: #ff5a36; } #u { translate: 1 0 0; } #c { translate: 2 0 0; }",
+      "@scene { group#spin { sphere#a; sphere#b; } } #spin { translate: 0 0.6 0; animation: turn 4s linear; } #a { translate: -0.8 0 0; radius: 0.4; } #b { translate: 0.8 0 0; radius: 0.4; } @keyframes turn { to { rotate-y: 1turn; } }",
     ],
   },
 ];
