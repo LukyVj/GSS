@@ -108,3 +108,13 @@ describe("custom properties", () => {
     );
   });
 });
+
+describe("custom properties in @keyframes", () => {
+  it("accepts a variable in a frame", () => {
+    expect(() =>
+      compileGSS(
+        "@scene { sphere } sphere { --y: 1; translate: 0 var(--y) 0; animation: up 2s; } @keyframes up { to { --y: 2; } }",
+      ),
+    ).not.toThrow();
+  });
+});

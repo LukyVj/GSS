@@ -164,9 +164,9 @@ describe("shapes", () => {
 });
 
 describe("functions", () => {
-  it("documents every math function the compiler computes, and only those", () => {
+  it("documents every function the compiler computes, and only those", () => {
     const documented = FUNCTIONS.flatMap((fn) => fn.covers).sort();
-    expect(documented).toEqual([...MATH_FUNCTIONS].sort());
+    expect(documented).toEqual([...MATH_FUNCTIONS, "var"].sort());
   });
 
   it("has no duplicate anchors", () => {

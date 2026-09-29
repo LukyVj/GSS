@@ -78,6 +78,7 @@ function kindOf(
     case "HASH":
       return inValue ? "color" : "id"; // #ff5a36 in a value, #hero in a selector
     case "IDENT":
+      if (token.value.startsWith("--")) return "variable"; // --size: 2; and var(--size)
       if (inValue) return nextIs("(") ? "function" : "keyword"; // glass(…) / gold, ease-in-out
       if (depth > 0 && nextIs(":")) return "property";
       return "selector"; // cube, scene, from, to, and the name after a "."

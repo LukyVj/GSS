@@ -43,6 +43,13 @@ describe("highlightGss", () => {
     expect(kind(highlightGss('path { d: path("M0 0"); }'), "&quot;M0 0&quot;")).toBe("string");
   });
 
+  it("colors custom properties as variables, declared or read", () => {
+    const html = highlightGss("scene { --size: 2; } cube { radius: var(--gap, 1); }");
+    expect(kind(html, "--size")).toBe("variable");
+    expect(kind(html, "--gap")).toBe("variable");
+    expect(kind(html, "var")).toBe("function");
+  });
+
   it("colors the frames of @keyframes as selectors", () => {
     const html = highlightGss("@keyframes k { from { scale: 1; } 50% { scale: 2; } }");
     expect(kind(html, "from")).toBe("selector");

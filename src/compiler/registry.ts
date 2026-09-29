@@ -49,7 +49,7 @@ export type SelectorDef = {
   examples: string[];
 };
 
-// A function that computes a value at compile time: calc(), sibling-index(), sin()… (decision 52)
+// A function that computes a value at compile time: calc(), sibling-index(), sin()… (decision 52), var() (decision 55)
 export type FunctionDef = {
   name: string; // what the docs show: "calc()", or "sin(), cos(), tan()"
   anchor: string; // its id in the docs: "fn-calc"
@@ -548,6 +548,19 @@ export const SHAPE_DOCS: ShapeDef[] = [
 ];
 
 export const FUNCTIONS: FunctionDef[] = [
+  {
+    name: "var()",
+    anchor: "fn-var",
+    covers: ["var"],
+    syntax: "var(--<name>) | var(--<name>, <fallback>)",
+    description:
+      "Reads a custom property, like CSS. A property whose name starts with -- is a variable: it can be declared on the scene (like :root), on a group or on an object, and it is inherited from the scene, then from each group, down to the object: the closest one wins. var(--name, fallback) uses the fallback when the variable is not defined; without a fallback, a missing variable is an error, so a typo is never ignored. A variable can hold several values (translate: var(--pos)), use another variable (--big: calc(var(--size) * 2)), and be used inside calc(). A @keyframes frame can set a variable: every animatable property that uses it moves with it. Like everything in GSS, variables are replaced by the compiler: the shader only receives numbers.",
+    examples: [
+      "@scene { sphere#a; sphere#b; } scene { --accent: #ff5a36; --r: 0.4; } sphere { radius: var(--r); color: var(--accent); } #a { translate: -0.8 0.5 0; } #b { --r: 0.6; translate: 0.8 0.6 0; }",
+      "@scene { group#tree { cone.level * 5; } } #tree { --green: #3ad16b; } .level { --size: calc(sibling-index() * 0.12); radius: var(--size); height: var(--size); translate: 0 calc(1.3 - sibling-index() * 0.18) 0; color: var(--green); }",
+      "@scene { sphere * 3; } sphere { --lift: 0; radius: 0.3; translate: calc(sibling-index() * 0.9 - 1.8) calc(0.4 + var(--lift) * sibling-index()) 0; color: #ff5a36; animation: rise 2s ease-in-out alternate; } @keyframes rise { to { --lift: 0.4; } }",
+    ],
+  },
   {
     name: "calc()",
     anchor: "fn-calc",

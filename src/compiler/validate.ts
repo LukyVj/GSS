@@ -59,6 +59,9 @@ export function validateKeyframes(keyframes: Keyframes[]): void {
   for (const animation of keyframes) {
     for (const frame of animation.frames) {
       for (const declaration of frame.declarations) {
+        // A variable can be animated: what uses it moves with it (decision 55)
+        if (declaration.property.startsWith("--")) continue;
+
         const property = PROPERTIES.find(
           (p) => p.name === declaration.property,
         );

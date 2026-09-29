@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { tokenize } from "./tokenizer";
-import { resolveVars } from "./vars";
+import { resolveVars, usesVariables } from "./vars";
 
 const vars = { "--size": tokenize("2"), "--pos": tokenize("0 1 0") };
 const resolve = (source: string) => resolveVars(tokenize(source), vars);
@@ -80,5 +80,26 @@ describe("variables that use variables", () => {
     expect(resolve("calc(var(--size) + var(--size))")).toEqual(
       tokenize("calc(2 + 2)"),
     );
+  });
+});
+
+describe("usesVariables", () => {
+  const variables = { "--h": tokenize("1"), "--top": tokenize("calc(var(--h) + 1)") };
+
+  it("finds a variable used directly", () => {
+    expect(usesVariables(tokenize("0 var(--h) 0"), new Set(["--h"]), variables)).toBe(true);
+  });
+
+  it("finds a variable used through another one", () => {
+    expect(usesVariables(tokenize("0 var(--top) 0"), new Set(["--h"]), variables)).toBe(true);
+  });
+
+  it("says no when the value does not use it", () => {
+    expect(usesVariables(tokenize("0 1 0"), new Set(["--h"]), variables)).toBe(false);
+  });
+
+  it("does not loop forever on a loop", () => {
+    const loop = { "--a": tokenize("var(--b)"), "--b": tokenize("var(--a)") };
+    expect(usesVariables(tokenize("var(--a)"), new Set(["--x"]), loop)).toBe(false);
   });
 });

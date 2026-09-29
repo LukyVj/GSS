@@ -1,4 +1,4 @@
-// var(--name) and var(--name, fallback), replaced by their value (decision __)
+// var(--name) and var(--name, fallback), replaced by their value (decision 55)
 // Like calc.ts: the rest of the compiler never sees a var().
 import type { Token } from "./tokenizer";
 import { errorAt } from "./errors";
@@ -74,4 +74,30 @@ function isVarCall(value: Token[], i: number): boolean {
     next?.type === "PUNCT" &&
     next.value === "("
   );
+}
+
+// Does this value use one of these variables, directly or through another variable?
+// translate: 0 var(--top) 0 with --top: calc(var(--h) + 1) uses --h.
+export function usesVariables(
+  value: Token[],
+  names: Set<string>,
+  variables: Variables,
+  seen: Set<string> = new Set(),
+): boolean {
+  for (let i = 0; i < value.length; i++) {
+    if (!isVarCall(value, i)) continue;
+    const name = value[i + 2];
+    if (name?.type !== "IDENT") continue;
+    if (names.has(name.value)) return true;
+    if (name.value in variables && !seen.has(name.value)) {
+      seen.add(name.value); // a loop is reported by resolveVars, not here
+      if (usesVariables(variables[name.value], names, variables, seen)) return true;
+    }
+  }
+  return false;
+}
+
+// Does this list of tokens contain a var() call?
+export function hasVar(value: Token[]): boolean {
+  return value.some((_, i) => isVarCall(value, i));
 }

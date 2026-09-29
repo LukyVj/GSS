@@ -65,3 +65,59 @@ describe("var()", () => {
     ).toContain("sdSphere(q, 4.0)");
   });
 });
+
+describe("var() in @keyframes", () => {
+  it("animates a variable: what uses it moves with it", () => {
+    const shader = compileGSS(
+      "@scene { sphere } sphere { --y: 1; translate: 0 var(--y) 0; animation: up 2s; } @keyframes up { to { --y: 3; } }",
+    );
+    expect(shader).toContain("vec3(0.0, 1.0, 0.0)");
+    expect(shader).toContain("vec3(0.0, 3.0, 0.0)");
+  });
+
+  it("follows a variable through another one, with the math", () => {
+    const shader = compileGSS(
+      "@scene { sphere } sphere { --h: 1; --top: calc(var(--h) * 2); translate: 0 var(--top) 0; animation: up 2s; } @keyframes up { to { --h: 3; } }",
+    );
+    expect(shader).toContain("vec3(0.0, 6.0, 0.0)");
+  });
+
+  it("reads the variables of each object in a shared @keyframes", () => {
+    const shader = compileGSS(
+      "@scene { sphere#a; sphere#b } #a { --top: 2; } #b { --top: 5; } sphere { animation: up 2s; } @keyframes up { to { translate: 0 var(--top) 0; } }",
+    );
+    expect(shader).toContain("vec3(0.0, 2.0, 0.0)");
+    expect(shader).toContain("vec3(0.0, 5.0, 0.0)");
+  });
+
+  it("gives sibling-index() its meaning in a frame that uses variables", () => {
+    const shader = compileGSS(
+      "@scene { sphere * 2 } sphere { --k: 1; animation: up 2s; } @keyframes up { to { translate: 0 calc(var(--k) * sibling-index()) 0; } }",
+    );
+    expect(shader).toContain("vec3(0.0, 1.0, 0.0)");
+    expect(shader).toContain("vec3(0.0, 2.0, 0.0)");
+  });
+
+  it("animates a variable on a group", () => {
+    const shader = compileGSS(
+      "@scene { group#g { sphere } } #g { --y: 0; translate: 0 var(--y) 0; animation: up 2s; } @keyframes up { to { --y: 4; } }",
+    );
+    expect(shader).toContain("vec3(0.0, 4.0, 0.0)");
+  });
+
+  it("rejects an animated variable used by a property that cannot be animated", () => {
+    expect(() =>
+      compileGSS(
+        "@scene { sphere } sphere { --r: 1; radius: var(--r); animation: grow 2s; } @keyframes grow { to { --r: 2; } }",
+      ),
+    ).toThrow("radius cannot be animated, but it uses --r");
+  });
+
+  it("still reports a missing variable in a frame", () => {
+    expect(() =>
+      compileGSS(
+        "@scene { sphere } sphere { animation: up 2s; } @keyframes up { to { translate: 0 var(--nope) 0; } }",
+      ),
+    ).toThrow("--nope is not defined");
+  });
+});

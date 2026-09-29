@@ -94,7 +94,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 ## Priorities
 
 1. [x] Loops: **option B chosen** (decision 52): `* n` + `calc(sibling-index())`, as in CSS. `@for` / `@each` later, only to change the shape at each step or to walk through a list
-2. [ ] `var()` (+ `calc()` ✅ decision 52, with `min()`, `max()`, `clamp()`, `abs()`, `sqrt()`, `pow()`, `sin()`, `cos()`, `tan()`)
+2. [x] `var()` ✅ decision 55, inherited and animatable (+ `calc()` ✅ decision 52, with `min()`, `max()`, `clamp()`, `abs()`, `sqrt()`, `pow()`, `sin()`, `cos()`, `tan()`)
 3. [ ] Functional colors
 4. [ ] Animation controls (delay / iteration-count / reverse)
 5. [ ] `@media` + `prefers-reduced-motion`

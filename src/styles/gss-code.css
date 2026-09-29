@@ -9,6 +9,7 @@
   --gss-selector: #1f5fbf;
   --gss-id: #8a3fc2;
   --gss-property: #0f6e62;
+  --gss-variable: #0e7490;
   --gss-number: #b85c00;
   --gss-unit: #d4843a;
   --gss-color: #c2410c;
@@ -27,6 +28,7 @@
   --gss-selector: #7cb4ff;
   --gss-id: #d29bff;
   --gss-property: #6fe0cf;
+  --gss-variable: #67e8f9;
   --gss-number: #ffb86b;
   --gss-unit: #ffcf99;
   --gss-color: #ff9a6b;
@@ -45,6 +47,7 @@
 .gss-selector { color: var(--gss-selector); }
 .gss-id { color: var(--gss-id); }
 .gss-property { color: var(--gss-property); }
+.gss-variable { color: var(--gss-variable); }
 .gss-number { color: var(--gss-number); }
 .gss-unit { color: var(--gss-unit); }
 .gss-color { color: var(--gss-color); }
