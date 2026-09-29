@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>GSS reference</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Martian+Mono:wght@300;400;600;800&amp;family=Geist:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A0A0C}
+a{color:#FF5A36}a:hover{color:#FF7A5C}
+.k-at{color:#ff7aa8}.k-sel{color:#7cb4ff}.k-id{color:#d29bff}.k-prop{color:#6fe0cf}.k-num{color:#ffb86b}.k-col{color:#ff9a6b}.k-fn{color:#d29bff}.k-p{color:#8a8a96}.k-c{color:#6e6e7a;font-style:italic}
+</style>
+</head>
+<body>
+<div style="width: 1280px; height: 1320px; box-sizing: border-box; background: #0A0A0C; color: #E8E6E1; font-family: Geist, system-ui, sans-serif; display: flex; flex-direction: column; position: relative; overflow: hidden">
+
+  <svg width="1280" height="820" viewBox="0 0 1280 820" style="position: absolute; left: 0; top: 0" aria-hidden="true">
+    <g fill="none" stroke="#E8E6E1">
+      <circle cx="930" cy="400" r="70" stroke-opacity="0.34"></circle>
+      <circle cx="930" cy="400" r="110" stroke-opacity="0.26"></circle>
+      <circle cx="930" cy="400" r="150" stroke-opacity="0.2"></circle>
+      <circle cx="930" cy="400" r="190" stroke-opacity="0.15"></circle>
+      <circle cx="930" cy="400" r="230" stroke-opacity="0.11"></circle>
+      <circle cx="930" cy="400" r="270" stroke-opacity="0.08"></circle>
+      <circle cx="930" cy="400" r="310" stroke-opacity="0.06"></circle>
+      <circle cx="930" cy="400" r="350" stroke-opacity="0.045"></circle>
+      <circle cx="930" cy="400" r="390" stroke-opacity="0.03"></circle>
+      <circle cx="930" cy="400" r="430" stroke-opacity="0.02"></circle>
+    </g>
+    <g fill="none" stroke="#E8E6E1" stroke-width="16" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M800 240 C750 240 742 265 742 305 v55 c0 32 -16 40 -55 40 c39 0 55 8 55 40 v55 c0 40 8 65 58 65"></path>
+      <path d="M1060 240 C1110 240 1118 265 1118 305 v55 c0 32 16 40 55 40 c-39 0 -55 8 -55 40 v55 c0 40 -8 65 -58 65"></path>
+    </g>
+    <circle cx="930" cy="400" r="52" fill="#FF5A36"></circle>
+    <circle cx="914" cy="384" r="16" fill="#FFB199" fill-opacity="0.55"></circle>
+    <g font-family="JetBrains Mono, monospace" font-size="11" fill="#807F88">
+      <text x="1003" y="396">d = 0.0</text>
+      <text x="1043" y="356">0.4</text>
+      <text x="1123" y="296">1.2</text>
+      <text x="1203" y="236">2.0</text>
+    </g>
+  </svg>
+
+  <header style="position: relative; display: flex; align-items: center; justify-content: space-between; padding: 28px 56px; border-bottom: 1px solid #202026">
+    <div style="display: flex; align-items: center; gap: 12px; font-family: 'Martian Mono', monospace; font-size: 15px; font-weight: 600; letter-spacing: -0.02em">
+      <span style="color: #E8E6E1">{</span><span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #FF5A36"></span><span style="color: #E8E6E1">}</span>
+      <span style="margin-left: 6px">gss</span>
+    </div>
+    <nav style="display: flex; gap: 32px; font-family: 'JetBrains Mono', monospace; font-size: 13px">
+      <a href="#" style="color: #A09E99; text-decoration: none">playground</a>
+      <a href="#" style="color: #A09E99; text-decoration: none">docs</a>
+      <a href="#" style="color: #A09E99; text-decoration: none">examples</a>
+      <a href="#" style="color: #A09E99; text-decoration: none">github ↗</a>
+    </nav>
+  </header>
+
+  <section style="position: relative; height: 700px; padding: 96px 56px 0; box-sizing: border-box; display: flex; flex-direction: column; gap: 28px; width: 680px">
+    <div style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #FF5A36; letter-spacing: 0.08em">GPU STYLE SHEETS — v0.x</div>
+    <h1 style="margin: 0; font-family: 'Martian Mono', monospace; font-weight: 800; font-size: 68px; line-height: 1.02; letter-spacing: -0.05em">Style sheets<br>for the GPU.</h1>
+    <p style="margin: 0; font-size: 19px; line-height: 1.5; color: #A09E99; max-width: 520px">Selectors, the cascade and <span style="font-family: 'JetBrains Mono', monospace; color: #E8E6E1">@keyframes</span>, compiled into a single raymarching shader. No Three.js. No meshes. Just CSS you already know.</p>
+    <div style="display: flex; gap: 14px; align-items: center; margin-top: 8px">
+      <a href="#" style="display: inline-flex; align-items: center; height: 48px; padding: 0 22px; background: #FF5A36; color: #0A0A0C; font-family: 'JetBrains Mono', monospace; font-weight: 500; font-size: 14px; text-decoration: none; border-radius: 2px">open the playground →</a>
+      <span style="display: inline-flex; align-items: center; height: 48px; padding: 0 18px; border: 1px solid #2A2A31; font-family: 'JetBrains Mono', monospace; font-size: 14px; color: #A09E99; border-radius: 2px">$ npm i gss-lang</span>
+    </div>
+  </section>
+
+  <section style="position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid #202026">
+    <div style="padding: 36px 40px 40px 56px; border-right: 1px solid #202026; display: flex; flex-direction: column; gap: 14px">
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #807F88">01</div>
+      <div style="font-family: 'Martian Mono', monospace; font-size: 18px; font-weight: 600; letter-spacing: -0.03em">Rules, not loops</div>
+      <pre style="margin: 0; padding: 16px; background: #111114; border: 1px solid #202026; font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.6"><span class="k-at">@scene</span> <span class="k-p">{</span> <span class="k-sel">cube</span><span class="k-sel">.corner</span> <span class="k-p">*</span> <span class="k-num">4</span><span class="k-p">;</span> <span class="k-p">}</span>
+<span class="k-sel">.corner</span> <span class="k-p">{</span> <span class="k-prop">color</span><span class="k-p">:</span> <span class="k-col">#ff5a36</span><span class="k-p">;</span> <span class="k-p">}</span></pre>
+    </div>
+    <div style="padding: 36px 40px 40px; border-right: 1px solid #202026; display: flex; flex-direction: column; gap: 14px">
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #807F88">02</div>
+      <div style="font-family: 'Martian Mono', monospace; font-size: 18px; font-weight: 600; letter-spacing: -0.03em">One shader</div>
+      <pre style="margin: 0; padding: 16px; background: #111114; border: 1px solid #202026; font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.6"><span class="k-c">// GSS → AST → cascade → GLSL</span>
+<span class="k-fn">vec2</span> <span class="k-prop">map</span><span class="k-p">(</span><span class="k-fn">vec3</span> p<span class="k-p">)</span> <span class="k-p">{ … }</span></pre>
+    </div>
+    <div style="padding: 36px 56px 40px 40px; display: flex; flex-direction: column; gap: 14px">
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #807F88">03</div>
+      <div style="font-family: 'Martian Mono', monospace; font-size: 18px; font-weight: 600; letter-spacing: -0.03em">LLMs already speak it</div>
+      <pre style="margin: 0; padding: 16px; background: #111114; border: 1px solid #202026; font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.6"><span class="k-id">#dot</span> <span class="k-p">{</span>
+  <span class="k-prop">material</span><span class="k-p">:</span> <span class="k-fn">jelly</span><span class="k-p">(</span><span class="k-num">0.6</span><span class="k-p">);</span>
+<span class="k-p">}</span></pre>
+    </div>
+  </section>
+
+  <section style="position: relative; flex-grow: 1; background: #111114; border-top: 1px solid #202026; padding: 36px 56px; display: flex; gap: 56px">
+    <div style="display: flex; flex-direction: column; gap: 14px; width: 560px">
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #807F88; letter-spacing: 0.08em">COLOR</div>
+      <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px">
+        <div style="display: flex; flex-direction: column; gap: 8px"><div style="height: 64px; background: #0A0A0C; border: 1px solid #2A2A31"></div><div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #A09E99">void<br>#0A0A0C</div></div>
+        <div style="display: flex; flex-direction: column; gap: 8px"><div style="height: 64px; background: #16161B; border: 1px solid #2A2A31"></div><div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #A09E99">graphite<br>#16161B</div></div>
+        <div style="display: flex; flex-direction: column; gap: 8px"><div style="height: 64px; background: #2A2A31"></div><div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #A09E99">isoline<br>#2A2A31</div></div>
+        <div style="display: flex; flex-direction: column; gap: 8px"><div style="height: 64px; background: #E8E6E1"></div><div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #A09E99">bone<br>#E8E6E1</div></div>
+        <div style="display: flex; flex-direction: column; gap: 8px"><div style="height: 64px; background: #FF5A36"></div><div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #A09E99">signal<br>#FF5A36</div></div>
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 14px; flex-grow: 1">
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #807F88; letter-spacing: 0.08em">TYPE</div>
+      <div style="font-family: 'Martian Mono', monospace; font-size: 30px; font-weight: 800; letter-spacing: -0.05em">Martian Mono — display</div>
+      <div style="font-size: 18px; color: #A09E99">Geist — body copy, docs prose, UI labels</div>
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 15px; color: #6fe0cf">JetBrains Mono — code, tokens, numbers</div>
+    </div>
+  </section>
+</div>
+</body>
+</html>

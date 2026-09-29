@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>GSS reference — Docs</title>
+<link href="https://fonts.googleapis.com/css2?family=Martian+Mono:wght@400;600;800&amp;family=Geist:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A0A0C}
+a{color:#FF5A36}a:hover{color:#FF7A5C}
+.k-at{color:#ff7aa8}.k-sel{color:#7cb4ff}.k-id{color:#d29bff}.k-prop{color:#6fe0cf}.k-num{color:#ffb86b}.k-col{color:#ff9a6b}.k-fn{color:#d29bff}.k-p{color:#8a8a96}.k-c{color:#6e6e7a;font-style:italic}
+</style>
+</head>
+<body>
+<div style="width: 1280px; height: 1000px; box-sizing: border-box; background: #0A0A0C; color: #E8E6E1; font-family: Geist, system-ui, sans-serif; display: grid; grid-template-columns: 260px 1fr 240px">
+  <nav style="border-right: 1px solid #202026; padding: 28px 24px; display: flex; flex-direction: column; gap: 6px; font-family: 'JetBrains Mono', monospace; font-size: 13px">
+    <div style="display: flex; align-items: center; gap: 6px; font-family: 'Martian Mono', monospace; font-weight: 600; margin-bottom: 28px">{<span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #FF5A36"></span>} <span style="margin-left: 6px">docs</span></div>
+    <div style="color: #807F88; font-size: 11px; letter-spacing: 0.08em; margin-bottom: 6px">GETTING STARTED</div>
+    <a href="#" style="color: #A09E99; text-decoration: none; padding: 5px 0">first scene</a>
+    <a href="#" style="color: #A09E99; text-decoration: none; padding: 5px 0">selectors &amp; cascade</a>
+    <div style="color: #807F88; font-size: 11px; letter-spacing: 0.08em; margin: 18px 0 6px">OBJECT PROPERTIES</div>
+    <a href="#" style="color: #A09E99; text-decoration: none; padding: 5px 0">translate</a>
+    <a href="#" style="color: #A09E99; text-decoration: none; padding: 5px 0">color</a>
+    <a href="#" style="color: #E8E6E1; text-decoration: none; padding: 5px 10px; margin-left: -12px; border-left: 2px solid #FF5A36; background: #16161B">material</a>
+    <a href="#" style="color: #A09E99; text-decoration: none; padding: 5px 0">blend</a>
+    <a href="#" style="color: #A09E99; text-decoration: none; padding: 5px 0">animation</a>
+    <div style="color: #807F88; font-size: 11px; letter-spacing: 0.08em; margin: 18px 0 6px">SHAPES</div>
+    <a href="#" style="color: #A09E99; text-decoration: none; padding: 5px 0">cube · sphere · torus</a>
+    <a href="#" style="color: #A09E99; text-decoration: none; padding: 5px 0">path · prism</a>
+  </nav>
+  <main style="padding: 48px 56px; display: flex; flex-direction: column; gap: 26px">
+    <div style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #807F88">object properties / <span style="color: #FF5A36">material</span></div>
+    <h1 style="margin: 0; font-family: 'Martian Mono', monospace; font-weight: 800; font-size: 52px; letter-spacing: -0.05em">material</h1>
+    <p style="margin: 0; font-size: 18px; line-height: 1.55; color: #A09E99; max-width: 620px">How light meets the surface. A material is a function; its colour is optional and comes first. Without one, it takes the object's <code style="font-family: 'JetBrains Mono', monospace; color: #6fe0cf">color</code>, like <code style="font-family: 'JetBrains Mono', monospace; color: #E8E6E1">currentColor</code>.</p>
+    <div style="display: grid; grid-template-columns: 140px 1fr; border-top: 1px solid #202026; font-size: 14px">
+      <div style="padding: 11px 0; border-bottom: 1px solid #202026; font-family: 'JetBrains Mono', monospace; color: #807F88">value</div><div style="padding: 11px 0; border-bottom: 1px solid #202026; font-family: 'JetBrains Mono', monospace">matte() | metal() | jelly() | glass() | &lt;keyword&gt;</div>
+      <div style="padding: 11px 0; border-bottom: 1px solid #202026; font-family: 'JetBrains Mono', monospace; color: #807F88">initial</div><div style="padding: 11px 0; border-bottom: 1px solid #202026; font-family: 'JetBrains Mono', monospace">matte()</div>
+      <div style="padding: 11px 0; border-bottom: 1px solid #202026; font-family: 'JetBrains Mono', monospace; color: #807F88">applies to</div><div style="padding: 11px 0; border-bottom: 1px solid #202026; font-family: 'JetBrains Mono', monospace">all shapes</div>
+      <div style="padding: 11px 0; border-bottom: 1px solid #202026; font-family: 'JetBrains Mono', monospace; color: #807F88">animatable</div><div style="padding: 11px 0; border-bottom: 1px solid #202026; font-family: 'JetBrains Mono', monospace">no — animate color instead</div>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; border: 1px solid #202026">
+      <pre style="margin: 0; padding: 20px; background: #111114; font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.7"><span class="k-sel">.a</span> <span class="k-p">{</span> <span class="k-prop">material</span><span class="k-p">:</span> <span class="k-fn">metal</span><span class="k-p">(</span><span class="k-col">#d4af37</span><span class="k-p">,</span> <span class="k-num">0.2</span><span class="k-p">);</span> <span class="k-p">}</span>
+<span class="k-sel">.b</span> <span class="k-p">{</span> <span class="k-prop">material</span><span class="k-p">:</span> <span class="k-fn">jelly</span><span class="k-p">(</span><span class="k-num">0.6</span><span class="k-p">);</span> <span class="k-p">}</span>
+<span class="k-sel">.c</span> <span class="k-p">{</span> <span class="k-prop">material</span><span class="k-p">:</span> ice<span class="k-p">;</span> <span class="k-p">}</span></pre>
+      <div style="position: relative; background: #0A0A0C; border-left: 1px solid #202026; display: flex; align-items: center; justify-content: space-around; padding: 0 20px">
+        <div style="width: 64px; height: 64px; border-radius: 50%; background: radial-gradient(circle at 36% 28%, #FFF6D5 0%, #F2CF6B 18%, #C99A2A 50%, #3A2804 100%)"></div>
+        <div style="width: 64px; height: 64px; border-radius: 50%; background: radial-gradient(circle at 36% 30%, #FFE3D8 0%, #FF8A64 22%, #FF5A36 50%, #7A1603 100%)"></div>
+        <div style="width: 64px; height: 64px; border-radius: 50%; background: radial-gradient(circle at 36% 30%, #FFFFFF 0%, #E6F4FF 25%, #BFE0F7 60%, #5F8EAB 100%)"></div>
+      </div>
+    </div>
+    <div style="display: flex; gap: 14px; padding: 16px 18px; border: 1px dashed #2A2A31; font-size: 14px; line-height: 1.5; color: #A09E99"><span style="font-family: 'JetBrains Mono', monospace; color: #FF5A36">cost</span><span>A glass pixel marches 3 more rays, 6 with <code style="font-family: 'JetBrains Mono', monospace; color: #E8E6E1">blurred</code>. Keep glass off the floor.</span></div>
+    <a href="#" style="align-self: flex-start; display: inline-flex; align-items: center; height: 44px; padding: 0 18px; border: 1px solid #FF5A36; color: #FF5A36; font-family: 'JetBrains Mono', monospace; font-size: 13px; text-decoration: none">try it in the playground →</a>
+  </main>
+  <aside style="border-left: 1px solid #202026; padding: 48px 24px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #807F88; display: flex; flex-direction: column; gap: 10px">
+    <div style="font-size: 11px; letter-spacing: 0.08em; margin-bottom: 4px">ON THIS PAGE</div>
+    <span style="color: #E8E6E1">syntax</span><span>matte()</span><span>metal()</span><span>jelly()</span><span>glass()</span><span>keywords</span><span>cost</span>
+  </aside>
+</div>
+</body>
+</html>

@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>GSS reference — Playground</title>
+<link href="https://fonts.googleapis.com/css2?family=Martian+Mono:wght@400;600;800&amp;family=Geist:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A0A0C}
+a{color:#FF5A36}a:hover{color:#FF7A5C}
+.k-at{color:#ff7aa8}.k-sel{color:#7cb4ff}.k-id{color:#d29bff}.k-prop{color:#6fe0cf}.k-num{color:#ffb86b}.k-col{color:#ff9a6b}.k-fn{color:#d29bff}.k-p{color:#8a8a96}.k-c{color:#6e6e7a;font-style:italic}.ln{color:#3a3a42;display:inline-block;width:28px}
+</style>
+</head>
+<body>
+<div style="width: 1280px; height: 800px; box-sizing: border-box; background: #0A0A0C; color: #E8E6E1; font-family: Geist, system-ui, sans-serif; display: flex; flex-direction: column">
+  <header style="height: 52px; display: flex; align-items: center; gap: 20px; padding: 0 18px; border-bottom: 1px solid #202026; font-family: 'JetBrains Mono', monospace; font-size: 13px">
+    <div style="display: flex; align-items: center; gap: 6px; font-family: 'Martian Mono', monospace; font-weight: 600">{<span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #FF5A36"></span>}</div>
+    <span style="color: #807F88">/</span>
+    <span>logo.gss</span>
+    <div style="display: flex; gap: 2px; margin-left: 12px; background: #16161B; padding: 3px; border-radius: 3px">
+      <button style="background: #2A2A31; color: #E8E6E1; border: 0; padding: 6px 12px; font: inherit; border-radius: 2px">gss</button>
+      <button style="background: transparent; color: #807F88; border: 0; padding: 6px 12px; font: inherit">glsl</button>
+    </div>
+    <div style="flex-grow: 1"></div>
+    <button style="height: 34px; background: transparent; color: #A09E99; border: 1px solid #2A2A31; padding: 0 14px; font: inherit; border-radius: 2px">examples ▾</button>
+    <button style="height: 34px; background: transparent; color: #A09E99; border: 1px solid #2A2A31; padding: 0 14px; font: inherit; border-radius: 2px">→ shadertoy</button>
+    <button style="height: 34px; background: #FF5A36; color: #0A0A0C; border: 0; padding: 0 16px; font: inherit; font-weight: 500; border-radius: 2px">share</button>
+  </header>
+  <div style="flex-grow: 1; display: grid; grid-template-columns: 480px 1fr; min-height: 0">
+    <div style="background: #111114; border-right: 1px solid #202026; display: flex; flex-direction: column">
+      <pre style="margin: 0; padding: 18px 16px; flex-grow: 1; font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.75"><span class="ln">1</span><span class="k-at">@scene</span> <span class="k-p">{</span>
+<span class="ln">2</span>  <span class="k-sel">path</span><span class="k-id">#brace-left</span><span class="k-p">;</span>
+<span class="ln">3</span>  <span class="k-sel">path</span><span class="k-id">#brace-right</span><span class="k-p">;</span>
+<span class="ln">4</span>  <span class="k-sel">sphere</span><span class="k-id">#dot</span><span class="k-p">;</span>
+<span class="ln">5</span><span class="k-p">}</span>
+<span class="ln">6</span>
+<span class="ln">7</span><span class="k-sel">scene</span> <span class="k-p">{</span>
+<span class="ln">8</span>  <span class="k-prop">background</span><span class="k-p">:</span> <span class="k-col">#0a0a0c</span><span class="k-p">;</span>
+<span class="ln">9</span>  <span class="k-prop">floor</span><span class="k-p">:</span> none<span class="k-p">;</span>
+<span class="ln">10</span><span class="k-p">}</span>
+<span class="ln">11</span>
+<span class="ln">12</span><span class="k-sel">path</span> <span class="k-p">{</span>
+<span class="ln">13</span>  <span class="k-prop">view-box</span><span class="k-p">:</span> <span class="k-num">0 0 32 32</span><span class="k-p">;</span>
+<span class="ln">14</span>  <span class="k-prop">stroke-width</span><span class="k-p">:</span> <span class="k-num">2.4</span><span class="k-p">;</span>
+<span class="ln">15</span>  <span class="k-prop">radius</span><span class="k-p">:</span> <span class="k-num">0.4</span><span class="k-p">;</span>
+<span class="ln"></span><span style="display: inline-block; margin: 2px 0; padding: 6px 10px; background: rgba(255,90,54,0.1); border-left: 2px solid #FF5A36; color: #FF9A80; font-size: 12px">15:3  radius only applies to sphere, torus, cylinder…</span>
+<span class="ln">16</span><span class="k-p">}</span>
+<span class="ln">17</span>
+<span class="ln">18</span><span class="k-id">#dot</span> <span class="k-p">{</span>
+<span class="ln">19</span>  <span class="k-prop">radius</span><span class="k-p">:</span> <span class="k-num">0.46</span><span class="k-p">;</span>
+<span class="ln">20</span>  <span class="k-prop">material</span><span class="k-p">:</span> <span class="k-fn">jelly</span><span class="k-p">(</span><span class="k-num">0.6</span><span class="k-p">);</span>
+<span class="ln">21</span>  <span class="k-prop">animation</span><span class="k-p">:</span> pulse <span class="k-num">2s</span> infinite<span class="k-p">;</span>
+<span class="ln">22</span><span class="k-p">}</span></pre>
+    </div>
+    <div style="position: relative; background: #0A0A0C; overflow: hidden">
+      <svg width="800" height="700" viewBox="0 0 800 700" style="position: absolute; left: 0; top: 0" aria-label="Rendered scene with distance-field isolines">
+        <g fill="none" stroke="#E8E6E1">
+          <circle cx="400" cy="330" r="80" stroke-opacity="0.22"></circle>
+          <circle cx="400" cy="330" r="120" stroke-opacity="0.16"></circle>
+          <circle cx="400" cy="330" r="165" stroke-opacity="0.12"></circle>
+          <circle cx="400" cy="330" r="215" stroke-opacity="0.08"></circle>
+          <circle cx="400" cy="330" r="270" stroke-opacity="0.05"></circle>
+          <circle cx="400" cy="330" r="330" stroke-opacity="0.03"></circle>
+        </g>
+        <g fill="none" stroke="#E8E6E1" stroke-width="14" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M285 190 C240 190 233 212 233 248 v48 c0 28 -14 34 -48 34 c34 0 48 6 48 34 v48 c0 36 7 58 52 58"></path>
+          <path d="M515 190 C560 190 567 212 567 248 v48 c0 28 14 34 48 34 c-34 0 -48 6 -48 34 v48 c0 36 -7 58 -52 58"></path>
+        </g>
+        <circle cx="400" cy="330" r="46" fill="#FF5A36"></circle>
+        <circle cx="386" cy="316" r="14" fill="#FFB199" fill-opacity="0.55"></circle>
+      </svg>
+      <div style="position: absolute; left: 20px; top: 18px; display: flex; gap: 8px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #807F88">
+        <span style="padding: 4px 8px; border: 1px solid #202026">view: shaded</span>
+        <span style="padding: 4px 8px; border: 1px solid #FF5A36; color: #FF5A36">view: distance</span>
+      </div>
+      <div style="position: absolute; right: 20px; top: 18px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #807F88">drag to orbit · scroll to zoom</div>
+    </div>
+  </div>
+  <footer style="height: 32px; display: flex; align-items: center; gap: 24px; padding: 0 18px; border-top: 1px solid #202026; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #807F88">
+    <span style="color: #FF5A36">● 1 error</span>
+    <span>3 objects</span>
+    <span>glsl 412 lines</span>
+    <span>compiled in 4 ms</span>
+    <span style="flex-grow: 1"></span>
+    <span>60 fps</span>
+  </footer>
+</div>
+</body>
+</html>
