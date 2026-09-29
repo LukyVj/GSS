@@ -25,11 +25,13 @@ describe("errors point at the code they are about", () => {
   });
 
   it("a missing punctuation: what was found instead", () => {
-    expect(pointedAt("@scene { cube }")).toBe("}");
+    expect(pointedAt("@scene { cube } cube { size 1; }")).toBe("1");
   });
 
   it("an unknown property: the whole declaration", () => {
-    expect(pointedAt("@scene { cube; } cube { colour: #fff; }")).toBe("colour: #fff");
+    expect(pointedAt("@scene { cube; } cube { colour: #fff; }")).toBe(
+      "colour: #fff",
+    );
   });
 
   it("a wrong value: the value", () => {
@@ -38,7 +40,9 @@ describe("errors point at the code they are about", () => {
   });
 
   it("a wrong argument inside a function: the argument", () => {
-    expect(pointedAt("@scene { cube; } cube { material: glass(1.5, bumpy 0.3); }")).toBe("bumpy");
+    expect(
+      pointedAt("@scene { cube; } cube { material: glass(1.5, bumpy 0.3); }"),
+    ).toBe("bumpy");
   });
 
   it("a wrong value inside @keyframes: that value, not the object's", () => {
@@ -48,10 +52,17 @@ describe("errors point at the code they are about", () => {
   });
 
   it("a wrong path: the text of the path", () => {
-    expect(pointedAt('@scene { path; } path { d: path("M0 0 A1 1 0 0 1 2 0"); }')).toBe('"M0 0 A1 1 0 0 1 2 0"');
+    expect(
+      pointedAt('@scene { path; } path { d: path("M0 0 A1 1 0 0 1 2 0"); }'),
+    ).toBe('"M0 0 A1 1 0 0 1 2 0"');
   });
 
   it("a scene setting", () => {
-    expect(pointedAt("@scene { cube; } scene { camera-distance: 30; }")).toBe("30");
+    expect(pointedAt("@scene { cube; } scene { camera-distance: 30; }")).toBe(
+      "30",
+    );
+  });
+  it("children on something that is not a group: the object's name", () => {
+    expect(pointedAt("@scene { cube#a { sphere } }")).toBe("cube");
   });
 });

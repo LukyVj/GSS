@@ -106,3 +106,46 @@ describe("parse", () => {
     );
   });
 });
+
+describe("@scene: groups and optional semicolons", () => {
+  it("accepts elements without semicolon, one per line", () => {
+    expect(parseGSS("@scene {\n  cube#a\n  torus#b\n}").scene).toEqual([
+      { tag: "cube", id: "a", classes: [], count: 1 },
+      { tag: "torus", id: "b", classes: [], count: 1 },
+    ]);
+  });
+
+  it("parses a group and its children", () => {
+    expect(
+      parseGSS("@scene { group#letters { cube#L; cube#U } }").scene,
+    ).toEqual([
+      {
+        tag: "group",
+        id: "letters",
+        classes: [],
+        count: 1,
+        children: [
+          { tag: "cube", id: "L", classes: [], count: 1 },
+          { tag: "cube", id: "U", classes: [], count: 1 },
+        ],
+      },
+    ]);
+  });
+
+  it("parses nested groups", () => {
+    const [outer] = parseGSS("@scene { group.a { group.b { sphere } } }").scene;
+    expect(outer.children?.[0].children?.[0].tag).toBe("sphere");
+  });
+
+  it("signals a group never closed", () => {
+    expect(() => parseGSS("@scene { group#g { cube")).toThrow(
+      'group#g never closed: "}" missing',
+    );
+  });
+
+  it("refuses children on something that is not a group", () => {
+    expect(() => parseGSS("@scene { cube#a { sphere } }")).toThrow(
+      "Only a group",
+    );
+  });
+});

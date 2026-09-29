@@ -13,6 +13,7 @@ export type SceneElement = {
   id: string | null; // "hero", or null if there is no
   classes: string[]; // ["corner"]
   count: number; // 4 (1 by default)
+  children?: SceneElement[]; // for groups
 };
 
 // A rule: torus#hero { radius: 1 0.28; }

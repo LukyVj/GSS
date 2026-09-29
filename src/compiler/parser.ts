@@ -82,20 +82,36 @@ export function parse(tokens: Token[]): Stylesheet {
       element.count = count.value;
     }
 
-    expectPunct(";");
+    // A group contains other elements: group#letters { … }
+    if (isPunct(peek(), "{")) {
+      if (element.tag !== "group") {
+        throw errorAt(
+          tagToken,
+          `Only a group can contain objects, not "${element.tag}"`,
+        );
+      }
+      element.children = parseScene(
+        element.id ? `group#${element.id}` : "group",
+      );
+      return element; // no ";" after the "}" of a group
+    }
+
+    // The ";" is optional: a new element or a "}" is enough
+    if (isPunct(peek(), ";")) next();
+
     return element;
   }
 
   // @scene { ... }
-  function parseScene(): SceneElement[] {
-    const open = peek(); // the "{", to point at it if it is never closed
+  function parseScene(owner: string): SceneElement[] {
+    const open = peek();
     expectPunct("{");
     const elements: SceneElement[] = [];
     while (!isPunct(peek(), "}")) {
-      if (!peek()) throw errorAt(open, '@scene never closed: "}" missing');
+      if (!peek()) throw errorAt(open, `${owner} never closed: "}" missing`);
       elements.push(parseSceneElement());
     }
-    next(); // we consume the "}"
+    next();
     return elements;
   }
 
@@ -206,7 +222,7 @@ export function parse(tokens: Token[]): Stylesheet {
     if (token.type === "AT_KEYWORD") {
       next();
       if (token.value === "scene") {
-        stylesheet.scene.push(...parseScene());
+        stylesheet.scene.push(...parseScene("@scene"));
       } else if (token.value === "keyframes") {
         stylesheet.keyframes.push(parseKeyframes());
       } else {
