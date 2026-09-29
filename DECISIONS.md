@@ -318,6 +318,20 @@ The floor is added last and is never affected. The walls of a hole take the mate
 **Why**: `sibling-index()`, `sibling-count()` and the math functions are real CSS: LLMs and front-end developers already write them, and "when a notion exists in CSS, we take its syntax". One rule replaces a loop, which is the point of "Rules, not loops". Sass-like `@for` would need its own variables, interpolation (`#{$i}`) and math anyway, for a syntax that is not CSS. Everything is known at compile time, so the GPU only receives numbers: math costs nothing when drawing.
 **Accepted limits**: no `var()` yet. No unary minus before a function (`-sibling-index()` is read as one name): write `calc(-1 * sibling-index())`. `sibling-index()` has no meaning in `scene { }` and in `@keyframes`, shared by every object: an error says so. A math value cannot be animated per object. `@for` / `@each` may come later for what `* n` cannot do: a different shape at each step, or a list of values.
 
+## 53. The shader only contains what the scene uses
+
+**Decision**: the GLSL of a scene holds only the functions it calls. The shapes (`sdSphere`…), the helpers of `path` and `prism` (`segment2`, `box2`, `crosses`, `extrude`), the rotation and the operations other than union (`rot`, `opS`, `opI`, `opSmooth*`), the materials other than matte (`metal()`, `jelly()`, `glass()` with their constants) and their lighting (`shadeMetal`, `shadeJelly`, `shadeGlass` and what they call: `trace`, `fresnel`, `thickness`, `noise`…) each go in only when needed. What always stays is the raymarcher itself: `map`, `getMaterial`, `matte()`, `opU` (the floor uses it), `march`, `calcNormal`, `diffuse`, `main`. An empty scene went from 418 lines to 104.
+**How**: each family of functions is a table in `codegen.ts` (`SHAPE_FUNCTIONS`, `PATH_HELPERS`, `MAP_HELPERS`, `MATERIALS`, `SHADING`), cut out of the template word for word. `used(table, code)` keeps the functions whose `name(` appears in the generated code, then looks again in the functions it kept, until nothing new comes up: `shadeGlass` brings `noise`, which brings `hash3`. It returns them in the order of the table, which is the order of the template, so each function comes after those it calls, as GLSL requires. Each table is searched in the right code: the shapes and the operations in `map()`, the path helpers in the generated path and prism functions, the materials in `getMaterial()`, the lighting in the lines `if (m.kind == …)` of `main()`, themselves written only for the materials the scene uses. The frost styles, `FROSTED` included, come with `glass()`; `matte()`, `metal()` and `jelly()` pass `0` as `frostStyle`, which only glass reads. The output is tidy: a section comment is written only when its section has something (`section()`), a hole at the end of a line leaves no blank line (`moreLines()`), and runs of blank lines become one.
+**Why**: the GPU compiles every function it receives, so a shader full of unused code is slower to start, and the GLSL tab of the playground showed 400 lines for an empty file. Reading the generated code, instead of having every shape and material declare what it needs, cannot forget a dependency: `plane` gets `sdRoundBox` because it calls it.
+**Accepted limits**: a function is found by its name followed by `(`, so a table must not hold a name that ends another one: with `box` and `sdbox`, a call to `sdbox(` would bring `box` too. The constant `MATTE` stays for readability: a `const int` costs nothing on the GPU.
+**Rejected**: normals from 4 samples (a tetrahedron) instead of 6 (central differences). It saves 2 calls to `map()` per pixel against dozens in `march`, a few percent at most, and it is less precise: its error grows with the curvature (about e × curvature, against e² for central differences), which could show in the sharp reflections of metal and in glass.
+
+## 54. The camera does not spin by default
+
+**Decision**: without `camera-spin`, the camera stays still (`none`); `readSpin` returns 0 instead of 0.3 radian per second (a turn in about 21 s). The registry says `initial: none`.
+**Why**: a scene stays where its author put it; the camera moves when the author asks for it (`camera-spin: 20s`) or with the mouse. The registry said `21s` and the compiler turned at 0.3 radian per second; both now say `none`.
+**Accepted limits**: the examples of the docs without `camera-spin` no longer turn; `scene.gss` sets `camera-spin: 100s` itself.
+
 ## Open questions
 
 - **Targeting multiplied ids**: should `#hero` target `hero-1`, `hero-2` and `hero-3`?
@@ -327,4 +341,5 @@ The floor is added last and is never affected. The walls of a hole take the mate
 - **Animation keywords**: every animation loops. `infinite` is accepted but changes nothing, and there is no iteration count, `animation-delay` or `animation-direction: reverse` yet.
 - **Colors in operations**: blended objects switch color halfway instead of mixing (decision 19).
 - **`@for` / `@each`**: are they worth adding, for what `* n` and `sibling-index()` cannot do (decision 52): a different shape at each step, or a list of values?
-
+- **Gamma**: colors are lit as if they were linear and written without gamma correction, which gives hard shading. Correcting it would change the look of every scene.
+- **Shadows**: objects cast no shadow, so they seem to float. A soft shadow costs one more march per pixel; should it be on by default, with `scene { shadows: none; }`?
