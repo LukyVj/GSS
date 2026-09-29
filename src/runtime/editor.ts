@@ -11,8 +11,17 @@ import {
   type DecorationSet,
   type ViewUpdate,
 } from "@codemirror/view";
-import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
-import { bracketMatching, indentOnInput, indentService } from "@codemirror/language";
+import {
+  defaultKeymap,
+  history,
+  historyKeymap,
+  indentWithTab,
+} from "@codemirror/commands";
+import {
+  bracketMatching,
+  indentOnInput,
+  indentService,
+} from "@codemirror/language";
 import { closeBrackets, closeBracketsKeymap } from "@codemirror/autocomplete";
 import { setDiagnostics, lintGutter, type Diagnostic } from "@codemirror/lint";
 import type { Renderer } from "./renderer";
@@ -40,7 +49,8 @@ export type Editor = {
 
 const marks = new Map<string, Decoration>();
 function markFor(kind: string): Decoration {
-  if (!marks.has(kind)) marks.set(kind, Decoration.mark({ class: `gss-${kind}` }));
+  if (!marks.has(kind))
+    marks.set(kind, Decoration.mark({ class: `gss-${kind}` }));
   return marks.get(kind)!;
 }
 
@@ -87,26 +97,53 @@ const gssIndent = indentService.of((context, position) => {
 });
 
 // Typing "}" at the start of a line re-indents it
-const reindentOnBrace = EditorState.languageData.of(() => [{ indentOnInput: /^\s*\}$/ }]);
+const reindentOnBrace = EditorState.languageData.of(() => [
+  { indentOnInput: /^\s*\}$/ },
+]);
 
 // ----- The editor -----
 
 const theme = EditorView.theme(
   {
-    "&": { height: "100%", backgroundColor: "transparent", color: "var(--gss-text)" },
+    "&": {
+      height: "100%",
+      backgroundColor: "transparent",
+      color: "var(--gss-text)",
+    },
     "&.cm-focused": { outline: "none" },
     ".cm-scroller": { fontFamily: "inherit", lineHeight: "1.6" },
-    ".cm-content": { caretColor: "#e6e6e6", padding: "0.75rem 0" },
-    ".cm-cursor": { borderLeftColor: "#e6e6e6" },
-    ".cm-gutters": { backgroundColor: "transparent", color: "#55555f", border: "none" },
-    ".cm-activeLine": { backgroundColor: "rgba(255, 255, 255, 0.03)" },
-    ".cm-activeLineGutter": { backgroundColor: "transparent", color: "#9a9aa3" },
-    "&.cm-focused .cm-selectionBackground, .cm-selectionBackground": {
-      backgroundColor: "rgba(124, 180, 255, 0.25) !important",
+    ".cm-content": { caretColor: "var(--gss-content)", padding: "0.75rem 0" },
+    ".cm-cursor": {
+      borderLeftColor: "var(--gss-signal)",
+      borderLeftWidth: "2px",
     },
-    ".cm-matchingBracket": { backgroundColor: "rgba(255, 255, 255, 0.12)", outline: "none" },
-    ".cm-lintRange-error": { backgroundImage: "none", textDecoration: "underline wavy #ff6b6b" },
-    ".cm-tooltip": { backgroundColor: "#1d1d22", border: "1px solid #33333a", color: "#e6e6e6" },
+    ".cm-gutters": {
+      backgroundColor: "transparent",
+      color: "var(--gss-gutter)",
+      border: "none",
+    },
+    ".cm-activeLine": { backgroundColor: "var(--gss-raised)" },
+    ".cm-activeLineGutter": {
+      backgroundColor: "transparent",
+      color: "var(--gss-ash)",
+    },
+    "&.cm-focused .cm-selectionBackground, .cm-selectionBackground": {
+      backgroundColor:
+        "color-mix(in srgb, var(--gss-signal) 22%, transparent) !important",
+    },
+    ".cm-matchingBracket": {
+      backgroundColor: "var(--gss-isoline)",
+      outline: "none",
+    },
+    ".cm-lintRange-error": {
+      backgroundImage: "none",
+      textDecoration: "underline wavy var(--gss-signal)",
+    },
+    ".cm-tooltip": {
+      backgroundColor: "var(--gss-raised)",
+      border: "1px solid var(--gss-isoline)",
+      color: "var(--gss-bone)",
+    },
   },
   { dark: true },
 );
@@ -141,7 +178,10 @@ export function connectEditor(
         EditorState.tabSize.of(2),
         keymap.of([
           // Shift+Alt+F formats the code, like in VS Code
-          { key: "Shift-Alt-f", run: (v) => (setCode(formatGss(v.state.doc.toString())), true) },
+          {
+            key: "Shift-Alt-f",
+            run: (v) => (setCode(formatGss(v.state.doc.toString())), true),
+          },
           ...closeBracketsKeymap,
           ...defaultKeymap,
           ...historyKeymap,
@@ -197,7 +237,9 @@ export function connectEditor(
   }
 
   function setCode(code: string): void {
-    view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: code } });
+    view.dispatch({
+      changes: { from: 0, to: view.state.doc.length, insert: code },
+    });
   }
 
   tryLoad();
