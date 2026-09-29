@@ -1,7 +1,7 @@
 import { defineConfig } from "vite";
 
-// Three pages: the home page (index.html), the editor (playground.html)
-// and the reference (docs.html). Without this list, `vite build` only builds index.html.
+// Four pages: the home page (index.html), the editor (playground.html),
+// the reference (docs.html) and the marks (brand.html). Without this list, `vite build` only builds index.html.
 export default defineConfig({
   build: {
     rollupOptions: {
@@ -9,6 +9,7 @@ export default defineConfig({
         main: "index.html",
         playground: "playground.html",
         docs: "docs.html",
+        brand: "brand.html",
       },
     },
   },

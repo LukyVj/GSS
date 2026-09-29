@@ -1,0 +1,810 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>GSS — Brand</title>
+    <meta
+      name="description"
+      content="The GSS marks: the { ● } mark, the gss. wordmark, the app icon, the colours, the faces and the social cards. Every file is a vector SVG, free to download."
+    />
+    <link rel="stylesheet" href="/src/styles/tokens.css" />
+    <style>
+      /* The brand page: the variations of design/reference/png/04-marks.png.
+         The look comes from DESIGN.md; the values from src/styles/tokens.css.
+         The files it shows live in public/marks/ (text outlined, so they need no font). */
+      body {
+        margin: 0;
+        background: var(--gss-void);
+        color: var(--gss-bone);
+        font-family: var(--gss-font-body);
+        line-height: 1.55;
+      }
+      a {
+        color: var(--gss-signal);
+        text-decoration: none;
+      }
+      a:hover {
+        color: var(--gss-signal-hover);
+      }
+      :focus-visible {
+        outline: 1px solid var(--gss-signal);
+        outline-offset: 2px;
+      }
+      img {
+        display: block;
+        max-width: 100%;
+      }
+      code {
+        font-family: var(--gss-font-code);
+        font-size: 0.9em;
+        color: var(--gss-bone);
+      }
+
+      /* ----- Top bar (same as the docs) ----- */
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        height: 52px;
+        padding: 0 24px;
+        border-bottom: 1px solid var(--gss-line);
+        background: var(--gss-void);
+        font-family: var(--gss-font-code);
+        font-size: 13px;
+      }
+      .mark {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        color: var(--gss-bone);
+        font-family: var(--gss-font-display);
+        font-weight: 600;
+        font-size: 15px;
+      }
+      .mark:hover {
+        color: var(--gss-bone);
+      }
+      .mark .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--gss-signal);
+      }
+      .crumb {
+        color: var(--gss-dim);
+      }
+      .spacer {
+        flex: 1;
+      }
+      .topbar nav {
+        display: flex;
+        gap: 20px;
+      }
+      .topbar nav a {
+        color: var(--gss-ash);
+        transition: color var(--gss-transition);
+      }
+      .topbar nav a:hover {
+        color: var(--gss-bone);
+      }
+
+      /* ----- Page ----- */
+      main {
+        box-sizing: border-box;
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 0 56px 96px;
+      }
+      .intro {
+        padding: 96px 0 56px;
+        max-width: 720px;
+      }
+      .eyebrow {
+        margin: 0 0 16px;
+        color: var(--gss-dim);
+        font: 12px var(--gss-font-code);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      h1 {
+        margin: 0 0 24px;
+        font: 800 clamp(40px, 6vw, 68px) / 1.02 var(--gss-font-display);
+        letter-spacing: -0.05em;
+      }
+      .lead {
+        margin: 0;
+        color: var(--gss-ash);
+        font-size: 19px;
+        line-height: 1.5;
+      }
+
+      section {
+        padding: 56px 0 0;
+      }
+      .head {
+        display: grid;
+        grid-template-columns: 260px 1fr;
+        gap: 24px;
+        align-items: baseline;
+        padding-bottom: 24px;
+      }
+      h2 {
+        margin: 0;
+        font: 600 22px / 1.2 var(--gss-font-display);
+        letter-spacing: -0.03em;
+      }
+      h2 .n {
+        color: var(--gss-dim);
+        font: 12px var(--gss-font-code);
+        letter-spacing: 0.08em;
+        margin-right: 12px;
+        vertical-align: 3px;
+      }
+      .head p {
+        margin: 0;
+        max-width: 640px;
+        color: var(--gss-ash);
+        font-size: 16px;
+      }
+
+      /* Tiles, separated by hairlines (DESIGN.md § 7): the grid shows its gaps in --gss-line */
+      .grid {
+        display: grid;
+        gap: 1px;
+        background: var(--gss-line);
+        border: 1px solid var(--gss-line);
+      }
+      .cols-2 {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .cols-3 {
+        grid-template-columns: repeat(3, 1fr);
+      }
+      .cols-4 {
+        grid-template-columns: repeat(4, 1fr);
+      }
+      .tile {
+        display: flex;
+        flex-direction: column;
+        background: var(--gss-void);
+        min-width: 0;
+      }
+      .tile .art {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 240px;
+        padding: 40px;
+      }
+      .tile.tall .art {
+        min-height: 320px;
+      }
+      .tile .art.bleed {
+        padding: 0;
+        min-height: 0;
+      }
+      .tile .art.bleed img {
+        width: 100%;
+        height: auto;
+        aspect-ratio: 16 / 10;
+        object-fit: cover;
+      }
+      .on-surface .art {
+        background: var(--gss-surface);
+      }
+      .on-bone .art {
+        background: var(--gss-bone);
+      }
+      .on-signal .art {
+        background: var(--gss-signal);
+      }
+      .tile footer {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 12px 16px;
+        border-top: 1px solid var(--gss-line);
+        background: var(--gss-void);
+        font: 12px var(--gss-font-code);
+        color: var(--gss-dim);
+      }
+      .tile footer .name {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .tile footer a {
+        color: var(--gss-ash);
+        transition: color var(--gss-transition);
+      }
+      .tile footer a:hover {
+        color: var(--gss-bone);
+      }
+
+      .h-mark {
+        height: 120px;
+        width: auto;
+      }
+      .h-word {
+        height: 72px;
+        width: auto;
+      }
+      .h-lock {
+        height: 64px;
+        width: auto;
+      }
+
+      /* The icon at its sizes */
+      .sizes {
+        display: flex;
+        align-items: flex-end;
+        gap: 32px;
+      }
+      .sizes figure {
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        font: 11px var(--gss-font-code);
+        color: var(--gss-dim);
+      }
+
+      /* Clear space and minimum size */
+      .rule-art svg {
+        width: 100%;
+        max-width: 360px;
+        height: auto;
+      }
+      .min {
+        display: flex;
+        align-items: center;
+        gap: 40px;
+      }
+      .min figure {
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        font: 11px var(--gss-font-code);
+        color: var(--gss-dim);
+      }
+
+      /* Colour */
+      .swatch .chip {
+        height: 120px;
+      }
+      .swatch dl {
+        margin: 0;
+        padding: 14px 16px 16px;
+        border-top: 1px solid var(--gss-line);
+        font: 12px var(--gss-font-code);
+      }
+      .swatch dt {
+        color: var(--gss-bone);
+        font-weight: 500;
+      }
+      .swatch dd {
+        margin: 2px 0 0;
+        color: var(--gss-dim);
+      }
+      .swatch dd.hex {
+        color: var(--gss-ash);
+        user-select: all;
+      }
+
+      /* Type */
+      .face {
+        padding: 32px 32px 28px;
+        background: var(--gss-void);
+      }
+      .face .sample {
+        margin: 0 0 20px;
+        color: var(--gss-bone);
+        overflow-wrap: anywhere;
+      }
+      .face .meta {
+        margin: 0;
+        font: 12px var(--gss-font-code);
+        color: var(--gss-dim);
+      }
+      .face .meta b {
+        color: var(--gss-ash);
+        font-weight: 500;
+      }
+      .face.display .sample {
+        font: 800 56px / 1.02 var(--gss-font-display);
+        letter-spacing: -0.05em;
+      }
+      .face.body .sample {
+        font: 400 19px / 1.5 var(--gss-font-body);
+        color: var(--gss-ash);
+      }
+      .face.code .sample {
+        font: 400 14px / 1.7 var(--gss-font-code);
+        white-space: pre;
+        overflow-x: auto;
+      }
+      .face.code .sample .at {
+        color: #ff7aa8;
+      }
+      .face.code .sample .id {
+        color: #d29bff;
+      }
+      .face.code .sample .sel {
+        color: #7cb4ff;
+      }
+      .face.code .sample .prop {
+        color: #6fe0cf;
+      }
+      .face.code .sample .fn {
+        color: #d29bff;
+      }
+      .face.code .sample .num {
+        color: #ffb86b;
+      }
+      .face.code .sample .p {
+        color: #8a8a96;
+      }
+
+      /* Social cards: shown at their 1200 × 630 ratio */
+      .card .art.bleed img {
+        aspect-ratio: 1200 / 630;
+      }
+
+      /* Don't */
+      .dont .art {
+        min-height: 200px;
+      }
+      .dont img {
+        height: 88px;
+        width: auto;
+      }
+      .dont .rotate img {
+        transform: rotate(-18deg);
+      }
+      .dont .stretch img {
+        transform: scaleX(1.6);
+      }
+      .dont .shadow img {
+        filter: drop-shadow(0 12px 18px rgb(255 90 54 / 0.55));
+      }
+      .dont .recolour img {
+        filter: hue-rotate(150deg) saturate(1.4);
+      }
+      .dont footer .name::before {
+        content: "✕ ";
+        color: var(--gss-signal);
+      }
+
+      .note {
+        margin: 16px 0 0;
+        padding: 14px 16px;
+        border: 1px dashed var(--gss-isoline);
+        color: var(--gss-ash);
+        font-size: 15px;
+      }
+      .note b {
+        color: var(--gss-signal);
+        font: 500 13px var(--gss-font-code);
+        margin-right: 8px;
+      }
+
+      .site-footer {
+        border-top: 1px solid var(--gss-line);
+        margin-top: 96px;
+      }
+      .site-footer .in {
+        box-sizing: border-box;
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 28px 56px;
+        display: flex;
+        justify-content: space-between;
+        gap: 24px;
+        font: 13px var(--gss-font-code);
+        color: var(--gss-dim);
+      }
+      .site-footer nav {
+        display: flex;
+        gap: 24px;
+      }
+      .site-footer nav a {
+        color: var(--gss-ash);
+      }
+
+      @media (max-width: 1024px) {
+        .cols-4 {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .head {
+          grid-template-columns: 1fr;
+          gap: 8px;
+        }
+      }
+      @media (max-width: 640px) {
+        main {
+          padding: 0 16px 56px;
+        }
+        .intro {
+          padding: 56px 0 32px;
+        }
+        .cols-2,
+        .cols-3,
+        .cols-4 {
+          grid-template-columns: 1fr;
+        }
+        .topbar {
+          padding: 0 16px;
+        }
+        .face.display .sample {
+          font-size: 40px;
+        }
+        .site-footer .in {
+          padding: 24px 16px;
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="mark" href="./" aria-label="GSS home">{<span class="dot"></span>}</a>
+      <span class="crumb">/</span>
+      <span>brand</span>
+      <span class="spacer"></span>
+      <nav aria-label="Main">
+        <a href="./playground.html">playground</a>
+        <a href="./docs.html">docs</a>
+      </nav>
+    </header>
+
+    <main>
+      <div class="intro">
+        <p class="eyebrow">Brand</p>
+        <h1>The GSS marks.</h1>
+        <p class="lead">
+          Everything you need to show GSS: the mark, the wordmark, the icon and the social cards.
+          Every file is a vector SVG with its text outlined, so it needs no font. The braces and the
+          dot share their geometry with the logo scene, so the flat mark and the 3D one are the same
+          drawing.
+        </p>
+      </div>
+
+      <!-- 01 The mark -->
+      <section id="mark" aria-labelledby="mark-title">
+        <div class="head">
+          <h2 id="mark-title"><span class="n">01</span>The mark</h2>
+          <p>
+            <code>{ ● }</code>: bone braces and a signal dot. A style sheet around the one thing it
+            draws. On signal, everything turns void; there are no other colourways.
+          </p>
+        </div>
+        <div class="grid cols-3">
+          <figure class="tile tall" style="margin: 0">
+            <div class="art"><img class="h-mark" src="/marks/mark-dark.svg" alt="The GSS mark on void" /></div>
+            <footer>
+              <span class="name">on void · mark-dark</span>
+              <a href="/marks/mark-dark.svg" download>svg</a>
+            </footer>
+          </figure>
+          <figure class="tile tall on-bone" style="margin: 0">
+            <div class="art"><img class="h-mark" src="/marks/mark-light.svg" alt="The GSS mark on bone" /></div>
+            <footer>
+              <span class="name">on bone · mark-light</span>
+              <a href="/marks/mark-light.svg" download>svg</a>
+            </footer>
+          </figure>
+          <figure class="tile tall on-signal" style="margin: 0">
+            <div class="art"><img class="h-mark" src="/marks/mark-mono.svg" alt="The GSS mark on signal" /></div>
+            <footer>
+              <span class="name">on signal · mark-mono</span>
+              <a href="/marks/mark-mono.svg" download>svg</a>
+            </footer>
+          </figure>
+        </div>
+        <div class="grid cols-2" style="border-top: 0">
+          <figure class="tile" style="margin: 0">
+            <div class="art bleed">
+              <img src="/marks/logo-3d.jpg" alt="The GSS mark rendered in 3D by GSS" width="1600" height="933" />
+            </div>
+            <footer>
+              <span class="name">in 3D · src/playground/logo.gss</span>
+              <a
+                href="./playground.html#code=XVFLbtswFNzrFIN4kxoVLYmSYjObol5k1ZWL7mnp6RNLokAxcYvAZ-gyB-pNepLi0XaiFIT4wOFw5mneaonvDeFht0NnavMZpdXHAe3AkMIL_r7-xgnLVRB8mQoaCC8BMGrXLPZWFxR2VLn7j5Bt68Zj09iQpUVp3H1wCoL393tdHGprnoZSYRHpSEcF86vOGKswmIH42LGOgoxKqpHyzqju9y0NTiESMmOg0D1ZHTpta2KY1wwv28npoSCFOVsPdUcKXnp9Ub5cTWM7XJs4BcFqia_GNfD_NqEwPaGypodrCJPuCTLBn1fedz8e1Dv83NIx3JufOBCNE-M95zp2uiAOlBPzaVyJ595lApn49Jw1BwqPbekahUSkHiy071vEvmPTcWALynn5dmdj8eKl8qO5vfkWJyJDKrLt5lyxQY4N1iJ7TosISRhDiiyUIuO6XSPm6_jOM-PNlSYyfs4UpDef5p5-7v-bXsy2ycUdiUTO25svvO_12yYpGyfy7Mx1Zh2ySPjBuzRnT6vL9mniaNJ8nk1VZVp6pNeObKs7hUfqul-3kci9xj8"
+                >open in the playground</a
+              >
+            </footer>
+          </figure>
+          <figure class="tile" style="margin: 0">
+            <div class="art bleed">
+              <img src="/marks/mark-isolines.svg" alt="The GSS mark in its distance field" />
+            </div>
+            <footer>
+              <span class="name">in its distance field · mark-isolines</span>
+              <a href="/marks/mark-isolines.svg" download>svg</a>
+            </footer>
+          </figure>
+        </div>
+      </section>
+
+      <!-- 02 Wordmark and lockup -->
+      <section id="wordmark" aria-labelledby="wordmark-title">
+        <div class="head">
+          <h2 id="wordmark-title"><span class="n">02</span>Wordmark and lockup</h2>
+          <p>
+            <code>gss.</code> in Martian Mono 800, lowercase, the period in signal. The lockup puts the
+            mark before <code>gss</code> in Martian Mono 600, its x-height centred on the dot: it is
+            the header of every page.
+          </p>
+        </div>
+        <div class="grid cols-2">
+          <figure class="tile" style="margin: 0">
+            <div class="art"><img class="h-word" src="/marks/wordmark-dark.svg" alt="The gss. wordmark on void" /></div>
+            <footer>
+              <span class="name">wordmark-dark</span>
+              <a href="/marks/wordmark-dark.svg" download>svg</a>
+            </footer>
+          </figure>
+          <figure class="tile on-bone" style="margin: 0">
+            <div class="art"><img class="h-word" src="/marks/wordmark-light.svg" alt="The gss. wordmark on bone" /></div>
+            <footer>
+              <span class="name">wordmark-light</span>
+              <a href="/marks/wordmark-light.svg" download>svg</a>
+            </footer>
+          </figure>
+          <figure class="tile" style="margin: 0">
+            <div class="art"><img class="h-lock" src="/marks/lockup-dark.svg" alt="The GSS lockup on void" /></div>
+            <footer>
+              <span class="name">lockup-dark</span>
+              <a href="/marks/lockup-dark.svg" download>svg</a>
+            </footer>
+          </figure>
+          <figure class="tile on-bone" style="margin: 0">
+            <div class="art"><img class="h-lock" src="/marks/lockup-light.svg" alt="The GSS lockup on bone" /></div>
+            <footer>
+              <span class="name">lockup-light</span>
+              <a href="/marks/lockup-light.svg" download>svg</a>
+            </footer>
+          </figure>
+        </div>
+      </section>
+
+      <!-- 03 Icon -->
+      <section id="icon" aria-labelledby="icon-title">
+        <div class="head">
+          <h2 id="icon-title"><span class="n">03</span>App icon and favicons</h2>
+          <p>
+            The dot alone, on a <code>raised</code> square with rounded corners (22%). From 64 px up it
+            keeps two faint isolines; at 16 px, the dot only.
+          </p>
+        </div>
+        <div class="grid cols-2">
+          <figure class="tile tall" style="margin: 0">
+            <div class="art">
+              <div class="sizes">
+                <figure><img src="/marks/icon.svg" width="128" height="128" alt="App icon, 128 px" />128</figure>
+                <figure><img src="/marks/icon.svg" width="64" height="64" alt="App icon, 64 px" />64</figure>
+                <figure><img src="/favicon.svg" width="32" height="32" alt="Favicon, 32 px" />32</figure>
+                <figure><img src="/marks/icon-16.svg" width="16" height="16" alt="Favicon, 16 px" />16</figure>
+              </div>
+            </div>
+            <footer>
+              <span class="name">icon · favicon · icon-16</span>
+              <a href="/marks/icon.svg" download>512</a>
+              <a href="/favicon.svg" download>32</a>
+              <a href="/marks/icon-16.svg" download>16</a>
+            </footer>
+          </figure>
+          <figure class="tile tall on-surface" style="margin: 0">
+            <div class="art rule-art">
+              <!-- Clear space: one dot diameter on every side of the mark's ink -->
+              <svg viewBox="0 0 360 300" role="img" aria-label="Clear space around the mark: one dot diameter">
+                <rect x="68.9" y="33.6" width="222.2" height="232.8" fill="none" stroke="#3a3a42" stroke-dasharray="4 4" />
+                <rect x="117.8" y="82.5" width="124.4" height="135" fill="none" stroke="#2a2a31" />
+                <g transform="translate(180 150) scale(5.315) translate(-16 -16)">
+                  <g fill="none" stroke="#e8e6e1" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12.5 4.5C9.5 4.5 9 6 9 8.5v4c0 2-1 3.5-3.5 3.5C8 16 9 17.5 9 19.5v4c0 2.5.5 4 3.5 4" />
+                    <path d="M19.5 4.5C22.5 4.5 23 6 23 8.5v4c0 2 1 3.5 3.5 3.5C24 16 23 17.5 23 19.5v4c0 2.5-.5 4-3.5 4" />
+                  </g>
+                  <circle cx="16" cy="16" r="4.6" fill="#ff5a36" />
+                </g>
+                <g fill="#807f88" font-family="JetBrains Mono, monospace" font-size="11">
+                  <text x="68.9" y="22">clear space = 1 dot</text>
+                </g>
+                <circle cx="93.35" cy="58.05" r="24.45" fill="none" stroke="#ff5a36" stroke-opacity="0.6" stroke-dasharray="3 3" />
+              </svg>
+            </div>
+            <footer>
+              <span class="name">clear space: one dot diameter around the ink</span>
+            </footer>
+          </figure>
+        </div>
+        <div class="grid cols-2" style="border-top: 0">
+          <figure class="tile on-surface" style="margin: 0">
+            <div class="art">
+              <div class="min">
+                <figure><img src="/marks/mark-dark.svg" style="height: 32px; width: auto" alt="" />32 px</figure>
+                <figure><img src="/marks/mark-dark.svg" style="height: 20px; width: auto" alt="" />20 px · min</figure>
+                <figure><img src="/marks/icon-16.svg" width="16" height="16" alt="" />below: the icon</figure>
+              </div>
+            </div>
+            <footer><span class="name">minimum size: the mark 20 px tall; below, use the dot</span></footer>
+          </figure>
+          <figure class="tile on-surface" style="margin: 0">
+            <div class="art">
+              <div class="min">
+                <figure><img src="/marks/lockup-dark.svg" style="height: 24px; width: auto" alt="" />24 px</figure>
+                <figure><img src="/marks/lockup-dark.svg" style="height: 16px; width: auto" alt="" />16 px · min</figure>
+              </div>
+            </div>
+            <footer><span class="name">minimum size: the lockup 16 px tall</span></footer>
+          </figure>
+        </div>
+      </section>
+
+      <!-- 04 Colour -->
+      <section id="colour" aria-labelledby="colour-title">
+        <div class="head">
+          <h2 id="colour-title"><span class="n">04</span>Colour</h2>
+          <p>
+            A ladder of near-blacks, three greys for text and one accent. Signal is scarce: one filled
+            signal element per view, text on it is void.
+          </p>
+        </div>
+        <div class="grid cols-4">
+          <div class="tile swatch">
+            <div class="chip" style="background: var(--gss-void)"></div>
+            <dl><dt>void</dt><dd class="hex">#0A0A0C</dd><dd>page, render</dd></dl>
+          </div>
+          <div class="tile swatch">
+            <div class="chip" style="background: var(--gss-surface)"></div>
+            <dl><dt>surface</dt><dd class="hex">#111114</dd><dd>editor, code</dd></dl>
+          </div>
+          <div class="tile swatch">
+            <div class="chip" style="background: var(--gss-raised)"></div>
+            <dl><dt>raised</dt><dd class="hex">#16161B</dd><dd>active, selected, icon</dd></dl>
+          </div>
+          <div class="tile swatch">
+            <div class="chip" style="background: var(--gss-line)"></div>
+            <dl><dt>line</dt><dd class="hex">#202026</dd><dd>hairlines</dd></dl>
+          </div>
+          <div class="tile swatch">
+            <div class="chip" style="background: var(--gss-bone)"></div>
+            <dl><dt>bone</dt><dd class="hex">#E8E6E1</dd><dd>text, the braces</dd></dl>
+          </div>
+          <div class="tile swatch">
+            <div class="chip" style="background: var(--gss-ash)"></div>
+            <dl><dt>ash</dt><dd class="hex">#A09E99</dd><dd>secondary text</dd></dl>
+          </div>
+          <div class="tile swatch">
+            <div class="chip" style="background: var(--gss-dim)"></div>
+            <dl><dt>dim</dt><dd class="hex">#807F88</dd><dd>labels, metadata</dd></dl>
+          </div>
+          <div class="tile swatch">
+            <div class="chip" style="background: var(--gss-signal)"></div>
+            <dl><dt>signal</dt><dd class="hex">#FF5A36</dd><dd>the one accent, the dot</dd></dl>
+          </div>
+        </div>
+      </section>
+
+      <!-- 05 Type -->
+      <section id="type" aria-labelledby="type-title">
+        <div class="head">
+          <h2 id="type-title"><span class="n">05</span>Type</h2>
+          <p>Three faces, three jobs: Martian Mono speaks, Geist explains, JetBrains Mono does the work. All free.</p>
+        </div>
+        <div class="grid">
+          <div class="face display">
+            <p class="sample">Style sheets for the GPU.</p>
+            <p class="meta"><b>Martian Mono</b> · 600–800 · titles · −0.05em</p>
+          </div>
+          <div class="face body">
+            <p class="sample">
+              GSS compiles selectors, the cascade and @keyframes into a single raymarching shader. If
+              you can write CSS, you can already read GSS.
+            </p>
+            <p class="meta"><b>Geist</b> · 400–600 · prose</p>
+          </div>
+          <div class="face code">
+            <p class="sample"><span class="at">@scene</span><span class="p"> {</span> <span class="sel">sphere</span><span class="id">#ball</span><span class="p">; }</span>
+<span class="id">#ball</span><span class="p"> {</span> <span class="prop">material</span><span class="p">:</span> <span class="fn">jelly</span><span class="p">(</span><span class="num">0.6</span><span class="p">); }</span></p>
+            <p class="meta"><b>JetBrains Mono</b> · 400–500 · code, UI, numbers</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 06 Social cards -->
+      <section id="social" aria-labelledby="social-title">
+        <div class="head">
+          <h2 id="social-title"><span class="n">06</span>Social cards</h2>
+          <p>1200 × 630, for links and posts. The renders are real: GSS drew them.</p>
+        </div>
+        <div class="grid cols-2">
+          <figure class="tile card" style="margin: 0">
+            <div class="art bleed"><img src="/marks/social-home.svg" alt="Social card: Style sheets for the GPU" loading="lazy" /></div>
+            <footer>
+              <span class="name">home</span>
+              <a href="/marks/social-home.png" download>png</a>
+              <a href="/marks/social-home.svg" download>svg</a>
+            </footer>
+          </figure>
+          <figure class="tile card" style="margin: 0">
+            <div class="art bleed"><img src="/marks/social-logo.svg" alt="Social card: the logo, drawn in GSS" loading="lazy" /></div>
+            <footer>
+              <span class="name">the logo, drawn in GSS</span>
+              <a href="/marks/social-logo.png" download>png</a>
+              <a href="/marks/social-logo.svg" download>svg</a>
+            </footer>
+          </figure>
+          <figure class="tile card" style="margin: 0">
+            <div class="art bleed"><img src="/marks/social-playground.svg" alt="Social card: the playground" loading="lazy" /></div>
+            <footer>
+              <span class="name">playground</span>
+              <a href="/marks/social-playground.png" download>png</a>
+              <a href="/marks/social-playground.svg" download>svg</a>
+            </footer>
+          </figure>
+          <figure class="tile card" style="margin: 0">
+            <div class="art bleed"><img src="/marks/social-docs.svg" alt="Social card: the reference" loading="lazy" /></div>
+            <footer>
+              <span class="name">docs</span>
+              <a href="/marks/social-docs.png" download>png</a>
+              <a href="/marks/social-docs.svg" download>svg</a>
+            </footer>
+          </figure>
+        </div>
+      </section>
+
+      <!-- 07 Don't -->
+      <section id="dont" aria-labelledby="dont-title">
+        <div class="head">
+          <h2 id="dont-title"><span class="n">07</span>Don't</h2>
+          <p>The mark is a piece of code: it is drawn once, in two colours, and left alone.</p>
+        </div>
+        <div class="grid cols-4 dont">
+          <figure class="tile rotate" style="margin: 0">
+            <div class="art"><img src="/marks/mark-dark.svg" alt="" /></div>
+            <footer><span class="name">rotate it</span></footer>
+          </figure>
+          <figure class="tile stretch" style="margin: 0">
+            <div class="art"><img src="/marks/mark-dark.svg" alt="" /></div>
+            <footer><span class="name">stretch it</span></footer>
+          </figure>
+          <figure class="tile recolour" style="margin: 0">
+            <div class="art"><img src="/marks/mark-dark.svg" alt="" /></div>
+            <footer><span class="name">recolour it</span></footer>
+          </figure>
+          <figure class="tile shadow" style="margin: 0">
+            <div class="art"><img src="/marks/mark-dark.svg" alt="" /></div>
+            <footer><span class="name">add a shadow or a glow</span></footer>
+          </figure>
+        </div>
+        <p class="note">
+          <b>note</b>The rules behind this page live in <code>DESIGN.md</code>. A mark that changes there
+          changes here, and in <code>src/playground/logo.gss</code>.
+        </p>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="in">
+        <span>GSS — GPU Style Sheets. CSS for 3D scenes, compiled to a shader.</span>
+        <nav aria-label="Footer">
+          <a href="./playground.html">playground</a>
+          <a href="./docs.html">docs</a>
+          <a href="./brand.html">brand</a>
+        </nav>
+      </div>
+    </footer>
+  </body>
+</html>
