@@ -2,6 +2,16 @@ import { describe, it, expect } from "vitest";
 import { readAngle } from "./codegen";
 import { compileGSS } from "./index";
 
+export const SHAPE_FUNCTIONS = [
+  "sdSphere",
+  "sdRoundBox",
+  "sdTorus",
+  "sdCylinder",
+  "sdCappedCone",
+  "sdCapsule",
+];
+export const PATH_HELPERS = ["segment2", "crosses", "extrude", "box2"];
+
 describe("readAngle", () => {
   it("converts degrees to radians", () => {
     expect(
@@ -538,15 +548,6 @@ describe("groups", () => {
 });
 
 describe("only the GLSL the scene uses", () => {
-  const SHAPE_FUNCTIONS = [
-    "sdSphere",
-    "sdRoundBox",
-    "sdTorus",
-    "sdCylinder",
-    "sdCappedCone",
-    "sdCapsule",
-  ];
-
   it("an empty scene has no shape function", () => {
     const shader = compileGSS("");
     for (const name of SHAPE_FUNCTIONS)
@@ -565,5 +566,30 @@ describe("only the GLSL the scene uses", () => {
     expect(shader).toContain("float sdRoundBox(");
     for (const name of SHAPE_FUNCTIONS.filter((n) => n !== "sdRoundBox"))
       expect(shader).not.toContain(`float ${name}(`);
+  });
+
+  it("an empty scene has no path helper", () => {
+    const shader = compileGSS("");
+    for (const name of PATH_HELPERS) expect(shader).not.toContain(`${name}(`);
+  });
+
+  it("a path brings segment2 and box2, not the prism helpers", () => {
+    const shader = compileGSS(
+      '@scene { path; } path { d: path("M0 0 L1 1"); }',
+    );
+    expect(shader).toContain("float segment2(");
+    expect(shader).toContain("float box2(");
+    expect(shader).not.toContain("bool crosses(");
+    expect(shader).not.toContain("float extrude(");
+  });
+
+  it("a prism brings the four helpers", () => {
+    const shader = compileGSS(
+      "@scene { prism; } prism { d: polygon(0 -1, 1 1, -1 1); }",
+    );
+    expect(shader).toContain("float segment2(");
+    expect(shader).toContain("float box2(");
+    expect(shader).toContain("bool crosses(");
+    expect(shader).toContain("float extrude(");
   });
 });

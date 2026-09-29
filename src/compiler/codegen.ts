@@ -13,7 +13,6 @@ function round(n: number): number {
 }
 
 // The GLSL functions of the shapes. Only those map() calls go in the shader.
-// The GLSL functions of the shapes. Only those map() calls go in the shader.
 const SHAPE_FUNCTIONS: Record<string, string> = {
   sdSphere: `float sdSphere(vec3 p, float r) {
   return length(p) - r;
@@ -51,6 +50,43 @@ float sdCapsule(vec3 p, float h, float r) {
   return length(p) - r;
 }`,
 };
+
+// The 2D helpers of path and prism. Only those the generated shapes call go in the shader.
+const PATH_HELPERS: Record<string, string> = {
+  segment2: `// For path objects: squared distances to a segment and to a box, in 2D
+float segment2(vec2 p, vec2 a, vec2 b) {
+  vec2 ap = p - a, ab = b - a;
+  vec2 v = ap - ab * clamp(dot(ap, ab) / dot(ab, ab), 0.0, 1.0);
+  return dot(v, v);
+}`,
+
+  crosses: `// For prism objects: does the horizontal line through p cross the side a-b?
+// Each crossing flips inside and outside.
+bool crosses(vec2 p, vec2 a, vec2 b) {
+  vec2 e = b - a, w = p - a;
+  bvec3 c = bvec3(p.y >= a.y, p.y < b.y, e.x * w.y > e.y * w.x);
+  return all(c) || all(not(c));
+}`,
+
+  extrude: `// Gives a 2D distance a depth along z: h is half the depth
+float extrude(float d, float z, float h) {
+  vec2 w = vec2(d, abs(z) - h);
+  return min(max(w.x, w.y), 0.0) + length(max(w, 0.0));
+}`,
+
+  box2: `float box2(vec2 p, vec2 center, vec2 halfSize) {
+  vec2 v = max(abs(p - center) - halfSize, 0.0);
+  return dot(v, v);
+}`,
+};
+
+// The functions of "table" that "code" calls, ready to paste in the shader
+function used(table: Record<string, string>, code: string): string {
+  return Object.entries(table)
+    .filter(([name]) => code.includes(name + "("))
+    .map(([, fn]) => fn)
+    .join("\n\n");
+}
 
 // The GLSL function behind each operation
 const OPERATIONS: Record<string, string> = {
@@ -816,12 +852,9 @@ export function generateShader(
     .join("\n\n");
 
   const map = mapLines.join("\n\n");
-  const shapeFunctions = Object.entries(SHAPE_FUNCTIONS)
-    .filter(([name]) => map.includes(name + "("))
-    .map(([, code]) => code)
-    .join("\n\n");
 
-  return TEMPLATE.replace("/*@SHAPE_FUNCTIONS*/", shapeFunctions)
+  return TEMPLATE.replace("/*@SHAPE_FUNCTIONS*/", used(SHAPE_FUNCTIONS, map))
+    .replace("/*@PATH_HELPERS*/", used(PATH_HELPERS, functions)) // called by the path and prism functions, not by map()
     .replace("/*@SHAPES*/", functions)
     .replace("/*@MAP*/", map)
     .replace("/*@MATERIALS*/", materialLines.join("\n"))
@@ -858,31 +891,7 @@ out vec4 outColor;
 
 /*@SHAPE_FUNCTIONS*/
 
-// For path objects: squared distances to a segment and to a box, in 2D
-float segment2(vec2 p, vec2 a, vec2 b) {
-  vec2 ap = p - a, ab = b - a;
-  vec2 v = ap - ab * clamp(dot(ap, ab) / dot(ab, ab), 0.0, 1.0);
-  return dot(v, v);
-}
-
-// For prism objects: does the horizontal line through p cross the side a-b?
-// Each crossing flips inside and outside.
-bool crosses(vec2 p, vec2 a, vec2 b) {
-  vec2 e = b - a, w = p - a;
-  bvec3 c = bvec3(p.y >= a.y, p.y < b.y, e.x * w.y > e.y * w.x);
-  return all(c) || all(not(c));
-}
-
-// Gives a 2D distance a depth along z: h is half the depth
-float extrude(float d, float z, float h) {
-  vec2 w = vec2(d, abs(z) - h);
-  return min(max(w.x, w.y), 0.0) + length(max(w, 0.0));
-}
-
-float box2(vec2 p, vec2 center, vec2 halfSize) {
-  vec2 v = max(abs(p - center) - halfSize, 0.0);
-  return dot(v, v);
-}
+/*@PATH_HELPERS*/
 
 // Shapes written by GSS (path…)
 /*@SHAPES*/
