@@ -326,4 +326,5 @@ The floor is added last and is never affected. The walls of a hole take the mate
 - **Validation inside `@keyframes`**: declarations in frames are not checked yet. An unknown or non-animatable property is silently ignored.
 - **Animation keywords**: every animation loops. `infinite` is accepted but changes nothing, and there is no iteration count, `animation-delay` or `animation-direction: reverse` yet.
 - **Colors in operations**: blended objects switch color halfway instead of mixing (decision 19).
+- **`@for` / `@each`**: are they worth adding, for what `* n` and `sibling-index()` cannot do (decision 52): a different shape at each step, or a list of values?
 

@@ -234,7 +234,7 @@ export const PROPERTIES: PropertyDef[] = [
   {
     name: "d",
     appliesTo: ["path", "prism"],
-    syntax: 'path("<svg path>") (path) | polygon(<x> <y>, …) (prism)',
+    syntax: 'path("<svg path>") (path, prism) | polygon(<x> <y>, …) (prism)',
     initial: "none (required)",
     description:
       "The line a path object follows, written like the d of an SVG path, or CSS path(): M moves, L H V draw lines, C S Q T draw curves, A draws an arc of ellipse (rx ry rotation large-arc sweep x y, like SVG), Z closes, in capitals (absolute) or lowercase (relative). A path copied from an SVG keeps its way up: y goes up in the scene, down in SVG, and GSS flips it. One path unit is one scene unit, so an icon drawn in a 24 or 32 box usually needs a scale. On a prism, d takes a polygon(), written like the one of CSS clip-path: one point per comma, x and y separated by a space, y going down like in SVG, and the polygon closes itself; or a path(), like above, whose every subpath is a closed contour, filled with the even-odd rule: a subpath inside another one is a hole, like the inside of an o. A logo exported as an SVG path becomes a solid shape this way.",
@@ -345,12 +345,13 @@ export const PROPERTIES: PropertyDef[] = [
   {
     name: "floor",
     appliesTo: "scene",
-    syntax: "<hex-color>",
+    syntax: "<hex-color> | none",
     initial: "#e8e3db",
     description:
-      "Sets the color of the floor, an infinite plane at y = 0 that is lit like the objects.",
+      "Sets the color of the floor, an infinite plane at y = 0 that is lit like the objects. none removes it: the objects float over the background, like the GSS logo.",
     examples: [
       "@scene { cube; } cube { translate: 0 0.5 0; } scene { floor: #1a1a1f; }",
+      "@scene { sphere; } sphere { color: #ff5a36; material: jelly(0.6); } scene { floor: none; background: #0a0a0c; }",
     ],
   },
   {
