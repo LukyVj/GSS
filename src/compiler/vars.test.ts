@@ -50,3 +50,35 @@ describe("resolveVars", () => {
     expect(resolve("var(--size, var(--nope))")).toEqual(tokenize("2"));
   });
 });
+
+describe("variables that use variables", () => {
+  it("resolves a variable that uses another", () => {
+    const variables = {
+      "--size": tokenize("2"),
+      "--big": tokenize("calc(var(--size) * 2)"),
+    };
+    expect(resolveVars(tokenize("var(--big)"), variables)).toEqual(
+      tokenize("calc(2 * 2)"),
+    );
+  });
+
+  it("rejects a loop, and shows it", () => {
+    const variables = { "--a": tokenize("var(--b)"), "--b": tokenize("var(--a)") };
+    expect(() => resolveVars(tokenize("var(--a)"), variables)).toThrow(
+      "--a uses itself: --a → --b → --a",
+    );
+  });
+
+  it("rejects a variable that uses itself", () => {
+    const variables = { "--a": tokenize("calc(var(--a) + 1)") };
+    expect(() => resolveVars(tokenize("var(--a)"), variables)).toThrow(
+      "--a uses itself",
+    );
+  });
+
+  it("is not a loop to use the same variable twice", () => {
+    expect(resolve("calc(var(--size) + var(--size))")).toEqual(
+      tokenize("calc(2 + 2)"),
+    );
+  });
+});

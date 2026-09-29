@@ -57,4 +57,11 @@ describe("var()", () => {
       ),
     ).toContain("sdSphere(q, 4.0)");
   });
+  it("resolves a variable that uses another", () => {
+    expect(
+      compileGSS(
+        "@scene { sphere } scene { --size: 2; --big: calc(var(--size) * 2); } sphere { radius: var(--big); }",
+      ),
+    ).toContain("sdSphere(q, 4.0)");
+  });
 });

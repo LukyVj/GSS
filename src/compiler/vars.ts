@@ -6,7 +6,12 @@ import { closingParen } from "./calc";
 
 export type Variables = Record<string, Token[]>;
 
-export function resolveVars(value: Token[], variables: Variables): Token[] {
+// chain = the variables being resolved, to find loops: --a → --b → --a
+export function resolveVars(
+  value: Token[],
+  variables: Variables,
+  chain: string[] = [],
+): Token[] {
   if (!value.some((_, i) => isVarCall(value, i))) return value; // nothing to replace: same array
   const out: Token[] = [];
   let i = 0;
@@ -36,9 +41,23 @@ export function resolveVars(value: Token[], variables: Variables): Token[] {
 
     const fallback = value.slice(i + 4, end);
 
-    if (name.value in variables) out.push(...variables[name.value]);
-    else if (fallback.length > 0) out.push(...resolveVars(fallback, variables));
-    else throw errorAt(value.slice(i, end + 1), `${name.value} is not defined`);
+    if (name.value in variables) {
+      if (chain.includes(name.value)) {
+        throw errorAt(
+          value.slice(i, end + 1),
+          `${name.value} uses itself: ${[...chain, name.value].join(" → ")}`,
+        );
+      }
+      // The value of a variable can use other variables: resolve them too.
+      // A new array, not chain.push(): var(--x) + var(--x) is not a loop.
+      out.push(
+        ...resolveVars(variables[name.value], variables, [...chain, name.value]),
+      );
+    } else if (fallback.length > 0) {
+      out.push(...resolveVars(fallback, variables, chain)); // read only when needed
+    } else {
+      throw errorAt(value.slice(i, end + 1), `${name.value} is not defined`);
+    }
 
     i = end + 1;
   }
