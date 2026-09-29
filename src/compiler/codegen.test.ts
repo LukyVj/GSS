@@ -11,6 +11,14 @@ export const SHAPE_FUNCTIONS = [
   "sdCapsule",
 ];
 export const PATH_HELPERS = ["segment2", "crosses", "extrude", "box2"];
+export const MAP_HELPERS = [
+  "rot",
+  "opS",
+  "opI",
+  "opSmoothU",
+  "opSmoothS",
+  "opSmoothI",
+];
 
 describe("readAngle", () => {
   it("converts degrees to radians", () => {
@@ -591,5 +599,34 @@ describe("only the GLSL the scene uses", () => {
     expect(shader).toContain("float box2(");
     expect(shader).toContain("bool crosses(");
     expect(shader).toContain("float extrude(");
+  });
+
+  it("an empty scene has no rotation or operation, but keeps opU for the floor", () => {
+    const shader = compileGSS("");
+    for (const name of MAP_HELPERS) expect(shader).not.toContain(`${name}(`);
+    expect(shader).toContain("vec2 opU(");
+  });
+
+  it("a rotation brings rot", () => {
+    const shader = compileGSS("@scene { cube; } cube { rotate-y: 30deg; }");
+    expect(shader).toContain("mat2 rot(");
+  });
+
+  it("subtract brings opS, and only opS", () => {
+    const shader = compileGSS(
+      "@scene { cube; sphere; } sphere { operation: subtract; }",
+    );
+    expect(shader).toContain("vec2 opS(");
+    for (const name of MAP_HELPERS.filter((n) => n !== "opS"))
+      expect(shader).not.toContain(`vec2 ${name}(`);
+  });
+
+  it("blend brings the smooth version of the operation", () => {
+    const shader = compileGSS(
+      "@scene { cube; sphere; } sphere { operation: intersect; blend: 0.3; }",
+    );
+    expect(shader).toContain("vec2 opSmoothI(");
+    expect(shader).not.toContain("vec2 opI(");
+    expect(shader).not.toContain("vec2 opSmoothU(");
   });
 });
