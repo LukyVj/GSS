@@ -1,3 +1,4 @@
+import "./styles/tokens.css";
 import "./styles/gss-code.css";
 import { EditorState } from "@codemirror/state";
 import { EditorView, lineNumbers } from "@codemirror/view";
@@ -42,8 +43,8 @@ const shareButton = $<HTMLButtonElement>("#share");
 shareButton.addEventListener("click", async () => {
   history.replaceState(null, "", await encodeCode(editor.getCode()));
   await navigator.clipboard.writeText(location.href);
-  shareButton.textContent = "Link copied";
-  setTimeout(() => (shareButton.textContent = "Share"), 2000);
+  shareButton.textContent = "link copied";
+  setTimeout(() => (shareButton.textContent = "share"), 2000);
 });
 
 // ----- The examples menu -----
@@ -64,8 +65,8 @@ exportToShadertoyButton.addEventListener("click", async () => {
   const shader = toShadertoy(compileScene(editor.getCode()));
   await navigator.clipboard.writeText(shader);
   window.open("https://www.shadertoy.com/new", "_blank");
-  exportToShadertoyButton.textContent = "Copied: paste it in Shadertoy";
-  setTimeout(() => (exportToShadertoyButton.textContent = "Export to Shadertoy"), 4000);
+  exportToShadertoyButton.textContent = "copied, paste it in shadertoy";
+  setTimeout(() => (exportToShadertoyButton.textContent = "→ shadertoy"), 4000);
 });
 
 // ----- The GLSL tab: the shader the GSS becomes, read-only -----

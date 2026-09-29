@@ -157,7 +157,7 @@ evenly spaced). Optional tiny `d = 0.4` labels in JetBrains Mono 11px.
 
 ## 6. Components
 
-**Buttons** (min height 44px, radius 2px, JetBrains Mono 13–14px, lowercase)
+**Buttons** (height 44px on touch screens, 34px in the dense desktop toolbar of the playground; radius 2px, JetBrains Mono 13–14px, lowercase)
 
 - _Primary_: signal fill, void text, weight 500. One per view.
 - _Secondary_: transparent, 1px `isoline` border, `ash` text; hover → `bone` text.

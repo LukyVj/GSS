@@ -7,7 +7,7 @@
 }
 
 scene {
-  background: #111114;
+  background: #0a0a0c;
   floor: none;
   light: 30deg 40deg;
   ambient: 0.35;

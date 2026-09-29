@@ -1,0 +1,50 @@
+/* The GSS design tokens: the values of DESIGN.md, as CSS variables.
+   DESIGN.md is the source of truth; change a value there first, then here. */
+
+/* The three faces, self-hosted (npm @fontsource/*), latin subset via the weight files */
+@import "@fontsource/martian-mono/600.css";
+@import "@fontsource/martian-mono/800.css";
+@import "@fontsource/geist/400.css";
+@import "@fontsource/geist/500.css";
+@import "@fontsource/geist/600.css";
+@import "@fontsource/jetbrains-mono/400.css";
+@import "@fontsource/jetbrains-mono/500.css";
+
+:root {
+  color-scheme: dark;
+
+  /* Ground: a ladder of near-blacks */
+  --gss-void: #0a0a0c; /* page, 3D viewport */
+  --gss-surface: #111114; /* editor, code blocks */
+  --gss-raised: #16161b; /* active tab, selected item */
+  --gss-line: #202026; /* 1px dividers between regions */
+  --gss-isoline: #2a2a31; /* borders of secondary controls */
+  --gss-gutter: #3a3a42; /* line numbers in the editor gutter */
+
+  /* Text */
+  --gss-bone: #e8e6e1; /* primary */
+  --gss-ash: #a09e99; /* secondary */
+  --gss-dim: #807f88; /* labels, metadata (≥ 4.5:1 on every surface) */
+
+  /* The one accent */
+  --gss-signal: #ff5a36;
+  --gss-signal-hover: #ff7a5c;
+  --gss-signal-wash: rgb(255 90 54 / 0.1); /* behind an error */
+  --gss-error-text: #ff9a80;
+
+  /* Type */
+  --gss-font-display: "Martian Mono", ui-monospace, monospace;
+  --gss-font-body: "Geist", system-ui, sans-serif;
+  --gss-font-code: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Shape */
+  --gss-radius-control: 2px;
+  --gss-control-height: 34px; /* compact toolbar; 44px on touch screens */
+  --gss-transition: 140ms ease-out;
+}
+
+@media (pointer: coarse) {
+  :root {
+    --gss-control-height: 44px;
+  }
+}
