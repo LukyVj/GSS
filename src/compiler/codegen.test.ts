@@ -536,3 +536,34 @@ describe("groups", () => {
     expect(shader).toContain("* 2.0 * 3.0,");
   });
 });
+
+describe("only the GLSL the scene uses", () => {
+  const SHAPE_FUNCTIONS = [
+    "sdSphere",
+    "sdRoundBox",
+    "sdTorus",
+    "sdCylinder",
+    "sdCappedCone",
+    "sdCapsule",
+  ];
+
+  it("an empty scene has no shape function", () => {
+    const shader = compileGSS("");
+    for (const name of SHAPE_FUNCTIONS)
+      expect(shader).not.toContain(`float ${name}(`);
+  });
+
+  it("a sphere brings sdSphere, and nothing else", () => {
+    const shader = compileGSS("@scene { sphere; }");
+    expect(shader).toContain("float sdSphere(");
+    for (const name of SHAPE_FUNCTIONS.filter((n) => n !== "sdSphere"))
+      expect(shader).not.toContain(`float ${name}(`);
+  });
+
+  it("a plane brings sdRoundBox", () => {
+    const shader = compileGSS("@scene { plane; }");
+    expect(shader).toContain("float sdRoundBox(");
+    for (const name of SHAPE_FUNCTIONS.filter((n) => n !== "sdRoundBox"))
+      expect(shader).not.toContain(`float ${name}(`);
+  });
+});

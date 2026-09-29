@@ -12,6 +12,46 @@ function round(n: number): number {
   return Math.round(n * 1000) / 1000;
 }
 
+// The GLSL functions of the shapes. Only those map() calls go in the shader.
+// The GLSL functions of the shapes. Only those map() calls go in the shader.
+const SHAPE_FUNCTIONS: Record<string, string> = {
+  sdSphere: `float sdSphere(vec3 p, float r) {
+  return length(p) - r;
+}`,
+
+  sdRoundBox: `float sdRoundBox(vec3 p, vec3 b, float r) {
+  vec3 q = abs(p) - b + r;
+  return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0) - r;
+}`,
+
+  sdTorus: `float sdTorus(vec3 p, vec2 t) {
+  vec2 q = vec2(length(p.xz) - t.x, p.y);
+  return length(q) - t.y;
+}`,
+
+  sdCylinder: `float sdCylinder(vec3 p, float h, float r) {
+  vec2 d = abs(vec2(length(p.xz), p.y)) - vec2(r, h);
+  return min(max(d.x, d.y), 0.0) + length(max(d, 0.0));
+}`,
+
+  sdCappedCone: `// r1 = radius at the bottom, r2 = radius at the top, h = half the height
+float sdCappedCone(vec3 p, float h, float r1, float r2) {
+  vec2 q = vec2(length(p.xz), p.y);
+  vec2 k1 = vec2(r2, h);
+  vec2 k2 = vec2(r2 - r1, 2.0 * h);
+  vec2 ca = vec2(q.x - min(q.x, (q.y < 0.0) ? r1 : r2), abs(q.y) - h);
+  vec2 cb = q - k1 + k2 * clamp(dot(k1 - q, k2) / dot(k2, k2), 0.0, 1.0);
+  float s = (cb.x < 0.0 && ca.y < 0.0) ? -1.0 : 1.0;
+  return s * sqrt(min(dot(ca, ca), dot(cb, cb)));
+}`,
+
+  sdCapsule: `// h = half of the straight part
+float sdCapsule(vec3 p, float h, float r) {
+  p.y -= clamp(p.y, -h, h);
+  return length(p) - r;
+}`,
+};
+
 // The GLSL function behind each operation
 const OPERATIONS: Record<string, string> = {
   union: "opU",
@@ -82,23 +122,35 @@ function readD(value: Token[] | undefined): Token & { type: "STRING" } {
 // Reads the contours of a prism: d: polygon(0 1, 1 -1, -1 -1), one contour,
 // or d: path("…"), one contour per subpath (the holes of a letter are subpaths)
 function readPrismD(value: Token[] | undefined): Point[][] {
-  const example = 'd: polygon(0 -1, 1 1, -1 1); or d: path("M0 0 L1 0 L1 1 Z");';
+  const example =
+    'd: polygon(0 -1, 1 1, -1 1); or d: path("M0 0 L1 0 L1 1 Z");';
   if (!value) throw new Error(`prism needs a d, like: ${example}`);
   const points = readPolygon(value);
   if (points) return [points];
 
   const call = readFunction(value);
   const [arg] = call?.args ?? [];
-  if (call?.name === "path" && call.args.length === 1 && arg.length === 1 && arg[0].type === "STRING") {
+  if (
+    call?.name === "path" &&
+    call.args.length === 1 &&
+    arg.length === 1 &&
+    arg[0].type === "STRING"
+  ) {
     const d = arg[0];
     // The precision follows the size of the shape: a logo 400 units wide
     // is cut as finely, relative to its size, as a shape 2 units wide
     const rough = locate(d, () => readSvgPath(d.value, Infinity)).flat();
-    const size = Math.max(...rough.map((p) => p.x)) - Math.min(...rough.map((p) => p.x))
-      + Math.max(...rough.map((p) => p.y)) - Math.min(...rough.map((p) => p.y));
+    const size =
+      Math.max(...rough.map((p) => p.x)) -
+      Math.min(...rough.map((p) => p.x)) +
+      Math.max(...rough.map((p) => p.y)) -
+      Math.min(...rough.map((p) => p.y));
     return locate(d, () => readSvgPath(d.value, Math.max(size, 1e-6) / 1000));
   }
-  throw errorAt(value, `d expects polygon(…) or path("…") on a prism, like: ${example}`);
+  throw errorAt(
+    value,
+    `d expects polygon(…) or path("…") on a prism, like: ${example}`,
+  );
 }
 
 // Reads "0 0 32 32": min-x, min-y, width, height, like the viewBox of an SVG
@@ -763,8 +815,15 @@ export function generateShader(
     .map(([code, name]) => code.replaceAll("NAME", name))
     .join("\n\n");
 
-  return TEMPLATE.replace("/*@SHAPES*/", functions)
-    .replace("/*@MAP*/", mapLines.join("\n\n"))
+  const map = mapLines.join("\n\n");
+  const shapeFunctions = Object.entries(SHAPE_FUNCTIONS)
+    .filter(([name]) => map.includes(name + "("))
+    .map(([, code]) => code)
+    .join("\n\n");
+
+  return TEMPLATE.replace("/*@SHAPE_FUNCTIONS*/", shapeFunctions)
+    .replace("/*@SHAPES*/", functions)
+    .replace("/*@MAP*/", map)
     .replace("/*@MATERIALS*/", materialLines.join("\n"))
     .replace(
       "/*@FLOOR*/",
@@ -797,41 +856,7 @@ uniform float uDist;
 
 out vec4 outColor;
 
-float sdSphere(vec3 p, float r) {
-  return length(p) - r;
-}
-
-float sdRoundBox(vec3 p, vec3 b, float r) {
-  vec3 q = abs(p) - b + r;
-  return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0) - r;
-}
-
-float sdTorus(vec3 p, vec2 t) {
-  vec2 q = vec2(length(p.xz) - t.x, p.y);
-  return length(q) - t.y;
-}
-
-float sdCylinder(vec3 p, float h, float r) {
-  vec2 d = abs(vec2(length(p.xz), p.y)) - vec2(r, h);
-  return min(max(d.x, d.y), 0.0) + length(max(d, 0.0));
-}
-
-// r1 = radius at the bottom, r2 = radius at the top, h = half the height
-float sdCappedCone(vec3 p, float h, float r1, float r2) {
-  vec2 q = vec2(length(p.xz), p.y);
-  vec2 k1 = vec2(r2, h);
-  vec2 k2 = vec2(r2 - r1, 2.0 * h);
-  vec2 ca = vec2(q.x - min(q.x, (q.y < 0.0) ? r1 : r2), abs(q.y) - h);
-  vec2 cb = q - k1 + k2 * clamp(dot(k1 - q, k2) / dot(k2, k2), 0.0, 1.0);
-  float s = (cb.x < 0.0 && ca.y < 0.0) ? -1.0 : 1.0;
-  return s * sqrt(min(dot(ca, ca), dot(cb, cb)));
-}
-
-// h = half of the straight part
-float sdCapsule(vec3 p, float h, float r) {
-  p.y -= clamp(p.y, -h, h);
-  return length(p) - r;
-}
+/*@SHAPE_FUNCTIONS*/
 
 // For path objects: squared distances to a segment and to a box, in 2D
 float segment2(vec2 p, vec2 a, vec2 b) {
