@@ -25,12 +25,12 @@ path {
   color: #e6e6e6;
 }
 
-#brace-left {
+#brace-left, #brace-right {
   d: path("M12.5 4.5C9.5 4.5 9 6 9 8.5v4c0 2-1 3.5-3.5 3.5C8 16 9 17.5 9 19.5v4c0 2.5.5 4 3.5 4");
 }
 
 #brace-right {
-  d: path("M19.5 4.5C22.5 4.5 23 6 23 8.5v4c0 2 1 3.5 3.5 3.5C24 16 23 17.5 23 19.5v4c0 2.5-.5 4-3.5 4");
+  rotate-y: 180deg;
 }
 
 #dot {
