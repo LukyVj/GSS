@@ -9,6 +9,7 @@ import { resolveMath, type CalcContext } from "./calc";
 import type { Styles } from "./resolve";
 import type { Keyframes } from "./ast";
 import { rememberSpan, spanOf } from "./errors";
+import { resolveVars, type Variables } from "./vars";
 
 // Everything the runtime needs to display a scene
 export type CompiledScene = {
@@ -18,22 +19,50 @@ export type CompiledScene = {
 };
 
 // GSS text → shader + camera settings
+// GSS text → shader + camera settings
 export function compileScene(source: string): CompiledScene {
   const stylesheet = parse(tokenize(source));
   validateProperties(stylesheet.rules);
   validateKeyframes(stylesheet.keyframes);
   const instances = expandScene(stylesheet.scene);
-  // The cascade picks the values, then the math is computed for each object (decision 52)
-  const styled = resolveStyles(instances, stylesheet.rules).map((instance) => ({
-    ...instance,
-    styles: computeMath(instance.styles, instance),
-    groupStyles: instance.groupStyles.map((styles, g) => computeMath(styles, instance.groups[g])),
-  }));
-  const sceneStyles = computeMath(resolveSceneStyles(stylesheet.rules), null);
+
+  // The scene is the root of the variables, like :root in CSS
+  const sceneStyles = resolveSceneStyles(stylesheet.rules);
+  const rootVariables = customProperties(sceneStyles);
+
+  // The cascade picks the values, then var() is replaced, then the math is computed
+  // for each object (decision 52)
+  const styled = resolveStyles(instances, stylesheet.rules).map((instance) => {
+    // Level 0 = the scene, 1… = the groups from the outside in, last = the object
+    const levels = [
+      rootVariables,
+      ...instance.groupStyles.map(customProperties),
+      customProperties(instance.styles),
+    ];
+    // The variables seen at level n: every level from 0 to n, the closest one wins
+    const seenAt = (n: number): Variables =>
+      Object.assign({}, ...levels.slice(0, n + 1));
+
+    return {
+      ...instance,
+      styles: computeMath(
+        computeVars(instance.styles, seenAt(levels.length - 1)),
+        instance,
+      ),
+      groupStyles: instance.groupStyles.map((styles, g) =>
+        computeMath(computeVars(styles, seenAt(g + 1)), instance.groups[g]),
+      ),
+    };
+  });
+
+  const computedScene = computeMath(
+    computeVars(sceneStyles, rootVariables),
+    null,
+  );
   const keyframes = computeKeyframes(stylesheet.keyframes);
   return {
-    shader: generateShader(styled, sceneStyles, keyframes),
-    camera: readCamera(sceneStyles),
+    shader: generateShader(styled, computedScene, keyframes),
+    camera: readCamera(computedScene),
     objects: instances.length,
   };
 }
@@ -41,7 +70,8 @@ export function compileScene(source: string): CompiledScene {
 // Every value of a set of styles, with calc(), sin(), sibling-index()… computed
 function computeMath(styles: Styles, context: CalcContext): Styles {
   const computed: Styles = {};
-  for (const [property, value] of Object.entries(styles)) computed[property] = resolveMath(value, context);
+  for (const [property, value] of Object.entries(styles))
+    computed[property] = resolveMath(value, context);
   return computed;
 }
 
@@ -61,6 +91,25 @@ function computeKeyframes(keyframes: Keyframes[]): Keyframes[] {
       }),
     })),
   }));
+}
+
+// The custom properties of a set of styles: { "--size": [2] }
+function customProperties(styles: Styles): Variables {
+  const variables: Variables = {};
+  for (const [property, value] of Object.entries(styles)) {
+    if (property.startsWith("--")) variables[property] = value;
+  }
+  return variables;
+}
+
+// Every var() replaced; the custom properties themselves are dropped
+function computeVars(styles: Styles, variables: Variables): Styles {
+  const computed: Styles = {};
+  for (const [property, value] of Object.entries(styles)) {
+    if (property.startsWith("--")) continue;
+    computed[property] = resolveVars(value, variables);
+  }
+  return computed;
 }
 
 // GSS text → shader only

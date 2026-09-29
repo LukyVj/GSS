@@ -94,3 +94,17 @@ describe("validateKeyframes", () => {
     ).toThrow("translate, color, rotate-x, rotate-y, rotate-z, scale");
   });
 });
+
+describe("custom properties", () => {
+  it("accepts custom properties on objects and on the scene", () => {
+    expect(() =>
+      validate("cube { --size: 2; } scene { --gap: 0.5; }"),
+    ).not.toThrow();
+  });
+
+  it("still rejects a property with a single dash", () => {
+    expect(() => validate("cube { -size: 2; }")).toThrow(
+      'Unknown property "-size"',
+    );
+  });
+});

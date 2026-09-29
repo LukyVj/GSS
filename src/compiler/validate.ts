@@ -11,18 +11,30 @@ export function validateProperties(rules: Rule[]): void {
     const isScene = isSceneSelector(selector);
 
     for (const declaration of rule.declarations) {
+      // A custom property (--anything) is valid everywhere, like CSS
+      if (declaration.property.startsWith("--")) continue;
+
       const property = PROPERTIES.find((p) => p.name === declaration.property);
 
       if (!property) {
-        throw errorAt(declaration, `Unknown property "${declaration.property}"`);
+        throw errorAt(
+          declaration,
+          `Unknown property "${declaration.property}"`,
+        );
       }
 
       if (isScene && property.appliesTo !== "scene") {
-        throw errorAt(declaration, `"${declaration.property}" only applies to objects.`);
+        throw errorAt(
+          declaration,
+          `"${declaration.property}" only applies to objects.`,
+        );
       }
 
       if (!isScene && property.appliesTo === "scene") {
-        throw errorAt(declaration, `"${declaration.property}" only applies to the scene.`);
+        throw errorAt(
+          declaration,
+          `"${declaration.property}" only applies to the scene.`,
+        );
       }
 
       // Shape-specific property on an explicit, incompatible tag
@@ -31,7 +43,8 @@ export function validateProperties(rules: Rule[]): void {
         selector.tag !== null &&
         !(property.appliesTo as string[]).includes(selector.tag)
       ) {
-        throw errorAt(declaration, 
+        throw errorAt(
+          declaration,
           `"${property.name}" only applies to ${property.appliesTo.join(", ")}.`,
         );
       }
@@ -46,16 +59,20 @@ export function validateKeyframes(keyframes: Keyframes[]): void {
   for (const animation of keyframes) {
     for (const frame of animation.frames) {
       for (const declaration of frame.declarations) {
-        const property = PROPERTIES.find((p) => p.name === declaration.property);
+        const property = PROPERTIES.find(
+          (p) => p.name === declaration.property,
+        );
 
         if (!property) {
-          throw errorAt(declaration, 
+          throw errorAt(
+            declaration,
             `Unknown property "${declaration.property}" in @keyframes ${animation.name}`,
           );
         }
 
         if (!property.animatable) {
-          throw errorAt(declaration, 
+          throw errorAt(
+            declaration,
             `"${declaration.property}" cannot be animated (in @keyframes ${animation.name}). Animatable properties: ${animatable.join(", ")}.`,
           );
         }
@@ -63,4 +80,3 @@ export function validateKeyframes(keyframes: Keyframes[]): void {
     }
   }
 }
-
