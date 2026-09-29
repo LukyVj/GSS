@@ -53,8 +53,8 @@ describe("errors point at the code they are about", () => {
 
   it("a wrong path: the text of the path", () => {
     expect(
-      pointedAt('@scene { path; } path { d: path("M0 0 A1 1 0 0 1 2 0"); }'),
-    ).toBe('"M0 0 A1 1 0 0 1 2 0"');
+      pointedAt('@scene { path; } path { d: path("M0 0 X1 1"); }'),
+    ).toBe('"M0 0 X1 1"');
   });
 
   it("a scene setting", () => {

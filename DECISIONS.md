@@ -210,7 +210,7 @@ The floor is added last and is never affected. The walls of a hole take the mate
 **Decision**: a `path` object follows `d: path("…")`, written like the `d` of an SVG path (and CSS `path()`): M, L, H, V, C, S, Q, T, Z, absolute and relative. `stroke-width` is the thickness of the tube, in path units, with round ends. `view-box: x y width height` works like an SVG viewBox: its center is the origin of the object, so paths copied from one SVG stay aligned. y is flipped, so a path copied from Figma or an SVG keeps its way up. One path unit is one scene unit: an icon needs a `scale`.
 **How**: strings are a new token (`STRING`). At compile time, curves are cut into segments that never stray more than 1/100 of the stroke width from the curve (fewer segments on gentle curves). Each path becomes a GLSL function written segment by segment (no array, no loop: much faster), with segments grouped by 8 behind a bounding box test, and the whole path behind its own box. Objects sharing the same path share the function.
 **Why**: SVG paths are what front-end developers already copy from their design tools, and a tube is enough for icons and logos (the GSS logo is drawn in GSS: `src/playground/logo.gss`).
-**Accepted limits**: no arcs (A) yet, no filled shapes (fill + extrusion comes later). A path costs more than a sphere: the logo renders about 10 times slower than the same scene with spheres in software rendering. Up to 512 segments per path.
+**Accepted limits**: no arcs (A) at first (they came with decision 49), no filled shapes (fill + extrusion comes later). A path costs more than a sphere: the logo renders about 10 times slower than the same scene with spheres in software rendering. Up to 512 segments per path.
 
 ## 36. Dimensions are full sizes, shapes are centered
 
@@ -291,6 +291,13 @@ The floor is added last and is never affected. The walls of a hole take the mate
 **Decision**: `group` has its own entry in the Shapes section of the docs, even though it draws nothing: that is where a reader looks for what can be written in `@scene`. `ShapeDef` gets an optional `takes`, the only properties that have an effect (translate, the rotations, scale and animation); the page lists them instead of "every object property". The test that compares the documented shapes with the compiler's now expects `group` on top of them. `@scene`, translate, the rotations, scale, animation and the `<shape>` selector say what they do on a group, and `@scene` has an example with a group.
 **Why**: every feature gets its entry as soon as it exists (decision 12), and a group without docs is a group nobody finds.
 **Accepted limits**: a property a group does not take (`color: red` on `#letters`) is silently ignored; an error or a warning would be better.
+
+## 49. Arcs (A) in paths
+
+**Decision**: `d: path()` accepts `A rx ry rotation large-arc sweep x y` and `a`, like SVG. Like SVG, radii too small to reach the end point are scaled up, a radius of 0 draws a straight line, an arc to its own start draws nothing, and the two flags may be glued (`a1 1 0 011 0` in minified SVG). A flag other than 0 or 1 is an error.
+**How**: `arcCenter` turns the two points and the radii into a center, a start angle and a turn, with the conversion of the SVG spec (appendix B.2.4). The arc is then cut into segments like the curves, with the same flatness bound (curvature at most r × turn²), and its last point is the end point itself, so rounding never leaves a gap. No Bézier on the way.
+**Why**: arcs are everywhere in icons exported from Figma or Illustrator (circles, rounded corners), and the error asked people to redraw them by hand.
+**Accepted limits**: a prism contour (`polygon()`) still has no curves, so no arcs either.
 
 ## Open questions
 

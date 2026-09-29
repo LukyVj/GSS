@@ -27,11 +27,15 @@ describe("path objects", () => {
     expect(() => compileGSS("@scene { path; }")).toThrow("path needs a d");
   });
 
-  it("explain a wrong d, a wrong view-box and an arc", () => {
+  it("explain a wrong d, a wrong view-box and an unknown command", () => {
     expect(() => compileGSS('@scene { path; } path { d: "M0 0 L1 1"; }')).toThrow('d expects path("…")');
     expect(() => compileGSS('@scene { path; } path { d: path("M0 0 L1 1"); view-box: 0 0 32; }')).toThrow(
       "view-box expects four numbers",
     );
-    expect(() => compileGSS('@scene { path; } path { d: path("M0 0 A1 1 0 0 1 2 0"); }')).toThrow("Arcs (A)");
+    expect(() => compileGSS('@scene { path; } path { d: path("M0 0 X1 1"); }')).toThrow('Unknown path command "X"');
+  });
+
+  it("draws an arc", () => {
+    expect(() => compileGSS('@scene { path; } path { d: path("M-1 0 A1 1 0 0 1 1 0"); }')).not.toThrow();
   });
 });

@@ -227,10 +227,11 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: 'path("<svg path>") (path) | polygon(<x> <y>, …) (prism)',
     initial: "none (required)",
     description:
-      "The line a path object follows, written like the d of an SVG path, or CSS path(): M moves, L H V draw lines, C S Q T draw curves, Z closes, in capitals (absolute) or lowercase (relative). Arcs (A) are not supported yet. A path copied from an SVG keeps its way up: y goes up in the scene, down in SVG, and GSS flips it. One path unit is one scene unit, so an icon drawn in a 24 or 32 box usually needs a scale. On a prism, d takes a polygon(), written like the one of CSS clip-path: one point per comma, x and y separated by a space, y going down like in SVG. The polygon closes itself.",
+      "The line a path object follows, written like the d of an SVG path, or CSS path(): M moves, L H V draw lines, C S Q T draw curves, A draws an arc of ellipse (rx ry rotation large-arc sweep x y, like SVG), Z closes, in capitals (absolute) or lowercase (relative). A path copied from an SVG keeps its way up: y goes up in the scene, down in SVG, and GSS flips it. One path unit is one scene unit, so an icon drawn in a 24 or 32 box usually needs a scale. On a prism, d takes a polygon(), written like the one of CSS clip-path: one point per comma, x and y separated by a space, y going down like in SVG. The polygon closes itself.",
     examples: [
       '@scene { path; } path { translate: 0 1 0; d: path("M-1 0.5 C-1 -1 1 -1 1 0.5"); stroke-width: 0.25; color: #ff5a36; }',
       '@scene { path; } path { translate: 0 1.2 0; d: path("M0 0 L1 1.5 L2 0 L3 1.5 L4 0"); stroke-width: 0.3; scale: 0.5; material: gold; }',
+      '@scene { path; } path { translate: 0 1 0; d: path("M-1 0 A1 1 0 1 1 1 0 A1 1 0 1 1 -1 0 M-0.4 -0.3 A0.5 0.5 0 0 0 0.4 -0.3"); stroke-width: 0.15; color: #ff5a36; }',
     ],
   },
   {
