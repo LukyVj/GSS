@@ -56,6 +56,8 @@ export function parse(tokens: Token[]): Stylesheet {
       const token = peek();
       if (token?.type === "HASH") {
         next();
+        if (element.id !== null)
+          throw errorAt(token, `An object has only one id, it already is "#${element.id}"`);
         element.id = token.value;
       } else if (isPunct(token, ".")) {
         next();

@@ -425,6 +425,16 @@ export const SELECTORS: SelectorDef[] = [
     ],
   },
   {
+    name: "a b",
+    anchor: "selector-descendant",
+    specificity: "The sum of its parts",
+    description:
+      "A space means \"inside\": #letters cube targets the cubes that are in the group #letters, at any depth. It reads from right to left, like CSS: the last part is the object, each part before it is one of its groups, further out each time. #letters#S would ask for one object with two ids, which never happens: that is an error.",
+    examples: [
+      "@scene { cube#a; group#letters { cube#b; cube#c; } } cube { translate: -1.2 0.5 0; } #letters cube { color: #ff5a36; } #b { translate: 0 0.5 0; } #c { translate: 1.2 0.5 0; }",
+    ],
+  },
+  {
     name: "!important",
     anchor: "selector-important",
     specificity: "Beats every declaration without it",

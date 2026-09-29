@@ -1,5 +1,5 @@
 import type { Rule } from "./ast";
-import { errorAt } from "./errors";
+import { errorAt, spanOf } from "./errors";
 import type { Token } from "./tokenizer";
 import type { SceneInstance } from "./expand";
 
@@ -17,7 +17,17 @@ export type SimpleSelector = {
   tag: string | null;
   id: string | null;
   classes: string[];
+  // The descendant combinator: in "#letters #S #left", the selector is #left and
+  // its ancestors are [#letters, #S], from the outermost to the innermost
+  ancestors?: SimpleSelector[];
 };
+
+// Was there a space (or a comment) between these two tokens in the source?
+function spaceBetween(before: Token, after: Token): boolean {
+  const a = spanOf(before);
+  const b = spanOf(after);
+  return a !== undefined && b !== undefined && a.end < b.start;
+}
 
 function tokenToText(token: Token): string {
   if (token.type === "HASH") return `#${token.value}`;
@@ -28,8 +38,22 @@ function tokenToText(token: Token): string {
   return String(token.value);
 }
 
-// Transform the tokens of a selector into an object { tag, id, classes }
+// "#letters #S #left" → #left, with the ancestors #letters and #S.
+// The tokenizer skips spaces, so we find them back with the positions of the tokens.
 export function parseSelector(tokens: Token[]): SimpleSelector {
+  const compounds: Token[][] = [[]];
+  tokens.forEach((token, i) => {
+    if (i > 0 && spaceBetween(tokens[i - 1], token)) compounds.push([]);
+    compounds[compounds.length - 1].push(token);
+  });
+  const selectors = compounds.map(parseCompound);
+  const selector = selectors[selectors.length - 1];
+  if (selectors.length > 1) selector.ancestors = selectors.slice(0, -1);
+  return selector;
+}
+
+// One compound selector, with no space inside: cube#left.corner
+function parseCompound(tokens: Token[]): SimpleSelector {
   const selector: SimpleSelector = { tag: null, id: null, classes: [] };
   let i = 0;
 
@@ -43,6 +67,12 @@ export function parseSelector(tokens: Token[]): SimpleSelector {
       selector.tag = token.value;
       i++;
     } else if (token.type === "HASH") {
+      if (selector.id !== null) {
+        throw errorAt(
+          token,
+          `An object has only one id: "#${selector.id}#${token.value}" can never match. For a descendant, add a space: "#${selector.id} #${token.value}"`,
+        );
+      }
       selector.id = token.value;
       i++;
     } else if (
@@ -66,6 +96,25 @@ export function matches(
   selector: SimpleSelector,
   instance: SceneInstance,
 ): boolean {
+  if (!matchesCompound(selector, instance)) return false;
+
+  // The ancestors, read from right to left like a browser does: each one must be
+  // one of the instance's groups, further out than the previous one
+  const ancestors = selector.ancestors ?? [];
+  let g = instance.groups.length - 1; // the innermost group first
+  for (let a = ancestors.length - 1; a >= 0; a--) {
+    while (g >= 0 && !matchesCompound(ancestors[a], instance.groups[g])) g--;
+    if (g < 0) return false; // no group left for this ancestor
+    g--; // the next ancestor must be further out
+  }
+  return true;
+}
+
+// The instance itself, without looking at its groups
+function matchesCompound(
+  selector: SimpleSelector,
+  instance: SceneInstance,
+): boolean {
   if (selector.tag !== null && selector.tag !== instance.tag) return false;
   if (selector.id !== null && selector.id !== instance.id) return false;
   return selector.classes.every((className) =>
@@ -75,11 +124,13 @@ export function matches(
 
 // ⬇️ TA MISSION : return a number as big as the selector is specific
 export function specificity(selector: SimpleSelector): number {
-  return (
+  const own =
     (selector.id ? 10_000 : 0) +
     selector.classes.length * 100 +
-    (selector.tag ? 1 : 0)
-  );
+    (selector.tag ? 1 : 0);
+  // like CSS, the ancestors add up: "#letters cube" beats "cube" and "#letters"
+  const ancestors = selector.ancestors ?? [];
+  return ancestors.reduce((sum, ancestor) => sum + specificity(ancestor), own);
 }
 
 export function resolveStyles(
@@ -124,7 +175,8 @@ export function isSceneSelector(selector: SimpleSelector): boolean {
   return (
     selector.tag === "scene" &&
     selector.id === null &&
-    selector.classes.length === 0
+    selector.classes.length === 0 &&
+    selector.ancestors === undefined
   );
 }
 

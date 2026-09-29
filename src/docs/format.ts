@@ -34,6 +34,14 @@ export function formatGss(code: string): string {
       depth = Math.max(0, depth - 1);
       needBreak = true;
     }
+    // In @scene (or a group), a name starts a new element, even without ";"
+    // before it (decision 46): one element per line. Not a name that continues
+    // the element: .corner, :nth-child(odd)
+    const inScene = blocks[blocks.length - 1] === "scene";
+    const continues = [".", ":", "(", ","].some(previousIs);
+    if (inScene && token.type === "IDENT" && previous && !continues)
+      needBreak = true;
+
     // Code written on the line after a comment stays on the next line
     if (previous?.token.type === "COMMENT" && newlines > 0) needBreak = true;
 
@@ -67,7 +75,8 @@ export function formatGss(code: string): string {
     if (is("{")) {
       depth++;
       needBreak = true;
-      blocks.push(startsWithScene ? "scene" : "rules");
+      // a group inside @scene holds elements too, not declarations
+      blocks.push(startsWithScene || inScene ? "scene" : "rules");
     }
     if (is("}")) blocks.pop();
     if (is(";") || is("}") || is("{")) headLength = 0;

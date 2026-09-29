@@ -143,3 +143,54 @@ describe("resolveStyles with groups", () => {
     expect(L.styles.color).toBeUndefined();
   });
 });
+
+describe("the descendant combinator", () => {
+  const stylesOf = (source: string) => {
+    const sheet = parse(tokenize(source));
+    return resolveStyles(expandScene(sheet.scene), sheet.rules);
+  };
+  const red = [{ type: "HASH", value: "f00" }];
+
+  it("targets an object inside a group, not the same object outside", () => {
+    const [outside, inside] = stylesOf(
+      "@scene { cube#left; group#letters { group#S { cube#left } } } #letters #S #left { color: #f00; }",
+    );
+    expect(outside.styles.color).toBeUndefined();
+    expect(inside.styles.color).toEqual(red);
+  });
+
+  it("works at any depth", () => {
+    const [cube] = stylesOf(
+      "@scene { group#outer { group { cube } } } #outer cube { color: #f00; }",
+    );
+    expect(cube.styles.color).toEqual(red);
+  });
+
+  it("keeps the order: the outer group comes first", () => {
+    const [cube] = stylesOf(
+      "@scene { group#a { group#b { cube } } } #b #a cube { color: #f00; }",
+    );
+    expect(cube.styles.color).toBeUndefined();
+  });
+
+  it("styles a group inside a group", () => {
+    const [cube] = stylesOf(
+      "@scene { group#outer { group#inner { cube } } } #outer group { scale: 2; }",
+    );
+    expect(cube.groupStyles[0].scale).toBeUndefined();
+    expect(cube.groupStyles[1].scale).toEqual([{ type: "NUMBER", value: 2 }]);
+  });
+
+  it("adds up the specificity of its parts", () => {
+    const [cube] = stylesOf(
+      "@scene { group#g { cube#c } } #g #c { color: #f00; } #c { color: #00f; }",
+    );
+    expect(cube.styles.color).toEqual(red);
+  });
+
+  it("refuses two ids in one compound selector", () => {
+    expect(() => stylesOf("@scene { cube#a; } #a#b { color: #f00; }")).toThrow(
+      "only one id",
+    );
+  });
+});

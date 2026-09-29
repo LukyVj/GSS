@@ -271,13 +271,20 @@ The floor is added last and is never affected. The walls of a hole take the mate
 
 **Decision**: `@scene` becomes a tree. `group#letters { cube#L; cube#U }` holds objects, and groups can be nested. A group is written like any object (`group`, `#id`, `.class`, `* N`), so it is styled with the selectors and the cascade we already have: `#letters { translate: -6 1 0; }`, like an SVG `<g id="letters">`. Only `group` may have children; `cube#a { … }` is an error pointed at `cube`. `group#g * 2` duplicates the whole group (`g-1`, `g-2`). `expandScene` flattens the tree: it outputs only the drawn objects, numbered from 1 across the whole scene; a group never takes an index, and each object keeps the list of its groups, from the outermost to the innermost.
 **Why**: moving five letters meant editing five `translate`s. A group gives one place to move, turn or scale them together, and each child's position becomes relative to the group. The first idea, `[letters] { … }` then `letters { … }`, was dropped: in CSS `[…]` is an attribute selector, and a bare name would collide with type selectors (`cube { }`): a group called `cube` would be ambiguous.
-**Accepted limits**: styles and transforms of groups are not applied yet (resolve and codegen come next). No combinators yet (`#letters cube`, `#letters > *`).
+**Accepted limits**: styles and transforms of groups are not applied yet (resolve and codegen come next). The descendant combinator came right after (decision 47); no child combinator (`>`) yet.
 
 ## 46. The ";" is optional between @scene elements
 
 **Decision**: inside `@scene` (and a group), the `;` after an element may be left out: a new element or a `}` is enough to end it. Inside a rule, the `;` stays required between declarations (still optional before `}`).
 **Why**: one object per line reads like a list, and the grammar needs no newline to know where an element ends: after `cube#a.big * 2`, only `;`, `}`, `{` or a new name can follow. In declarations, a value can span lines (`path("…")`, `polygon(…)`), so a newline cannot mean "end".
 **Accepted limits**: `cube#a torus#b` on one line is accepted too; the formatter puts one element per line.
+
+## 47. The descendant combinator: a space means "inside"
+
+**Decision**: `#letters #S #left` targets `#left` when it is inside the group `#S`, itself inside `#letters`, at any depth. `parseSelector` returns the last compound (the object) with its `ancestors`, from the outermost to the innermost. `matches` reads them from right to left, like a browser: each ancestor must match one of the instance's `groups`, further out each time. The specificity adds up all the parts, like CSS: `#g #c` beats `#c`. Two ids in one compound (`#letters#S`) are an error, in a rule as in `@scene`: an object has only one id, and the old parser kept the last one silently.
+**How**: the tokenizer skips spaces, so `parseSelector` finds them back with the positions of the tokens (`spanOf`): a gap between two tokens starts a new compound. No new token, so no test of the tokenizer changes. The formatter keeps one space in a descendant selector, and now also starts a new line for every element of `@scene` or a group, with or without `;` (decision 46).
+**Why**: styling "every cube of the letters" or "the left bar of the S" without an id on each object is what groups are for, and every CSS developer reads a space this way.
+**Accepted limits**: no child combinator (`>`), no sibling combinators (`+`, `~`). A comment between two parts of a selector counts as a space. A selector made in code (without positions) is read as one compound.
 
 ## Open questions
 

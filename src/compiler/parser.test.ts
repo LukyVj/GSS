@@ -149,3 +149,7 @@ describe("@scene: groups and optional semicolons", () => {
     );
   });
 });
+
+it("refuses two ids on one object in @scene", () => {
+  expect(() => parseGSS("@scene { group#a#b { cube } }")).toThrow("only one id");
+});

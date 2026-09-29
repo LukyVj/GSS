@@ -128,3 +128,30 @@ describe("formatGss with comments", () => {
     expect(formatGss(formatGss(scene))).toBe(formatGss(scene));
   });
 });
+
+describe("formatGss with groups", () => {
+  it("puts one element per line, with or without ;", () => {
+    expect(
+      formatGss("@scene { sphere#foo group#letters { cube#L cube#U; cube#C } }"),
+    ).toBe(
+      `@scene {
+  sphere#foo
+  group#letters {
+    cube#L
+    cube#U;
+    cube#C
+  }
+}
+`,
+    );
+  });
+
+  it("keeps the spaces of a descendant selector", () => {
+    expect(formatGss("#letters   #S #left{size:1}")).toBe(
+      `#letters #S #left {
+  size: 1
+}
+`,
+    );
+  });
+});
