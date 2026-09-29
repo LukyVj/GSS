@@ -267,6 +267,18 @@ The floor is added last and is never affected. The walls of a hole take the mate
 **Why**: one long page buried each entry among fifty others, and the design reference is a page per entry, like MDN. Keeping the whole reference in the HTML means every existing link (`#material`, `#object-properties`) still works, the tests of `render.ts` are unchanged, and the change of page is instant.
 **Accepted limits**: "find in page" only searches the entry on screen. The highlight of what is being read (view timelines) is gone: with one entry on screen, `aria-current` says it. An open "Try it" is closed when the page changes (one WebGL canvas at a time).
 
+## 45. group: a node that holds other objects
+
+**Decision**: `@scene` becomes a tree. `group#letters { cube#L; cube#U }` holds objects, and groups can be nested. A group is written like any object (`group`, `#id`, `.class`, `* N`), so it is styled with the selectors and the cascade we already have: `#letters { translate: -6 1 0; }`, like an SVG `<g id="letters">`. Only `group` may have children; `cube#a { … }` is an error pointed at `cube`. `group#g * 2` duplicates the whole group (`g-1`, `g-2`). `expandScene` flattens the tree: it outputs only the drawn objects, numbered from 1 across the whole scene; a group never takes an index, and each object keeps the list of its groups, from the outermost to the innermost.
+**Why**: moving five letters meant editing five `translate`s. A group gives one place to move, turn or scale them together, and each child's position becomes relative to the group. The first idea, `[letters] { … }` then `letters { … }`, was dropped: in CSS `[…]` is an attribute selector, and a bare name would collide with type selectors (`cube { }`): a group called `cube` would be ambiguous.
+**Accepted limits**: styles and transforms of groups are not applied yet (resolve and codegen come next). No combinators yet (`#letters cube`, `#letters > *`).
+
+## 46. The ";" is optional between @scene elements
+
+**Decision**: inside `@scene` (and a group), the `;` after an element may be left out: a new element or a `}` is enough to end it. Inside a rule, the `;` stays required between declarations (still optional before `}`).
+**Why**: one object per line reads like a list, and the grammar needs no newline to know where an element ends: after `cube#a.big * 2`, only `;`, `}`, `{` or a new name can follow. In declarations, a value can span lines (`path("…")`, `polygon(…)`), so a newline cannot mean "end".
+**Accepted limits**: `cube#a torus#b` on one line is accepted too; the formatter puts one element per line.
+
 ## Open questions
 
 - **Targeting multiplied ids**: should `#hero` target `hero-1`, `hero-2` and `hero-3`?
@@ -276,5 +288,3 @@ The floor is added last and is never affected. The walls of a hole take the mate
 - **Animation keywords**: every animation loops. `infinite` is accepted but changes nothing, and there is no iteration count, `animation-delay` or `animation-direction: reverse` yet.
 - **Colors in operations**: blended objects switch color halfway instead of mixing (decision 19).
 
-git add src/compiler/tokenizer.ts src/compiler/ast.ts src/compiler/parser.ts src/compiler/resolve.ts src/compiler/parser.test.ts src/compiler/resolve.test.ts DECISIONS.md
-git commit -m "\!important: beats every normal declaration"

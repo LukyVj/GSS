@@ -107,3 +107,39 @@ describe("specificity", () => {
     expect(idOnly).toBeLessThan(idAndClass);
   });
 });
+
+describe("resolveStyles with groups", () => {
+  const resolveGSS = (source: string) => {
+    const sheet = parse(tokenize(source));
+    return resolveStyles(expandScene(sheet.scene), sheet.rules);
+  };
+
+  it("styles the groups of an object, in order", () => {
+    const [L] = resolveGSS(`
+      @scene { group#outer { group#letters { cube#L } } }
+      #outer   { translate: 0 1 0; }
+      #letters { translate: -6 0 0; }
+    `);
+    expect(L.groupStyles).toHaveLength(2);
+    expect(L.groupStyles[0].translate?.[1]).toEqual({
+      type: "NUMBER",
+      value: 1,
+    });
+    expect(L.groupStyles[1].translate?.[0]).toEqual({
+      type: "NUMBER",
+      value: -6,
+    });
+  });
+
+  it("a type selector targets groups too", () => {
+    const [ball] = resolveGSS(
+      "@scene { group { sphere } } group { scale: 2; }",
+    );
+    expect(ball.groupStyles[0].scale).toEqual([{ type: "NUMBER", value: 2 }]);
+  });
+
+  it("a rule of the group does not style its children (no inheritance yet)", () => {
+    const [L] = resolveGSS("@scene { group#g { cube#L } } #g { color: #f00; }");
+    expect(L.styles.color).toBeUndefined();
+  });
+});

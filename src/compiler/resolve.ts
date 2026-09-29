@@ -7,7 +7,10 @@ import type { SceneInstance } from "./expand";
 export type Styles = Record<string, Token[]>;
 
 // An instance + its final styles
-export type StyledInstance = SceneInstance & { styles: Styles };
+export type StyledInstance = SceneInstance & {
+  styles: Styles;
+  groupStyles: Styles[];
+};
 
 // A simple selector: cube, .corner, #hero, or a combination like cube#left.corner
 export type SimpleSelector = {
@@ -95,21 +98,26 @@ export function resolveStyles(
       (a, b) =>
         specificity(a.selector) - specificity(b.selector) || a.order - b.order,
     );
-
-  return instances.map((instance) => {
+  // The cascade for one instance (an object or a group)
+  function cascade(instance: SceneInstance): Styles {
     const styles: Styles = {};
     for (const important of [false, true]) {
       for (const { rule, selector } of sortedRules) {
         if (!matches(selector, instance)) continue;
         for (const declaration of rule.declarations) {
           if ((declaration.important ?? false) !== important) continue;
-
           styles[declaration.property] = declaration.value; // the next rule overwrites the previous one
         }
       }
     }
-    return { ...instance, styles };
-  });
+    return styles;
+  }
+
+  return instances.map((instance) => ({
+    ...instance,
+    styles: cascade(instance),
+    groupStyles: instance.groups.map(cascade),
+  }));
 }
 
 export function isSceneSelector(selector: SimpleSelector): boolean {
