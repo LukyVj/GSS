@@ -440,7 +440,7 @@ describe("animation", () => {
       sphere { translate: 0 1 0; animation: pulse 1s; }
       @keyframes pulse { to { scale: 2; } }
     `);
-    expect(shader).toContain("q = p - vec3(0.0, 1.0, 0.0);");
+    expect(shader).toContain("q -= vec3(0.0, 1.0, 0.0);");
   });
 });
 
@@ -477,5 +477,62 @@ describe("shader structure", () => {
     expect(compileGSS("@scene { cube; }")).toContain(
       "vec3 trace(vec3 ro, vec3 rd)",
     );
+  });
+});
+
+describe("groups", () => {
+  it("moves into the group's space before the object's", () => {
+    const shader = compileGSS(`
+      @scene { group#g { sphere } }
+      #g { translate: 0 1 0; }
+      sphere { translate: 2 0 0; }
+    `);
+    const group = shader.indexOf("q -= vec3(0.0, 1.0, 0.0);");
+    const object = shader.indexOf("q -= vec3(2.0, 0.0, 0.0);");
+    expect(group).toBeGreaterThan(-1);
+    expect(object).toBeGreaterThan(group);
+  });
+
+  it("multiplies the distance by every scale", () => {
+    const shader = compileGSS(`
+      @scene { group#g { sphere } }
+      #g { scale: 2; }
+      sphere { scale: 3; }
+    `);
+    expect(shader).toContain("* 2.0 * 3.0,");
+  });
+
+  it("turns the group before its children", () => {
+    const shader = compileGSS(`
+      @scene { group#g { cube } }
+      #g { rotate-y: 90deg; }
+    `);
+    // the group's rotation comes before the cube's own translate
+    expect(shader.indexOf("q.xz *= rot(")).toBeLessThan(
+      shader.lastIndexOf("q -= vec3(0.0);"),
+    );
+  });
+});
+
+describe("groups", () => {
+  it("moves into the group's space before the object's", () => {
+    const shader = compileGSS(`
+      @scene { group#g { sphere } }
+      #g { translate: 0 1 0; }
+      sphere { translate: 2 0 0; }
+    `);
+    const group = shader.indexOf("q -= vec3(0.0, 1.0, 0.0);");
+    const object = shader.indexOf("q -= vec3(2.0, 0.0, 0.0);");
+    expect(group).toBeGreaterThan(-1);
+    expect(object).toBeGreaterThan(group);
+  });
+
+  it("multiplies the distance by every scale", () => {
+    const shader = compileGSS(`
+      @scene { group#g { sphere } }
+      #g { scale: 2; }
+      sphere { scale: 3; }
+    `);
+    expect(shader).toContain("* 2.0 * 3.0,");
   });
 });

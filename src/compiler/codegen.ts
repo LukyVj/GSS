@@ -565,22 +565,23 @@ function readRotation(value: Token[] | undefined): string {
   return value ? glslFloat(round(readAngle(value))) : "0.0";
 }
 
-function rotationLines(
-  instance: StyledInstance,
-  keyframes: Keyframes[],
-): string[] {
+function rotationLines(styles: Styles, keyframes: Keyframes[]): string[] {
   const lines: string[] = [];
   for (const [property, axes] of ROTATIONS) {
-    const angle = animatedValue(
-      instance.styles,
-      keyframes,
-      property,
-      readRotation,
-    );
+    const angle = animatedValue(styles, keyframes, property, readRotation);
     if (angle === "0.0") continue; // no rotation on this axis
     lines.push(`  q.${axes} *= rot(${angle});`);
   }
   return lines;
+}
+
+// The lines that move q into the space of one node (a group or an object)
+function transformLines(styles: Styles, keyframes: Keyframes[]): string[] {
+  return [
+    `  q -= ${animatedValue(styles, keyframes, "translate", readTranslate)};`,
+    ...rotationLines(styles, keyframes),
+    `  q /= ${animatedValue(styles, keyframes, "scale", readScale)};`,
+  ];
 }
 
 function label(instance: StyledInstance): string {
@@ -696,11 +697,16 @@ export function generateShader(
       );
     }
     const shapeCode = shape(instance.styles, context);
-    const scale = animatedValue(instance.styles, keyframes, "scale", readScale);
+    // Every node from the outside in: the groups, then the object itself
+    const nodes = [...instance.groupStyles, instance.styles];
+    // q was divided by every scale, so the distance is multiplied back by all of them
+    const scales = nodes.map((styles) =>
+      animatedValue(styles, keyframes, "scale", readScale),
+    );
 
     const operation = readOperation(instance.styles["operation"]);
     const blend = readNumber(instance.styles["blend"], "blend", 0, true);
-    const shapeValue = `vec2(${shapeCode} * ${scale}, ${glslFloat(instance.index)})`;
+    const shapeValue = `vec2(${shapeCode} * ${scales.join(" * ")}, ${glslFloat(instance.index)})`;
 
     const combine =
       blend > 0
@@ -709,9 +715,8 @@ export function generateShader(
 
     return [
       ` // ${label(instance)}`,
-      ` q = p - ${animatedValue(instance.styles, keyframes, "translate", readTranslate)};`,
-      ...rotationLines(instance, keyframes),
-      ` q /= ${scale};`,
+      `  q = p;`,
+      ...nodes.flatMap((styles) => transformLines(styles, keyframes)),
       ` res = ${combine};`,
     ].join("\n");
   });
