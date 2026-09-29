@@ -659,7 +659,7 @@ function readRadii(value: Token[] | undefined): number[] {
   if (!value) return [0.5, 0];
   const numbers = value.map((token) => {
     if (token.type !== "NUMBER" || token.value < 0)
-      throw errorAt(token, errorMessage);
+      throw errorAt(token, `${errorMessage} (got ${token.value})`);
     return token.value;
   });
 
@@ -1147,44 +1147,58 @@ export function generateShader(
     .map(([, line]) => line)
     .join("\n");
 
-  return TEMPLATE.replace("/*@SHAPE_FUNCTIONS*/", used(SHAPE_FUNCTIONS, map))
-    .replace("/*@PATH_HELPERS*/", used(PATH_HELPERS, functions)) // called by the path and prism functions, not by map()
-    .replace(
-      "/*@MAP_HELPERS*/",
-      section("// Rotations and the other operations: only those map() calls", used(MAP_HELPERS, map)),
-    )
-    .replace("/*@SHAPES*/", section("// Shapes written by GSS (path…)", functions))
-    .replace("/*@MAP*/", map)
-    .replace(
-      "/*@MATERIALS_USED*/",
-      section("// The metal, jelly and glass materials: only those getMaterial() uses", used(MATERIALS, materials)),
-    )
-    .replace("/*@MATERIALS*/", moreLines(materials))
-    .replace(
-      "/*@SHADING*/",
-      section("// The lighting of metal, jelly and glass, and what it calls: only what the scene uses", used(SHADING, shadeCalls)),
-    )
-    .replace("/*@SHADE_CALLS*/", moreLines(shadeCalls))
-    .replace(
-      "/*@FLOOR*/",
-      noFloor ? "vec3(0.0)" : readColor(floor, "vec3(0.91, 0.89, 0.86)"),
-    )
-    .replace("/*@FLOOR_DISTANCE*/", noFloor ? "1e10" : "p.y")
-    .replace("/*@LIGHT*/", vec3(readLight(sceneStyles["light"])))
-    .replace("/*@AMBIENT*/", glslFloat(ambient))
-    .replace("/*@DIRECT*/", glslFloat(direct))
-    .replace(
-      "/*@CAMERA_TARGET*/",
-      sceneStyles["camera-target"]
-        ? readTranslate(sceneStyles["camera-target"])
-        : "vec3(0.0, 0.5, 0.0)",
-    )
-    .replace(
-      "/*@BACKGROUND*/",
-      readColor(sceneStyles["background"], "vec3(0.03)"),
-    )
-    // The parts left out leave blank lines behind: never more than one in a row
-    .replace(/\n[ \t]*\n(?:[ \t]*\n)+/g, "\n\n");
+  return (
+    TEMPLATE.replace("/*@SHAPE_FUNCTIONS*/", used(SHAPE_FUNCTIONS, map))
+      .replace("/*@PATH_HELPERS*/", used(PATH_HELPERS, functions)) // called by the path and prism functions, not by map()
+      .replace(
+        "/*@MAP_HELPERS*/",
+        section(
+          "// Rotations and the other operations: only those map() calls",
+          used(MAP_HELPERS, map),
+        ),
+      )
+      .replace(
+        "/*@SHAPES*/",
+        section("// Shapes written by GSS (path…)", functions),
+      )
+      .replace("/*@MAP*/", map)
+      .replace(
+        "/*@MATERIALS_USED*/",
+        section(
+          "// The metal, jelly and glass materials: only those getMaterial() uses",
+          used(MATERIALS, materials),
+        ),
+      )
+      .replace("/*@MATERIALS*/", moreLines(materials))
+      .replace(
+        "/*@SHADING*/",
+        section(
+          "// The lighting of metal, jelly and glass, and what it calls: only what the scene uses",
+          used(SHADING, shadeCalls),
+        ),
+      )
+      .replace("/*@SHADE_CALLS*/", moreLines(shadeCalls))
+      .replace(
+        "/*@FLOOR*/",
+        noFloor ? "vec3(0.0)" : readColor(floor, "vec3(0.91, 0.89, 0.86)"),
+      )
+      .replace("/*@FLOOR_DISTANCE*/", noFloor ? "1e10" : "p.y")
+      .replace("/*@LIGHT*/", vec3(readLight(sceneStyles["light"])))
+      .replace("/*@AMBIENT*/", glslFloat(ambient))
+      .replace("/*@DIRECT*/", glslFloat(direct))
+      .replace(
+        "/*@CAMERA_TARGET*/",
+        sceneStyles["camera-target"]
+          ? readTranslate(sceneStyles["camera-target"])
+          : "vec3(0.0, 0.5, 0.0)",
+      )
+      .replace(
+        "/*@BACKGROUND*/",
+        readColor(sceneStyles["background"], "vec3(0.03)"),
+      )
+      // The parts left out leave blank lines behind: never more than one in a row
+      .replace(/\n[ \t]*\n(?:[ \t]*\n)+/g, "\n\n")
+  );
 }
 
 // The shader skeleton. Only the /*@...*/ parts change from one scene to the next.
