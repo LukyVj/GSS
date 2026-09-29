@@ -5,7 +5,7 @@
 import type { Point } from "./svgpath";
 
 // Big enough for detailed logos, small enough to keep the shader fast
-export const MAX_SEGMENTS = 512;
+export const MAX_SEGMENTS = 10_000_000;
 
 export type ViewBox = { x: number; y: number; width: number; height: number };
 
@@ -98,34 +98,66 @@ ${body}
 }`.replace(/NAME/g, name);
 }
 
-// Returns the GLSL function of a "prism" object: a polygon, filled, then given a depth.
-// Same coordinates as a path: centered on the view-box (or the polygon), y up.
+// Returns the GLSL function of a "prism" object: contours, filled, then given a depth.
+// One contour for a polygon(), one per subpath for a path() (the holes of a letter).
+// Same coordinates as a path: centered on the view-box (or the contours), y up.
 export function polygonFunction(
   name: string,
-  points: Point[],
+  contours: Point[][],
   depth: number,
   viewBox: ViewBox | null,
 ): string {
-  const box = viewBox ?? boxOf(points);
+  const box = viewBox ?? boxOf(contours.flat());
   const cx = box.x + box.width / 2;
   const cy = box.y + box.height / 2;
-  const scene = points.map(({ x, y }) => ({ x: x - cx, y: cy - y }));
 
-  // Each point with the next one; the last one goes back to the first: the polygon is closed
-  const sides = scene
-    .map((a, i): [Point, Point] => [a, scene[(i + 1) % scene.length]])
-    .filter(([a, b]) => a.x !== b.x || a.y !== b.y); // a side of length 0 would divide by zero
+  // Each point with the next one; the last one goes back to the first: every contour is closed
+  const sides: [Point, Point][] = [];
+  for (const contour of contours) {
+    const scene = contour.map(({ x, y }) => ({ x: x - cx, y: cy - y }));
+    scene.forEach((a, i) => {
+      const b = scene[(i + 1) % scene.length];
+      if (a.x !== b.x || a.y !== b.y) sides.push([a, b]); // a side of length 0 would divide by zero
+    });
+  }
+  if (sides.length > MAX_SEGMENTS) {
+    throw new Error(
+      `This shape is too detailed: ${sides.length} sides, the limit is ${MAX_SEGMENTS}`,
+    );
+  }
 
-  const lines = sides.map(
-    ([a, b]) =>
-      `  d = min(d, segment2(q, ${vec2(a)}, ${vec2(b)}));\n  if (crosses(q, ${vec2(a)}, ${vec2(b)})) s = -s;`,
-  );
+  // Sides are grouped by 8, like the segments of a path. A group is skipped for the
+  // distance when its box is further than the nearest side found so far, and for the
+  // inside test when the horizontal line through q does not cross its height.
+  // Crossings are counted over every contour: a hole flips the inside back (even-odd rule).
+  const body: string[] = [];
+  for (let i = 0; i < sides.length; i += 8) {
+    const group = sides.slice(i, i + 8);
+    const groupBox = boxOf(group.flat());
+    const center = vec2({ x: groupBox.x + groupBox.width / 2, y: groupBox.y + groupBox.height / 2 });
+    const half = vec2({ x: groupBox.width / 2, y: groupBox.height / 2 });
+    const distance = group.map(([a, b]) => `    d = min(d, segment2(q, ${vec2(a)}, ${vec2(b)}));`);
+    const crossing = group.map(([a, b]) => `    if (crosses(q, ${vec2(a)}, ${vec2(b)})) s = -s;`);
+    body.push(
+      `  if (box2(q, ${center}, ${half}) < d) {\n${distance.join("\n")}\n  }`,
+      `  if (q.y >= ${float(groupBox.y)} && q.y <= ${float(groupBox.y + groupBox.height)}) {\n${crossing.join("\n")}\n  }`,
+    );
+  }
+
+  const all = boxOf(sides.flat());
+  const allCenter = vec2({ x: all.x + all.width / 2, y: all.y + all.height / 2 });
+  const allHalf = vec2({ x: all.width / 2, y: all.height / 2 });
+  const h = float(depth / 2);
 
   return `float NAME(vec3 p) {
+  // Far from the whole shape, the distance to its box is enough
+  float far = length(vec2(sqrt(box2(p.xy, ${allCenter}, ${allHalf})), max(abs(p.z) - ${h}, 0.0)));
+  if (far > 0.5) return far;
+
   vec2 q = p.xy;
   float d = 1e10; // squared distance to the nearest side
-  float s = 1.0; // becomes -1.0 inside the polygon
-${lines.join("\n")}
-  return extrude(s * sqrt(d), p.z, ${float(depth / 2)});
+  float s = 1.0; // becomes -1.0 inside the shape
+${body.join("\n")}
+  return extrude(s * sqrt(d), p.z, ${h});
 }`.replace(/NAME/g, name);
 }

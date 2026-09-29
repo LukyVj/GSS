@@ -3,6 +3,7 @@ import type {
   AtRuleDef,
   SelectorDef,
   ShapeDef,
+  FunctionDef,
 } from "../compiler/registry";
 import { formatGss } from "./format";
 import { escapeHtml } from "./escape";
@@ -78,6 +79,22 @@ export function renderSelector(selector: SelectorDef): string {
         <dd>${escapeHtml(selector.specificity)}</dd>
       </dl>
       ${renderExamples(selector.examples)}
+    </article>`;
+}
+
+// The HTML of one math function (or of a family: sin(), cos(), tan())
+export function renderFunction(fn: FunctionDef): string {
+  return `
+    <article class="property" id="${escapeHtml(fn.anchor)}">
+      <h3><code>${escapeHtml(fn.name)}</code></h3>
+      <p>${escapeHtml(fn.description)}</p>
+      <dl>
+        <dt>Syntax</dt>
+        <dd><code>${escapeHtml(fn.syntax)}</code></dd>
+        <dt>Computed</dt>
+        <dd>at compile time, once per object</dd>
+      </dl>
+      ${renderExamples(fn.examples)}
     </article>`;
 }
 
@@ -205,6 +222,7 @@ export function renderDocs(
   atRules: AtRuleDef[] = [],
   selectors: SelectorDef[] = [],
   shapes: ShapeDef[] = [],
+  functions: FunctionDef[] = [],
 ): string {
   const propertyEntries = (belongs: (property: PropertyDef) => boolean) =>
     properties.filter(belongs).map((property) => ({
@@ -239,6 +257,15 @@ export function renderDocs(
         anchor: selector.anchor,
         label: selector.name,
         html: renderSelector(selector),
+      })),
+    },
+    {
+      id: "values",
+      title: "Values and math",
+      entries: functions.map((fn) => ({
+        anchor: fn.anchor,
+        label: fn.name,
+        html: renderFunction(fn),
       })),
     },
     {

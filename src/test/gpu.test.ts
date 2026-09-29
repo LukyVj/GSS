@@ -2,7 +2,7 @@ import { describe, it, expect, afterAll } from "vitest";
 import { compileOnGpu, closeGpu } from "./gpu";
 import { compileGSS, compileScene } from "../compiler";
 import { toShadertoy } from "../compiler/shadertoy";
-import { PROPERTIES, SELECTORS, SHAPE_DOCS } from "../compiler/registry";
+import { PROPERTIES, SELECTORS, SHAPE_DOCS, FUNCTIONS } from "../compiler/registry";
 import sceneSource from "../scene.gss?raw";
 import { FIRST_SCENE } from "../docs/guide";
 import logoSource from "../playground/logo.gss?raw";
@@ -36,6 +36,13 @@ describe("every documented example compiles on the GPU", () => {
   for (const selector of SELECTORS) {
     for (const example of selector.examples) {
       it(`${selector.name}: ${example}`, async () => {
+        expect(await compileOnGpu(compileGSS(example))).toBe("");
+      });
+    }
+  }
+  for (const fn of FUNCTIONS) {
+    for (const example of fn.examples) {
+      it(`${fn.name}: ${example}`, async () => {
         expect(await compileOnGpu(compileGSS(example))).toBe("");
       });
     }

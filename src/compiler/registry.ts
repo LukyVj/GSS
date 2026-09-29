@@ -49,6 +49,16 @@ export type SelectorDef = {
   examples: string[];
 };
 
+// A function that computes a value at compile time: calc(), sibling-index(), sin()… (decision 52)
+export type FunctionDef = {
+  name: string; // what the docs show: "calc()", or "sin(), cos(), tan()"
+  anchor: string; // its id in the docs: "fn-calc"
+  covers: string[]; // the functions of calc.ts it documents: ["sin", "cos", "tan"]
+  syntax: string;
+  description: string;
+  examples: string[];
+};
+
 export const PROPERTIES: PropertyDef[] = [
   {
     name: "translate",
@@ -227,7 +237,7 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: 'path("<svg path>") (path) | polygon(<x> <y>, …) (prism)',
     initial: "none (required)",
     description:
-      "The line a path object follows, written like the d of an SVG path, or CSS path(): M moves, L H V draw lines, C S Q T draw curves, A draws an arc of ellipse (rx ry rotation large-arc sweep x y, like SVG), Z closes, in capitals (absolute) or lowercase (relative). A path copied from an SVG keeps its way up: y goes up in the scene, down in SVG, and GSS flips it. One path unit is one scene unit, so an icon drawn in a 24 or 32 box usually needs a scale. On a prism, d takes a polygon(), written like the one of CSS clip-path: one point per comma, x and y separated by a space, y going down like in SVG. The polygon closes itself.",
+      "The line a path object follows, written like the d of an SVG path, or CSS path(): M moves, L H V draw lines, C S Q T draw curves, A draws an arc of ellipse (rx ry rotation large-arc sweep x y, like SVG), Z closes, in capitals (absolute) or lowercase (relative). A path copied from an SVG keeps its way up: y goes up in the scene, down in SVG, and GSS flips it. One path unit is one scene unit, so an icon drawn in a 24 or 32 box usually needs a scale. On a prism, d takes a polygon(), written like the one of CSS clip-path: one point per comma, x and y separated by a space, y going down like in SVG, and the polygon closes itself; or a path(), like above, whose every subpath is a closed contour, filled with the even-odd rule: a subpath inside another one is a hole, like the inside of an o. A logo exported as an SVG path becomes a solid shape this way.",
     examples: [
       '@scene { path; } path { translate: 0 1 0; d: path("M-1 0.5 C-1 -1 1 -1 1 0.5"); stroke-width: 0.25; color: #ff5a36; }',
       '@scene { path; } path { translate: 0 1.2 0; d: path("M0 0 L1 1.5 L2 0 L3 1.5 L4 0"); stroke-width: 0.3; scale: 0.5; material: gold; }',
@@ -511,9 +521,10 @@ export const SHAPE_DOCS: ShapeDef[] = [
   {
     name: "prism",
     description:
-      "A polygon, filled, then given a depth: a star, a letter, an arrow. It stands in the xy plane, facing the camera, and is centered on its polygon (or its view-box), like a path.",
+      "A contour, filled, then given a depth: a star, a letter, an arrow, a logo. The contour is a polygon() or a path() (see d); a path can hold several contours, and one inside another is a hole. It stands in the xy plane, facing the camera, and is centered on its contours (or its view-box), like a path.",
     examples: [
       "@scene { prism; } prism { translate: 0 1 0; d: polygon(0 -1, -0.25 -0.34, -0.95 -0.31, -0.4 0.13, -0.59 0.81, 0 0.42, 0.59 0.81, 0.4 0.13, 0.95 -0.31, 0.25 -0.34); depth: 0.3; material: gold; }",
+      '@scene { prism; } prism { translate: 0 1 0; d: path("M-1 -1 H1 V1 H-1 Z M0 -0.6 A0.6 0.6 0 1 1 0 0.6 A0.6 0.6 0 1 1 0 -0.6 Z"); depth: 0.4; color: #ff5a36; }',
     ],
   },
   {
@@ -524,6 +535,75 @@ export const SHAPE_DOCS: ShapeDef[] = [
     examples: [
       "@scene { group#letters { cube#l; cube#u; cube#c; } } #letters { translate: -1 0.5 0; rotate-y: 20deg; } #letters cube { size: 0.3 1 0.3; color: #ff5a36; } #u { translate: 1 0 0; } #c { translate: 2 0 0; }",
       "@scene { group#spin { sphere#a; sphere#b; } } #spin { translate: 0 0.6 0; animation: turn 4s linear; } #a { translate: -0.8 0 0; radius: 0.4; } #b { translate: 0.8 0 0; radius: 0.4; } @keyframes turn { to { rotate-y: 1turn; } }",
+    ],
+  },
+];
+
+export const FUNCTIONS: FunctionDef[] = [
+  {
+    name: "calc()",
+    anchor: "fn-calc",
+    covers: ["calc"],
+    syntax: "calc(<expression>)",
+    description:
+      "Computes a value, like CSS calc(): + - * / and parentheses, with numbers, angles (deg, rad, turn) and durations (s, ms). Like in CSS, + and - need a space on each side. Everything is computed by the compiler, once per object: the shader only receives the result, so math costs nothing on the GPU. calc() and the other math functions work in any value, even inside another function: metal(#fff, calc(0.1 * 2)).",
+    examples: [
+      "@scene { cube.step * 5; } .step { size: 0.4; translate: calc(sibling-index() * 0.6 - 1.8) calc(sibling-index() * 0.25) 0; color: #ff5a36; }",
+    ],
+  },
+  {
+    name: "sibling-index()",
+    anchor: "fn-sibling-index",
+    covers: ["sibling-index"],
+    syntax: "sibling-index()",
+    description:
+      "The position of the object among its siblings, from 1, like the CSS function of the same name: cube * 12 gives 12 siblings numbered 1 to 12. Siblings are the objects of the same @scene block or of the same group; a group is a sibling too, and inside a group the count starts again. With calc(), one rule gives every copy of a multiplied object its own place, angle or size: no loop needed. It has no meaning in scene { } or in @keyframes, shared by every object.",
+    examples: [
+      "@scene { cube.petal * 12; } .petal { size: 0.25 0.6 0.25; translate: calc(cos(sibling-index() * 30deg) * 1.6) 0.5 calc(sin(sibling-index() * 30deg) * 1.6); rotate-y: calc(sibling-index() * -30deg); color: #ff5a36; }",
+    ],
+  },
+  {
+    name: "sibling-count()",
+    anchor: "fn-sibling-count",
+    covers: ["sibling-count"],
+    syntax: "sibling-count()",
+    description:
+      "How many siblings the object has, itself included, like the CSS function of the same name. Divided into a full turn, it spreads objects evenly whatever their number: change * 8 into * 20, the ring follows.",
+    examples: [
+      "@scene { sphere.bead * 8; } .bead { radius: 0.2; translate: calc(cos(sibling-index() * 1turn / sibling-count()) * 1.4) 0.5 calc(sin(sibling-index() * 1turn / sibling-count()) * 1.4); material: jelly(0.6); color: #ff5a36; }",
+    ],
+  },
+  {
+    name: "sin(), cos(), tan()",
+    anchor: "fn-trig",
+    covers: ["sin", "cos", "tan"],
+    syntax: "sin(<angle> | <number>)",
+    description:
+      "The trigonometric functions of CSS: they take an angle (deg, rad, turn), or a number of radians, and return a number. cos() and sin() of the same angle give a point on a circle: the way to place objects in a ring, a spiral or a wave. pi is also known: cos(pi) is -1.",
+    examples: [
+      "@scene { sphere.wave * 9; } .wave { radius: 0.18; translate: calc(sibling-index() * 0.4 - 2) calc(0.8 + sin(sibling-index() * 40deg) * 0.5) 0; color: #7cb4ff; }",
+    ],
+  },
+  {
+    name: "min(), max(), clamp()",
+    anchor: "fn-min-max-clamp",
+    covers: ["min", "max", "clamp"],
+    syntax: "min(<value>, …) | max(<value>, …) | clamp(<min>, <value>, <max>)",
+    description:
+      "The smallest or the largest of their values, or a value kept between two bounds, like in CSS. The values must share a unit: max(10deg, 20deg), not max(10deg, 2).",
+    examples: [
+      "@scene { cube.bar * 6; } .bar { size: 0.3 calc(clamp(0.4, sibling-index() * 0.35, 1.4)) 0.3; translate: calc(sibling-index() * 0.5 - 1.75) 0.7 0; color: #ff5a36; }",
+    ],
+  },
+  {
+    name: "abs(), sqrt(), pow()",
+    anchor: "fn-abs-sqrt-pow",
+    covers: ["abs", "sqrt", "pow"],
+    syntax: "abs(<value>) | sqrt(<number>) | pow(<number>, <number>)",
+    description:
+      "abs() drops the sign, sqrt() is the square root, pow(a, b) is a to the power b, like in CSS. pow() grows fast: good for sizes that double.",
+    examples: [
+      "@scene { sphere.dot * 5; } .dot { radius: calc(pow(1.4, sibling-index()) * 0.08); translate: calc(sibling-index() * 0.8 - 2.4) 0.6 0; color: #ff5a36; }",
     ],
   },
 ];

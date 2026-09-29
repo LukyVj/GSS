@@ -79,14 +79,26 @@ function readD(value: Token[] | undefined): Token & { type: "STRING" } {
   return arg[0];
 }
 
-// Reads d: polygon(0 1, 1 -1, -1 -1) for a prism
-function readPrismD(value: Token[] | undefined): Point[] {
-  const example = "d: polygon(0 -1, 1 1, -1 1);";
+// Reads the contours of a prism: d: polygon(0 1, 1 -1, -1 -1), one contour,
+// or d: path("…"), one contour per subpath (the holes of a letter are subpaths)
+function readPrismD(value: Token[] | undefined): Point[][] {
+  const example = 'd: polygon(0 -1, 1 1, -1 1); or d: path("M0 0 L1 0 L1 1 Z");';
   if (!value) throw new Error(`prism needs a d, like: ${example}`);
   const points = readPolygon(value);
-  if (!points)
-    throw errorAt(value, `d expects polygon(…) on a prism, like: ${example}`);
-  return points;
+  if (points) return [points];
+
+  const call = readFunction(value);
+  const [arg] = call?.args ?? [];
+  if (call?.name === "path" && call.args.length === 1 && arg.length === 1 && arg[0].type === "STRING") {
+    const d = arg[0];
+    // The precision follows the size of the shape: a logo 400 units wide
+    // is cut as finely, relative to its size, as a shape 2 units wide
+    const rough = locate(d, () => readSvgPath(d.value, Infinity)).flat();
+    const size = Math.max(...rough.map((p) => p.x)) - Math.min(...rough.map((p) => p.x))
+      + Math.max(...rough.map((p) => p.y)) - Math.min(...rough.map((p) => p.y));
+    return locate(d, () => readSvgPath(d.value, Math.max(size, 1e-6) / 1000));
+  }
+  throw errorAt(value, `d expects polygon(…) or path("…") on a prism, like: ${example}`);
 }
 
 // Reads "0 0 32 32": min-x, min-y, width, height, like the viewBox of an SVG
@@ -168,10 +180,12 @@ const SHAPES: Record<
   },
   // A polygon, filled, then given a depth
   prism: (styles, context) => {
-    const points = readPrismD(styles["d"]);
+    const contours = readPrismD(styles["d"]);
     const depth = readNumber(styles["depth"], "depth", 0.2);
     const viewBox = readViewBox(styles["view-box"]);
-    const code = polygonFunction("NAME", points, depth, viewBox);
+    const code = locate(styles["d"], () =>
+      polygonFunction("NAME", contours, depth, viewBox),
+    );
     return `${useFunction(context, code)}(q)`;
   },
   // A thin box: the ray could jump over a surface with no thickness

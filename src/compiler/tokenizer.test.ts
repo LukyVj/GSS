@@ -149,7 +149,11 @@ describe("strings", () => {
 
   it("recovering, runs an unclosed string to the end of the line", () => {
     const parts = scan(`"M0 0\ncube`, { recover: true });
-    expect(parts[0]).toEqual({ token: { type: "STRING", value: "M0 0" }, start: 0, end: 5 });
+    expect(parts[0]).toEqual({
+      token: { type: "STRING", value: "M0 0" },
+      start: 0,
+      end: 5,
+    });
     expect(parts[1].token).toEqual({ type: "IDENT", value: "cube" });
   });
 });

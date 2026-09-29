@@ -5,6 +5,10 @@ import { resolveStyles, resolveSceneStyles } from "./resolve";
 import { generateShader } from "./codegen";
 import { validateProperties, validateKeyframes } from "./validate";
 import { readCamera, type CameraSettings } from "./camera";
+import { resolveMath, type CalcContext } from "./calc";
+import type { Styles } from "./resolve";
+import type { Keyframes } from "./ast";
+import { rememberSpan, spanOf } from "./errors";
 
 // Everything the runtime needs to display a scene
 export type CompiledScene = {
@@ -19,13 +23,44 @@ export function compileScene(source: string): CompiledScene {
   validateProperties(stylesheet.rules);
   validateKeyframes(stylesheet.keyframes);
   const instances = expandScene(stylesheet.scene);
-  const styled = resolveStyles(instances, stylesheet.rules);
-  const sceneStyles = resolveSceneStyles(stylesheet.rules);
+  // The cascade picks the values, then the math is computed for each object (decision 52)
+  const styled = resolveStyles(instances, stylesheet.rules).map((instance) => ({
+    ...instance,
+    styles: computeMath(instance.styles, instance),
+    groupStyles: instance.groupStyles.map((styles, g) => computeMath(styles, instance.groups[g])),
+  }));
+  const sceneStyles = computeMath(resolveSceneStyles(stylesheet.rules), null);
+  const keyframes = computeKeyframes(stylesheet.keyframes);
   return {
-    shader: generateShader(styled, sceneStyles, stylesheet.keyframes),
+    shader: generateShader(styled, sceneStyles, keyframes),
     camera: readCamera(sceneStyles),
     objects: instances.length,
   };
+}
+
+// Every value of a set of styles, with calc(), sin(), sibling-index()… computed
+function computeMath(styles: Styles, context: CalcContext): Styles {
+  const computed: Styles = {};
+  for (const [property, value] of Object.entries(styles)) computed[property] = resolveMath(value, context);
+  return computed;
+}
+
+// @keyframes are shared by every object that plays them: no sibling-index() in there
+function computeKeyframes(keyframes: Keyframes[]): Keyframes[] {
+  return keyframes.map((animation) => ({
+    ...animation,
+    frames: animation.frames.map((frame) => ({
+      ...frame,
+      declarations: frame.declarations.map((declaration) => {
+        const value = resolveMath(declaration.value, null);
+        if (value === declaration.value) return declaration; // nothing computed: same object
+        const computed = { ...declaration, value };
+        const span = spanOf(declaration);
+        if (span) rememberSpan(computed, span); // errors keep pointing at the declaration
+        return computed;
+      }),
+    })),
+  }));
 }
 
 // GSS text → shader only

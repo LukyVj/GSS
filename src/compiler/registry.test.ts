@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { PROPERTIES, AT_RULES, SELECTORS, SHAPE_DOCS } from "./registry";
+import { PROPERTIES, AT_RULES, SELECTORS, SHAPE_DOCS, FUNCTIONS } from "./registry";
+import { MATH_FUNCTIONS } from "./calc";
 import { shapeNames } from "./codegen";
 import { compileGSS } from "./index";
 
@@ -155,6 +156,35 @@ describe("shapes", () => {
     for (const shape of SHAPE_DOCS) {
       for (const example of shape.examples) {
         it(`${shape.name}: ${example}`, () => {
+          expect(() => compileGSS(example)).not.toThrow();
+        });
+      }
+    }
+  });
+});
+
+describe("functions", () => {
+  it("documents every math function the compiler computes, and only those", () => {
+    const documented = FUNCTIONS.flatMap((fn) => fn.covers).sort();
+    expect(documented).toEqual([...MATH_FUNCTIONS].sort());
+  });
+
+  it("has no duplicate anchors", () => {
+    const anchors = FUNCTIONS.map((fn) => fn.anchor);
+    expect(new Set(anchors).size).toBe(anchors.length);
+  });
+
+  it("gives every function a description and at least one example", () => {
+    for (const fn of FUNCTIONS) {
+      expect(fn.description, fn.name).not.toBe("");
+      expect(fn.examples.length, fn.name).toBeGreaterThan(0);
+    }
+  });
+
+  describe("every documented example compiles", () => {
+    for (const fn of FUNCTIONS) {
+      for (const example of fn.examples) {
+        it(`${fn.name}: ${example}`, () => {
           expect(() => compileGSS(example)).not.toThrow();
         });
       }

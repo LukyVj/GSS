@@ -5,7 +5,9 @@ export type SceneInstance = {
   tag: string;
   id: string | null;
   classes: string[];
-  index: number; // its position in the scene, starting from 1: this will be sibling-index()
+  index: number; // its number among the drawn objects, from 1 (the material id of the shader)
+  siblingIndex: number; // its position among its siblings, from 1, like CSS sibling-index()
+  siblingCount: number; // how many siblings it has, itself included, like CSS sibling-count()
   groups: SceneInstance[];
 };
 
@@ -14,6 +16,9 @@ export function expandScene(elements: SceneElement[]): SceneInstance[] {
 
   // Reads a list of elements. "groups" = the groups we are currently inside
   function walk(elements: SceneElement[], groups: SceneInstance[]): void {
+    // Siblings = everything in the same @scene block or group, multiplied ones counted one by one
+    const siblingCount = elements.reduce((sum, element) => sum + element.count, 0);
+    let siblingIndex = 0;
     for (const element of elements) {
       for (let n = 1; n <= element.count; n++) {
         let id: string | null;
@@ -30,6 +35,8 @@ export function expandScene(elements: SceneElement[]): SceneInstance[] {
           id,
           classes: element.classes,
           index: 0, // a group is never drawn: it keeps 0
+          siblingIndex: ++siblingIndex,
+          siblingCount,
           groups,
         };
 
