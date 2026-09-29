@@ -1,4 +1,9 @@
-import { EditorState, RangeSetBuilder, StateEffect, StateField } from "@codemirror/state";
+import {
+  EditorState,
+  RangeSetBuilder,
+  StateEffect,
+  StateField,
+} from "@codemirror/state";
 import {
   EditorView,
   Decoration,
@@ -138,9 +143,11 @@ const errorLine = StateField.define<DecorationSet>({
       if (!effect.is(setErrorLine)) continue;
       lines = effect.value
         ? Decoration.set([
-            Decoration.widget({ widget: new ErrorLine(effect.value.text), block: true, side: 1 }).range(
-              effect.value.at,
-            ),
+            Decoration.widget({
+              widget: new ErrorLine(effect.value.text),
+              block: true,
+              side: 1,
+            }).range(effect.value.at),
           ])
         : Decoration.none;
     }
@@ -171,7 +178,10 @@ export const theme = EditorView.theme(
       color: "var(--gss-gutter)",
       border: "none",
     },
-    ".cm-activeLine": { backgroundColor: "var(--gss-raised)" },
+    ".cm-activeLine": {
+      backgroundColor: "color-mix(in srgb, var(--gss-raised) 60%, transparent)",
+      boxShadow: "inset 2px 0 0 var(--gss-isoline)",
+    },
     ".cm-activeLineGutter": {
       backgroundColor: "transparent",
       color: "var(--gss-ash)",
@@ -278,16 +288,23 @@ export function connectEditor(
       const from = Math.min(caught.start, length);
       const to = Math.min(Math.max(caught.end ?? from, from + 1), length);
       const line = view.state.doc.lineAt(from);
-      const diagnostics: Diagnostic[] = [{ from, to, severity: "error", message }];
+      const diagnostics: Diagnostic[] = [
+        { from, to, severity: "error", message },
+      ];
       error.hidden = true;
       view.dispatch(setDiagnostics(view.state, diagnostics), {
-        effects: setErrorLine.of({ at: line.to, text: `${line.number}:${from - line.from + 1}  ${message}` }),
+        effects: setErrorLine.of({
+          at: line.to,
+          text: `${line.number}:${from - line.from + 1}  ${message}`,
+        }),
       });
     } else {
       // No place (a GLSL error, for instance): the message goes under the editor
       error.textContent = message;
       error.hidden = false;
-      view.dispatch(setDiagnostics(view.state, []), { effects: setErrorLine.of(null) });
+      view.dispatch(setDiagnostics(view.state, []), {
+        effects: setErrorLine.of(null),
+      });
     }
   }
 
@@ -307,7 +324,9 @@ export function connectEditor(
       status.className = "status ok";
     }
     error.hidden = true;
-    view.dispatch(setDiagnostics(view.state, []), { effects: setErrorLine.of(null) });
+    view.dispatch(setDiagnostics(view.state, []), {
+      effects: setErrorLine.of(null),
+    });
     lastCompiled = code;
     emitStats({
       errors: 0,
