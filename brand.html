@@ -9,6 +9,18 @@
       name="description"
       content="The GSS marks: the { ● } mark, the gss. wordmark, the app icon, the colours, the faces and the social cards. Every file is a vector SVG, free to download."
     />
+    <!-- Link previews (Open Graph, X): the cards of the brand page, public/marks/ -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="GSS" />
+    <meta property="og:url" content="https://www.gss-lang.dev/brand" />
+    <meta property="og:title" content="GSS — Brand" />
+    <meta property="og:description" content="The GSS marks: the { ● } mark, the gss. wordmark, the app icon, the colours, the faces and the social cards. Every file is a vector SVG, free to download." />
+    <meta property="og:image" content="https://www.gss-lang.dev/marks/social-logo.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="The GSS logo, drawn in GSS: two braces around an orange sphere" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="canonical" href="https://www.gss-lang.dev/brand" />
     <link rel="stylesheet" href="/src/styles/tokens.css" />
     <style>
       /* The brand page: the variations of design/reference/png/04-marks.png.
@@ -359,6 +371,10 @@
       /* Social cards: shown at their 1200 × 630 ratio */
       .card .art.bleed img {
         aspect-ratio: 1200 / 630;
+      }
+      /* The home card leads the section, across both columns */
+      .card.wide {
+        grid-column: 1 / -1;
       }
 
       /* Don't */
@@ -730,7 +746,7 @@
           <p>1200 × 630, for links and posts. The renders are real: GSS drew them.</p>
         </div>
         <div class="grid cols-2">
-          <figure class="tile card" style="margin: 0">
+          <figure class="tile card wide" style="margin: 0">
             <div class="art bleed"><img src="/marks/social-home.svg" alt="Social card: Style sheets for the GPU" loading="lazy" /></div>
             <footer>
               <span class="name">home</span>
@@ -744,6 +760,14 @@
               <span class="name">the logo, drawn in GSS</span>
               <a href="/marks/social-logo.png" download>png</a>
               <a href="/marks/social-logo.svg" download>svg</a>
+            </footer>
+          </figure>
+          <figure class="tile card" style="margin: 0">
+            <div class="art bleed"><img src="/marks/social-css.svg" alt="Social card: If you can write CSS, you can write GSS" loading="lazy" /></div>
+            <footer>
+              <span class="name">if you can write CSS</span>
+              <a href="/marks/social-css.png" download>png</a>
+              <a href="/marks/social-css.svg" download>svg</a>
             </footer>
           </figure>
           <figure class="tile card" style="margin: 0">
