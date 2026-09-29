@@ -31,7 +31,7 @@ describe("material: matte()", () => {
 
   describe("material: the shader", () => {
     it("knows the metal material", () => {
-      const shader = compileGSS("@scene { sphere; }");
+      const shader = compileGSS("@scene { sphere; } sphere { material: gold; }");
       expect(shader).toContain("Material metal(vec3 color, float roughness)");
     });
   });
@@ -94,7 +94,7 @@ describe("material keywords", () => {
 
   describe("material: metal lighting", () => {
     it("has the functions that light a metal", () => {
-      const shader = compileGSS("@scene { sphere; }");
+      const shader = compileGSS("@scene { sphere; } sphere { material: gold; }");
       expect(shader).toContain("vec3 fresnel(vec3 f0, vec3 rd, vec3 n)");
       expect(shader).toContain(
         "vec3 shadeMetal(vec3 p, vec3 n, vec3 rd, Material m)",
@@ -103,7 +103,7 @@ describe("material keywords", () => {
   });
 
   it("lights metals with shadeMetal in main()", () => {
-    expect(compileGSS("@scene { sphere; }")).toContain(
+    expect(compileGSS("@scene { sphere; } sphere { material: gold; }")).toContain(
       "if (m.kind == METAL) col = shadeMetal(p, n, rd, m);",
     );
   });
@@ -135,7 +135,7 @@ describe("material: jelly()", () => {
   });
 
   it("knows the jelly material", () => {
-    expect(compileGSS("@scene { sphere; }")).toContain(
+    expect(compileGSS("@scene { sphere; } sphere { material: jelly; }")).toContain(
       "Material jelly(vec3 color, float density)",
     );
   });
@@ -143,7 +143,7 @@ describe("material: jelly()", () => {
 
 describe("material: jelly lighting", () => {
   it("has the functions that light a jelly", () => {
-    const shader = compileGSS("@scene { sphere; }");
+    const shader = compileGSS("@scene { sphere; } sphere { material: jelly; }");
     expect(shader).toContain("float thickness(vec3 p, vec3 n)");
     expect(shader).toContain(
       "vec3 shadeJelly(vec3 p, vec3 n, vec3 rd, Material m)",
@@ -151,7 +151,7 @@ describe("material: jelly lighting", () => {
   });
 
   it("lights jellies with shadeJelly in main()", () => {
-    expect(compileGSS("@scene { sphere; }")).toContain(
+    expect(compileGSS("@scene { sphere; } sphere { material: jelly; }")).toContain(
       "if (m.kind == JELLY) col = shadeJelly(p, n, rd, m);",
     );
   });
@@ -191,7 +191,7 @@ describe("material: glass()", () => {
   });
 
   it("knows the glass material", () => {
-    expect(compileGSS("@scene { sphere; }")).toContain(
+    expect(compileGSS("@scene { sphere; } sphere { material: glass; }")).toContain(
       "Material glass(vec3 color, float ior, float frost, int frostStyle)",
     );
   });
@@ -199,7 +199,7 @@ describe("material: glass()", () => {
 
 describe("material: glass lighting", () => {
   it("can march inside an object", () => {
-    expect(compileGSS("@scene { sphere; }")).toContain(
+    expect(compileGSS("@scene { sphere; } sphere { material: glass; }")).toContain(
       "float marchInside(vec3 ro, vec3 rd)",
     );
   });
@@ -243,7 +243,7 @@ describe("material: glass() frost styles", () => {
   });
 
   it("knows the frost styles in the shader", () => {
-    const shader = compileGSS("@scene { sphere; }");
+    const shader = compileGSS("@scene { sphere; } sphere { material: glass; }");
     expect(shader).toContain("const int HAMMERED = 2;");
     expect(shader).toContain(
       "Material glass(vec3 color, float ior, float frost, int frostStyle)",
@@ -251,13 +251,13 @@ describe("material: glass() frost styles", () => {
   });
 
   it("reads the settings of each frost style", () => {
-    expect(compileGSS("@scene { sphere; }")).toContain(
+    expect(compileGSS("@scene { sphere; } sphere { material: glass; }")).toContain(
       "vec3 frostSettings(int style)",
     );
   });
 
   it("blurs only the blurred style", () => {
-    expect(compileGSS("@scene { sphere; }")).toContain(
+    expect(compileGSS("@scene { sphere; } sphere { material: glass; }")).toContain(
       "if (m.frostStyle == BLURRED",
     );
   });

@@ -11,6 +11,23 @@ export const SHAPE_FUNCTIONS = [
   "sdCapsule",
 ];
 export const PATH_HELPERS = ["segment2", "crosses", "extrude", "box2"];
+// Everything the metal, jelly and glass materials bring
+export const MATERIAL_FUNCTIONS = [
+  "metal",
+  "jelly",
+  "glass",
+  "trace",
+  "fresnel",
+  "shadeMetal",
+  "thickness",
+  "shadeJelly",
+  "hash3",
+  "noise",
+  "bump",
+  "frostSettings",
+  "marchInside",
+  "shadeGlass",
+];
 export const MAP_HELPERS = [
   "rot",
   "opS",
@@ -492,7 +509,7 @@ describe("shader structure", () => {
   });
 
   it("can tell what any ray sees", () => {
-    expect(compileGSS("@scene { cube; }")).toContain(
+    expect(compileGSS("@scene { cube; } cube { material: gold; }")).toContain(
       "vec3 trace(vec3 ro, vec3 rd)",
     );
   });
@@ -628,5 +645,76 @@ describe("only the GLSL the scene uses", () => {
     expect(shader).toContain("vec2 opSmoothI(");
     expect(shader).not.toContain("vec2 opI(");
     expect(shader).not.toContain("vec2 opSmoothU(");
+  });
+
+  it("an empty scene has only the matte material", () => {
+    const shader = compileGSS("");
+    expect(shader).toContain("Material matte(");
+    for (const name of MATERIAL_FUNCTIONS)
+      expect(shader).not.toContain(`${name}(`);
+  });
+
+  it("a metal brings its shading, its reflection, and nothing of jelly or glass", () => {
+    const shader = compileGSS("@scene { sphere; } sphere { material: gold; }");
+    expect(shader).toContain("Material metal(");
+    expect(shader).toContain("vec3 shadeMetal(");
+    expect(shader).toContain("vec3 fresnel(");
+    expect(shader).toContain("vec3 trace(");
+    expect(shader).toContain("if (m.kind == METAL)");
+    expect(shader).not.toContain("vec3 shadeJelly(");
+    expect(shader).not.toContain("vec3 shadeGlass(");
+    expect(shader).not.toContain("float noise(");
+    expect(shader).not.toContain("float thickness(");
+  });
+
+  it("a jelly brings thickness, but no reflection", () => {
+    const shader = compileGSS("@scene { sphere; } sphere { material: jelly; }");
+    expect(shader).toContain("Material jelly(");
+    expect(shader).toContain("vec3 shadeJelly(");
+    expect(shader).toContain("float thickness(");
+    expect(shader).toContain("if (m.kind == JELLY)");
+    expect(shader).not.toContain("vec3 trace(");
+    expect(shader).not.toContain("vec3 fresnel(");
+    expect(shader).not.toContain("vec3 shadeMetal(");
+  });
+
+  it("a glass brings shadeGlass and everything it calls, even indirectly", () => {
+    const shader = compileGSS("@scene { sphere; } sphere { material: glass; }");
+    for (const definition of [
+      "Material glass(",
+      "vec3 shadeGlass(",
+      "float marchInside(",
+      "vec3 frostSettings(",
+      "vec3 bump(",
+      "float noise(",
+      "vec3 hash3(", // called by noise(), not by shadeGlass() directly
+      "float thickness(",
+      "vec3 fresnel(",
+      "vec3 trace(",
+      "const int HAMMERED",
+    ])
+      expect(shader).toContain(definition);
+    expect(shader).not.toContain("vec3 shadeMetal(");
+    expect(shader).not.toContain("vec3 shadeJelly(");
+  });
+
+  it("keeps the frost styles for glass: FROSTED comes only with it", () => {
+    expect(compileGSS("")).not.toContain("FROSTED");
+    expect(
+      compileGSS("@scene { sphere; } sphere { material: gold; }"),
+    ).not.toContain("FROSTED");
+    expect(
+      compileGSS("@scene { sphere; } sphere { material: glass; }"),
+    ).toContain("const int FROSTED = 0;");
+  });
+
+  it("never leaves two blank lines in a row, even where parts were left out", () => {
+    const twoBlankLines = /\n[ \t]*\n[ \t]*\n/;
+    for (const source of [
+      "",
+      "@scene { sphere; } sphere { material: glass; }",
+      '@scene { path; prism; } path { d: path("M0 0 L1 1"); } prism { d: polygon(0 -1, 1 1, -1 1); }',
+    ])
+      expect(compileGSS(source)).not.toMatch(twoBlankLines);
   });
 });
