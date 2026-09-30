@@ -6,6 +6,7 @@ import type { Keyframes } from "./ast";
 import { readFunction, readPolygon } from "./values";
 import { readSvgPath, type Point } from "./svgpath";
 import { pathFunction, polygonFunction, type ViewBox } from "./path";
+import { readTexture, sceneTextures } from "./textures";
 
 // Utility functions
 function round(n: number): number {
@@ -151,6 +152,73 @@ const SHADE_CALLS: Record<string, string> = {
   jelly: "    if (m.kind == JELLY) col = shadeJelly(p, n, rd, m);",
   glass: "    if (m.kind == GLASS) col = shadeGlass(p, n, rd, m);",
 };
+
+// The image seen from the axis the surface faces most: y is the top and the bottom,
+// x and z are the sides. q: the point in the object's space (centered on 0),
+// n: the normal in that space, box: the full size of the object
+const TRIPLANAR = `vec3 triplanar(sampler2D image, vec3 q, vec3 n, vec3 box) {
+  vec3 a = abs(n);
+  vec2 uv;
+  if (a.y >= a.x && a.y >= a.z) uv = q.xz / box.xz;  // top and bottom
+  else if (a.x >= a.z) uv = q.zy / box.zy;           // left and right
+  else uv = q.xy / box.xy;                           // front and back
+  return texture(image, uv + 0.5).rgb;               // uv goes from -0.5 to 0.5
+}`;
+
+// The full size of an object: one image covers one face (texture-size will come at step 6)
+function textureBox(instance: StyledInstance): number[] {
+  if (instance.tag === "cube") return readSize(instance.styles["size"]);
+  if (instance.tag === "sphere") {
+    const diameter = 2 * readNumber(instance.styles["radius"], "radius", 0.5); // same default as SHAPES.sphere
+    return [diameter, diameter, diameter];
+  }
+  return [1, 1, 1];
+}
+
+// The GLSL of the textures: one uniform per image, one space function per textured
+// object, triplanar() and textureColor(). Nothing at all when the scene has no texture.
+function textureCode(instances: StyledInstance[], keyframes: Keyframes[]) {
+  const files = sceneTextures(instances);
+  if (files.length === 0) return { uniforms: "", functions: "", call: "" };
+
+  const uniforms = files
+    .map((file, i) => `uniform sampler2D uTexture${i}; // ${file}`)
+    .join("\n");
+
+  const textured = instances.filter((instance) => instance.styles["texture"]);
+
+  // The same moves as in map(): the groups from the outside in, then the object
+  const spaces = textured.map((instance) => {
+    const nodes = [...instance.groupStyles, instance.styles];
+    return [
+      `vec3 space${instance.index}(vec3 p) {  // ${label(instance)}`,
+      "  vec3 q = p;",
+      ...nodes.flatMap((styles) => transformLines(styles, keyframes)),
+      "  return q;",
+      "}",
+    ].join("\n");
+  });
+
+  const branches = textured.map((instance) => {
+    const image = files.indexOf(readTexture(instance.styles["texture"]));
+    const space = `space${instance.index}`;
+    // The normal in the object's space: where the point goes when it moves a little along n
+    return `  if (id == ${glslFloat(instance.index)}) return triplanar(uTexture${image}, ${space}(p), ${space}(p + n * 0.01) - ${space}(p), ${vec3(textureBox(instance))});`;
+  });
+
+  const textureColor = [
+    "vec3 textureColor(float id, vec3 p, vec3 n, vec3 color) {",
+    ...branches,
+    "  return color;", // the objects without a texture keep their color
+    "}",
+  ].join("\n");
+
+  return {
+    uniforms,
+    functions: [...spaces, TRIPLANAR, textureColor].join("\n\n"),
+    call: "    m.color = textureColor(id, p, n, m.color);",
+  };
+}
 
 // The lighting functions, in the order GLSL needs: each one after those it calls.
 // Only those the shade calls need, directly or not, go in the shader.
@@ -1140,6 +1208,7 @@ export function generateShader(
     .join("\n\n");
 
   const map = mapLines.join("\n\n");
+  const textures = textureCode(instances, keyframes);
   const materials = materialLines.join("\n");
   // One line in main() for each material the scene uses
   const shadeCalls = Object.entries(SHADE_CALLS)
@@ -1162,6 +1231,15 @@ export function generateShader(
         section("// Shapes written by GSS (path…)", functions),
       )
       .replace("/*@MAP*/", map)
+      .replace("/*@TEXTURE_UNIFORMS*/", textures.uniforms)
+      .replace(
+        "/*@TEXTURES*/",
+        section(
+          "// Textures: each image seen from the axis the surface faces most",
+          textures.functions,
+        ),
+      )
+      .replace("/*@TEXTURE_CALL*/", moreLines(textures.call))
       .replace(
         "/*@MATERIALS_USED*/",
         section(
@@ -1209,6 +1287,7 @@ uniform vec3 iResolution;
 uniform float iTime;
 uniform vec2 uCamera;
 uniform float uDist;
+/*@TEXTURE_UNIFORMS*/
 
 out vec4 outColor;
 
@@ -1259,6 +1338,8 @@ vec2 map(vec3 p) {
 Material getMaterial(float id) {/*@MATERIALS*/
   return matte(/*@FLOOR*/);  // the floor
 }
+
+/*@TEXTURES*/
 // ----- End of generated code -----
 const float MAX_DIST = 20.0;
 const vec3 BACKGROUND = /*@BACKGROUND*/;
@@ -1314,7 +1395,7 @@ void main() {
   if (t < MAX_DIST) {
     vec3 p = ro + rd * t;
     vec3 n = calcNormal(p);
-    Material m = getMaterial(id);
+    Material m = getMaterial(id);/*@TEXTURE_CALL*/
     col = diffuse(n, m.color);/*@SHADE_CALLS*/
   }
 
