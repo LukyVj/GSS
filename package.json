@@ -3,14 +3,37 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "exports": {
+    ".": {
+      "types": "./lib/types/embed/index.d.ts",
+      "import": "./lib/index.js"
+    },
+    "./runtime": {
+      "types": "./lib/types/embed/runtime.d.ts",
+      "import": "./lib/runtime.js"
+    },
+    "./vite": {
+      "types": "./lib/types/vite/plugin.d.ts",
+      "import": "./lib/vite.js"
+    },
+    "./client": {
+      "types": "./types/client.d.ts"
+    }
+  },
+  "files": [
+    "lib",
+    "types"
+  ],
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "tsc && vite build && vite build -c vite.embed.config.ts",
     "preview": "vite preview",
     "test": "vitest",
     "format": "node scripts/format-gss.mjs",
     "format:check": "node scripts/format-gss.mjs --check",
-    "generate-vscode-extension": "cd editors/vscode && npm install && npm run package"
+    "generate-vscode-extension": "cd editors/vscode && npm install && npm run package",
+    "build:lib": "vite build -c vite.lib.config.ts && tsc -p tsconfig.lib.json",
+    "captures": "node scripts/capture-showcase.mjs"
   },
   "devDependencies": {
     "playwright": "^1.63.0",

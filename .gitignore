@@ -27,3 +27,6 @@ dist-ssr
 
 # misc
 zz-repo.tgz
+
+# the npm package (npm run build:lib)
+lib
