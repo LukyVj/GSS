@@ -1,17 +1,17 @@
-// rgb(), hsl() and the named colors of CSS, turned into #rrggbb at compile time (decision 56).
+// rgb(), hsl() and the named colors of CSS, turned into #rrggbb at compile time (decision 58).
 // Like calc.ts and vars.ts: the rest of the compiler only ever sees a HASH token.
 import type { Token } from "./tokenizer";
 import { errorAt, rememberSpan, spanAcross } from "./errors";
 import { closingParen } from "./calc";
 import { NAMED_COLORS } from "./named-colors";
 
-const COLOR_FUNCTIONS = ["rgb", "rgba", "hsl", "hsla"];
+export const COLOR_FUNCTIONS = ["rgb", "rgba", "hsl", "hsla"];
 // The properties whose whole value is a color
 const COLOR_PROPERTIES = ["color", "floor", "background"];
 // The materials whose first argument is a color: metal(tomato, 0.2)
 const MATERIAL_FUNCTIONS = ["matte", "metal", "jelly", "glass"];
 
-// tomato → #ff6347, but only where a color is expected (decision 56):
+// tomato → #ff6347, but only where a color is expected (decision 58):
 // material: gold stays the gold material, while color: gold is #ffd700.
 export function resolveNamedColors(property: string, value: Token[]): Token[] {
   // 1. color: tomato → the value is a single name

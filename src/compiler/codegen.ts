@@ -698,7 +698,7 @@ function readColor(value: Token[] | undefined, fallback = "vec3(0.9)"): string {
   if (value.length !== 1 || token.type !== "HASH") {
     throw errorAt(
       value,
-      "color expects a hexadecimal color, like: color: #ff5a36;",
+      "color expects a hex, rgb(), hsl() or named color, like: color: #ff5a36; or color: rgb(255 0 0); or color: red;",
     );
   }
   const rgb = locate(token, () => hexToRgb(token.value));

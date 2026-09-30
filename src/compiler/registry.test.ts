@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { PROPERTIES, AT_RULES, SELECTORS, SHAPE_DOCS, FUNCTIONS } from "./registry";
 import { MATH_FUNCTIONS } from "./calc";
+import { COLOR_FUNCTIONS } from "./colors";
 import { shapeNames } from "./codegen";
 import { compileGSS } from "./index";
 
@@ -166,7 +167,7 @@ describe("shapes", () => {
 describe("functions", () => {
   it("documents every function the compiler computes, and only those", () => {
     const documented = FUNCTIONS.flatMap((fn) => fn.covers).sort();
-    expect(documented).toEqual([...MATH_FUNCTIONS, "var"].sort());
+    expect(documented).toEqual([...MATH_FUNCTIONS, "var", ...COLOR_FUNCTIONS].sort());
   });
 
   it("has no duplicate anchors", () => {

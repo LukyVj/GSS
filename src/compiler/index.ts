@@ -220,7 +220,7 @@ function computeVars(styles: Styles, variables: Variables): Styles {
   return computed;
 }
 
-// One value, with rgb(), hsl() and the named colors turned into #rrggbb (decision 56).
+// One value, with rgb(), hsl() and the named colors turned into #rrggbb (decision 58).
 // The property is needed: material: gold is a material, color: gold is a color.
 function colorsOf(property: string, value: Token[]): Token[] {
   return resolveNamedColors(property, resolveColors(value));

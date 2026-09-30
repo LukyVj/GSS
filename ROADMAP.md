@@ -4,7 +4,7 @@ A living list of the next features. Tick an item or move it to **Done recently**
 
 **Rule:** every new feature or entry goes into the **registry** (in the right place) **and** into the **docs** (syntax, example, etc.).
 
-## Already in GSS (Sept. 29, 2026)
+## Already in GSS (Sept. 30, 2026)
 
 What the language and the tools can do today. Each feature is detailed in the registry (so in the docs), and the "why" is in `DECISIONS.md` (column *Dec.*).
 
@@ -20,6 +20,8 @@ What the language and the tools can do today. Each feature is detailed in the re
 | Cascade | specificity (id 10,000, class 100, tag 1), last one wins, `!important` in 2 passes | 4, 38 |
 | Animation | `@keyframes` (`from`, `to`, `%`), `animation: name duration [linear \| ease-in-out] [alternate]`, computed in the shader | 21, 22, 23, 24 |
 | Math | `calc()`, `min()`, `max()`, `clamp()`, `abs()`, `sqrt()`, `pow()`, `sin()`, `cos()`, `tan()`, `pi`, `e` | 52 |
+| Variables | `--size: 2`, `var(--size, 1)`; inherited scene → group → object, a variable can use another, animatable in `@keyframes` | 55 |
+| Colors | `#ff5a36`, `rgb(255 90 54)`, `hsl(20 100% 60%)`, the 148 CSS names (`tomato`) where a color is expected; math and `var()` inside | 58 |
 | CSS-style loops | `sibling-index()`, `sibling-count()`: each copy of a `* n` gets its own value | 52 |
 | Units | angles `deg` `rad` `turn` (always with a unit), durations `s` `ms`, `%` | 9, 17, 20 |
 | Modern CSS functions | commas or spaces: `metal(#d4af37, 0.2)`, `polygon(0 1, 1 0, -1 0)` | 28 |
@@ -73,7 +75,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 | --- | --- |
 | Everything compiled into **a single GLSL fragment shader**, SDF raymarching, WebGL2, no Three.js | 1, 5, 30 |
 | One reflection (1 bounce), glass refraction (in + out), procedural frost | 29, 31 |
-| No textures: everything is computed | 1 |
+| No textures yet: everything is computed (textures planned, see **Textures**) | 1 |
 | Minimal shader: only the GLSL the scene uses goes in (an empty scene: 104 lines) | 53 |
 
 ### Tools
@@ -85,6 +87,8 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 | Status bar | `ok · 0 objects · glsl 104 lines · compiled in 4 ms · 60 fps` | 42 |
 | Located errors | underlined, and written under their line (`15:3 …`) | 43 |
 | Generated docs | `docs.html`, one page per entry, from the registry, live "Try it" everywhere | 12, 39, 44 |
+| Site | [gss-lang.dev](https://gss-lang.dev) on Vercel, clean URLs (`/playground`, `/docs`, `/brand`), Open Graph and X cards | 56 |
+| Brand page | `/brand` (`brand.html`): marks, wordmark, lockup, icons, social cards | 57 |
 | Shadertoy export | `→ shadertoy` button in the playground | – |
 | Formatter | `formatGss`, `Shift+Alt+F` in the playground | 33 |
 | VS Code / Cursor extension | highlighting, formatter, icon for `.gss` files | 33 |
@@ -95,15 +99,33 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 
 1. [x] Loops: **option B chosen** (decision 52): `* n` + `calc(sibling-index())`, as in CSS. `@for` / `@each` later, only to change the shape at each step or to walk through a list
 2. [x] `var()` ✅ decision 55, inherited and animatable (+ `calc()` ✅ decision 52, with `min()`, `max()`, `clamp()`, `abs()`, `sqrt()`, `pow()`, `sin()`, `cos()`, `tan()`)
-3. [ ] Functional colors
-4. [ ] Animation controls (delay / iteration-count / reverse)
-5. [ ] `@media` + `prefers-reduced-motion`
-6. [ ] Selectors / nesting (combinators `>` `+` `~`, etc.)
-7. [ ] `:hover` + `transition`
-8. [ ] `transform-origin`
-9. [ ] Fog
-10. [x] `sibling-index()` + `sibling-count()` (decision 52)
-11. [ ] Motion path
+3. [ ] Functional colors: `rgb()`, `hsl()` and the named colors ✅ decision 58; still to do: `oklch()`, `oklab()`, `hwb()`, `color-mix()`
+4. [ ] Textures: `texture: url(…)`, triplanar mapping (see **Textures** below)
+5. [ ] Animation controls (delay / iteration-count / reverse)
+6. [ ] `@media` + `prefers-reduced-motion`
+7. [ ] Selectors / nesting (combinators `>` `+` `~`, etc.)
+8. [ ] `:hover` + `transition`
+9. [ ] `transform-origin`
+10. [ ] Fog
+11. [x] `sibling-index()` + `sibling-count()` (decision 52)
+12. [ ] Motion path
+
+## Textures (after functional colors)
+
+Goal: redo a Minecraft-style dirt block from an image, then a grass block (a different top, sides and bottom). Use our own 16×16 textures or CC0 ones, not Minecraft's.
+
+**Ideas so far** (nothing decided yet):
+
+- SDF shapes have no UVs, so the natural technique is **triplanar mapping**: the image is projected along the surface normal. +Y is the top, −Y the bottom, X and Z the sides: exactly the split of a Minecraft block, and it works on every shape (sphere, torus, prism…), not only the cube.
+- The projection is done in the object's space, so the texture moves, turns and scales with the object.
+- Syntax, two options to choose from:
+  - **A. A shorthand** with 1 to 3 values, like `margin`: `texture: url(dirt.png)` / `texture: url(top.png) url(side.png) url(bottom.png)`.
+  - **B. Face pseudo-elements**: `cube.grass { texture: url(side.png); }`, `cube.grass::top { … }`, `cube.grass::bottom { … }`. Very CSS; needs to define what `::top` means on a sphere (the +Y side of the blend).
+- `image-rendering: pixelated` (real CSS) → nearest filtering, needed for pixel art. A `texture-size` (or `background-size`-like) property for the tiling.
+- The texture gives the base color of any material (matte, metal, jelly…); `color` could tint it.
+- Compiler: collects the `url()`s and generates one `sampler2D` uniform per image (WebGL2 guarantees at least 16 texture units). Runtime: loads the images asynchronously (a runtime job, not a compiler one) and uses the object's `color` until they are loaded.
+- First step: one texture on every face (the dirt block).
+- Open questions: images in the playground and in share links (URLs only? data URLs? drag and drop?), CORS, one file per face vs an atlas, how sharp the blend is between faces (sharp on a cube, soft on a sphere), and decision 1's "no textures".
 
 ## Later
 
@@ -123,7 +145,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 - [x] Solid fill of a path: `prism` with `d: path(…)`, holes included (decision 50)
 - [ ] `lathe` (mentioned as a future shape)
 - [ ] Lost ray: when `march` runs out of its 100 steps without hitting anything or passing `MAX_DIST`, `main()` treats it as a hit
-- [ ] Fade the floor into the background: the floor stops sharply at `MAX_DIST` (related to fog, priority #9)
+- [ ] Fade the floor into the background: the floor stops sharply at `MAX_DIST` (related to fog, priority #10)
 - [ ] Soft shadows, that can be turned off (`scene { shadows: none; }`?)
 - [ ] Optional antialiasing (4× the cost)
 - [ ] Measure the compile time of large scenes; if needed, loop in `calcNormal` so `map()` is copied only once
@@ -153,6 +175,9 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 
 ## Done recently
 
+- Custom properties and `var()`, inherited and animatable (decision 55)
+- The descendant combinator `#letters #S #left` (decision 47)
+- Site on gss-lang.dev (Vercel, clean URLs, Open Graph and X cards) and brand page (decisions 56, 57)
 - Group styles and transforms
 - SVG arcs in paths
 - "Distance field" design
@@ -176,15 +201,15 @@ A score for how well a CSS notion carries over to GSS (a style language → an S
 | `animation-name` | 1.0 | Tied to `@keyframes` |
 | `animation-duration` | 1.0 | Priority: animation controls |
 | `animation-timing-function` | 0.9 | Easings → compact curve |
-| `animation-delay` | 1.0 | Roadmap priority #4 |
-| `animation-iteration-count` | 1.0 | Roadmap priority #4 |
+| `animation-delay` | 1.0 | Roadmap priority #5 |
+| `animation-iteration-count` | 1.0 | Roadmap priority #5 |
 | `animation-direction` | 1.0 | reverse planned |
 | `animation-fill-mode` | 0.8 | Maps to holding the start/end |
 | `animation-play-state` | 0.7 | Runtime pause possible |
 | `animation-composition` | 0.5 | Blending tracks, later |
 | `animation-timeline` | 0.5 | If reframed (scene time/scroll) |
 | `animation-range` / `-start` / `-end` | 0.5 | Same, timelines |
-| `transition` (shorthand) | 1.0 | With `:hover` (priority #7) |
+| `transition` (shorthand) | 1.0 | With `:hover` (priority #8) |
 | `transition-property` | 1.0 | Same |
 | `transition-duration` | 1.0 | Same |
 | `transition-delay` | 1.0 | Same |
@@ -198,7 +223,7 @@ A score for how well a CSS notion carries over to GSS (a style language → an S
 | Feature | Score | Short note |
 | --- | ---: | --- |
 | `transform` | 0.9 | Already split (translate/rotate/scale) |
-| `transform-origin` | 1.0 | Roadmap priority #8 |
+| `transform-origin` | 1.0 | Roadmap priority #9 |
 | `transform-style` | 0.6 | 3D groups already; preserve-3d limited |
 | `transform-box` | 0.3 | Box CSS |
 | `translate` | 1.0 | Already in GSS |
@@ -206,7 +231,7 @@ A score for how well a CSS notion carries over to GSS (a style language → an S
 | `scale` | 1.0 | Already in (uniform, SDF) |
 | `perspective` / `perspective-origin` | 0.7 | Rather the scene camera |
 | `backface-visibility` | 0.3 | Raster faces |
-| `offset` / `offset-path` / `offset-distance` | 0.9 | Motion path, priority #11 |
+| `offset` / `offset-path` / `offset-distance` | 0.9 | Motion path, priority #12 |
 | `offset-rotate` / `offset-anchor` / `offset-position` | 0.8 | Motion path, continued |
 
 #### Colors, opacity, compositing
@@ -228,7 +253,7 @@ A score for how well a CSS notion carries over to GSS (a style language → an S
 | --- | ---: | --- |
 | `background` (shorthand) | 0.6 | → scene `background` / material |
 | `background-color` | 0.7 | Scene already |
-| `background-image` | 0.4 | Textures later |
+| `background-image` | 0.4 | Textures: see **Textures** (`texture` property) |
 | `background-position` / `-size` / `-repeat` / `-clip` / `-origin` / `-attachment` | 0.2 | Box painting |
 | `background-position-x/y` / `background-repeat-x/y` | 0.1 | Same |
 | `border` (+ longhands color/style/width/sides) | 0.2 | Box model |
@@ -247,7 +272,7 @@ A score for how well a CSS notion carries over to GSS (a style language → an S
 | Feature | Score | Short note |
 | --- | ---: | --- |
 | `filter` | 0.85 | Shader post-process |
-| fog (GSS / atmosphere, not a strict CSS property) | 1.0 | Roadmap priority #9; fog-like post-process |
+| fog (GSS / atmosphere, not a strict CSS property) | 1.0 | Roadmap priority #10; fog-like post-process |
 | `backdrop-filter` | 0.6 | Post-process behind the object |
 | `mask` (+ clip/composite/image/mode/origin/position/repeat/size/type) | 0.55 | CSG / alpha mask adjacent |
 | `mask-border` (+ longhands) | 0.2 | Box mask image |
@@ -314,7 +339,8 @@ A score for how well a CSS notion carries over to GSS (a style language → an S
 | Feature | Score | Short note |
 | --- | ---: | --- |
 | `object-fit` / `object-position` / `object-view-box` | 0.2 | Replaced content |
-| `image-orientation` / `image-rendering` / `image-resolution` | 0.3 | Texture sampling, weak |
+| `image-rendering` | 0.8 | `pixelated` → nearest filtering for textures |
+| `image-orientation` / `image-resolution` | 0.2 | Weak |
 | `fill` / `fill-opacity` / `fill-rule` | 0.5 | Path fill / extrusion |
 | `stroke` / `stroke-*` | 0.7 | Close to `stroke-width` of GSS paths |
 | `paint-order` / `vector-effect` / `shape-rendering` | 0.3 | SVG paint |
@@ -366,7 +392,7 @@ A score for how well a CSS notion carries over to GSS (a style language → an S
 | --- | ---: | --- |
 | `view-transition-name` / `view-transition-class` / `view-transition-scope` | 0.1 | DOM VT |
 | `all` | 0.4 | Reset cascade compile-time |
-| Custom properties `--*` | 1.0 | With `var()`, priority #2 |
+| Custom properties `--*` | 1.0 | Already in GSS (dec. 55) |
 | `-moz-float-edge` / `-moz-force-broken-image-icon` / `-moz-orient` | 0.0 | Vendor |
 | Remaining non-standard `-webkit-*` (slider, meter, search, … via selectors) | 0.0 | UI vendor |
 
@@ -375,7 +401,7 @@ A score for how well a CSS notion carries over to GSS (a style language → an S
 | Feature | Score | Short note |
 | --- | ---: | --- |
 | `@keyframes` | 1.0 | Already in GSS |
-| `@media` | 1.0 | Priority #5 |
+| `@media` | 1.0 | Priority #6 |
 | `prefers-reduced-motion` (media feature) | 1.0 | Explicitly planned |
 | `prefers-color-scheme` / `prefers-contrast` / `prefers-reduced-transparency` / `prefers-reduced-data` | 0.7 | Useful variants for the scene/UI |
 | `hover` / `any-hover` / `pointer` / `any-pointer` (MF) | 0.6 | Input capability |
@@ -409,11 +435,11 @@ A score for how well a CSS notion carries over to GSS (a style language → an S
 | `.class` / `#id` / `*` | 1.0 | Already in GSS |
 | Selector list `a, b` | 1.0 | Already in GSS |
 | Descendant `a b` | 1.0 | Already in GSS |
-| Child `>` / adjacent `+` / sibling `~` | 1.0 | Nesting, priority #6 |
+| Child `>` / adjacent `+` / sibling `~` | 1.0 | Nesting, priority #7 |
 | Column `\|\|` | 0.0 | Tables |
 | `&` nesting | 0.9 | Nesting, strong |
 | Attribute selectors | 0.4 | Few attributes in GSS |
-| `:hover` | 1.0 | Priority #7 |
+| `:hover` | 1.0 | Priority #8 |
 | `:active` / `:focus` / `:focus-visible` / `:focus-within` | 0.5 | Interaction host |
 | `:nth-child()` / `:nth-of-type()` / `:nth-last-*` | 0.85 | Compile-time index |
 | `:first-child` / `:last-child` / `:only-child` / `:first-of-type` / `:last-of-type` / `:only-of-type` / `:empty` | 0.8 | Scene structure |
@@ -436,14 +462,14 @@ A score for how well a CSS notion carries over to GSS (a style language → an S
 
 | Feature | Score | Short note |
 | --- | ---: | --- |
-| `var()` | 1.0 | Priority #2 |
+| `var()` | 1.0 | Already in GSS (dec. 55) |
 | `calc()` | 1.0 | Already in GSS (dec. 52) |
 | `min()` / `max()` / `clamp()` | 1.0 | Already in GSS (dec. 52) |
 | `abs()` / `sign()` / `mod()` / `rem()` / `round()` / `pow()` / `sqrt()` / `hypot()` / `log()` / `exp()` / `progress()` | 0.85 | `abs()`, `pow()`, `sqrt()` already in (dec. 52); the others to do |
 | `sin()` / `cos()` / `tan()` / `asin()` / `acos()` / `atan()` / `atan2()` | 0.85 | `sin()`, `cos()`, `tan()` already in (dec. 52); the others to do |
 | `random()` | 0.55 | Seed at compile time or runtime |
 | `calc-size()` | 0.2 | Intrinsic box |
-| `rgb()` / `hsl()` / `hwb()` / `lab()` / `lch()` / `oklab()` / `oklch()` / `color()` | 1.0 | Functional colors, priority #3 |
+| `rgb()` / `hsl()` / `hwb()` / `lab()` / `lch()` / `oklab()` / `oklch()` / `color()` | 1.0 | Functional colors, priority #3: `rgb()` and `hsl()` already in (dec. 58); the others to do |
 | `color-mix()` | 0.85 | Mixing in color spaces |
 | `alpha()` / `light-dark()` / `contrast-color()` | 0.7 | Color utilities |
 | `device-cmyk()` / `dynamic-range-limit-mix()` / `palette-mix()` | 0.2 | Niche print/HDR/fonts |
@@ -456,7 +482,7 @@ A score for how well a CSS notion carries over to GSS (a style language → an S
 | `sibling-count()` | 1.0 | Already in GSS (dec. 52) |
 | `path()` / `circle()` / `ellipse()` / `polygon()` / `inset()` / `rect()` / `xywh()` / `shape()` / `ray()` | 0.7 | Shapes / motion path |
 | `superellipse()` | 0.5 | Corner shape |
-| `url()` | 0.4 | Assets / `@import` |
+| `url()` | 0.8 | Textures, then `@import` |
 | `attr()` / `env()` | 0.4 | Host / env |
 | `if()` | 0.55 | Compile-time condition |
 | `layer()` | 0.5 | With `@layer` |
@@ -476,8 +502,8 @@ A score for how well a CSS notion carries over to GSS (a style language → an S
 | --- | ---: | --- |
 | Cascade & specificity | 0.9 | Already in (with `!important`) |
 | Inheritance | 0.7 | Scene/group properties |
-| Nesting | 0.9 | Priority #6 |
-| Custom properties / variables | 1.0 | `var`, priority #2 |
+| Nesting | 0.9 | Priority #7 |
+| Custom properties / variables | 1.0 | Already in GSS (dec. 55) |
 | Shorthand properties | 0.8 | Pattern GSS |
 | Values & units | 0.9 | Numbers, angles, colors |
 | Functional notations | 0.9 | Math / colors |
@@ -490,7 +516,7 @@ A score for how well a CSS notion carries over to GSS (a style language → an S
 | Shadow DOM / scoping encapsulation | 0.1 | Web components |
 | View Transitions | 0.1 | Document transitions |
 | Media / container queries (concept) | 0.7 | Adapting the scene |
-| Motion path (concept) | 0.9 | Prio #11 |
+| Motion path (concept) | 0.9 | Prio #12 |
 | Filter effects (concept) | 0.85 | Shader post-process |
 | Masking / clipping (concept) | 0.55 | CSG-adjacent |
 | Compositing & blending | 0.5 | Close to GSS `operation`/`blend` |

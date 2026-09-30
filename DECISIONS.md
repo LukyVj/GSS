@@ -339,6 +339,24 @@ The floor is added last and is never affected. The walls of a hole take the mate
 **Differences with CSS**: a missing variable without fallback is an error, not an invalid declaration silently dropped (decision 12). A variable that uses another one is resolved where it is used, not where it is declared: with `scene { --big: calc(var(--size) * 2); }` and `#g { --size: 5; }`, the objects of `#g` get 10, where CSS would give the value computed on the root. An animated variable moves the values that use it smoothly, as if it were a registered `@property`; in CSS, an unregistered variable flips at the middle of the step.
 **Accepted limits**: a property that cannot be animated (`radius`…) and uses an animated variable is an error that names both. The variables of the scene and of `@keyframes` without an object are not animated: `scene { }` plays no animation. `@property` (typed variables) is not supported.
 
+## 56. The site lives on gss-lang.dev, the repo stays private
+
+**Decision**: the site (home, playground, docs, brand) is hosted on Vercel at `gss-lang.dev`. `vercel.json` turns on clean URLs, so pages are linked as `/playground`, `/docs` and `/brand`, without `.html`. Every page has a meta description, a canonical URL and its own Open Graph and X card (`public/marks/social-*.png`). The GitHub repo stays private for now.
+**Why**: a language is judged by its front door: a short domain, links that look good when shared, and a playground one click away. Keeping the repo private leaves time to clean the code and rename `csl` → `gss` before opening it.
+**Accepted limits**: no GitHub link and no `npm i gss-lang` on the site until the repo and the package are public (decision 51).
+
+## 57. A brand page, and the words that go with the mark
+
+**Decision**: `brand.html` (`/brand`) shows the marks from `DESIGN.md`: the `{ ● }` mark (light, dark, mono, isolines), the wordmark, the lockup, the icons and the social cards, all in `public/marks/`. The home card says **"Style sheets for the GPU."**; the tagline is **"If you can write CSS, you can write GSS."**
+**Why**: the marks had to exist in every variation before the social cards were drawn from them, and one page lets anyone (people, press, coding agents) take the right file. One line for the home card, one for the pitch, so they stay the same everywhere.
+
+## 58. rgb(), hsl() and the named colors, turned into hex at compile time
+
+**Decision**: `colors.ts` turns `rgb()`, `rgba()`, `hsl()` and `hsla()` into a plain `#rrggbb` token (`resolveColors`), with the modern syntax (spaces) and the old one (commas). `rgb()` takes numbers from 0 to 255 or percentages, clamped; `hsl()` takes a hue as a number of degrees or in `deg`, `rad`, `turn`, wrapped around the circle (-120 is 240), and a saturation and a lightness as percentages or numbers. The 148 named colors of CSS Color 4 (`named-colors.ts`) become hex too, but only where a color is expected (`resolveNamedColors`): `color`, `floor`, `background`, and the first argument of a material (`metal(tomato, 0.2)`). This pass runs after the math, on objects, groups, the scene and `@keyframes` (`colorsOf`, `computeColors`), so the pipeline is: `var()` → math → colors → codegen, and `hsl(calc(sibling-index() * 45) var(--s) 50%)` works with no special case. `readColor` and the rest of codegen are unchanged: they only ever see a HASH token. `rgb()` and `hsl()` are documented with the functions (`fn-rgb`, `fn-hsl`); a test checks that `COLOR_FUNCTIONS` is documented.
+**Why**: `rgb()`, `hsl()` and `tomato` are what a CSS developer writes without thinking. Converting them at compile time keeps the GPU receiving numbers only, like decision 52 and 55. Each pass does one thing and trusts the previous ones: the colors never need to know about variables or siblings.
+**Named colors only where a color is expected**: `gold` is both a CSS color (`#ffd700`) and a GSS material (`material: gold`, decision 27). Replacing names everywhere would turn the material into a color, and every future GSS keyword could clash with one of 148 names. The property decides, like CSS, where `red` means a color in `color` but an animation name in `animation`.
+**Accepted limits**: no alpha: `rgb(255 0 0 / 50%)` is an error ("GSS has no transparency yet"), not silently ignored (decision 12). No `transparent` and no `currentcolor`. An unknown name (`tomatoe`) is left alone and reported by `readColor`. A color written as a hex keeps 8 bits per channel: `rgb(127.5 0 0)` is rounded. `oklch()`, `oklab()`, `lab()`, `lch()`, `hwb()`, `color()` and `color-mix()` come later.
+
 ## Open questions
 
 - **Targeting multiplied ids**: should `#hero` target `hero-1`, `hero-2` and `hero-3`?

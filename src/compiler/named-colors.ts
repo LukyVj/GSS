@@ -1,5 +1,5 @@
 // The named colors of CSS (CSS Color 4), without "transparent" and "currentcolor":
-// GSS has no transparency, and no text color to inherit (decision 56).
+// GSS has no transparency, and no text color to inherit (decision 58).
 // Data only: resolveNamedColors (colors.ts) reads it.
 export const NAMED_COLORS: Record<string, string> = {
   aliceblue: "f0f8ff",

@@ -74,16 +74,20 @@ export const PROPERTIES: PropertyDef[] = [
     name: "color",
     appliesTo: "object",
     animatable: true,
-    syntax: "<hex-color>",
+    syntax: "<color>",
     initial: "#e6e6e6",
-    description: "Sets the base color of the object's surface.",
-    examples: ["@scene { sphere; } sphere { color: #ff5a36; }"],
+    description:
+      "Sets the base color of the object's surface: a hex color (#ff5a36), rgb(), hsl() or one of the 148 CSS named colors (tomato). Everything is turned into a hex color by the compiler.",
+    examples: [
+      "@scene { sphere; } sphere { color: #ff5a36; }",
+      "@scene { sphere#a; sphere#b; } #a { translate: -0.8 0.5 0; color: tomato; } #b { translate: 0.8 0.5 0; color: hsl(210 80% 60%); }",
+    ],
   },
   {
     name: "material",
     appliesTo: "object",
     syntax:
-      "matte([<hex-color>]) | metal([<hex-color>,] [<roughness>]) | jelly([<hex-color>,] [<density>]) | gold | chrome | jelly | glass([<hex-color>,] [<refraction-index>] [, [frosted | wavy | hammered | blurred] <frost>]) | glass | ice",
+      "matte([<color>]) | metal([<color>,] [<roughness>]) | jelly([<color>,] [<density>]) | gold | chrome | jelly | glass([<color>,] [<refraction-index>] [, [frosted | wavy | hammered | blurred] <frost>]) | glass | ice",
     initial: "matte()",
     description:
       "Sets how the surface of the object reacts to light. matte() only scatters light, like chalk. metal() reflects the scene: roughness goes from 0, a mirror, to 1, a brushed metal (0.2 by default). Without a color, the material uses the color property, like currentColor in CSS, so color stays animatable. jelly() lets light through its thin parts, like a gummy candy: density goes from 0, clear, to 1, deep (0.5 by default). gold, chrome and jelly are shortcuts for metal(#d4af37, 0.2), metal(#ffffff, 0.05) and jelly(). glass() lets you see through the object, bent by its refraction index (1 to 3, 1.5 by default: 1.33 is water, 2.4 is diamond). The frost, from 0 to 1, comes with an optional style: frosted (white patches, the default), wavy (big waves), hammered (small bumps) or blurred (soft blur). glass is glass(), ice is glass(#cfeaff, 1.31, frosted 0.25).",
@@ -345,7 +349,7 @@ export const PROPERTIES: PropertyDef[] = [
   {
     name: "floor",
     appliesTo: "scene",
-    syntax: "<hex-color> | none",
+    syntax: "<color> | none",
     initial: "#e8e3db",
     description:
       "Sets the color of the floor, an infinite plane at y = 0 that is lit like the objects. none removes it: the objects float over the background, like the GSS logo.",
@@ -357,7 +361,7 @@ export const PROPERTIES: PropertyDef[] = [
   {
     name: "background",
     appliesTo: "scene",
-    syntax: "<hex-color>",
+    syntax: "<color>",
     initial: "#080808",
     description:
       "Sets the color of the background, visible wherever there is no object and no floor.",
@@ -548,6 +552,30 @@ export const SHAPE_DOCS: ShapeDef[] = [
 ];
 
 export const FUNCTIONS: FunctionDef[] = [
+  {
+    name: "rgb()",
+    anchor: "fn-rgb",
+    covers: ["rgb", "rgba"],
+    syntax: "rgb(<red> <green> <blue>) | rgb(<red>, <green>, <blue>)",
+    description:
+      "A color from its red, green and blue channels, like CSS: numbers from 0 to 255, or percentages (100% is 255). Both syntaxes work, with spaces or with commas, and rgba() is the same function. Values outside the range are clamped. GSS has no transparency yet: an alpha (rgb(255 0 0 / 50%)) is an error. The math works inside, so one rule can give every copy its own color. It is turned into a hex color by the compiler, wherever a color is expected: color, floor, background, and the first argument of a material.",
+    examples: [
+      "@scene { sphere; } sphere { color: rgb(255 90 54); }",
+      "@scene { cube.step * 5; } .step { size: 0.4; translate: calc(sibling-index() * 0.6 - 1.8) 0.3 0; color: rgb(calc(sibling-index() * 50) 90 200); }",
+    ],
+  },
+  {
+    name: "hsl()",
+    anchor: "fn-hsl",
+    covers: ["hsl", "hsla"],
+    syntax: "hsl(<hue> <saturation> <lightness>)",
+    description:
+      "A color from its hue, saturation and lightness, like CSS. The hue is an angle on the color wheel (0 red, 120 green, 240 blue), as a number of degrees or in deg, rad or turn, and it goes round: -120 is 240. Saturation and lightness are percentages (or numbers, 100 meaning 100%); 50% lightness gives the pure color. With sibling-index(), the hue spreads a rainbow over the copies of an object. Commas, hsla() and the alpha work as in rgb().",
+    examples: [
+      "@scene { sphere; } sphere { color: hsl(20 100% 60%); }",
+      "@scene { sphere.dot * 8; } .dot { radius: 0.25; translate: calc(sibling-index() * 0.6 - 2.7) 0.5 0; color: hsl(calc(sibling-index() * 45) 90% 60%); }",
+    ],
+  },
   {
     name: "var()",
     anchor: "fn-var",
