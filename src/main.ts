@@ -82,7 +82,14 @@ examples.addEventListener("change", () => {
 // we copy it, in Shadertoy's format, and open a new shader where it can be pasted.
 const exportToShadertoyButton = $<HTMLButtonElement>("#export-to-shadertoy");
 exportToShadertoyButton.addEventListener("click", async () => {
-  const shader = toShadertoy(compileScene(editor.getCode()));
+  let shader: string;
+  try {
+    shader = toShadertoy(compileScene(editor.getCode()));
+  } catch (error) {
+    exportToShadertoyButton.textContent = (error as Error).message; // e.g. too many images
+    setTimeout(() => (exportToShadertoyButton.textContent = "→ shadertoy"), 4000);
+    return;
+  }
   await navigator.clipboard.writeText(shader);
   window.open("https://www.shadertoy.com/new", "_blank");
   exportToShadertoyButton.textContent = "copied, paste it in shadertoy";

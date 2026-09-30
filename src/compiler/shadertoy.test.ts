@@ -24,4 +24,26 @@ describe("toShadertoy", () => {
     expect(exported).toContain("#define uDist 5.0");
     expect(exported).toContain("iTime * 0.0"); // camera-spin: none
   });
+
+  it("plugs each image into a Shadertoy channel", () => {
+    const textured = toShadertoy(
+      compileScene(
+        `@scene { cube#a; cube#b; } #a { texture: url("/a.png"); } #b { texture: url("/b.png"); }`,
+      ),
+    );
+    expect(textured).toContain("#define uTexture0 iChannel0");
+    expect(textured).toContain("#define uTexture1 iChannel1");
+  });
+
+  it("has no channel lines when the scene has no image", () => {
+    expect(exported).not.toContain("iChannel");
+  });
+
+  it("refuses more images than Shadertoy has channels", () => {
+    const five = [0, 1, 2, 3, 4];
+    const source = `@scene { ${five.map((i) => `cube#c${i};`).join(" ")} } ${five
+      .map((i) => `#c${i} { texture: url("/${i}.png"); }`)
+      .join(" ")}`;
+    expect(() => toShadertoy(compileScene(source))).toThrow("4 image channels");
+  });
 });

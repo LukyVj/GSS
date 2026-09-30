@@ -9,7 +9,27 @@ function float(n: number): string {
   return text.includes(".") || text.includes("e") ? text : `${text}.0`;
 }
 
+// Shadertoy gives 4 image channels, filled by hand in its editor
+const SHADERTOY_CHANNELS = 4;
+
+// Our images become Shadertoy's channels: uTexture0 → iChannel0…
+// An empty channel reads as transparent, so triplanar() falls back to the object's color.
+function channelDefines(shader: string): string {
+  const textures = [...shader.matchAll(/^uniform sampler2D (uTexture(\d+));/gm)];
+  if (textures.length > SHADERTOY_CHANNELS) {
+    throw new Error(
+      `Shadertoy has ${SHADERTOY_CHANNELS} image channels, this scene uses ${textures.length} images`,
+    );
+  }
+  if (textures.length === 0) return "";
+  const lines = textures.map(([, name, i]) => `#define ${name} iChannel${i}`);
+  return `// The images of the scene: put them in these channels (empty: the object keeps its color)
+${lines.join("\n")}
+`;
+}
+
 export function toShadertoy({ shader, camera }: CompiledScene): string {
+  const channels = channelDefines(shader);
   const body = shader
     // 1. What Shadertoy already writes: the header, its uniforms, the output
     .replace(/^#version.*\n/m, "")
@@ -27,6 +47,6 @@ export function toShadertoy({ shader, camera }: CompiledScene): string {
 // The camera of the scene, fixed at export time
 #define uCamera vec2(${float(camera.yaw)} + iTime * ${float(camera.spin)}, ${float(camera.pitch)})
 #define uDist ${float(camera.distance)}
-
+${channels}
 ${body}`;
 }
