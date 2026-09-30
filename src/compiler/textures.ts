@@ -1,5 +1,5 @@
 import type { Token } from "./tokenizer";
-import type { Face, Styles } from "./resolve";
+import { FACES, type Face, type Styles } from "./resolve";
 import { readFunction } from "./values";
 import { errorAt } from "./errors";
 
@@ -32,8 +32,7 @@ export function sceneTextures(
     // The object's own image first, then its faces
     const values = [
       instance.styles["texture"],
-      instance.faceStyles.top["texture"],
-      instance.faceStyles.bottom["texture"],
+      ...FACES.map((face) => instance.faceStyles[face]["texture"]),
     ];
     for (const value of values) {
       if (!value) continue;

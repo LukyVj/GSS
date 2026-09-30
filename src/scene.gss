@@ -6,6 +6,7 @@
     Zone 4 (left)    materials: matte, metal, jelly, glass, ice
     Zone 5 (right)   shapes: cylinder, cone, capsule
     Zone 6 (back right) paths: the GSS logo
+    Zone 7 (front left) textures: dirt, grass, ::face(), image-rendering, texture-size
  */
 
 @scene {
@@ -48,6 +49,12 @@
   path#logo-left.logo;
   path#logo-right.logo;
   sphere#logo-dot.logo;
+
+  /* Zone 7: textures */
+  cube#t-tiles;
+  cube#t-grass.grass;
+  cube#t-dirt;
+  sphere#t-smooth;
 }
 
 /* ===== Scene settings ===== */
@@ -284,4 +291,53 @@ path.logo {
   radius: 0.46;
   color: #ff5a36;
   material: jelly(0.6);
+}
+
+/* ===== Zone 7: textures (front left, x = -7, z = 6) ===== */
+/* The images are in public/textures: 16×16, drawn for GSS */
+
+/* A floor of small tiles: texture-size repeats the image */
+#t-tiles {
+  translate: -7 0.05 6;
+  size: 3 0.1 3;
+  texture: url("/textures/dirt.png");
+  texture-size: 0.5;
+  image-rendering: pixelated;
+}
+
+/* The grass block: an image for the sides, the top and the bottom */
+.grass {
+  texture: url("/textures/grass-side.png");
+  image-rendering: pixelated;
+}
+
+.grass::top {
+  texture: url("/textures/grass-top.png");
+}
+
+.grass::bottom {
+  texture: url("/textures/dirt.png");
+}
+
+#t-grass {
+  translate: -7.7 0.6 5.4;
+}
+
+/* The same dirt, pixelated on a cube and smooth on a sphere (cut like the cube around it) */
+#t-dirt {
+  translate: -6.3 0.6 5.4;
+  rotate-y: 20deg;
+  texture: url("/textures/dirt.png");
+  image-rendering: pixelated;
+}
+
+/* One face of its own: it turns with the cube */
+#t-dirt::face(front) {
+  texture: url("/textures/grass-top.png");
+}
+
+#t-smooth {
+  translate: -7 0.6 6.8;
+  radius: 0.5;
+  texture: url("/textures/dirt.png");
 }

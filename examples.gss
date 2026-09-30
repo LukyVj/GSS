@@ -65,3 +65,19 @@ cube {
 .grass::bottom {
   texture: url("/textures/dirt.png");
 }
+
+/* One face of its own: ::face(front), ::face(back), ::face(left), ::face(right) */
+@scene {
+  cube.block
+}
+
+.block {
+  translate: 0 0.5 0;
+  rotate-y: 30deg;
+  texture: url("/textures/dirt.png");
+  image-rendering: pixelated;
+}
+
+.block::face(front) {
+  texture: url("/textures/grass-top.png");
+}

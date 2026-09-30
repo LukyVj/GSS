@@ -1,7 +1,7 @@
 import { tokenize } from "./tokenizer";
 import { parse } from "./parser";
 import { expandScene } from "./expand";
-import { resolveStyles, resolveSceneStyles } from "./resolve";
+import { resolveStyles, resolveSceneStyles, FACES, type Face } from "./resolve";
 import { generateShader } from "./codegen";
 import { validateProperties, validateKeyframes } from "./validate";
 import { readCamera, type CameraSettings } from "./camera";
@@ -81,18 +81,17 @@ export function compileScene(source: string): CompiledScene {
       groupStyles: instance.groupStyles.map((styles, g) =>
         computeNode(styles, seenAt(g + 1), instance.groups[g]),
       ),
-      faceStyles: {
-        top: computeNode(
-          instance.faceStyles.top,
-          seenAt(levels.length - 1),
-          instance,
-        ),
-        bottom: computeNode(
-          instance.faceStyles.bottom,
-          seenAt(levels.length - 1),
-          instance,
-        ),
-      },
+      // The faces use the object's variables: cube::top { texture: var(--top); }
+      faceStyles: Object.fromEntries(
+        FACES.map((face) => [
+          face,
+          computeNode(
+            instance.faceStyles[face],
+            seenAt(levels.length - 1),
+            instance,
+          ),
+        ]),
+      ) as Record<Face, Styles>,
     };
   });
 

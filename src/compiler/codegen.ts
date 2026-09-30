@@ -1,7 +1,7 @@
 import type { Token } from "./tokenizer";
 import { errorAt, locate } from "./errors";
 import { tokenize } from "./tokenizer";
-import type { StyledInstance, Styles } from "./resolve";
+import { FACES, type Face, type StyledInstance, type Styles } from "./resolve";
 import type { Keyframes } from "./ast";
 import { readFunction, readPolygon } from "./values";
 import { readSvgPath, type Point } from "./svgpath";
@@ -162,25 +162,43 @@ const TRIPLANAR = `vec3 triplanar(sampler2D image, vec3 q, vec3 n, vec3 box, vec
   if (a.y >= a.x && a.y >= a.z) uv = q.xz / box.xz;  // top and bottom
   else if (a.x >= a.z) uv = q.zy / box.zy;           // left and right
   else uv = q.xy / box.xy;                           // front and back
-  vec2 st = uv + 0.5;                 // from 0 to 1 across the face
+  vec2 st = fract(uv + 0.5);                         // from 0 to 1, again at each image: the pattern repeats
   if (pixelated) {
-    vec2 size = vec2(textureSize(image, 0));      // the image in pixels: 16×16
-    st = (floor(st * size) + 0.5) / size;        // the center of the pixel st falls in
+    vec2 size = vec2(textureSize(image, 0));         // the image in pixels: 16×16
+    st = (floor(st * size) + 0.5) / size;            // the center of the pixel st falls in
   }
   vec4 pixel = texture(image, st);
   return mix(color, pixel.rgb, pixel.a);
 }`;
 
-// Which face a normal points to, in the object's space: 1 the top, 2 the bottom,
-// 0 a side. The same test as triplanar(), so a face and its image always agree.
+// Which face a normal points to, in the object's space: its number in FACE_NUMBERS.
+// The same tests as triplanar(), so a face and its image always agree.
 const FACE_OF = `int faceOf(vec3 n) {
   vec3 a = abs(n);
-  if (a.y >= a.x && a.y >= a.z) return n.y > 0.0 ? 1 : 2;
-  return 0;
+  if (a.y >= a.x && a.y >= a.z) return n.y > 0.0 ? 1 : 2;  // top, bottom
+  if (a.x >= a.z) return n.x > 0.0 ? 5 : 6;                // right, left
+  return n.z > 0.0 ? 3 : 4;                                // front, back
 }`;
 
-// The full size of an object: one image covers one face (texture-size will come at step 6)
+// The number faceOf() gives each face
+const FACE_NUMBERS: Record<Face, number> = {
+  top: 1,
+  bottom: 2,
+  front: 3,
+  back: 4,
+  right: 5,
+  left: 6,
+};
+
+// The size one image covers: texture-size, or else the full size of the object (one image per face)
 function textureBox(instance: StyledInstance): number[] {
+  // texture-size: the size of one image on the surface; the pattern repeats (like background-size)
+  const imageSize = instance.styles["texture-size"];
+  if (imageSize) {
+    const size = readNumber(imageSize, "texture-size", 1); // its error: "texture-size expects one positive number"
+    return [size, size, size];
+  }
+
   if (instance.tag === "cube") return readSize(instance.styles["size"]);
   if (instance.tag === "sphere") {
     const diameter = 2 * readNumber(instance.styles["radius"], "radius", 0.5); // same default as SHAPES.sphere
@@ -202,8 +220,7 @@ function textureCode(instances: StyledInstance[], keyframes: Keyframes[]) {
   const textured = instances.filter(
     (instance) =>
       instance.styles["texture"] ||
-      instance.faceStyles.top["texture"] ||
-      instance.faceStyles.bottom["texture"],
+      FACES.some((face) => instance.faceStyles[face]["texture"]),
   );
 
   // The same moves as in map(): the groups from the outside in, then the object
@@ -230,11 +247,14 @@ function textureCode(instances: StyledInstance[], keyframes: Keyframes[]) {
       `triplanar(uTexture${image}, ${q}, ${normal}, ${box}, color, ${pixelated})`;
 
     const side = imageOf(instance.styles["texture"]);
-    const top = imageOf(instance.faceStyles.top["texture"]);
-    const bottom = imageOf(instance.faceStyles.bottom["texture"]);
+    // The faces with an image of their own, and that image
+    const faces = FACES.map((face) => ({
+      face,
+      image: imageOf(instance.faceStyles[face]["texture"]),
+    })).filter((entry) => entry.image !== null);
 
     // No face of its own: one line, like before
-    if (top === null && bottom === null) {
+    if (faces.length === 0) {
       return `  if (id == ${id}) return ${read(side!, `${space}(p)`, `${space}(p + n * 0.01) - ${space}(p)`)};`;
     }
     return [
@@ -242,12 +262,10 @@ function textureCode(instances: StyledInstance[], keyframes: Keyframes[]) {
       `    vec3 q = ${space}(p);`,
       `    vec3 ln = ${space}(p + n * 0.01) - q; // the normal in the object's space`,
       `    int face = faceOf(ln);`,
-      ...(top !== null
-        ? [`    if (face == 1) return ${read(top, "q", "ln")};`]
-        : []),
-      ...(bottom !== null
-        ? [`    if (face == 2) return ${read(bottom, "q", "ln")};`]
-        : []),
+      ...faces.map(
+        ({ face, image }) =>
+          `    if (face == ${FACE_NUMBERS[face]}) return ${read(image!, "q", "ln")}; // ${face}`,
+      ),
       side !== null
         ? `    return ${read(side, "q", "ln")};`
         : "    return color;", // no side image: the color

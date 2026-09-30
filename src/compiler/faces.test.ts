@@ -33,18 +33,42 @@ describe("::top and ::bottom in a selector", () => {
     expect(selector("cube.grass").face).toBeUndefined();
   });
 
+  it("name any of the 6 faces with ::face(), like ::part() in CSS", () => {
+    for (const face of ["top", "bottom", "front", "back", "left", "right"]) {
+      expect(selector(`cube::face(${face})`)).toMatchObject({
+        tag: "cube",
+        face,
+      });
+    }
+  });
+
+  it("have ::top and ::bottom as shortcuts, and only those", () => {
+    expect(selector("cube::top")).toEqual(selector("cube::face(top)"));
+    expect(selector("cube::bottom")).toEqual(selector("cube::face(bottom)"));
+    expect(() => selector("cube::front")).toThrow(/::face\(front\)/);
+  });
+
   it("explain an unknown face", () => {
-    expect(() => selector("cube::left")).toThrow(/::top or ::bottom/);
+    for (const text of [
+      "cube::face(middle)",
+      "cube::face()",
+      "cube::face(top",
+      "cube::nope",
+    ]) {
+      expect(() => selector(text), text).toThrow(/a face is ::face\(top\)/);
+    }
   });
 
   it("must be the last thing of the selector, like CSS", () => {
     expect(() => selector("cube::top.grass")).toThrow(/at the end/);
+    expect(() => selector("cube::face(front).grass")).toThrow(/at the end/);
     expect(() => selector("#g::top cube")).toThrow(/at the end/);
   });
 
   it("count like a tag in the specificity, like CSS", () => {
     expect(specificity(selector("cube::top"))).toBe(2);
     expect(specificity(selector(".grass::top"))).toBe(101);
+    expect(specificity(selector("cube::face(front)"))).toBe(2);
   });
 });
 
@@ -57,6 +81,14 @@ describe("the cascade of the faces", () => {
     expect(readTexture(cube.styles["texture"])).toBe("side.png");
     expect(readTexture(cube.faceStyles.top["texture"])).toBe("top.png");
     expect(cube.faceStyles.bottom).toEqual({});
+    expect(Object.keys(cube.faceStyles)).toEqual([
+      "top",
+      "bottom",
+      "front",
+      "back",
+      "left",
+      "right",
+    ]);
   });
 
   it("only applies a face rule to the objects it matches", () => {
@@ -79,5 +111,8 @@ describe("the cascade of the faces", () => {
     expect(() =>
       styled("@scene { cube; } cube::top { color: #ff0000; }"),
     ).toThrow(/::top only takes texture/);
+    expect(() =>
+      styled("@scene { cube; } cube::face(front) { scale: 2; }"),
+    ).toThrow(/::face\(front\) only takes texture/);
   });
 });

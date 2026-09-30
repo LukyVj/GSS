@@ -49,8 +49,12 @@ describe("the faces in the shader", () => {
     expect(shader).toContain("int faceOf(vec3 n)");
     const textureColor = glslFunction(shader, "vec3 textureColor(");
     expect(textureColor).toContain("int face = faceOf(");
-    expect(textureColor).toContain("if (face == 1) return triplanar(uTexture1, ");
-    expect(textureColor).toContain("if (face == 2) return triplanar(uTexture2, ");
+    expect(textureColor).toContain(
+      "if (face == 1) return triplanar(uTexture1, ",
+    );
+    expect(textureColor).toContain(
+      "if (face == 2) return triplanar(uTexture2, ",
+    );
     expect(textureColor).toContain("return triplanar(uTexture0, ");
   });
 
@@ -64,13 +68,44 @@ describe("the faces in the shader", () => {
       @scene { cube; }
       cube::top { texture: url("grass-top.png"); }`);
     const textureColor = glslFunction(shader, "vec3 textureColor(");
-    expect(textureColor).toContain("if (face == 1) return triplanar(uTexture0, ");
+    expect(textureColor).toContain(
+      "if (face == 1) return triplanar(uTexture0, ",
+    );
     expect(textureColor).not.toContain("face == 2");
     expect(textureColor).not.toContain("uTexture1");
   });
 
+  it("number the six faces like faceOf(): front 3, back 4, right 5, left 6", () => {
+    const shader = compileGSS(`
+      @scene { cube.furnace; }
+      .furnace { texture: url("stone.png"); }
+      .furnace::face(front) { texture: url("door.png"); }
+      .furnace::face(back) { texture: url("b.png"); }
+      .furnace::face(right) { texture: url("r.png"); }
+      .furnace::face(left) { texture: url("l.png"); }`);
+    const textureColor = glslFunction(shader, "vec3 textureColor(");
+    expect(textureColor).toContain(
+      "if (face == 3) return triplanar(uTexture1, ",
+    );
+    expect(textureColor).toContain(
+      "if (face == 4) return triplanar(uTexture2, ",
+    );
+    expect(textureColor).toContain(
+      "if (face == 5) return triplanar(uTexture4, ",
+    );
+    expect(textureColor).toContain(
+      "if (face == 6) return triplanar(uTexture3, ",
+    );
+    expect(textureColor).toContain("return triplanar(uTexture0, "); // top and bottom: the stone
+    expect(glslFunction(shader, "int faceOf(vec3 n)")).toContain(
+      "return n.z > 0.0 ? 3 : 4;",
+    );
+  });
+
   it("add nothing when no face has its own image", () => {
-    const shader = compileGSS('@scene { cube; } cube { texture: url("dirt.png"); }');
+    const shader = compileGSS(
+      '@scene { cube; } cube { texture: url("dirt.png"); }',
+    );
     expect(shader).not.toContain("faceOf");
     expect(shader).toContain("if (id == 1.0) return triplanar(uTexture0, ");
   });

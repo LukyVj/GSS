@@ -24,7 +24,7 @@ Selectors, the cascade and <code>@keyframes</code>, compiled into a single rayma
 
 GSS (GPU Style Sheets) is a 3D language for people who already speak CSS. You declare shapes in a
 `@scene`, style them with selectors, and the compiler turns the whole thing into one GLSL
-fragment shader: signed distance fields, raymarched in WebGL2. No Three.js, no meshes, no textures.
+fragment shader: signed distance fields, raymarched in WebGL2. No Three.js, no meshes, no UVs.
 
 ```css
 @scene {
@@ -66,11 +66,13 @@ and a readable path toward the shader underneath. It is not meant to replace GLS
 - **Structure**: `@scene { cube.corner * 4; torus#hero; }`, multiplication with auto-numbered ids,
   `group#g { … }` to move several shapes together.
 - **Selectors and the cascade**: `shape`, `.class`, `#id`, `*`, lists, the descendant combinator,
-  specificity, `!important`.
+  specificity, `!important`, and `::face(front)` / `::top` / `::bottom` to style one face.
 - **Shapes**: `cube`, `sphere`, `torus`, `cylinder`, `cone`, `capsule`, `plane`, `path` (a tube
   along an SVG path) and `prism` (a `polygon()` or `path()` contour, extruded).
 - **Materials**: `matte()`, `metal()`, `jelly()`, `glass()` with refraction and frost, and the
   shortcuts `gold`, `chrome`, `ice`.
+- **Textures**: `texture: url("dirt.png")` projected on each face, a different image per face
+  (the Minecraft grass block), `image-rendering: pixelated` and `texture-size` to repeat it.
 - **Motion**: `@keyframes` and `animation`, computed on the GPU.
 - **Math**: `calc()`, `min()`, `max()`, `clamp()`, trigonometry, and `sibling-index()` /
   `sibling-count()` for CSS-style loops.

@@ -16,7 +16,7 @@ What the language and the tools can do today. Each feature is detailed in the re
 | Multiplication | `cube * 12`; numbered ids: `cube#petal * 12` → `#petal-1` … `#petal-12` | 3 |
 | Groups | `group#g { … }`: transforms and animation apply to the children, positions are relative | 45, 48 |
 | Scene styling | `scene { floor; background; light; ambient; camera-* }` | 11, 15, 16 |
-| Selectors | `<shape>`, `.class`, `#id`, `*`, lists `a, b`, descendant `a b` | 4, 37, 47 |
+| Selectors | `<shape>`, `.class`, `#id`, `*`, lists `a, b`, descendant `a b`, faces `::face(front)`, `::top`, `::bottom` | 4, 37, 47, 59 |
 | Cascade | specificity (id 10,000, class 100, tag 1), last one wins, `!important` in 2 passes | 4, 38 |
 | Animation | `@keyframes` (`from`, `to`, `%`), `animation: name duration [linear \| ease-in-out] [alternate]`, computed in the shader | 21, 22, 23, 24 |
 | Math | `calc()`, `min()`, `max()`, `clamp()`, `abs()`, `sqrt()`, `pow()`, `sin()`, `cos()`, `tan()`, `pi`, `e` | 52 |
@@ -48,6 +48,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 | --- | --- | --- |
 | Transforms | `translate`, `rotate-x`, `rotate-y`, `rotate-z`, `scale` (uniform) | 13 |
 | Look | `color`, `material` | 26 |
+| Textures | `texture: url("…")`, `image-rendering: pixelated`, `texture-size` | 59 |
 | Combinations | `operation: union \| subtract \| intersect`, `blend` (smooth union) | 18, 19 |
 | Animation | `animation`; animatable: `translate`, `rotate-*`, `scale`, `color` | 24 |
 
@@ -75,7 +76,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 | --- | --- |
 | Everything compiled into **a single GLSL fragment shader**, SDF raymarching, WebGL2, no Three.js | 1, 5, 30 |
 | One reflection (1 bounce), glass refraction (in + out), procedural frost | 29, 31 |
-| No textures yet: everything is computed (textures planned, see **Textures**) | 1 |
+| Everything is computed, except the images of `texture`: projected on each face (triplanar), at most 16 per scene | 1, 59 |
 | Minimal shader: only the GLSL the scene uses goes in (an empty scene: 104 lines) | 53 |
 
 ### Tools
@@ -100,7 +101,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 1. [x] Loops: **option B chosen** (decision 52): `* n` + `calc(sibling-index())`, as in CSS. `@for` / `@each` later, only to change the shape at each step or to walk through a list
 2. [x] `var()` ✅ decision 55, inherited and animatable (+ `calc()` ✅ decision 52, with `min()`, `max()`, `clamp()`, `abs()`, `sqrt()`, `pow()`, `sin()`, `cos()`, `tan()`)
 3. [ ] Functional colors: `rgb()`, `hsl()` and the named colors ✅ decision 58; still to do: `oklch()`, `oklab()`, `hwb()`, `color-mix()`
-4. [ ] Textures: `texture: url(…)`, triplanar mapping (see **Textures** below)
+4. [x] Textures: `texture: url("…")`, one image per face, `::face()` (decision 59)
 5. [ ] Animation controls (delay / iteration-count / reverse)
 6. [ ] `@media` + `prefers-reduced-motion`
 7. [ ] Selectors / nesting (combinators `>` `+` `~`, etc.)
@@ -109,29 +110,6 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 10. [ ] Fog
 11. [x] `sibling-index()` + `sibling-count()` (decision 52)
 12. [ ] Motion path
-
-## Textures (in progress)
-
-Goal: redo a Minecraft-style dirt block from an image, then a grass block (a different top, sides and bottom). Use our own 16×16 textures or CC0 ones, not Minecraft's.
-
-**Chosen (Sept. 30)**:
-
-- **Face pseudo-elements** for the faces: `cube.grass { texture: url("side.png"); }`, `cube.grass::top { … }`, `cube.grass::bottom { … }`. On a sphere, `::top` is the part facing +Y.
-- **One image per face** by default, whatever the size of the object (the Minecraft block). A `texture-size` property will repeat the pattern later.
-- `url("…")` with quotes, like `path("…")`: no unquoted CSS `url(dirt.png)` in the first version.
-
-**Technique**: SDF shapes have no UVs, so the image is projected along the surface normal (triplanar mapping): +Y is the top, −Y the bottom, X and Z the sides. The projection is done in the object's space (the same `q` as in `map()`), so the texture moves, turns and scales with the object. For pixel art, the dominant axis wins (no blend between faces) in the first version.
-
-**Steps**:
-
-1. [x] Compiler: `texture: url("…")` is read (`readTexture`), and `compileScene` returns the list of images of the scene (`textures`). Registry entry.
-2. [x] Codegen: one `uniform sampler2D` per image, the object's point and normal in its own space, triplanar sampling, the texture replaces the base color of the material.
-3. [x] Runtime: the renderer loads the images, uploads them to the GPU and binds them; the object keeps its `color` until its image is loaded.
-4. [x] `image-rendering: pixelated` → nearest filtering (smooth by default, like CSS).
-5. [x] `::top` and `::bottom`: parser, cascade (a pseudo-element counts as a tag in the specificity, like CSS), one texture per face.
-6. [ ] `texture-size`, docs, the dirt and grass blocks in the test scene, a decision in `DECISIONS.md`.
-
-**Open**: images in the playground and in share links (URLs only? data URLs? drag and drop?), CORS, one file per face vs an atlas, a soft blend between faces for round shapes, and decision 1's "no textures".
 
 ## Later
 
@@ -155,6 +133,15 @@ Goal: redo a Minecraft-style dirt block from an image, then a grass block (a dif
 - [ ] Soft shadows, that can be turned off (`scene { shadows: none; }`?)
 - [ ] Optional antialiasing (4× the cost)
 - [ ] Measure the compile time of large scenes; if needed, loop in `calcNormal` so `map()` is copied only once
+
+### Textures (after decision 59)
+
+- [ ] A soft blend between faces (triplanar weights), for stone or bark on round shapes
+- [ ] `texture-mapping: sphere`: the image wraps a sphere like a map around a globe (planets)
+- [ ] Images in the playground: drag and drop, and in share links (data URLs?)
+- [ ] Unmirror the −x, −z and bottom faces
+- [ ] Textures in reflections and glass (`trace()` → `textureColor()`)
+- [ ] `image-rendering` per face; `url(dirt.png)` without quotes; an atlas
 
 ### Backend
 
@@ -181,6 +168,7 @@ Goal: redo a Minecraft-style dirt block from an image, then a grass block (a dif
 
 ## Done recently
 
+- Textures: `texture: url("…")`, `::face()` / `::top` / `::bottom`, `image-rendering: pixelated`, `texture-size`: the Minecraft dirt and grass blocks (decision 59)
 - `rgb()`, `hsl()` and the 148 CSS named colors, only where a color is expected (decision 58)
 - Custom properties and `var()`, inherited and animatable (decision 55)
 - The descendant combinator `#letters #S #left` (decision 47)
@@ -260,7 +248,7 @@ A score for how well a CSS notion carries over to GSS (a style language → an S
 | --- | ---: | --- |
 | `background` (shorthand) | 0.6 | → scene `background` / material |
 | `background-color` | 0.7 | Scene already |
-| `background-image` | 0.4 | Textures: see **Textures** (`texture` property) |
+| `background-image` | 0.4 | Done as `texture` (dec. 59) |
 | `background-position` / `-size` / `-repeat` / `-clip` / `-origin` / `-attachment` | 0.2 | Box painting |
 | `background-position-x/y` / `background-repeat-x/y` | 0.1 | Same |
 | `border` (+ longhands color/style/width/sides) | 0.2 | Box model |
@@ -346,7 +334,7 @@ A score for how well a CSS notion carries over to GSS (a style language → an S
 | Feature | Score | Short note |
 | --- | ---: | --- |
 | `object-fit` / `object-position` / `object-view-box` | 0.2 | Replaced content |
-| `image-rendering` | 0.8 | `pixelated` → nearest filtering for textures |
+| `image-rendering` | 1.0 | Already in GSS (dec. 59) |
 | `image-orientation` / `image-resolution` | 0.2 | Weak |
 | `fill` / `fill-opacity` / `fill-rule` | 0.5 | Path fill / extrusion |
 | `stroke` / `stroke-*` | 0.7 | Close to `stroke-width` of GSS paths |
@@ -489,7 +477,7 @@ A score for how well a CSS notion carries over to GSS (a style language → an S
 | `sibling-count()` | 1.0 | Already in GSS (dec. 52) |
 | `path()` / `circle()` / `ellipse()` / `polygon()` / `inset()` / `rect()` / `xywh()` / `shape()` / `ray()` | 0.7 | Shapes / motion path |
 | `superellipse()` | 0.5 | Corner shape |
-| `url()` | 0.8 | Textures, then `@import` |
+| `url()` | 0.8 | Already in `texture` (dec. 59); `@import` later |
 | `attr()` / `env()` | 0.4 | Host / env |
 | `if()` | 0.55 | Compile-time condition |
 | `layer()` | 0.5 | With `@layer` |

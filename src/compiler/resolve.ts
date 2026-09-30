@@ -10,7 +10,7 @@ export type Styles = Record<string, Token[]>;
 export type StyledInstance = SceneInstance & {
   styles: Styles;
   groupStyles: Styles[];
-  faceStyles: Record<Face, Styles>; // what cube::top and cube::bottom set
+  faceStyles: Record<Face, Styles>; // what cube::face(front), cube::top… set
 };
 
 // A simple selector: cube, .corner, #hero, or a combination like cube#left.corner
@@ -24,9 +24,27 @@ export type SimpleSelector = {
   face?: Face;
 };
 
-// The faces a pseudo-element can style: cube::top, cube::bottom
-export type Face = "top" | "bottom";
-const FACES: Face[] = ["top", "bottom"];
+// The faces a pseudo-element can style, in the object's space: cube::face(front).
+// top is +y, bottom -y, front +z, back -z, right +x, left -x (decision 59)
+export type Face = "top" | "bottom" | "front" | "back" | "left" | "right";
+export const FACES: Face[] = [
+  "top",
+  "bottom",
+  "front",
+  "back",
+  "left",
+  "right",
+];
+// ::top is ::face(top): the faces a Minecraft-style block changes most
+const SHORTCUTS: Face[] = ["top", "bottom"];
+
+// How a face is written, for the messages: ::top, ::face(front)
+export function faceSelector(face: Face): string {
+  return SHORTCUTS.includes(face) ? `::${face}` : `::face(${face})`;
+}
+
+const FACES_HELP =
+  "a face is ::face(top), ::face(bottom), ::face(front), ::face(back), ::face(left) or ::face(right); ::top and ::bottom are shortcuts";
 
 // Was there a space (or a comment) between these two tokens in the source?
 function spaceBetween(before: Token, after: Token): boolean {
@@ -58,7 +76,7 @@ export function parseSelector(tokens: Token[]): SimpleSelector {
   if (selector.ancestors?.some((ancestor) => ancestor.face !== undefined)) {
     throw errorAt(
       tokens,
-      "::top and ::bottom go at the end of the selector, on the object",
+      "A face goes at the end of the selector, on the object: cube.grass::top, not #g::top cube",
     );
   }
   return selector;
@@ -100,22 +118,46 @@ function parseCompound(tokens: Token[]): SimpleSelector {
       next?.type === "PUNCT" &&
       next.value === ":"
     ) {
+      // ::face(front), like ::part(name) in CSS, or a shortcut: ::top, ::bottom
       const name = tokens[i + 2];
-      if (name?.type !== "IDENT" || !FACES.includes(name.value as Face)) {
-        throw errorAt(
-          tokens,
-          "Unknown pseudo-element: a face is ::top or ::bottom",
-        );
+      const open = tokens[i + 3];
+      let face: string | undefined;
+      let length: number; // how many tokens the pseudo-element takes
+      if (
+        name?.type === "IDENT" &&
+        name.value === "face" &&
+        open?.type === "PUNCT" &&
+        open.value === "("
+      ) {
+        const inside = tokens[i + 4];
+        const close = tokens[i + 5];
+        if (
+          inside?.type === "IDENT" &&
+          close?.type === "PUNCT" &&
+          close.value === ")"
+        )
+          face = inside.value;
+        length = 6;
+      } else {
+        if (name?.type === "IDENT") face = name.value;
+        length = 3;
+      }
+      const known =
+        face !== undefined &&
+        (length === 6 ? FACES : SHORTCUTS).includes(face as Face);
+      if (!known) {
+        throw errorAt(tokens, `Unknown pseudo-element: ${FACES_HELP}`);
       }
       // Like CSS, a pseudo-element closes the selector: nothing after it
-      if (i + 3 !== tokens.length) {
+      if (i + length !== tokens.length) {
+        const written = faceSelector(face as Face);
         throw errorAt(
           tokens,
-          `::${name.value} goes at the end of the selector, like: cube.grass::${name.value}`,
+          `${written} goes at the end of the selector, like: cube.grass${written}`,
         );
       }
-      selector.face = name.value as Face;
-      i += 3;
+      selector.face = face as Face;
+      i += length;
     } else {
       const text = tokens.map(tokenToText).join("");
       throw errorAt(tokens, `Selector not supported: "${text}"`);
@@ -198,7 +240,7 @@ export function resolveStyles(
           ) {
             throw errorAt(
               declaration,
-              `::${selector.face} only takes texture, like: cube::${selector.face} { texture: url("top.png"); }`,
+              `${faceSelector(selector.face)} only takes texture, like: cube${faceSelector(selector.face)} { texture: url("${selector.face}.png"); }`,
             );
           }
           if ((declaration.important ?? false) !== important) continue;
@@ -213,10 +255,9 @@ export function resolveStyles(
     ...instance,
     styles: cascade(instance),
     groupStyles: instance.groups.map((group) => cascade(group)),
-    faceStyles: {
-      top: cascade(instance, "top"),
-      bottom: cascade(instance, "bottom"),
-    },
+    faceStyles: Object.fromEntries(
+      FACES.map((face) => [face, cascade(instance, face)]),
+    ) as Record<Face, Styles>,
   }));
 }
 

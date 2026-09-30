@@ -125,6 +125,17 @@ export const PROPERTIES: PropertyDef[] = [
     ],
   },
   {
+    name: "texture-size",
+    appliesTo: "object",
+    syntax: "<number>",
+    initial: "auto",
+    description:
+      "The size of one image on the surface, in the object's units, like background-size: the image repeats to cover the face. texture-size: 0.5 on a cube of size 3 shows 6 × 6 images per face. auto, the default, fits one image to each face, whatever the size of the object.",
+    examples: [
+      "@scene { cube; } cube { size: 3 0.2 3; translate: 0 0.1 0; texture: url('/textures/dirt.png'); texture-size: 0.5; image-rendering: pixelated; }",
+    ],
+  },
+  {
     name: "rotate-x",
     appliesTo: "object",
     animatable: true,
@@ -477,6 +488,17 @@ export const SELECTORS: SelectorDef[] = [
       'A space means "inside": #letters cube targets the cubes that are in the group #letters, at any depth. It reads from right to left, like CSS: the last part is the object, each part before it is one of its groups, further out each time. #letters#S would ask for one object with two ids, which never happens: that is an error.',
     examples: [
       "@scene { cube#a; group#letters { cube#b; cube#c; } } cube { translate: -1.2 0.5 0; } #letters cube { color: #ff5a36; } #b { translate: 0 0.5 0; } #c { translate: 1.2 0.5 0; }",
+    ],
+  },
+  {
+    name: "::face(), ::top, ::bottom",
+    anchor: "selector-face",
+    specificity: "1, like a tag, added to the rest",
+    description:
+      "A pseudo-element, like ::part() in CSS: the rule styles one face of the object, not the object. ::face() takes top, bottom, front, back, left or right, in the object's own space, so the faces turn with it: top is up (+y), front faces +z, right faces +x. ::top and ::bottom are shortcuts for ::face(top) and ::face(bottom). A face without a rule of its own shows the object's texture. On a round shape, a face is the part that faces that way the most: a sphere is cut like the cube around it. A face only takes texture, and it goes at the end of the selector, like CSS: cube.grass::top, never #g::top cube.",
+    examples: [
+      '@scene { cube.furnace; } .furnace { translate: 0 0.5 0; rotate-y: 30deg; texture: url("/textures/dirt.png"); image-rendering: pixelated; } .furnace::face(front) { texture: url("/textures/grass-top.png"); }',
+      '@scene { cube.grass; } .grass { translate: 0 0.5 0; texture: url("/textures/grass-side.png"); image-rendering: pixelated; } .grass::top { texture: url("/textures/grass-top.png"); } .grass::bottom { texture: url("/textures/dirt.png"); }',
     ],
   },
   {
