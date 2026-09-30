@@ -29,6 +29,7 @@ docsearch({
   container: "#docsearch",
   ...ALGOLIA,
   placeholder: "Search the docs",
+  insights: true,
   transformItems: (items) =>
     items.map((item) => ({ ...item, url: localUrl(item.url) })),
 });

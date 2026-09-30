@@ -5,17 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>GSS — GPU Style Sheets</title>
-    <meta name="description" content="Selectors, the cascade and @keyframes, compiled into a single raymarching shader. The 3D language designers and AIs already speak." />
+    <meta
+      name="description"
+      content="Selectors, the cascade and @keyframes, compiled into a single raymarching shader. The 3D language designers and AIs already speak."
+    />
     <!-- Link previews (Open Graph, X): the cards of the brand page, public/marks/ -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="GSS" />
     <meta property="og:url" content="https://www.gss-lang.dev/" />
     <meta property="og:title" content="GSS — GPU Style Sheets" />
-    <meta property="og:description" content="Selectors, the cascade and @keyframes, compiled into a single raymarching shader. The 3D language designers and AIs already speak." />
-    <meta property="og:image" content="https://www.gss-lang.dev/marks/social-home.png" />
+    <meta
+      property="og:description"
+      content="Selectors, the cascade and @keyframes, compiled into a single raymarching shader. The 3D language designers and AIs already speak."
+    />
+    <meta
+      property="og:image"
+      content="https://www.gss-lang.dev/marks/social-home.png"
+    />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="Style sheets for the GPU. The GSS logo, rendered by GSS, in its distance field" />
+    <meta
+      property="og:image:alt"
+      content="Style sheets for the GPU. The GSS logo, rendered by GSS, in its distance field"
+    />
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="canonical" href="https://www.gss-lang.dev/" />
     <style>
@@ -152,7 +164,9 @@
         border-radius: var(--gss-radius-control);
         color: var(--gss-ash);
         font: 14px var(--gss-font-code);
-        transition: color var(--gss-transition), border-color var(--gss-transition),
+        transition:
+          color var(--gss-transition),
+          border-color var(--gss-transition),
           background-color var(--gss-transition);
       }
       .button:hover {
@@ -457,11 +471,18 @@
         }
       }
     </style>
+    <script
+      defer
+      src="https://cloud.umami.is/script.js"
+      data-website-id="89b55a0a-cc5f-44e3-9d29-1db01ff93bc9"
+    ></script>
   </head>
   <body class="gss-dark">
     <header class="topbar">
       <div class="wrap">
-        <a class="mark" href="./" aria-label="GSS home">{<span class="dot"></span>}<span class="word">gss</span></a>
+        <a class="mark" href="./" aria-label="GSS home"
+          >{<span class="dot"></span>}<span class="word">gss</span></a
+        >
         <nav aria-label="Main">
           <a href="./playground.html">playground</a>
           <a href="./docs.html">docs</a>
@@ -477,17 +498,25 @@
             <div class="eyebrow">GPU Style Sheets</div>
             <h1>Style sheets<br />for the GPU.</h1>
             <p class="lead">
-              Selectors, the cascade and <code>@keyframes</code>, compiled into a single
-              raymarching shader. No Three.js. No meshes. Just CSS you already know.
+              Selectors, the cascade and <code>@keyframes</code>, compiled into
+              a single raymarching shader. No Three.js. No meshes. Just CSS you
+              already know.
             </p>
             <div class="actions">
-              <a class="button primary" href="./playground.html">open the playground →</a>
+              <a class="button primary" href="./playground.html"
+                >open the playground →</a
+              >
               <a class="button" href="./docs.html">read the docs</a>
             </div>
           </div>
 
           <!-- The mark in its distance field: DESIGN.md § 4 and § 5 -->
-          <svg class="field" viewBox="0 0 600 600" role="img" aria-label="The GSS mark, a dot between two braces, inside the rings of its distance field">
+          <svg
+            class="field"
+            viewBox="0 0 600 600"
+            role="img"
+            aria-label="The GSS mark, a dot between two braces, inside the rings of its distance field"
+          >
             <g class="rings">
               <circle cx="300" cy="300" r="70" stroke-opacity="0.34" />
               <circle cx="300" cy="300" r="110" stroke-opacity="0.26" />
@@ -500,11 +529,21 @@
               <circle cx="300" cy="300" r="390" stroke-opacity="0.025" />
             </g>
             <g class="braces">
-              <path d="M170 140 C120 140 112 165 112 205 v55 c0 32 -16 40 -55 40 c39 0 55 8 55 40 v55 c0 40 8 65 58 65" />
-              <path d="M430 140 C480 140 488 165 488 205 v55 c0 32 16 40 55 40 c-39 0 -55 8 -55 40 v55 c0 40 -8 65 -58 65" />
+              <path
+                d="M170 140 C120 140 112 165 112 205 v55 c0 32 -16 40 -55 40 c39 0 55 8 55 40 v55 c0 40 8 65 58 65"
+              />
+              <path
+                d="M430 140 C480 140 488 165 488 205 v55 c0 32 16 40 55 40 c-39 0 -55 8 -55 40 v55 c0 40 -8 65 -58 65"
+              />
             </g>
             <circle cx="300" cy="300" r="52" fill="#ff5a36" />
-            <circle cx="284" cy="284" r="16" fill="#ffb199" fill-opacity="0.55" />
+            <circle
+              cx="284"
+              cy="284"
+              r="16"
+              fill="#ffb199"
+              fill-opacity="0.55"
+            />
             <!-- labels on the lower-right diagonal, clear of the braces -->
             <text x="352" y="358">d = 0.4</text>
             <text x="410" y="412">0.8</text>
@@ -518,21 +557,32 @@
           <article class="pillar">
             <div class="eyebrow">01</div>
             <h2>Rules, not loops</h2>
-            <p>Style a thousand objects with one selector. The cascade decides, like on a web page.</p>
+            <p>
+              Style a thousand objects with one selector. The cascade decides,
+              like on a web page.
+            </p>
             <pre><code data-gss>@scene { cube.corner * 4; }
 .corner { color: #ff5a36; }</code></pre>
           </article>
           <article class="pillar">
             <div class="eyebrow">02</div>
             <h2>One shader</h2>
-            <p>The compiler writes the GLSL: the whole scene becomes one fragment shader, raymarched on the GPU.</p>
-            <pre class="glsl"><code><span class="c">// GSS → AST → cascade → GLSL</span>
+            <p>
+              The compiler writes the GLSL: the whole scene becomes one fragment
+              shader, raymarched on the GPU.
+            </p>
+            <pre
+              class="glsl"
+            ><code><span class="c">// GSS → AST → cascade → GLSL</span>
 vec2 map(vec3 p) { … }</code></pre>
           </article>
           <article class="pillar">
             <div class="eyebrow">03</div>
             <h2>LLMs already speak it</h2>
-            <p>Every model knows CSS by heart. It writes the style sheet; the compiler writes the shader.</p>
+            <p>
+              Every model knows CSS by heart. It writes the style sheet; the
+              compiler writes the shader.
+            </p>
             <pre><code data-gss>#dot {
   material: jelly(0.6);
 }</code></pre>
@@ -547,16 +597,23 @@ vec2 map(vec3 p) { … }</code></pre>
               <div class="eyebrow">Live</div>
               <h2 id="live-title">Edit it. It compiles as you type.</h2>
             </div>
-            <a class="button" id="open-demo" href="./playground.html">open in the playground →</a>
+            <a class="button" id="open-demo" href="./playground.html"
+              >open in the playground →</a
+            >
           </header>
           <div class="demo">
             <div class="demo-body">
               <div class="code-host" id="demo-code"></div>
-              <canvas id="demo-scene" aria-label="The scene, rendered live. Drag to turn around it."></canvas>
+              <canvas
+                id="demo-scene"
+                aria-label="The scene, rendered live. Drag to turn around it."
+              ></canvas>
             </div>
             <pre class="error" id="demo-error" hidden></pre>
             <div class="demo-bar">
-              <span class="stats" id="demo-stats" aria-live="polite"><span>loading</span></span>
+              <span class="stats" id="demo-stats" aria-live="polite"
+                ><span>loading</span></span
+              >
               <span class="hint">drag to orbit · scroll to zoom</span>
             </div>
           </div>
@@ -565,9 +622,15 @@ vec2 map(vec3 p) { … }</code></pre>
 
       <section class="numbers" aria-label="GSS in numbers">
         <div class="wrap">
-          <a class="number" href="./docs.html#shapes"><strong id="count-shapes">–</strong><span>shapes</span></a>
-          <a class="number" href="./docs.html#object-properties"><strong id="count-properties">–</strong><span>properties</span></a>
-          <a class="number" href="./docs.html#selectors"><strong id="count-selectors">–</strong><span>selectors</span></a>
+          <a class="number" href="./docs.html#shapes"
+            ><strong id="count-shapes">–</strong><span>shapes</span></a
+          >
+          <a class="number" href="./docs.html#object-properties"
+            ><strong id="count-properties">–</strong><span>properties</span></a
+          >
+          <a class="number" href="./docs.html#selectors"
+            ><strong id="count-selectors">–</strong><span>selectors</span></a
+          >
           <div class="number"><strong>1</strong><span>shader</span></div>
         </div>
       </section>
@@ -575,7 +638,10 @@ vec2 map(vec3 p) { … }</code></pre>
 
     <footer>
       <div class="wrap">
-        <span>GSS — GPU Style Sheets. CSS for 3D scenes, compiled to a shader.</span>
+        <span
+          >GSS — GPU Style Sheets. CSS for 3D scenes, compiled to a
+          shader.</span
+        >
         <nav aria-label="Footer">
           <a href="./playground.html">playground</a>
           <a href="./docs.html">docs</a>
