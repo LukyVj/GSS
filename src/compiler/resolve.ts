@@ -212,7 +212,6 @@ export function resolveStyles(
   return instances.map((instance) => ({
     ...instance,
     styles: cascade(instance),
-    // (group) => cascade(group): map() would pass the index as the face
     groupStyles: instance.groups.map((group) => cascade(group)),
     faceStyles: {
       top: cascade(instance, "top"),

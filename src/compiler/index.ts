@@ -81,6 +81,18 @@ export function compileScene(source: string): CompiledScene {
       groupStyles: instance.groupStyles.map((styles, g) =>
         computeNode(styles, seenAt(g + 1), instance.groups[g]),
       ),
+      faceStyles: {
+        top: computeNode(
+          instance.faceStyles.top,
+          seenAt(levels.length - 1),
+          instance,
+        ),
+        bottom: computeNode(
+          instance.faceStyles.bottom,
+          seenAt(levels.length - 1),
+          instance,
+        ),
+      },
     };
   });
 

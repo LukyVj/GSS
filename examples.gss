@@ -46,3 +46,22 @@ cube {
 #smooth {
   translate: 0.7 0.5 0;
 }
+
+/* Grass block: an image for the sides, the top and the bottom */
+@scene {
+  cube.grass
+}
+
+.grass {
+  translate: 0 0.5 0;
+  texture: url("/textures/grass-side.png");
+  image-rendering: pixelated;
+}
+
+.grass::top {
+  texture: url("/textures/grass-top.png");
+}
+
+.grass::bottom {
+  texture: url("/textures/dirt.png");
+}

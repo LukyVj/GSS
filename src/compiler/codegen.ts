@@ -171,6 +171,14 @@ const TRIPLANAR = `vec3 triplanar(sampler2D image, vec3 q, vec3 n, vec3 box, vec
   return mix(color, pixel.rgb, pixel.a);
 }`;
 
+// Which face a normal points to, in the object's space: 1 the top, 2 the bottom,
+// 0 a side. The same test as triplanar(), so a face and its image always agree.
+const FACE_OF = `int faceOf(vec3 n) {
+  vec3 a = abs(n);
+  if (a.y >= a.x && a.y >= a.z) return n.y > 0.0 ? 1 : 2;
+  return 0;
+}`;
+
 // The full size of an object: one image covers one face (texture-size will come at step 6)
 function textureBox(instance: StyledInstance): number[] {
   if (instance.tag === "cube") return readSize(instance.styles["size"]);
@@ -191,7 +199,12 @@ function textureCode(instances: StyledInstance[], keyframes: Keyframes[]) {
     .map((file, i) => `uniform sampler2D uTexture${i}; // ${file}`)
     .join("\n");
 
-  const textured = instances.filter((instance) => instance.styles["texture"]);
+  const textured = instances.filter(
+    (instance) =>
+      instance.styles["texture"] ||
+      instance.faceStyles.top["texture"] ||
+      instance.faceStyles.bottom["texture"],
+  );
 
   // The same moves as in map(): the groups from the outside in, then the object
   const spaces = textured.map((instance) => {
@@ -206,10 +219,40 @@ function textureCode(instances: StyledInstance[], keyframes: Keyframes[]) {
   });
 
   const branches = textured.map((instance) => {
-    const image = files.indexOf(readTexture(instance.styles["texture"]));
+    const id = glslFloat(instance.index);
     const space = `space${instance.index}`;
-    // The normal in the object's space: where the point goes when it moves a little along n
-    return `  if (id == ${glslFloat(instance.index)}) return triplanar(uTexture${image}, ${space}(p), ${space}(p + n * 0.01) - ${space}(p), ${vec3(textureBox(instance))}, color, ${readRendering(instance.styles["image-rendering"])});`;
+    const box = vec3(textureBox(instance));
+    const pixelated = readRendering(instance.styles["image-rendering"]); // one rendering for every face
+    // The number of the image a texture value names, or null when there is none
+    const imageOf = (value: Token[] | undefined): number | null =>
+      value ? files.indexOf(readTexture(value)) : null;
+    const read = (image: number, q: string, normal: string) =>
+      `triplanar(uTexture${image}, ${q}, ${normal}, ${box}, color, ${pixelated})`;
+
+    const side = imageOf(instance.styles["texture"]);
+    const top = imageOf(instance.faceStyles.top["texture"]);
+    const bottom = imageOf(instance.faceStyles.bottom["texture"]);
+
+    // No face of its own: one line, like before
+    if (top === null && bottom === null) {
+      return `  if (id == ${id}) return ${read(side!, `${space}(p)`, `${space}(p + n * 0.01) - ${space}(p)`)};`;
+    }
+    return [
+      `  if (id == ${id}) {  // ${label(instance)}`,
+      `    vec3 q = ${space}(p);`,
+      `    vec3 ln = ${space}(p + n * 0.01) - q; // the normal in the object's space`,
+      `    int face = faceOf(ln);`,
+      ...(top !== null
+        ? [`    if (face == 1) return ${read(top, "q", "ln")};`]
+        : []),
+      ...(bottom !== null
+        ? [`    if (face == 2) return ${read(bottom, "q", "ln")};`]
+        : []),
+      side !== null
+        ? `    return ${read(side, "q", "ln")};`
+        : "    return color;", // no side image: the color
+      "  }",
+    ].join("\n");
   });
 
   const textureColor = [
@@ -221,7 +264,12 @@ function textureCode(instances: StyledInstance[], keyframes: Keyframes[]) {
 
   return {
     uniforms,
-    functions: [...spaces, TRIPLANAR, textureColor].join("\n\n"),
+    functions: [
+      ...spaces,
+      TRIPLANAR,
+      ...(branches.join("\n").includes("faceOf(") ? [FACE_OF] : []),
+      textureColor,
+    ].join("\n\n"),
     call: "    m.color = textureColor(id, p, n, m.color);",
   };
 }

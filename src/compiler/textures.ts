@@ -1,5 +1,5 @@
 import type { Token } from "./tokenizer";
-import type { Styles } from "./resolve";
+import type { Face, Styles } from "./resolve";
 import { readFunction } from "./values";
 import { errorAt } from "./errors";
 
@@ -23,12 +23,20 @@ export function readTexture(value: Token[]): string {
 }
 
 // Every image of the scene, once each, in the order of the objects
-export function sceneTextures(instances: { styles: Styles }[]): string[] {
+export function sceneTextures(
+  instances: { styles: Styles; faceStyles: Record<Face, Styles> }[],
+): string[] {
   const files = new Set<string>(); // keeps the first order, ignores duplicates
   for (const instance of instances) {
-    const value = instance.styles["texture"];
     readRendering(instance.styles["image-rendering"]); // checked on every object, even without a texture
-    if (value) {
+    // The object's own image first, then its faces
+    const values = [
+      instance.styles["texture"],
+      instance.faceStyles.top["texture"],
+      instance.faceStyles.bottom["texture"],
+    ];
+    for (const value of values) {
+      if (!value) continue;
       files.add(readTexture(value));
       // Only the image just added can go over the limit
       if (files.size > MAX_IMAGES) {

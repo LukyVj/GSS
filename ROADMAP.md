@@ -128,7 +128,7 @@ Goal: redo a Minecraft-style dirt block from an image, then a grass block (a dif
 2. [x] Codegen: one `uniform sampler2D` per image, the object's point and normal in its own space, triplanar sampling, the texture replaces the base color of the material.
 3. [x] Runtime: the renderer loads the images, uploads them to the GPU and binds them; the object keeps its `color` until its image is loaded.
 4. [x] `image-rendering: pixelated` → nearest filtering (smooth by default, like CSS).
-5. [ ] `::top` and `::bottom`: parser, cascade (a pseudo-element counts as a tag in the specificity, like CSS), one texture per face.
+5. [x] `::top` and `::bottom`: parser, cascade (a pseudo-element counts as a tag in the specificity, like CSS), one texture per face.
 6. [ ] `texture-size`, docs, the dirt and grass blocks in the test scene, a decision in `DECISIONS.md`.
 
 **Open**: images in the playground and in share links (URLs only? data URLs? drag and drop?), CORS, one file per face vs an atlas, a soft blend between faces for round shapes, and decision 1's "no textures".
