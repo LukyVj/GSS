@@ -175,6 +175,7 @@ Goal: redo a Minecraft-style dirt block from an image, then a grass block (a dif
 
 ## Done recently
 
+- `rgb()`, `hsl()` and the 148 CSS named colors, only where a color is expected (decision 58)
 - Custom properties and `var()`, inherited and animatable (decision 55)
 - The descendant combinator `#letters #S #left` (decision 47)
 - Site on gss-lang.dev (Vercel, clean URLs, Open Graph and X cards) and brand page (decisions 56, 57)

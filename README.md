@@ -74,6 +74,10 @@ and a readable path toward the shader underneath. It is not meant to replace GLS
 - **Motion**: `@keyframes` and `animation`, computed on the GPU.
 - **Math**: `calc()`, `min()`, `max()`, `clamp()`, trigonometry, and `sibling-index()` /
   `sibling-count()` for CSS-style loops.
+- **Variables**: `--size: 2` and `var(--size, 1)`, inherited from the scene to groups to objects,
+  and animatable in `@keyframes`.
+- **Colors**: hex, `rgb()`, `hsl()` and the CSS named colors (`tomato`), with math and `var()`
+  inside: `hsl(calc(sibling-index() * 45) 90% 60%)`.
 - **The scene**: `floor`, `background`, `light`, `ambient` and an orbit camera.
 
 Every property, shape and selector is described once in the registry
@@ -86,8 +90,8 @@ with a live example for each entry.
 GSS text → tokenizer → parser → scene expansion → cascade → validation → GLSL codegen → WebGL2
 ```
 
-Everything that can be decided at compile time is: the cascade, the selectors, the units, the
-math. The shader receives final values. The runtime only holds what changes every frame (time,
+Everything that can be decided at compile time is: the cascade, the selectors, the units,
+`var()`, the math and the colors, in that order. The shader receives final values. The runtime only holds what changes every frame (time,
 camera) and sends it as uniforms.
 
 The design decisions, and why they were made, are recorded in [`DECISIONS.md`](DECISIONS.md).
@@ -111,7 +115,7 @@ npm run build    # type-check, then build to dist/
 
 | Path | What lives there |
 | --- | --- |
-| `src/compiler/` | tokenizer, parser, cascade, validation, math, GLSL codegen, the registry |
+| `src/compiler/` | tokenizer, parser, cascade, validation, variables, math, colors, GLSL codegen, the registry |
 | `src/runtime/` | WebGL2 renderer, camera, editor, share links |
 | `src/docs/` | the generated reference and the syntax highlighter |
 | `src/playground/`, `src/home/` | the playground and the home page |
