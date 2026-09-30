@@ -5,6 +5,8 @@ import { errorAt } from "./errors";
 
 const EXAMPLE = 'texture: url("dirt.png");';
 
+const MAX_IMAGES = 16; // WebGL2 guarantees 16 texture units
+
 // texture: url("dirt.png") → "dirt.png"
 export function readTexture(value: Token[]): string {
   const call = readFunction(value);
@@ -25,7 +27,16 @@ export function sceneTextures(instances: { styles: Styles }[]): string[] {
   const files = new Set<string>(); // keeps the first order, ignores duplicates
   for (const instance of instances) {
     const value = instance.styles["texture"];
-    if (value) files.add(readTexture(value));
+    if (value) {
+      files.add(readTexture(value));
+      // Only the image just added can go over the limit
+      if (files.size > MAX_IMAGES) {
+        throw errorAt(
+          value,
+          `a scene can use at most ${MAX_IMAGES} images (WebGL2 guarantees 16 texture units)`,
+        );
+      }
+    }
   }
   return [...files];
 }

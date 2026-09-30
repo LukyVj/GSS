@@ -156,13 +156,14 @@ const SHADE_CALLS: Record<string, string> = {
 // The image seen from the axis the surface faces most: y is the top and the bottom,
 // x and z are the sides. q: the point in the object's space (centered on 0),
 // n: the normal in that space, box: the full size of the object
-const TRIPLANAR = `vec3 triplanar(sampler2D image, vec3 q, vec3 n, vec3 box) {
+const TRIPLANAR = `vec3 triplanar(sampler2D image, vec3 q, vec3 n, vec3 box, vec3 color) {
   vec3 a = abs(n);
   vec2 uv;
   if (a.y >= a.x && a.y >= a.z) uv = q.xz / box.xz;  // top and bottom
   else if (a.x >= a.z) uv = q.zy / box.zy;           // left and right
   else uv = q.xy / box.xy;                           // front and back
-  return texture(image, uv + 0.5).rgb;               // uv goes from -0.5 to 0.5
+  vec4 pixel = texture(image, uv + 0.5);             // uv goes from -0.5 to 0.5
+  return mix(color, pixel.rgb, pixel.a);             // transparent: the color, opaque: the image
 }`;
 
 // The full size of an object: one image covers one face (texture-size will come at step 6)
@@ -203,7 +204,7 @@ function textureCode(instances: StyledInstance[], keyframes: Keyframes[]) {
     const image = files.indexOf(readTexture(instance.styles["texture"]));
     const space = `space${instance.index}`;
     // The normal in the object's space: where the point goes when it moves a little along n
-    return `  if (id == ${glslFloat(instance.index)}) return triplanar(uTexture${image}, ${space}(p), ${space}(p + n * 0.01) - ${space}(p), ${vec3(textureBox(instance))});`;
+    return `  if (id == ${glslFloat(instance.index)}) return triplanar(uTexture${image}, ${space}(p), ${space}(p + n * 0.01) - ${space}(p), ${vec3(textureBox(instance))}, color);`;
   });
 
   const textureColor = [

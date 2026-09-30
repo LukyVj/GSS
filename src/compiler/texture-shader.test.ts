@@ -66,16 +66,16 @@ describe("textures in the shader", () => {
 
   it("fit one image per face of a cube, whatever its size", () => {
     expect(compileGSS(`@scene { cube; } cube { size: 2; ${dirt}; }`)).toContain(
-      "vec3(2.0, 2.0, 2.0))",
+      "vec3(2.0, 2.0, 2.0), color);",
     );
     expect(
       compileGSS(`@scene { cube; } cube { size: 1 2 3; ${dirt}; }`),
-    ).toContain("vec3(1.0, 2.0, 3.0))");
+    ).toContain("vec3(1.0, 2.0, 3.0), color);");
   });
 
   it("fit the image to the diameter of a sphere", () => {
     expect(
       compileGSS(`@scene { sphere; } sphere { radius: 0.8; ${dirt}; }`),
-    ).toContain("vec3(1.6, 1.6, 1.6))");
+    ).toContain("vec3(1.6, 1.6, 1.6), color);");
   });
 });
