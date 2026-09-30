@@ -8,6 +8,9 @@ import { createRenderer } from "../runtime/renderer";
 import { connectEditor } from "../runtime/editor";
 import { encodeCode } from "../runtime/share";
 import { statusParts } from "../runtime/status";
+import { mountSearch } from "../docs/search-box";
+
+mountSearch();
 
 // The home page: design/reference/png/01-home.png.
 const $ = <T extends HTMLElement>(selector: string) => document.querySelector<T>(selector)!;

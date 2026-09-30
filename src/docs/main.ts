@@ -10,10 +10,7 @@ import {
 import { renderDocs } from "./render";
 import { enableTryIt } from "./playground";
 import { enablePages } from "./pages";
-import docsearch from "@docsearch/js/docsearch";
-import "@docsearch/css/dist/style.css";
-import "../styles/docsearch.css"; // after @docsearch/css: our values win
-import { ALGOLIA, localUrl } from "./search";
+import { mountSearch } from "./search-box";
 
 const docs = document.querySelector<HTMLElement>("#docs")!;
 docs.innerHTML = renderDocs(
@@ -25,11 +22,4 @@ docs.innerHTML = renderDocs(
 );
 enableTryIt(docs);
 enablePages(docs);
-docsearch({
-  container: "#docsearch",
-  ...ALGOLIA,
-  placeholder: "Search the docs",
-  insights: true,
-  transformItems: (items) =>
-    items.map((item) => ({ ...item, url: localUrl(item.url) })),
-});
+mountSearch();

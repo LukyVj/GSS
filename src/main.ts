@@ -10,19 +10,9 @@ import { compileGSS, compileScene } from "./compiler";
 import { toShadertoy } from "./compiler/shadertoy";
 import { EXAMPLES, renderExampleOptions } from "./playground/examples";
 import { statusParts, fpsText } from "./runtime/status";
-import docsearch from "@docsearch/js/docsearch";
-import "@docsearch/css/dist/style.css";
-import "./styles/docsearch.css"; // after @docsearch/css: our values win
-import { ALGOLIA, localUrl } from "./docs/search";
+import { mountSearch } from "./docs/search-box";
 
-docsearch({
-  container: "#docsearch",
-  ...ALGOLIA,
-  placeholder: "Search the docs",
-  insights: true,
-  transformItems: (items) =>
-    items.map((item) => ({ ...item, url: localUrl(item.url) })),
-});
+mountSearch();
 
 // The playground: the GSS editor (or the GLSL it becomes) on the left, the scene on the right.
 const $ = <T extends HTMLElement>(selector: string) =>
