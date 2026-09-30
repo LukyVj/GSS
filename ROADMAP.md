@@ -106,7 +106,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 5. [ ] Animation controls (delay / iteration-count / reverse)
 6. [ ] `@media` + `prefers-reduced-motion`
 7. [ ] Selectors / nesting (combinators `>` `+` `~`, etc.)
-8. [ ] `:hover` + `transition`
+8. [ ] `:hover` + `transition` ← **next** (picking pass → `uHover`, then `transition`)
 9. [ ] `transform-origin`
 10. [ ] Fog
 11. [x] `sibling-index()` + `sibling-count()` (decision 52)
