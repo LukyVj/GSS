@@ -15,7 +15,9 @@ const SHADERTOY_CHANNELS = 4;
 // Our images become Shadertoy's channels: uTexture0 → iChannel0…
 // An empty channel reads as transparent, so triplanar() falls back to the object's color.
 function channelDefines(shader: string): string {
-  const textures = [...shader.matchAll(/^uniform sampler2D (uTexture(\d+));/gm)];
+  const textures = [
+    ...shader.matchAll(/^uniform sampler2D (uTexture(\d+));/gm),
+  ];
   if (textures.length > SHADERTOY_CHANNELS) {
     throw new Error(
       `Shadertoy has ${SHADERTOY_CHANNELS} image channels, this scene uses ${textures.length} images`,
@@ -31,13 +33,22 @@ ${lines.join("\n")}
 export function toShadertoy({ shader, camera }: CompiledScene): string {
   const channels = channelDefines(shader);
   const body = shader
+    // 0. No picking in Shadertoy: every object stays at rest. Before step 1,
+    // which removes every uniform line
+    .replace(/^uniform float uHover\[(\d+)\];.*\n/m, (_, n) => {
+      const zeros = Array(Number(n)).fill("0.0").join(", ");
+      return `const float uHover[${n}] = float[${n}](${zeros}); // :hover needs the GSS runtime\n`;
+    })
     // 1. What Shadertoy already writes: the header, its uniforms, the output
     .replace(/^#version.*\n/m, "")
     .replace(/^precision .*\n/m, "")
     .replace(/^uniform .*\n/gm, "")
     .replace(/^out vec4 outColor;\n/m, "")
     // 2. Shadertoy calls mainImage, and gives the pixel as fragCoord
-    .replace("void main() {", "void mainImage(out vec4 outColor, in vec2 fragCoord) {")
+    .replace(
+      "void main() {",
+      "void mainImage(out vec4 outColor, in vec2 fragCoord) {",
+    )
     .replaceAll("gl_FragCoord", "fragCoord")
     .trimStart();
 

@@ -2,7 +2,7 @@ import { tokenize } from "./tokenizer";
 import { parse } from "./parser";
 import { expandScene } from "./expand";
 import { resolveStyles, resolveSceneStyles, FACES, type Face } from "./resolve";
-import { generateShader } from "./codegen";
+import { generateShader, hoverSlots } from "./codegen";
 import { validateProperties, validateKeyframes } from "./validate";
 import { readCamera, type CameraSettings } from "./camera";
 import { resolveMath, type CalcContext } from "./calc";
@@ -21,6 +21,7 @@ export type CompiledScene = {
   camera: CameraSettings;
   objects: number; // instances drawn, for the status bar (decision 42)
   textures: string[]; // the image files the runtime loads, once each
+  hover: number[][]; // for each slot of uHover[], the ids that, hovered, set it to 1
 };
 
 // GSS text → shader + camera settings
@@ -75,9 +76,17 @@ export function compileScene(source: string): CompiledScene {
     const seenAt = (n: number): Variables =>
       Object.assign({}, ...levels.slice(0, n + 1));
 
+    // The hover state has its own variables, cube:hover { --c: red; },
+    // on top of what the scene and the groups give
+    const hoverVariables: Variables = {
+      ...seenAt(levels.length - 2),
+      ...customProperties(instance.hoverStyles),
+    };
+
     return {
       ...instance,
       styles: computeNode(instance.styles, seenAt(levels.length - 1), instance),
+      hoverStyles: computeNode(instance.hoverStyles, hoverVariables, instance),
       groupStyles: instance.groupStyles.map((styles, g) =>
         computeNode(styles, seenAt(g + 1), instance.groups[g]),
       ),
@@ -108,6 +117,7 @@ export function compileScene(source: string): CompiledScene {
     objects: instances.length,
     // After the cascade and var(): the texture an object really ends up with
     textures: sceneTextures(styled),
+    hover: hoverSlots(styled).map((instance) => instance.hoverTriggers),
   };
 }
 

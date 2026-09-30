@@ -8,6 +8,9 @@ import { readSvgPath, type Point } from "./svgpath";
 import { pathFunction, polygonFunction, type ViewBox } from "./path";
 import { readRendering, readTexture, sceneTextures } from "./textures";
 
+// What an object looks like when hovered, and its number in uHover[]
+type Hover = { styles: Styles; slot: number };
+
 // Utility functions
 function round(n: number): number {
   return Math.round(n * 1000) / 1000;
@@ -209,7 +212,11 @@ function textureBox(instance: StyledInstance): number[] {
 
 // The GLSL of the textures: one uniform per image, one space function per textured
 // object, triplanar() and textureColor(). Nothing at all when the scene has no texture.
-function textureCode(instances: StyledInstance[], keyframes: Keyframes[]) {
+function textureCode(
+  instances: StyledInstance[],
+  keyframes: Keyframes[],
+  hoverOf: (instance: StyledInstance) => Hover | undefined,
+) {
   const files = sceneTextures(instances);
   if (files.length === 0) return { uniforms: "", functions: "", call: "" };
 
@@ -229,7 +236,13 @@ function textureCode(instances: StyledInstance[], keyframes: Keyframes[]) {
     return [
       `vec3 space${instance.index}(vec3 p) {  // ${label(instance)}`,
       "  vec3 q = p;",
-      ...nodes.flatMap((styles) => transformLines(styles, keyframes)),
+      ...nodes.flatMap((styles, n) =>
+        transformLines(
+          styles,
+          keyframes,
+          n === nodes.length - 1 ? hoverOf(instance) : undefined,
+        ),
+      ),
       "  return q;",
       "}",
     ].join("\n");
@@ -1095,10 +1108,14 @@ function readRotation(value: Token[] | undefined): string {
   return value ? glslFloat(round(readAngle(value))) : "0.0";
 }
 
-function rotationLines(styles: Styles, keyframes: Keyframes[]): string[] {
+function rotationLines(
+  styles: Styles,
+  keyframes: Keyframes[],
+  hover?: Hover,
+): string[] {
   const lines: string[] = [];
   for (const [property, axes] of ROTATIONS) {
-    const angle = animatedValue(styles, keyframes, property, readRotation);
+    const angle = hoverValue(styles, keyframes, property, readRotation, hover);
     if (angle === "0.0") continue; // no rotation on this axis
     lines.push(`  q.${axes} *= rot(${angle});`);
   }
@@ -1106,12 +1123,37 @@ function rotationLines(styles: Styles, keyframes: Keyframes[]): string[] {
 }
 
 // The lines that move q into the space of one node (a group or an object)
-function transformLines(styles: Styles, keyframes: Keyframes[]): string[] {
+// hover: only for the object itself, never for its groups
+function transformLines(
+  styles: Styles,
+  keyframes: Keyframes[],
+  hover?: Hover,
+): string[] {
   return [
-    `  q -= ${animatedValue(styles, keyframes, "translate", readTranslate)};`,
-    ...rotationLines(styles, keyframes),
-    `  q /= ${animatedValue(styles, keyframes, "scale", readScale)};`,
+    `  q -= ${hoverValue(styles, keyframes, "translate", readTranslate, hover)};`,
+    ...rotationLines(styles, keyframes, hover),
+    `  q /= ${hoverValue(styles, keyframes, "scale", readScale, hover)};`,
   ];
+}
+
+// The objects that can be hovered, in scene order: each one gets a slot in uHover[]
+export function hoverSlots(instances: StyledInstance[]): StyledInstance[] {
+  return instances.filter((instance) => instance.hoverTriggers.length > 0);
+}
+
+// A property at rest, or mixed with its hovered value when :hover changes it
+function hoverValue(
+  styles: Styles,
+  keyframes: Keyframes[],
+  property: string,
+  read: (value: Token[] | undefined) => string,
+  hover?: Hover,
+): string {
+  const rest = animatedValue(styles, keyframes, property, read);
+  if (!hover) return rest; // this object cannot be hovered
+  const hovered = animatedValue(hover.styles, keyframes, property, read);
+  if (hovered === rest) return rest; // :hover does not change this property
+  return `mix(${rest}, ${hovered}, uHover[${hover.slot}])`;
 }
 
 function label(instance: StyledInstance): string {
@@ -1218,6 +1260,12 @@ export function generateShader(
   sceneStyles: Styles = {},
   keyframes: Keyframes[] = [],
 ): string {
+  const slots = hoverSlots(instances);
+  // The hover state of one object, or undefined when it cannot be hovered
+  const hoverOf = (instance: StyledInstance): Hover | undefined => {
+    const slot = slots.indexOf(instance);
+    return slot === -1 ? undefined : { styles: instance.hoverStyles, slot };
+  };
   const context: ShapeContext = { functions: new Map() };
   const mapLines = instances.map((instance) => {
     const shape = SHAPES[instance.tag];
@@ -1230,8 +1278,17 @@ export function generateShader(
     // Every node from the outside in: the groups, then the object itself
     const nodes = [...instance.groupStyles, instance.styles];
     // q was divided by every scale, so the distance is multiplied back by all of them
-    const scales = nodes.map((styles) =>
-      animatedValue(styles, keyframes, "scale", readScale),
+    // :hover moves the object itself, the last node, never its groups
+    const hover = hoverOf(instance);
+    const last = nodes.length - 1;
+    const scales = nodes.map((styles, n) =>
+      hoverValue(
+        styles,
+        keyframes,
+        "scale",
+        readScale,
+        n === last ? hover : undefined,
+      ),
     );
 
     const operation = readOperation(instance.styles["operation"]);
@@ -1246,13 +1303,21 @@ export function generateShader(
     return [
       ` // ${label(instance)}`,
       `  q = p;`,
-      ...nodes.flatMap((styles) => transformLines(styles, keyframes)),
+      ...nodes.flatMap((styles, n) =>
+        transformLines(styles, keyframes, n === last ? hover : undefined),
+      ),
       ` res = ${combine};`,
     ].join("\n");
   });
 
   const materialLines = instances.map((instance) => {
-    const color = animatedValue(instance.styles, keyframes, "color", readColor);
+    const color = hoverValue(
+      instance.styles,
+      keyframes,
+      "color",
+      readColor,
+      hoverOf(instance),
+    );
     const material = readMaterial(instance.styles["material"], color);
     return `  if (id == ${glslFloat(instance.index)}) return ${material};  // ${label(instance)}`;
   });
@@ -1280,7 +1345,7 @@ export function generateShader(
     .join("\n\n");
 
   const map = mapLines.join("\n\n");
-  const textures = textureCode(instances, keyframes);
+  const textures = textureCode(instances, keyframes, hoverOf);
   const materials = materialLines.join("\n");
   // One line in main() for each material the scene uses
   const shadeCalls = Object.entries(SHADE_CALLS)
@@ -1304,6 +1369,12 @@ export function generateShader(
       )
       .replace("/*@MAP*/", map)
       .replace("/*@TEXTURE_UNIFORMS*/", textures.uniforms)
+      .replace(
+        "/*@HOVER_UNIFORM*/",
+        slots.length > 0
+          ? `uniform float uHover[${slots.length}]; // 0 at rest, 1 hovered`
+          : "",
+      )
       .replace(
         "/*@TEXTURES*/",
         section(
@@ -1360,6 +1431,7 @@ uniform float iTime;
 uniform vec2 uCamera;
 uniform float uDist;
 /*@TEXTURE_UNIFORMS*/
+/*@HOVER_UNIFORM*/
 
 out vec4 outColor;
 

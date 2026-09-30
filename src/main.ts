@@ -10,6 +10,19 @@ import { compileGSS, compileScene } from "./compiler";
 import { toShadertoy } from "./compiler/shadertoy";
 import { EXAMPLES, renderExampleOptions } from "./playground/examples";
 import { statusParts, fpsText } from "./runtime/status";
+import docsearch from "@docsearch/js/docsearch";
+import "@docsearch/css/dist/style.css";
+import "./styles/docsearch.css"; // after @docsearch/css: our values win
+import { ALGOLIA, localUrl } from "./docs/search";
+
+docsearch({
+  container: "#docsearch",
+  ...ALGOLIA,
+  placeholder: "Search the docs",
+  insights: true,
+  transformItems: (items) =>
+    items.map((item) => ({ ...item, url: localUrl(item.url) })),
+});
 
 // The playground: the GSS editor (or the GLSL it becomes) on the left, the scene on the right.
 const $ = <T extends HTMLElement>(selector: string) =>
@@ -87,7 +100,10 @@ exportToShadertoyButton.addEventListener("click", async () => {
     shader = toShadertoy(compileScene(editor.getCode()));
   } catch (error) {
     exportToShadertoyButton.textContent = (error as Error).message; // e.g. too many images
-    setTimeout(() => (exportToShadertoyButton.textContent = "→ shadertoy"), 4000);
+    setTimeout(
+      () => (exportToShadertoyButton.textContent = "→ shadertoy"),
+      4000,
+    );
     return;
   }
   await navigator.clipboard.writeText(shader);
