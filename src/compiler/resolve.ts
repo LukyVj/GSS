@@ -11,6 +11,8 @@ export type StyledInstance = SceneInstance & {
   styles: Styles;
   groupStyles: Styles[];
   faceStyles: Record<Face, Styles>; // what cube::face(front), cube::top… set
+  hoverTriggers: number[]; // the objects that, hovered, put this one in its hover state
+  hoverStyles: Styles;
 };
 
 // A simple selector: cube, .corner, #hero, or a combination like cube#left.corner
@@ -22,6 +24,7 @@ export type SimpleSelector = {
   // its ancestors are [#letters, #S], from the outermost to the innermost
   ancestors?: SimpleSelector[];
   face?: Face;
+  hover?: boolean; // cube:hover, #g:hover
 };
 
 // The faces a pseudo-element can style, in the object's space: cube::face(front).
@@ -37,6 +40,30 @@ export const FACES: Face[] = [
 ];
 // ::top is ::face(top): the faces a Minecraft-style block changes most
 const SHORTCUTS: Face[] = ["top", "bottom"];
+
+// The objects that must be hovered for this selector to match this instance
+function triggersOf(
+  selector: SimpleSelector,
+  instance: SceneInstance,
+  instances: SceneInstance[],
+): number[] {
+  let triggers = instances; // everything, then each :hover narrows it down
+  if (selector.hover) {
+    triggers = triggers.filter((other) => other === instance); // only the object itself
+  }
+  for (const ancestor of selector.ancestors ?? []) {
+    if (!ancestor.hover) continue;
+    // the groups of this object that match "#g"
+    const groups = instance.groups.filter((group) =>
+      matchesCompound(ancestor, group),
+    );
+    // the objects inside one of these groups
+    triggers = triggers.filter((other) =>
+      other.groups.some((group) => groups.includes(group)),
+    );
+  }
+  return triggers.map((other) => other.index);
+}
 
 // How a face is written, for the messages: ::top, ::face(front)
 export function faceSelector(face: Face): string {
@@ -158,6 +185,18 @@ function parseCompound(tokens: Token[]): SimpleSelector {
       }
       selector.face = face as Face;
       i += length;
+    } else if (token.type === "PUNCT" && token.value === ":") {
+      // :hover, a pseudo-class: like a class, it can go anywhere after the tag
+      if (next?.type === "IDENT" && next.value === "hover") {
+        selector.hover = true;
+        i += 2;
+      } else {
+        const name = next?.type === "IDENT" ? `:${next.value}` : ":";
+        throw errorAt(
+          tokens,
+          `Unknown pseudo-class "${name}": GSS knows :hover`,
+        );
+      }
     } else {
       const text = tokens.map(tokenToText).join("");
       throw errorAt(tokens, `Selector not supported: "${text}"`);
@@ -204,10 +243,19 @@ export function specificity(selector: SimpleSelector): number {
     (selector.id ? 10_000 : 0) +
     selector.classes.length * 100 +
     (selector.tag ? 1 : 0) +
-    (selector.face ? 1 : 0);
+    (selector.face ? 1 : 0) +
+    (selector.hover ? 100 : 0); // a pseudo-class counts like a class, like CSS
   // like CSS, the ancestors add up: "#letters cube" beats "cube" and "#letters"
   const ancestors = selector.ancestors ?? [];
   return ancestors.reduce((sum, ancestor) => sum + specificity(ancestor), own);
+}
+
+// Does this selector need a hovered object? cube:hover, or #g:hover cube
+export function needsHover(selector: SimpleSelector): boolean {
+  return (
+    selector.hover === true ||
+    (selector.ancestors ?? []).some((ancestor) => ancestor.hover === true)
+  );
 }
 
 export function resolveStyles(
@@ -227,11 +275,16 @@ export function resolveStyles(
         specificity(a.selector) - specificity(b.selector) || a.order - b.order,
     );
   // The cascade for one instance (an object or a group), or for one face of an object
-  function cascade(instance: SceneInstance, face?: Face): Styles {
+  function cascade(
+    instance: SceneInstance,
+    face?: Face,
+    hovered = false,
+  ): Styles {
     const styles: Styles = {};
     for (const important of [false, true]) {
       for (const { rule, selector } of sortedRules) {
         if (!matches(selector, instance)) continue;
+        if (needsHover(selector) && !hovered) continue;
         if (selector.face !== face) continue; // a face rule styles its face, the other rules the object
         for (const declaration of rule.declarations) {
           if (
@@ -251,6 +304,22 @@ export function resolveStyles(
     return styles;
   }
 
+  // Every group of the scene, once: a Set keeps each group only once
+  const groups = [...new Set(instances.flatMap((instance) => instance.groups))];
+  for (const { rule, selector } of sortedRules) {
+    if (!needsHover(selector)) continue;
+    const stylesGroups = groups.some((group) => matches(selector, group));
+    const stylesObjects = instances.some((instance) =>
+      matches(selector, instance),
+    );
+    if (stylesGroups && !stylesObjects) {
+      throw errorAt(
+        rule.selector,
+        "A :hover rule cannot style a group yet: style its objects, like #g:hover cube",
+      );
+    }
+  }
+
   return instances.map((instance) => ({
     ...instance,
     styles: cascade(instance),
@@ -258,6 +327,17 @@ export function resolveStyles(
     faceStyles: Object.fromEntries(
       FACES.map((face) => [face, cascade(instance, face)]),
     ) as Record<Face, Styles>,
+    hoverTriggers: [
+      ...new Set(
+        sortedRules
+          .filter(
+            ({ selector }) =>
+              needsHover(selector) && matches(selector, instance),
+          )
+          .flatMap(({ selector }) => triggersOf(selector, instance, instances)),
+      ),
+    ].sort((a, b) => a - b),
+    hoverStyles: cascade(instance, undefined, true),
   }));
 }
 

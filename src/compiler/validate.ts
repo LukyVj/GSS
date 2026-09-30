@@ -1,6 +1,6 @@
 import type { Rule, Keyframes } from "./ast";
 import { PROPERTIES } from "./registry";
-import { parseSelector, isSceneSelector } from "./resolve";
+import { parseSelector, isSceneSelector, needsHover } from "./resolve";
 import { errorAt } from "./errors";
 
 // Throws if a rule uses a property that is not in the registry,
@@ -9,6 +9,10 @@ export function validateProperties(rules: Rule[]): void {
   for (const rule of rules) {
     const selector = parseSelector(rule.selector);
     const isScene = isSceneSelector(selector);
+    const hover = needsHover(selector);
+    if (hover && selector.face !== undefined) {
+      throw errorAt(rule.selector, "A face cannot change on :hover yet");
+    }
 
     for (const declaration of rule.declarations) {
       // A custom property (--anything) is valid everywhere, like CSS
@@ -20,6 +24,16 @@ export function validateProperties(rules: Rule[]): void {
         throw errorAt(
           declaration,
           `Unknown property "${declaration.property}"`,
+        );
+      }
+
+      if (hover && !property.animatable) {
+        const animatable = PROPERTIES.filter((p) => p.animatable).map(
+          (p) => p.name,
+        );
+        throw errorAt(
+          declaration,
+          `"${declaration.property}" cannot change on :hover. Animatable properties: ${animatable.join(", ")}.`,
         );
       }
 
