@@ -11,6 +11,7 @@ import {
 import sceneSource from "../scene.gss?raw";
 import { FIRST_SCENE } from "../docs/guide";
 import logoSource from "../playground/logo.gss?raw";
+import { USE_CASES } from "../showcase/content";
 
 afterAll(closeGpu); // close Chromium when every test of this file is done
 
@@ -64,6 +65,15 @@ it("the GSS logo compiles on the GPU", async () => {
 
 it("the test scene compiles on the GPU", async () => {
   expect(await compileOnGpu(compileGSS(sceneSource))).toBe("");
+});
+
+// Decision 63: the live scenes of showcase.html
+describe("every showcase scene compiles on the GPU", () => {
+  for (const useCase of USE_CASES) {
+    it(useCase.slug, async () => {
+      expect(await compileOnGpu(compileGSS(useCase.scene))).toBe("");
+    });
+  }
 });
 
 // What Shadertoy puts around the code we paste (the part that matters to compile)

@@ -1,0 +1,43 @@
+/* Creative coders: write it in GSS, publish it on Shadertoy.
+   The → shadertoy button of the playground gives a shader Shadertoy runs as is. */
+
+@scene {
+  torus#ring;
+  sphere#core;
+}
+
+scene {
+  background: #0a0a0c;
+  floor: #111114;
+  camera-distance: 6;
+  camera-angle: 0deg 22deg;
+}
+
+#ring {
+  translate: 0 1.2 0;
+  radius: 1;
+  thickness: 0.18;
+  material: gold;
+  animation: tumble 7s linear;
+}
+
+#core {
+  translate: 0 1.2 0;
+  radius: 0.5;
+  color: #ff5a36;
+  material: jelly(0.6);
+  animation: breathe 2s ease-in-out alternate;
+}
+
+@keyframes tumble {
+  to {
+    rotate-x: 1turn;
+    rotate-z: 0.5turn;
+  }
+}
+
+@keyframes breathe {
+  to {
+    scale: 1.2;
+  }
+}

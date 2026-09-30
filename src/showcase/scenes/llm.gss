@@ -1,0 +1,82 @@
+/* Developers: 3D an LLM writes well, because it already knows CSS.
+   Prompt: "A small snowman on a dark floor, with a carrot nose and a black hat." */
+
+@scene {
+  group#snowman {
+    sphere#base;
+    sphere#body;
+    sphere#head;
+    cone#nose;
+    sphere.eye#eye-left;
+    sphere.eye#eye-right;
+    cylinder#brim;
+    cylinder#hat;
+  }
+}
+
+scene {
+  background: #0a0a0c;
+  floor: #111114;
+  camera-distance: 6;
+  camera-angle: 20deg 12deg;
+  camera-target: 0 1.3 0;
+}
+
+#base,
+#body,
+#head {
+  color: #f4f4f6;
+}
+
+#base {
+  radius: 0.7;
+  translate: 0 0.7 0;
+}
+
+#body {
+  radius: 0.5;
+  translate: 0 1.75 0;
+}
+
+#head {
+  radius: 0.35;
+  translate: 0 2.5 0;
+}
+
+#nose {
+  radius: 0.07;
+  height: 0.35;
+  translate: 0 2.5 0.45;
+  rotate-x: 90deg;
+  color: #ff8a1f;
+}
+
+.eye {
+  radius: 0.045;
+  color: #111114;
+}
+
+#eye-left {
+  translate: -0.12 2.6 0.3;
+}
+
+#eye-right {
+  translate: 0.12 2.6 0.3;
+}
+
+#brim,
+#hat {
+  color: #16161b;
+}
+
+#brim {
+  radius: 0.4;
+  height: 0.05;
+  translate: 0 2.8 0;
+}
+
+#hat {
+  radius: 0.25;
+  height: 0.4;
+  translate: 0 3 0;
+}

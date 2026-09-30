@@ -203,7 +203,10 @@ function renderTocTimelines(sections: Section[]): string {
 // One hand-written entry of "Getting started"
 function renderGuideEntry(entry: GuideEntry): string {
   const paragraphs = (list: string[] = []) =>
-    list.map((text) => `<p>${text}</p>`).join("\n      ");
+    // a block of code (<pre>) is not a paragraph: it goes in as it is
+    list
+      .map((text) => (text.startsWith("<pre") ? text : `<p>${text}</p>`))
+      .join("\n      ");
   return `
     <article class="guide" id="${escapeHtml(entry.anchor)}">
       <h3>${escapeHtml(entry.label)}</h3>

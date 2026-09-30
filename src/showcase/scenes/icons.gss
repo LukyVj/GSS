@@ -1,0 +1,61 @@
+/* Designers: a 3D icon set, themed by two variables.
+   Change --accent or --finish: every icon follows. */
+
+@scene {
+  cube.icon;
+  sphere.icon;
+  torus.icon;
+  capsule.icon;
+  cone.icon;
+}
+
+scene {
+  --accent: #ff5a36;
+  --finish: jelly(0.55);
+  background: #0a0a0c;
+  floor: #111114;
+  camera-distance: 9.5;
+  camera-angle: 0deg 18deg;
+}
+
+.icon {
+  translate: calc(sibling-index() * 1.4 - 4.2) 0.7 0;
+  color: var(--accent);
+  material: var(--finish);
+  animation: turn 8s linear;
+}
+
+cube {
+  size: 0.8;
+}
+
+sphere {
+  radius: 0.45;
+}
+
+torus {
+  radius: 0.35;
+  thickness: 0.13;
+  rotate-x: 70deg;
+}
+
+capsule {
+  radius: 0.22;
+  height: 1;
+}
+
+cone {
+  radius: 0.45;
+  height: 0.9;
+}
+
+.icon:hover {
+  scale: 1.2;
+  color: #e8e6e1;
+}
+
+@keyframes turn {
+  to {
+    rotate-y: 1turn;
+  }
+}

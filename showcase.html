@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>GSS — Showcase</title>
+    <meta
+      name="description"
+      content="What designers, creative coders and developers make with GSS: live scenes, the code behind them, and three ways to put a scene on your own site."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="GSS" />
+    <meta property="og:url" content="https://www.gss-lang.dev/showcase" />
+    <meta property="og:title" content="GSS — Showcase" />
+    <meta
+      property="og:description"
+      content="What designers, creative coders and developers make with GSS: live scenes, the code behind them, and three ways to put a scene on your own site."
+    />
+    <meta
+      property="og:image"
+      content="https://www.gss-lang.dev/marks/social-home.png"
+    />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="canonical" href="https://www.gss-lang.dev/showcase" />
+    <link rel="stylesheet" href="/src/styles/site.css" />
+    <style>
+      /* The showcase (decision 63): use cases by audience, the three ways to embed,
+         the inspiration grid. Built on <gss-scene>: the site uses its own embed.
+         The look comes from DESIGN.md; the values from src/styles/tokens.css. */
+      main {
+        box-sizing: border-box;
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 0 56px 96px;
+      }
+      .intro {
+        padding: 96px 0 56px;
+        max-width: 760px;
+      }
+      .eyebrow {
+        margin: 0 0 16px;
+      }
+      h1 {
+        margin: 0 0 24px;
+        font: 800 clamp(40px, 6vw, 68px) / 1.02 var(--gss-font-display);
+        letter-spacing: -0.05em;
+      }
+      .lead {
+        line-height: 1.5;
+      }
+      .lead code,
+      .head code,
+      .pitch code {
+        font-size: 0.88em;
+        color: var(--gss-bone);
+      }
+      .jump {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 24px;
+        margin: 32px 0 0;
+        padding: 0;
+        list-style: none;
+        font: 13px var(--gss-font-code);
+      }
+      .jump a {
+        color: var(--gss-ash);
+      }
+      .jump a:hover {
+        color: var(--gss-bone);
+      }
+      .jump .n {
+        color: var(--gss-dim);
+        margin-right: 8px;
+      }
+
+      section {
+        padding: 72px 0 0;
+        scroll-margin-top: 24px;
+      }
+      .head {
+        display: grid;
+        grid-template-columns: 260px 1fr;
+        gap: 24px;
+        align-items: baseline;
+        padding-bottom: 24px;
+      }
+      h2 {
+        margin: 0;
+        font: 600 22px / 1.2 var(--gss-font-display);
+        letter-spacing: -0.03em;
+      }
+      h2 .n {
+        color: var(--gss-dim);
+        font: 12px var(--gss-font-code);
+        letter-spacing: 0.08em;
+        margin-right: 12px;
+        vertical-align: 3px;
+      }
+      .head p {
+        margin: 0;
+        max-width: 640px;
+        color: var(--gss-ash);
+        font-size: 16px;
+      }
+
+      /* Tiles separated by hairlines (DESIGN.md § 7): the gaps show --gss-line */
+      .grid {
+        display: grid;
+        gap: 1px;
+        background: var(--gss-line);
+        border: 1px solid var(--gss-line);
+      }
+
+      /* ----- A use case: the live scene, then what it is and the code to copy ----- */
+      .case {
+        display: grid;
+        grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+        background: var(--gss-void);
+      }
+      .case gss-scene {
+        aspect-ratio: 4 / 3;
+        border-right: 1px solid var(--gss-line);
+      }
+      .case .text {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        padding: 32px;
+        min-width: 0;
+      }
+      .case h3 {
+        margin: 0;
+        font: 600 20px / 1.25 var(--gss-font-display);
+        letter-spacing: -0.03em;
+      }
+      .pitch {
+        margin: 0;
+        color: var(--gss-ash);
+        font-size: 16px;
+        line-height: 1.55;
+      }
+      pre.snippet {
+        margin: 0;
+        padding: 16px 18px;
+        background: var(--gss-surface);
+        border: 1px solid var(--gss-line);
+        font: 13px / 1.65 var(--gss-font-code);
+        color: var(--gss-bone);
+        overflow-x: auto;
+      }
+      .case .links {
+        margin-top: auto;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 8px 14px;
+        font: 12px var(--gss-font-code);
+        color: var(--gss-dim);
+      }
+      .case .links a.feature {
+        color: var(--gss-ash);
+      }
+      .case .links a.feature:hover {
+        color: var(--gss-bone);
+      }
+      .case .links .open {
+        margin-right: auto;
+        font-size: 13px;
+      }
+      .hint {
+        margin: 12px 0 0;
+        font: 12px var(--gss-font-code);
+        color: var(--gss-dim);
+      }
+
+      /* ----- Embed: three columns, one per way ----- */
+      .ways {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+      .way {
+        display: flex;
+        flex-direction: column;
+        background: var(--gss-void);
+        min-width: 0;
+      }
+      .way header {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--gss-line);
+        font: 13px var(--gss-font-code);
+      }
+      .way header span {
+        color: var(--gss-dim);
+      }
+      .way pre.snippet {
+        flex: 1;
+        border: 0;
+      }
+      .note {
+        margin: 16px 0 0;
+        padding: 14px 16px;
+        border: 1px dashed var(--gss-isoline);
+        color: var(--gss-ash);
+        font-size: 15px;
+      }
+      .note b {
+        color: var(--gss-signal);
+        font: 500 13px var(--gss-font-code);
+        margin-right: 8px;
+      }
+      .note code {
+        font-size: 0.88em;
+        color: var(--gss-bone);
+      }
+
+      /* ----- Inspiration: captures that open the playground ----- */
+      .gallery {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+      .shot {
+        display: flex;
+        flex-direction: column;
+        background: var(--gss-void);
+        color: var(--gss-bone);
+        min-width: 0;
+      }
+      .shot:hover {
+        color: var(--gss-bone);
+      }
+      .shot .art {
+        aspect-ratio: 4 / 3;
+        background: var(--gss-surface);
+        overflow: hidden;
+      }
+      .shot img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform var(--gss-transition);
+      }
+      .shot:hover img {
+        transform: scale(1.03);
+      }
+      /* No capture yet: the first lines of the code instead */
+      .shot .art pre {
+        margin: 0;
+        padding: 14px 16px;
+        height: 100%;
+        box-sizing: border-box;
+        font: 11px / 1.6 var(--gss-font-code);
+        overflow: hidden;
+        color: var(--gss-dim);
+      }
+      .shot footer {
+        display: flex;
+        gap: 12px;
+        padding: 12px 16px;
+        border-top: 1px solid var(--gss-line);
+        font: 12px var(--gss-font-code);
+        color: var(--gss-ash);
+      }
+      .shot footer .name {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .shot footer .go {
+        color: var(--gss-dim);
+        transition: color var(--gss-transition);
+      }
+      .shot:hover footer .go {
+        color: var(--gss-signal);
+      }
+
+      .site-footer {
+        border-top: 1px solid var(--gss-line);
+        margin-top: 96px;
+      }
+      .site-footer .in {
+        box-sizing: border-box;
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 28px 56px;
+        display: flex;
+        justify-content: space-between;
+        gap: 24px;
+        font: 13px var(--gss-font-code);
+        color: var(--gss-dim);
+      }
+      .site-footer nav {
+        display: flex;
+        gap: 24px;
+      }
+      .site-footer nav a {
+        color: var(--gss-ash);
+      }
+
+      @media (max-width: 1024px) {
+        .head {
+          grid-template-columns: 1fr;
+          gap: 8px;
+        }
+        .case {
+          grid-template-columns: 1fr;
+        }
+        .case gss-scene {
+          border-right: 0;
+          border-bottom: 1px solid var(--gss-line);
+        }
+        .ways {
+          grid-template-columns: 1fr;
+        }
+        .gallery {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+      @media (max-width: 640px) {
+        main {
+          padding: 0 16px 56px;
+        }
+        .intro {
+          padding: 56px 0 32px;
+        }
+        .topbar {
+          padding: 0 16px;
+        }
+        .case .text {
+          padding: 24px 16px;
+        }
+        .gallery {
+          grid-template-columns: 1fr;
+        }
+        .site-footer .in {
+          padding: 24px 16px;
+          flex-direction: column;
+        }
+      }
+    </style>
+    <script
+      defer
+      src="https://cloud.umami.is/script.js"
+      data-website-id="89b55a0a-cc5f-44e3-9d29-1db01ff93bc9"
+    ></script>
+  </head>
+  <body class="gss-dark">
+    <header class="topbar">
+      <a class="mark" href="./" aria-label="GSS home"
+        >{<span class="dot"></span>}</a
+      >
+      <span class="crumb">/</span>
+      <span>showcase</span>
+      <span class="spacer"></span>
+      <nav aria-label="Main">
+        <a href="./playground.html">playground</a>
+        <a href="./docs.html">docs</a>
+      </nav>
+    </header>
+
+    <main>
+      <div class="intro">
+        <p class="eyebrow">Showcase</p>
+        <h1>What you can make with GSS.</h1>
+        <p class="lead">
+          Real uses, for designers, creative coders and developers. Every scene
+          on this page is live: drag it, hover it, open it in the playground.
+          And every one is embedded with <code>&lt;gss-scene&gt;</code>, the
+          same tag you can put on your own site.
+        </p>
+        <ul class="jump">
+          <li>
+            <a href="#designers"><span class="n">01</span>designers</a>
+          </li>
+          <li>
+            <a href="#creative-coders"
+              ><span class="n">02</span>creative coders</a
+            >
+          </li>
+          <li>
+            <a href="#developers"><span class="n">03</span>developers</a>
+          </li>
+          <li>
+            <a href="#embed"><span class="n">04</span>on your site</a>
+          </li>
+          <li>
+            <a href="#inspiration"><span class="n">05</span>inspiration</a>
+          </li>
+        </ul>
+      </div>
+
+      <section id="designers" aria-labelledby="designers-title">
+        <div class="head">
+          <h2 id="designers-title"><span class="n">01</span>For designers</h2>
+          <p>
+            Your logo, your icons, your tokens: the things you already draw in
+            2D, in 3D, written like a stylesheet.
+          </p>
+        </div>
+        <div class="grid" data-audience="designers"></div>
+      </section>
+
+      <section id="creative-coders" aria-labelledby="creative-coders-title">
+        <div class="head">
+          <h2 id="creative-coders-title">
+            <span class="n">02</span>For creative coders
+          </h2>
+          <p>
+            Rules instead of loops, and a readable way into the shader: every
+            scene becomes GLSL you can read, and export.
+          </p>
+        </div>
+        <div class="grid" data-audience="creative coders"></div>
+      </section>
+
+      <section id="developers" aria-labelledby="developers-title">
+        <div class="head">
+          <h2 id="developers-title"><span class="n">03</span>For developers</h2>
+          <p>
+            A 3D scene is a stylesheet: small enough to ship, simple enough for
+            an LLM to write.
+          </p>
+        </div>
+        <div class="grid" data-audience="developers"></div>
+      </section>
+
+      <section id="embed" aria-labelledby="embed-title">
+        <div class="head">
+          <h2 id="embed-title"><span class="n">04</span>On your site</h2>
+          <p>
+            Three ways to put a scene on a page, from a tag you paste to a build
+            step that keeps the compiler out of the page.
+          </p>
+        </div>
+        <div class="grid ways" id="ways"></div>
+        <p class="note">
+          <b>note</b>GSS has no transparency yet: give the scene the
+          <code>background</code> of your page. A browser keeps about 16 WebGL
+          contexts; a scene only starts when it comes into view, and sleeps when
+          it leaves it.
+        </p>
+      </section>
+
+      <section id="inspiration" aria-labelledby="inspiration-title">
+        <div class="head">
+          <h2 id="inspiration-title"><span class="n">05</span>Inspiration</h2>
+          <p>
+            Scenes to start from. Each one opens in the playground, where you
+            can change it and share it with a link.
+          </p>
+        </div>
+        <div class="grid gallery" id="gallery"></div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="in">
+        <span
+          >GSS — GPU Style Sheets. CSS for 3D scenes, compiled to a
+          shader.</span
+        >
+        <nav aria-label="Footer">
+          <a href="./playground.html">playground</a>
+          <a href="./docs.html">docs</a>
+          <a href="./showcase.html">showcase</a>
+          <a href="./brand.html">brand</a>
+        </nav>
+      </div>
+    </footer>
+
+    <script type="module" src="/src/showcase/main.ts"></script>
+  </body>
+</html>

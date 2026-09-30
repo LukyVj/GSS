@@ -1,0 +1,59 @@
+/* Designers: your SVG logo, in 3D.
+   The braces are the d="…" of the flat mark, pasted into path(). */
+
+@scene {
+  group#logo {
+    path#brace-left;
+    path#brace-right;
+    sphere#dot;
+  }
+}
+
+scene {
+  background: #0a0a0c;
+  floor: none;
+  light: 30deg 40deg;
+  ambient: 0.35;
+  camera-target: 0 0 0;
+  camera-distance: 5;
+  camera-angle: 0deg 8deg;
+}
+
+#logo {
+  animation: sway 6s ease-in-out alternate;
+}
+
+path {
+  view-box: 0 0 32 32;
+  stroke-width: 2.4;
+  scale: 0.1;
+  color: #e8e6e1;
+}
+
+#brace-left,
+#brace-right {
+  d: path("M12.5 4.5C9.5 4.5 9 6 9 8.5v4c0 2-1 3.5-3.5 3.5C8 16 9 17.5 9 19.5v4c0 2.5.5 4 3.5 4");
+}
+
+#brace-right {
+  rotate-y: 180deg;
+}
+
+#dot {
+  radius: 0.46;
+  color: #ff5a36;
+  material: jelly(0.6);
+}
+
+#dot:hover {
+  scale: 1.25;
+}
+
+@keyframes sway {
+  from {
+    rotate-y: -25deg;
+  }
+  to {
+    rotate-y: 25deg;
+  }
+}

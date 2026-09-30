@@ -1,0 +1,24 @@
+/* Creative coders: one rule, 36 objects.
+   sibling-index() gives every bead its own angle, height and hue. */
+
+@scene {
+  sphere.bead * 36;
+}
+
+scene {
+  background: #0a0a0c;
+  floor: #111114;
+  camera-distance: 10;
+  camera-angle: 0deg 12deg;
+  camera-spin: 40s;
+  camera-target: 0 1.6 0;
+}
+
+.bead {
+  --i: sibling-index();
+  --r: calc(0.4 + var(--i) * 0.045);
+  radius: calc(0.08 + var(--i) * 0.005);
+  translate: calc(cos(var(--i) * 30deg) * var(--r)) calc(var(--i) * 0.09) calc(sin(var(--i) * 30deg) * var(--r));
+  color: hsl(calc(var(--i) * 10) 85% 60%);
+  material: metal(0.25);
+}

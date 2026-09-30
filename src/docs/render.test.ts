@@ -220,3 +220,13 @@ describe("renderSelector", () => {
     expect(html).toContain("<dd>0</dd>");
   });
 });
+
+// Decision 63: the guide entry "Embedding a scene" holds code blocks
+describe("a guide paragraph that is a code block", () => {
+  it("is not wrapped in a <p>", () => {
+    const html = renderDocs(PROPERTIES, AT_RULES, SELECTORS, SHAPE_DOCS);
+    expect(html).toContain('id="embedding"');
+    expect(html).toMatch(/<pre><code>&lt;script type=&quot;module&quot;/);
+    expect(html).not.toContain("<p><pre>");
+  });
+});
