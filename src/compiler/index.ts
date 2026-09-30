@@ -12,6 +12,7 @@ import type { Token } from "./tokenizer";
 import { errorAt, rememberSpan, spanOf } from "./errors";
 import { resolveVars, usesVariables, hasVar, type Variables } from "./vars";
 import { PROPERTIES } from "./registry";
+import { resolveColors, resolveNamedColors } from "./colors";
 
 // Everything the runtime needs to display a scene
 export type CompiledScene = {
@@ -35,13 +36,28 @@ export function compileScene(source: string): CompiledScene {
   const copies: Keyframes[] = [];
 
   // One object or one group: var() replaced, then the math, with its own variables
-  function computeNode(styles: Styles, variables: Variables, context: CalcContext): Styles {
-    const computed = computeMath(computeVars(styles, variables), context);
-    const copy = animateVariables(styles, variables, context, stylesheet.keyframes, copies.length + 1);
+  function computeNode(
+    styles: Styles,
+    variables: Variables,
+    context: CalcContext,
+  ): Styles {
+    const computed = computeColors(
+      computeMath(computeVars(styles, variables), context),
+    );
+    const copy = animateVariables(
+      styles,
+      variables,
+      context,
+      stylesheet.keyframes,
+      copies.length + 1,
+    );
     if (!copy) return computed;
     copies.push(copy.keyframes);
     // The object plays its own copy: the rest of the animation (2s, alternate…) stays
-    return { ...computed, animation: [copy.name, ...computed["animation"].slice(1)] };
+    return {
+      ...computed,
+      animation: [copy.name, ...computed["animation"].slice(1)],
+    };
   }
 
   // The cascade picks the values, then var() is replaced, then the math is computed
@@ -66,12 +82,13 @@ export function compileScene(source: string): CompiledScene {
     };
   });
 
-  const computedScene = computeMath(
-    computeVars(sceneStyles, rootVariables),
-    null,
+  const computedScene = computeColors(
+    computeMath(computeVars(sceneStyles, rootVariables), null),
   );
   // @keyframes with variables are only played through their copies
-  const shared = computeKeyframes(stylesheet.keyframes.filter((k) => !usesVariablesIn(k)));
+  const shared = computeKeyframes(
+    stylesheet.keyframes.filter((k) => !usesVariablesIn(k)),
+  );
   return {
     shader: generateShader(styled, computedScene, [...shared, ...copies]),
     camera: readCamera(computedScene),
@@ -82,7 +99,9 @@ export function compileScene(source: string): CompiledScene {
 // Does a @keyframes block set a variable, or read one?
 function usesVariablesIn(animation: Keyframes): boolean {
   return animation.frames.some((frame) =>
-    frame.declarations.some((d) => d.property.startsWith("--") || hasVar(d.value)),
+    frame.declarations.some(
+      (d) => d.property.startsWith("--") || hasVar(d.value),
+    ),
   );
 }
 
@@ -113,15 +132,19 @@ function animateVariables(
     // At this moment of the animation, the variables of the frame win
     const frameVariables: Variables = { ...variables };
     for (const d of set) frameVariables[d.property] = d.value;
-    const compute = (value: Token[]) => resolveMath(resolveVars(value, frameVariables), context);
+    const compute = (property: string, value: Token[]) =>
+      colorsOf(property, resolveMath(resolveVars(value, frameVariables), context));
 
     // The properties the frame writes itself
-    const declarations: Declaration[] = own.map((d) => keepSpan({ ...d, value: compute(d.value) }, d));
+    const declarations: Declaration[] = own.map((d) =>
+      keepSpan({ ...d, value: compute(d.property, d.value) }, d),
+    );
 
     // The properties of the object that use a variable the frame sets
     const names = new Set(set.map((d) => d.property));
     for (const [property, value] of Object.entries(styles)) {
-      if (property.startsWith("--") || own.some((d) => d.property === property)) continue;
+      if (property.startsWith("--") || own.some((d) => d.property === property))
+        continue;
       if (!usesVariables(value, names, variables)) continue;
       if (!animatable.includes(property)) {
         throw errorAt(
@@ -129,7 +152,7 @@ function animateVariables(
           `${property} cannot be animated, but it uses ${[...names].join(", ")}, which @keyframes ${found.name} animates. Animatable properties: ${animatable.join(", ")}.`,
         );
       }
-      declarations.push({ property, value: compute(value) });
+      declarations.push({ property, value: compute(property, value) });
     }
     return { ...frame, declarations };
   });
@@ -164,7 +187,10 @@ function computeKeyframes(keyframes: Keyframes[]): Keyframes[] {
     frames: animation.frames.map((frame) => ({
       ...frame,
       declarations: frame.declarations.map((declaration) => {
-        const value = resolveMath(declaration.value, null);
+        const value = colorsOf(
+          declaration.property,
+          resolveMath(declaration.value, null),
+        );
         if (value === declaration.value) return declaration; // nothing computed: same object
         const computed = { ...declaration, value };
         const span = spanOf(declaration);
@@ -191,6 +217,20 @@ function computeVars(styles: Styles, variables: Variables): Styles {
     if (property.startsWith("--")) continue;
     computed[property] = resolveVars(value, variables);
   }
+  return computed;
+}
+
+// One value, with rgb(), hsl() and the named colors turned into #rrggbb (decision 56).
+// The property is needed: material: gold is a material, color: gold is a color.
+function colorsOf(property: string, value: Token[]): Token[] {
+  return resolveNamedColors(property, resolveColors(value));
+}
+
+// Every value of a set of styles, through colorsOf
+function computeColors(styles: Styles): Styles {
+  const computed: Styles = {};
+  for (const [property, value] of Object.entries(styles))
+    computed[property] = colorsOf(property, value);
   return computed;
 }
 

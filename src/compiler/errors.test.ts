@@ -36,7 +36,7 @@ describe("errors point at the code they are about", () => {
 
   it("a wrong value: the value", () => {
     expect(pointedAt("@scene { cube; } cube { translate: 0 1; }")).toBe("0 1");
-    expect(pointedAt("@scene { cube; } cube { color: red; }")).toBe("red");
+    expect(pointedAt("@scene { cube; } cube { color: tomatoe; }")).toBe("tomatoe"); // red is a color since decision 56
   });
 
   it("a wrong argument inside a function: the argument", () => {
