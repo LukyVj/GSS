@@ -90,7 +90,8 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 | Generated docs | `docs.html`, one page per entry, from the registry, live "Try it" everywhere | 12, 39, 44 |
 | Site | [gss-lang.dev](https://gss-lang.dev) on Vercel, clean URLs (`/playground`, `/docs`, `/brand`), Open Graph and X cards | 56 |
 | Brand page | `/brand` (`brand.html`): marks, wordmark, lockup, icons, social cards | 57 |
-| Shadertoy export | `→ shadertoy` button in the playground | – |
+| Shadertoy export | `→ shadertoy` button in the playground, images in `iChannel0`…`3` (at most 4) | 60 |
+| Analytics | DocSearch Insights (Algolia) + Umami, events through `track()` | 61 |
 | Formatter | `formatGss`, `Shift+Alt+F` in the playground | 33 |
 | VS Code / Cursor extension | highlighting, formatter, icon for `.gss` files | 33 |
 | Design | `DESIGN.md` "Distance field", tokens in `src/styles/tokens.css` | – |
