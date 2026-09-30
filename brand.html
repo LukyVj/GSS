@@ -30,29 +30,11 @@
     />
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="canonical" href="https://www.gss-lang.dev/brand" />
-    <link rel="stylesheet" href="/src/styles/tokens.css" />
+    <link rel="stylesheet" href="/src/styles/site.css" />
     <style>
       /* The brand page: the variations of design/reference/png/04-marks.png.
          The look comes from DESIGN.md; the values from src/styles/tokens.css.
          The files it shows live in public/marks/ (text outlined, so they need no font). */
-      body {
-        margin: 0;
-        background: var(--gss-void);
-        color: var(--gss-bone);
-        font-family: var(--gss-font-body);
-        line-height: 1.55;
-      }
-      a {
-        color: var(--gss-signal);
-        text-decoration: none;
-      }
-      a:hover {
-        color: var(--gss-signal-hover);
-      }
-      :focus-visible {
-        outline: 1px solid var(--gss-signal);
-        outline-offset: 2px;
-      }
       img {
         display: block;
         max-width: 100%;
@@ -64,55 +46,6 @@
       }
 
       /* ----- Top bar (same as the docs) ----- */
-      .topbar {
-        position: sticky;
-        top: 0;
-        z-index: 20;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        height: 52px;
-        padding: 0 24px;
-        border-bottom: 1px solid var(--gss-line);
-        background: var(--gss-void);
-        font-family: var(--gss-font-code);
-        font-size: 13px;
-      }
-      .mark {
-        display: flex;
-        align-items: center;
-        gap: 5px;
-        color: var(--gss-bone);
-        font-family: var(--gss-font-display);
-        font-weight: 600;
-        font-size: 15px;
-      }
-      .mark:hover {
-        color: var(--gss-bone);
-      }
-      .mark .dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: var(--gss-signal);
-      }
-      .crumb {
-        color: var(--gss-dim);
-      }
-      .spacer {
-        flex: 1;
-      }
-      .topbar nav {
-        display: flex;
-        gap: 20px;
-      }
-      .topbar nav a {
-        color: var(--gss-ash);
-        transition: color var(--gss-transition);
-      }
-      .topbar nav a:hover {
-        color: var(--gss-bone);
-      }
 
       /* ----- Page ----- */
       main {
@@ -127,10 +60,6 @@
       }
       .eyebrow {
         margin: 0 0 16px;
-        color: var(--gss-dim);
-        font: 12px var(--gss-font-code);
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
       }
       h1 {
         margin: 0 0 24px;
@@ -138,9 +67,6 @@
         letter-spacing: -0.05em;
       }
       .lead {
-        margin: 0;
-        color: var(--gss-ash);
-        font-size: 19px;
         line-height: 1.5;
       }
 

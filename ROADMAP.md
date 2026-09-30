@@ -95,7 +95,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 | Analytics | DocSearch Insights (Algolia) + Umami, events through `track()` | 61 |
 | Formatter | `formatGss`, `Shift+Alt+F` in the playground | 33 |
 | VS Code / Cursor extension | highlighting, formatter, icon for `.gss` files | 33 |
-| Design | `DESIGN.md` "Distance field", tokens in `src/styles/tokens.css` | – |
+| Design | `DESIGN.md` "Distance field", tokens in `src/styles/tokens.css`, what every page shares in `src/styles/site.css` (`@layer site`: a page's own `<style>` always wins) | – |
 | Tests | Vitest (CPU) + GPU compilation of every registry example (Chromium) | 12, 25 |
 
 ## Priorities

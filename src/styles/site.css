@@ -1,0 +1,137 @@
+/* What every page of the site shares: home, playground, docs, brand.
+   Everything is in @layer site: a rule outside any layer, like the <style> of a
+   page, always wins over it, whatever the order of the files (Vite moves this
+   file after the page's <style> in the build). So a page overrides what it needs,
+   and only that.
+   The look comes from DESIGN.md; the values from tokens.css. */
+@import "./tokens.css";
+
+/* Outside the layer on purpose: .gss-dark (gss-code.css, outside any layer too)
+   sets the text to the code color; the page text stays bone */
+body.gss-dark {
+  color: var(--gss-bone);
+}
+
+@layer site {
+  /* ----- The page ----- */
+  body {
+    margin: 0;
+    background: var(--gss-void);
+    color: var(--gss-bone);
+    font-family: var(--gss-font-body);
+    line-height: 1.55;
+  }
+  a {
+    color: var(--gss-signal);
+    text-decoration: none;
+  }
+  a:hover {
+    color: var(--gss-signal-hover);
+  }
+  code,
+  pre {
+    font-family: var(--gss-font-code);
+  }
+  :focus-visible {
+    outline: 1px solid var(--gss-signal);
+    outline-offset: 2px;
+  }
+
+  /* ----- The top bar: { ● } / page name … actions ----- */
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 52px;
+    padding: 0 24px;
+    border-bottom: 1px solid var(--gss-line);
+    background: var(--gss-void);
+    font-family: var(--gss-font-code);
+    font-size: 13px;
+  }
+  .topbar nav {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+  }
+  .topbar nav a {
+    color: var(--gss-ash);
+    transition: color var(--gss-transition);
+  }
+  .topbar nav a:hover {
+    color: var(--gss-bone);
+  }
+  .crumb {
+    color: var(--gss-dim);
+  }
+  .spacer {
+    flex: 1;
+  }
+
+  /* The mark: {●}, a link to the home page */
+  .mark {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--gss-bone);
+    font-family: var(--gss-font-display);
+    font-size: 15px;
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .mark:hover {
+    color: var(--gss-bone);
+    text-decoration: none;
+  }
+  .mark .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--gss-signal);
+  }
+
+  /* ----- Buttons: secondary by default, .primary for the one main action ----- */
+  .button {
+    height: var(--gss-control-height);
+    padding: 0 14px;
+    border: 1px solid var(--gss-isoline);
+    border-radius: var(--gss-radius-control);
+    background: transparent;
+    color: var(--gss-ash);
+    cursor: pointer;
+    transition:
+      color var(--gss-transition),
+      border-color var(--gss-transition),
+      background-color var(--gss-transition);
+  }
+  .button:hover {
+    border-color: var(--gss-dim);
+    color: var(--gss-bone);
+  }
+  .button.primary {
+    border-color: var(--gss-signal);
+    background: var(--gss-signal);
+    color: var(--gss-void);
+    font-weight: 500;
+  }
+  .button.primary:hover {
+    border-color: var(--gss-signal-hover);
+    background: var(--gss-signal-hover);
+  }
+
+  /* ----- Text ----- */
+  .eyebrow {
+    color: var(--gss-dim);
+    font: 12px var(--gss-font-code);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .lead {
+    margin: 0;
+    color: var(--gss-ash);
+    font-size: 19px;
+  }
+}

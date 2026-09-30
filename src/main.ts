@@ -1,4 +1,3 @@
-import "./styles/tokens.css";
 import "./styles/gss-code.css";
 import { EditorState } from "@codemirror/state";
 import { EditorView, lineNumbers } from "@codemirror/view";

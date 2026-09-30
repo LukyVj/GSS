@@ -27,17 +27,16 @@
     <meta property="og:image:alt" content="A GSS scene next to its render" />
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="canonical" href="https://www.gss-lang.dev/playground" />
+    <link rel="stylesheet" href="/src/styles/site.css" />
     <style>
       /* The look comes from DESIGN.md; the values from src/styles/tokens.css */
       html,
       body {
-        margin: 0;
         height: 100%;
-        background: var(--gss-void);
-        color: var(--gss-bone);
-        font-family: var(--gss-font-code);
       }
       body {
+        font-family: var(--gss-font-code); /* the whole playground is a tool */
+        line-height: normal; /* fixed-height bars: no body-text leading */
         display: grid;
         grid-template-columns: minmax(320px, 480px) 1fr;
         grid-template-rows: 52px minmax(0, 1fr) 32px;
@@ -54,34 +53,7 @@
       /* ----- The top bar: the mark, the tabs, the actions ----- */
       .topbar {
         grid-area: top;
-        display: flex;
-        align-items: center;
-        gap: 12px;
         padding: 0 18px;
-        border-bottom: 1px solid var(--gss-line);
-        font-size: 13px;
-      }
-      .mark {
-        display: flex;
-        align-items: center;
-        gap: 5px;
-        color: var(--gss-bone);
-        font-family: var(--gss-font-display);
-        font-weight: 600;
-        font-size: 15px;
-        text-decoration: none;
-      }
-      .mark .dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: var(--gss-signal);
-      }
-      .crumb {
-        color: var(--gss-dim);
-      }
-      .spacer {
-        flex: 1;
       }
 
       /* Tabs: a raised track, the active tab lit */
@@ -113,33 +85,6 @@
       }
 
       /* Buttons: secondary (outlined) and primary (signal, one per view) */
-      .button {
-        height: var(--gss-control-height);
-        padding: 0 14px;
-        border: 1px solid var(--gss-isoline);
-        border-radius: var(--gss-radius-control);
-        background: transparent;
-        color: var(--gss-ash);
-        cursor: pointer;
-        transition:
-          color var(--gss-transition),
-          border-color var(--gss-transition),
-          background-color var(--gss-transition);
-      }
-      .button:hover {
-        color: var(--gss-bone);
-        border-color: var(--gss-dim);
-      }
-      .button.primary {
-        border-color: var(--gss-signal);
-        background: var(--gss-signal);
-        color: var(--gss-void);
-        font-weight: 500;
-      }
-      .button.primary:hover {
-        border-color: var(--gss-signal-hover);
-        background: var(--gss-signal-hover);
-      }
       select.button {
         appearance: none;
         padding-right: 30px;
@@ -152,10 +97,6 @@
       select.button optgroup {
         background: var(--gss-surface);
         color: var(--gss-bone);
-      }
-      :focus-visible {
-        outline: 1px solid var(--gss-signal);
-        outline-offset: 2px;
       }
 
       /* ----- The editor, docked on the left ----- */

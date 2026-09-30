@@ -30,6 +30,7 @@
     />
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="canonical" href="https://www.gss-lang.dev/" />
+    <link rel="stylesheet" href="/src/styles/site.css" />
     <style>
       /* The home page: design/reference/png/01-home.png. Values from src/styles/tokens.css */
       html {
@@ -40,42 +41,20 @@
           scroll-behavior: auto;
         }
       }
-      body,
-      body.gss-dark {
-        margin: 0;
-        background: var(--gss-void);
-        color: var(--gss-bone);
-        font-family: var(--gss-font-body);
-        line-height: 1.5;
-      }
-      a {
-        color: var(--gss-signal);
-        text-decoration: none;
-      }
-      :focus-visible {
-        outline: 1px solid var(--gss-signal);
-        outline-offset: 2px;
-      }
-      code,
-      pre {
-        font-family: var(--gss-font-code);
-      }
       .wrap {
         box-sizing: border-box;
         max-width: 1280px;
         margin: 0 auto;
         padding: 0 56px;
       }
-      .eyebrow {
-        font: 12px var(--gss-font-code);
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: var(--gss-dim);
-      }
 
       /* ----- Top bar ----- */
       .topbar {
-        border-bottom: 1px solid var(--gss-line);
+        /* the home's bar: its .wrap lays it out, 72px tall */
+        position: static;
+        display: block;
+        height: auto;
+        padding: 0;
       }
       .topbar .wrap {
         display: flex;
@@ -84,33 +63,18 @@
         height: 72px;
       }
       .mark {
-        display: flex;
-        align-items: center;
         gap: 6px;
-        color: var(--gss-bone);
-        font: 600 15px var(--gss-font-display);
         letter-spacing: -0.02em;
       }
       .mark .dot {
         width: 10px;
         height: 10px;
-        border-radius: 50%;
-        background: var(--gss-signal);
       }
       .mark .word {
         margin-left: 8px;
       }
       .topbar nav {
-        display: flex;
         gap: 32px;
-        font: 13px var(--gss-font-code);
-      }
-      .topbar nav a {
-        color: var(--gss-ash);
-        transition: color var(--gss-transition);
-      }
-      .topbar nav a:hover {
-        color: var(--gss-bone);
       }
 
       /* ----- Hero: the words on the left, the distance field on the right ----- */
@@ -140,10 +104,7 @@
         letter-spacing: -0.05em;
       }
       .lead {
-        margin: 0;
         max-width: 34rem;
-        font-size: 19px;
-        color: var(--gss-ash);
       }
       .lead code {
         color: var(--gss-bone);
@@ -156,32 +117,12 @@
         margin-top: 8px;
       }
       .button {
+        /* the big calls to action of the home */
         display: inline-flex;
         align-items: center;
         height: 48px;
         padding: 0 22px;
-        border: 1px solid var(--gss-isoline);
-        border-radius: var(--gss-radius-control);
-        color: var(--gss-ash);
         font: 14px var(--gss-font-code);
-        transition:
-          color var(--gss-transition),
-          border-color var(--gss-transition),
-          background-color var(--gss-transition);
-      }
-      .button:hover {
-        color: var(--gss-bone);
-        border-color: var(--gss-dim);
-      }
-      .button.primary {
-        border-color: var(--gss-signal);
-        background: var(--gss-signal);
-        color: var(--gss-void);
-        font-weight: 500;
-      }
-      .button.primary:hover {
-        border-color: var(--gss-signal-hover);
-        background: var(--gss-signal-hover);
       }
       .field {
         width: 100%;

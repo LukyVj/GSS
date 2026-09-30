@@ -1,4 +1,3 @@
-import "../styles/tokens.css";
 import "../styles/gss-code.css";
 import { highlightGss } from "../docs/highlight";
 import { formatGss } from "../docs/format";
