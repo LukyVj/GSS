@@ -1372,9 +1372,14 @@ export function generateShader(
       .replace(
         "/*@HOVER_UNIFORM*/",
         slots.length > 0
-          ? `uniform float uHover[${slots.length}]; // 0 at rest, 1 hovered`
+          ? `uniform float uHover[${slots.length}]; // 0 at rest, 1 hovered
+uniform bool uPicking; // true: draw the id of the object under uPick, not its color
+uniform vec2 uPick;`
           : "",
       )
+      .replace("/*@PICK_PIXEL*/", slots.length > 0 ? PICK_PIXEL : "")
+      .replace("/*@PIXEL*/", slots.length > 0 ? "pixel" : "gl_FragCoord.xy")
+      .replace("/*@PICK_OUTPUT*/", slots.length > 0 ? PICK_OUTPUT : "")
       .replace(
         "/*@TEXTURES*/",
         section(
@@ -1421,6 +1426,18 @@ export function generateShader(
       .replace(/\n[ \t]*\n(?:[ \t]*\n)+/g, "\n\n")
   );
 }
+
+// The picking pass (:hover): the same shader, drawn on one pixel, aims at the mouse
+const PICK_PIXEL = `
+  vec2 pixel = uPicking ? uPick : gl_FragCoord.xy;`;
+
+// ...and writes the id of the object it hits, before any lighting: red + 256 × green
+const PICK_OUTPUT = `
+  if (uPicking) {
+    float picked = t < MAX_DIST ? id : 0.0; // 0: the background
+    outColor = vec4(mod(picked, 256.0) / 255.0, floor(picked / 256.0) / 255.0, 0.0, 1.0);
+    return;
+  }`;
 
 // The shader skeleton. Only the /*@...*/ parts change from one scene to the next.
 const TEMPLATE = `#version 300 es
@@ -1519,8 +1536,8 @@ vec3 diffuse(vec3 n, vec3 color) {
 
 /*@SHADING*/
 
-void main() {
-  vec2 uv = (gl_FragCoord.xy - 0.5 * iResolution.xy) / iResolution.y;
+void main() {/*@PICK_PIXEL*/
+  vec2 uv = (/*@PIXEL*/ - 0.5 * iResolution.xy) / iResolution.y;
 
   vec3 target = /*@CAMERA_TARGET*/;
   float yaw = uCamera.x;
@@ -1533,7 +1550,7 @@ void main() {
 
   vec2 hit = march(ro, rd);
   float t = hit.x;
-  float id = hit.y;
+  float id = hit.y;/*@PICK_OUTPUT*/
 
   vec3 col = BACKGROUND;
   if (t < MAX_DIST) {

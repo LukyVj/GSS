@@ -39,6 +39,8 @@ export function toShadertoy({ shader, camera }: CompiledScene): string {
       const zeros = Array(Number(n)).fill("0.0").join(", ");
       return `const float uHover[${n}] = float[${n}](${zeros}); // :hover needs the GSS runtime\n`;
     })
+    .replace(/^uniform bool uPicking;.*\n/m, "const bool uPicking = false;\n")
+    .replace(/^uniform vec2 uPick;.*\n/m, "const vec2 uPick = vec2(0.0);\n")
     // 1. What Shadertoy already writes: the header, its uniforms, the output
     .replace(/^#version.*\n/m, "")
     .replace(/^precision .*\n/m, "")

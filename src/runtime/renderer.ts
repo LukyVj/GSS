@@ -2,6 +2,7 @@ import { compileScene } from "../compiler";
 import type { CameraSettings } from "../compiler/camera";
 import type { CompiledScene } from "../compiler";
 import { createTextureStore } from "./textures";
+import { pickPixel, decodeId, hoverValues } from "./hover";
 
 // Draws GSS scenes in a canvas, with a camera the mouse can move.
 // Used by the home page and by every "Try it" in the docs.
@@ -34,6 +35,11 @@ type GpuScene = {
   // One per image of the scene, in the order of uTexture0, uTexture1…
   textures: WebGLTexture[];
   uTextures: (WebGLUniformLocation | null)[];
+  // :hover: for each slot of uHover[], the ids that set it to 1 (empty: no :hover)
+  hover: number[][];
+  uHover: WebGLUniformLocation | null;
+  uPicking: WebGLUniformLocation | null;
+  uPick: WebGLUniformLocation | null;
 };
 
 export function createRenderer(canvas: HTMLCanvasElement): Renderer {
@@ -43,6 +49,32 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
   gl.bindVertexArray(gl.createVertexArray());
   // The images, kept for every scene this renderer will load
   const store = createTextureStore(gl);
+
+  // :hover: a 1 × 1 image where the picking pass writes the id under the mouse
+  const pickTexture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, pickTexture);
+  gl.texImage2D(
+    gl.TEXTURE_2D,
+    0,
+    gl.RGBA8,
+    1,
+    1,
+    0,
+    gl.RGBA,
+    gl.UNSIGNED_BYTE,
+    null,
+  );
+  const pickBuffer = gl.createFramebuffer(); // "draw here instead of the canvas"
+  gl.bindFramebuffer(gl.FRAMEBUFFER, pickBuffer);
+  gl.framebufferTexture2D(
+    gl.FRAMEBUFFER,
+    gl.COLOR_ATTACHMENT0,
+    gl.TEXTURE_2D,
+    pickTexture,
+    0,
+  );
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null); // back to the canvas
+  const picked = new Uint8Array(4); // the pixel read back: r, g, b, a
 
   function compileShader(type: number, source: string): WebGLShader {
     const shader = gl!.createShader(type)!;
@@ -56,7 +88,11 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
     return shader;
   }
 
-  function createGpuScene(fragSource: string, files: string[]): GpuScene {
+  function createGpuScene(
+    fragSource: string,
+    files: string[],
+    hover: number[][],
+  ): GpuScene {
     const vertex = compileShader(gl!.VERTEX_SHADER, VERTEX_SOURCE);
     const fragment = compileShader(gl!.FRAGMENT_SHADER, fragSource);
     const program = gl!.createProgram()!;
@@ -80,6 +116,10 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
       uTextures: files.map((_, i) =>
         gl!.getUniformLocation(program, `uTexture${i}`),
       ),
+      hover,
+      uHover: gl!.getUniformLocation(program, "uHover"),
+      uPicking: gl!.getUniformLocation(program, "uPicking"),
+      uPick: gl!.getUniformLocation(program, "uPick"),
     };
   }
 
@@ -87,6 +127,7 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
   let scene: GpuScene | null = null; // what is on screen
   let settings: CameraSettings | null = null; // the camera written in the GSS
   const camera = { yaw: 0, pitch: 0, dist: 8, dragging: false };
+  let pointer: { x: number; y: number } | null = null; // the mouse, in the page
 
   // Only reset what the GSS changed, so that typing does not
   // move the camera the user has placed with the mouse.
@@ -122,6 +163,7 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
   );
 
   canvas.addEventListener("pointermove", (e) => {
+    pointer = { x: e.clientX, y: e.clientY }; // before the return: hover works without a drag
     if (!camera.dragging) return;
     camera.yaw -= e.movementX * 0.01;
     camera.pitch += e.movementY * 0.01;
@@ -133,6 +175,34 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
   };
   canvas.addEventListener("pointerup", stopDragging);
   canvas.addEventListener("pointercancel", stopDragging);
+  canvas.addEventListener("pointerleave", () => {
+    pointer = null; // nothing is hovered any more
+  });
+
+  // :hover: draws the scene on one pixel, under the mouse, and reads which
+  // object is there. Returns its id, 0 when there is none.
+  function pick(scene: GpuScene): number {
+    if (!pointer) return 0;
+    const pixel = pickPixel(
+      pointer.x,
+      pointer.y,
+      canvas.getBoundingClientRect(),
+      canvas.width,
+      canvas.height,
+    );
+    if (!pixel) return 0;
+    gl!.bindFramebuffer(gl!.FRAMEBUFFER, pickBuffer);
+    gl!.viewport(0, 0, 1, 1);
+    gl!.uniform1i(scene.uPicking, 1);
+    gl!.uniform2f(scene.uPick, pixel[0], pixel[1]);
+    gl!.drawArrays(gl!.TRIANGLES, 0, 3);
+    gl!.readPixels(0, 0, 1, 1, gl!.RGBA, gl!.UNSIGNED_BYTE, picked);
+    // back to the canvas
+    gl!.uniform1i(scene.uPicking, 0);
+    gl!.bindFramebuffer(gl!.FRAMEBUFFER, null);
+    gl!.viewport(0, 0, canvas.width, canvas.height);
+    return decodeId(picked);
+  }
 
   // --- 4. Adapt the canvas size to its box ---
   function resize() {
@@ -175,6 +245,11 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
         gl!.bindTexture(gl!.TEXTURE_2D, texture);
         gl!.uniform1i(scene!.uTextures[i], i);
       });
+      // :hover: which object is under the mouse, then uHover[] for every slot
+      if (scene.hover.length > 0) {
+        const id = pick(scene);
+        gl!.uniform1fv(scene.uHover, hoverValues(scene.hover, id));
+      }
       gl!.drawArrays(gl!.TRIANGLES, 0, 3);
     }
     frameId = requestAnimationFrame(frame);
@@ -184,7 +259,11 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
   return {
     load(source) {
       const compiled = compileScene(source); // GSS errors
-      const next = createGpuScene(compiled.shader, compiled.textures); // GLSL errors
+      const next = createGpuScene(
+        compiled.shader,
+        compiled.textures,
+        compiled.hover,
+      ); // GLSL errors
       if (scene) gl.deleteProgram(scene.program);
       scene = next;
       applyCameraSettings(compiled.camera);
@@ -202,6 +281,8 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
       if (scene) gl.deleteProgram(scene.program);
       scene = null;
       store.destroy();
+      gl.deleteFramebuffer(pickBuffer);
+      gl.deleteTexture(pickTexture);
       gl.getExtension("WEBGL_lose_context")?.loseContext();
     },
   };
