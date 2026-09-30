@@ -502,6 +502,17 @@ export const SELECTORS: SelectorDef[] = [
     ],
   },
   {
+    name: ":hover",
+    anchor: "selector-hover",
+    specificity: "100, like a class, added to the rest",
+    description:
+      "A pseudo-class, like CSS: the rule applies while the mouse is over the object. It can go anywhere after the shape name (cube:hover.big) and on a group of a descendant selector: #letters:hover cube lifts every cube of #letters as soon as the mouse is over any object of the group, like hovering a child hovers its parent in CSS. The :hover rules join the cascade like any other: #a { color: blue; } beats cube:hover { color: red; }, and a normal !important beats them all. A :hover rule changes the animatable properties only (translate, rotate-x, rotate-y, rotate-z, scale, color, and variables), never a face, and it styles objects, not groups: #g:hover { translate: 0 1 0; } is an error, write #g:hover cube. For now the change is instant; transition comes next.",
+    examples: [
+      "@scene { cube#a; cube#b; } cube { translate: -0.8 0.5 0; color: #e6e6e6; } #b { translate: 0.8 0.5 0; } cube:hover { translate: -0.8 1 0; color: #ff5a36; rotate-y: 45deg; } #b:hover { translate: 0.8 1 0; }",
+      "@scene { group#letters { cube#l1; cube#l2; cube#l3; } sphere; } #letters { translate: -1.6 0.5 0; } #letters cube { size: 0.4 1 0.4; color: #e6e6e6; } #l2 { translate: 0.7 0 0; } #l3 { translate: 1.4 0 0; } #letters:hover cube { color: #ff5a36; scale: 1.15; } sphere { translate: 1.4 0.5 0; radius: 0.5; }",
+    ],
+  },
+  {
     name: "!important",
     anchor: "selector-important",
     specificity: "Beats every declaration without it",

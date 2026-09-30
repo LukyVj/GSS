@@ -66,7 +66,8 @@ and a readable path toward the shader underneath. It is not meant to replace GLS
 - **Structure**: `@scene { cube.corner * 4; torus#hero; }`, multiplication with auto-numbered ids,
   `group#g { … }` to move several shapes together.
 - **Selectors and the cascade**: `shape`, `.class`, `#id`, `*`, lists, the descendant combinator,
-  specificity, `!important`, and `::face(front)` / `::top` / `::bottom` to style one face.
+  specificity, `!important`, `::face(front)` / `::top` / `::bottom` to style one face, and `:hover`
+  (`#letters:hover cube` lights up a whole group).
 - **Shapes**: `cube`, `sphere`, `torus`, `cylinder`, `cone`, `capsule`, `plane`, `path` (a tube
   along an SVG path) and `prism` (a `polygon()` or `path()` contour, extruded).
 - **Materials**: `matte()`, `metal()`, `jelly()`, `glass()` with refraction and frost, and the

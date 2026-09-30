@@ -16,7 +16,7 @@ What the language and the tools can do today. Each feature is detailed in the re
 | Multiplication | `cube * 12`; numbered ids: `cube#petal * 12` → `#petal-1` … `#petal-12` | 3 |
 | Groups | `group#g { … }`: transforms and animation apply to the children, positions are relative | 45, 48 |
 | Scene styling | `scene { floor; background; light; ambient; camera-* }` | 11, 15, 16 |
-| Selectors | `<shape>`, `.class`, `#id`, `*`, lists `a, b`, descendant `a b`, faces `::face(front)`, `::top`, `::bottom` | 4, 37, 47, 59 |
+| Selectors | `<shape>`, `.class`, `#id`, `*`, lists `a, b`, descendant `a b`, faces `::face(front)`, `::top`, `::bottom`, `:hover` (on objects and their groups) | 4, 37, 47, 59, 62 |
 | Cascade | specificity (id 10,000, class 100, tag 1), last one wins, `!important` in 2 passes | 4, 38 |
 | Animation | `@keyframes` (`from`, `to`, `%`), `animation: name duration [linear \| ease-in-out] [alternate]`, computed in the shader | 21, 22, 23, 24 |
 | Math | `calc()`, `min()`, `max()`, `clamp()`, `abs()`, `sqrt()`, `pow()`, `sin()`, `cos()`, `tan()`, `pi`, `e` | 52 |
@@ -50,7 +50,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 | Look | `color`, `material` | 26 |
 | Textures | `texture: url("…")`, `image-rendering: pixelated`, `texture-size` | 59 |
 | Combinations | `operation: union \| subtract \| intersect`, `blend` (smooth union) | 18, 19 |
-| Animation | `animation`; animatable: `translate`, `rotate-*`, `scale`, `color` | 24 |
+| Animation | `animation`; animatable: `translate`, `rotate-*`, `scale`, `color` (also what `:hover` can change) | 24, 62 |
 
 ### Materials
 
@@ -78,6 +78,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 | One reflection (1 bounce), glass refraction (in + out), procedural frost | 29, 31 |
 | Everything is computed, except the images of `texture`: projected on each face (triplanar), at most 16 per scene | 1, 59 |
 | Minimal shader: only the GLSL the scene uses goes in (an empty scene: 104 lines) | 53 |
+| `:hover`: a 1-pixel picking pass under the mouse, `uHover[]` mixed into every hovered property | 62 |
 
 ### Tools
 
@@ -106,7 +107,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 5. [ ] Animation controls (delay / iteration-count / reverse)
 6. [ ] `@media` + `prefers-reduced-motion`
 7. [ ] Selectors / nesting (combinators `>` `+` `~`, etc.)
-8. [ ] `:hover` + `transition` ← **next** (picking pass → `uHover`, then `transition`)
+8. [ ] `:hover` ✅ decision 62 (picking pass → `uHover[]`); still to do: `transition` ← **next**, then `:has()` (`#g:has(sphere:hover) cube`)
 9. [ ] `transform-origin`
 10. [ ] Fog
 11. [x] `sibling-index()` + `sibling-count()` (decision 52)
@@ -169,6 +170,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 
 ## Done recently
 
+- `:hover`: triggers, a second cascade, `uHover[]` in the shader and a picking pass, on the home page, the playground and every "Try it" (decision 62)
 - Textures: `texture: url("…")`, `::face()` / `::top` / `::bottom`, `image-rendering: pixelated`, `texture-size`: the Minecraft dirt and grass blocks (decision 59)
 - `rgb()`, `hsl()` and the 148 CSS named colors, only where a color is expected (decision 58)
 - Custom properties and `var()`, inherited and animatable (decision 55)
@@ -435,12 +437,12 @@ A score for how well a CSS notion carries over to GSS (a style language → an S
 | Column `\|\|` | 0.0 | Tables |
 | `&` nesting | 0.9 | Nesting, strong |
 | Attribute selectors | 0.4 | Few attributes in GSS |
-| `:hover` | 1.0 | Priority #8 |
+| `:hover` | 1.0 | Already in GSS (dec. 62) |
 | `:active` / `:focus` / `:focus-visible` / `:focus-within` | 0.5 | Interaction host |
 | `:nth-child()` / `:nth-of-type()` / `:nth-last-*` | 0.85 | Compile-time index |
 | `:first-child` / `:last-child` / `:only-child` / `:first-of-type` / `:last-of-type` / `:only-of-type` / `:empty` | 0.8 | Scene structure |
 | `:is()` / `:where()` / `:not()` | 0.6 | Selector utilities |
-| `:has()` | 0.5 | Parent query, costly but useful |
+| `:has()` | 0.9 | Next to `:hover`: more triggers, resolved at compile time (decision 62) |
 | `:root` / `:scope` | 0.6 | Root / scope |
 | `:lang()` / `:dir()` | 0.2 | I18n DOM |
 | Link/visited/any-link/local-link/target* | 0.1 | Navigation HTML |
