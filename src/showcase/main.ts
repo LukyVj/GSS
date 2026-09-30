@@ -1,6 +1,6 @@
 import "../styles/gss-code.css";
 import "../embed/element"; // <gss-scene>: the site uses its own embed (decision 63)
-import { highlightGss } from "../docs/highlight";
+import { highlightCode } from "../docs/highlight-code";
 import { escapeHtml } from "../docs/escape";
 import { encodeCode } from "../runtime/share";
 import {
@@ -13,7 +13,7 @@ import {
 // showcase.html: the use cases by audience, the three ways to embed, the inspiration grid.
 
 const code = (lang: "gss" | "html" | "js", text: string) =>
-  `<pre class="snippet"><code class="gss">${lang === "gss" ? highlightGss(text) : escapeHtml(text)}</code></pre>`;
+  `<pre class="snippet"><code class="gss">${highlightCode(lang, text)}</code></pre>`;
 
 const playgroundLink = async (source: string) =>
   `./playground.html${await encodeCode(source)}`;

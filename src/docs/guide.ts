@@ -1,5 +1,6 @@
 import { EMBED_SNIPPETS } from "../embed/snippets";
 import { escapeHtml } from "./escape";
+import { highlightCode } from "./highlight-code";
 
 // The "Getting started" section of the docs: written by hand, unlike the reference,
 // which is generated from the registry. The paragraphs are trusted HTML.
@@ -47,7 +48,7 @@ export const GETTING_STARTED: GuideEntry[] = [
       'A GSS scene can live on any page, three ways (decision 63). <b>A tag</b>, with no build step: load <code>embed.js</code> once, then write <code>&lt;gss-scene src="logo.gss"&gt;</code>, or put the code in a <code>&lt;script type="text/gss"&gt;</code> inside it. <b>A function</b>: <code>mount(canvas, source)</code> from the <code>gss-lang</code> package compiles in the page. <b>A build step</b>: with the Vite plugin, <code>import logo from "./logo.gss"</code> compiles at build time, and <code>mount</code> from <code>gss-lang/runtime</code> draws it without shipping the compiler (about 10 kB).',
       ...EMBED_SNIPPETS.flatMap((way) => [
         `<b>${escapeHtml(way.title)}</b> (${escapeHtml(way.who)})`,
-        `<pre><code>${escapeHtml(way.code)}</code></pre>`,
+        `<pre><code class="gss">${highlightCode(way.lang, way.code)}</code></pre>`,
       ]),
       'An embedded scene behaves like the playground: drag turns the camera, the wheel zooms, <code>:hover</code> works. <code>controls="none"</code> (or <code>controls: false</code>) keeps only <code>:hover</code>, so the page scrolls over the scene. It starts when it comes into view, sleeps when it leaves it, and stands still under <code>prefers-reduced-motion</code>. Images are read next to the <code>.gss</code> file, like <code>url()</code> in a stylesheet. GSS has no transparency yet: give the scene the <code>background</code> of your page. See them all live on the <a href="./showcase.html">showcase</a>.',
     ],

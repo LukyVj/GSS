@@ -8,6 +8,7 @@ import type {
 import { formatGss } from "./format";
 import { escapeHtml } from "./escape";
 import { highlightGss } from "./highlight";
+import { highlightSyntax } from "./highlight-code";
 import { GETTING_STARTED, type GuideEntry } from "./guide";
 
 export { escapeHtml }; // the tests and other pages import it from here
@@ -41,7 +42,7 @@ export function renderProperty(property: PropertyDef): string {
       <p>${escapeHtml(property.description)}</p>
       <dl>
         <dt>Syntax</dt>
-        <dd><code>${escapeHtml(property.syntax)}</code></dd>
+        <dd><code class="gss syntax">${highlightSyntax(property.syntax)}</code></dd>
         <dt>Initial value</dt>
         <dd><code>${escapeHtml(property.initial)}</code></dd>
         <dt>Applies to</dt>
@@ -62,7 +63,7 @@ export function renderAtRule(atRule: AtRuleDef): string {
       <p>${escapeHtml(atRule.description)}</p>
       <dl>
         <dt>Syntax</dt>
-        <dd><code>${escapeHtml(atRule.syntax)}</code></dd>
+        <dd><code class="gss syntax">${highlightSyntax(atRule.syntax)}</code></dd>
       </dl>
       ${renderExamples(atRule.examples)}
     </article>`;
@@ -90,7 +91,7 @@ export function renderFunction(fn: FunctionDef): string {
       <p>${escapeHtml(fn.description)}</p>
       <dl>
         <dt>Syntax</dt>
-        <dd><code>${escapeHtml(fn.syntax)}</code></dd>
+        <dd><code class="gss syntax">${highlightSyntax(fn.syntax)}</code></dd>
         <dt>Computed</dt>
         <dd>at compile time, once per object</dd>
       </dl>

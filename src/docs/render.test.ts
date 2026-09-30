@@ -183,7 +183,9 @@ describe("renderDocs", () => {
   it("documents the shapes between the selectors and the properties", () => {
     const shapes = html.indexOf('<section id="shapes">');
     expect(shapes).toBeGreaterThan(html.indexOf('<section id="selectors">'));
-    expect(shapes).toBeLessThan(html.indexOf('<section id="object-properties">'));
+    expect(shapes).toBeLessThan(
+      html.indexOf('<section id="object-properties">'),
+    );
     for (const shape of SHAPE_DOCS) {
       expect(html, shape.name).toContain(`id="shape-${shape.name}"`);
     }
@@ -221,12 +223,25 @@ describe("renderSelector", () => {
   });
 });
 
-// Decision 63: the guide entry "Embedding a scene" holds code blocks
+// Decision 63: the guide entry "Embedding a scene" holds code blocks, and the
+// syntax lines of the reference are colored
 describe("a guide paragraph that is a code block", () => {
   it("is not wrapped in a <p>", () => {
     const html = renderDocs(PROPERTIES, AT_RULES, SELECTORS, SHAPE_DOCS);
     expect(html).toContain('id="embedding"');
-    expect(html).toMatch(/<pre><code>&lt;script type=&quot;module&quot;/);
+    // colored like the rest of the code (highlight-code.ts)
+    expect(html).toMatch(
+      /<pre><code class="gss"><span class="gss-punct">&lt;<\/span><span class="gss-selector">script<\/span>/,
+    );
     expect(html).not.toContain("<p><pre>");
+  });
+});
+
+describe("a syntax line", () => {
+  it("is colored", () => {
+    const html = renderDocs(PROPERTIES, AT_RULES, SELECTORS, SHAPE_DOCS);
+    expect(html).toContain(
+      '<dd><code class="gss syntax"><span class="gss-id">&lt;number&gt;</span>',
+    );
   });
 });
