@@ -10,14 +10,14 @@ describe("an image over the color", () => {
   it("lets triplanar() mix the color and the image by its alpha", () => {
     const shader = compileGSS(`@scene { cube; } cube { ${dirt}; }`);
     expect(shader).toContain(
-      "vec3 triplanar(sampler2D image, vec3 q, vec3 n, vec3 box, vec3 color)",
+      "vec3 triplanar(sampler2D image, vec3 q, vec3 n, vec3 box, vec3 color, bool pixelated)",
     );
     expect(shader).toContain("return mix(color, ");
   });
 
   it("passes the object's color to triplanar()", () => {
     const shader = compileGSS(`@scene { cube; } cube { ${dirt}; }`);
-    expect(shader).toContain(", vec3(1.0, 1.0, 1.0), color);");
+    expect(shader).toContain(", vec3(1.0, 1.0, 1.0), color, false);");
   });
 });
 

@@ -114,6 +114,17 @@ export const PROPERTIES: PropertyDef[] = [
     ],
   },
   {
+    name: "image-rendering",
+    appliesTo: "object",
+    syntax: "auto | smooth | pixelated | crisp-edges",
+    initial: "auto",
+    description:
+      "How the image of texture is drawn. pixelated reads the nearest pixel of the image: every pixel stays a sharp square, the look of pixel art (a 16×16 Minecraft-style block). auto and smooth blend the pixels, for photos and painted textures. crisp-edges is the same as pixelated.",
+    examples: [
+      '@scene { cube; } cube { translate: 0 0.5 0; texture: url("/textures/dirt.png"); image-rendering: pixelated; }',
+    ],
+  },
+  {
     name: "rotate-x",
     appliesTo: "object",
     animatable: true,

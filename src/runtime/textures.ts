@@ -40,7 +40,7 @@ export function createTextureStore(gl: WebGL2RenderingContext): TextureStore {
         0,
         gl.RGBA,
         gl.UNSIGNED_BYTE,
-        new Uint8Array([0, 0, 0, 255]),
+        new Uint8Array([0, 0, 0, 0]),
       );
 
       // The download, in the background

@@ -27,6 +27,7 @@ export function sceneTextures(instances: { styles: Styles }[]): string[] {
   const files = new Set<string>(); // keeps the first order, ignores duplicates
   for (const instance of instances) {
     const value = instance.styles["texture"];
+    readRendering(instance.styles["image-rendering"]); // checked on every object, even without a texture
     if (value) {
       files.add(readTexture(value));
       // Only the image just added can go over the limit
@@ -39,4 +40,29 @@ export function sceneTextures(instances: { styles: Styles }[]): string[] {
     }
   }
   return [...files];
+}
+
+// CSS values of image-rendering → does the object read the nearest pixel?
+const RENDERINGS: Record<string, boolean> = {
+  auto: false,
+  smooth: false,
+  pixelated: true,
+  "crisp-edges": true, // in CSS, "keep the edges sharp": the same thing for a texture
+};
+
+// image-rendering: pixelated → true (the nearest pixel), auto → false (smooth)
+export function readRendering(value: Token[] | undefined): boolean {
+  if (!value) return false; // not set: auto, like CSS
+  const [word] = value;
+  if (
+    value.length !== 1 ||
+    word.type !== "IDENT" ||
+    !(word.value in RENDERINGS)
+  ) {
+    throw errorAt(
+      value,
+      "image-rendering expects auto, smooth, pixelated or crisp-edges, like: image-rendering: pixelated;",
+    );
+  }
+  return RENDERINGS[word.value];
 }
