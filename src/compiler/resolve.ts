@@ -10,6 +10,7 @@ export type Styles = Record<string, Token[]>;
 export type StyledInstance = SceneInstance & {
   styles: Styles;
   groupStyles: Styles[];
+  faceStyles: Record<Face, Styles>; // what cube::top and cube::bottom set
 };
 
 // A simple selector: cube, .corner, #hero, or a combination like cube#left.corner
@@ -20,7 +21,12 @@ export type SimpleSelector = {
   // The descendant combinator: in "#letters #S #left", the selector is #left and
   // its ancestors are [#letters, #S], from the outermost to the innermost
   ancestors?: SimpleSelector[];
+  face?: Face;
 };
+
+// The faces a pseudo-element can style: cube::top, cube::bottom
+export type Face = "top" | "bottom";
+const FACES: Face[] = ["top", "bottom"];
 
 // Was there a space (or a comment) between these two tokens in the source?
 function spaceBetween(before: Token, after: Token): boolean {
@@ -49,6 +55,12 @@ export function parseSelector(tokens: Token[]): SimpleSelector {
   const selectors = compounds.map(parseCompound);
   const selector = selectors[selectors.length - 1];
   if (selectors.length > 1) selector.ancestors = selectors.slice(0, -1);
+  if (selector.ancestors?.some((ancestor) => ancestor.face !== undefined)) {
+    throw errorAt(
+      tokens,
+      "::top and ::bottom go at the end of the selector, on the object",
+    );
+  }
   return selector;
 }
 
@@ -82,6 +94,28 @@ function parseCompound(tokens: Token[]): SimpleSelector {
     ) {
       selector.classes.push(next.value);
       i += 2;
+    } else if (
+      token.type === "PUNCT" &&
+      token.value === ":" &&
+      next?.type === "PUNCT" &&
+      next.value === ":"
+    ) {
+      const name = tokens[i + 2];
+      if (name?.type !== "IDENT" || !FACES.includes(name.value as Face)) {
+        throw errorAt(
+          tokens,
+          "Unknown pseudo-element: a face is ::top or ::bottom",
+        );
+      }
+      // Like CSS, a pseudo-element closes the selector: nothing after it
+      if (i + 3 !== tokens.length) {
+        throw errorAt(
+          tokens,
+          `::${name.value} goes at the end of the selector, like: cube.grass::${name.value}`,
+        );
+      }
+      selector.face = name.value as Face;
+      i += 3;
     } else {
       const text = tokens.map(tokenToText).join("");
       throw errorAt(tokens, `Selector not supported: "${text}"`);
@@ -127,7 +161,8 @@ export function specificity(selector: SimpleSelector): number {
   const own =
     (selector.id ? 10_000 : 0) +
     selector.classes.length * 100 +
-    (selector.tag ? 1 : 0);
+    (selector.tag ? 1 : 0) +
+    (selector.face ? 1 : 0);
   // like CSS, the ancestors add up: "#letters cube" beats "cube" and "#letters"
   const ancestors = selector.ancestors ?? [];
   return ancestors.reduce((sum, ancestor) => sum + specificity(ancestor), own);
@@ -149,13 +184,23 @@ export function resolveStyles(
       (a, b) =>
         specificity(a.selector) - specificity(b.selector) || a.order - b.order,
     );
-  // The cascade for one instance (an object or a group)
-  function cascade(instance: SceneInstance): Styles {
+  // The cascade for one instance (an object or a group), or for one face of an object
+  function cascade(instance: SceneInstance, face?: Face): Styles {
     const styles: Styles = {};
     for (const important of [false, true]) {
       for (const { rule, selector } of sortedRules) {
         if (!matches(selector, instance)) continue;
+        if (selector.face !== face) continue; // a face rule styles its face, the other rules the object
         for (const declaration of rule.declarations) {
+          if (
+            selector.face !== undefined &&
+            declaration.property !== "texture"
+          ) {
+            throw errorAt(
+              declaration,
+              `::${selector.face} only takes texture, like: cube::${selector.face} { texture: url("top.png"); }`,
+            );
+          }
           if ((declaration.important ?? false) !== important) continue;
           styles[declaration.property] = declaration.value; // the next rule overwrites the previous one
         }
@@ -167,7 +212,12 @@ export function resolveStyles(
   return instances.map((instance) => ({
     ...instance,
     styles: cascade(instance),
-    groupStyles: instance.groups.map(cascade),
+    // (group) => cascade(group): map() would pass the index as the face
+    groupStyles: instance.groups.map((group) => cascade(group)),
+    faceStyles: {
+      top: cascade(instance, "top"),
+      bottom: cascade(instance, "bottom"),
+    },
   }));
 }
 

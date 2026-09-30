@@ -27,3 +27,22 @@ cone {
   height: 0.5;
   color: #826032
 }
+
+/* Dirt block: the same image, pixelated on the left, smooth on the right */
+@scene {
+  cube#dirt;
+  cube#smooth
+}
+
+cube {
+  texture: url("/textures/dirt.png");
+}
+
+#dirt {
+  translate: -0.7 0.5 0;
+  image-rendering: pixelated;
+}
+
+#smooth {
+  translate: 0.7 0.5 0;
+}
