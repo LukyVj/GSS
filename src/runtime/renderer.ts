@@ -1,6 +1,7 @@
 import { compileScene } from "../compiler";
 import type { CameraSettings } from "../compiler/camera";
 import type { CompiledScene } from "../compiler";
+import { createTextureStore } from "./textures";
 
 // Draws GSS scenes in a canvas, with a camera the mouse can move.
 // Used by the home page and by every "Try it" in the docs.
@@ -30,6 +31,9 @@ type GpuScene = {
   uTime: WebGLUniformLocation | null;
   uCamera: WebGLUniformLocation | null;
   uDist: WebGLUniformLocation | null;
+  // One per image of the scene, in the order of uTexture0, uTexture1…
+  textures: WebGLTexture[];
+  uTextures: (WebGLUniformLocation | null)[];
 };
 
 export function createRenderer(canvas: HTMLCanvasElement): Renderer {
@@ -37,6 +41,8 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
   const gl = canvas.getContext("webgl2");
   if (!gl) throw new Error("WebGL2 is not available in this browser");
   gl.bindVertexArray(gl.createVertexArray());
+  // The images, kept for every scene this renderer will load
+  const store = createTextureStore(gl);
 
   function compileShader(type: number, source: string): WebGLShader {
     const shader = gl!.createShader(type)!;
@@ -50,7 +56,7 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
     return shader;
   }
 
-  function createGpuScene(fragSource: string): GpuScene {
+  function createGpuScene(fragSource: string, files: string[]): GpuScene {
     const vertex = compileShader(gl!.VERTEX_SHADER, VERTEX_SOURCE);
     const fragment = compileShader(gl!.FRAGMENT_SHADER, fragSource);
     const program = gl!.createProgram()!;
@@ -70,6 +76,10 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
       uTime: gl!.getUniformLocation(program, "iTime"),
       uCamera: gl!.getUniformLocation(program, "uCamera"),
       uDist: gl!.getUniformLocation(program, "uDist"),
+      textures: files.map((file) => store.get(file)),
+      uTextures: files.map((_, i) =>
+        gl!.getUniformLocation(program, `uTexture${i}`),
+      ),
     };
   }
 
@@ -81,7 +91,11 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
   // Only reset what the GSS changed, so that typing does not
   // move the camera the user has placed with the mouse.
   function applyCameraSettings(next: CameraSettings): void {
-    if (!settings || next.yaw !== settings.yaw || next.pitch !== settings.pitch) {
+    if (
+      !settings ||
+      next.yaw !== settings.yaw ||
+      next.pitch !== settings.pitch
+    ) {
       camera.yaw = next.yaw;
       camera.pitch = next.pitch;
     }
@@ -155,6 +169,12 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
       gl!.uniform1f(scene.uTime, now / 1000);
       gl!.uniform2f(scene.uCamera, camera.yaw, camera.pitch);
       gl!.uniform1f(scene.uDist, camera.dist);
+      // Each image on its own texture unit, and each uTextureN told which unit to read
+      scene.textures.forEach((texture, i) => {
+        gl!.activeTexture(gl!.TEXTURE0 + i);
+        gl!.bindTexture(gl!.TEXTURE_2D, texture);
+        gl!.uniform1i(scene!.uTextures[i], i);
+      });
       gl!.drawArrays(gl!.TRIANGLES, 0, 3);
     }
     frameId = requestAnimationFrame(frame);
@@ -164,7 +184,7 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
   return {
     load(source) {
       const compiled = compileScene(source); // GSS errors
-      const next = createGpuScene(compiled.shader); // GLSL errors
+      const next = createGpuScene(compiled.shader, compiled.textures); // GLSL errors
       if (scene) gl.deleteProgram(scene.program);
       scene = next;
       applyCameraSettings(compiled.camera);
@@ -181,6 +201,7 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
       cancelAnimationFrame(frameId);
       if (scene) gl.deleteProgram(scene.program);
       scene = null;
+      store.destroy();
       gl.getExtension("WEBGL_lose_context")?.loseContext();
     },
   };

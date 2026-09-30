@@ -124,9 +124,9 @@ Goal: redo a Minecraft-style dirt block from an image, then a grass block (a dif
 
 **Steps**:
 
-1. [ ] Compiler: `texture: url("…")` is read (`readTexture`), and `compileScene` returns the list of images of the scene (`textures`). Registry entry.
-2. [ ] Codegen: one `uniform sampler2D` per image, the object's point and normal in its own space, triplanar sampling, the texture replaces the base color of the material.
-3. [ ] Runtime: the renderer loads the images, uploads them to the GPU and binds them; the object keeps its `color` until its image is loaded.
+1. [x] Compiler: `texture: url("…")` is read (`readTexture`), and `compileScene` returns the list of images of the scene (`textures`). Registry entry.
+2. [x] Codegen: one `uniform sampler2D` per image, the object's point and normal in its own space, triplanar sampling, the texture replaces the base color of the material.
+3. [x] Runtime: the renderer loads the images, uploads them to the GPU and binds them; the object keeps its `color` until its image is loaded.
 4. [ ] `image-rendering: pixelated` → nearest filtering (smooth by default, like CSS).
 5. [ ] `::top` and `::bottom`: parser, cascade (a pseudo-element counts as a tag in the specificity, like CSS), one texture per face.
 6. [ ] `texture-size`, docs, the dirt and grass blocks in the test scene, a decision in `DECISIONS.md`.
