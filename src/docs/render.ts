@@ -100,7 +100,10 @@ export function renderFunction(fn: FunctionDef): string {
 
 // The HTML of one shape. Its own properties come from the registry (appliesTo),
 // so a new shape property shows up here without touching this list.
-export function renderShape(shape: ShapeDef, properties: PropertyDef[]): string {
+export function renderShape(
+  shape: ShapeDef,
+  properties: PropertyDef[],
+): string {
   const own = properties.filter(
     (property) =>
       Array.isArray(property.appliesTo) &&
@@ -115,7 +118,8 @@ export function renderShape(shape: ShapeDef, properties: PropertyDef[]): string 
   // A group only takes a few properties: they are listed instead of "every object property"
   const takes = (shape.takes ?? [])
     .map(
-      (name) => `<a href="#${escapeHtml(name)}"><code>${escapeHtml(name)}</code></a>`,
+      (name) =>
+        `<a href="#${escapeHtml(name)}"><code>${escapeHtml(name)}</code></a>`,
     )
     .join(", ");
   const propertyList = shape.takes
@@ -161,6 +165,7 @@ function renderToc(sections: Section[]): string {
      <div class="toc-slot">
       <div class="toc" aria-label="Contents">
         <h2><button type="button" class="toc-toggle" aria-expanded="false">Contents</button></h2>
+        <div id="docsearch"></div>
         <nav class="toc-nav"> ${groups.join("\n")}</nav>
       </div>
     </div>`;

@@ -1,0 +1,167 @@
+/* Algolia DocSearch, dressed in "Distance field" (DESIGN.md): near-black ladder,
+   1px hairlines, 2px radius, no shadow, no blur, one accent.
+   Imported after @docsearch/css (src/docs/main.ts), so these values win.
+   The second selector beats DocSearch's own :root[data-theme="dark"]. */
+
+:root,
+:root[data-theme="dark"] {
+  --docsearch-font-family: var(--gss-font-body);
+  --docsearch-primary-color: var(--gss-signal);
+  --docsearch-primary-dark-color: var(--gss-signal-hover);
+  --docsearch-soft-primary-color: var(--gss-signal-wash);
+  --docsearch-highlight-color: var(--gss-signal);
+  --docsearch-focus-color: var(--gss-signal);
+  --docsearch-logo-color: var(--gss-signal);
+
+  --docsearch-text-color: var(--gss-bone);
+  --docsearch-secondary-text-color: var(--gss-ash);
+  --docsearch-muted-color: var(--gss-dim);
+  --docsearch-muted-color-darker: var(--gss-isoline);
+  --docsearch-icon-color: var(--gss-dim);
+  --docsearch-subtle-color: var(--gss-line);
+  --docsearch-background-color: var(--gss-raised);
+
+  /* Flat: no radius beyond 2px, no shadow, no translucent layers */
+  --docsearch-border-radius: var(--gss-radius-control);
+  --docsearch-modal-radius: 0;
+  --docsearch-modal-shadow: 0 0 0 1px var(--gss-line);
+  --docsearch-modal-background: var(--gss-surface);
+  --docsearch-container-background: rgb(10 10 12 / 0.85); /* void, dimmed */
+  --docsearch-searchbox-background: var(--gss-void);
+  --docsearch-searchbox-focus-background: var(--gss-void);
+  --docsearch-hit-background: var(--gss-surface);
+  --docsearch-hit-focus-background: var(--gss-raised);
+  --docsearch-hit-color: var(--gss-ash);
+  --docsearch-hit-shadow: none;
+  --docsearch-hit-highlight-color: var(--gss-signal-wash);
+  --docsearch-footer-background: var(--gss-surface);
+  --docsearch-footer-shadow: none;
+
+  --docsearch-key-background: var(--gss-raised);
+  --docsearch-key-color: var(--gss-ash);
+  --docsearch-key-pressed-shadow: none;
+
+  --docsearch-search-button-background: transparent;
+  --docsearch-search-button-text-color: var(--gss-ash);
+  --docsearch-popover-background: var(--gss-raised);
+  --docsearch-popover-shadow: 0 0 0 1px var(--gss-line);
+  --docsearch-popover-arrow-color: var(--gss-raised);
+  --docsearch-dropdown-menu-background: var(--gss-raised);
+  --docsearch-dropdown-menu-item-hover-background: var(--gss-isoline);
+  --docsearch-chip-background: var(--gss-raised);
+  --docsearch-chip-text-color: var(--gss-ash);
+  --docsearch-code-block-background: var(--gss-void);
+}
+
+/* ----- The button, in the contents column: a secondary control (DESIGN.md § 6) ----- */
+.DocSearch-Button {
+  box-sizing: border-box;
+  width: 100%;
+  height: var(--gss-control-height);
+  margin: 0 0 20px;
+  padding: 0 10px;
+  border: 1px solid var(--gss-isoline);
+  border-radius: var(--gss-radius-control);
+  font: 13px var(--gss-font-code);
+  transition:
+    color var(--gss-transition),
+    border-color var(--gss-transition);
+}
+.DocSearch-Button:hover,
+.DocSearch-Button:focus-visible {
+  border-color: var(--gss-dim);
+  color: var(--gss-bone);
+  box-shadow: none;
+}
+.DocSearch-Button .DocSearch-Search-Icon {
+  width: 14px;
+  height: 14px;
+  color: var(--gss-dim);
+}
+.DocSearch-Button-Placeholder {
+  padding-inline: 8px;
+  font-size: 13px;
+  text-transform: lowercase;
+}
+.DocSearch-Button-Key {
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--gss-line);
+  border-radius: var(--gss-radius-control);
+  font: 11px var(--gss-font-code);
+}
+.DocSearch-Button-Key--ctrl {
+  width: 30px;
+}
+
+/* ----- The modal: square, a hairline around it ----- */
+.DocSearch-Container {
+  backdrop-filter: none;
+}
+.DocSearch-Form {
+  border-radius: 0;
+  box-shadow: none;
+}
+.DocSearch-Input {
+  font: 15px var(--gss-font-code);
+  color: var(--gss-bone);
+}
+.DocSearch-Input::placeholder {
+  color: var(--gss-dim);
+}
+
+/* Section eyebrows ("Shapes", "Object properties"), like the contents */
+.DocSearch-Hit-source {
+  font: 11px var(--gss-font-code);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gss-dim);
+}
+
+/* A hit: mono title, the selected one is bone on raised with a 2px signal rule,
+   like the current page in the contents (DESIGN.md § 6, Nav) */
+.DocSearch-Hit a {
+  border-radius: 0;
+  border-left: 2px solid transparent;
+  transition: background-color var(--gss-transition);
+}
+.DocSearch-Hit[aria-selected="true"] a {
+  border-left-color: var(--gss-signal);
+  background: var(--gss-raised);
+}
+.DocSearch-Hit-title {
+  font-family: var(--gss-font-code);
+  color: var(--gss-bone);
+}
+.DocSearch-Hit-path,
+.DocSearch-Hit-text {
+  color: var(--gss-ash);
+}
+.DocSearch-Hit mark,
+.DocSearch-Hits mark {
+  color: var(--gss-signal);
+  text-decoration: none;
+  background: none;
+}
+.DocSearch-Hit-icon {
+  color: var(--gss-dim);
+}
+
+/* Keys in the footer, square and flat */
+.DocSearch-Footer {
+  border-radius: 0;
+}
+.DocSearch-Commands-Key {
+  border: 1px solid var(--gss-line);
+  border-radius: var(--gss-radius-control);
+}
+
+/* The Algolia logo: its blue is written inside the SVG (fill: #003dff), so the
+   --docsearch-logo-color variable is not enough */
+.DocSearch-Logo svg .cls-1,
+.DocSearch-Logo svg .cls-2 {
+  fill: var(--gss-signal);
+}
+.DocSearch-Label {
+  color: var(--gss-dim);
+}

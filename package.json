@@ -26,6 +26,8 @@
     "@codemirror/lint": "^6.9.7",
     "@codemirror/state": "^6.7.6",
     "@codemirror/view": "^6.43.13",
+    "@docsearch/css": "^5.1.1",
+    "@docsearch/js": "^5.1.1",
     "@fontsource/geist": "^5.3.0",
     "@fontsource/jetbrains-mono": "^5.3.0",
     "@fontsource/martian-mono": "^5.3.0",
