@@ -59,3 +59,9 @@ export function createTextureStore(gl: WebGL2RenderingContext): TextureStore {
     },
   };
 }
+
+// Where an image of the scene lives: next to the .gss file, like url() in a stylesheet.
+// Without a base (the playground, the docs), the path stays as written.
+export function resolveImage(file: string, base?: string): string {
+  return base ? new URL(file, base).href : file;
+}
