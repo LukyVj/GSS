@@ -113,6 +113,26 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 11. [x] `sibling-index()` + `sibling-count()` (decision 52)
 12. [ ] Motion path
 
+## Embedding and showcase (decision 63)
+
+A page of real use cases, for designers, creative coders and developers, needs scenes that live outside gss-lang.dev. Three ways to embed a scene, all in v1, then the page that uses them.
+
+1. [x] **Split the compiler from the runtime**: `runtime/view.ts` draws a `CompiledScene` and never imports the compiler; `createRenderer` (`load(source)`) becomes a thin layer on top of it. Without this, every page that draws also ships the compiler.
+2. [x] **`mount(canvas, scene, options)`** (`src/embed/`): the scene sleeps when it leaves the screen, `prefers-reduced-motion` freezes the time, images are resolved against the `.gss` file (`base`), mouse controls like the playground (`controls: false` → hover only).
+3. [x] **`<gss-scene>`**: `src="logo.gss"` or the code inline in a `<script type="text/gss">`, `controls="none"`; the WebGL context is only created when the element comes into view. Built as `embed.js` (a second Vite build) and served by gss-lang.dev: no npm, no build step for designers.
+4. [x] **The Vite plugin** (`gss-lang/vite`): `import scene from "./logo.gss"` compiles at build time; the page only ships the runtime and the shader. GSS errors show in Vite's terminal; relative images become Vite assets.
+5. [ ] **The npm package** (built: `npm run build:lib` → `lib/`, `exports` and types ready; still `private`): `exports` for `gss-lang` (compiler + mount), `gss-lang/runtime` (mount only) and `gss-lang/vite`, with types. Publishing waits for a **license** (npm makes the code readable even while the repo is private).
+6. [x] **`showcase.html`**: use cases by audience at the top (designers: an SVG logo in 3D, a themable icon set; creative coders: generative loops, the Shadertoy export; developers: a hero with `:hover`, a scene written by an LLM), an inspiration grid below (captures that open the playground with `#code=`). Built with `<gss-scene>`: the site uses its own embed. The demos are written by Lucas; every demo is a `.gss` file that `gpu.test.ts` compiles.
+7. [x] **An "Embedding" entry in the docs**, with the three snippets.
+
+Next, on this page:
+
+- [ ] **Lucas's demos** replace the six starter scenes of `src/showcase/scenes/` (the LLM one should come from a real, unedited run), then `npm run captures`
+- [ ] Captures of the registry examples show the light default floor: to revisit with the floor decision
+- [ ] A license, then `npm publish` (and the `npm i gss-lang` / GitHub links on the home page)
+- [ ] Ctrl/Cmd + wheel to zoom an embedded scene, if the wheel that stops the page scroll gets in the way
+- [ ] `<gss-scene>` in the VS Code extension's HTML snippets
+
 ## Later
 
 ### Product / surface
@@ -170,6 +190,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 
 ## Done recently
 
+- Embedding and showcase: `<gss-scene>` / `embed.js`, `mount()`, the Vite plugin, a runtime without the compiler (10 kB), `showcase.html`, `npm run captures` (decision 63)
 - `:hover`: triggers, a second cascade, `uHover[]` in the shader and a picking pass, on the home page, the playground and every "Try it" (decision 62)
 - Textures: `texture: url("…")`, `::face()` / `::top` / `::bottom`, `image-rendering: pixelated`, `texture-size`: the Minecraft dirt and grass blocks (decision 59)
 - `rgb()`, `hsl()` and the 148 CSS named colors, only where a color is expected (decision 58)
