@@ -103,6 +103,17 @@ export const PROPERTIES: PropertyDef[] = [
     ],
   },
   {
+    name: "texture",
+    appliesTo: "object",
+    syntax: 'url("<file>")',
+    initial: "none",
+    description:
+      "Projects an image onto the surface of the object: one image per face, the top, the bottom and the sides, whatever the size of the object. The image replaces the base color of the material, and moves, turns and scales with the object.",
+    examples: [
+      '@scene { cube; } cube { translate: 0 0.5 0; texture: url("/textures/dirt.png"); }',
+    ],
+  },
+  {
     name: "rotate-x",
     appliesTo: "object",
     animatable: true,

@@ -110,22 +110,28 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 11. [x] `sibling-index()` + `sibling-count()` (decision 52)
 12. [ ] Motion path
 
-## Textures (after functional colors)
+## Textures (in progress)
 
 Goal: redo a Minecraft-style dirt block from an image, then a grass block (a different top, sides and bottom). Use our own 16×16 textures or CC0 ones, not Minecraft's.
 
-**Ideas so far** (nothing decided yet):
+**Chosen (Sept. 30)**:
 
-- SDF shapes have no UVs, so the natural technique is **triplanar mapping**: the image is projected along the surface normal. +Y is the top, −Y the bottom, X and Z the sides: exactly the split of a Minecraft block, and it works on every shape (sphere, torus, prism…), not only the cube.
-- The projection is done in the object's space, so the texture moves, turns and scales with the object.
-- Syntax, two options to choose from:
-  - **A. A shorthand** with 1 to 3 values, like `margin`: `texture: url(dirt.png)` / `texture: url(top.png) url(side.png) url(bottom.png)`.
-  - **B. Face pseudo-elements**: `cube.grass { texture: url(side.png); }`, `cube.grass::top { … }`, `cube.grass::bottom { … }`. Very CSS; needs to define what `::top` means on a sphere (the +Y side of the blend).
-- `image-rendering: pixelated` (real CSS) → nearest filtering, needed for pixel art. A `texture-size` (or `background-size`-like) property for the tiling.
-- The texture gives the base color of any material (matte, metal, jelly…); `color` could tint it.
-- Compiler: collects the `url()`s and generates one `sampler2D` uniform per image (WebGL2 guarantees at least 16 texture units). Runtime: loads the images asynchronously (a runtime job, not a compiler one) and uses the object's `color` until they are loaded.
-- First step: one texture on every face (the dirt block).
-- Open questions: images in the playground and in share links (URLs only? data URLs? drag and drop?), CORS, one file per face vs an atlas, how sharp the blend is between faces (sharp on a cube, soft on a sphere), and decision 1's "no textures".
+- **Face pseudo-elements** for the faces: `cube.grass { texture: url("side.png"); }`, `cube.grass::top { … }`, `cube.grass::bottom { … }`. On a sphere, `::top` is the part facing +Y.
+- **One image per face** by default, whatever the size of the object (the Minecraft block). A `texture-size` property will repeat the pattern later.
+- `url("…")` with quotes, like `path("…")`: no unquoted CSS `url(dirt.png)` in the first version.
+
+**Technique**: SDF shapes have no UVs, so the image is projected along the surface normal (triplanar mapping): +Y is the top, −Y the bottom, X and Z the sides. The projection is done in the object's space (the same `q` as in `map()`), so the texture moves, turns and scales with the object. For pixel art, the dominant axis wins (no blend between faces) in the first version.
+
+**Steps**:
+
+1. [ ] Compiler: `texture: url("…")` is read (`readTexture`), and `compileScene` returns the list of images of the scene (`textures`). Registry entry.
+2. [ ] Codegen: one `uniform sampler2D` per image, the object's point and normal in its own space, triplanar sampling, the texture replaces the base color of the material.
+3. [ ] Runtime: the renderer loads the images, uploads them to the GPU and binds them; the object keeps its `color` until its image is loaded.
+4. [ ] `image-rendering: pixelated` → nearest filtering (smooth by default, like CSS).
+5. [ ] `::top` and `::bottom`: parser, cascade (a pseudo-element counts as a tag in the specificity, like CSS), one texture per face.
+6. [ ] `texture-size`, docs, the dirt and grass blocks in the test scene, a decision in `DECISIONS.md`.
+
+**Open**: images in the playground and in share links (URLs only? data URLs? drag and drop?), CORS, one file per face vs an atlas, a soft blend between faces for round shapes, and decision 1's "no textures".
 
 ## Later
 

@@ -13,12 +13,14 @@ import { errorAt, rememberSpan, spanOf } from "./errors";
 import { resolveVars, usesVariables, hasVar, type Variables } from "./vars";
 import { PROPERTIES } from "./registry";
 import { resolveColors, resolveNamedColors } from "./colors";
+import { sceneTextures } from "./textures";
 
 // Everything the runtime needs to display a scene
 export type CompiledScene = {
   shader: string;
   camera: CameraSettings;
   objects: number; // instances drawn, for the status bar (decision 42)
+  textures: string[]; // the image files the runtime loads, once each
 };
 
 // GSS text → shader + camera settings
@@ -93,6 +95,8 @@ export function compileScene(source: string): CompiledScene {
     shader: generateShader(styled, computedScene, [...shared, ...copies]),
     camera: readCamera(computedScene),
     objects: instances.length,
+    // After the cascade and var(): the texture an object really ends up with
+    textures: sceneTextures(styled),
   };
 }
 
@@ -133,7 +137,10 @@ function animateVariables(
     const frameVariables: Variables = { ...variables };
     for (const d of set) frameVariables[d.property] = d.value;
     const compute = (property: string, value: Token[]) =>
-      colorsOf(property, resolveMath(resolveVars(value, frameVariables), context));
+      colorsOf(
+        property,
+        resolveMath(resolveVars(value, frameVariables), context),
+      );
 
     // The properties the frame writes itself
     const declarations: Declaration[] = own.map((d) =>
