@@ -524,10 +524,11 @@ export const AT_RULES: AtRuleDef[] = [
     name: "media",
     syntax: "@media <media-query> { <rule> … }",
     description:
-      "Applies rules only when the screen matches a media query, like CSS: (max-width: 600px), (min-width: 40em), (orientation: portrait), (prefers-color-scheme: dark), (prefers-reduced-motion), joined with and, not or commas. The browser reads the query, so any media query CSS knows works. Inside, the rules join the cascade where the @media is written, with their usual specificity. When the screen changes (a window resized, the system turning dark), the scene follows at once and the camera stays where it is. A common use: a lighter render on small screens with scene { dpr: 1; }, and no motion for people who ask for less with * { animation: none !important; }. A scene can use up to 4 different queries. @media holds rules only: @scene and @keyframes go outside it.",
+      "Applies rules only when the screen matches a media query, like CSS: (max-width: 600px), (min-width: 40em), (orientation: portrait), (prefers-color-scheme: dark), (prefers-reduced-motion), joined with and, not or commas. The browser reads the query, so any media query CSS knows works. Inside, the rules join the cascade where the @media is written, with their usual specificity. When the screen changes (a window resized, the system switching between light and dark mode), the scene follows at once and the camera stays where it is. (prefers-color-scheme: dark) and (prefers-color-scheme: light) follow the light or dark mode of the system, like CSS. A common use: a lighter render on small screens with scene { dpr: 1; }, and no motion for people who ask for less with * { animation: none !important; }. A scene can use up to 4 different queries. @media holds rules only: @scene and @keyframes go outside it.",
     examples: [
       "@scene { sphere; } sphere { translate: 0 1 0; color: #ff5a36; } @media (max-width: 600px) { scene { dpr: 1; } sphere { color: #3a7bff; } }",
       "@scene { sphere; } sphere { translate: 0 1 0; color: #ff5a36; animation: bob 2s ease-in-out alternate; } @keyframes bob { to { translate: 0 1.6 0; } } @media (prefers-reduced-motion) { * { animation: none !important; } }",
+      "@scene { sphere; } scene { background: #f2efe9; floor: #e8e3db; } sphere { translate: 0 1 0; color: #ff5a36; } @media (prefers-color-scheme: dark) { scene { background: #080808; floor: #1a1a1f; } sphere { color: #3a7bff; } }",
     ],
   },
 ];
