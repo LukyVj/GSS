@@ -1,0 +1,773 @@
+/*
+ * FRAME — COMPACT CAMERA
+ *
+ * Product configurator + interactive lens explorer.
+ *
+ * Hover:
+ * - finish swatches -> changes camera finish
+ * - front glass -> explodes the lens stack
+ * - shutter -> presses physically
+ *
+ * No dynamic hover rule styles a group.
+ */
+
+@scene {
+  group#demo {
+
+    group#camera {
+      cube#body
+      cube#grip
+
+      cylinder#lens-base
+      cylinder#lens-mid
+      cylinder#lens-front
+
+      torus#ring-1
+      torus#ring-2
+      torus#ring-3
+
+      sphere#glass
+
+      cube#screen
+      cube#viewfinder
+
+      cylinder#dial
+      cylinder#button
+      sphere#shutter
+
+      path#logo
+    }
+
+    group#finishes {
+      sphere.finish * 4
+    }
+  }
+}
+
+
+/* ==================================================
+   SCENE
+   ================================================== */
+
+scene {
+  --black: #18181a;
+  --silver: #bcbab5;
+  --sand: #b7a88f;
+  --red: #9c3636;
+
+  --metal: #aaa8a4;
+  --glass: #394257;
+
+  background: #d9d5ce;
+  floor: #c7c1b8;
+
+  light: 140deg 38deg;
+  ambient: 0.42;
+
+  dpr: auto;
+
+  camera-target: 0 1.35 0;
+  camera-distance: 7.2;
+  camera-angle: -22deg 12deg;
+}
+
+
+/* ==================================================
+   CAMERA BODY
+   ================================================== */
+
+#body {
+  size: 2.9 1.85 0.75;
+
+  translate: 0 1.45 0;
+
+  corner-radius: 0.22;
+
+  color: var(--black);
+
+  material: metal(0.48);
+
+  transition:
+    0.4s
+    cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+
+#grip {
+  size: 0.55 1.5 0.9;
+
+  translate: 1.18 1.42 0.02;
+
+  corner-radius: 0.2;
+
+  color: #111113;
+
+  material: matte();
+
+  transition:
+    0.35s
+    ease-out;
+}
+
+
+/* ==================================================
+   LENS BASE
+   ================================================== */
+
+#lens-base {
+  radius: 0.72;
+  height: 0.28;
+
+  translate: -0.35 1.45 0.52;
+
+  rotate-x: 90deg;
+
+  color: #222226;
+
+  material: metal(0.3);
+
+  transition:
+    0.32s
+    cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+
+/* ==================================================
+   LENS MID
+   ================================================== */
+
+#lens-mid {
+  radius: 0.59;
+  height: 0.32;
+
+  translate: -0.35 1.45 0.72;
+
+  rotate-x: 90deg;
+
+  color: #121214;
+
+  material: metal(0.24);
+
+  transition:
+    0.32s
+    cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+
+/* ==================================================
+   LENS FRONT
+   ================================================== */
+
+#lens-front {
+  radius: 0.5;
+  height: 0.18;
+
+  translate: -0.35 1.45 0.96;
+
+  rotate-x: 90deg;
+
+  color: #08090b;
+
+  material: metal(0.16);
+
+  transition:
+    0.32s
+    cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+
+/* ==================================================
+   OPTICAL RINGS
+   ================================================== */
+
+#ring-1 {
+  radius: 0.65;
+  thickness: 0.035;
+
+  translate: -0.35 1.45 0.64;
+
+  rotate-x: 90deg;
+
+  color: #6c6c70;
+
+  material: metal(0.15);
+
+  transition:
+    0.28s
+    ease-out;
+}
+
+
+#ring-2 {
+  radius: 0.555;
+  thickness: 0.025;
+
+  translate: -0.35 1.45 0.84;
+
+  rotate-x: 90deg;
+
+  color: #88888d;
+
+  material: metal(0.12);
+
+  transition:
+    0.28s
+    ease-out;
+}
+
+
+#ring-3 {
+  radius: 0.46;
+  thickness: 0.018;
+
+  translate: -0.35 1.45 1.08;
+
+  rotate-x: 90deg;
+
+  color: #aaaab0;
+
+  material: metal(0.1);
+
+  transition:
+    0.28s
+    ease-out;
+}
+
+
+/* ==================================================
+   FRONT GLASS
+   ================================================== */
+
+#glass {
+  radius: 0.43;
+
+  scale: 1;
+
+  translate: -0.35 1.45 1.12;
+
+  color: var(--glass);
+
+  material:
+    glass(
+      #3f4c68,
+      1.5
+    );
+
+  transition:
+    0.3s
+    cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+
+/* ==================================================
+   VIEWFINDER
+   ================================================== */
+
+#viewfinder {
+  size: 0.58 0.34 0.12;
+
+  translate: 0.68 1.92 0.43;
+
+  corner-radius: 0.09;
+
+  color: #101114;
+
+  material:
+    glass(
+      #242b36,
+      1.5
+    );
+}
+
+
+/* ==================================================
+   SCREEN
+   ================================================== */
+
+#screen {
+  size: 1.35 0.92 0.07;
+
+  translate: 0.18 1.42 -0.4;
+
+  corner-radius: 0.08;
+
+  color: #161a20;
+
+  material:
+    glass(
+      #111820,
+      1.45
+    );
+}
+
+
+/* ==================================================
+   TOP DIAL
+   ================================================== */
+
+#dial {
+  radius: 0.25;
+  height: 0.12;
+
+  translate: 0.7 2.43 0;
+
+  color: #252529;
+
+  material: metal(0.24);
+
+  transition:
+    0.22s
+    ease-out;
+}
+
+
+/* ==================================================
+   BUTTON
+   ================================================== */
+
+#button {
+  radius: 0.12;
+  height: 0.08;
+
+  translate: 1.05 2.4 0;
+
+  color: #c9c7c2;
+
+  material: metal(0.12);
+
+  transition:
+    0.16s
+    cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+
+/* ==================================================
+   SHUTTER
+   ================================================== */
+
+#shutter {
+  radius: 0.11;
+
+  scale: 1;
+
+  translate: 1.05 2.47 0;
+
+  color: #e0ded8;
+
+  material: metal(0.08);
+
+  transition:
+    0.15s
+    cubic-bezier(0.3, -0.3, 0.6, 1.3);
+}
+
+
+/* ==================================================
+   LOGO
+   ================================================== */
+
+#logo {
+  d: path(
+    "M5 21 L5 5 L12 5 C17 5 20 8 20 13 C20 18 17 21 12 21 Z"
+  );
+
+  view-box: 0 0 26 26;
+
+  stroke-width: 1.4;
+
+  scale: 0.025;
+
+  translate: 0.8 1.1 0.405;
+
+  color: #d9d7d2;
+
+  material: metal(0.2);
+
+  transition:
+    0.3s
+    ease-out;
+}
+
+
+/* ==================================================
+   FINISH SWATCHES
+   ================================================== */
+
+#finishes > .finish {
+  --i: sibling-index();
+
+  radius: 0.16;
+
+  translate:
+    calc(var(--i) * 0.55 - 1.38)
+    0.18
+    1.35;
+
+  material: matte();
+
+  transition:
+    0.2s
+    cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+
+#finish-1 {
+  color: var(--black);
+}
+
+
+#finish-2 {
+  color: var(--silver);
+}
+
+
+#finish-3 {
+  color: var(--sand);
+}
+
+
+#finish-4 {
+  color: var(--red);
+}
+
+
+/* ==================================================
+   SWATCH INTERACTION
+   ================================================== */
+
+.finish:hover {
+  scale: 1.4;
+
+  translate:
+    calc(var(--i) * 0.55 - 1.38)
+    0.26
+    1.35;
+}
+
+
+.finish:hover + .finish,
+.finish:has(+ .finish:hover) {
+  scale: 1.12;
+}
+
+
+/* ==================================================
+   BLACK FINISH
+   ================================================== */
+
+#demo:has(#finish-1:hover) #body {
+  color: var(--black);
+}
+
+
+#demo:has(#finish-1:hover) #grip {
+  color: #111113;
+}
+
+
+#demo:has(#finish-1:hover) #logo {
+  color: #dedcd7;
+}
+
+
+/* ==================================================
+   SILVER FINISH
+   ================================================== */
+
+#demo:has(#finish-2:hover) #body {
+  color: var(--silver);
+}
+
+
+#demo:has(#finish-2:hover) #grip {
+  color: #333337;
+}
+
+
+#demo:has(#finish-2:hover) #logo {
+  color: #28282b;
+}
+
+
+/* ==================================================
+   SAND FINISH
+   ================================================== */
+
+#demo:has(#finish-3:hover) #body {
+  color: var(--sand);
+}
+
+
+#demo:has(#finish-3:hover) #grip {
+  color: #4a4339;
+}
+
+
+#demo:has(#finish-3:hover) #logo {
+  color: #423d36;
+}
+
+
+/* ==================================================
+   RED FINISH
+   ================================================== */
+
+#demo:has(#finish-4:hover) #body {
+  color: var(--red);
+}
+
+
+#demo:has(#finish-4:hover) #grip {
+  color: #451c1c;
+}
+
+
+#demo:has(#finish-4:hover) #logo {
+  color: #f4e8e6;
+}
+
+
+/* ==================================================
+   FINISH PREVIEW RESPONSE
+   ================================================== */
+
+#demo:has(.finish:hover) #body {
+  scale: 1.015;
+}
+
+
+#demo:has(.finish:hover) #lens-base {
+  scale: 1.02;
+}
+
+
+#demo:has(.finish:hover) #lens-mid {
+  scale: 1.02;
+}
+
+
+#demo:has(.finish:hover) #lens-front {
+  scale: 1.02;
+}
+
+
+#demo:has(.finish:hover) #glass {
+  scale: 1.2;
+}
+
+
+/* ==================================================
+   LENS EXPLORER
+
+   Hover the front glass and the optical stack
+   separates into an exploded view.
+   ================================================== */
+
+#glass:hover {
+  scale: 1.06 1.06 0.22;
+
+  color: #637698;
+}
+
+
+#camera:has(#glass:hover) #lens-base {
+  translate: -0.35 1.45 0.48;
+}
+
+
+#camera:has(#glass:hover) #ring-1 {
+  translate: -0.35 1.45 0.68;
+}
+
+
+#camera:has(#glass:hover) #lens-mid {
+  translate: -0.35 1.45 0.82;
+}
+
+
+#camera:has(#glass:hover) #ring-2 {
+  translate: -0.35 1.45 1.02;
+}
+
+
+#camera:has(#glass:hover) #lens-front {
+  translate: -0.35 1.45 1.17;
+}
+
+
+#camera:has(#glass:hover) #ring-3 {
+  translate: -0.35 1.45 1.36;
+}
+
+
+#camera:has(#glass:hover) #glass {
+  translate: -0.35 1.45 1.58;
+}
+
+
+/* ==================================================
+   LENS HOVER DETAILS
+   ================================================== */
+
+#lens-front:hover {
+  color: #17181c;
+}
+
+
+#camera:has(#lens-front:hover) #ring-3 {
+  color: #d7d5cf;
+
+  scale: 1.08;
+}
+
+
+#camera:has(#lens-front:hover) #glass {
+  color: #536684;
+}
+
+
+/* ==================================================
+   SHUTTER INTERACTION
+   ================================================== */
+
+#shutter:hover {
+  scale: 1.12;
+
+  translate: 1.05 2.43 0;
+
+  color: #ffffff;
+}
+
+
+#camera:has(#shutter:hover) #button {
+  translate: 1.05 2.36 0;
+
+  color: #ffffff;
+}
+
+
+#camera:has(#shutter:hover) #glass {
+  color: #778ebd;
+}
+
+
+#camera:has(#shutter:hover) #ring-3 {
+  color: #ffffff;
+}
+
+
+/* ==================================================
+   BODY HOVER
+   ================================================== */
+
+#body:hover {
+  scale: 1.015;
+}
+
+
+#camera:has(#body:hover) #grip {
+  translate: 1.21 1.42 0.04;
+}
+
+
+/* ==================================================
+   DIAL HOVER
+   ================================================== */
+
+#dial:hover {
+  scale: 1.1;
+
+  color: #47474d;
+}
+
+
+#camera:has(#dial:hover) #screen {
+  color: #233043;
+}
+
+
+/* ==================================================
+   SCREEN HOVER
+   ================================================== */
+
+#screen:hover {
+  color: #26354b;
+}
+
+
+#camera:has(#screen:hover) #viewfinder {
+  color: #34445d;
+}
+
+
+/* ==================================================
+   RESPONSIVE
+   ================================================== */
+
+@media (max-width: 700px) {
+
+  scene {
+    camera-distance: 8.1;
+    camera-target: 0 1.35 0;
+  }
+
+  #finishes > .finish {
+    radius: 0.18;
+
+    translate:
+      calc(var(--i) * 0.64 - 1.6)
+      0.18
+      1.4;
+  }
+
+  .finish:hover {
+    translate:
+      calc(var(--i) * 0.64 - 1.6)
+      0.27
+      1.4;
+  }
+}
+
+
+/* ==================================================
+   DARK MODE
+   ================================================== */
+
+@media (prefers-color-scheme: dark) {
+
+  scene {
+    background: #101012;
+    floor: #19191c;
+
+    ambient: 0.3;
+  }
+
+}
+
+
+/* ==================================================
+   REDUCED MOTION
+   ================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+
+  #body,
+  #grip,
+  #lens-base,
+  #lens-mid,
+  #lens-front,
+  #ring-1,
+  #ring-2,
+  #ring-3,
+  #glass,
+  #screen,
+  #viewfinder,
+  #dial,
+  #button,
+  #shutter,
+  #logo,
+  .finish {
+    transition: none;
+  }
+
+}

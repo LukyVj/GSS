@@ -11,6 +11,9 @@ import tidal from "../scenes/todal.gss?raw";
 import everything from "../scene.gss?raw";
 import ripple from "../scenes/ripple.gss?raw";
 import proximity from "../scenes/proximity.gss?raw";
+import watch from "../scenes/watch.gss?raw";
+import orbit from "../scenes/orbit-sequencer.gss?raw";
+import perfume from "../scenes/perfume.gss?raw";
 
 import { FIRST_SCENE } from "../docs/guide";
 import { formatGss } from "../docs/format";
@@ -197,5 +200,20 @@ export const INSPIRATION: Inspiration[] = [
     slug: "proximity",
     title: "Proximity falloff (1D steps)",
     code: proximity,
+  },
+  {
+    slug: "watch",
+    title: "A watch, with a glass ball and a crown",
+    code: watch,
+  },
+  {
+    slug: "orbit",
+    title: "An orbiting planet, with a glass ball and a crown",
+    code: orbit,
+  },
+  {
+    slug: "perfume",
+    title: "A perfume bottle, with a glass ball and a crown",
+    code: perfume,
   },
 ];

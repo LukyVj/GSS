@@ -1,0 +1,531 @@
+/*
+ * SILLAGE
+ * Interactive perfume product configurator.
+ *
+ * Hover a swatch to preview another fragrance.
+ *
+ * Deliberately small scene:
+ * - 1 glass bottle
+ * - 1 liquid body
+ * - simple metal hardware
+ * - 4 interactive swatches
+ *
+ * No dynamic rule styles a group.
+ */
+
+@scene {
+  group#stage {
+
+    group#product {
+      cube#bottle
+      cube#liquid
+
+      cylinder#neck
+      torus#collar
+
+      cylinder#cap
+      cylinder#sprayer
+      sphere#nozzle
+
+      cube#label
+      path#mark
+    }
+
+    group#swatches {
+      sphere#tone * 4
+    }
+  }
+}
+
+
+/* ==================================================
+   SCENE
+   ================================================== */
+
+scene {
+  --cream: #f2eee7;
+  --ink: #151416;
+
+  --rose: #e69aaa;
+  --amber: #d78a4d;
+  --violet: #8875d7;
+  --green: #7d9c7a;
+
+  background: #e8e2da;
+  floor: #d8d0c6;
+
+  light: 135deg 42deg;
+  ambient: 0.48;
+
+  dpr: auto;
+
+  camera-target: 0 1.65 0;
+  camera-distance: 6.8;
+  camera-angle: -18deg 9deg;
+}
+
+
+/* ==================================================
+   PRODUCT
+   ================================================== */
+
+#product {
+  translate: 0 0 0;
+
+  /*
+   * Slow product turntable.
+   * Static animation on a group is allowed.
+   */
+  animation:
+    product-turn
+    18s
+    ease-in-out
+    infinite
+    alternate;
+}
+
+
+/* ==================================================
+   GLASS BOTTLE
+   ================================================== */
+
+#bottle {
+  size: 1.85 2.5 0.82;
+
+  translate: 0 1.45 0;
+
+  corner-radius: 0.24;
+
+  color: #ffffff;
+
+  material:
+    glass(
+      #ffffff,
+      1.46,
+      blurred 0.08
+    );
+}
+
+
+/* ==================================================
+   LIQUID
+   ================================================== */
+
+#liquid {
+  size: 1.58 1.75 0.58;
+
+  translate: 0 1.18 0;
+
+  corner-radius: 0.18;
+
+  color: var(--rose);
+
+  material: jelly(0.42);
+
+  transition:
+    0.55s
+    cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+
+/* ==================================================
+   NECK
+   ================================================== */
+
+#neck {
+  radius: 0.27;
+  height: 0.38;
+
+  translate: 0 2.84 0;
+
+  color: #e9e4dc;
+
+  material: glass;
+}
+
+
+/* ==================================================
+   METAL COLLAR
+   ================================================== */
+
+#collar {
+  radius: 0.34;
+  thickness: 0.055;
+
+  translate: 0 2.96 0;
+
+  rotate-x: 90deg;
+
+  color: #c9a76b;
+
+  material: metal(0.18);
+}
+
+
+/* ==================================================
+   CAP
+   ================================================== */
+
+#cap {
+  radius: 0.37;
+  height: 0.76;
+
+  translate: 0 3.35 0;
+
+  color: #171619;
+
+  material: metal(0.22);
+}
+
+
+/* ==================================================
+   SPRAYER
+   ================================================== */
+
+#sprayer {
+  radius: 0.12;
+  height: 0.16;
+
+  translate: 0 3.80 0;
+
+  color: #c9a76b;
+
+  material: metal(0.12);
+}
+
+
+#nozzle {
+  radius: 0.075;
+
+  translate: 0.14 3.84 0;
+
+  color: #c9a76b;
+
+  material: metal(0.12);
+}
+
+
+/* ==================================================
+   LABEL
+   ================================================== */
+
+#label {
+  size: 0.92 0.74 0.045;
+
+  translate: 0 1.56 0.44;
+
+  corner-radius: 0.04;
+
+  color: var(--cream);
+
+  material: matte();
+
+  transition:
+    0.55s
+    ease-out;
+}
+
+
+/* ==================================================
+   MONOGRAM
+   ================================================== */
+
+#mark {
+  /*
+   * Minimal S mark.
+   */
+
+  d: path(
+    "M18 6 C10 6 8 10 12 13 C16 16 22 15 22 20 C22 25 17 27 10 25"
+  );
+
+  view-box: 0 0 32 32;
+
+  stroke-width: 2.2;
+
+  scale: 0.025;
+
+  translate: 0 1.56 0.49;
+
+  color: var(--ink);
+
+  material: metal(0.3);
+
+  transition:
+    0.55s
+    ease-out;
+}
+
+
+/* ==================================================
+   SWATCHES
+   ================================================== */
+
+#swatches {
+  translate: 0 0 0;
+}
+
+
+#swatches > .tone {
+  --i: sibling-index();
+
+  radius: 0.16;
+
+  translate:
+    calc(var(--i) * 0.58 - 1.45)
+    0.18
+    1.6;
+
+  material: matte();
+
+  transition:
+    0.24s
+    cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+
+#tone-1 {
+  color: var(--rose);
+}
+
+#tone-2 {
+  color: var(--amber);
+}
+
+#tone-3 {
+  color: var(--violet);
+}
+
+#tone-4 {
+  color: var(--green);
+}
+
+
+/* ==================================================
+   SWATCH HOVER
+   ================================================== */
+
+.tone:hover {
+  scale: 1.42;
+
+  translate:
+    calc(var(--i) * 0.58 - 1.45)
+    0.26
+    1.6;
+}
+
+
+/*
+ * Neighbour reaction.
+ */
+
+.tone:hover + .tone,
+.tone:has(+ .tone:hover) {
+  scale: 1.12;
+}
+
+
+/* ==================================================
+   CONFIGURATOR
+   ================================================== */
+
+/*
+ * ROSE
+ */
+
+#stage:has(#tone-1:hover) #liquid {
+  color: var(--rose);
+}
+
+#stage:has(#tone-1:hover) #mark {
+  color: #a84d67;
+}
+
+#stage:has(#tone-1:hover) #label {
+  color: #fff0f3;
+}
+
+
+/*
+ * AMBER
+ */
+
+#stage:has(#tone-2:hover) #liquid {
+  color: var(--amber);
+}
+
+#stage:has(#tone-2:hover) #mark {
+  color: #a96029;
+}
+
+#stage:has(#tone-2:hover) #label {
+  color: #fff0df;
+}
+
+
+/*
+ * VIOLET
+ */
+
+#stage:has(#tone-3:hover) #liquid {
+  color: var(--violet);
+}
+
+#stage:has(#tone-3:hover) #mark {
+  color: #6351b7;
+}
+
+#stage:has(#tone-3:hover) #label {
+  color: #eeebff;
+}
+
+
+/*
+ * GREEN
+ */
+
+#stage:has(#tone-4:hover) #liquid {
+  color: var(--green);
+}
+
+#stage:has(#tone-4:hover) #mark {
+  color: #4f704d;
+}
+
+#stage:has(#tone-4:hover) #label {
+  color: #edf3e9;
+}
+
+
+/* ==================================================
+   PRODUCT REACTION
+   ================================================== */
+
+/*
+ * Since dynamically styling #product would style
+ * a group, every reaction targets drawable objects.
+ */
+
+#stage:has(.tone:hover) #bottle {
+  scale: 1.015;
+}
+
+
+#stage:has(.tone:hover) #liquid {
+  scale: 1.035;
+}
+
+
+#stage:has(.tone:hover) #cap {
+  translate: 0 3.39 0;
+}
+
+
+#stage:has(.tone:hover) #label,
+#stage:has(.tone:hover) #mark {
+  translate: 0 1.59 0.46;
+}
+
+
+/* ==================================================
+   BOTTLE HOVER
+   ================================================== */
+
+#bottle:hover {
+  scale: 1.025;
+}
+
+
+#product:has(#bottle:hover) #liquid {
+  scale: 1.025;
+}
+
+
+#product:has(#bottle:hover) #mark {
+  color: #c9a76b;
+}
+
+
+/* ==================================================
+   ANIMATION
+   ================================================== */
+
+@keyframes product-turn {
+  from {
+    rotate-y: -8deg;
+  }
+
+  to {
+    rotate-y: 8deg;
+  }
+}
+
+
+/* ==================================================
+   RESPONSIVE
+   ================================================== */
+
+@media (max-width: 700px) {
+  scene {
+    camera-distance: 7.7;
+    camera-target: 0 1.55 0;
+  }
+
+  #swatches > .tone {
+    radius: 0.18;
+
+    translate:
+      calc(var(--i) * 0.65 - 1.62)
+      0.18
+      1.65;
+  }
+
+  .tone:hover {
+    translate:
+      calc(var(--i) * 0.65 - 1.62)
+      0.28
+      1.65;
+  }
+}
+
+
+/* ==================================================
+   DARK MODE
+   ================================================== */
+
+@media (prefers-color-scheme: dark) {
+  scene {
+    background: #111012;
+    floor: #191719;
+
+    ambient: 0.32;
+  }
+
+  #label {
+    color: #e9e4de;
+  }
+
+  #mark {
+    color: #19171a;
+  }
+}
+
+
+/* ==================================================
+   REDUCED MOTION
+   ================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  #product {
+    animation: none;
+  }
+
+  #bottle,
+  #liquid,
+  #cap,
+  #label,
+  #mark,
+  .tone {
+    transition: none;
+  }
+}

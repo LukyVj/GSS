@@ -1,0 +1,567 @@
+/*
+ * ORBIT SEQUENCER
+ *
+ * A spatial GPU instrument.
+ *
+ * Hover a key:
+ * - it pops out
+ * - neighbouring keys react
+ * - the inner orbit contracts
+ * - the core + halo react
+ *
+ * Hover an inner dot:
+ * - neighbouring dots react
+ * - the outer orbit expands
+ *
+ * No JS interaction.
+ * No dynamic :hover rule ever styles a group.
+ */
+
+@scene {
+  group#machine {
+    group#outer {
+      cube.key * 16
+    }
+
+    group#inner {
+      sphere.dot * 10
+    }
+
+    torus#halo
+    sphere#core
+  }
+}
+
+
+/* ==================================================
+   SCENE
+   ================================================== */
+
+scene {
+  --background: #07070b;
+
+  --ink: #dedee8;
+
+  --hot: #ff4f87;
+  --warm: #ff9d66;
+  --soft: #ffc4a8;
+
+  --cold: #6f8cff;
+  --cold-soft: #a8b5ff;
+
+  background: var(--background);
+
+  floor: none;
+
+  light: 135deg 34deg;
+  ambient: 0.32;
+
+  dpr: auto;
+
+  camera-target: 0 1.5 0;
+  camera-distance: 8;
+  camera-angle: 20deg 16deg;
+}
+
+
+/* ==================================================
+   MACHINE
+   ================================================== */
+
+#machine {
+  translate: 0 0.1 0;
+}
+
+
+/* ==================================================
+   OUTER SEQUENCER
+   ================================================== */
+
+#outer {
+  animation: outer-spin 22s linear infinite;
+}
+
+
+#outer > .key {
+  --angle: calc(
+    sibling-index() * 1turn / sibling-count()
+  );
+
+  /*
+   * Base radius of the outer orbit.
+   */
+  --orbit-radius: 2.65;
+
+  size: 0.38 0.16 0.72;
+
+  corner-radius: 0.07;
+
+  translate:
+    calc(cos(var(--angle)) * var(--orbit-radius))
+    calc(
+      1.5
+      + sin(sibling-index() * 67deg) * 0.18
+    )
+    calc(sin(var(--angle)) * var(--orbit-radius));
+
+  rotate-y:
+    calc(
+      sibling-index()
+      * -1turn
+      / sibling-count()
+    );
+
+  color:
+    hsl(
+      calc(sibling-index() * 22)
+      88%
+      61%
+    );
+
+  material: metal(0.38);
+
+  transition:
+    0.28s
+    cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+
+/* ==================================================
+   OUTER — PROXIMITY REACTION
+   ================================================== */
+
+/*
+ * Two keys away.
+ */
+
+.key:hover + .key + .key,
+.key:has(+ .key + .key:hover) {
+  scale: 1.1;
+  color: var(--soft);
+
+  transition:
+    0.32s
+    ease-out;
+}
+
+
+/*
+ * Direct neighbour.
+ */
+
+.key:hover + .key,
+.key:has(+ .key:hover) {
+  scale: 1.28;
+  color: var(--hot);
+
+  transition:
+    0.22s
+    cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+
+/*
+ * Active key.
+ */
+
+.key:hover {
+  scale: 1.72;
+  color: #ffffff;
+
+  translate:
+    calc(cos(var(--angle)) * 2.82)
+    calc(
+      1.65
+      + sin(sibling-index() * 67deg) * 0.18
+    )
+    calc(sin(var(--angle)) * 2.82);
+
+  transition:
+    0.16s
+    cubic-bezier(0.3, -0.35, 0.6, 1.45);
+}
+
+
+/* ==================================================
+   INNER ORBIT
+   ================================================== */
+
+#inner {
+  animation:
+    inner-spin
+    13s
+    linear
+    infinite
+    reverse;
+}
+
+
+#inner > .dot {
+  --angle: calc(
+    sibling-index() * 1turn / sibling-count()
+  );
+
+  --orbit-radius: 1.45;
+
+  translate:
+    calc(cos(var(--angle)) * var(--orbit-radius))
+    calc(
+      1.5
+      + sin(sibling-index() * 91deg) * 0.12
+    )
+    calc(sin(var(--angle)) * var(--orbit-radius));
+
+  radius: 0.115;
+
+  color: var(--cold);
+
+  material: matte();
+
+  transition:
+    0.28s
+    cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+
+/* ==================================================
+   INNER — PROXIMITY REACTION
+   ================================================== */
+
+.dot:hover {
+  scale: 2.5;
+  color: #ffffff;
+
+  transition:
+    0.18s
+    cubic-bezier(0.3, -0.3, 0.6, 1.35);
+}
+
+
+.dot:hover + .dot,
+.dot:has(+ .dot:hover) {
+  scale: 1.65;
+  color: var(--cold-soft);
+}
+
+
+.dot:hover + .dot + .dot,
+.dot:has(+ .dot + .dot:hover) {
+  scale: 1.25;
+  color: #8499ff;
+}
+
+
+/* ==================================================
+   CENTRAL CORE
+   ================================================== */
+
+#core {
+  translate: 0 1.5 0;
+
+  radius: 0.48;
+
+  color: var(--hot);
+
+  material: jelly(0.42);
+
+  animation:
+    heartbeat
+    2.8s
+    ease-in-out
+    infinite
+    alternate;
+
+  transition:
+    0.25s
+    ease-out;
+}
+
+
+/* ==================================================
+   HALO
+   ================================================== */
+
+#halo {
+  translate: 0 1.5 0;
+
+  radius: 0.78;
+  thickness: 0.025;
+
+  rotate-x: 72deg;
+
+  color: #74748c;
+
+  material: metal(0.18);
+
+  animation:
+    halo-spin
+    9s
+    linear
+    infinite;
+
+  transition:
+    0.35s
+    ease-out;
+}
+
+
+/* ==================================================
+   CROSS-OBJECT INTERACTIONS
+   ================================================== */
+
+/*
+ * IMPORTANT:
+ *
+ * :has(...:hover) can trigger these rules,
+ * but every target below is an actual drawable object,
+ * never #machine, #outer or #inner.
+ */
+
+
+/*
+ * Anything hovered inside the machine
+ * lights up the core.
+ */
+
+#machine:has(.key:hover, .dot:hover) #core {
+  color: #ffffff;
+  scale: 1.16;
+}
+
+
+/*
+ * Outer key → halo expands.
+ */
+
+#machine:has(.key:hover) #halo {
+  scale: 1.32;
+  color: var(--hot);
+}
+
+
+/*
+ * Inner dot → halo contracts.
+ */
+
+#machine:has(.dot:hover) #halo {
+  scale: 0.82;
+  color: var(--cold);
+}
+
+
+/* ==================================================
+   OUTER KEY → INNER ORBIT CONTRACTS
+   ================================================== */
+
+/*
+ * We cannot dynamically scale #inner itself,
+ * because #inner is a group.
+ *
+ * Instead, move every .dot closer to the center.
+ */
+
+#machine:has(#outer > .key:hover) #inner > .dot {
+  translate:
+    calc(cos(var(--angle)) * 1.08)
+    calc(
+      1.5
+      + sin(sibling-index() * 91deg) * 0.08
+    )
+    calc(sin(var(--angle)) * 1.08);
+
+  scale: 0.86;
+
+  color: var(--hot);
+}
+
+
+/* ==================================================
+   INNER DOT → OUTER ORBIT EXPANDS
+   ================================================== */
+
+/*
+ * Same trick:
+ * don't scale the #outer group.
+ *
+ * Push each key further from the center instead.
+ */
+
+#machine:has(#inner > .dot:hover) #outer > .key {
+  translate:
+    calc(cos(var(--angle)) * 2.92)
+    calc(
+      1.5
+      + sin(sibling-index() * 67deg) * 0.22
+    )
+    calc(sin(var(--angle)) * 2.92);
+
+  scale: 1.08;
+}
+
+
+/* ==================================================
+   EXTRA RELATIONAL REACTIONS
+   ================================================== */
+
+/*
+ * Hovering an outer key also compresses
+ * the opposite visual hierarchy by making
+ * all inner dots warmer.
+ */
+
+#machine:has(.key:hover) .dot {
+  color: var(--warm);
+}
+
+
+/*
+ * But the hovered/nearby dots still win
+ * thanks to later rules below.
+ */
+
+#machine:has(.key:hover) .dot:hover {
+  color: #ffffff;
+}
+
+
+#machine:has(.key:hover) .dot:hover + .dot,
+#machine:has(.key:hover) .dot:has(+ .dot:hover) {
+  color: var(--hot);
+}
+
+
+/*
+ * Hovering a dot makes outer keys colder.
+ */
+
+#machine:has(.dot:hover) .key {
+  color: var(--cold);
+}
+
+
+/*
+ * Keep the hovered key visually dominant
+ * if interactions happen close together.
+ */
+
+#machine:has(.dot:hover) .key:hover {
+  color: #ffffff;
+}
+
+
+/* ==================================================
+   ANIMATIONS
+   ================================================== */
+
+@keyframes outer-spin {
+  from {
+    rotate-y: 0turn;
+  }
+
+  to {
+    rotate-y: 1turn;
+  }
+}
+
+
+@keyframes inner-spin {
+  from {
+    rotate-y: 0turn;
+  }
+
+  to {
+    rotate-y: 1turn;
+  }
+}
+
+
+@keyframes halo-spin {
+  from {
+    rotate-z: 0turn;
+  }
+
+  to {
+    rotate-z: 1turn;
+  }
+}
+
+
+@keyframes heartbeat {
+  from {
+    scale: 0.92;
+    color: #ff4f87;
+  }
+
+  to {
+    scale: 1.08;
+    color: #ff9466;
+  }
+}
+
+
+/* ==================================================
+   RESPONSIVE
+   ================================================== */
+
+@media (max-width: 700px) {
+  scene {
+    camera-distance: 9.5;
+  }
+
+  #outer > .key {
+    size: 0.32 0.14 0.58;
+  }
+
+  #inner > .dot {
+    radius: 0.1;
+  }
+}
+
+
+/* ==================================================
+   LIGHT THEME
+   ================================================== */
+
+@media (prefers-color-scheme: light) {
+  scene {
+    --background: #ececf2;
+
+    --ink: #15151b;
+
+    --hot: #e52c69;
+    --warm: #e97942;
+    --soft: #f2a681;
+
+    --cold: #4568e8;
+    --cold-soft: #8299ef;
+
+    background: var(--background);
+
+    ambient: 0.42;
+  }
+
+  #halo {
+    color: #777784;
+  }
+}
+
+
+/* ==================================================
+   REDUCED MOTION
+   ================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  #outer,
+  #inner,
+  #halo,
+  #core {
+    animation: none;
+  }
+
+  .key,
+  .dot,
+  #halo,
+  #core {
+    transition: none;
+  }
+}
