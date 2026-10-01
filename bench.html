@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="robots" content="noindex" />
+    <title>GSS bench</title>
+    <!-- Dev only: driven by scripts/bench.mjs (npm run bench). Not in the build inputs of vite.config.ts. -->
+    <style>
+      html,
+      body {
+        margin: 0;
+        background: #0a0a0c;
+      }
+      canvas {
+        position: absolute;
+        left: 40px;
+        top: 40px;
+        width: 960px;
+        height: 540px;
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="scene"></canvas>
+    <script type="module" src="/src/bench/main.ts"></script>
+  </body>
+</html>

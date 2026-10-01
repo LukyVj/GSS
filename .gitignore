@@ -30,3 +30,7 @@ zz-repo.tgz
 
 # the npm package (npm run build:lib)
 lib
+
+# the bench (npm run bench): results and the worktrees of other commits
+bench-results
+.bench-worktrees
