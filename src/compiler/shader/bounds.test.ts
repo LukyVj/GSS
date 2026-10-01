@@ -1,4 +1,4 @@
-import { inlineAnimations } from "./inline-animations";
+import { inlineAnimations } from "../tests/inline-animations";
 import { describe, it, expect } from "vitest";
 import { compileGSS } from "../index";
 import { shapeRadius } from "./codegen";

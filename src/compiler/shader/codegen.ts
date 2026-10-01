@@ -1585,7 +1585,7 @@ export function generateShader(
         "// The easings of the animations: only those the scene uses",
         used(
           EASINGS,
-          [map, textures.functions, textures.call, materials].join("\n"),
+          [map, animate, textures.functions, textures.call, materials].join("\n"),
         ),
       ),
     )

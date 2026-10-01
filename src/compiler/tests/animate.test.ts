@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { compileGSS, compileScene } from "./index";
-import { toShadertoy } from "./shadertoy";
+import { compileGSS, compileScene } from "../index";
+import { toShadertoy } from "../shader/shadertoy";
 
 // An animated value depends on the time, not on the point: animate() computes it
 // once per pixel, and map() (about 150 calls per pixel) reads it from a global.

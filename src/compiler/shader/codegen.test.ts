@@ -1,4 +1,4 @@
-import { inlineAnimations } from "./inline-animations";
+import { inlineAnimations } from "../tests/inline-animations";
 import { describe, it, expect } from "vitest";
 import { readAngle } from "./codegen";
 import { compileGSS } from "../index";
