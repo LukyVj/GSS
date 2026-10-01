@@ -7,6 +7,7 @@ import { createClock } from "./clock";
 import type { FrameProbe } from "../profiler/profiler";
 import type { Dpr } from "../compiler/dpr";
 import { pixelRatio } from "./dpr";
+import { createTransitions } from "./transitions";
 
 // Draws compiled GSS scenes in a canvas, with a camera the mouse can move.
 // It never imports the compiler (decision 63): a page that embeds a scene compiled
@@ -78,6 +79,8 @@ export function createView(
   const picker = createPicker(gl);
   let hovered = 0; // the id under the mouse, as last read back (0: nothing)
   let dpr: Dpr = "auto"; // the pixel density the scene asks for (scene { dpr })
+  let transitions = createTransitions([]); // how each hover slot glides (transition)
+  let reducedMotion = false; // freeze(): transitions jump, like the animations stop
 
   function compileShader(type: number, source: string): WebGLShader {
     const shader = gl!.createShader(type)!;
@@ -259,7 +262,11 @@ export function createView(
         const id = picker.poll(); // the answer to an earlier request, if it came back
         if (id !== null && pointer) hovered = id;
         requestPick(scene);
-        gl!.uniform1fv(scene.uHover, hoverValues(scene.hover, hovered));
+        const targets = hoverValues(scene.hover, hovered);
+        gl!.uniform1fv(
+          scene.uHover,
+          transitions.update(targets, now, reducedMotion),
+        );
       }
       gl!.drawArrays(gl!.TRIANGLES, 0, 3);
       probe?.drawEnd();
@@ -281,6 +288,7 @@ export function createView(
       scene = next;
       hovered = 0; // the ids belong to the new scene now
       dpr = compiled.dpr;
+      transitions = createTransitions(compiled.transitions);
       applyCameraSettings(compiled.camera);
     },
     sampleFrames() {
@@ -303,6 +311,7 @@ export function createView(
     },
     freeze(frozen) {
       clock.freeze(frozen);
+      reducedMotion = frozen;
     },
     destroy() {
       playing = false;
