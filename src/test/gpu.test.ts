@@ -107,3 +107,11 @@ describe("every pass of a documented filter compiles on the GPU (decision 83)", 
     }
   }
 });
+
+it("the watch compiles on WebGL2 in every media variant", async () => {
+  const { default: watch } = await import("../scenes/watch.gss?raw");
+  const scene = compileScene(watch);
+  for (const variant of scene.media!.variants) {
+    expect(await compileOnGpu(variant.shader)).toBe("");
+  }
+}, 30000);

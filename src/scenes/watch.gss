@@ -1,0 +1,617 @@
+/*
+ * ATELIER — MECHANICAL WATCH
+ *
+ * Realistic product scene built in GSS.
+ *
+ * Uses:
+ * - gradients
+ * - oklch()
+ * - color-mix()
+ * - steps()
+ * - sibling-index()
+ * - sibling-count()
+ * - :has()
+ * - variables
+ * - @media
+ * - group animations
+ *
+ * Important:
+ * - no if()
+ * - no random()
+ * - no dynamic :hover rule styles a group
+ */
+
+/* ==================================================
+   SCENE GRAPH
+   ================================================== */
+
+@scene {
+
+  group#watch {
+
+    /* Strap */
+    cube#strap-top cube#strap-bottom /* Lugs */
+    cube#lug-nw cube#lug-ne cube#lug-sw cube#lug-se /* Case */
+    cylinder#case torus#outer-bezel torus#inner-bezel /* Dial */
+    cylinder#dial /* Hour markers */
+    group#markers {
+      cube.marker * 12
+    }
+
+    /* Hands */
+    group#hour-system {
+      cube#hour-hand
+    }
+
+    group#minute-system {
+      cube#minute-hand
+    }
+
+    group#second-system {
+      cube#second-hand sphere#center-pin
+    }
+
+    /* Crystal */
+    cylinder#crystal /* Crown */
+    cylinder#crown torus#crown-ring
+  }
+}
+
+/* ==================================================
+   GLOBAL TOKENS
+   ================================================== */
+
+scene {
+
+  --steel: color-mix( in oklab, #f1efea 68%, #777572 32% );
+
+  --steel-dark: color-mix( in oklab, #55555a 58%, #151518 42% );
+
+  --dial-light: oklch(92% 0.012 78);
+  --dial-mid: oklch(83% 0.018 77);
+  --dial-edge: oklch(62% 0.022 72);
+
+  --ink: oklch(21% 0.008 260);
+
+  --accent: oklch(59% 0.19 28);
+
+  --leather: oklch(27% 0.035 55);
+
+  /*
+   * New gradient support.
+   */
+
+  background: linear-gradient( 145deg, oklch(95% 0.012 74) 0%, oklch(86% 0.018 72) 52%, oklch(74% 0.022 68) 100% );
+
+  floor: oklch(72% 0.018 72);
+
+  ambient: 0.38;
+
+  light: 138deg 44deg;
+
+  dpr: auto;
+
+  camera-target: 0 0.55 0;
+
+  camera-distance: 6.7;
+
+  camera-angle: -25deg 42deg;
+}
+
+/* ==================================================
+   STRAP
+   ================================================== */
+
+#strap-top, #strap-bottom {
+
+  size: 1.16 0.18 2.45;
+
+  corner-radius: 0.28;
+
+  color: var(--leather);
+
+  material: matte();
+}
+
+#strap-top {
+  translate: 0 0.15 -2.55;
+}
+
+#strap-bottom {
+  translate: 0 0.15 2.55;
+}
+
+/* ==================================================
+   LUGS
+   ================================================== */
+
+#lug-nw, #lug-ne, #lug-sw, #lug-se {
+
+  size: 0.42 0.3 0.74;
+
+  corner-radius: 0.14;
+
+  color: var(--steel);
+
+  material: metal(0.24);
+}
+
+#lug-nw {
+  translate: -1.08 0.37 -1.5;
+}
+
+#lug-ne {
+  translate: 1.08 0.37 -1.5;
+}
+
+#lug-sw {
+  translate: -1.08 0.37 1.5;
+}
+
+#lug-se {
+  translate: 1.08 0.37 1.5;
+}
+
+/* ==================================================
+   WATCH CASE
+   ================================================== */
+
+#case {
+
+  radius: 1.67;
+  height: 0.4;
+
+  translate: 0 0.51 0;
+
+  color: linear-gradient( to right, #777775 0%, #eeeeea 24%, #aaa9a5 52%, #f4f2ed 75%, #777775 100% );
+
+  material: metal(0.2);
+
+  transition: 0.28s ease-out;
+}
+
+/* ==================================================
+   OUTER BEZEL
+   ================================================== */
+
+#outer-bezel {
+
+  radius: 1.53;
+  thickness: 0.095;
+
+  translate: 0 0.73 0;
+
+  color: linear-gradient( to right, #6e6e6d, #f4f2ec, #888886 );
+
+  material: metal(0.12);
+
+  transition: 0.28s ease-out;
+}
+
+/* ==================================================
+   INNER BEZEL
+   ================================================== */
+
+#inner-bezel {
+
+  radius: 1.39;
+  thickness: 0.035;
+
+  translate: 0 0.765 0;
+
+  color: var(--steel-dark);
+
+  material: metal(0.16);
+
+  transition: 0.28s ease-out;
+}
+
+/* ==================================================
+   DIAL
+   ================================================== */
+
+#dial {
+
+  radius: 1.35;
+  height: 0.06;
+
+  translate: 0 0.77 0;
+
+  /*
+   * Subtle vignette / sunburst-like dial.
+   */
+
+  color: radial-gradient( circle at 46% 43%, var(--dial-light) 0%, var(--dial-mid) 58%, var(--dial-edge) 100% );
+
+  material: metal(0.68);
+}
+
+/* ==================================================
+   HOUR MARKERS
+   ================================================== */
+
+.marker {
+
+  --angle: calc( sibling-index() * 1turn / sibling-count() );
+
+  size: 0.075 0.075 0.29;
+
+  translate: calc(cos(var(--angle)) * 1.11) 0.84 calc(sin(var(--angle)) * 1.11);
+
+  rotate-y: calc( 90deg - sibling-index() * 1turn / sibling-count() );
+
+  color: var(--ink);
+
+  material: metal(0.16);
+
+  transition: 0.2s ease-out;
+}
+
+/* ==================================================
+   IMPORTANT MARKERS
+   ================================================== */
+
+#marker-3, #marker-6, #marker-9, #marker-12 {
+
+  size: 0.105 0.08 0.4;
+
+  color: color-mix( in oklab, var(--ink) 78%, var(--steel) 22% );
+}
+
+/* ==================================================
+   HOUR HAND
+   ================================================== */
+
+#hour-hand {
+
+  size: 0.15 0.08 0.76;
+
+  translate: 0 0.91 -0.33;
+
+  corner-radius: 0.035;
+
+  color: var(--ink);
+
+  material: metal(0.14);
+
+  transition: 0.2s ease-out;
+}
+
+/*
+ * Group animation is fine:
+ * the hover limitation only concerns dynamic rules.
+ */
+
+#hour-system {
+
+  animation: hour-turn 43200s linear -36500s infinite;
+}
+
+/* ==================================================
+   MINUTE HAND
+   ================================================== */
+
+#minute-hand {
+
+  size: 0.085 0.07 1.04;
+
+  translate: 0 0.93 -0.47;
+
+  corner-radius: 0.026;
+
+  color: var(--ink);
+
+  material: metal(0.12);
+
+  transition: 0.2s ease-out;
+}
+
+#minute-system {
+
+  animation: minute-turn 3600s linear -500s infinite;
+}
+
+/* ==================================================
+   SECOND HAND
+   ================================================== */
+
+#second-hand {
+
+  size: 0.032 0.045 1.24;
+
+  translate: 0 0.97 -0.48;
+
+  corner-radius: 0.012;
+
+  color: var(--accent);
+
+  material: metal(0.08);
+
+  transition: 0.16s ease-out;
+}
+
+#center-pin {
+
+  radius: 0.095;
+
+  translate: 0 0.98 0;
+
+  color: var(--accent);
+
+  material: metal(0.08);
+
+  transition: 0.16s ease-out;
+}
+
+/*
+ * One discrete step per second.
+ *
+ * This is a good real-world use of steps().
+ */
+
+#second-system {
+
+  animation: second-turn 60s steps(60, end) -42s infinite;
+}
+
+/* ==================================================
+   CRYSTAL
+   ================================================== */
+
+#crystal {
+
+  radius: 1.42;
+  height: 0.07;
+
+  translate: 0 1.015 0;
+
+  color: #f8fcff;
+
+  material: glass( #eaf5ff, 1.48, blurred 0.025 );
+
+  transition: 0.3s ease-out;
+}
+
+/* ==================================================
+   CROWN
+   ================================================== */
+
+#crown {
+
+  radius: 0.2;
+  height: 0.48;
+
+  rotate-z: 90deg;
+
+  translate: 1.84 0.53 0;
+
+  color: var(--steel);
+
+  material: metal(0.13);
+
+  transition: 0.24s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+#crown-ring {
+
+  radius: 0.18;
+  thickness: 0.027;
+
+  rotate-z: 90deg;
+
+  translate: 2.06 0.53 0;
+
+  color: var(--steel-dark);
+
+  material: metal(0.18);
+
+  transition: 0.24s ease-out;
+}
+
+/* ==================================================
+   CROWN INTERACTION
+   ================================================== */
+
+#crown:hover {
+
+  translate: 1.96 0.53 0;
+
+  color: var(--accent);
+}
+
+/*
+ * #watch is a group.
+ *
+ * It can be the SUBJECT of :has().
+ *
+ * But we only style drawable objects after it.
+ */
+
+#watch:has(#crown:hover) #crown-ring {
+
+  translate: 2.18 0.53 0;
+
+  color: var(--accent);
+}
+
+#watch:has(#crown:hover) #second-hand {
+
+  scale: 0.91;
+
+  color: #ffffff;
+}
+
+#watch:has(#crown:hover) #center-pin {
+
+  scale: 1.18;
+
+  color: #ffffff;
+}
+
+#watch:has(#crown:hover) .marker {
+
+  color: color-mix( in oklab, var(--accent) 35%, var(--ink) 65% );
+}
+
+/* ==================================================
+   CRYSTAL INTERACTION
+   ================================================== */
+
+#crystal:hover {
+
+  color: oklch(95% 0.035 235);
+
+  scale: 1.015;
+}
+
+#watch:has(#crystal:hover) #outer-bezel {
+
+  /* Gradient colors stay fixed; transforms can react to hover. */
+  scale: 1.02;
+}
+
+#watch:has(#crystal:hover) #inner-bezel {
+
+  color: color-mix( in oklab, var(--accent) 16%, var(--steel-dark) 84% );
+}
+
+/* ==================================================
+   MARKER PROXIMITY
+   ================================================== */
+
+/*
+ * Hovering one hour marker gives a subtle
+ * response to the following marker.
+ */
+
+.marker:hover {
+
+  scale: 1.22;
+
+  color: var(--accent);
+}
+
+.marker:hover + .marker {
+
+  scale: 1.1;
+
+  color: color-mix( in oklab, var(--accent) 45%, var(--ink) 55% );
+}
+
+/*
+ * Previous sibling:
+ * find the marker that has the hovered marker next.
+ */
+
+.marker:has(+ .marker:hover) {
+
+  scale: 1.1;
+
+  color: color-mix( in oklab, var(--accent) 45%, var(--ink) 55% );
+}
+
+/* ==================================================
+   WATCH HOVER
+   ================================================== */
+
+/*
+ * :hover on the group is allowed as a selector,
+ * but the targets are drawable objects.
+ */
+
+#watch:hover #case {
+
+  /* Keep the steel gradient while the case responds to hover. */
+  scale: 1.008;
+}
+
+#watch:hover #outer-bezel {
+
+  scale: 1.012;
+}
+
+/* ==================================================
+   HAND ANIMATIONS
+   ================================================== */
+
+@keyframes second-turn {
+
+  from {
+    rotate-y: 0turn;
+  }
+
+  to {
+    rotate-y: 1turn;
+  }
+}
+
+@keyframes minute-turn {
+
+  from {
+    rotate-y: 0turn;
+  }
+
+  to {
+    rotate-y: 1turn;
+  }
+}
+
+@keyframes hour-turn {
+
+  from {
+    rotate-y: 0turn;
+  }
+
+  to {
+    rotate-y: 1turn;
+  }
+}
+
+/* ==================================================
+   MOBILE
+   ================================================== */
+
+@media (max-width: 700px) {
+
+  scene {
+
+    camera-distance: 8.2;
+
+    camera-target: 0 0.5 0;
+
+    camera-angle: -20deg 46deg;
+
+    dpr: 1;
+  }
+}
+
+/* ==================================================
+   DARK MODE
+   ================================================== */
+
+@media (prefers-color-scheme: dark) {
+
+  scene {
+
+    background: linear-gradient( 145deg, oklch(18% 0.012 260), oklch(8% 0.008 260) );
+
+    floor: oklch(12% 0.008 260);
+
+    ambient: 0.28;
+  }
+}
+
+/* ==================================================
+   REDUCED MOTION
+   ================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+
+  #hour-system, #minute-system, #second-system {
+    animation: none;
+  }
+
+  #case, #outer-bezel, #inner-bezel, #crystal, #crown, #crown-ring, #hour-hand, #minute-hand, #second-hand, #center-pin, .marker {
+    transition: none;
+  }
+}
