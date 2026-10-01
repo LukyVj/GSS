@@ -1,6 +1,7 @@
 import type { Token } from "../syntax/tokenizer";
 import type { Easing } from "../values/easing";
 import { readAnimation, type AnimationSpec } from "../features/animation";
+import { readTransition } from "../features/transition";
 import { errorAt, locate } from "../syntax/errors";
 import { tokenize } from "../syntax/tokenizer";
 import { FACES, type Face, type StyledInstance, type Styles } from "../cascade/resolve";
@@ -1453,15 +1454,43 @@ function splitArguments(text: string): string[] {
   return parts;
 }
 
-const WEIGHT = /^(smoothstep\(0\.0, 1\.0, )?clamp\(.*, 0\.0, 1\.0\)\)?$|^uHover\[\d+\]$/;
+// The arguments of `name(…)` when the whole text is that one call, else null
+function callOf(text: string, name: string): string[] | null {
+  if (!text.startsWith(`${name}(`) || !text.endsWith(")")) return null;
+  let depth = 0;
+  for (let i = name.length; i < text.length - 1; i++) {
+    if (text[i] === "(") depth++;
+    else if (text[i] === ")" && --depth === 0) return null; // closes before the end
+  }
+  return splitArguments(text.slice(name.length + 1, -1));
+}
 
-function anchors(expr: string): number[][] | null {
+// A weight that always stays in [0, 1]: smoothstep(0.0, 1.0, …) whatever is inside,
+// clamp(…, 0.0, 1.0), and uHover[i] when the transitions of that object never
+// overshoot (stays01)
+function isWeight(text: string, steadyHover: boolean): boolean {
+  const smooth = callOf(text, "smoothstep");
+  if (smooth) return smooth.length === 3 && smooth[0] === "0.0" && smooth[1] === "1.0";
+  const clamped = callOf(text, "clamp");
+  if (clamped) return clamped.length === 3 && clamped[1] === "0.0" && clamped[2] === "1.0";
+  return steadyHover && /^uHover\[\d+\]$/.test(text);
+}
+
+// An easing whose progress never leaves [0, 1]: a cubic-bezier() stays in the hull of
+// its points (0, y1, y2, 1), a linear() between its outputs. A transition with such
+// easings keeps uHover[] in [0, 1]; one that overshoots (back-out…) can push it out.
+function stays01(easing: Easing): boolean {
+  const outputs =
+    easing.type === "cubic-bezier" ? [easing.y1, easing.y2] : easing.points.map((p) => p.output);
+  return outputs.every((y) => y >= 0 && y <= 1);
+}
+
+function anchors(expr: string, steadyHover: boolean): number[][] | null {
   const text = expr.trim();
-  const mixed = text.match(/^mix\((.*)\)$/);
-  if (mixed) {
-    const parts = splitArguments(mixed[1]);
-    if (parts.length !== 3 || !WEIGHT.test(parts[2])) return null;
-    const [a, b] = [anchors(parts[0]), anchors(parts[1])];
+  const parts = callOf(text, "mix");
+  if (parts) {
+    if (parts.length !== 3 || !isWeight(parts[2], steadyHover)) return null;
+    const [a, b] = [anchors(parts[0], steadyHover), anchors(parts[1], steadyHover)];
     return a && b ? [...a, ...b] : null;
   }
   const inside = text.match(/^vec3\((.*)\)$/)?.[1] ?? text;
@@ -1485,6 +1514,14 @@ function boxOfPoints(points: number[][]): { middle: number[]; reach: number } {
   };
 }
 
+// uHover[] of this object stays in [0, 1]: its transitions (rest and hovered) never overshoot
+function steadyTransitions(instance: StyledInstance): boolean {
+  return [instance.styles, instance.hoverStyles].every((styles) => {
+    const transition = readTransition(styles["transition"]);
+    return !transition || stays01(transition.easing);
+  });
+}
+
 // One object's sphere in the scene, through its own transforms and its groups', from
 // the inside out. A node maps its child's space to its parent's: scale, rotate,
 // then translate. null when a value is not known at compile time.
@@ -1500,8 +1537,9 @@ function objectSphere(
     const nodeHover = n === nodes.length - 1 ? hover : undefined;
     const value = (property: string, read: (value: Token[] | undefined) => string) =>
       hoverValue(nodes[n], keyframes, property, read, nodeHover);
-    const scales = anchors(value("scale", readScale));
-    const translates = anchors(value("translate", readTranslate));
+    const steady = !nodeHover || steadyTransitions(instance);
+    const scales = anchors(value("scale", readScale), steady);
+    const translates = anchors(value("translate", readTranslate), steady);
     if (!scales || !translates) return null;
     // Scale: anywhere between the smallest and the largest
     const factors = scales.map((s) => Math.abs(s[0]));

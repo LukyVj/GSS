@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { compileGSS } from "./index";
+import { compileGSS } from "../index";
 
 // march() starts with the sphere around the whole scene: a ray that passes by it
 // meets no object, only the floor. The sphere must hold every object, at every
@@ -70,6 +70,33 @@ describe("the sphere of the scene", () => {
     const shader = compileGSS("@scene { sphere; } scene { floor: none; }");
     expect(shader).not.toContain("floorT");
     expect(shader).toContain("return vec2(MAX_DIST + 1.0, 0.0);");
+  });
+
+  it("holds a hovered object with a transition that never overshoots", () => {
+    const gss = "@scene { sphere; } sphere { transition: 0.4s ease-out; } sphere:hover { translate: 0 4 0; }";
+    expect(holds(gss, [0, 4, 0], 0.5)).toBe(true);
+  });
+
+  it("is not there when a transition can overshoot: uHover[] may leave [0, 1]", () => {
+    const back = "@scene { sphere; } sphere { transition: 0.4s cubic-bezier(0.3, 1.6, 0.6, 1); } sphere:hover { translate: 0 4 0; }";
+    expect(sphereOf(back)).toBeNull();
+    const bounce = "@scene { sphere; } sphere:hover { translate: 0 4 0; transition: 1s linear(0, 1.2, 1); }";
+    expect(sphereOf(bounce)).toBeNull();
+  });
+
+  it("is not there when a keyframe easing can overshoot, or the time is not a plain segment", () => {
+    const overshoot = `
+      @scene { sphere; }
+      sphere { animation: rise 2s cubic-bezier(0.3, -0.4, 0.7, 1.4); }
+      @keyframes rise { to { translate: 0 2 0; } }
+    `;
+    expect(sphereOf(overshoot)).toBeNull();
+    const delayed = `
+      @scene { sphere; }
+      sphere { animation: rise 2s 1s 2; }
+      @keyframes rise { to { translate: 0 2 0; } }
+    `;
+    expect(sphereOf(delayed)).toBeNull();
   });
 
   it("is not there for an empty scene", () => {
