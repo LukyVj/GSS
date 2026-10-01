@@ -23,6 +23,18 @@ export const MATH_FUNCTIONS = [
   "sin",
   "cos",
   "tan",
+  "asin",
+  "acos",
+  "atan",
+  "atan2",
+  "sign",
+  "round",
+  "mod",
+  "rem",
+  "hypot",
+  "log",
+  "exp",
+  "progress",
   "sibling-index",
   "sibling-count",
 ] as const;
@@ -36,6 +48,9 @@ const ANGLES: Record<string, number> = {
   turn: 360,
 };
 const TIMES: Record<string, number> = { s: 1, ms: 0.001 };
+// The first argument of round(), like CSS: round(down, 2.7) is 2
+const ROUNDING = ["nearest", "up", "down", "to-zero"];
+const degrees = (radians: number): Quantity => ({ value: (radians * 180) / Math.PI, unit: "deg" });
 
 function normalize(quantity: Quantity): Quantity {
   if (quantity.unit in ANGLES)
@@ -247,6 +262,14 @@ class Reader {
       throw this.error(`${name}() cannot be used inside math`);
     this.i += 2; // the name and "("
     const args: Quantity[] = [];
+    // round(up, 2.5, 1): the rounding strategy comes first, as a keyword
+    let strategy = "nearest";
+    const first = this.peek();
+    if (name === "round" && first?.type === "IDENT" && ROUNDING.includes(first.value)) {
+      strategy = first.value;
+      this.i++;
+      this.expect(",", "round()");
+    }
     if (!this.isPunct(")")) {
       args.push(this.sum());
       while (this.isPunct(",")) {
@@ -255,10 +278,10 @@ class Reader {
       }
     }
     this.expect(")", `${name}()`);
-    return this.apply(name, args);
+    return this.apply(name, args, strategy);
   }
 
-  private apply(name: string, args: Quantity[]): Quantity {
+  private apply(name: string, args: Quantity[], strategy = "nearest"): Quantity {
     const count = (n: number, example: string) => {
       if (args.length !== n)
         throw this.error(
@@ -325,6 +348,66 @@ class Reader {
         count(1, `${name}(30deg)`);
         const angle = radians(args[0]);
         return { value: Math[name](angle), unit: "" };
+      }
+      // The inverse functions return an angle, in deg
+      case "asin":
+      case "acos":
+      case "atan":
+        count(1, `${name}(0.5)`);
+        return degrees(Math[name](plain(args[0])));
+      case "atan2": {
+        count(2, "atan2(1, -1)");
+        this.sameUnit(args, name);
+        return degrees(Math.atan2(args[0].value, args[1].value));
+      }
+      case "sign":
+        count(1, "sign(-2)");
+        return { value: Math.sign(args[0].value), unit: "" };
+      case "round": {
+        if (args.length !== 1 && args.length !== 2)
+          throw this.error("round() takes a value and a step, like: round(2.6, 0.5) or round(down, 2.6, 0.5)");
+        const step = args[1] ?? { value: 1, unit: args[0].unit };
+        const unit = this.sameUnit([args[0], step], name);
+        if (step.value === 0) throw this.error("round() cannot round to a step of 0");
+        const ratio = args[0].value / step.value;
+        const rounded =
+          strategy === "up" ? Math.ceil(ratio)
+          : strategy === "down" ? Math.floor(ratio)
+          : strategy === "to-zero" ? Math.trunc(ratio)
+          : Math.floor(ratio + 0.5); // halfway goes up, like CSS
+        return { value: rounded * step.value, unit };
+      }
+      // mod() takes the sign of the divisor, rem() the sign of the value, like CSS
+      case "mod":
+      case "rem": {
+        count(2, `${name}(7, 3)`);
+        const unit = this.sameUnit(args, name);
+        const [a, b] = args.map((q) => q.value);
+        if (b === 0) throw this.error(`${name}() cannot divide by 0`);
+        const value = name === "mod" ? a - b * Math.floor(a / b) : a % b;
+        return { value, unit };
+      }
+      case "hypot": {
+        if (args.length === 0) throw this.error("hypot() needs at least one value, like: hypot(3, 4)");
+        const unit = this.sameUnit(args, name);
+        return { value: Math.hypot(...args.map((q) => q.value)), unit };
+      }
+      case "log": {
+        if (args.length !== 1 && args.length !== 2)
+          throw this.error("log() takes a number and an optional base, like: log(8, 2)");
+        const value = Math.log(plain(args[0]));
+        return { value: args[1] ? value / Math.log(plain(args[1])) : value, unit: "" };
+      }
+      case "exp":
+        count(1, "exp(1)");
+        return { value: Math.exp(plain(args[0])), unit: "" };
+      // Where a value sits between a start and an end, from 0 to 1, like CSS
+      case "progress": {
+        count(3, "progress(sibling-index(), 1, sibling-count())");
+        this.sameUnit(args, name);
+        const [value, start, end] = args.map((q) => q.value);
+        if (start === end) throw this.error("progress() needs a start and an end that differ");
+        return { value: Math.min(Math.max((value - start) / (end - start), 0), 1), unit: "" };
       }
     }
     throw this.error(`${name}() cannot be used inside math`);

@@ -77,6 +77,71 @@ describe("resolveMath: the other functions", () => {
   });
 });
 
+describe("resolveMath: the functions added with decision 78", () => {
+  const n = (value: string) => (compute(value, third)[0] as { value: number }).value;
+  const unit = (value: string) => (compute(value, third)[0] as { unit?: string }).unit;
+
+  it("asin(), acos(), atan() and atan2() return an angle in deg", () => {
+    expect(compute("asin(1)")).toEqual([{ type: "DIMENSION", value: 90, unit: "deg" }]);
+    expect(n("acos(0.5)")).toBe(60);
+    expect(n("atan(1)")).toBe(45);
+    expect(n("atan2(1, -1)")).toBe(135);
+    expect(unit("atan2(1deg, -1deg)")).toBe("deg");
+  });
+
+  it("sign() gives -1, 0 or 1", () => {
+    expect(n("sign(-3deg)")).toBe(-1);
+    expect(n("sign(0)")).toBe(0);
+    expect(n("calc(sign(sibling-index() - 2) * 5)")).toBe(5);
+  });
+
+  it("round(): nearest by default, halfway goes up, a step, and the four strategies", () => {
+    expect(n("round(2.5)")).toBe(3);
+    expect(n("round(-2.5)")).toBe(-2);
+    expect(n("round(2.6, 0.5)")).toBe(2.5);
+    expect(n("round(up, 2.1)")).toBe(3);
+    expect(n("round(down, 2.9)")).toBe(2);
+    expect(n("round(to-zero, -2.9)")).toBe(-2);
+    expect(compute("round(37deg, 15deg)")).toEqual([{ type: "DIMENSION", value: 30, unit: "deg" }]);
+  });
+
+  it("mod() takes the sign of the divisor, rem() the sign of the value", () => {
+    expect(n("mod(7, 3)")).toBe(1);
+    expect(n("mod(-7, 3)")).toBe(2);
+    expect(n("rem(-7, 3)")).toBe(-1);
+    expect(n("mod(400deg, 1turn)")).toBe(40);
+  });
+
+  it("hypot(), log() and exp()", () => {
+    expect(n("hypot(3, 4)")).toBe(5);
+    expect(n("log(8, 2)")).toBe(3);
+    expect(n("log(e)")).toBe(1);
+    expect(n("exp(0)")).toBe(1);
+  });
+
+  it("progress() goes from 0 to 1 between a start and an end, clamped like CSS", () => {
+    expect(n("progress(sibling-index(), 1, 5)")).toBe(0.5);
+    expect(n("progress(15, 0, 10)")).toBe(1);
+    expect(n("progress(-5, 0, 10)")).toBe(0);
+  });
+
+  it("says what is wrong", () => {
+    const message = (value: string) => {
+      try {
+        compute(value);
+      } catch (error) {
+        return (error as Error).message;
+      }
+      return "no error";
+    };
+    expect(message("mod(7deg, 3)")).toBe("mod() mixes a deg value and a number");
+    expect(message("mod(7, 0)")).toBe("mod() cannot divide by 0");
+    expect(message("round(sideways, 2)")).toMatch(/is not a value math can use/);
+    expect(message("asin(30deg)")).toBe("asin() expects a number, not a deg value");
+    expect(message("progress(1, 2, 2)")).toMatch(/start and an end that differ/);
+  });
+});
+
 describe("resolveMath: errors that say what to do", () => {
   const message = (value: string) => {
     try {

@@ -1309,4 +1309,104 @@ export const FUNCTIONS: FunctionDef[] = [
       },
     ],
   },
+  {
+    name: "asin(), acos(), atan(), atan2()",
+    anchor: "fn-inverse-trig",
+    covers: ["asin", "acos", "atan", "atan2"],
+    syntax: "asin(<number>) | acos(<number>) | atan(<number>) | atan2(<y>, <x>)",
+    description:
+      "The inverse trigonometric functions of CSS: they take a number and return an angle, in deg. atan2(y, x) gives the angle of the point (x, y), whatever its quarter: the way to turn an object toward a point. Its two values must share a unit.",
+    examples: [
+      {
+        name: "asin()",
+        code: "@scene { cube.tilt * 5; } .tilt { size: 0.2 0.9 0.2; translate: calc(sibling-index() * 0.6 - 1.8) 0.45 0; rotate-z: asin(calc(sibling-index() * 0.2 - 0.6)); color: #ff5a36; }",
+      },
+      {
+        name: "acos()",
+        code: "@scene { cube.fan * 5; } .fan { size: 0.9 0.1 0.2; translate: 0 calc(sibling-index() * 0.3) 0; rotate-y: acos(calc(sibling-index() * 0.4 - 1.2)); color: #7cb4ff; }",
+      },
+      {
+        name: "atan()",
+        code: "@scene { cube.ramp * 5; } .ramp { size: 0.8 0.08 0.3; translate: calc(sibling-index() * 0.9 - 2.7) 0.5 0; rotate-z: atan(calc(sibling-index() * 0.4)); color: #3ad16b; }",
+      },
+      {
+        name: "atan2()",
+        code: "@scene { cube.needle * 8; } .needle { --a: calc(sibling-index() * 45deg); size: 0.5 0.08 0.08; translate: calc(cos(var(--a)) * 1.4) 0.5 calc(sin(var(--a)) * 1.4); rotate-y: calc(0deg - atan2(sin(var(--a)), cos(var(--a)))); color: #ff5a36; }",
+      },
+      {
+        name: "asin(), acos(), atan() and atan2() together",
+        code: "@scene { sphere.dot * 10; } .dot { --x: calc(sibling-index() * 0.2 - 1.1); radius: 0.12; translate: calc(var(--x) * 2) calc(1 + sin(asin(var(--x)) + acos(var(--x))) * 0.4) calc(atan(var(--x)) / 90deg); rotate-y: atan2(var(--x), 1); color: hsl(calc(sibling-index() * 36) 80% 60%); }",
+      },
+    ],
+  },
+  {
+    name: "sign(), round(), mod(), rem()",
+    anchor: "fn-stepped",
+    covers: ["sign", "round", "mod", "rem"],
+    syntax: "sign(<value>) | round([nearest | up | down | to-zero,]? <value>, <step>?) | mod(<value>, <value>) | rem(<value>, <value>)",
+    description:
+      "The stepped functions of CSS. sign() gives -1, 0 or 1. round() snaps a value to a multiple of its step (1 by default): nearest (halfway goes up), up, down or to-zero. mod() and rem() give the rest of a division: mod() takes the sign of the divisor, rem() the sign of the value, so mod(-7, 3) is 2 and rem(-7, 3) is -1. Their values must share a unit: round(37deg, 15deg) is 30deg.",
+    examples: [
+      {
+        name: "sign()",
+        code: "@scene { cube.side * 9; } .side { size: 0.3; translate: calc(sibling-index() * 0.45 - 2.25) calc(0.6 + sign(sibling-index() - 5) * 0.4) 0; color: #7cb4ff; }",
+      },
+      {
+        name: "round()",
+        code: "@scene { cube.stair * 9; } .stair { --h: round(down, calc(sibling-index() * 0.3), 0.5); size: 0.4 calc(var(--h) + 0.1) 0.4; translate: calc(sibling-index() * 0.45 - 2.25) calc(var(--h) / 2 + 0.05) 0; color: #ff5a36; }",
+      },
+      {
+        name: "mod()",
+        code: "@scene { cube.row * 12; } .row { size: 0.3; translate: calc(mod(sibling-index() - 1, 4) * 0.5 - 0.75) 0.15 calc(round(down, calc((sibling-index() - 1) / 4)) * 0.5 - 0.5); color: #3ad16b; }",
+      },
+      {
+        name: "rem()",
+        code: "@scene { sphere.ball * 9; } .ball { radius: 0.18; translate: calc(sibling-index() * 0.45 - 2.25) calc(0.3 + rem(sibling-index(), 3) * 0.4) 0; color: #ff5a36; }",
+      },
+      {
+        name: "sign(), round(), mod() and rem() together",
+        code: "@scene { cube.tile * 16; } .tile { --col: mod(sibling-index() - 1, 4); --row: round(down, calc((sibling-index() - 1) / 4)); size: 0.4 calc(0.2 + rem(sibling-index(), 3) * 0.2) 0.4; translate: calc(var(--col) * 0.5 - 0.75) 0.2 calc(var(--row) * 0.5 - 0.75); rotate-y: calc(sign(var(--col) - 1.5) * 15deg); color: hsl(calc(sibling-index() * 22) 80% 60%); }",
+      },
+    ],
+  },
+  {
+    name: "hypot(), log(), exp()",
+    anchor: "fn-exponential",
+    covers: ["hypot", "log", "exp"],
+    syntax: "hypot(<value>, …) | log(<number>, <base>?) | exp(<number>)",
+    description:
+      "The exponential functions of CSS. hypot() is the length of a vector: hypot(3, 4) is 5, the distance from the center to the point (3, 4). log() is the natural logarithm, or the logarithm in a base: log(8, 2) is 3. exp() is e to a power. e is also known as a constant.",
+    examples: [
+      {
+        name: "hypot()",
+        code: "@scene { sphere.dot * 9; } .dot { --x: calc(mod(sibling-index() - 1, 3) - 1); --z: calc(round(down, calc((sibling-index() - 1) / 3)) - 1); radius: calc(0.12 + hypot(var(--x), var(--z)) * 0.1); translate: calc(var(--x) * 0.9) 0.4 calc(var(--z) * 0.9); color: #7cb4ff; }",
+      },
+      {
+        name: "log()",
+        code: "@scene { cube.bar * 8; } .bar { --h: calc(0.2 + log(sibling-index(), 2) * 0.4); size: 0.3 var(--h) 0.3; translate: calc(sibling-index() * 0.45 - 2) calc(var(--h) / 2) 0; color: #3ad16b; }",
+      },
+      {
+        name: "exp()",
+        code: "@scene { sphere.dot * 6; } .dot { radius: calc(exp(sibling-index() / 3) * 0.06); translate: calc(sibling-index() * 0.7 - 2.45) 0.6 0; color: #ff5a36; }",
+      },
+      {
+        name: "hypot(), log() and exp() together",
+        code: "@scene { sphere.seed * 12; } .seed { --a: calc(sibling-index() * 30deg); --d: calc(log(sibling-index() + 1) * 0.8); radius: calc(exp(0 - sibling-index() / 8) * 0.25); translate: calc(cos(var(--a)) * var(--d)) calc(0.3 + hypot(cos(var(--a)), 1) * 0.2) calc(sin(var(--a)) * var(--d)); color: hsl(calc(sibling-index() * 30) 80% 60%); }",
+      },
+    ],
+  },
+  {
+    name: "progress()",
+    anchor: "fn-progress",
+    covers: ["progress"],
+    syntax: "progress(<value>, <start>, <end>)",
+    description:
+      "Where a value sits between a start and an end, as a number from 0 to 1, like the CSS function of the same name: progress(sibling-index(), 1, sibling-count()) goes from 0 for the first copy to 1 for the last. The result is clamped to 0 and 1, and the three values must share a unit.",
+    examples: [
+      {
+        name: "progress()",
+        code: "@scene { cube.fade * 8; } .fade { --p: progress(sibling-index(), 1, sibling-count()); size: 0.35 calc(0.2 + var(--p)) 0.35; translate: calc(sibling-index() * 0.5 - 2.25) calc(0.1 + var(--p) / 2) 0; color: hsl(calc(200 + var(--p) * 160) 80% 60%); }",
+      },
+    ],
+  },
 ];

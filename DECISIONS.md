@@ -491,6 +491,12 @@ The floor is added last and is never affected. The walls of a hole take the mate
 **Why**: decision 66 measured that a test per simple shape costs as much as the shape; one test for a whole group does not. Measured (bench, dpr 2, M4 Pro, after decisions 75 and 76): macropad 16.6 → 4.0 ms (−76 %), todal 19.4 → 3.9 ms (−80 %), L'Orrery 9.9 → 7.5 ms (−24 %, hovered −49 %), the others the same. Over the three decisions, from `main`: L'Orrery 20.3 → 7.5 ms, macropad 17.4 → 4.0 ms, todal 24.3 → 3.9 ms, every scene of the bench under 8.3 ms (120 Hz) at dpr 2. Images: stray pixels only (decision 74).
 **Accepted limits**: a group of 2 objects, or one with a subtraction, an intersection or a blend, keeps one line per object. A ring of objects (todal's dial) gets a sphere as large as the ring.
 
+## 78. The rest of the CSS math functions, computed at compile time like the first ones
+
+**Decision**: `calc.ts` knows every math function of CSS Values 4 and 5 that makes sense without a box: `asin()`, `acos()`, `atan()`, `atan2()`, `sign()`, `round()`, `mod()`, `rem()`, `hypot()`, `log()`, `exp()` and `progress()`. They follow CSS: the inverse functions return an angle (in deg), `atan2(y, x)` takes two values of the same unit; `round()` takes an optional strategy first (`nearest`, the default, where halfway goes up, `up`, `down`, `to-zero`) and an optional step (1 by default), `round(37deg, 15deg)` is `30deg`; `mod()` takes the sign of the divisor and `rem()` the sign of the value (`mod(-7, 3)` is 2, `rem(-7, 3)` is -1); `log(x, base)` has an optional base; `progress(value, start, end)` is clamped to 0–1. Documented as four registry entries (`fn-inverse-trig`, `fn-stepped`, `fn-exponential`, `fn-progress`).
+**Why**: decision 52 put math at compile time; these are the same mechanism, one case each in `apply()`, and every one of them helps to place copies (`mod()` and `round(down, …)` turn a list into a grid, `progress()` into a 0–1 ramp, `atan2()` turns an object toward a point).
+**Different from CSS**: a division by zero in `mod()`, `rem()` or `round()` (a step of 0), or `progress()` with the same start and end, is an error instead of `NaN`; `progress()` has no `no-clamp` keyword; `infinity` and `NaN` are not constants.
+
 ## Open questions
 
 - **Targeting multiplied ids**: should `#hero` target `hero-1`, `hero-2` and `hero-3`?

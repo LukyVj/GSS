@@ -21,7 +21,7 @@ What the language and the tools can do today. Each feature is detailed in the re
 | Animation            | `@keyframes` (`from`, `to`, `%`), `animation: name duration [easing] [delay] [count \| infinite] [direction] [fill-mode]` and the six longhands, computed in the shader                     | 21, 22, 23, 24, 70    |
 | Easings              | `linear`, `ease`, `ease-in`, `ease-out`, `ease-in-out`, `cubic-bezier()`, `linear()`, in `@keyframes` and `transition`                                                                      | 68                    |
 | Media queries        | `@media (…) { … }`: any query the browser knows (width, orientation, `prefers-color-scheme`, `prefers-reduced-motion`…), up to 4 per scene, switched live                                   | 71                    |
-| Math                 | `calc()`, `min()`, `max()`, `clamp()`, `abs()`, `sqrt()`, `pow()`, `sin()`, `cos()`, `tan()`, `pi`, `e`                                                                                     | 52                    |
+| Math                 | `calc()`, `min()`, `max()`, `clamp()`, `abs()`, `sqrt()`, `pow()`, trigonometry and its inverses (`asin()` … `atan2()`), `sign()`, `round()`, `mod()`, `rem()`, `hypot()`, `log()`, `exp()`, `progress()`, `pi`, `e` | 52, 78                |
 | Variables            | `--size: 2`, `var(--size, 1)`; inherited scene → group → object, a variable can use another, animatable in `@keyframes`                                                                     | 55                    |
 | Colors               | `#ff5a36`, `rgb(255 90 54)`, `hsl(20 100% 60%)`, the 148 CSS names (`tomato`) where a color is expected; math and `var()` inside                                                            | 58                    |
 | CSS-style loops      | `sibling-index()`, `sibling-count()`: each copy of a `* n` gets its own value                                                                                                               | 52                    |
@@ -114,7 +114,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 ## Priorities
 
 1. [x] Loops: **option B chosen** (decision 52): `* n` + `calc(sibling-index())`, as in CSS. `@for` / `@each` later, only to change the shape at each step or to walk through a list
-2. [x] `var()` ✅ decision 55, inherited and animatable (+ `calc()` ✅ decision 52, with `min()`, `max()`, `clamp()`, `abs()`, `sqrt()`, `pow()`, `sin()`, `cos()`, `tan()`)
+2. [x] `var()` ✅ decision 55, inherited and animatable (+ `calc()` ✅ decision 52, with `min()`, `max()`, `clamp()`, `abs()`, `sqrt()`, `pow()`, `sin()`, `cos()`, `tan()`; every other CSS math function ✅ decision 78)
 3. [ ] Functional colors: `rgb()`, `hsl()` and the named colors ✅ decision 58; still to do: `oklch()`, `oklab()`, `hwb()`, `color-mix()`
 4. [x] Textures: `texture: url("…")`, one image per face, `::face()` (decision 59)
 5. [x] Animation controls ✅ decision 70: delay, iteration count, direction, fill mode, and the six longhands
@@ -222,6 +222,7 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 
 ## Done recently
 
+- Every CSS math function: `asin()`, `acos()`, `atan()`, `atan2()`, `sign()`, `round()` (and its four strategies), `mod()`, `rem()`, `hypot()`, `log()`, `exp()`, `progress()` (decision 78)
 - Performance with the same image (decisions 74–77): `animate()`, the sphere of the scene, bounds on groups; L'Orrery 20.3 → 7.5 ms, macropad 17.4 → 4.0 ms, todal 24.3 → 3.9 ms at dpr 2; the bench accepts stray pixels (GPU rounding)
 - Child (`>`), adjacent sibling (`+`) and subsequent sibling (`~`) combinators, including mixed chains, `:hover` and relative `:has()` selectors (decision 73)
 
@@ -529,8 +530,8 @@ A score for how well a CSS notion carries over to GSS (a style language → an S
 | `var()`                                                                                                                                           |   1.0 | Already in GSS (dec. 55)                                                                   |
 | `calc()`                                                                                                                                          |   1.0 | Already in GSS (dec. 52)                                                                   |
 | `min()` / `max()` / `clamp()`                                                                                                                     |   1.0 | Already in GSS (dec. 52)                                                                   |
-| `abs()` / `sign()` / `mod()` / `rem()` / `round()` / `pow()` / `sqrt()` / `hypot()` / `log()` / `exp()` / `progress()`                            |  0.85 | `abs()`, `pow()`, `sqrt()` already in (dec. 52); the others to do                          |
-| `sin()` / `cos()` / `tan()` / `asin()` / `acos()` / `atan()` / `atan2()`                                                                          |  0.85 | `sin()`, `cos()`, `tan()` already in (dec. 52); the others to do                           |
+| `abs()` / `sign()` / `mod()` / `rem()` / `round()` / `pow()` / `sqrt()` / `hypot()` / `log()` / `exp()` / `progress()`                            |   1.0 | Already in GSS (dec. 52, 78)                                                               |
+| `sin()` / `cos()` / `tan()` / `asin()` / `acos()` / `atan()` / `atan2()`                                                                          |   1.0 | Already in GSS (dec. 52, 78)                                                               |
 | `random()`                                                                                                                                        |  0.55 | Seed at compile time or runtime                                                            |
 | `calc-size()`                                                                                                                                     |   0.2 | Intrinsic box                                                                              |
 | `rgb()` / `hsl()` / `hwb()` / `lab()` / `lch()` / `oklab()` / `oklch()` / `color()`                                                               |   1.0 | Functional colors, priority #3: `rgb()` and `hsl()` already in (dec. 58); the others to do |
