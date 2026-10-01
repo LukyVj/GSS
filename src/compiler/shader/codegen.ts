@@ -1188,16 +1188,56 @@ function readRotation(value: Token[] | undefined): string {
   return value ? glslFloat(round(readAngle(value))) : "0.0";
 }
 
+// ----- Animations, computed once per pixel -----
+// An animated value (or one :hover changes) depends on the time, not on the point.
+// map() runs about 150 times per pixel (the march, the normal, the reflection):
+// such a value is computed once, in animate() at the start of main(), and map()
+// reads it from a global. Same arithmetic, moved: the image does not change.
+type Hoisted = { names: Map<string, string>; values: { type: string; name: string; expr: string }[] };
+
+function createHoisted(): Hoisted {
+  return { names: new Map(), values: [] };
+}
+
+// The expression as it is when it is constant; otherwise the name of its global
+// (two objects with the same animation share it)
+function hoist(hoisted: Hoisted | undefined, type: "float" | "vec3" | "mat2", expr: string): string {
+  if (!hoisted || !/\b(iTime|uHover)\b/.test(expr)) return expr;
+  const key = `${type} ${expr}`;
+  let name = hoisted.names.get(key);
+  if (!name) {
+    name = `anim${hoisted.values.length}`;
+    hoisted.names.set(key, name);
+    hoisted.values.push({ type, name, expr });
+  }
+  return name;
+}
+
+// The globals and animate(), or "" when nothing moves
+function animateCode(hoisted: Hoisted): string {
+  if (hoisted.values.length === 0) return "";
+  return [
+    "// Animations and :hover: they depend on the time, not on the point, so",
+    "// animate() computes them once per pixel, and map() reads them",
+    ...hoisted.values.map(({ type, name }) => `${type} ${name};`),
+    "",
+    "void animate() {",
+    ...hoisted.values.map(({ name, expr }) => `  ${name} = ${expr};`),
+    "}",
+  ].join("\n");
+}
+
 function rotationLines(
   styles: Styles,
   keyframes: Keyframes[],
   hover?: Hover,
+  hoisted?: Hoisted,
 ): string[] {
   const lines: string[] = [];
   for (const [property, axes] of ROTATIONS) {
     const angle = hoverValue(styles, keyframes, property, readRotation, hover);
     if (angle === "0.0") continue; // no rotation on this axis
-    lines.push(`  q.${axes} *= rot(${angle});`);
+    lines.push(`  q.${axes} *= ${hoist(hoisted, "mat2", `rot(${angle})`)};`);
   }
   return lines;
 }
@@ -1208,11 +1248,12 @@ function transformLines(
   styles: Styles,
   keyframes: Keyframes[],
   hover?: Hover,
+  hoisted?: Hoisted,
 ): string[] {
   return [
-    `  q -= ${hoverValue(styles, keyframes, "translate", readTranslate, hover)};`,
-    ...rotationLines(styles, keyframes, hover),
-    `  q /= ${hoverValue(styles, keyframes, "scale", readScale, hover)};`,
+    `  q -= ${hoist(hoisted, "vec3", hoverValue(styles, keyframes, "translate", readTranslate, hover))};`,
+    ...rotationLines(styles, keyframes, hover, hoisted),
+    `  q /= ${hoist(hoisted, "float", hoverValue(styles, keyframes, "scale", readScale, hover))};`,
   ];
 }
 
@@ -1399,6 +1440,7 @@ export function generateShader(
     return slot === -1 ? undefined : { styles: instance.hoverStyles, slot };
   };
   const context: ShapeContext = { functions: new Map() };
+  const hoisted = createHoisted(); // the animated values of map(): computed by animate()
 
   // What an object must beat to matter. With only plain unions, map() is a plain min():
   // an object further than the floor can never be the nearest, so the floor counts
@@ -1431,12 +1473,16 @@ export function generateShader(
     const hover = hoverOf(instance);
     const last = nodes.length - 1;
     const scales = nodes.map((styles, n) =>
-      hoverValue(
-        styles,
-        keyframes,
-        "scale",
-        readScale,
-        n === last ? hover : undefined,
+      hoist(
+        hoisted,
+        "float",
+        hoverValue(
+          styles,
+          keyframes,
+          "scale",
+          readScale,
+          n === last ? hover : undefined,
+        ),
       ),
     );
 
@@ -1450,7 +1496,7 @@ export function generateShader(
         : `${operation}(res, ${shapeValue})`;
 
     const groupLines = instance.groupStyles.flatMap((styles) =>
-      transformLines(styles, keyframes),
+      transformLines(styles, keyframes, undefined, hoisted),
     );
 
     // Only a costly shape is worth the test, and only a plain union can be skipped:
@@ -1460,7 +1506,7 @@ export function generateShader(
         ` // ${label(instance)}`,
         `  q = p;`,
         ...groupLines,
-        ...transformLines(instance.styles, keyframes, hover),
+        ...transformLines(instance.styles, keyframes, hover, hoisted),
         ` res = ${combine};`,
       ].join("\n");
     }
@@ -1479,9 +1525,9 @@ export function generateShader(
       ` // ${label(instance)}`,
       `  q = p;`,
       ...groupLines,
-      `  q -= ${hoverValue(instance.styles, keyframes, "translate", readTranslate, hover)};`,
+      `  q -= ${hoist(hoisted, "vec3", hoverValue(instance.styles, keyframes, "translate", readTranslate, hover))};`,
       `  if (${sphere} <= ${nearest}) { // its bounding sphere could be the nearest`,
-      ...rotationLines(instance.styles, keyframes, hover).map((line) => `  ${line}`),
+      ...rotationLines(instance.styles, keyframes, hover, hoisted).map((line) => `  ${line}`),
       `    q /= ${ownScale};`,
       `   res = ${combine};`,
       `  }`,
@@ -1523,6 +1569,7 @@ export function generateShader(
     .join("\n\n");
 
   const map = mapLines.join("\n\n");
+  const animate = animateCode(hoisted);
   const textures = textureCode(instances, keyframes, hoverOf);
   const materials = materialLines.join("\n");
   // One line in main() for each material the scene uses
@@ -1548,8 +1595,8 @@ export function generateShader(
         "/*@MAP_HELPERS*/",
         section(
           "// Rotations and the other operations: only those map() calls",
-          used(MAP_HELPERS, map),
-        ),
+          used(MAP_HELPERS, map + animate),
+        ) + (animate ? `\n\n${animate}` : ""),
       )
       .replace(
         "/*@SHAPES*/",
@@ -1609,6 +1656,11 @@ uniform vec2 uPick;`
       .replace(
         "/*@BACKGROUND*/",
         readColor(sceneStyles["background"], "vec3(0.03)"),
+      )
+      // The animations of this pixel, computed once before anything calls map()
+      .replace(
+        "void main() {",
+        animate ? "void main() {\n  animate();" : "void main() {",
       )
       // The parts left out leave blank lines behind: never more than one in a row
       .replace(/\n[ \t]*\n(?:[ \t]*\n)+/g, "\n\n")

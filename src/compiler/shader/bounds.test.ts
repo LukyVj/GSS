@@ -1,3 +1,4 @@
+import { inlineAnimations } from "./inline-animations";
 import { describe, it, expect } from "vitest";
 import { compileGSS } from "../index";
 import { shapeRadius } from "./codegen";
@@ -7,7 +8,7 @@ import { pathRadius, polygonRadius } from "./path";
 // map() skips a path or a prism when even its bounding sphere is further than the
 // nearest object found so far. These tests read the GLSL of map().
 const mapOf = (gss: string) => {
-  const shader = compileGSS(gss);
+  const shader = inlineAnimations(compileGSS(gss));
   return shader.slice(shader.indexOf("vec2 map(vec3 p)"), shader.indexOf("Material getMaterial"));
 };
 // The block of one object in map(), from its comment to the next object's
