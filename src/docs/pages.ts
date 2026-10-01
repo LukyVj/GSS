@@ -1,4 +1,5 @@
 import { encodeCode } from "../runtime/share";
+import { mountCopyPage } from "./copy-page";
 import { closePlayground } from "./playground";
 
 // The docs show one entry at a time, like pages (design/reference/png/03-docs.png):
@@ -108,14 +109,17 @@ export function enablePages(root: HTMLElement): void {
       toc?.classList.remove("open");
       toggle?.setAttribute("aria-expanded", "false");
 
-      // Breadcrumb: "object properties / material"
-      root.querySelector(".crumbs")?.remove();
+      // Breadcrumb + copy page: "object properties / material" · copy page ▾
+      root.querySelector(".page-bar")?.remove();
+      const bar = document.createElement("div");
+      bar.className = "page-bar";
       const crumbs = document.createElement("div");
       crumbs.className = "crumbs";
       const current = document.createElement("span");
       current.textContent = titleOf(article);
       crumbs.append(`${section.querySelector("h2")?.textContent?.toLowerCase() ?? ""} / `, current);
-      article.prepend(crumbs);
+      bar.append(crumbs, mountCopyPage(article));
+      article.prepend(bar);
 
       // Previous / next
       root.querySelector(".pager")?.remove();

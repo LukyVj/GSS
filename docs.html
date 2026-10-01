@@ -257,13 +257,74 @@
       .paged > section > h2 {
         display: none; /* the breadcrumb says it */
       }
-      .crumbs {
+      .page-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px 16px;
         margin-bottom: 18px;
+      }
+      .crumbs {
         font: 12px var(--gss-font-code);
         color: var(--gss-dim);
       }
       .crumbs span {
         color: var(--gss-signal);
+      }
+      /* Copy page ▾ — Markdown for LLMs (src/docs/copy-page.ts) */
+      .copy-page {
+        position: relative;
+        flex-shrink: 0;
+      }
+      .copy-page-trigger {
+        height: 28px;
+        padding: 0 10px;
+        border: 1px solid var(--gss-isoline);
+        border-radius: var(--gss-radius-control);
+        background: transparent;
+        color: var(--gss-ash);
+        font: 12px var(--gss-font-code);
+        text-transform: lowercase;
+        cursor: pointer;
+        transition:
+          color var(--gss-transition),
+          border-color var(--gss-transition),
+          background-color var(--gss-transition);
+      }
+      .copy-page-trigger:hover,
+      .copy-page-trigger[aria-expanded="true"] {
+        border-color: var(--gss-ash);
+        color: var(--gss-bone);
+        background: var(--gss-raised);
+      }
+      .copy-page-menu {
+        position: absolute;
+        top: calc(100% + 4px);
+        right: 0;
+        z-index: 20;
+        min-width: 260px;
+        padding: 4px;
+        border: 1px solid var(--gss-line);
+        border-radius: var(--gss-radius-control);
+        background: var(--gss-raised);
+      }
+      .copy-page-item {
+        display: block;
+        width: 100%;
+        padding: 8px 10px;
+        border: 0;
+        border-radius: var(--gss-radius-control);
+        background: transparent;
+        color: var(--gss-ash);
+        font: 12px/1.4 var(--gss-font-code);
+        text-align: left;
+        text-transform: lowercase;
+        cursor: pointer;
+      }
+      .copy-page-item:hover {
+        background: var(--gss-isoline);
+        color: var(--gss-bone);
       }
       .property,
       .guide {
