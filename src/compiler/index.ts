@@ -14,11 +14,13 @@ import { resolveVars, usesVariables, hasVar, type Variables } from "./vars";
 import { PROPERTIES } from "./registry";
 import { resolveColors, resolveNamedColors } from "./colors";
 import { sceneTextures } from "./textures";
+import { readDpr, type Dpr } from "./dpr";
 
 // Everything the runtime needs to display a scene
 export type CompiledScene = {
   shader: string;
   camera: CameraSettings;
+  dpr: Dpr;
   objects: number; // instances drawn, for the status bar (decision 42)
   textures: string[]; // the image files the runtime loads, once each
   hover: number[][]; // for each slot of uHover[], the ids that, hovered, set it to 1
@@ -114,6 +116,7 @@ export function compileScene(source: string): CompiledScene {
   return {
     shader: generateShader(styled, computedScene, [...shared, ...copies]),
     camera: readCamera(computedScene),
+    dpr: readDpr(computedScene),
     objects: instances.length,
     // After the cascade and var(): the texture an object really ends up with
     textures: sceneTextures(styled),

@@ -121,3 +121,31 @@ describe("var() in @keyframes", () => {
     ).toThrow("--nope is not defined");
   });
 });
+
+describe("dpr", () => {
+  it("is auto in a scene that does not set it", () => {
+    expect(compileScene("@scene { cube; }").dpr).toBe("auto");
+  });
+
+  it("gives the runtime the dpr of the scene", () => {
+    expect(compileScene("@scene { cube; } scene { dpr: max; }").dpr).toBe(
+      "max",
+    );
+    expect(compileScene("@scene { cube; } scene { dpr: 1.5; }").dpr).toBe(1.5);
+  });
+
+  it("reads a variable and the math, like every scene property", () => {
+    expect(
+      compileScene("@scene { cube; } scene { --d: 2; dpr: var(--d); }").dpr,
+    ).toBe(2);
+    expect(compileScene("@scene { cube; } scene { dpr: calc(1 / 2); }").dpr).toBe(
+      0.5,
+    );
+  });
+
+  it("points at the value when it is wrong", () => {
+    expect(() => compileScene("@scene { cube; } scene { dpr: 8; }")).toThrow(
+      "dpr expects",
+    );
+  });
+});
