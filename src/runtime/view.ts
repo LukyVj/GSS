@@ -5,6 +5,8 @@ import { pickPixel, hoverValues } from "./hover";
 import { createPicker } from "./picker";
 import { createClock } from "./clock";
 import type { FrameProbe } from "../profiler/profiler";
+import type { Dpr } from "../compiler/dpr";
+import { pixelRatio } from "./dpr";
 
 // Draws compiled GSS scenes in a canvas, with a camera the mouse can move.
 // It never imports the compiler (decision 63): a page that embeds a scene compiled
@@ -75,6 +77,7 @@ export function createView(
   // (picker.ts). The answer comes one or two frames later; until then, the last one holds.
   const picker = createPicker(gl);
   let hovered = 0; // the id under the mouse, as last read back (0: nothing)
+  let dpr: Dpr = "auto"; // the pixel density the scene asks for (scene { dpr })
 
   function compileShader(type: number, source: string): WebGLShader {
     const shader = gl!.createShader(type)!;
@@ -209,9 +212,9 @@ export function createView(
 
   // --- 4. Adapt the canvas size to its box ---
   function resize() {
-    const dpr = Math.min(window.devicePixelRatio, 2);
-    const width = Math.floor(canvas.clientWidth * dpr);
-    const height = Math.floor(canvas.clientHeight * dpr);
+    const ratio = pixelRatio(dpr, window.devicePixelRatio);
+    const width = Math.floor(canvas.clientWidth * ratio);
+    const height = Math.floor(canvas.clientHeight * ratio);
     if (canvas.width !== width || canvas.height !== height) {
       canvas.width = width;
       canvas.height = height;
@@ -277,6 +280,7 @@ export function createView(
       if (scene) gl.deleteProgram(scene.program);
       scene = next;
       hovered = 0; // the ids belong to the new scene now
+      dpr = compiled.dpr;
       applyCameraSettings(compiled.camera);
     },
     sampleFrames() {
