@@ -1,0 +1,76 @@
+/* The performance panel: dev only, over the top-right corner of the scene.
+   Imported by panel.ts, so a production build never ships it. */
+
+@import "../styles/tokens.css";
+
+.perf-panel {
+  grid-area: scene; /* same cell as the canvas, drawn above it */
+  align-self: start;
+  justify-self: end;
+  z-index: 1;
+  margin: 12px;
+  padding: 10px 12px;
+  min-width: 240px;
+  background: rgb(
+    10 10 12 / 0.86
+  ); /* --gss-void, the scene shows through a little */
+  border: 1px solid var(--gss-isoline);
+  border-radius: var(--gss-radius-control);
+  font: 400 11px/1.6 var(--gss-font-code);
+  color: var(--gss-bone);
+  pointer-events: none; /* drag and hover reach the scene through it */
+}
+.perf-panel[hidden] {
+  display: none;
+}
+
+.perf-panel h2 {
+  margin: 0 0 6px;
+  font: inherit;
+  color: var(--gss-dim);
+  text-transform: lowercase;
+}
+
+.perf-panel dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 16px;
+  margin: 0;
+}
+.perf-panel dt {
+  color: var(--gss-dim);
+}
+.perf-panel dd {
+  margin: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums; /* numbers do not jump as they change */
+}
+.perf-panel dd.missing {
+  color: var(--gss-ash);
+}
+/* Over budget: the line to look at first */
+.perf-panel dd.warning {
+  color: var(--gss-signal);
+}
+
+/* The toggle, in the status bar */
+.perf-toggle {
+  height: 22px;
+  padding: 0 8px;
+  background: none;
+  border: 1px solid var(--gss-isoline);
+  border-radius: var(--gss-radius-control);
+  color: var(--gss-dim);
+  font-size: 11px;
+  cursor: pointer;
+  transition:
+    color var(--gss-transition),
+    border-color var(--gss-transition);
+}
+.perf-toggle:hover {
+  color: var(--gss-bone);
+}
+.perf-toggle[aria-pressed="true"] {
+  color: var(--gss-signal);
+  border-color: var(--gss-signal);
+}
