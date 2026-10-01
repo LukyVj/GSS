@@ -212,15 +212,83 @@ export const PROPERTIES: PropertyDef[] = [
   {
     name: "animation",
     appliesTo: "object",
-    syntax: "<keyframes-name> <time> [<easing>] [alternate]",
+    syntax:
+      "<keyframes-name> <time> [<easing>] [<time>] [<number> | infinite] [normal | reverse | alternate | alternate-reverse] [none | forwards | backwards | both]",
     initial: "none",
     description:
-      "Plays a @keyframes animation on the object, in a loop. The duration is in s or ms. alternate plays it forward then backward. The easing shapes each step, like CSS: linear, the default, keeps a constant speed; ease, ease-in, ease-out and ease-in-out speed up and slow down; cubic-bezier() and linear() draw your own curve. In an animation, ease-in-out is computed as a smoothstep, a very close curve. Animatable properties: translate, rotate-x, rotate-y, rotate-z, scale and color. On a group, it animates translate, the rotations and scale of the whole group.",
+      "Plays a @keyframes animation on the object, like CSS. After the name: the duration (s or ms), then if needed an easing, a delay, a number of iterations, a direction and a fill mode, in any order. Unlike CSS, an animation loops forever unless you give it a number of iterations. The second time is the delay: the animation starts after it, or partway with a negative delay. A number plays that many times (1.5 stops halfway through the second), infinite loops. alternate plays it forward then backward, reverse backward, alternate-reverse backward first. The fill mode says what the object shows outside the animation: none, its own value, like CSS; backwards, the first frame during the delay; forwards, the last frame once it is over; both, the two. The easing shapes each step: linear, the default, keeps a constant speed; ease, ease-in, ease-out and ease-in-out speed up and slow down; cubic-bezier() and linear() draw your own curve. In an animation, ease-in-out is computed as a smoothstep, a very close curve. Each part also has its own property: animation-duration, animation-delay, animation-iteration-count, animation-direction, animation-fill-mode and animation-timing-function, which win over what animation says. Animatable properties: translate, rotate-x, rotate-y, rotate-z, scale and color. On a group, it animates translate, the rotations and scale of the whole group.",
     examples: [
       "@scene { sphere; } sphere { animation: float 2s ease-in-out alternate; } @keyframes float { from { translate: 0 1 0; } to { translate: 0 2 0; } }",
       "@scene { cube; } cube { translate: 0 0.5 0; animation: bounce 1s; } @keyframes bounce { 0%, 100% { translate: 0 0.5 0; } 50% { translate: 0 1.5 0; scale: 1.2; } }",
       "@scene { cube; } cube { translate: 0 0.5 0; color: #ff5a36; animation: turn 4s linear; } @keyframes turn { to { rotate-y: 1turn; color: #3a7bff; } }",
       "@scene { sphere; } sphere { translate: 0 0.5 0; radius: 0.5; color: #ff5a36; animation: jump 1.2s cubic-bezier(0.3, -0.4, 0.7, 1.4) alternate; } @keyframes jump { to { translate: 0 2 0; } }",
+      "@scene { cube; } cube { translate: 0 3 0; color: #ff5a36; animation: drop 1s ease-in 0.5s 1 both; } @keyframes drop { to { translate: 0 0.5 0; rotate-y: 90deg; } }",
+    ],
+  },
+  {
+    name: "animation-duration",
+    appliesTo: "object",
+    syntax: "<time>",
+    initial: "0s",
+    description:
+      "The duration of one iteration of the animation, in s or ms. It wins over the duration written in animation.",
+    examples: [
+      "@scene { sphere; } sphere { radius: 0.5; color: #3a7bff; animation: rise 1.5s ease-in-out; animation-duration: 3s; } @keyframes rise { from { translate: 0 0.5 0; } to { translate: 0 2 0; } }",
+    ],
+  },
+  {
+    name: "animation-delay",
+    appliesTo: "object",
+    syntax: "<time>",
+    initial: "0s",
+    description:
+      "How long the animation waits before it starts, in s or ms. A negative delay starts it partway, as if it had begun earlier. It wins over the delay written in animation.",
+    examples: [
+      "@scene { sphere; } sphere { radius: 0.5; color: #3a7bff; animation: rise 1.5s ease-in-out; animation-delay: 1s; } @keyframes rise { from { translate: 0 0.5 0; } to { translate: 0 2 0; } }",
+    ],
+  },
+  {
+    name: "animation-iteration-count",
+    appliesTo: "object",
+    syntax: "<number> | infinite",
+    initial: "infinite",
+    description:
+      "How many times the animation plays: a number (1.5 stops halfway through the second time) or infinite. Unlike CSS, where it plays once, a GSS animation loops forever by default. It wins over the count written in animation.",
+    examples: [
+      "@scene { sphere; } sphere { radius: 0.5; color: #3a7bff; animation: rise 1.5s ease-in-out; animation-iteration-count: 2; } @keyframes rise { from { translate: 0 0.5 0; } to { translate: 0 2 0; } }",
+    ],
+  },
+  {
+    name: "animation-direction",
+    appliesTo: "object",
+    syntax: "normal | reverse | alternate | alternate-reverse",
+    initial: "normal",
+    description:
+      "The way the animation plays: forward (normal), backward (reverse), forward then backward (alternate), or backward then forward (alternate-reverse). It wins over the direction written in animation.",
+    examples: [
+      "@scene { sphere; } sphere { radius: 0.5; color: #3a7bff; animation: rise 1.5s ease-in-out; animation-direction: alternate; } @keyframes rise { from { translate: 0 0.5 0; } to { translate: 0 2 0; } }",
+    ],
+  },
+  {
+    name: "animation-fill-mode",
+    appliesTo: "object",
+    syntax: "none | forwards | backwards | both",
+    initial: "none",
+    description:
+      "What the object shows outside the animation, like CSS: none, its own value; backwards, the first frame during the delay; forwards, the last frame once the animation is over; both, the two. It only matters with a delay or a number of iterations.",
+    examples: [
+      "@scene { sphere; } sphere { radius: 0.5; color: #3a7bff; animation: rise 1.5s ease-in-out; animation-iteration-count: 1; animation-fill-mode: forwards; } @keyframes rise { from { translate: 0 0.5 0; } to { translate: 0 2 0; } }",
+    ],
+  },
+  {
+    name: "animation-timing-function",
+    appliesTo: "object",
+    syntax: "<easing>",
+    initial: "linear",
+    description:
+      "The easing of each step of the animation: a keyword (linear, ease, ease-in, ease-out, ease-in-out), cubic-bezier() or linear(). It wins over the easing written in animation.",
+    examples: [
+      "@scene { sphere; } sphere { radius: 0.5; color: #3a7bff; animation: rise 1.5s ease-in-out; animation-timing-function: ease-out; } @keyframes rise { from { translate: 0 0.5 0; } to { translate: 0 2 0; } }",
     ],
   },
   {
@@ -634,6 +702,12 @@ export const SHAPE_DOCS: ShapeDef[] = [
       "rotate-z",
       "scale",
       "animation",
+      "animation-duration",
+      "animation-delay",
+      "animation-iteration-count",
+      "animation-direction",
+      "animation-fill-mode",
+      "animation-timing-function",
     ],
     examples: [
       "@scene { group#letters { cube#l; cube#u; cube#c; } } #letters { translate: -1 0.5 0; rotate-y: 20deg; } #letters cube { size: 0.3 1 0.3; color: #ff5a36; } #u { translate: 1 0 0; } #c { translate: 2 0 0; }",

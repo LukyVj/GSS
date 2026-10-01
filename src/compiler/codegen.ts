@@ -1,5 +1,6 @@
 import type { Token } from "./tokenizer";
-import { findEasing, type Easing } from "./easing";
+import type { Easing } from "./easing";
+import { readAnimation, type AnimationSpec } from "./animation";
 import { errorAt, locate } from "./errors";
 import { tokenize } from "./tokenizer";
 import { FACES, type Face, type StyledInstance, type Styles } from "./resolve";
@@ -106,6 +107,19 @@ float cubicBezier(float x, vec4 h) {
     if (bezierAt(s, h.x, h.z) < x) low = s; else high = s;
   }
   return bezierAt(0.5 * (low + high), h.y, h.w);
+}`,
+
+  playhead: `// The progress of an animation in its iteration, like CSS. t: seconds since it
+// started (after the delay), n: iterations, dir: 0 normal, 1 reverse, 2 alternate,
+// 3 alternate-reverse. Before the start: the first frame; after the end: the last.
+float playhead(float t, float duration, float n, int dir) {
+  float c = clamp(t / duration, 0.0, n);
+  float i = floor(c);
+  if (i == c && c == n && n > 0.0) i -= 1.0; // the end of the last iteration
+  float f = c - i;
+  bool odd = mod(i, 2.0) == 1.0;
+  bool back = dir == 1 || (dir == 2 && odd) || (dir == 3 && !odd);
+  return back ? 1.0 - f : f;
 }`,
 };
 
@@ -1228,35 +1242,52 @@ function label(instance: StyledInstance): string {
   return `${instance.tag}${id}${classes}`;
 }
 
-// "2s" or "500ms" → seconds
-function readDuration(value: Token[]): number {
-  for (const token of value) {
-    if (token.type === "DIMENSION" && token.unit === "s") return token.value;
-    if (token.type === "DIMENSION" && token.unit === "ms")
-      return token.value / 1000;
-  }
-  throw errorAt(
-    value,
-    "animation needs a duration, like: animation: float 2s;",
-  );
-}
+const DIRECTION_NUMBERS = {
+  normal: 0,
+  reverse: 1,
+  alternate: 2,
+  "alternate-reverse": 3,
+};
+// Infinity in GLSL: more iterations than any scene will ever play
+const FOREVER = 1e9;
 
-function hasKeyword(value: Token[], word: string): boolean {
-  return value.some((token) => token.type === "IDENT" && token.value === word);
-}
+// How the shader plays an animation: the progress (0 to 1) in the current iteration,
+// and when the animation shows at all (null: always). Without a delay, a count or a
+// direction other than alternate, the expressions are the ones GSS always wrote.
+function playback(spec: AnimationSpec): {
+  progress: string;
+  active: string | null;
+} {
+  const { duration, delay, iterations, direction, fill } = spec;
+  const plain = delay === 0 && iterations === Infinity;
+  const time = `iTime / ${glslFloat(duration)}`;
+  if (plain && direction === "normal")
+    return { progress: `fract(${time})`, active: null }; // 0 → 1, 0 → 1 …
+  if (plain && direction === "alternate")
+    return { progress: `(1.0 - abs(mod(${time}, 2.0) - 1.0))`, active: null }; // 0 → 1 → 0 …
 
-// A GLSL expression that goes from 0 to 1 over time
-// A GLSL expression that goes from 0 to 1 over time, at constant speed
-function animationProgress(value: Token[]): string {
-  const time = `iTime / ${glslFloat(readDuration(value))}`;
-  return hasKeyword(value, "alternate")
-    ? `(1.0 - abs(mod(${time}, 2.0) - 1.0))` // 0 → 1 → 0 → 1 …
-    : `fract(${time})`; // 0 → 1, 0 → 1 …
-}
-// Applies the timing curve of an animation to a progress between 0 and 1.
-// value[0] is the name of the @keyframes, the easing is among the rest.
-function easing(value: Token[], progress: string): string {
-  return easingCode(findEasing(value.slice(1)).easing, progress);
+  const t =
+    delay === 0
+      ? "iTime"
+      : delay > 0
+        ? `iTime - ${glslFloat(delay)}`
+        : `iTime + ${glslFloat(-delay)}`;
+  const n = iterations === Infinity ? FOREVER : iterations;
+  const progress = `playhead(${t}, ${glslFloat(duration)}, ${glslFloat(n)}, ${DIRECTION_NUMBERS[direction]})`;
+
+  // Like CSS: outside the animation, the object's own value, unless the fill mode
+  // holds the first frame (backwards) during the delay or the last one (forwards) after
+  const conditions: string[] = [];
+  const holdsBefore = delay <= 0 || fill === "backwards" || fill === "both";
+  const holdsAfter =
+    iterations === Infinity || fill === "forwards" || fill === "both";
+  if (!holdsBefore) conditions.push(`iTime >= ${glslFloat(delay)}`);
+  if (!holdsAfter)
+    conditions.push(`iTime < ${glslFloat(round(delay + iterations * duration))}`);
+  return {
+    progress,
+    active: conditions.length > 0 ? conditions.join(" && ") : null,
+  };
 }
 
 // An easing in GLSL. No easing, or a straight line: the progress itself.
@@ -1317,10 +1348,10 @@ function animatedValue(
   read: (value: Token[] | undefined) => string,
 ): string {
   const own = read(styles[property]);
-  const animation = styles["animation"];
+  const animation = readAnimation(styles);
   if (!animation) return own;
 
-  const [name] = animation;
+  const { name } = animation;
   // Like in CSS, if two @keyframes have the same name, the last one wins
   const found = keyframes.findLast((k) => k.name === name.value);
   if (!found) throw errorAt(name, `No @keyframes named "${name.value}"`);
@@ -1345,15 +1376,15 @@ function animatedValue(
     .sort((a, b) => a.offset - b.offset);
 
   // Chain of mix: each segment takes over when the previous one is done
-  const progress = animationProgress(animation);
+  const { progress, active } = playback(animation);
   let result = stops[0].value;
   for (let i = 1; i < stops.length; i++) {
     const start = stops[i - 1].offset;
     const length = round(stops[i].offset - start);
     const local = `clamp((${progress} - ${glslFloat(start)}) / ${glslFloat(length)}, 0.0, 1.0)`;
-    result = `mix(${result}, ${stops[i].value}, ${easing(animation, local)})`;
+    result = `mix(${result}, ${stops[i].value}, ${easingCode(animation.easing, local)})`;
   }
-  return result;
+  return active ? `((${active}) ? ${result} : ${own})` : result;
 }
 
 export function generateShader(
