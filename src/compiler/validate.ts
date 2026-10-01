@@ -27,7 +27,8 @@ export function validateProperties(rules: Rule[]): void {
         );
       }
 
-      if (hover && !property.animatable) {
+      // transition is not animated, but :hover can set it, like CSS
+      if (hover && !property.animatable && property.name !== "transition") {
         const animatable = PROPERTIES.filter((p) => p.animatable).map(
           (p) => p.name,
         );

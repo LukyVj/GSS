@@ -15,6 +15,7 @@ import { PROPERTIES } from "./registry";
 import { resolveColors, resolveNamedColors } from "./colors";
 import { sceneTextures } from "./textures";
 import { readDpr, type Dpr } from "./dpr";
+import { readTransition, type Transition } from "./transition";
 
 // Everything the runtime needs to display a scene
 export type CompiledScene = {
@@ -24,6 +25,8 @@ export type CompiledScene = {
   objects: number; // instances drawn, for the status bar (decision 42)
   textures: string[]; // the image files the runtime loads, once each
   hover: number[][]; // for each slot of uHover[], the ids that, hovered, set it to 1
+  // for each slot of uHover[], how it glides to 1 (enter) and back to 0 (leave)
+  transitions: { enter: Transition | null; leave: Transition | null }[];
 };
 
 // GSS text → shader + camera settings
@@ -121,6 +124,11 @@ export function compileScene(source: string): CompiledScene {
     // After the cascade and var(): the texture an object really ends up with
     textures: sceneTextures(styled),
     hover: hoverSlots(styled).map((instance) => instance.hoverTriggers),
+    // Like CSS: the transition of the state the object goes to
+    transitions: hoverSlots(styled).map((instance) => ({
+      enter: readTransition(instance.hoverStyles["transition"]),
+      leave: readTransition(instance.styles["transition"]),
+    })),
   };
 }
 

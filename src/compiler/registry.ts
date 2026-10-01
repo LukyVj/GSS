@@ -198,6 +198,18 @@ export const PROPERTIES: PropertyDef[] = [
     ],
   },
   {
+    name: "transition",
+    appliesTo: "object",
+    syntax: "none | [all] <time> [<easing>] [<time>]",
+    initial: "none",
+    description:
+      "Glides the object to its :hover state and back, instead of jumping, like CSS. The first time is the duration, the second one a delay, and the easing is ease by default; it can be any keyword, cubic-bezier() or linear(). One transition covers every property :hover changes on the object. Like CSS, the object enters :hover with the transition written in its :hover rule, if there is one, and leaves it with the transition written at rest. Leaving halfway goes back from where it is, in the time already spent.",
+    examples: [
+      "@scene { cube; } cube { translate: 0 0.5 0; color: #ff5a36; transition: 0.4s ease-out; } cube:hover { scale: 1.3; rotate-y: 45deg; color: #3a7bff; }",
+      "@scene { sphere * 5; } sphere { radius: 0.35; translate: calc(sibling-index() * 0.9 - 2.7) 0.4 0; color: #3ad16b; transition: 0.8s cubic-bezier(0.3, -0.4, 0.7, 1.4); } sphere:hover { translate: calc(sibling-index() * 0.9 - 2.7) 1.4 0; transition: 0.4s ease-out; }",
+    ],
+  },
+  {
     name: "animation",
     appliesTo: "object",
     syntax: "<keyframes-name> <time> [<easing>] [alternate]",
