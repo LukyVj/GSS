@@ -8,11 +8,18 @@ import { diffPixels } from "./compare";
 //   ?scene=orrery&mode=run    the scene lives (animations, spin): for the timings
 //   ?mode=diff                no scene: compares two PNGs (diffPixels) in the browser
 
+// The scenes are in src/scenes/; the old folders are read too, so that a commit made
+// before the move can still be benched (the bench is copied into its worktree)
 const SOURCES = import.meta.glob<string>(
-  ["../scene.gss", "../playground/*.gss", "../showcase/scenes/*.gss"],
+  [
+    "../scene.gss",
+    "../scenes/*.gss",
+    "../playground/*.gss",
+    "../showcase/scenes/*.gss",
+  ],
   { query: "?raw", import: "default", eager: true },
 );
-// "../playground/orrery.gss" → "orrery"
+// "../scenes/orrery.gss" → "orrery"
 const SCENES: Record<string, string> = Object.fromEntries(
   Object.entries(SOURCES).map(([path, code]) => [
     path.split("/").pop()!.replace(/\.gss$/, ""),

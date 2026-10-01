@@ -1,17 +1,20 @@
-import logo3d from "./scenes/logo-3d.gss?raw";
-import icons from "./scenes/icons.gss?raw";
-import spiral from "./scenes/spiral.gss?raw";
-import shadertoy from "./scenes/shadertoy.gss?raw";
-import hero from "./scenes/hero.gss?raw";
-import llm from "./scenes/llm.gss?raw";
-import logo from "../playground/logo.gss?raw";
+import logo3d from "../scenes/logo-3d.gss?raw";
+import icons from "../scenes/icons.gss?raw";
+import spiral from "../scenes/spiral.gss?raw";
+import shadertoy from "../scenes/shadertoy.gss?raw";
+import hero from "../scenes/hero.gss?raw";
+import llm from "../scenes/llm.gss?raw";
+import logo from "../scenes/logo.gss?raw";
+import orrery from "../scenes/orrery.gss?raw";
+import macropad from "../scenes/macropad.gss?raw";
+import tidal from "../scenes/todal.gss?raw";
 import everything from "../scene.gss?raw";
 import { FIRST_SCENE } from "../docs/guide";
 import { formatGss } from "../docs/format";
 import { PROPERTIES, SELECTORS } from "../compiler/registry";
 export { EMBED_SNIPPETS } from "../embed/snippets";
 
-// What showcase.html shows (decision 63). The scenes are .gss files in scenes/:
+// What showcase.html shows (decision 63). The scenes are .gss files in src/scenes/:
 // gpu.test.ts compiles every one of them, so a demo never breaks in silence.
 
 export type Audience = "designers" | "creative coders" | "developers";
@@ -155,6 +158,13 @@ export const INSPIRATION: Inspiration[] = [
     code: formatGss(FIRST_SCENE),
   },
   { slug: "logo", title: "The GSS logo, drawn in GSS", code: logo },
+  {
+    slug: "orrery",
+    title: "A fairground planetarium, every feature at once",
+    code: orrery,
+  },
+  { slug: "macropad", title: "A macro pad: keys that press", code: macropad },
+  { slug: "tidal", title: "Tidal, a breathing instrument", code: tidal },
   {
     slug: "every-feature",
     title: "Every feature, one zone each",

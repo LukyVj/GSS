@@ -1,6 +1,6 @@
 import sceneSource from "../scene.gss?raw";
-import logoSource from "./logo.gss?raw";
-import orrerySource from "./orrery.gss?raw";
+import logoSource from "../scenes/logo.gss?raw";
+import orrerySource from "../scenes/orrery.gss?raw";
 import { FIRST_SCENE } from "../docs/guide";
 import { formatGss } from "../docs/format";
 import { PROPERTIES, AT_RULES, FUNCTIONS } from "../compiler/registry";

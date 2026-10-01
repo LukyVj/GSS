@@ -10,7 +10,7 @@ import {
 } from "../compiler/registry";
 import sceneSource from "../scene.gss?raw";
 import { FIRST_SCENE } from "../docs/guide";
-import logoSource from "../playground/logo.gss?raw";
+import logoSource from "../scenes/logo.gss?raw";
 import { USE_CASES } from "../showcase/content";
 
 afterAll(closeGpu); // close Chromium when every test of this file is done
