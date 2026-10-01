@@ -4,7 +4,7 @@ A living list of the next features. Tick an item or move it to **Done recently**
 
 **Rule:** every new feature or entry goes into the **registry** (in the right place) **and** into the **docs** (syntax, example, etc.).
 
-## Already in GSS (Sept. 30, 2026)
+## Already in GSS (Oct. 1, 2026)
 
 What the language and the tools can do today. Each feature is detailed in the registry (so in the docs), and the "why" is in `DECISIONS.md` (column *Dec.*).
 
@@ -79,6 +79,8 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 | Everything is computed, except the images of `texture`: projected on each face (triplanar), at most 16 per scene | 1, 59 |
 | Minimal shader: only the GLSL the scene uses goes in (an empty scene: 104 lines) | 53 |
 | `:hover`: a 1-pixel picking pass under the mouse, `uHover[]` mixed into every hovered property | 62 |
+| `:hover` read without waiting for the GPU: a pixel buffer and a fence (`runtime/picker.ts`) | 65 |
+| `map()` skips a `path` or a `prism` whose bounding sphere is further than the nearest object: same image, macropad −37 %, logo −50 % on the GPU at dpr 2 | 66 |
 
 ### Tools
 
@@ -97,6 +99,8 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 | VS Code / Cursor extension | highlighting, formatter, icon for `.gss` files | 33 |
 | Design | `DESIGN.md` "Distance field", tokens in `src/styles/tokens.css`, what every page shares in `src/styles/site.css` (`@layer site`: a page's own `<style>` always wins) | – |
 | Tests | Vitest (CPU) + GPU compilation of every registry example (Chromium) | 12, 25 |
+| Profiler (dev only) | a panel over the playground scene, `perf` button or Alt+P: fps, frame, GPU and CPU time, real pixels, shader build time; over budget in signal | 64 |
+| Bench | `npm run bench:compare -- main --dpr 2`: another commit against the working tree, 3 alternating rounds, images compared pixel by pixel, report in `bench-results/compare.md` | 64 |
 
 ## Priorities
 
@@ -146,6 +150,16 @@ Next, on this page:
 
 - [ ] `view: distance` / `view: shaded` (promised in the design, missing)
 
+### Performance
+
+Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median: orrery 20 ms, todal 25–28 ms, macropad 17 ms, test scene 6 ms, spiral 4.5 ms, logo 2 ms. Budget: 16.7 ms at 60 fps, 8.3 ms at 120 Hz. Every item below must keep the image (the bench compares it pixel by pixel).
+
+- [ ] **Animations once per pixel** (branch `perf/animate`, not merged): every animated or hovered translate, rotation and scale becomes a global computed by `animate()` at the start of `main()`, instead of at every call of `map()` (about 150 per pixel). Same arithmetic, moved (the `map()` of every scene is the same text once the values are put back). Measured: orrery −24 % on the GPU in a first run, inconclusive in a second (busy machine); 17 edge pixels out of 2 million changed (see the open question on edge pixels in `DECISIONS.md`)
+- [ ] **A sphere around the whole scene** (prepared, not applied): a ray that passes by it meets no object, so `march()` finds the floor at once (most of the sky and of the far floor). The sphere holds every object at every moment of its animations and hovered, read from the GLSL (`mix()` of constants with weights in [0, 1]); rotating groups make it larger. Measured in software rendering: −27 to −50 % on the GPU. It also ends the lost rays at the far edge of the floor (below), so a few pixels of the horizon change
+- [ ] Bounds on whole groups, one test per group (the radii of the simple shapes are already computed)
+- [ ] Animations computed once per frame on the CPU and sent as uniforms (todal: 61 `iTime` in `map()`)
+- [ ] `scene { dpr: max; }`, `dpr: 2`, `dpr: 1`: the pixel density of the render, chosen by the author (today always `min(devicePixelRatio, 2)`). `max` follows the screen. With `@media` (priority #6), it can change with the screen: `@media (max-width: 600px) { scene { dpr: 1; } }`
+
 ### Shapes / rendering
 
 - [x] Solid fill of a path: `prism` with `d: path(…)`, holes included (decision 50)
@@ -190,6 +204,7 @@ Next, on this page:
 
 ## Done recently
 
+- Performance tools and two speed-ups with an identical image (Oct. 1): the dev profiler and the bench (decision 64), `:hover` without a GPU wait (decision 65), bounding spheres for `path` and `prism` in `map()` (decision 66)
 - Embedding and showcase: `<gss-scene>` / `embed.js`, `mount()`, the Vite plugin, a runtime without the compiler (10 kB), `showcase.html`, `npm run captures` (decision 63)
 - `:hover`: triggers, a second cascade, `uHover[]` in the shader and a picking pass, on the home page, the playground and every "Try it" (decision 62)
 - Textures: `texture: url("…")`, `::face()` / `::top` / `::bottom`, `image-rendering: pixelated`, `texture-size`: the Minecraft dirt and grass blocks (decision 59)
