@@ -10,21 +10,23 @@ What the language and the tools can do today. Each feature is detailed in the re
 
 ### Language
 
-| Feature              | Syntax                                                                                                                                              | Dec.              |
-| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
-| Scene structure      | `@scene { cube.corner * 4; torus#hero; }`, `;` optional between elements                                                                            | 2, 11, 46         |
-| Multiplication       | `cube * 12`; numbered ids: `cube#petal * 12` → `#petal-1` … `#petal-12`                                                                             | 3                 |
-| Groups               | `group#g { … }`: transforms and animation apply to the children, positions are relative                                                             | 45, 48            |
-| Scene styling        | `scene { floor; background; light; ambient; camera-* }`                                                                                             | 11, 15, 16        |
-| Selectors            | `<shape>`, `.class`, `#id`, `*`, lists `a, b`, descendant `a b`, faces `::face(front)`, `::top`, `::bottom`, `:hover` (on objects and their groups) | 4, 37, 47, 59, 62 |
-| Cascade              | specificity (id 10,000, class 100, tag 1), last one wins, `!important` in 2 passes                                                                  | 4, 38             |
-| Animation            | `@keyframes` (`from`, `to`, `%`), `animation: name duration [linear \| ease-in-out] [alternate]`, computed in the shader                            | 21, 22, 23, 24    |
-| Math                 | `calc()`, `min()`, `max()`, `clamp()`, `abs()`, `sqrt()`, `pow()`, `sin()`, `cos()`, `tan()`, `pi`, `e`                                             | 52                |
-| Variables            | `--size: 2`, `var(--size, 1)`; inherited scene → group → object, a variable can use another, animatable in `@keyframes`                             | 55                |
-| Colors               | `#ff5a36`, `rgb(255 90 54)`, `hsl(20 100% 60%)`, the 148 CSS names (`tomato`) where a color is expected; math and `var()` inside                    | 58                |
-| CSS-style loops      | `sibling-index()`, `sibling-count()`: each copy of a `* n` gets its own value                                                                       | 52                |
-| Units                | angles `deg` `rad` `turn` (always with a unit), durations `s` `ms`, `%`                                                                             | 9, 17, 20         |
-| Modern CSS functions | commas or spaces: `metal(#d4af37, 0.2)`, `polygon(0 1, 1 0, -1 0)`                                                                                  | 28                |
+| Feature              | Syntax                                                                                                                                                                                      | Dec.                  |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
+| Scene structure      | `@scene { cube.corner * 4; torus#hero; }`, `;` optional between elements                                                                                                                    | 2, 11, 46             |
+| Multiplication       | `cube * 12`; numbered ids: `cube#petal * 12` → `#petal-1` … `#petal-12`                                                                                                                     | 3                     |
+| Groups               | `group#g { … }`: transforms and animation apply to the children, positions are relative                                                                                                     | 45, 48                |
+| Scene styling        | `scene { floor; background; light; ambient; camera-* }`                                                                                                                                     | 11, 15, 16            |
+| Selectors            | `<shape>`, `.class`, `#id`, `*`, lists `a, b`, descendant `a b`, faces `::face(front)`, `::top`, `::bottom`, `:hover` (on objects and their groups), `:has()` (`#g:has(sphere:hover) cube`) | 4, 37, 47, 59, 62, 69 |
+| Cascade              | specificity (id 10,000, class 100, tag 1), last one wins, `!important` in 2 passes                                                                                                          | 4, 38                 |
+| Animation            | `@keyframes` (`from`, `to`, `%`), `animation: name duration [easing] [delay] [count \| infinite] [direction] [fill-mode]` and the six longhands, computed in the shader                     | 21, 22, 23, 24, 70    |
+| Easings              | `linear`, `ease`, `ease-in`, `ease-out`, `ease-in-out`, `cubic-bezier()`, `linear()`, in `@keyframes` and `transition`                                                                      | 68                    |
+| Media queries        | `@media (…) { … }`: any query the browser knows (width, orientation, `prefers-color-scheme`, `prefers-reduced-motion`…), up to 4 per scene, switched live                                   | 71                    |
+| Math                 | `calc()`, `min()`, `max()`, `clamp()`, `abs()`, `sqrt()`, `pow()`, `sin()`, `cos()`, `tan()`, `pi`, `e`                                                                                     | 52                    |
+| Variables            | `--size: 2`, `var(--size, 1)`; inherited scene → group → object, a variable can use another, animatable in `@keyframes`                                                                     | 55                    |
+| Colors               | `#ff5a36`, `rgb(255 90 54)`, `hsl(20 100% 60%)`, the 148 CSS names (`tomato`) where a color is expected; math and `var()` inside                                                            | 58                    |
+| CSS-style loops      | `sibling-index()`, `sibling-count()`: each copy of a `* n` gets its own value                                                                                                               | 52                    |
+| Units                | angles `deg` `rad` `turn` (always with a unit), durations `s` `ms`, `%`                                                                                                                     | 9, 17, 20             |
+| Modern CSS functions | commas or spaces: `metal(#d4af37, 0.2)`, `polygon(0 1, 1 0, -1 0)`                                                                                                                          | 28                    |
 
 ### Shapes (10)
 
@@ -51,7 +53,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 | Textures     | `texture: url("…")`, `image-rendering: pixelated`, `texture-size`                                  | 59     |
 | Combinations | `operation: union \| subtract \| intersect`, `blend` (smooth union)                                | 18, 19 |
 | Animation    | `animation`; animatable: `translate`, `rotate-*`, `scale`, `color` (also what `:hover` can change) | 24, 62 |
-| Transition   | `transition: 0.3s ease-out`, one per object; easings: keywords, `cubic-bezier()`, `linear()`         | 68     |
+| Transition   | `transition: 0.3s ease-out`, one per object; easings: keywords, `cubic-bezier()`, `linear()`       | 68     |
 
 ### Materials
 
@@ -64,13 +66,13 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 
 ### Scene
 
-| Property                                                          | Role                                                                           |
-| ----------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| `floor`                                                           | floor color, or `none`                                                         |
-| `background`                                                      | background color                                                               |
-| `light`, `ambient`                                                | direction of the sun, ambient light                                            |
+| Property                                                          | Role                                                                                 |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `floor`                                                           | floor color, or `none`                                                               |
+| `background`                                                      | background color                                                                     |
+| `light`, `ambient`                                                | direction of the sun, ambient light                                                  |
 | `dpr`                                                             | pixel density of the render: `auto` (the screen, up to 2), `max`, a number (dec. 67) |
-| `camera-target`, `camera-distance`, `camera-angle`, `camera-spin` | camera (mouse orbit; automatic turn as a duration, `none` by default, dec. 54) |
+| `camera-target`, `camera-distance`, `camera-angle`, `camera-spin` | camera (mouse orbit; automatic turn as a duration, `none` by default, dec. 54)       |
 
 ### Rendering
 
@@ -100,6 +102,8 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 | Formatter                  | `formatGss`, `Shift+Alt+F` in the playground                                                                                                                                 | 33         |
 | VS Code / Cursor extension | highlighting, formatter, icon for `.gss` files                                                                                                                               | 33         |
 | Design                     | `DESIGN.md` "Distance field", tokens in `src/styles/tokens.css`, what every page shares in `src/styles/site.css` (`@layer site`: a page's own `<style>` always wins)         | –          |
+| npm package                | [`gss-lang`](https://www.npmjs.com/package/gss-lang) 0.0.1 (tag `v0.0.1`), Apache-2.0: `gss-lang` (compiler + `mount`), `gss-lang/runtime`, `gss-lang/vite`                  | 63         |
+| Scenes                     | every demo `.gss` in `src/scenes/` (playground examples, showcase, bench), all compiled by `gpu.test.ts`                                                                     | 63         |
 | Tests                      | Vitest (CPU) + GPU compilation of every registry example (Chromium)                                                                                                          | 12, 25     |
 | Profiler (dev only)        | a panel over the playground scene, `perf` button or Alt+P: fps, frame, GPU and CPU time, real pixels, shader build time; over budget in signal                               | 64         |
 | Bench                      | `npm run bench:compare -- main --dpr 2`: another commit against the working tree, 3 alternating rounds, images compared pixel by pixel, report in `bench-results/compare.md` | 64         |
@@ -127,13 +131,14 @@ A page of real use cases, for designers, creative coders and developers, needs s
 2. [x] **`mount(canvas, scene, options)`** (`src/embed/`): the scene sleeps when it leaves the screen, `prefers-reduced-motion` freezes the time, images are resolved against the `.gss` file (`base`), mouse controls like the playground (`controls: false` → hover only).
 3. [x] **`<gss-scene>`**: `src="logo.gss"` or the code inline in a `<script type="text/gss">`, `controls="none"`; the WebGL context is only created when the element comes into view. Built as `embed.js` (a second Vite build) and served by gss-lang.dev: no npm, no build step for designers.
 4. [x] **The Vite plugin** (`gss-lang/vite`): `import scene from "./logo.gss"` compiles at build time; the page only ships the runtime and the shader. GSS errors show in Vite's terminal; relative images become Vite assets.
-5. [ ] **The npm package** (built: `npm run build:lib` → `lib/`, `exports` and types ready; still `private`): `exports` for `gss-lang` (compiler + mount), `gss-lang/runtime` (mount only) and `gss-lang/vite`, with types. Publishing waits for a **license** (npm makes the code readable even while the repo is private).
+5. [x] **The npm package** ✅ `gss-lang` 0.0.1 published on npm (Apache-2.0 license, public README, `CONTRIBUTING.md`), tagged `v0.0.1`: `gss-lang` (compiler + mount), `gss-lang/runtime` (mount only) and `gss-lang/vite`, with types.
 6. [x] **`showcase.html`**: use cases by audience at the top (designers: an SVG logo in 3D, a themable icon set; creative coders: generative loops, the Shadertoy export; developers: a hero with `:hover`, a scene written by an LLM), an inspiration grid below (captures that open the playground with `#code=`). Built with `<gss-scene>`: the site uses its own embed. The demos are written by Lucas; every demo is a `.gss` file that `gpu.test.ts` compiles.
 7. [x] **An "Embedding" entry in the docs**, with the three snippets.
 
 Next, on this page:
 
-- [ ] **Lucas's demos** replace the six starter scenes of `src/showcase/scenes/` (the LLM one should come from a real, unedited run), then `npm run captures`
+- [ ] **Lucas's demos** replace the six starter use-case scenes (now in `src/scenes/`, with the LLM one coming from a real, unedited run), then `npm run captures`. Started: L'Orrery, the macro pad and Tidal are in the inspiration grid, with their captures
+- [ ] Home page: the logo reveal (the SVG mark in front, the same logo live in GSS behind, a slider between the two), in progress
 - [ ] Captures of the registry examples show the light default floor: to revisit with the floor decision
 - [x] A license, then `npm publish` (and the `npm i gss-lang` / GitHub links on the home page)
 - [ ] Ctrl/Cmd + wheel to zoom an embedded scene, if the wheel that stops the page scroll gets in the way
@@ -145,8 +150,8 @@ Next, on this page:
 
 - [x] Landing page (`/`, decision 51)
 - [x] Root README
-- [ ] Rename the public folder and package `csl` → `gss` (when ready)
-- [ ] Git remote / npm publishing (package still at `0.0.0`)
+- [ ] Rename the folder / GitHub repo `csl` → `gss` (the npm package is already `gss-lang`)
+- [x] npm publishing: `gss-lang` 0.0.1
 
 ### Playground
 
@@ -200,12 +205,14 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median: orrery 20 ms, tod
 ## Under discussion
 
 - Non-uniform scale: stay with exact SDFs, or accept an approximation?
-- When to rename `csl` → `gss` publicly (breaking for any existing users).
+- When to rename the `csl` folder and repo → `gss` (the npm package already ships as `gss-lang`).
 - Gamma correction: more natural light, but it changes the look of every existing scene.
 - Shadows on by default or not (cost: one more ray march per pixel).
 
 ## Done recently
 
+- Scenes gathered in `src/scenes/`; three of Lucas's scenes in the showcase (L'Orrery, the macro pad, Tidal) with their captures
+- Release 0.0.1: `gss-lang` on npm (passed the staged review), Apache-2.0 license, public README, `CONTRIBUTING.md`, tag `v0.0.1`
 - `@media`, like CSS: one version of the scene per combination of its queries, switched when the screen changes (decision 71)
 - Animation controls: delay, iteration count, direction, fill mode, and `animation-duration`, `-delay`, `-iteration-count`, `-direction`, `-fill-mode`, `-timing-function` (decision 70)
 - `:has()`, like CSS: a group that holds a match, at compile time or under the mouse (`#g:has(sphere:hover) cube`), any selector inside (decision 69)
@@ -254,7 +261,7 @@ A score for how well a CSS notion carries over to GSS (a style language → an S
 | `transition-property`                 |   1.0 | Same                            |
 | `transition-duration`                 |   1.0 | Same                            |
 | `transition-delay`                    |   1.0 | Same                            |
-| `transition-timing-function`          |   0.9 | Easings                         |
+| `transition-timing-function`          |   1.0 | Already in GSS (decision 68)    |
 | `transition-behavior`                 |   0.4 | Little use for SDFs             |
 | `timeline-scope`                      |   0.4 | DOM-centric                     |
 | `interpolate-size`                    |   0.2 | Box layout                      |
@@ -470,34 +477,34 @@ A score for how well a CSS notion carries over to GSS (a style language → an S
 
 ### Selectors
 
-| Feature                                                                                                                                                                                                                                                                                                             | Score | Short note                                                              |
+| Feature | Score | Short note |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----: | ----------------------------------------------------------------------- | --- |
-| Type / `<shape>`                                                                                                                                                                                                                                                                                                    |   1.0 | Already in GSS                                                          |
-| `.class` / `#id` / `*`                                                                                                                                                                                                                                                                                              |   1.0 | Already in GSS                                                          |
-| Selector list `a, b`                                                                                                                                                                                                                                                                                                |   1.0 | Already in GSS                                                          |
-| Descendant `a b`                                                                                                                                                                                                                                                                                                    |   1.0 | Already in GSS                                                          |
-| Child `>` / adjacent `+` / sibling `~`                                                                                                                                                                                                                                                                              |   1.0 | Nesting, priority #7                                                    |
-| Column `\|\|`                                                                                                                                                                                                                                                                                                       |   0.0 | Tables                                                                  |
-| `&` nesting                                                                                                                                                                                                                                                                                                         |   0.9 | Nesting, strong                                                         |
-| Attribute selectors                                                                                                                                                                                                                                                                                                 |   0.4 | Few attributes in GSS                                                   |
-| `:hover`                                                                                                                                                                                                                                                                                                            |   1.0 | Already in GSS (dec. 62)                                                |
-| `:active` / `:focus` / `:focus-visible` / `:focus-within`                                                                                                                                                                                                                                                           |   0.5 | Interaction host                                                        |
-| `:nth-child()` / `:nth-of-type()` / `:nth-last-*`                                                                                                                                                                                                                                                                   |  0.85 | Compile-time index                                                      |
-| `:first-child` / `:last-child` / `:only-child` / `:first-of-type` / `:last-of-type` / `:only-of-type` / `:empty`                                                                                                                                                                                                    |   0.8 | Scene structure                                                         |
-| `:is()` / `:where()` / `:not()`                                                                                                                                                                                                                                                                                     |   0.6 | Selector utilities                                                      |
-| `:has()`                                                                                                                                                                                                                                                                                                            |   1.0 | Already in GSS (decision 69)                                             |
-| `:root` / `:scope`                                                                                                                                                                                                                                                                                                  |   0.6 | Root / scope                                                            |
-| `:lang()` / `:dir()`                                                                                                                                                                                                                                                                                                |   0.2 | I18n DOM                                                                |
-| Link/visited/any-link/local-link/target\*                                                                                                                                                                                                                                                                           |   0.1 | Navigation HTML                                                         |
-| Form (`:checked`, `:disabled`, `:enabled`, `:valid`, `:invalid`, `:required`, `:optional`, `:read-*`, `:placeholder-shown`, `:autofill`, `:default`, `:indeterminate`, `:in-range`, `:out-of-range`, `:user-valid/invalid`)                                                                                         |   0.0 | Forms                                                                   |
-| Media (`:playing`, `:paused`, `:muted`, `:seeking`, `:buffering`, `:stalled`, `:volume-locked`, `:picture-in-picture`)                                                                                                                                                                                              |   0.1 | Media elements                                                          |
-| Shadow (`:host`, `:host()`, `:host-context()`, `:has-slotted`, `:state()`, `::part()`, `::slotted()`)                                                                                                                                                                                                               |  0.05 | Shadow DOM                                                              |
-| View-transition pseudos (`:active-view-transition*`, `::view-transition*`)                                                                                                                                                                                                                                          |   0.1 | DOM VT                                                                  |
-| `::before` / `::after`                                                                                                                                                                                                                                                                                              |   0.4 | Pseudo content → clones?                                                |
-| `::first-letter` / `::first-line` / `::selection` / `::marker` / `::placeholder` / `::backdrop` / `::file-selector-button` / `::grammar-error` / `::spelling-error` / `::highlight()` / `::search-text` / `::target-text` / `::details-content` / `::column` / `::cue` / `::checkmark` / `::picker*` / `::scroll-*` |   0.1 | Chrome / text                                                           |
-| Vendor `:-moz-*` / `::-moz-*` / `::-webkit-*`                                                                                                                                                                                                                                                                       |   0.0 | UI vendor                                                               |
-| Keyframe selectors (`from`/`to`/`%`)                                                                                                                                                                                                                                                                                |   1.0 | Already via `@keyframes`                                                |
-| Namespace separator `                                                                                                                                                                                                                                                                                               |     ` | 0.0                                                                     | XML |
+| Type / `<shape>` | 1.0 | Already in GSS |
+| `.class` / `#id` / `*` | 1.0 | Already in GSS |
+| Selector list `a, b` | 1.0 | Already in GSS |
+| Descendant `a b` | 1.0 | Already in GSS |
+| Child `>` / adjacent `+` / sibling `~` | 1.0 | Nesting, priority #7 |
+| Column `\|\|` | 0.0 | Tables |
+| `&` nesting | 0.9 | Nesting, strong |
+| Attribute selectors | 0.4 | Few attributes in GSS |
+| `:hover` | 1.0 | Already in GSS (dec. 62) |
+| `:active` / `:focus` / `:focus-visible` / `:focus-within` | 0.5 | Interaction host |
+| `:nth-child()` / `:nth-of-type()` / `:nth-last-*` | 0.85 | Compile-time index |
+| `:first-child` / `:last-child` / `:only-child` / `:first-of-type` / `:last-of-type` / `:only-of-type` / `:empty` | 0.8 | Scene structure |
+| `:is()` / `:where()` / `:not()` | 0.6 | Selector utilities |
+| `:has()` | 1.0 | Already in GSS (decision 69) |
+| `:root` / `:scope` | 0.6 | Root / scope |
+| `:lang()` / `:dir()` | 0.2 | I18n DOM |
+| Link/visited/any-link/local-link/target\* | 0.1 | Navigation HTML |
+| Form (`:checked`, `:disabled`, `:enabled`, `:valid`, `:invalid`, `:required`, `:optional`, `:read-*`, `:placeholder-shown`, `:autofill`, `:default`, `:indeterminate`, `:in-range`, `:out-of-range`, `:user-valid/invalid`) | 0.0 | Forms |
+| Media (`:playing`, `:paused`, `:muted`, `:seeking`, `:buffering`, `:stalled`, `:volume-locked`, `:picture-in-picture`) | 0.1 | Media elements |
+| Shadow (`:host`, `:host()`, `:host-context()`, `:has-slotted`, `:state()`, `::part()`, `::slotted()`) | 0.05 | Shadow DOM |
+| View-transition pseudos (`:active-view-transition*`, `::view-transition*`) | 0.1 | DOM VT |
+| `::before` / `::after` | 0.4 | Pseudo content → clones? |
+| `::first-letter` / `::first-line` / `::selection` / `::marker` / `::placeholder` / `::backdrop` / `::file-selector-button` / `::grammar-error` / `::spelling-error` / `::highlight()` / `::search-text` / `::target-text` / `::details-content` / `::column` / `::cue` / `::checkmark` / `::picker*` / `::scroll-*` | 0.1 | Chrome / text |
+| Vendor `:-moz-*` / `::-moz-*` / `::-webkit-*` | 0.0 | UI vendor |
+| Keyframe selectors (`from`/`to`/`%`) | 1.0 | Already via `@keyframes` |
+| Namespace separator `                                                                                                                                                                                                                                                                                               |     ` | 0.0 | XML |
 
 ### Functions
 
@@ -514,7 +521,7 @@ A score for how well a CSS notion carries over to GSS (a style language → an S
 | `color-mix()`                                                                                                                                     |  0.85 | Mixing in color spaces                                                                     |
 | `alpha()` / `light-dark()` / `contrast-color()`                                                                                                   |   0.7 | Color utilities                                                                            |
 | `device-cmyk()` / `dynamic-range-limit-mix()` / `palette-mix()`                                                                                   |   0.2 | Niche print/HDR/fonts                                                                      |
-| `cubic-bezier()` / `linear()` / `steps()`                                                                                                         |   0.9 | Animation easings                                                                          |
+| `cubic-bezier()` / `linear()` / `steps()`                                                                                                         |   0.9 | `cubic-bezier()` and `linear()` already in (dec. 68); `steps()` to do                      |
 | `blur()` / `brightness()` / `contrast()` / `grayscale()` / `hue-rotate()` / `invert()` / `opacity()` / `saturate()` / `sepia()` / `drop-shadow()` |   0.8 | `filter` post                                                                              |
 | `translate*()` / `rotate*()` / `scale*()`                                                                                                         |   0.9 | Already GSS concepts                                                                       |
 | `skew()` / `skewX()` / `skewY()`                                                                                                                  |   0.4 | Skew ≠ SDF exact                                                                           |
@@ -539,35 +546,35 @@ A score for how well a CSS notion carries over to GSS (a style language → an S
 
 ### Concepts
 
-| Feature                                                              | Score | Short note                       |
-| -------------------------------------------------------------------- | ----: | -------------------------------- |
-| Cascade & specificity                                                |   0.9 | Already in (with `!important`)   |
-| Inheritance                                                          |   0.7 | Scene/group properties           |
-| Nesting                                                              |   0.9 | Priority #7                      |
-| Custom properties / variables                                        |   1.0 | Already in GSS (dec. 55)         |
-| Shorthand properties                                                 |   0.8 | Pattern GSS                      |
-| Values & units                                                       |   0.9 | Numbers, angles, colors          |
-| Functional notations                                                 |   0.9 | Math / colors                    |
-| At-rules (concept)                                                   |   0.9 | `@scene`, `@keyframes`, …        |
-| Selectors (concept)                                                  |   0.9 | Core of the language             |
-| Box model / formatting contexts / margin collapse / containing block |  0.05 | Layout CSS                       |
-| Stacking context / painting order                                    |   0.2 | ≠ SDF order                      |
-| Flex / Grid / Multi-column / Float layout                            |   0.0 | Out of scope                     |
-| Scroll containers / overflow                                         |   0.1 | Host UI                          |
-| Shadow DOM / scoping encapsulation                                   |   0.1 | Web components                   |
-| View Transitions                                                     |   0.1 | Document transitions             |
-| Media / container queries (concept)                                  |   0.7 | Adapting the scene               |
-| Motion path (concept)                                                |   0.9 | Prio #12                         |
-| Filter effects (concept)                                             |  0.85 | Shader post-process              |
-| Masking / clipping (concept)                                         |  0.55 | CSG-adjacent                     |
-| Compositing & blending                                               |   0.5 | Close to GSS `operation`/`blend` |
-| Scroll-driven animations                                             |   0.5 | Can be reframed                  |
-| Generated content                                                    |   0.3 | Limited pseudos                  |
-| Lists & counters                                                     |  0.05 | Out of scope                     |
-| Fonts & text layout                                                  |  0.05 | Out of scope                     |
-| Paged media / fragmentation                                          |   0.0 | Print                            |
-| CSSOM / style sheets API                                             |   0.3 | Host runtime, not the core       |
-| Houdini (`@property`, paint worklet)                                 |   0.5 | `@property` useful; paint not    |
-| Anchor positioning                                                   |   0.2 | DOM layout                       |
-| Environment variables                                                |   0.4 | `env()` host                     |
-| Mixins / custom functions                                            |  0.55 | DX compile                       |
+| Feature                                                              | Score | Short note                                        |
+| -------------------------------------------------------------------- | ----: | ------------------------------------------------- |
+| Cascade & specificity                                                |   0.9 | Already in (with `!important`)                    |
+| Inheritance                                                          |   0.7 | Scene/group properties                            |
+| Nesting                                                              |   0.9 | Priority #7 (next)                                |
+| Custom properties / variables                                        |   1.0 | Already in GSS (dec. 55)                          |
+| Shorthand properties                                                 |   0.8 | Pattern GSS                                       |
+| Values & units                                                       |   0.9 | Numbers, angles, colors                           |
+| Functional notations                                                 |   0.9 | Math / colors                                     |
+| At-rules (concept)                                                   |   0.9 | `@scene`, `@keyframes`, …                         |
+| Selectors (concept)                                                  |   0.9 | Core of the language                              |
+| Box model / formatting contexts / margin collapse / containing block |  0.05 | Layout CSS                                        |
+| Stacking context / painting order                                    |   0.2 | ≠ SDF order                                       |
+| Flex / Grid / Multi-column / Float layout                            |   0.0 | Out of scope                                      |
+| Scroll containers / overflow                                         |   0.1 | Host UI                                           |
+| Shadow DOM / scoping encapsulation                                   |   0.1 | Web components                                    |
+| View Transitions                                                     |   0.1 | Document transitions                              |
+| Media / container queries (concept)                                  |   0.8 | `@media` already in (dec. 71); `@container` later |
+| Motion path (concept)                                                |   0.9 | Prio #12                                          |
+| Filter effects (concept)                                             |  0.85 | Shader post-process                               |
+| Masking / clipping (concept)                                         |  0.55 | CSG-adjacent                                      |
+| Compositing & blending                                               |   0.5 | Close to GSS `operation`/`blend`                  |
+| Scroll-driven animations                                             |   0.5 | Can be reframed                                   |
+| Generated content                                                    |   0.3 | Limited pseudos                                   |
+| Lists & counters                                                     |  0.05 | Out of scope                                      |
+| Fonts & text layout                                                  |  0.05 | Out of scope                                      |
+| Paged media / fragmentation                                          |   0.0 | Print                                             |
+| CSSOM / style sheets API                                             |   0.3 | Host runtime, not the core                        |
+| Houdini (`@property`, paint worklet)                                 |   0.5 | `@property` useful; paint not                     |
+| Anchor positioning                                                   |   0.2 | DOM layout                                        |
+| Environment variables                                                |   0.4 | `env()` host                                      |
+| Mixins / custom functions                                            |  0.55 | DX compile                                        |

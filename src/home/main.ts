@@ -8,8 +8,19 @@ import { connectEditor } from "../runtime/editor";
 import { encodeCode } from "../runtime/share";
 import { statusParts } from "../runtime/status";
 import { mountSearch } from "../docs/search-box";
+import { createLogoReveal } from "./logo-reveal";
 
 mountSearch();
+
+// Hero: SVG in front, hero-logo.gss behind, revealed by a drag bar
+const heroField = document.querySelector<SVGSVGElement>(".hero svg.field");
+if (heroField) {
+  try {
+    createLogoReveal(heroField, { initial: 50 });
+  } catch (error) {
+    console.warn("GSS hero reveal unavailable:", error);
+  }
+}
 
 // The home page: design/reference/png/01-home.png.
 const $ = <T extends HTMLElement>(selector: string) => document.querySelector<T>(selector)!;

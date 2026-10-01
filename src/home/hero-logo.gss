@@ -1,0 +1,103 @@
+/* Home hero mark in GSS: a living distance field behind the flat SVG.
+   Same brace paths as index.html — then chrome, jelly, depth and motion. */
+
+@scene {
+  group#artwork {
+    path#brace-left;
+    path#brace-right;
+    group#rings {
+      torus#ring * 9;
+    }
+    sphere#dot;
+  }
+}
+
+scene {
+  background: #0a0a0c;
+  floor: none;
+  ambient: 0.22;
+  light: 35deg 48deg;
+  camera-target: 0 0 0;
+  camera-distance: 5.6;
+  camera-angle: 0deg 12deg;
+  camera-spin: none;
+  dpr: 1.5;
+}
+
+/* Flip to match the SVG's horizontal axis, then breathe in yaw. */
+#artwork {
+  rotate-y: 180deg;
+  animation: turn 7s ease-in-out alternate;
+}
+
+@keyframes turn {
+  from {
+    rotate-y: 155deg;
+  }
+  to {
+    rotate-y: 205deg;
+  }
+}
+
+/* 600 path units → ~4 scene units at this camera. */
+path {
+  view-box: 0 0 600 600;
+  stroke-width: 18;
+  scale: 0.0066667;
+  color: #e8e6e1;
+  material: chrome;
+}
+
+#brace-left {
+  d: path("M170 140 C120 140 112 165 112 205 v55 c0 32 -16 40 -55 40 c39 0 55 8 55 40 v55 c0 40 8 65 58 65");
+}
+
+#brace-right {
+  d: path("M430 140 C480 140 488 165 488 205 v55 c0 32 16 40 55 40 c-39 0 -55 8 -55 40 v55 c0 40 -8 65 -58 65");
+}
+
+/* Isolines as real tubes, stacked in depth — a field you can orbit through. */
+#rings {
+  animation: field 8s ease-in-out alternate;
+}
+
+@keyframes field {
+  from {
+    rotate-z: -6deg;
+  }
+  to {
+    rotate-z: 6deg;
+  }
+}
+
+#ring-1, #ring-2, #ring-3, #ring-4, #ring-5, #ring-6, #ring-7, #ring-8, #ring-9 {
+  --i: sibling-index();
+  --t: calc((var(--i) - 1) / 8);
+  thickness: calc(0.032 - var(--t) * 0.018);
+  radius: calc(0.48 + (var(--i) - 1) * 0.27);
+  rotate-x: calc(68deg + var(--i) * 1.5deg);
+  translate: 0 0 calc((5 - var(--i)) * 0.11);
+  material: metal(0.25);
+  color: hsl(calc(20 + var(--i)) 12% calc(78% - var(--i) * 6%));
+}
+
+#dot {
+  radius: 0.36;
+  color: #ff5a36;
+  material: jelly(0.55);
+  animation: pulse 2.4s ease-in-out alternate;
+}
+
+#dot:hover {
+  scale: 1.35;
+  color: #ff7a5c;
+}
+
+@keyframes pulse {
+  from {
+    scale: 1;
+  }
+  to {
+    scale: 1.12;
+  }
+}

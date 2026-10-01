@@ -11,67 +11,54 @@
     /* Row 1: media keys */
     group.row#media {
       group.key#prev {
-        cube.cap
-        prism.legend
+        cube.cap prism.legend
       }
       group.key#play {
-        cube.cap
-        prism.legend
+        cube.cap prism.legend
       }
       group.key#pause {
-        cube.cap
-        prism.legend
+        cube.cap prism.legend
       }
       group.key#next {
-        cube.cap
-        prism.legend
+        cube.cap prism.legend
       }
     }
 
     /* Row 2: the wordmark, one letter per key */
     group.row#word {
       group.key#g {
-        cube.cap
-        path.letter
+        cube.cap path.letter
       }
       group.key.s * 2 {
-        cube.cap
-        path.letter
+        cube.cap path.letter
       }
       group.key#dot {
-        cube.cap
-        sphere.bead
+        cube.cap sphere.bead
       }
     }
 
     /* Row 3: arrows, one triangle turned four ways */
     group.row#arrows {
       group.key#left {
-        cube.cap
-        prism.legend
+        cube.cap prism.legend
       }
       group.key#down {
-        cube.cap
-        prism.legend
+        cube.cap prism.legend
       }
       group.key#up {
-        cube.cap
-        prism.legend
+        cube.cap prism.legend
       }
       group.key#right {
-        cube.cap
-        prism.legend
+        cube.cap prism.legend
       }
     }
 
     /* The knob and its level meter */
     group#dial {
-      cylinder#knob
-      capsule#notch
+      cylinder#knob capsule#notch
     }
     group#meter {
-      cube.tick.on * 7
-      cube.tick * 4
+      cube.tick.on * 7 cube.tick * 4
     }
   }
 }
@@ -145,8 +132,7 @@ scene {
 }
 
 /* Legends lie on the top of their key */
-.legend,
-.letter {
+.legend, .letter {
   --press: 0;
   translate: 0 calc(0.97 - var(--press)) 0;
   rotate-x: -90deg;
@@ -164,8 +150,7 @@ scene {
   color: var(--accent);
 }
 
-.key:hover .legend,
-.key:hover .letter {
+.key:hover .legend, .key:hover .letter {
   --press: 0.14;
   color: #0a0a0c;
 }
@@ -299,5 +284,14 @@ scene {
   }
   50% {
     color: var(--ink);
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  scene {
+    --accent: #3d7bff;
+    --case: #d8d4cc;
+    --cap: #f2f0ea;
+    --ink: #202026;
   }
 }
