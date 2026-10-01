@@ -5,6 +5,14 @@ import type { Easing } from "../compiler/values/easing";
 // The eased progress at the moment t (0 to 1; held outside)
 export function ease(easing: Easing, t: number): number {
   const x = Math.min(Math.max(t, 0), 1);
+  if (easing.type === "steps") {
+    // The same as stepsShape() in the compiler, which the runtime does not import
+    const { count, position } = easing;
+    const jumps =
+      position === "jump-both" ? count + 1 : position === "jump-none" ? count - 1 : count;
+    const offset = position === "jump-start" || position === "jump-both" ? 1 : 0;
+    return Math.min(Math.floor(x * count) + offset, jumps) / jumps;
+  }
   return easing.type === "cubic-bezier"
     ? bezierAt(easing, x)
     : linearAt(easing.points, x);

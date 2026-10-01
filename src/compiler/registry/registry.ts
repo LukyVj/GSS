@@ -278,7 +278,7 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "none | [all] <time> [<easing>] [<time>]",
     initial: "none",
     description:
-      "Glides the object to its :hover state and back, instead of jumping, like CSS. The first time is the duration, the second one a delay, and the easing is ease by default; it can be any keyword, cubic-bezier() or linear(). One transition covers every property :hover changes on the object. Like CSS, the object enters :hover with the transition written in its :hover rule, if there is one, and leaves it with the transition written at rest. Leaving halfway goes back from where it is, in the time already spent.",
+      "Glides the object to its :hover state and back, instead of jumping, like CSS. The first time is the duration, the second one a delay, and the easing is ease by default; it can be any keyword, cubic-bezier(), linear() or steps(). One transition covers every property :hover changes on the object. Like CSS, the object enters :hover with the transition written in its :hover rule, if there is one, and leaves it with the transition written at rest. Leaving halfway goes back from where it is, in the time already spent.",
     examples: [
       {
         name: "transition",
@@ -301,7 +301,7 @@ export const PROPERTIES: PropertyDef[] = [
       "<keyframes-name> <time> [<easing>] [<time>] [<number> | infinite] [normal | reverse | alternate | alternate-reverse] [none | forwards | backwards | both]",
     initial: "none",
     description:
-      "Plays a @keyframes animation on the object, like CSS. After the name: the duration (s or ms), then if needed an easing, a delay, a number of iterations, a direction and a fill mode, in any order. Unlike CSS, an animation loops forever unless you give it a number of iterations. The second time is the delay: the animation starts after it, or partway with a negative delay. A number plays that many times (1.5 stops halfway through the second), infinite loops. alternate plays it forward then backward, reverse backward, alternate-reverse backward first. The fill mode says what the object shows outside the animation: none, its own value, like CSS; backwards, the first frame during the delay; forwards, the last frame once it is over; both, the two. The easing shapes each step: linear, the default, keeps a constant speed; ease, ease-in, ease-out and ease-in-out speed up and slow down; cubic-bezier() and linear() draw your own curve. In an animation, ease-in-out is computed as a smoothstep, a very close curve. Each part also has its own property: animation-duration, animation-delay, animation-iteration-count, animation-direction, animation-fill-mode and animation-timing-function, which win over what animation says. Animatable properties: translate, rotate-x, rotate-y, rotate-z, scale and color. On a group, it animates translate, the rotations and scale of the whole group.",
+      "Plays a @keyframes animation on the object, like CSS. After the name: the duration (s or ms), then if needed an easing, a delay, a number of iterations, a direction and a fill mode, in any order. Unlike CSS, an animation loops forever unless you give it a number of iterations. The second time is the delay: the animation starts after it, or partway with a negative delay. A number plays that many times (1.5 stops halfway through the second), infinite loops. alternate plays it forward then backward, reverse backward, alternate-reverse backward first. The fill mode says what the object shows outside the animation: none, its own value, like CSS; backwards, the first frame during the delay; forwards, the last frame once it is over; both, the two. The easing shapes each step: linear, the default, keeps a constant speed; ease, ease-in, ease-out and ease-in-out speed up and slow down; cubic-bezier() and linear() draw your own curve; steps() moves by jumps. In an animation, ease-in-out is computed as a smoothstep, a very close curve. Each part also has its own property: animation-duration, animation-delay, animation-iteration-count, animation-direction, animation-fill-mode and animation-timing-function, which win over what animation says. Animatable properties: translate, rotate-x, rotate-y, rotate-z, scale and color. On a group, it animates translate, the rotations and scale of the whole group.",
     examples: [
       {
         name: "animation",
@@ -401,7 +401,7 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "<easing>",
     initial: "linear",
     description:
-      "The easing of each step of the animation: a keyword (linear, ease, ease-in, ease-out, ease-in-out), cubic-bezier() or linear(). It wins over the easing written in animation.",
+      "The easing of each step of the animation: a keyword (linear, ease, ease-in, ease-out, ease-in-out, step-start, step-end), cubic-bezier(), linear() or steps(). It wins over the easing written in animation.",
     examples: [
       {
         name: "animation-timing-function",
@@ -1128,6 +1128,24 @@ export const FUNCTIONS: FunctionDef[] = [
       {
         name: "linear()",
         code: "@scene { sphere; } sphere { radius: 0.4; color: #3a7bff; animation: drop 2s linear(0, 1 40%, 0.75 55%, 1 70%, 0.95 80%, 1); } @keyframes drop { from { translate: 0 3 0; } to { translate: 0 0.4 0; } }",
+      },
+    ],
+  },
+  {
+    name: "steps()",
+    anchor: "fn-steps",
+    covers: ["steps"],
+    syntax: "steps(<integer>, [jump-start | jump-end | jump-none | jump-both | start | end]?) | step-start | step-end",
+    description:
+      "An easing that moves by equal jumps instead of gliding, like CSS: steps(4) holds still, then jumps, four times. The position says where the jumps are: jump-end (the default, also written end) jumps at the end of each step, so the last value is only reached at the very end; jump-start (start) jumps at the start of each step; jump-both adds a jump at both ends; jump-none keeps the first and the last values for a whole step each. step-start and step-end are steps(1, jump-start) and steps(1, jump-end). Good for ticking hands, sprite-like motion and anything mechanical.",
+    examples: [
+      {
+        name: "steps()",
+        code: "@scene { cube; } cube { size: 1.2 0.15 0.15; translate: 0 0.6 0; color: #ff5a36; animation: tick 6s steps(12); } @keyframes tick { from { rotate-y: 0deg; } to { rotate-y: 360deg; } }",
+      },
+      {
+        name: "step-start and step-end",
+        code: "@scene { sphere#a; sphere#b; } sphere { radius: 0.4; } #a { translate: -0.8 0.5 0; color: #3a7bff; animation: blink 1s step-start; } #b { translate: 0.8 0.5 0; color: #3ad16b; animation: blink 1s step-end; } @keyframes blink { 50% { scale: 1.6; } }",
       },
     ],
   },

@@ -69,3 +69,16 @@ describe("ease: linear()", () => {
     expect(ease(curve, 1)).toBe(0.9);
   });
 });
+
+describe("ease: steps()", () => {
+  const steps = (count: number, position: string): Easing =>
+    ({ type: "steps", count, position }) as Easing;
+  const at = (easing: Easing) => [0, 0.2, 0.25, 0.5, 0.99, 1].map((t) => ease(easing, t));
+
+  it("jumps like CSS, wherever the jumps are", () => {
+    expect(at(steps(4, "jump-end"))).toEqual([0, 0, 0.25, 0.5, 0.75, 1]);
+    expect(at(steps(4, "jump-start"))).toEqual([0.25, 0.25, 0.5, 0.75, 1, 1]);
+    expect(at(steps(3, "jump-both"))).toEqual([0.25, 0.25, 0.25, 0.5, 0.75, 1]);
+    expect(at(steps(3, "jump-none"))).toEqual([0, 0, 0, 0.5, 1, 1]);
+  });
+});

@@ -19,7 +19,7 @@ What the language and the tools can do today. Each feature is detailed in the re
 | Selectors            | `<shape>`, `.class`, `#id`, `*`, lists `a, b`, descendant `a b`, child `a > b`, siblings `a + b` / `a ~ b`, faces `::face(front)`, `::top`, `::bottom`, `:hover` (on objects and their groups), `:has()` (`#g:has(sphere:hover) cube`) | 4, 37, 47, 59, 62, 69, 73 |
 | Cascade              | specificity (id 10,000, class 100, tag 1), last one wins, `!important` in 2 passes                                                                                                          | 4, 38                 |
 | Animation            | `@keyframes` (`from`, `to`, `%`), `animation: name duration [easing] [delay] [count \| infinite] [direction] [fill-mode]` and the six longhands, computed in the shader                     | 21, 22, 23, 24, 70    |
-| Easings              | `linear`, `ease`, `ease-in`, `ease-out`, `ease-in-out`, `cubic-bezier()`, `linear()`, in `@keyframes` and `transition`                                                                      | 68                    |
+| Easings              | `linear`, `ease`, `ease-in`, `ease-out`, `ease-in-out`, `step-start`, `step-end`, `cubic-bezier()`, `linear()`, `steps()`, in `@keyframes` and `transition` | 68, 80                |
 | Media queries        | `@media (…) { … }`: any query the browser knows (width, orientation, `prefers-color-scheme`, `prefers-reduced-motion`…), up to 4 per scene, switched live                                   | 71                    |
 | Math                 | `calc()`, `min()`, `max()`, `clamp()`, `abs()`, `sqrt()`, `pow()`, trigonometry and its inverses (`asin()` … `atan2()`), `sign()`, `round()`, `mod()`, `rem()`, `hypot()`, `log()`, `exp()`, `progress()`, `pi`, `e` | 52, 78                |
 | Variables            | `--size: 2`, `var(--size, 1)`; inherited scene → group → object, a variable can use another, animatable in `@keyframes`                                                                     | 55                    |
@@ -222,6 +222,7 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 
 ## Done recently
 
+- `steps()`, `step-start` and `step-end`, in `@keyframes` and `transition` (decision 80)
 - The rest of the CSS color functions: `hwb()`, `lab()`, `lch()`, `oklab()`, `oklch()`, `color()`, `color-mix()`, `light-dark()` (one version of the scene per color scheme), `contrast-color()` (decision 79)
 - Every CSS math function: `asin()`, `acos()`, `atan()`, `atan2()`, `sign()`, `round()` (and its four strategies), `mod()`, `rem()`, `hypot()`, `log()`, `exp()`, `progress()` (decision 78)
 - Performance with the same image (decisions 74–77): `animate()`, the sphere of the scene, bounds on groups; L'Orrery 20.3 → 7.5 ms, macropad 17.4 → 4.0 ms, todal 24.3 → 3.9 ms at dpr 2; the bench accepts stray pixels (GPU rounding)
@@ -539,7 +540,7 @@ A score for how well a CSS notion carries over to GSS (a style language → an S
 | `color-mix()`                                                                                                                                     |   1.0 | Already in GSS (dec. 79)                                                                   |
 | `alpha()` / `light-dark()` / `contrast-color()`                                                                                                   |   0.7 | `light-dark()` and `contrast-color()` already in (dec. 79); `alpha()` waits for transparency |
 | `device-cmyk()` / `dynamic-range-limit-mix()` / `palette-mix()`                                                                                   |   0.2 | Niche print/HDR/fonts                                                                      |
-| `cubic-bezier()` / `linear()` / `steps()`                                                                                                         |   0.9 | `cubic-bezier()` and `linear()` already in (dec. 68); `steps()` to do                      |
+| `cubic-bezier()` / `linear()` / `steps()`                                                                                                         |   1.0 | Already in GSS (dec. 68, 80)                                                               |
 | `blur()` / `brightness()` / `contrast()` / `grayscale()` / `hue-rotate()` / `invert()` / `opacity()` / `saturate()` / `sepia()` / `drop-shadow()` |   0.8 | `filter` post                                                                              |
 | `translate*()` / `rotate*()` / `scale*()`                                                                                                         |   0.9 | Already GSS concepts                                                                       |
 | `skew()` / `skewX()` / `skewY()`                                                                                                                  |   0.4 | Skew ≠ SDF exact                                                                           |

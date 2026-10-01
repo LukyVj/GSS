@@ -1,4 +1,4 @@
-// Timing curves, as in CSS: the keywords, cubic-bezier() and linear().
+// Timing curves, as in CSS: the keywords, cubic-bezier(), linear() and steps().
 // One reading here; the runtime (transitions) and the shader (@keyframes) compute them.
 import type { Token } from "../syntax/tokenizer";
 import { readFunction } from "./values";
@@ -9,7 +9,10 @@ import { errorAt } from "../syntax/errors";
 export type Easing =
   | { type: "cubic-bezier"; x1: number; y1: number; x2: number; y2: number }
   // input: the moment (0 to 1), output: the progress at that moment
-  | { type: "linear"; points: { input: number; output: number }[] };
+  | { type: "linear"; points: { input: number; output: number }[] }
+  // count equal jumps; where the jumps are: at the start, the end, both or neither
+  | { type: "steps"; count: number; position: StepPosition };
+export type StepPosition = "jump-start" | "jump-end" | "jump-none" | "jump-both";
 
 // The CSS keywords (CSS Easing Functions, level 1)
 const KEYWORDS: Record<string, Easing> = {
@@ -24,13 +27,17 @@ const KEYWORDS: Record<string, Easing> = {
       { input: 1, output: 1 },
     ],
   },
+  "step-start": { type: "steps", count: 1, position: "jump-start" },
+  "step-end": { type: "steps", count: 1, position: "jump-end" },
 };
 
 // The easing functions, documented in the registry
-export const EASING_FUNCTIONS = ["cubic-bezier", "linear"];
+export const EASING_FUNCTIONS = ["cubic-bezier", "linear", "steps"];
 
 const BEZIER_ERROR =
   "cubic-bezier() expects four numbers, x1 and x2 from 0 to 1, like: cubic-bezier(0.25, 0.1, 0.25, 1)";
+const STEPS_ERROR =
+  "steps() expects a whole number of steps, then jump-start, jump-end, jump-none, jump-both, start or end, like: steps(4, jump-end)";
 const LINEAR_ERROR =
   "linear() expects at least two numbers, each with up to two percentages, like: linear(0, 0.8 60%, 1)";
 
@@ -49,6 +56,7 @@ export function readEasing(value: Token[]): Easing | null {
   const call = readFunction(value);
   if (call?.name === "cubic-bezier") return readBezier(call.args, value);
   if (call?.name === "linear") return readLinear(call.args, value);
+  if (call?.name === "steps") return readSteps(call.args, value);
 
   // 3. Anything else
   return null;
@@ -65,6 +73,48 @@ function readBezier(args: Token[][], value: Token[]): Easing {
   // x is time: it stays between 0 and 1. y can overshoot (a bounce).
   if (x1 < 0 || x1 > 1 || x2 < 0 || x2 > 1) throw errorAt(value, BEZIER_ERROR);
   return { type: "cubic-bezier", x1, y1, x2, y2 };
+}
+
+// steps(4) or steps(4, jump-start): start and end are the old names of jump-start and jump-end
+function readSteps(args: Token[][], value: Token[]): Easing {
+  if (args.length < 1 || args.length > 2) throw errorAt(value, STEPS_ERROR);
+  const [count] = args[0];
+  if (
+    args[0].length !== 1 ||
+    count.type !== "NUMBER" ||
+    !Number.isInteger(count.value) ||
+    count.value < 1
+  )
+    throw errorAt(value, STEPS_ERROR);
+  let position: StepPosition = "jump-end";
+  if (args[1]) {
+    const [keyword] = args[1];
+    const name =
+      args[1].length === 1 && keyword.type === "IDENT" ? keyword.value : "";
+    const names: Record<string, StepPosition> = {
+      start: "jump-start",
+      end: "jump-end",
+      "jump-start": "jump-start",
+      "jump-end": "jump-end",
+      "jump-none": "jump-none",
+      "jump-both": "jump-both",
+    };
+    if (!Object.hasOwn(names, name)) throw errorAt(value, STEPS_ERROR);
+    position = names[name];
+  }
+  if (position === "jump-none" && count.value < 2)
+    throw errorAt(value, "steps() with jump-none needs at least 2 steps, like: steps(2, jump-none)");
+  return { type: "steps", count: count.value, position };
+}
+
+// How a steps() easing is computed, by the runtime and the shader: the progress x
+// becomes min(floor(x · count) + offset, jumps) / jumps, like CSS
+export function stepsShape(easing: { count: number; position: StepPosition }) {
+  const { count, position } = easing;
+  const jumps =
+    position === "jump-both" ? count + 1 : position === "jump-none" ? count - 1 : count;
+  const offset = position === "jump-start" || position === "jump-both" ? 1 : 0;
+  return { jumps, offset };
 }
 
 // linear(0, 0.25 75%, 1): a stop is an output, then 0, 1 or 2 positions.

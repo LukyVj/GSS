@@ -1,5 +1,5 @@
 import type { Token } from "../syntax/tokenizer";
-import type { Easing } from "../values/easing";
+import { type Easing, stepsShape } from "../values/easing";
 import { readAnimation, type AnimationSpec } from "../features/animation";
 import { readTransition } from "../features/transition";
 import { errorAt, locate } from "../syntax/errors";
@@ -1344,6 +1344,13 @@ export function easingCode(easing: Easing | null, progress: string): string {
     const handles = [x1, y1, x2, y2].map(glslFloat).join(", ");
     return `cubicBezier(${progress}, vec4(${handles}))`;
   }
+  // steps(): the progress snapped to its jumps
+  if (easing.type === "steps") {
+    const { jumps, offset } = stepsShape(easing);
+    const n = glslFloat(easing.count);
+    const floor = offset ? `floor(${progress} * ${n}) + 1.0` : `floor(${progress} * ${n})`;
+    return `(min(${floor}, ${glslFloat(jumps)}) / ${glslFloat(jumps)})`;
+  }
   // linear(): the first output, plus what each segment adds once it has started
   const { points } = easing;
   const straight =
@@ -1424,7 +1431,12 @@ function animatedValue(
     const start = stops[i - 1].offset;
     const length = round(stops[i].offset - start);
     const local = `clamp((${progress} - ${glslFloat(start)}) / ${glslFloat(length)}, 0.0, 1.0)`;
-    result = `mix(${result}, ${stops[i].value}, ${easingCode(animation.easing, local)})`;
+    let weight = easingCode(animation.easing, local);
+    // Before its segment starts, local is 0: an easing that is not 0 there (steps() with
+    // jump-start, linear(0.5, 1)…) must wait for its segment, or it covers the ones before
+    if (i > 1 && animation.easing && !startsAtZero(animation.easing))
+      weight = `${weight} * step(${glslFloat(start)}, ${progress})`;
+    result = `mix(${result}, ${stops[i].value}, ${weight})`;
   }
   return active ? `((${active}) ? ${result} : ${own})` : result;
 }
@@ -1476,10 +1488,18 @@ function isWeight(text: string, steadyHover: boolean): boolean {
   return steadyHover && /^uHover\[\d+\]$/.test(text);
 }
 
+// An easing whose progress is 0 at the start of its segment
+function startsAtZero(easing: Easing): boolean {
+  if (easing.type === "steps") return stepsShape(easing).offset === 0;
+  if (easing.type === "linear") return easing.points[0].output === 0;
+  return true; // a cubic-bezier() always starts at (0, 0)
+}
+
 // An easing whose progress never leaves [0, 1]: a cubic-bezier() stays in the hull of
 // its points (0, y1, y2, 1), a linear() between its outputs. A transition with such
 // easings keeps uHover[] in [0, 1]; one that overshoots (back-out…) can push it out.
 function stays01(easing: Easing): boolean {
+  if (easing.type === "steps") return true; // from 0 to 1 by jumps
   const outputs =
     easing.type === "cubic-bezier" ? [easing.y1, easing.y2] : easing.points.map((p) => p.output);
   return outputs.every((y) => y >= 0 && y <= 1);

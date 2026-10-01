@@ -197,3 +197,32 @@ describe("findEasing: the easing among the tokens of a shorthand", () => {
     );
   });
 });
+
+describe("readEasing: steps()", () => {
+  it("reads the count and the position, jump-end by default, like CSS", () => {
+    expect(easingOf("steps(4)")).toEqual({ type: "steps", count: 4, position: "jump-end" });
+    expect(easingOf("steps(3, jump-both)")).toEqual({ type: "steps", count: 3, position: "jump-both" });
+    expect(easingOf("steps(2, start)")).toEqual({ type: "steps", count: 2, position: "jump-start" });
+    expect(easingOf("steps(2, end)")).toEqual({ type: "steps", count: 2, position: "jump-end" });
+  });
+
+  it("knows step-start and step-end", () => {
+    expect(easingOf("step-start")).toEqual({ type: "steps", count: 1, position: "jump-start" });
+    expect(easingOf("step-end")).toEqual({ type: "steps", count: 1, position: "jump-end" });
+  });
+
+  it("is found in a shorthand", () => {
+    expect(findEasing(tokenize("2s steps(4, jump-none) 1s")).easing).toEqual({
+      type: "steps",
+      count: 4,
+      position: "jump-none",
+    });
+  });
+
+  it("rejects a count that is not a whole positive number, a wrong position, and jump-none with 1 step", () => {
+    expect(() => easingOf("steps(2.5)")).toThrow("steps() expects a whole number of steps");
+    expect(() => easingOf("steps(0)")).toThrow("steps() expects a whole number of steps");
+    expect(() => easingOf("steps(4, middle)")).toThrow("steps() expects a whole number of steps");
+    expect(() => easingOf("steps(1, jump-none)")).toThrow("needs at least 2 steps");
+  });
+});

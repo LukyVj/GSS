@@ -60,6 +60,25 @@ describe("easings in @keyframes", () => {
     expect(shaderOf("2s linear")).toBe(shaderOf("2s"));
   });
 
+  it("snaps the progress with steps(), without any helper function", () => {
+    const shader = shaderOf("2s steps(4)");
+    expect(shader).toMatch(/\(min\(floor\(clamp\(.*\) \* 4\.0\), 4\.0\) \/ 4\.0\)/);
+    expect(shader).not.toContain("cubicBezier");
+    expect(shaderOf("2s steps(3, jump-both)")).toMatch(/\* 3\.0\) \+ 1\.0, 4\.0\) \/ 4\.0\)/);
+  });
+
+  it("waits for its segment when the easing is not 0 at its start (step-start, linear(0.5, 1))", () => {
+    const blink = (easing: string) =>
+      compileScene(
+        `@scene { sphere; } sphere { animation: blink 1s ${easing}; } @keyframes blink { 50% { scale: 1.6; } }`,
+      ).shader;
+    expect(blink("step-start")).toContain("* step(0.5, ");
+    expect(blink("linear(0.5, 1)")).toContain("* step(0.5, ");
+    // The others do not change: 0 at the start of a segment is already "not started"
+    expect(blink("step-end")).not.toContain("* step(0.5, ");
+    expect(blink("ease-out")).not.toContain("* step(0.5, ");
+  });
+
   it("rejects two easings", () => {
     expect(() => shaderOf("2s ease-in linear")).toThrow("only one easing");
   });
