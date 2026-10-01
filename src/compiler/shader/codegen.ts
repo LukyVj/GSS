@@ -1428,6 +1428,141 @@ function animatedValue(
   return active ? `((${active}) ? ${result} : ${own})` : result;
 }
 
+// ----- The sphere around the whole scene -----
+// A ray that passes by it meets no object: march() then only has the floor left,
+// found without marching (most of the sky and of the floor, in most scenes).
+// It must hold every object at every moment of its animations, and hovered.
+
+// Every value an animated (or hovered) expression can take, read from the GLSL
+// itself: a constant, or mix(a, b, w) with a weight w in [0, 1] (a keyframe segment:
+// clamp(…, 0.0, 1.0), eased or not; :hover: uHover[i]). Such a value always stays in
+// the box of its constants. null: anything else (then the scene gets no sphere).
+function splitArguments(text: string): string[] {
+  const parts: string[] = [];
+  let depth = 0;
+  let start = 0;
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] === "(" || text[i] === "[") depth++;
+    else if (text[i] === ")" || text[i] === "]") depth--;
+    else if (text[i] === "," && depth === 0) {
+      parts.push(text.slice(start, i).trim());
+      start = i + 1;
+    }
+  }
+  parts.push(text.slice(start).trim());
+  return parts;
+}
+
+const WEIGHT = /^(smoothstep\(0\.0, 1\.0, )?clamp\(.*, 0\.0, 1\.0\)\)?$|^uHover\[\d+\]$/;
+
+function anchors(expr: string): number[][] | null {
+  const text = expr.trim();
+  const mixed = text.match(/^mix\((.*)\)$/);
+  if (mixed) {
+    const parts = splitArguments(mixed[1]);
+    if (parts.length !== 3 || !WEIGHT.test(parts[2])) return null;
+    const [a, b] = [anchors(parts[0]), anchors(parts[1])];
+    return a && b ? [...a, ...b] : null;
+  }
+  const inside = text.match(/^vec3\((.*)\)$/)?.[1] ?? text;
+  const numbers = splitArguments(inside).map(Number);
+  if (numbers.length !== 1 && numbers.length !== 3) return null;
+  if (numbers.some((n) => !Number.isFinite(n))) return null;
+  return [numbers.length === 1 ? [numbers[0], numbers[0], numbers[0]] : numbers];
+}
+
+type Sphere = { center: number[]; radius: number };
+
+const length3 = (v: number[]) => Math.hypot(v[0], v[1], v[2]);
+
+// The box of some points: its middle, and half its diagonal
+function boxOfPoints(points: number[][]): { middle: number[]; reach: number } {
+  const low = [0, 1, 2].map((i) => Math.min(...points.map((p) => p[i])));
+  const high = [0, 1, 2].map((i) => Math.max(...points.map((p) => p[i])));
+  return {
+    middle: low.map((l, i) => (l + high[i]) / 2),
+    reach: length3(low.map((l, i) => (high[i] - l) / 2)),
+  };
+}
+
+// One object's sphere in the scene, through its own transforms and its groups', from
+// the inside out. A node maps its child's space to its parent's: scale, rotate,
+// then translate. null when a value is not known at compile time.
+function objectSphere(
+  radius: number,
+  instance: StyledInstance,
+  keyframes: Keyframes[],
+  hover: Hover | undefined,
+): Sphere | null {
+  let sphere: Sphere = { center: [0, 0, 0], radius };
+  const nodes = [...instance.groupStyles, instance.styles];
+  for (let n = nodes.length - 1; n >= 0; n--) {
+    const nodeHover = n === nodes.length - 1 ? hover : undefined;
+    const value = (property: string, read: (value: Token[] | undefined) => string) =>
+      hoverValue(nodes[n], keyframes, property, read, nodeHover);
+    const scales = anchors(value("scale", readScale));
+    const translates = anchors(value("translate", readTranslate));
+    if (!scales || !translates) return null;
+    // Scale: anywhere between the smallest and the largest
+    const factors = scales.map((s) => Math.abs(s[0]));
+    const [low, high] = [Math.min(...factors), Math.max(...factors)];
+    const middle = (low + high) / 2;
+    sphere = {
+      center: sphere.center.map((c) => c * middle),
+      radius: sphere.radius * high + (length3(sphere.center) * (high - low)) / 2,
+    };
+    // Rotation, at any angle: the sphere is centered on the node's origin
+    const rotated = ROTATIONS.some(([property]) => value(property, readRotation) !== "0.0");
+    if (rotated) sphere = { center: [0, 0, 0], radius: length3(sphere.center) + sphere.radius };
+    // Translate: anywhere in the box of its values
+    const box = boxOfPoints(translates);
+    sphere = {
+      center: sphere.center.map((c, i) => c + box.middle[i]),
+      radius: sphere.radius + box.reach,
+    };
+  }
+  return sphere;
+}
+
+// The first lines of march(): a ray that passes by the sphere of the scene meets
+// no object. With a floor, it meets the floor (y = 0) or nothing; without, nothing.
+// What main() does with a floor hit only depends on the floor's normal and color,
+// so the pixel is the one the march would have found.
+function sceneMiss(center: number[], radius: number, floor: boolean): string {
+  const r = Math.ceil(radius * 1000) / 1000; // rounded up: never smaller
+  const hit = floor
+    ? [
+        "    float floorT = rd.y < 0.0 ? -ro.y / rd.y : 1e10;",
+        "    return vec2(floorT < MAX_DIST ? floorT : MAX_DIST + 1.0, 0.0);",
+      ]
+    : ["    return vec2(MAX_DIST + 1.0, 0.0);"];
+  return [
+    "  // A ray that passes by the sphere around every object, at every moment of",
+    "  // their animations, meets no object: only the floor is left, found at once",
+    `  vec3 oc = ro - ${vec3(center.map((c) => Math.round(c * 10000) / 10000))};`,
+    "  float b = dot(oc, rd);",
+    `  float c = dot(oc, oc) - ${glslFloat(Math.round(r * r * 10000) / 10000 + 0.001)};`,
+    `  if (${floor ? "ro.y > 0.0 && " : ""}c > 0.0 && (b > 0.0 || b * b < c * dot(rd, rd))) {`,
+    ...hit,
+    "  }",
+    "",
+  ].join("\n");
+}
+
+// The sphere that holds all the others
+function enclosing(spheres: Sphere[]): Sphere {
+  const box = boxOfPoints(
+    spheres.flatMap(({ center, radius }) => [
+      center.map((c) => c - radius),
+      center.map((c) => c + radius),
+    ]),
+  );
+  const radius = Math.max(
+    ...spheres.map((s) => length3(s.center.map((c, i) => c - box.middle[i])) + s.radius),
+  );
+  return { center: box.middle, radius };
+}
+
 export function generateShader(
   instances: StyledInstance[],
   sceneStyles: Styles = {},
@@ -1441,6 +1576,7 @@ export function generateShader(
   };
   const context: ShapeContext = { functions: new Map() };
   const hoisted = createHoisted(); // the animated values of map(): computed by animate()
+  const spheres: (Sphere | null)[] = []; // each object's, for the sphere of the scene
 
   // What an object must beat to matter. With only plain unions, map() is a plain min():
   // an object further than the floor can never be the nearest, so the floor counts
@@ -1466,6 +1602,7 @@ export function generateShader(
       );
     }
     const { code: shapeCode, radius } = shape(instance.styles, context);
+    spheres.push(radius === null ? null : objectSphere(radius, instance, keyframes, hoverOf(instance)));
     // Every node from the outside in: the groups, then the object itself
     const nodes = [...instance.groupStyles, instance.styles];
     // q was divided by every scale, so the distance is multiplied back by all of them
@@ -1569,6 +1706,13 @@ export function generateShader(
     .join("\n\n");
 
   const map = mapLines.join("\n\n");
+  // A blend adds a fillet up to its distance around the objects it joins
+  const maxBlend = Math.max(0, ...instances.map((i) => readNumber(i.styles["blend"], "blend", 0, true)));
+  const known = spheres.every((s): s is Sphere => s !== null) && spheres.length > 0;
+  const scene = known ? enclosing(spheres as Sphere[]) : null;
+  const sceneSphereCode = scene
+    ? sceneMiss(scene.center, scene.radius + maxBlend + 0.01, hasFloor)
+    : "";
   const animate = animateCode(hoisted);
   const textures = textureCode(instances, keyframes, hoverOf);
   const materials = materialLines.join("\n");
@@ -1656,6 +1800,10 @@ uniform vec2 uPick;`
       .replace(
         "/*@BACKGROUND*/",
         readColor(sceneStyles["background"], "vec3(0.03)"),
+      )
+      .replace(
+        "vec2 march(vec3 ro, vec3 rd) {\n",
+        `vec2 march(vec3 ro, vec3 rd) {\n${sceneSphereCode}`,
       )
       // The animations of this pixel, computed once before anything calls map()
       .replace(
