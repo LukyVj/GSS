@@ -200,14 +200,15 @@ export const PROPERTIES: PropertyDef[] = [
   {
     name: "animation",
     appliesTo: "object",
-    syntax: "<keyframes-name> <time> [linear | ease-in-out] [alternate]",
+    syntax: "<keyframes-name> <time> [<easing>] [alternate]",
     initial: "none",
     description:
-      "Plays a @keyframes animation on the object, in a loop. The duration is in s or ms. alternate plays it forward then backward. ease-in-out slows down each step at both ends; linear, the default, keeps a constant speed. Animatable properties: translate, rotate-x, rotate-y, rotate-z, scale and color. On a group, it animates translate, the rotations and scale of the whole group.",
+      "Plays a @keyframes animation on the object, in a loop. The duration is in s or ms. alternate plays it forward then backward. The easing shapes each step, like CSS: linear, the default, keeps a constant speed; ease, ease-in, ease-out and ease-in-out speed up and slow down; cubic-bezier() and linear() draw your own curve. In an animation, ease-in-out is computed as a smoothstep, a very close curve. Animatable properties: translate, rotate-x, rotate-y, rotate-z, scale and color. On a group, it animates translate, the rotations and scale of the whole group.",
     examples: [
       "@scene { sphere; } sphere { animation: float 2s ease-in-out alternate; } @keyframes float { from { translate: 0 1 0; } to { translate: 0 2 0; } }",
       "@scene { cube; } cube { translate: 0 0.5 0; animation: bounce 1s; } @keyframes bounce { 0%, 100% { translate: 0 0.5 0; } 50% { translate: 0 1.5 0; scale: 1.2; } }",
       "@scene { cube; } cube { translate: 0 0.5 0; color: #ff5a36; animation: turn 4s linear; } @keyframes turn { to { rotate-y: 1turn; color: #3a7bff; } }",
+      "@scene { sphere; } sphere { translate: 0 0.5 0; radius: 0.5; color: #ff5a36; animation: jump 1.2s cubic-bezier(0.3, -0.4, 0.7, 1.4) alternate; } @keyframes jump { to { translate: 0 2 0; } }",
     ],
   },
   {
@@ -619,6 +620,28 @@ export const SHAPE_DOCS: ShapeDef[] = [
 ];
 
 export const FUNCTIONS: FunctionDef[] = [
+  {
+    name: "cubic-bezier()",
+    anchor: "fn-cubic-bezier",
+    covers: ["cubic-bezier"],
+    syntax: "cubic-bezier(<x1>, <y1>, <x2>, <y2>)",
+    description:
+      "An easing curve, like CSS, for animation and transition. The curve goes from (0, 0) to (1, 1), pulled by two handles: x is the time and stays from 0 to 1, y is the progress and can go below 0 or above 1, to overshoot and come back. The keywords are shortcuts for it: ease is cubic-bezier(0.25, 0.1, 0.25, 1), ease-in is cubic-bezier(0.42, 0, 1, 1), ease-out is cubic-bezier(0, 0, 0.58, 1) and ease-in-out is cubic-bezier(0.42, 0, 0.58, 1).",
+    examples: [
+      "@scene { sphere; } sphere { translate: 0 0.5 0; radius: 0.5; color: #ff5a36; animation: jump 1.2s cubic-bezier(0.3, -0.4, 0.7, 1.4) alternate; } @keyframes jump { to { translate: 0 2 0; } }",
+    ],
+  },
+  {
+    name: "linear()",
+    anchor: "fn-linear",
+    covers: ["linear"],
+    syntax: "linear(<number> [<percentage>{0,2}], …)",
+    description:
+      "An easing drawn as straight segments, like CSS: each number is the progress at one moment, and the moment is a percentage of the duration. A missing moment is spread evenly between its neighbours; the first point starts at 0% and the last one ends at 100%. Two percentages on one number hold it still between them; two points at the same moment jump. With enough points, it draws bounces and springs. The linear keyword is linear(0, 1): a constant speed.",
+    examples: [
+      "@scene { sphere; } sphere { radius: 0.4; color: #3a7bff; animation: drop 2s linear(0, 1 40%, 0.75 55%, 1 70%, 0.95 80%, 1); } @keyframes drop { from { translate: 0 3 0; } to { translate: 0 0.4 0; } }",
+    ],
+  },
   {
     name: "rgb()",
     anchor: "fn-rgb",

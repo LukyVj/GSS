@@ -26,7 +26,8 @@ const KEYWORDS: Record<string, Easing> = {
   },
 };
 
-const FUNCTIONS = ["cubic-bezier", "linear"];
+// The easing functions, documented in the registry
+export const EASING_FUNCTIONS = ["cubic-bezier", "linear"];
 
 const BEZIER_ERROR =
   "cubic-bezier() expects four numbers, x1 and x2 from 0 to 1, like: cubic-bezier(0.25, 0.1, 0.25, 1)";
@@ -133,7 +134,7 @@ export function findEasing(value: Token[]): {
       next?.type === "PUNCT" &&
       next.value === "("
     ) {
-      if (FUNCTIONS.includes(token.value)) {
+      if (EASING_FUNCTIONS.includes(token.value)) {
         end = closingParen(value, i + 1);
         found = readEasing(value.slice(i, end + 1));
       }

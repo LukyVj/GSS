@@ -1,4 +1,5 @@
 import type { Token } from "./tokenizer";
+import { findEasing, type Easing } from "./easing";
 import { errorAt, locate } from "./errors";
 import { tokenize } from "./tokenizer";
 import { FACES, type Face, type StyledInstance, type Styles } from "./resolve";
@@ -91,6 +92,23 @@ float extrude(float d, float z, float h) {
 };
 
 // The rotation and the operations other than union. Only those map() calls go in the shader.
+// The easings of the @keyframes that need a function: only those the scene uses
+const EASINGS: Record<string, string> = {
+  cubicBezier: `// cubic-bezier(): the progress at the moment x, for the handles h = (x1, y1, x2, y2).
+// x(s) only goes up, so a bisection finds s, then y(s) is the progress.
+float bezierAt(float s, float a, float b) {
+  return (((1.0 + 3.0 * a - 3.0 * b) * s + (3.0 * b - 6.0 * a)) * s + 3.0 * a) * s;
+}
+float cubicBezier(float x, vec4 h) {
+  float low = 0.0, high = 1.0;
+  for (int i = 0; i < 16; i++) {
+    float s = 0.5 * (low + high);
+    if (bezierAt(s, h.x, h.z) < x) low = s; else high = s;
+  }
+  return bezierAt(0.5 * (low + high), h.y, h.w);
+}`,
+};
+
 const MAP_HELPERS: Record<string, string> = {
   rot: `mat2 rot(float a) {
   float c = cos(a), s = sin(a);
@@ -1235,11 +1253,46 @@ function animationProgress(value: Token[]): string {
     ? `(1.0 - abs(mod(${time}, 2.0) - 1.0))` // 0 → 1 → 0 → 1 …
     : `fract(${time})`; // 0 → 1, 0 → 1 …
 }
-// Applies the timing curve to a progress between 0 and 1
+// Applies the timing curve of an animation to a progress between 0 and 1.
+// value[0] is the name of the @keyframes, the easing is among the rest.
 function easing(value: Token[], progress: string): string {
-  if (hasKeyword(value, "ease-in-out"))
-    return `smoothstep(0.0, 1.0, ${progress})`;
-  return progress; // linear
+  return easingCode(findEasing(value.slice(1)).easing, progress);
+}
+
+// An easing in GLSL. No easing, or a straight line: the progress itself.
+export function easingCode(easing: Easing | null, progress: string): string {
+  if (!easing) return progress;
+  if (easing.type === "cubic-bezier") {
+    const { x1, y1, x2, y2 } = easing;
+    // ease-in-out stays a smoothstep, close to the CSS curve and much cheaper:
+    // the scenes written before cubic-bezier() keep their exact motion
+    if (x1 === 0.42 && y1 === 0 && x2 === 0.58 && y2 === 1)
+      return `smoothstep(0.0, 1.0, ${progress})`;
+    const handles = [x1, y1, x2, y2].map(glslFloat).join(", ");
+    return `cubicBezier(${progress}, vec4(${handles}))`;
+  }
+  // linear(): the first output, plus what each segment adds once it has started
+  const { points } = easing;
+  const straight =
+    points.length === 2 &&
+    points[0].input === 0 &&
+    points[0].output === 0 &&
+    points[1].input === 1 &&
+    points[1].output === 1;
+  if (straight) return progress;
+  let code = glslFloat(points[0].output);
+  for (let i = 1; i < points.length; i++) {
+    const from = points[i - 1];
+    const to = points[i];
+    const rise = to.output - from.output;
+    if (rise === 0) continue; // a flat segment adds nothing
+    const along =
+      to.input === from.input
+        ? `step(${glslFloat(from.input)}, ${progress})` // a jump
+        : `clamp((${progress} - ${glslFloat(from.input)}) / ${glslFloat(to.input - from.input)}, 0.0, 1.0)`;
+    code += ` + ${glslFloat(rise)} * ${along}`;
+  }
+  return `(${code})`;
 }
 
 // from → 0, to → 1, 50% → 0.5
@@ -1448,7 +1501,17 @@ export function generateShader(
     .join("\n");
 
   return (
-    TEMPLATE.replace("/*@SHAPE_FUNCTIONS*/", used(SHAPE_FUNCTIONS, map))
+    TEMPLATE.replace(
+      "/*@EASINGS*/",
+      section(
+        "// The easings of the animations: only those the scene uses",
+        used(
+          EASINGS,
+          [map, textures.functions, textures.call, materials].join("\n"),
+        ),
+      ),
+    )
+      .replace("/*@SHAPE_FUNCTIONS*/", used(SHAPE_FUNCTIONS, map))
       .replace("/*@PATH_HELPERS*/", used(PATH_HELPERS, functions)) // called by the path and prism functions, not by map()
       .replace(
         "/*@MAP_HELPERS*/",
@@ -1545,6 +1608,8 @@ uniform float uDist;
 /*@HOVER_UNIFORM*/
 
 out vec4 outColor;
+
+/*@EASINGS*/
 
 /*@SHAPE_FUNCTIONS*/
 
