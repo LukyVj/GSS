@@ -12,7 +12,12 @@ import type { Token } from "./syntax/tokenizer";
 import { errorAt, rememberSpan, spanOf } from "./syntax/errors";
 import { resolveVars, usesVariables, hasVar, type Variables } from "./cascade/vars";
 import { PROPERTIES } from "./registry/registry";
-import { resolveColors, resolveNamedColors } from "./values/colors";
+import {
+  type ColorScheme,
+  DARK_QUERY,
+  resolveColors,
+  resolveNamedColors,
+} from "./values/colors";
 import { sceneTextures } from "./features/textures";
 import { readDpr, type Dpr } from "./features/dpr";
 import { readTransition, type Transition } from "./features/transition";
@@ -38,11 +43,21 @@ const MAX_QUERIES = 4;
 
 // GSS text → shader + camera settings, and a version per combination of @media
 export function compileScene(source: string): CompiledScene {
-  const stylesheet = parse(tokenize(source));
+  const tokens = tokenize(source);
+  const stylesheet = parse(tokens);
+  // light-dark() needs a version of the scene per color scheme, like this @media query
+  const lightDark = tokens.some(
+    (token, i) =>
+      token.type === "IDENT" &&
+      token.value === "light-dark" &&
+      tokens[i + 1]?.type === "PUNCT" &&
+      tokens[i + 1].value === "(",
+  );
   const queries = [
-    ...new Set(
-      stylesheet.rules.flatMap((rule) => (rule.media ? [rule.media] : [])),
-    ),
+    ...new Set([
+      ...stylesheet.rules.flatMap((rule) => (rule.media ? [rule.media] : [])),
+      ...(lightDark ? [DARK_QUERY] : []),
+    ]),
   ];
   if (queries.length === 0) return compileStylesheet(stylesheet);
   if (queries.length > MAX_QUERIES) {
@@ -55,20 +70,28 @@ export function compileScene(source: string): CompiledScene {
     );
   }
   // Like CSS, a rule inside a matching @media joins the cascade where it is written
+  const dark = queries.indexOf(DARK_QUERY);
   const variants = Array.from({ length: 2 ** queries.length }, (_, mask) =>
-    compileStylesheet({
-      ...stylesheet,
-      rules: stylesheet.rules.filter(
-        (rule) =>
-          !rule.media || (mask & (1 << queries.indexOf(rule.media))) !== 0,
-      ),
-    }),
+    compileStylesheet(
+      {
+        ...stylesheet,
+        rules: stylesheet.rules.filter(
+          (rule) =>
+            !rule.media || (mask & (1 << queries.indexOf(rule.media))) !== 0,
+        ),
+      },
+      dark >= 0 && (mask & (1 << dark)) !== 0 ? "dark" : "light",
+    ),
   );
   return { ...variants[0], media: { queries, variants } };
 }
 
 // One version of the scene: the rules that apply, compiled
-function compileStylesheet(stylesheet: Stylesheet): CompiledScene {
+function compileStylesheet(
+  stylesheet: Stylesheet,
+  scheme: ColorScheme = "light",
+): CompiledScene {
+  colorScheme = scheme;
   validateProperties(stylesheet.rules);
   validateKeyframes(stylesheet.keyframes);
   const instances = expandScene(stylesheet.scene);
@@ -299,8 +322,10 @@ function computeVars(styles: Styles, variables: Variables): Styles {
 // One value, with rgb(), hsl() and the named colors turned into #rrggbb (decision 58).
 // The property is needed: material: gold is a material, color: gold is a color.
 function colorsOf(property: string, value: Token[]): Token[] {
-  return resolveNamedColors(property, resolveColors(value));
+  return resolveNamedColors(property, resolveColors(value, colorScheme));
 }
+// The color scheme of the version being compiled, read by light-dark() (decision 79)
+let colorScheme: ColorScheme = "light";
 
 // Every value of a set of styles, through colorsOf
 function computeColors(styles: Styles): Styles {

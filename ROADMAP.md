@@ -23,7 +23,7 @@ What the language and the tools can do today. Each feature is detailed in the re
 | Media queries        | `@media (…) { … }`: any query the browser knows (width, orientation, `prefers-color-scheme`, `prefers-reduced-motion`…), up to 4 per scene, switched live                                   | 71                    |
 | Math                 | `calc()`, `min()`, `max()`, `clamp()`, `abs()`, `sqrt()`, `pow()`, trigonometry and its inverses (`asin()` … `atan2()`), `sign()`, `round()`, `mod()`, `rem()`, `hypot()`, `log()`, `exp()`, `progress()`, `pi`, `e` | 52, 78                |
 | Variables            | `--size: 2`, `var(--size, 1)`; inherited scene → group → object, a variable can use another, animatable in `@keyframes`                                                                     | 55                    |
-| Colors               | `#ff5a36`, `rgb(255 90 54)`, `hsl(20 100% 60%)`, the 148 CSS names (`tomato`) where a color is expected; math and `var()` inside                                                            | 58                    |
+| Colors               | `#ff5a36`, `rgb()`, `hsl()`, `hwb()`, `lab()`, `lch()`, `oklab()`, `oklch()`, `color()`, `color-mix()`, `light-dark()`, `contrast-color()`, the 148 CSS names (`tomato`) where a color is expected; math and `var()` inside | 58, 79                |
 | CSS-style loops      | `sibling-index()`, `sibling-count()`: each copy of a `* n` gets its own value                                                                                                               | 52                    |
 | Units                | angles `deg` `rad` `turn` (always with a unit), durations `s` `ms`, `%`                                                                                                                     | 9, 17, 20             |
 | Modern CSS functions | commas or spaces: `metal(#d4af37, 0.2)`, `polygon(0 1, 1 0, -1 0)`                                                                                                                          | 28                    |
@@ -115,7 +115,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 
 1. [x] Loops: **option B chosen** (decision 52): `* n` + `calc(sibling-index())`, as in CSS. `@for` / `@each` later, only to change the shape at each step or to walk through a list
 2. [x] `var()` ✅ decision 55, inherited and animatable (+ `calc()` ✅ decision 52, with `min()`, `max()`, `clamp()`, `abs()`, `sqrt()`, `pow()`, `sin()`, `cos()`, `tan()`; every other CSS math function ✅ decision 78)
-3. [ ] Functional colors: `rgb()`, `hsl()` and the named colors ✅ decision 58; still to do: `oklch()`, `oklab()`, `hwb()`, `color-mix()`
+3. [x] Functional colors: `rgb()`, `hsl()` and the named colors ✅ decision 58; `hwb()`, `lab()`, `lch()`, `oklab()`, `oklch()`, `color()`, `color-mix()`, `light-dark()`, `contrast-color()` ✅ decision 79
 4. [x] Textures: `texture: url("…")`, one image per face, `::face()` (decision 59)
 5. [x] Animation controls ✅ decision 70: delay, iteration count, direction, fill mode, and the six longhands
 6. [x] `@media` ✅ decision 71: any media query the browser knows (width, orientation, `prefers-color-scheme`, `prefers-reduced-motion`…), up to 4 per scene
@@ -222,6 +222,7 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 
 ## Done recently
 
+- The rest of the CSS color functions: `hwb()`, `lab()`, `lch()`, `oklab()`, `oklch()`, `color()`, `color-mix()`, `light-dark()` (one version of the scene per color scheme), `contrast-color()` (decision 79)
 - Every CSS math function: `asin()`, `acos()`, `atan()`, `atan2()`, `sign()`, `round()` (and its four strategies), `mod()`, `rem()`, `hypot()`, `log()`, `exp()`, `progress()` (decision 78)
 - Performance with the same image (decisions 74–77): `animate()`, the sphere of the scene, bounds on groups; L'Orrery 20.3 → 7.5 ms, macropad 17.4 → 4.0 ms, todal 24.3 → 3.9 ms at dpr 2; the bench accepts stray pixels (GPU rounding)
 - Child (`>`), adjacent sibling (`+`) and subsequent sibling (`~`) combinators, including mixed chains, `:hover` and relative `:has()` selectors (decision 73)
@@ -534,9 +535,9 @@ A score for how well a CSS notion carries over to GSS (a style language → an S
 | `sin()` / `cos()` / `tan()` / `asin()` / `acos()` / `atan()` / `atan2()`                                                                          |   1.0 | Already in GSS (dec. 52, 78)                                                               |
 | `random()`                                                                                                                                        |  0.55 | Seed at compile time or runtime                                                            |
 | `calc-size()`                                                                                                                                     |   0.2 | Intrinsic box                                                                              |
-| `rgb()` / `hsl()` / `hwb()` / `lab()` / `lch()` / `oklab()` / `oklch()` / `color()`                                                               |   1.0 | Functional colors, priority #3: `rgb()` and `hsl()` already in (dec. 58); the others to do |
-| `color-mix()`                                                                                                                                     |  0.85 | Mixing in color spaces                                                                     |
-| `alpha()` / `light-dark()` / `contrast-color()`                                                                                                   |   0.7 | Color utilities                                                                            |
+| `rgb()` / `hsl()` / `hwb()` / `lab()` / `lch()` / `oklab()` / `oklch()` / `color()`                                                               |   1.0 | Already in GSS (dec. 58, 79); `color()` takes srgb, srgb-linear, display-p3, xyz           |
+| `color-mix()`                                                                                                                                     |   1.0 | Already in GSS (dec. 79)                                                                   |
+| `alpha()` / `light-dark()` / `contrast-color()`                                                                                                   |   0.7 | `light-dark()` and `contrast-color()` already in (dec. 79); `alpha()` waits for transparency |
 | `device-cmyk()` / `dynamic-range-limit-mix()` / `palette-mix()`                                                                                   |   0.2 | Niche print/HDR/fonts                                                                      |
 | `cubic-bezier()` / `linear()` / `steps()`                                                                                                         |   0.9 | `cubic-bezier()` and `linear()` already in (dec. 68); `steps()` to do                      |
 | `blur()` / `brightness()` / `contrast()` / `grayscale()` / `hue-rotate()` / `invert()` / `opacity()` / `saturate()` / `sepia()` / `drop-shadow()` |   0.8 | `filter` post                                                                              |

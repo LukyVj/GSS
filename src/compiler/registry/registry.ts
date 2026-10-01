@@ -1168,6 +1168,120 @@ export const FUNCTIONS: FunctionDef[] = [
     ],
   },
   {
+    name: "hwb()",
+    anchor: "fn-hwb",
+    covers: ["hwb"],
+    syntax: "hwb(<hue> <whiteness> <blackness>)",
+    description:
+      "A color from a hue, and how much white and black are mixed into it, like CSS: hwb(0 0% 0%) is the pure red, more whiteness makes it paler, more blackness darker. When whiteness and blackness add up to 100% or more, the color is a gray. The hue works as in hsl().",
+    examples: [
+      {
+        name: "hwb()",
+        code: "@scene { cube.tint * 5; } .tint { size: 0.6; translate: calc(sibling-index() * 0.8 - 2.4) 0.3 0; color: hwb(200 calc(sibling-index() * 15%) 10%); }",
+      },
+    ],
+  },
+  {
+    name: "lab(), lch()",
+    anchor: "fn-lab-lch",
+    covers: ["lab", "lch"],
+    syntax: "lab(<lightness> <a> <b>) | lch(<lightness> <chroma> <hue>)",
+    description:
+      "The CIE Lab color space of CSS, built on how the eye sees: the lightness goes from 0 (black) to 100 (white), a from green to red, b from blue to yellow. lch() is the same space written with a chroma (how colorful) and a hue. Percentages work as in CSS: 100% is 100 for the lightness, 125 for a and b, 150 for the chroma. A color outside what the screen shows is clipped to it.",
+    examples: [
+      {
+        name: "lab()",
+        code: "@scene { sphere; } sphere { color: lab(62 52 48); }",
+      },
+      {
+        name: "lch()",
+        code: "@scene { sphere.dot * 6; } .dot { radius: 0.3; translate: calc(sibling-index() * 0.75 - 2.6) 0.5 0; color: lch(65 60 calc(sibling-index() * 60)); }",
+      },
+      {
+        name: "lab() and lch() together",
+        code: "@scene { cube#a; cube#b; } #a { translate: -0.7 0.5 0; color: lab(55 -40 30); } #b { translate: 0.7 0.5 0; color: lch(55 50 140); }",
+      },
+    ],
+  },
+  {
+    name: "oklab(), oklch()",
+    anchor: "fn-oklab-oklch",
+    covers: ["oklab", "oklch"],
+    syntax: "oklab(<lightness> <a> <b>) | oklch(<lightness> <chroma> <hue>)",
+    description:
+      "The OKLab color space of CSS: its lightness matches what the eye sees much better than hsl(), so colors of the same lightness look equally light, whatever their hue. The lightness goes from 0 to 1 (or 0% to 100%); oklch() adds a chroma, around 0 to 0.4 (100% is 0.4), and a hue. With sibling-index() on the hue, oklch() gives a rainbow whose colors all look as light as each other. A color outside what the screen shows is clipped to it.",
+    examples: [
+      {
+        name: "oklab()",
+        code: "@scene { sphere; } sphere { color: oklab(0.72 0.12 0.1); }",
+      },
+      {
+        name: "oklch()",
+        code: "@scene { sphere.dot * 8; } .dot { radius: 0.25; translate: calc(sibling-index() * 0.6 - 2.7) 0.5 0; color: oklch(72% 0.15 calc(sibling-index() * 45)); }",
+      },
+      {
+        name: "oklab() and oklch() together",
+        code: "@scene { cube#a; cube#b; } #a { translate: -0.7 0.5 0; color: oklab(60% -0.1 -0.1); } #b { translate: 0.7 0.5 0; color: oklch(60% 0.14 30deg); }",
+      },
+    ],
+  },
+  {
+    name: "color()",
+    anchor: "fn-color",
+    covers: ["color"],
+    syntax: "color(<space> <r> <g> <b>)",
+    description:
+      "A color in a named color space, like CSS: srgb, srgb-linear, display-p3, xyz (or xyz-d65) and xyz-d50, with three channels from 0 to 1, or percentages. A display-p3 color that the sRGB render cannot show is clipped to it.",
+    examples: [
+      {
+        name: "color()",
+        code: "@scene { sphere#a; sphere#b; } #a { translate: -0.8 0.6 0; color: color(display-p3 0.95 0.35 0.2); } #b { translate: 0.8 0.6 0; color: color(srgb-linear 0.1 0.3 0.8); }",
+      },
+    ],
+  },
+  {
+    name: "color-mix()",
+    anchor: "fn-color-mix",
+    covers: ["color-mix"],
+    syntax: "color-mix(in <space> [shorter | longer hue]?, <color> <percentage>?, <color> <percentage>?)",
+    description:
+      "Mixes two colors in a color space, like CSS: srgb, srgb-linear, lab, lch, oklab, oklch, hsl or hwb. Without percentages, half of each; with one, the other color takes the rest; with both, they are scaled to add up to 100%. They cannot add up to less, since GSS has no transparency. In a space with a hue, the hue goes the shorter way round the wheel, or the longer one with longer hue; a gray takes the hue of the other color. oklab gives the most even mixes; mixing in srgb goes through duller middle colors.",
+    examples: [
+      {
+        name: "color-mix()",
+        code: "@scene { cube.step * 6; } .step { size: 0.6; translate: calc(sibling-index() * 0.75 - 2.6) 0.3 0; color: color-mix(in oklab, #ff5a36, #3a7bff calc(sibling-index() * 20% - 20%)); }",
+      },
+    ],
+  },
+  {
+    name: "light-dark()",
+    anchor: "fn-light-dark",
+    covers: ["light-dark"],
+    syntax: "light-dark(<light color>, <dark color>)",
+    description:
+      "The first color when the page is in light mode, the second in dark mode, like CSS. The scene follows the setting of the system as it changes: it works like @media (prefers-color-scheme: dark), and counts as one of the @media queries of the scene.",
+    examples: [
+      {
+        name: "light-dark()",
+        code: "@scene { sphere; } scene { background: light-dark(#f4f1ea, #0b0b10); floor: light-dark(#e8e3db, #16161d); } sphere { color: light-dark(#ff5a36, #7cb4ff); }",
+      },
+    ],
+  },
+  {
+    name: "contrast-color()",
+    anchor: "fn-contrast-color",
+    covers: ["contrast-color"],
+    syntax: "contrast-color(<color>)",
+    description:
+      "White or black, whichever contrasts most with the color, like CSS: the way to keep an object readable against a background held in a variable.",
+    examples: [
+      {
+        name: "contrast-color()",
+        code: "@scene { cube; sphere; } scene { --bg: #3a7bff; background: var(--bg); } cube { translate: 0 0.5 0; color: var(--bg); } sphere { radius: 0.3; translate: 0 1.3 0; color: contrast-color(var(--bg)); }",
+      },
+    ],
+  },
+  {
     name: "var()",
     anchor: "fn-var",
     covers: ["var"],
