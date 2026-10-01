@@ -8,6 +8,7 @@ import type { FrameProbe } from "../profiler/profiler";
 import type { Dpr } from "../compiler/dpr";
 import { pixelRatio } from "./dpr";
 import { createTransitions } from "./transitions";
+import { pickVariant, watchMedia, matchesNow } from "./media";
 
 // Draws compiled GSS scenes in a canvas, with a camera the mouse can move.
 // It never imports the compiler (decision 63): a page that embeds a scene compiled
@@ -81,6 +82,8 @@ export function createView(
   let dpr: Dpr = "auto"; // the pixel density the scene asks for (scene { dpr })
   let transitions = createTransitions([]); // how each hover slot glides (transition)
   let reducedMotion = false; // freeze(): transitions jump, like the animations stop
+  let shown: CompiledScene | null = null; // the version on screen (@media)
+  let stopMedia = () => {}; // stops listening to the @media queries of the scene
 
   function compileShader(type: number, source: string): WebGLShader {
     const shader = gl!.createShader(type)!;
@@ -275,21 +278,41 @@ export function createView(
   }
   frameId = requestAnimationFrame(frame);
 
+  // One compiled scene (one version, with @media) on screen
+  function display(compiled: CompiledScene, resetCamera: boolean) {
+    const start = performance.now();
+    const next = createGpuScene(
+      compiled.shader,
+      compiled.textures,
+      compiled.hover,
+    ); // GLSL errors
+    probe?.shaderBuilt(performance.now() - start);
+    if (scene) gl!.deleteProgram(scene.program);
+    scene = next;
+    shown = compiled;
+    hovered = 0; // the ids belong to the new scene now
+    dpr = compiled.dpr;
+    transitions = createTransitions(compiled.transitions);
+    if (resetCamera) applyCameraSettings(compiled.camera);
+  }
+
   return {
     show(compiled) {
-      const start = performance.now();
-      const next = createGpuScene(
-        compiled.shader,
-        compiled.textures,
-        compiled.hover,
-      ); // GLSL errors
-      probe?.shaderBuilt(performance.now() - start);
-      if (scene) gl.deleteProgram(scene.program);
-      scene = next;
-      hovered = 0; // the ids belong to the new scene now
-      dpr = compiled.dpr;
-      transitions = createTransitions(compiled.transitions);
-      applyCameraSettings(compiled.camera);
+      // @media: the version for the screen now, then another one when it changes,
+      // keeping the camera where the mouse left it
+      display(pickVariant(compiled, matchesNow), true); // GLSL errors
+      stopMedia();
+      stopMedia = compiled.media
+        ? watchMedia(compiled.media.queries, () => {
+            const next = pickVariant(compiled, matchesNow);
+            if (next === shown) return;
+            try {
+              display(next, false);
+            } catch (error) {
+              console.error(error);
+            }
+          })
+        : () => {};
     },
     sampleFrames() {
       const now = performance.now();
@@ -314,6 +337,7 @@ export function createView(
       reducedMotion = frozen;
     },
     destroy() {
+      stopMedia();
       playing = false;
       cancelAnimationFrame(frameId);
       if (scene) gl.deleteProgram(scene.program);

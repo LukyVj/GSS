@@ -7,7 +7,7 @@ import type {
   Keyframes,
   Keyframe,
 } from "./ast";
-import { errorAt, rememberSpan, spanAcross } from "./errors";
+import { errorAt, rememberSpan, spanAcross, spanOf } from "./errors";
 
 export function parse(tokens: Token[]): Stylesheet {
   let pos = 0; // our position in the list of tokens
@@ -57,7 +57,10 @@ export function parse(tokens: Token[]): Stylesheet {
       if (token?.type === "HASH") {
         next();
         if (element.id !== null)
-          throw errorAt(token, `An object has only one id, it already is "#${element.id}"`);
+          throw errorAt(
+            token,
+            `An object has only one id, it already is "#${element.id}"`,
+          );
         element.id = token.value;
       } else if (isPunct(token, ".")) {
         next();
@@ -219,6 +222,35 @@ export function parse(tokens: Token[]): Stylesheet {
     return { name: name.value, frames };
   }
 
+  // @media (max-width: 600px) { rules }: each rule remembers its query, like CSS
+  function parseMedia(at: Token): Rule[] {
+    const prelude: Token[] = [];
+    while (peek() && !isPunct(peek(), "{")) prelude.push(next());
+    if (prelude.length === 0)
+      throw errorAt(
+        at,
+        "@media needs a query, like: @media (max-width: 600px) { scene { dpr: 1; } }",
+      );
+    const open = next(); // the "{"
+    const media = textOf(prelude);
+    const rules: Rule[] = [];
+    while (!isPunct(peek(), "}")) {
+      const token = peek();
+      if (!token) throw errorAt(open, '@media never closed: "}" missing');
+      if (token.type === "AT_KEYWORD")
+        throw errorAt(
+          token,
+          "@media holds rules only, for now: write @scene and @keyframes outside it",
+        );
+      for (const rule of parseRules()) {
+        rule.media = media;
+        rules.push(rule);
+      }
+    }
+    next(); // the "}"
+    return rules;
+  }
+
   // The whole file: a sequence of @scene and rules
   const stylesheet: Stylesheet = { scene: [], rules: [], keyframes: [] };
 
@@ -230,6 +262,8 @@ export function parse(tokens: Token[]): Stylesheet {
         stylesheet.scene.push(...parseScene("@scene"));
       } else if (token.value === "keyframes") {
         stylesheet.keyframes.push(parseKeyframes());
+      } else if (token.value === "media") {
+        stylesheet.rules.push(...parseMedia(token));
       } else {
         throw errorAt(token, `@${token.value} isn't supported yet`);
       }
@@ -239,4 +273,27 @@ export function parse(tokens: Token[]): Stylesheet {
   }
 
   return stylesheet;
+}
+
+// Tokens back to text, with a space where the source had one: the query of a
+// @media, which the browser reads (matchMedia)
+function textOf(tokens: Token[]): string {
+  return tokens
+    .map((token, i) => {
+      const before = tokens[i - 1];
+      const a = before && spanOf(before);
+      const b = spanOf(token);
+      const space = a !== undefined && b !== undefined && a.end < b.start;
+      return (space ? " " : "") + tokenText(token);
+    })
+    .join("");
+}
+
+function tokenText(token: Token): string {
+  if (token.type === "HASH") return `#${token.value}`;
+  if (token.type === "AT_KEYWORD") return `@${token.value}`;
+  if (token.type === "DIMENSION") return `${token.value}${token.unit}`;
+  if (token.type === "PERCENTAGE") return `${token.value}%`;
+  if (token.type === "STRING") return JSON.stringify(token.value);
+  return String(token.value);
 }

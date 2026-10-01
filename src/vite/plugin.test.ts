@@ -30,6 +30,15 @@ describe("gssModule", () => {
     expect(code).toContain('"/textures/grass-top.png"'); // absolute: served as it is
   });
 
+  it("turns the images of every @media version into assets too", () => {
+    const code = gssModule(`@scene { cube; }
+      @media (max-width: 600px) { cube { texture: url("small.png"); } }`);
+    expect(code).toContain(
+      'scene.media.variants[1].textures = [new URL("./small.png", import.meta.url).href];',
+    );
+    expect(code).not.toContain('"small.png"'); // never left as a bare relative path
+  });
+
   it("throws the GSS error", () => {
     expect(() => gssModule("@scene { teapot; }")).toThrow(/teapot/);
   });

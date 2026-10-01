@@ -20,6 +20,7 @@ export type SceneElement = {
 export type Rule = {
   selector: Token[]; // for now, we keep the raw tokens
   declarations: Declaration[];
+  media?: string; // inside @media (max-width: 600px) { … }: the query, as text
 };
 
 // A declaration: radius: 1 0.28;

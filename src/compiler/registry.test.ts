@@ -69,10 +69,11 @@ describe("at-rules", () => {
     expect(new Set(names).size).toBe(names.length);
   });
 
-  it("documents @scene and @keyframes", () => {
+  it("documents @scene, @keyframes and @media", () => {
     expect(AT_RULES.map((atRule) => atRule.name)).toEqual([
       "scene",
       "keyframes",
+      "media",
     ]);
   });
 

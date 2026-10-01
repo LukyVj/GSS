@@ -7,7 +7,7 @@ import { validateProperties, validateKeyframes } from "./validate";
 import { readCamera, type CameraSettings } from "./camera";
 import { resolveMath, type CalcContext } from "./calc";
 import type { Styles } from "./resolve";
-import type { Declaration, Keyframes } from "./ast";
+import type { Declaration, Keyframes, Stylesheet } from "./ast";
 import type { Token } from "./tokenizer";
 import { errorAt, rememberSpan, spanOf } from "./errors";
 import { resolveVars, usesVariables, hasVar, type Variables } from "./vars";
@@ -25,13 +25,50 @@ export type CompiledScene = {
   objects: number; // instances drawn, for the status bar (decision 42)
   textures: string[]; // the image files the runtime loads, once each
   hover: number[][]; // for each slot of uHover[], the ids that, hovered, set it to 1
+  // @media: the queries, and the scene for every combination of them. variants[mask]
+  // is the scene when the queries whose bit is set in mask match (bit 0: queries[0]).
+  // The fields above are variants[0], the scene when none matches.
+  media?: { queries: string[]; variants: CompiledScene[] };
   // for each slot of uHover[], how it glides to 1 (enter) and back to 0 (leave)
   transitions: { enter: Transition | null; leave: Transition | null }[];
 };
 
-// GSS text → shader + camera settings
+// The most @media queries a scene can use: 2^4 = 16 versions of it are compiled
+const MAX_QUERIES = 4;
+
+// GSS text → shader + camera settings, and a version per combination of @media
 export function compileScene(source: string): CompiledScene {
   const stylesheet = parse(tokenize(source));
+  const queries = [
+    ...new Set(
+      stylesheet.rules.flatMap((rule) => (rule.media ? [rule.media] : [])),
+    ),
+  ];
+  if (queries.length === 0) return compileStylesheet(stylesheet);
+  if (queries.length > MAX_QUERIES) {
+    const extra = stylesheet.rules.find(
+      (rule) => rule.media === queries[MAX_QUERIES],
+    )!;
+    throw errorAt(
+      extra.selector,
+      `A scene takes at most ${MAX_QUERIES} different @media queries (here: ${queries.length}): GSS prepares a version of the scene for every combination`,
+    );
+  }
+  // Like CSS, a rule inside a matching @media joins the cascade where it is written
+  const variants = Array.from({ length: 2 ** queries.length }, (_, mask) =>
+    compileStylesheet({
+      ...stylesheet,
+      rules: stylesheet.rules.filter(
+        (rule) =>
+          !rule.media || (mask & (1 << queries.indexOf(rule.media))) !== 0,
+      ),
+    }),
+  );
+  return { ...variants[0], media: { queries, variants } };
+}
+
+// One version of the scene: the rules that apply, compiled
+function compileStylesheet(stylesheet: Stylesheet): CompiledScene {
   validateProperties(stylesheet.rules);
   validateKeyframes(stylesheet.keyframes);
   const instances = expandScene(stylesheet.scene);

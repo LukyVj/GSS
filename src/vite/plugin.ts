@@ -1,5 +1,5 @@
 import type { Plugin } from "vite";
-import { compileScene } from "../compiler";
+import { compileScene, type CompiledScene } from "../compiler";
 
 // gss-lang/vite (decision 63): `import scene from "./logo.gss"` gives the compiled
 // scene. The compiler runs at build time; the page only ships the runtime and the shader:
@@ -23,15 +23,30 @@ function isRelative(file: string): boolean {
 // which Vite copies into the build (with a hash) like any other asset.
 export function gssModule(source: string): string {
   const compiled = compileScene(source);
-  const textures = compiled.textures.map((file) =>
-    isRelative(file)
-      ? `new URL(${JSON.stringify(file.startsWith(".") ? file : `./${file}`)}, import.meta.url).href`
-      : JSON.stringify(file),
-  );
-  const { textures: _, ...rest } = compiled;
+  // The images of the scene, and of each @media version of it, as JavaScript
+  const images = (files: string[]) =>
+    files
+      .map((file) =>
+        isRelative(file)
+          ? `new URL(${JSON.stringify(file.startsWith(".") ? file : `./${file}`)}, import.meta.url).href`
+          : JSON.stringify(file),
+      )
+      .join(", ");
+  const withoutImages = ({ textures: _, ...rest }: CompiledScene) => rest;
+  const variants = compiled.media?.variants ?? [];
+  const data = {
+    ...withoutImages(compiled),
+    ...(compiled.media && {
+      media: { ...compiled.media, variants: variants.map(withoutImages) },
+    }),
+  };
   return [
-    `const scene = ${JSON.stringify(rest, null, 2)};`,
-    `scene.textures = [${textures.join(", ")}];`,
+    `const scene = ${JSON.stringify(data, null, 2)};`,
+    `scene.textures = [${images(compiled.textures)}];`,
+    ...variants.map(
+      (variant, i) =>
+        `scene.media.variants[${i}].textures = [${images(variant.textures)}];`,
+    ),
     `export default scene;`,
     "",
   ].join("\n");

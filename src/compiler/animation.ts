@@ -73,6 +73,14 @@ export function readAnimation(styles: Styles): AnimationSpec | null {
     return null;
   }
 
+  // animation: none, like CSS: no animation (in @media (prefers-reduced-motion))
+  if (
+    value.length === 1 &&
+    value[0].type === "IDENT" &&
+    value[0].value === "none"
+  )
+    return null;
+
   // 1. The shorthand: the name first, then the easing anywhere, then the rest
   const [name, ...others] = value;
   const { easing, rest } = findEasing(others);
