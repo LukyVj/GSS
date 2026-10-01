@@ -16,7 +16,7 @@ What the language and the tools can do today. Each feature is detailed in the re
 | Multiplication       | `cube * 12`; numbered ids: `cube#petal * 12` → `#petal-1` … `#petal-12`                                                                                                                     | 3                     |
 | Groups               | `group#g { … }`: transforms and animation apply to the children, positions are relative                                                                                                     | 45, 48                |
 | Scene styling        | `scene { floor; background; light; ambient; camera-* }`                                                                                                                                     | 11, 15, 16            |
-| Selectors            | `<shape>`, `.class`, `#id`, `*`, lists `a, b`, descendant `a b`, faces `::face(front)`, `::top`, `::bottom`, `:hover` (on objects and their groups), `:has()` (`#g:has(sphere:hover) cube`) | 4, 37, 47, 59, 62, 69 |
+| Selectors            | `<shape>`, `.class`, `#id`, `*`, lists `a, b`, descendant `a b`, child `a > b`, siblings `a + b` / `a ~ b`, faces `::face(front)`, `::top`, `::bottom`, `:hover` (on objects and their groups), `:has()` (`#g:has(sphere:hover) cube`) | 4, 37, 47, 59, 62, 69, 73 |
 | Cascade              | specificity (id 10,000, class 100, tag 1), last one wins, `!important` in 2 passes                                                                                                          | 4, 38                 |
 | Animation            | `@keyframes` (`from`, `to`, `%`), `animation: name duration [easing] [delay] [count \| infinite] [direction] [fill-mode]` and the six longhands, computed in the shader                     | 21, 22, 23, 24, 70    |
 | Easings              | `linear`, `ease`, `ease-in`, `ease-out`, `ease-in-out`, `cubic-bezier()`, `linear()`, in `@keyframes` and `transition`                                                                      | 68                    |
@@ -116,7 +116,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 4. [x] Textures: `texture: url("…")`, one image per face, `::face()` (decision 59)
 5. [x] Animation controls ✅ decision 70: delay, iteration count, direction, fill mode, and the six longhands
 6. [x] `@media` ✅ decision 71: any media query the browser knows (width, orientation, `prefers-color-scheme`, `prefers-reduced-motion`…), up to 4 per scene
-7. [ ] Selectors / nesting (combinators `>` `+` `~`, etc.)
+7. [ ] Selectors / nesting: combinators `>` `+` `~` ✅ decision 73 (including relative selectors in `:has()`); nested style rules with `&` still to do
 8. [x] `:hover` ✅ decision 62 (picking pass → `uHover[]`), `transition` ✅ decision 68 (one per object; per-property lists later), `:has()` ✅ decision 69 (`#g:has(sphere:hover) cube`, any selector inside)
 9. [ ] `transform-origin`
 10. [ ] Fog
@@ -211,6 +211,8 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median: orrery 20 ms, tod
 - Shadows on by default or not (cost: one more ray march per pixel).
 
 ## Done recently
+
+- Child (`>`), adjacent sibling (`+`) and subsequent sibling (`~`) combinators, including mixed chains, `:hover` and relative `:has()` selectors (decision 73)
 
 - Home page: the logo reveal, the SVG mark and the same logo live in GSS on either side of a slider (`src/home/logo-reveal.ts`)
 - `src/compiler/` sorted by pipeline stage: `syntax/`, `cascade/`, `values/`, `features/`, `shader/`, `registry/`, end-to-end tests in `tests/` (decision 72)
@@ -486,7 +488,7 @@ A score for how well a CSS notion carries over to GSS (a style language → an S
 | `.class` / `#id` / `*` | 1.0 | Already in GSS |
 | Selector list `a, b` | 1.0 | Already in GSS |
 | Descendant `a b` | 1.0 | Already in GSS |
-| Child `>` / adjacent `+` / sibling `~` | 1.0 | Nesting, priority #7 |
+| Child `>` / adjacent `+` / sibling `~` | 1.0 | Already in GSS (dec. 73) |
 | Column `\|\|` | 0.0 | Tables |
 | `&` nesting | 0.9 | Nesting, strong |
 | Attribute selectors | 0.4 | Few attributes in GSS |

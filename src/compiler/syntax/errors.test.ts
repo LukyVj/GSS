@@ -17,7 +17,7 @@ function pointedAt(source: string): string {
 
 describe("errors point at the code they are about", () => {
   it("an unexpected character", () => {
-    expect(pointedAt("@scene { cube; } cube { scale: 2 ~ }")).toBe("~");
+    expect(pointedAt("@scene { cube; } cube { scale: 2 ? }")).toBe("?");
   });
 
   it("a block never closed: its {", () => {

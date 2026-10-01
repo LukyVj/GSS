@@ -177,6 +177,10 @@
         {
           "match": ",",
           "name": "punctuation.separator.list.comma.gss"
+        },
+        {
+          "match": "[>+~]",
+          "name": "keyword.operator.combinator.gss"
         }
       ]
     },

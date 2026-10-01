@@ -2,7 +2,9 @@ import type { Rule } from "../syntax/ast";
 import { errorAt, spanOf } from "../syntax/errors";
 import { closingParen } from "../values/calc";
 import type { Token } from "../syntax/tokenizer";
-import type { SceneInstance } from "./expand";
+import { sceneNodes, type SceneInstance } from "./expand";
+
+type Combinator = " " | ">" | "+" | "~";
 
 // The properties of an instance after the cascade: { translate: [...], color: [...] }
 export type Styles = Record<string, Token[]>;
@@ -21,9 +23,11 @@ export type SimpleSelector = {
   tag: string | null;
   id: string | null;
   classes: string[];
-  // The descendant combinator: in "#letters #S #left", the selector is #left and
-  // its ancestors are [#letters, #S], from the outermost to the innermost
+  // The preceding compounds, from left to right (historically called ancestors).
+  // combinators[i] joins ancestors[i] to the next compound; absent means spaces.
   ancestors?: SimpleSelector[];
+  combinators?: Combinator[];
+  relative?: Combinator; // a leading combinator, only inside :has()
   face?: Face;
   hover?: boolean; // cube:hover, #g:hover
   has?: SimpleSelector[]; // #g:has(sphere, cube:hover): something inside matches one of them
@@ -43,62 +47,57 @@ export const FACES: Face[] = [
 // ::top is ::face(top): the faces a Minecraft-style block changes most
 const SHORTCUTS: Face[] = ["top", "bottom"];
 
-// The objects that must be hovered for this selector to match this node (an object,
-// or a group inside a :has()). "groups": the node's ancestors the selector may use.
+// A hover trigger must satisfy every part of one complete matching path.
+// Alternative paths are a union; multiple :hover conditions on a path intersect.
 function triggersOf(
   selector: SimpleSelector,
   node: SceneInstance,
-  groups: SceneInstance[],
   scene: SceneInstance[],
+  anchor?: SceneInstance,
 ): SceneInstance[] {
-  let triggers = scene; // everything, then each :hover and :has() narrows it down
-  const keep = (allowed: SceneInstance[]) => {
-    triggers = triggers.filter((other) => allowed.includes(other));
-  };
-  // One part of the selector, and the nodes it matched
-  const narrow = (part: SimpleSelector, matched: SceneInstance[]) => {
-    // cube:hover → the object itself; #g:hover → any object inside the group
-    if (part.hover) keep(matched.flatMap((m) => hoveredBy(m, scene)));
-    // #g:has(sphere:hover) → the spheres inside #g
-    const has = part.has ?? [];
-    if (has.some((inner) => needsHover(inner))) {
-      const found = matched.map((m) => hasTriggers(has, m, scene));
-      // null: true without the mouse in one of the groups, so nothing to narrow
-      if (found.every((f): f is SceneInstance[] => f !== null))
-        keep(found.flat());
-    }
-  };
-  narrow(selector, [node]);
-  for (const ancestor of selector.ancestors ?? []) {
-    // the groups of this node that match "#g"
-    narrow(
-      ancestor,
-      groups.filter((group) => matchesCompound(ancestor, group, scene)),
-    );
+  const parts = [...(selector.ancestors ?? []), selector];
+  const found = new Set<SceneInstance>();
+  for (const path of matchingPaths(selector, node, scene, anchor)) {
+    let triggers = scene;
+    parts.forEach((part, i) => {
+      const matched = path[i];
+      if (part.hover) {
+        const allowed = hoveredBy(matched, scene);
+        triggers = triggers.filter((other) => allowed.includes(other));
+      }
+      if (part.has?.some(needsHover)) {
+        const allowed = hasTriggers(part.has, matched, scene);
+        if (allowed !== null)
+          triggers = triggers.filter((other) => allowed.includes(other));
+      }
+    });
+    triggers.forEach((other) => found.add(other));
   }
-  return triggers;
+  return [...found];
 }
 
-// Hovering a group means hovering one of its objects
-function hoveredBy(node: SceneInstance, scene: SceneInstance[]): SceneInstance[] {
+// Hovering a group means hovering one of its drawable objects.
+function hoveredBy(
+  node: SceneInstance,
+  scene: SceneInstance[],
+): SceneInstance[] {
   return node.tag === "group"
     ? scene.filter((object) => object.groups.includes(node))
     : [node];
 }
 
-// The objects that, hovered, make "group:has(list)" true. null: it is true anyway,
-// since a selector of the list without :hover already matches inside the group.
+// null: one alternative matches without the mouse, so it imposes no constraint.
 function hasTriggers(
   list: SimpleSelector[],
-  group: SceneInstance,
+  anchor: SceneInstance,
   scene: SceneInstance[],
 ): SceneInstance[] | null {
   const found: SceneInstance[] = [];
   for (const inner of list) {
-    for (const { node, groups } of inside(group, scene)) {
-      if (!matchesAmong(inner, node, groups, scene)) continue;
+    for (const node of sceneNodes(scene)) {
+      if (!matches(inner, node, scene, anchor)) continue;
       if (!needsHover(inner)) return null;
-      found.push(...triggersOf(inner, node, groups, scene));
+      found.push(...triggersOf(inner, node, scene, anchor));
     }
   }
   return found;
@@ -145,20 +144,58 @@ function splitAtCommas(tokens: Token[]): Token[][] {
 
 // "#letters #S #left" → #left, with the ancestors #letters and #S.
 // The tokenizer skips spaces, so we find them back with the positions of the tokens.
-export function parseSelector(tokens: Token[]): SimpleSelector {
+export function parseSelector(
+  tokens: Token[],
+  relative = false,
+): SimpleSelector {
   const compounds: Token[][] = [[]];
-  let depth = 0; // inside :has( … ), a space belongs to the selector in it
+  const combinators: Combinator[] = [];
+  let leading: Combinator | undefined;
+  let depth = 0;
   tokens.forEach((token, i) => {
-    if (depth === 0 && i > 0 && spaceBetween(tokens[i - 1], token))
+    const current = compounds[compounds.length - 1];
+    const explicit =
+      depth === 0 &&
+      token.type === "PUNCT" &&
+      [">", "+", "~"].includes(token.value);
+    if (explicit) {
+      const combinator = token.value as Combinator;
+      if (current.length === 0) {
+        if (i === 0 && relative) leading = combinator;
+        else
+          throw errorAt(
+            token,
+            "A combinator needs a selector on both sides (a leading combinator is only allowed in :has())",
+          );
+      } else {
+        combinators.push(combinator);
+        compounds.push([]);
+      }
+      return;
+    }
+    if (
+      depth === 0 &&
+      current.length > 0 &&
+      i > 0 &&
+      spaceBetween(tokens[i - 1], token)
+    ) {
+      combinators.push(" ");
       compounds.push([]);
+    }
     compounds[compounds.length - 1].push(token);
     if (token.type === "PUNCT" && token.value === "(") depth++;
     if (token.type === "PUNCT" && token.value === ")") depth--;
   });
+  if (compounds.some((part) => part.length === 0))
+    throw errorAt(tokens, "A selector is required after a combinator or comma");
   const selectors = compounds.map(parseCompound);
   const selector = selectors[selectors.length - 1];
-  if (selectors.length > 1) selector.ancestors = selectors.slice(0, -1);
-  if (selector.ancestors?.some((ancestor) => ancestor.face !== undefined)) {
+  if (selectors.length > 1) {
+    selector.ancestors = selectors.slice(0, -1);
+    selector.combinators = combinators;
+  }
+  if (leading) selector.relative = leading;
+  if (selector.ancestors?.some((part) => part.face !== undefined)) {
     throw errorAt(
       tokens,
       "A face goes at the end of the selector, on the object: cube.grass::top, not #g::top cube",
@@ -262,7 +299,7 @@ function parseCompound(tokens: Token[]): SimpleSelector {
             tokens,
             ":has() needs a selector, like: #g:has(sphere:hover) cube",
           );
-        selector.has = parts.map((part) => parseSelector(part));
+        selector.has = parts.map((part) => parseSelector(part, true));
         const nested = (inner: SimpleSelector) =>
           inner.has !== undefined ||
           (inner.ancestors ?? []).some((a) => a.has !== undefined);
@@ -282,45 +319,76 @@ function parseCompound(tokens: Token[]): SimpleSelector {
     }
   }
 
-  // An object holds nothing: :has() matches a group, written group or #g / .g
-  if (selector.has && selector.tag !== null && selector.tag !== "group")
+  // An object holds nothing, but can look for following siblings with :has().
+  if (
+    selector.has &&
+    selector.tag !== null &&
+    selector.tag !== "group" &&
+    !selector.has.some(
+      (inner) => inner.relative === "+" || inner.relative === "~",
+    )
+  )
     throw errorAt(
       tokens,
-      ":has() goes on a group: an object holds nothing, like: #g:has(sphere:hover) cube",
+      ":has() goes on a group for descendants: an object holds nothing. Use #g:has(sphere:hover) cube, or cube:has(+ sphere) for a sibling.",
     );
 
   return selector;
 }
 
-// Does this selector target this instance? The scene (every object) is
-// needed for :has(), which looks inside the groups.
+// Read every chain from right to left. Backtracking matters for mixed chains:
+// an earlier ancestor/sibling can succeed even when the nearest one fails.
+function* matchingPaths(
+  selector: SimpleSelector,
+  node: SceneInstance,
+  scene: SceneInstance[],
+  anchor?: SceneInstance,
+): Generator<SceneInstance[]> {
+  const parts = [...(selector.ancestors ?? []), selector];
+  function* visit(
+    at: number,
+    current: SceneInstance,
+  ): Generator<SceneInstance[]> {
+    if (!matchesCompound(parts[at], current, scene)) return;
+    if (at === 0) {
+      if (!anchor || related(anchor, current, selector.relative ?? " "))
+        yield [current];
+      return;
+    }
+    const combinator = selector.combinators?.[at - 1] ?? " ";
+    const candidates =
+      combinator === " " || combinator === ">"
+        ? current.groups.slice().reverse()
+        : sceneNodes(scene);
+    for (const previous of candidates) {
+      if (!related(previous, current, combinator)) continue;
+      for (const path of visit(at - 1, previous)) yield [...path, current];
+    }
+  }
+  yield* visit(parts.length - 1, node);
+}
+
+function related(
+  left: SceneInstance,
+  right: SceneInstance,
+  combinator: Combinator,
+): boolean {
+  if (combinator === " ") return right.groups.includes(left);
+  const parent = (node: SceneInstance) => node.groups[node.groups.length - 1];
+  if (combinator === ">") return parent(right) === left;
+  if (parent(left) !== parent(right)) return false;
+  return combinator === "+"
+    ? left.siblingIndex + 1 === right.siblingIndex
+    : left.siblingIndex < right.siblingIndex;
+}
+
 export function matches(
   selector: SimpleSelector,
   instance: SceneInstance,
   scene: SceneInstance[],
+  anchor?: SceneInstance,
 ): boolean {
-  return matchesAmong(selector, instance, instance.groups, scene);
-}
-
-// The node, and its ancestors among "groups" (from the outermost to the innermost)
-function matchesAmong(
-  selector: SimpleSelector,
-  node: SceneInstance,
-  groups: SceneInstance[],
-  scene: SceneInstance[],
-): boolean {
-  if (!matchesCompound(selector, node, scene)) return false;
-
-  // The ancestors, read from right to left like a browser does: each one must be
-  // one of the groups, further out than the previous one
-  const ancestors = selector.ancestors ?? [];
-  let g = groups.length - 1; // the innermost group first
-  for (let a = ancestors.length - 1; a >= 0; a--) {
-    while (g >= 0 && !matchesCompound(ancestors[a], groups[g], scene)) g--;
-    if (g < 0) return false; // no group left for this ancestor
-    g--; // the next ancestor must be further out
-  }
-  return true;
+  return !matchingPaths(selector, instance, scene, anchor).next().done;
 }
 
 // The instance itself, without looking at its groups
@@ -335,33 +403,10 @@ function matchesCompound(
     !selector.classes.every((className) => instance.classes.includes(className))
   )
     return false;
-  // :has(): a group that holds a match for one of the selectors
   if (!selector.has) return true;
-  return (
-    instance.tag === "group" &&
-    selector.has.some((inner) =>
-      inside(instance, scene).some(({ node, groups }) =>
-        matchesAmong(inner, node, groups, scene),
-      ),
-    )
+  return selector.has.some((inner) =>
+    sceneNodes(scene).some((node) => matches(inner, node, scene, instance)),
   );
-}
-
-// Everything inside a group, at any depth: its objects and the groups between, each
-// with its ancestors inside the group (the group itself and what holds it do not count)
-function inside(
-  group: SceneInstance,
-  scene: SceneInstance[],
-): { node: SceneInstance; groups: SceneInstance[] }[] {
-  const found = new Map<SceneInstance, SceneInstance[]>();
-  for (const object of scene) {
-    const depth = object.groups.indexOf(group);
-    if (depth === -1) continue; // not inside this group
-    const between = object.groups.slice(depth + 1);
-    found.set(object, between);
-    between.forEach((node, i) => found.set(node, between.slice(0, i)));
-  }
-  return [...found].map(([node, groups]) => ({ node, groups }));
 }
 
 // ⬇️ TA MISSION : return a number as big as the selector is specific
@@ -374,7 +419,7 @@ export function specificity(selector: SimpleSelector): number {
     (selector.hover ? 100 : 0) + // a pseudo-class counts like a class, like CSS
     // :has() weighs like its most specific selector, like CSS
     Math.max(0, ...(selector.has ?? []).map((inner) => specificity(inner)));
-  // like CSS, the ancestors add up: "#letters cube" beats "cube" and "#letters"
+  // Like CSS, preceding compounds add up: "#letters cube" beats "cube" and "#letters"
   const ancestors = selector.ancestors ?? [];
   return ancestors.reduce((sum, ancestor) => sum + specificity(ancestor), own);
 }
@@ -384,7 +429,8 @@ export function specificity(selector: SimpleSelector): number {
 export function needsHover(selector: SimpleSelector): boolean {
   return [selector, ...(selector.ancestors ?? [])].some(
     (part) =>
-      part.hover === true || (part.has ?? []).some((inner) => needsHover(inner)),
+      part.hover === true ||
+      (part.has ?? []).some((inner) => needsHover(inner)),
   );
 }
 
@@ -466,9 +512,7 @@ export function resolveStyles(
             ({ selector }) =>
               needsHover(selector) && matches(selector, instance, instances),
           )
-          .flatMap(({ selector }) =>
-            triggersOf(selector, instance, instance.groups, instances),
-          )
+          .flatMap(({ selector }) => triggersOf(selector, instance, instances))
           .map((other) => other.index),
       ),
     ].sort((a, b) => a - b),

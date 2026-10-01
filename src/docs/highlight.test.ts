@@ -61,6 +61,6 @@ describe("highlightGss", () => {
 describe("classifyGss", () => {
   it("never throws on unfinished code", () => {
     expect(() => classifyGss("cube { color: # ~ /* not closed")).not.toThrow();
-    expect(classifyGss("a ~").at(-1)).toEqual({ start: 2, end: 3, kind: "invalid" });
+    expect(classifyGss("a ?").at(-1)).toEqual({ start: 2, end: 3, kind: "invalid" });
   });
 });

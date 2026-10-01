@@ -11,13 +11,29 @@ export type SceneInstance = {
   groups: SceneInstance[];
 };
 
+// Keep the structural nodes separately from the drawable objects. Empty groups
+// still occupy a sibling position, but never receive a shader/material index.
+const structures = new WeakMap<SceneInstance[], SceneInstance[]>();
+
+export function sceneNodes(instances: SceneInstance[]): SceneInstance[] {
+  return (
+    structures.get(instances) ?? [
+      ...new Set(instances.flatMap((o) => [...o.groups, o])),
+    ]
+  );
+}
+
 export function expandScene(elements: SceneElement[]): SceneInstance[] {
   const instances: SceneInstance[] = [];
+  const nodes: SceneInstance[] = [];
 
   // Reads a list of elements. "groups" = the groups we are currently inside
   function walk(elements: SceneElement[], groups: SceneInstance[]): void {
     // Siblings = everything in the same @scene block or group, multiplied ones counted one by one
-    const siblingCount = elements.reduce((sum, element) => sum + element.count, 0);
+    const siblingCount = elements.reduce(
+      (sum, element) => sum + element.count,
+      0,
+    );
     let siblingIndex = 0;
     for (const element of elements) {
       for (let n = 1; n <= element.count; n++) {
@@ -40,6 +56,7 @@ export function expandScene(elements: SceneElement[]): SceneInstance[] {
           groups,
         };
 
+        nodes.push(instance);
         if (element.children) {
           // a group: we go inside, one group deeper
           walk(element.children, [...groups, instance]);
@@ -52,5 +69,6 @@ export function expandScene(elements: SceneElement[]): SceneInstance[] {
   }
 
   walk(elements, []);
+  structures.set(instances, nodes);
   return instances;
 }
