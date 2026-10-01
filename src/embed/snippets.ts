@@ -9,7 +9,7 @@ export const EMBED_SNIPPETS: {
     title: "A tag",
     who: "no build step",
     lang: "html",
-    code: `<script type="module" src="https://gss-lang.dev/embed.js"></script>\n\n<gss-scene src="logo.gss"></gss-scene>\n<gss-scene controls="none">\n  <script type="text/gss"> @scene { sphere; } </script>\n</gss-scene>`,
+    code: `<script type="module" src="https://www.gss-lang.dev/embed.js"></script>\n\n<gss-scene src="logo.gss"></gss-scene>\n<gss-scene controls="none">\n  <script type="text/gss"> @scene { sphere; } </script>\n</gss-scene>`,
   },
   {
     title: "A function",

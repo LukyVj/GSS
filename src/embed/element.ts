@@ -3,7 +3,7 @@ import { readControls, sourceUrl } from "./options";
 
 // <gss-scene>: a GSS scene in any page, without a build step (decision 63).
 //
-//   <script type="module" src="https://gss-lang.dev/embed.js"></script>
+//   <script type="module" src="https://www.gss-lang.dev/embed.js"></script>
 //   <gss-scene src="logo.gss"></gss-scene>
 //   <gss-scene controls="none"><script type="text/gss"> @scene { sphere; } </script></gss-scene>
 //

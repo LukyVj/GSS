@@ -3,6 +3,7 @@ import type { CompiledScene } from "../compiler";
 import { createTextureStore, resolveImage } from "./textures";
 import { pickPixel, decodeId, hoverValues } from "./hover";
 import { createClock } from "./clock";
+import type { FrameProbe } from "../profiler/profiler";
 
 // Draws compiled GSS scenes in a canvas, with a camera the mouse can move.
 // It never imports the compiler (decision 63): a page that embeds a scene compiled
@@ -27,6 +28,8 @@ export type ViewOptions = {
   controls?: boolean;
   // The URL of the .gss file: its images are read next to it
   base?: string;
+  // Dev only: gets the WebGL context, returns what to tell about each frame
+  profile?: (gl: WebGL2RenderingContext) => FrameProbe;
 };
 
 // The vertex shader: a giant triangle that covers the whole canvas.
@@ -63,6 +66,7 @@ export function createView(
   const gl = canvas.getContext("webgl2");
   if (!gl) throw new Error("WebGL2 is not available in this browser");
   gl.bindVertexArray(gl.createVertexArray());
+  const probe = options.profile?.(gl); // undefined: no profiler, nothing happens
   // The images, kept for every scene this renderer will load
   const store = createTextureStore(gl);
 
@@ -251,6 +255,8 @@ export function createView(
     resize();
     gl!.viewport(0, 0, canvas.width, canvas.height);
 
+    probe?.frameStart(now, canvas.width, canvas.height);
+
     if (scene) {
       // We send the state to the shader
       gl!.useProgram(scene.program);
@@ -264,12 +270,14 @@ export function createView(
         gl!.bindTexture(gl!.TEXTURE_2D, texture);
         gl!.uniform1i(scene!.uTextures[i], i);
       });
+      probe?.drawStart(); // before the picking: its pass costs GPU time too
       // :hover: which object is under the mouse, then uHover[] for every slot
       if (scene.hover.length > 0) {
         const id = pick(scene);
         gl!.uniform1fv(scene.uHover, hoverValues(scene.hover, id));
       }
       gl!.drawArrays(gl!.TRIANGLES, 0, 3);
+      probe?.drawEnd();
     }
     frameId = requestAnimationFrame(frame);
   }
@@ -277,11 +285,13 @@ export function createView(
 
   return {
     show(compiled) {
+      const start = performance.now();
       const next = createGpuScene(
         compiled.shader,
         compiled.textures,
         compiled.hover,
       ); // GLSL errors
+      probe?.shaderBuilt(performance.now() - start);
       if (scene) gl.deleteProgram(scene.program);
       scene = next;
       applyCameraSettings(compiled.camera);

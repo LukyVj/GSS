@@ -17,7 +17,13 @@ mountSearch();
 const $ = <T extends HTMLElement>(selector: string) =>
   document.querySelector<T>(selector)!;
 
-const renderer = createRenderer($<HTMLCanvasElement>("#scene"));
+// Dev only: the performance panel. In a build, import.meta.env.DEV is false:
+// the import never happens, and the profiler is not in the bundle.
+const perf = import.meta.env.DEV ? await import("./profiler/panel") : null;
+const renderer = createRenderer($<HTMLCanvasElement>("#scene"), {
+  profile: perf?.profile,
+});
+perf?.mountPanel($(".statusbar"));
 
 // A shared link opens its scene; otherwise the first example
 const start = (await decodeCode(location.hash)) ?? EXAMPLES[0].code;
