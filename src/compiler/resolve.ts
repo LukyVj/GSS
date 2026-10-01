@@ -293,17 +293,20 @@ export function specificity(selector: SimpleSelector): number {
     selector.classes.length * 100 +
     (selector.tag ? 1 : 0) +
     (selector.face ? 1 : 0) +
-    (selector.hover ? 100 : 0); // a pseudo-class counts like a class, like CSS
+    (selector.hover ? 100 : 0) + // a pseudo-class counts like a class, like CSS
+    // :has() weighs like its most specific selector, like CSS
+    Math.max(0, ...(selector.has ?? []).map((inner) => specificity(inner)));
   // like CSS, the ancestors add up: "#letters cube" beats "cube" and "#letters"
   const ancestors = selector.ancestors ?? [];
   return ancestors.reduce((sum, ancestor) => sum + specificity(ancestor), own);
 }
 
-// Does this selector need a hovered object? cube:hover, or #g:hover cube
+// Does this selector need a hovered object? cube:hover, #g:hover cube,
+// or #g:has(sphere:hover) cube
 export function needsHover(selector: SimpleSelector): boolean {
-  return (
-    selector.hover === true ||
-    (selector.ancestors ?? []).some((ancestor) => ancestor.hover === true)
+  return [selector, ...(selector.ancestors ?? [])].some(
+    (part) =>
+      part.hover === true || (part.has ?? []).some((inner) => needsHover(inner)),
   );
 }
 

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { tokenize } from "./tokenizer";
-import { parseSelector } from "./resolve";
+import { parseSelector, specificity, needsHover } from "./resolve";
 import { parse } from "./parser";
 
 const selector = (text: string) => parseSelector(tokenize(text));
@@ -68,5 +68,25 @@ describe(":has(): the rule list", () => {
     );
     expect(rules).toHaveLength(2);
     expect(rules[0].selector).toHaveLength(9); // # g : has ( sphere , cube ) cube
+  });
+});
+
+// Step 2: what a :has() weighs, and when it needs the mouse
+describe(":has(): specificity and hover", () => {
+  it("weighs like its most specific selector, like CSS", () => {
+    expect(specificity(selector("#g:has(sphere)"))).toBe(10_000 + 1);
+    expect(specificity(selector("#g:has(sphere, #a.big)"))).toBe(
+      10_000 + 10_100,
+    );
+    expect(specificity(selector("#g:has(#inner sphere:hover) cube"))).toBe(
+      10_000 + (10_000 + 1 + 100) + 1,
+    );
+  });
+
+  it("needs the mouse when the selector inside needs it", () => {
+    expect(needsHover(selector("#g:has(sphere) cube"))).toBe(false);
+    expect(needsHover(selector("#g:has(sphere:hover) cube"))).toBe(true);
+    expect(needsHover(selector("#g:has(#inner:hover sphere) cube"))).toBe(true);
+    expect(needsHover(selector("#g:has(sphere, cube:hover)"))).toBe(true);
   });
 });
