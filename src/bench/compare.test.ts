@@ -95,12 +95,12 @@ describe("diffPixels", () => {
 
   it("finds nothing between two identical images", () => {
     const a = image([10, 20, 30, 255], [0, 0, 0, 255]);
-    expect(diffPixels(a, a.slice())).toEqual({ changed: 0, total: 2, maxDelta: 0, edges: 0 });
+    expect(diffPixels(a, a.slice())).toEqual({ changed: 0, total: 2, maxDelta: 0, stray: 0 });
   });
   it("forgives tiny differences (GPU rounding), not real ones", () => {
     const a = image([100, 100, 100, 255], [100, 100, 100, 255]);
     const b = image([102, 100, 99, 255], [140, 100, 100, 255]);
-    expect(diffPixels(a, b, 2)).toEqual({ changed: 1, total: 2, maxDelta: 40, edges: 0 });
+    expect(diffPixels(a, b, 2)).toEqual({ changed: 1, total: 2, maxDelta: 40, stray: 0 });
   });
   it("paints the changed pixels red in the diff image", () => {
     const a = image([100, 100, 100, 255], [100, 100, 100, 255]);
@@ -117,17 +117,22 @@ describe("diffPixels", () => {
   it("calls a silhouette moved by one pixel an edge flip", () => {
     const a = image(D, D, L, D, D, L, L, L, L);
     const b = image(D, D, L, D, D, D, L, L, L); // the middle-right pixel joined the object
-    expect(diffPixels(a, b, 2, undefined, 3)).toEqual({ changed: 1, total: 9, maxDelta: 180, edges: 1 });
+    expect(diffPixels(a, b, 2, undefined, 3)).toEqual({ changed: 1, total: 9, maxDelta: 180, stray: 1 });
   });
-  it("never calls a new color an edge flip", () => {
+  it("calls a lone changed pixel stray, whatever its color (GPU rounding)", () => {
     const a = image(D, D, L, D, D, L, L, L, L);
     const b = image(D, D, L, D, D, N, L, L, L);
-    expect(diffPixels(a, b, 2, undefined, 3).edges).toBe(0);
+    expect(diffPixels(a, b, 2, undefined, 3).stray).toBe(1);
   });
-  it("needs the old color still around the pixel", () => {
-    const a = image(L, L, L, L, D, L, L, L, L); // a one-pixel object
-    const b = image(L, L, L, L, L, L, L, L, L); // gone: not an edge flip
-    expect(diffPixels(a, b, 2, undefined, 3).edges).toBe(0);
+  it("never calls a patch of new colors stray", () => {
+    const a = image(D, D, L, D, D, L, L, L, L);
+    const b = image(D, D, L, D, D, N, L, L, N); // two touching pixels of a color found nowhere
+    expect(diffPixels(a, b, 2, undefined, 3)).toMatchObject({ changed: 2, stray: 0 });
+  });
+  it("needs the old color still around an edge flip", () => {
+    const a = image(L, L, L, L, D, D, L, L, L); // a two-pixel object
+    const b = image(L, L, L, L, L, L, L, L, L); // gone: two touching pixels, not stray
+    expect(diffPixels(a, b, 2, undefined, 3).stray).toBe(0);
   });
   it("paints the edge flips yellow", () => {
     const a = image(D, D, L, D, D, L, L, L, L);
@@ -142,7 +147,7 @@ describe("diffPixels", () => {
 });
 
 describe("the verdict of a whole comparison", () => {
-  const same = visualVerdict("orrery.png", { changed: 0, total: 4, maxDelta: 1, edges: 0 });
+  const same = visualVerdict("orrery.png", { changed: 0, total: 4, maxDelta: 1, stray: 0 });
   const steady = report("a", [[4, 1], [4.1, 1], [4, 1.1]]);
 
   it("is clean when no judged metric got worse and every image is identical", () => {
@@ -158,16 +163,16 @@ describe("the verdict of a whole comparison", () => {
     expect(hasRegression(comparePerf(steady, jumpy), [same])).toBe(false);
   });
   it("is a regression when one pixel changed, or an image is missing", () => {
-    expect(hasRegression([], [visualVerdict("a.png", { changed: 1, total: 4, maxDelta: 30, edges: 0 })])).toBe(true);
+    expect(hasRegression([], [visualVerdict("a.png", { changed: 1, total: 4, maxDelta: 30, stray: 0 })])).toBe(true);
     expect(hasRegression([], [visualVerdict("a.png", null)])).toBe(true);
   });
-  it("accepts a few edge flips, not a whole shifted outline", () => {
-    const few = visualVerdict("a.png", { changed: 17, total: 2_000_000, maxDelta: 120, edges: 17 });
-    expect(few.verdict).toBe("edges");
+  it("accepts a few stray pixels, not a whole shifted outline", () => {
+    const few = visualVerdict("a.png", { changed: 17, total: 2_000_000, maxDelta: 120, stray: 17 });
+    expect(few.verdict).toBe("stray");
     expect(hasRegression([], [few])).toBe(false);
-    const many = visualVerdict("a.png", { changed: 5000, total: 2_000_000, maxDelta: 120, edges: 5000 });
+    const many = visualVerdict("a.png", { changed: 5000, total: 2_000_000, maxDelta: 120, stray: 5000 });
     expect(many.verdict).toBe("changed");
-    const mixed = visualVerdict("a.png", { changed: 18, total: 2_000_000, maxDelta: 120, edges: 17 });
+    const mixed = visualVerdict("a.png", { changed: 18, total: 2_000_000, maxDelta: 120, stray: 17 });
     expect(mixed.verdict).toBe("changed");
   });
   it("writes it all as a markdown report, with the range of the rounds", () => {

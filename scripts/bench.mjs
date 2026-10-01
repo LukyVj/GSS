@@ -17,8 +17,8 @@
 // Another commit is benched in a git worktree (.bench-worktrees/), with today's bench
 // and profiler copied in: the same measuring tool on the old engine.
 // The comparison goes to bench-results/compare.md (and the terminal); exit code 1 when
-// a metric got worse beyond the noise, or one pixel changed that is not an edge flip
-// (a silhouette moved by one pixel, GPU rounding: see diffPixels in src/bench/compare.ts).
+// a metric got worse beyond the noise, or one pixel changed that is not stray
+// (GPU rounding: an edge flip or an isolated pixel, see diffPixels in src/bench/compare.ts).
 //
 // Timings only mean something on a real GPU, in a visible window (the default):
 // keep the window in view while it runs, and the machine quiet.
