@@ -1,7 +1,16 @@
 {
   "name": "gss-lang",
-  "private": true,
-  "version": "0.0.0",
+  "version": "0.0.1",
+  "description": "Write 3D scenes in CSS: selectors, the cascade, @keyframes, and more compiled into a single WebGL2 shader.",
+  "keywords": [
+    "css",
+    "webgl",
+    "glsl",
+    "3d",
+    "shader",
+    "raymarching"
+  ],
+  "homepage": "https://www.gss-lang.dev",
   "license": "Apache-2.0",
   "type": "module",
   "exports": {
@@ -36,15 +45,22 @@
     "build:lib": "vite build -c vite.lib.config.ts && tsc -p tsconfig.lib.json",
     "captures": "node scripts/capture-showcase.mjs",
     "bench": "node scripts/bench.mjs run",
-    "bench:compare": "node scripts/bench.mjs compare"
+    "bench:compare": "node scripts/bench.mjs compare",
+    "prepublishOnly": "npm run build:lib && npx vitest run --exclude '**/gpu.test.ts'"
+  },
+  "peerDependencies": {
+    "vite": ">=5"
+  },
+  "peerDependenciesMeta": {
+    "vite": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "playwright": "^1.63.0",
     "typescript": "~6.0.2",
     "vite": "^8.3.0",
-    "vitest": "^5.0.2"
-  },
-  "dependencies": {
+    "vitest": "^5.0.2",
     "@codemirror/autocomplete": "^6.20.3",
     "@codemirror/commands": "^6.11.1",
     "@codemirror/lang-cpp": "^6.0.3",

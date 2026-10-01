@@ -1,8 +1,8 @@
 <p align="center">
-  <a href="https://gss-lang.dev">
+  <a href="https://www.gss-lang.dev">
     <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="public/marks/lockup-dark.svg" />
-      <img src="public/marks/lockup-light.svg" alt="GSS" height="56" />
+      <source media="(prefers-color-scheme: dark)" srcset="https://www.gss-lang.dev/marks/lockup-dark.svg" />
+      <img src="https://www.gss-lang.dev/marks/lockup-light.svg" alt="GSS" height="56" />
     </picture>
   </a>
 </p>
@@ -11,13 +11,13 @@
 Selectors, the cascade and <code>@keyframes</code>, compiled into a single raymarching shader.</p>
 
 <p align="center">
-  <a href="https://gss-lang.dev">Website</a> ·
-  <a href="https://gss-lang.dev/playground">Playground</a> ·
-  <a href="https://gss-lang.dev/docs">Reference</a>
+  <a href="https://www.gss-lang.dev">Website</a> ·
+  <a href="https://www.gss-lang.dev/playground">Playground</a> ·
+  <a href="https://www.gss-lang.dev/docs">Reference</a>
 </p>
 
 <p align="center">
-  <a href="https://gss-lang.dev/playground"><img src="public/marks/social-playground.png" alt="A GSS scene next to its render" width="720" /></a>
+  <a href="https://www.gss-lang.dev/playground"><img src="https://www.gss-lang.dev/marks/social-playground.png" alt="A GSS scene next to its render" width="720" /></a>
 </p>
 
 ---
@@ -54,6 +54,57 @@ fragment shader: signed distance fields, raymarched in WebGL2. No Three.js, no m
 }
 ```
 
+## Install
+
+Three ways to put a scene on a page.
+
+**A tag, no build step.** Load `embed.js` once, then point a `<gss-scene>` at a `.gss` file, or
+write the scene inside it:
+
+```html
+<script type="module" src="https://www.gss-lang.dev/embed.js"></script>
+
+<gss-scene src="logo.gss"></gss-scene>
+<gss-scene controls="none">
+  <script type="text/gss"> @scene { sphere; } </script>
+</gss-scene>
+```
+
+**A function, with any bundler.** The compiler runs in the page:
+
+```sh
+npm install gss-lang
+```
+
+```js
+import { mount } from "gss-lang";
+
+const scene = mount(canvas, "@scene { sphere; }");
+scene.update(otherSource);
+scene.destroy();
+```
+
+**Compiled at build time, with Vite.** The page ships a small runtime and the shader, not the
+compiler:
+
+```js
+// vite.config.ts
+import gss from "gss-lang/vite";
+export default { plugins: [gss()] };
+
+// main.ts
+import { mount } from "gss-lang/runtime";
+import logo from "./logo.gss";
+mount(canvas, logo);
+```
+
+With TypeScript, add `"types": ["gss-lang/client"]` to `tsconfig.json` so `.gss` imports are typed.
+
+An embedded scene behaves like the playground: drag turns the camera, the wheel zooms, `:hover`
+works (`controls="none"` keeps only `:hover`). It starts when it comes into view, sleeps when it
+leaves it, and stands still under `prefers-reduced-motion`. Images are read next to the `.gss`
+file, like `url()` in a stylesheet.
+
 ## Why
 
 Front-end developers already know how to describe what things look like. The moment they want to
@@ -83,9 +134,8 @@ and a readable path toward the shader underneath. It is not meant to replace GLS
   inside: `hsl(calc(sibling-index() * 45) 90% 60%)`.
 - **The scene**: `floor`, `background`, `light`, `ambient` and an orbit camera.
 
-Every property, shape and selector is described once in the registry
-(`src/compiler/registry.ts`), and the [reference](https://gss-lang.dev/docs) is generated from it,
-with a live example for each entry.
+Every property, shape, selector and function has its page in the
+[reference](https://www.gss-lang.dev/docs), with a live example to edit.
 
 ## How it works
 
@@ -94,43 +144,28 @@ GSS text → tokenizer → parser → scene expansion → cascade → validation
 ```
 
 Everything that can be decided at compile time is: the cascade, the selectors, the units,
-`var()`, the math and the colors, in that order. The shader receives final values. The runtime only holds what changes every frame (time,
-camera) and sends it as uniforms.
-
-The design decisions, and why they were made, are recorded in [`DECISIONS.md`](DECISIONS.md).
+`var()`, the math and the colors, in that order. The shader receives final values. The runtime
+only holds what changes every frame (time, camera, the hovered object) and sends it as uniforms.
 
 ## Tools
 
-- **Playground**: [gss-lang.dev/playground](https://gss-lang.dev/playground). Located errors,
-  examples, the generated GLSL, share by URL, export to Shadertoy.
-- **Editor extension** for VS Code and Cursor: syntax highlighting, formatting and the `.gss` file
-  icon (`editors/vscode`).
-- **Formatter**: `npm run format` (or `Shift+Alt+F` in the playground).
-
-## Develop
-
-```sh
-npm install
-npm run dev      # the site: home, playground, docs, brand
-npm test         # Vitest
-npm run build    # type-check, then build to dist/
-```
-
-| Path | What lives there |
-| --- | --- |
-| `src/compiler/` | tokenizer, parser, cascade, validation, variables, math, colors, GLSL codegen, the registry |
-| `src/runtime/` | WebGL2 renderer, camera, editor, share links |
-| `src/docs/` | the generated reference and the syntax highlighter |
-| `src/playground/`, `src/home/` | the playground and the home page |
-| `editors/vscode/` | the VS Code / Cursor extension |
-| `DESIGN.md` | the visual identity ("Distance field") |
+- **Playground**: [gss-lang.dev/playground](https://www.gss-lang.dev/playground). Located errors,
+  examples, the generated GLSL, share by URL, export to Shadertoy, and a formatter
+  (`Shift+Alt+F`).
+- **Reference**: [gss-lang.dev/docs](https://www.gss-lang.dev/docs), searchable, one live example
+  per entry.
+- **Showcase**: [gss-lang.dev/showcase](https://www.gss-lang.dev/showcase), what you can make, for
+  designers, creative coders and developers.
 
 ## Status
 
-Early and moving fast. The package is not on npm yet. The syntax may still change; each change is
-logged in `DECISIONS.md`.
+Version 0.0.1: early, and moving fast. The syntax may still change between versions.
+
+## License
+
+[Apache 2.0](LICENSE).
 
 ## Brand
 
 The mark, the wordmark, the icon and the social cards are on
-[gss-lang.dev/brand](https://gss-lang.dev/brand).
+[gss-lang.dev/brand](https://www.gss-lang.dev/brand).
