@@ -1,8 +1,6 @@
 import "../styles/gss-code.css";
-import { highlightGss } from "../docs/highlight";
 import { formatGss } from "../docs/format";
 import { FIRST_SCENE } from "../docs/guide";
-import { PROPERTIES, SELECTORS, SHAPE_DOCS } from "../compiler/registry/registry";
 import { createRenderer } from "../runtime/renderer";
 import { connectEditor } from "../runtime/editor";
 import { encodeCode } from "../runtime/share";
@@ -23,20 +21,11 @@ if (heroField) {
 }
 
 // The home page: design/reference/png/01-home.png.
+// Pillar highlighting and registry counts are prerendered (src/home/prerender.ts).
 const $ = <T extends HTMLElement>(selector: string) => document.querySelector<T>(selector)!;
 
 // A link shared before the playground moved to playground.html: #code=… still opens it there
 if (location.hash.startsWith("#code=")) location.replace(`./playground.html${location.hash}`);
-
-// ----- The code of the pillars, colored like everywhere else -----
-for (const code of document.querySelectorAll<HTMLElement>("code[data-gss]")) {
-  code.innerHTML = highlightGss(code.textContent ?? "");
-}
-
-// ----- Numbers: read from the registry, so they are always true -----
-$("#count-shapes").textContent = String(SHAPE_DOCS.length);
-$("#count-properties").textContent = String(PROPERTIES.length);
-$("#count-selectors").textContent = String(SELECTORS.length);
 
 // The first scene of the docs, in jelly (the material of the logo) on a dark floor that sits
 // in the page: glass shows the floor through it, so on a dark floor it turns muddy
