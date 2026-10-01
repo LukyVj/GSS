@@ -17,9 +17,10 @@ const LOW_FPS = 55; // under: visibly not smooth (60 Hz wobbles between 59 and 6
 const SLOW_FRAME_P95_MS = 20; // over: 1 frame in 20 misses the screen
 const HEAVY_GPU_MS = 12; // over: the GPU uses 3/4 of the frame, no room left
 const SLOW_SHADER_MS = 500; // over: typing feels stuck
+const BUSY_CPU_MS = 4; // over: the draw call waits for something (the GPU, most of the time)
 
 export function reportRows(report: Report): Row[] {
-  const { frame, fps, gpu, resolution, shaderMs } = report;
+  const { frame, fps, gpu, cpu, resolution, shaderMs } = report;
   const { width, height } = resolution;
   return [
     fps === null
@@ -47,6 +48,14 @@ export function reportRows(report: Report): Row[] {
             value: `${ms(gpu.medianMs)} ms · p95 ${ms(gpu.p95Ms)}`,
             warning: gpu.medianMs > HEAVY_GPU_MS,
           },
+
+    cpu === null
+      ? { label: "cpu", ...NONE }
+      : {
+          label: "cpu",
+          value: `${ms(cpu.medianMs)} ms · p95 ${ms(cpu.p95Ms)}`,
+          warning: cpu.medianMs > BUSY_CPU_MS,
+        },
 
     {
       label: "pixels",

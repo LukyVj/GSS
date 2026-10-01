@@ -13,6 +13,7 @@ export type Report = {
   frame: Summary | null; // time between two frames
   fps: number | null;
   gpu: Summary | null | "unavailable";
+  cpu: Summary | null; // the draw on the CPU: uniforms, picking, drawArrays (a GPU wait shows here)
   resolution: { width: number; height: number };
   shaderMs: number | null;
 };
@@ -21,9 +22,12 @@ const CAPACITY = 300; // about 5 s at 60 fps
 
 export function createProfiler(
   timer: GpuTimer,
-): FrameProbe & { report(): Report } {
+  clock: () => number = () => performance.now(), // the tests give their own
+): FrameProbe & { report(): Report; reset(): void } {
   const intervals = createSamples(CAPACITY);
   const gpu = createSamples(CAPACITY);
+  const cpu = createSamples(CAPACITY);
+  let drawStartedAt = 0;
   let last: number | null = null; // the start of the previous frame
   let resolution = { width: 0, height: 0 };
   let shaderMs: number | null = null;
@@ -36,18 +40,26 @@ export function createProfiler(
     },
 
     drawStart() {
+      drawStartedAt = clock();
       timer.begin();
     },
 
     drawEnd() {
       timer.end();
       timer.collect().forEach((ms) => gpu.push(ms));
+      cpu.push(clock() - drawStartedAt);
     },
 
     shaderBuilt(ms) {
       shaderMs = ms;
+      this.reset();
+    },
+
+    // Forgets every sample (the bench calls it between two measures)
+    reset() {
       intervals.clear();
       gpu.clear();
+      cpu.clear();
       last = null; // the next frame starts a new count
     },
 
@@ -57,6 +69,7 @@ export function createProfiler(
         frame,
         fps: frame ? 1000 / frame.meanMs : null,
         gpu: timer.available ? summarize(gpu.values()) : "unavailable",
+        cpu: summarize(cpu.values()),
         resolution,
         shaderMs,
       };

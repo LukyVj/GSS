@@ -1,7 +1,8 @@
 import type { CameraSettings } from "../compiler/camera";
 import type { CompiledScene } from "../compiler";
 import { createTextureStore, resolveImage } from "./textures";
-import { pickPixel, decodeId, hoverValues } from "./hover";
+import { pickPixel, hoverValues } from "./hover";
+import { createPicker } from "./picker";
 import { createClock } from "./clock";
 import type { FrameProbe } from "../profiler/profiler";
 
@@ -70,31 +71,10 @@ export function createView(
   // The images, kept for every scene this renderer will load
   const store = createTextureStore(gl);
 
-  // :hover: a 1 × 1 image where the picking pass writes the id under the mouse
-  const pickTexture = gl.createTexture();
-  gl.bindTexture(gl.TEXTURE_2D, pickTexture);
-  gl.texImage2D(
-    gl.TEXTURE_2D,
-    0,
-    gl.RGBA8,
-    1,
-    1,
-    0,
-    gl.RGBA,
-    gl.UNSIGNED_BYTE,
-    null,
-  );
-  const pickBuffer = gl.createFramebuffer(); // "draw here instead of the canvas"
-  gl.bindFramebuffer(gl.FRAMEBUFFER, pickBuffer);
-  gl.framebufferTexture2D(
-    gl.FRAMEBUFFER,
-    gl.COLOR_ATTACHMENT0,
-    gl.TEXTURE_2D,
-    pickTexture,
-    0,
-  );
-  gl.bindFramebuffer(gl.FRAMEBUFFER, null); // back to the canvas
-  const picked = new Uint8Array(4); // the pixel read back: r, g, b, a
+  // :hover: the picking pass reads the id under the mouse without stopping the CPU
+  // (picker.ts). The answer comes one or two frames later; until then, the last one holds.
+  const picker = createPicker(gl);
+  let hovered = 0; // the id under the mouse, as last read back (0: nothing)
 
   function compileShader(type: number, source: string): WebGLShader {
     const shader = gl!.createShader(type)!;
@@ -202,29 +182,29 @@ export function createView(
     pointer = null; // nothing is hovered any more
   });
 
-  // :hover: draws the scene on one pixel, under the mouse, and reads which
-  // object is there. Returns its id, 0 when there is none.
-  function pick(scene: GpuScene): number {
-    if (!pointer) return 0;
-    const pixel = pickPixel(
-      pointer.x,
-      pointer.y,
-      canvas.getBoundingClientRect(),
-      canvas.width,
-      canvas.height,
-    );
-    if (!pixel) return 0;
-    gl!.bindFramebuffer(gl!.FRAMEBUFFER, pickBuffer);
-    gl!.viewport(0, 0, 1, 1);
-    gl!.uniform1i(scene.uPicking, 1);
-    gl!.uniform2f(scene.uPick, pixel[0], pixel[1]);
-    gl!.drawArrays(gl!.TRIANGLES, 0, 3);
-    gl!.readPixels(0, 0, 1, 1, gl!.RGBA, gl!.UNSIGNED_BYTE, picked);
-    // back to the canvas
-    gl!.uniform1i(scene.uPicking, 0);
-    gl!.bindFramebuffer(gl!.FRAMEBUFFER, null);
-    gl!.viewport(0, 0, canvas.width, canvas.height);
-    return decodeId(picked);
+  // :hover: asks which object is under the mouse. The picking pass is the scene
+  // drawn on one pixel; picker.ts brings its id back later, without waiting.
+  function requestPick(scene: GpuScene): void {
+    const pixel = pointer
+      ? pickPixel(
+          pointer.x,
+          pointer.y,
+          canvas.getBoundingClientRect(),
+          canvas.width,
+          canvas.height,
+        )
+      : null;
+    if (!pixel) {
+      hovered = 0; // outside the canvas: nothing is hovered, at once
+      return;
+    }
+    picker.request(() => {
+      gl!.uniform1i(scene.uPicking, 1);
+      gl!.uniform2f(scene.uPick, pixel[0], pixel[1]);
+      gl!.drawArrays(gl!.TRIANGLES, 0, 3);
+      gl!.uniform1i(scene.uPicking, 0);
+    });
+    gl!.viewport(0, 0, canvas.width, canvas.height); // the picker drew on 1×1
   }
 
   // --- 4. Adapt the canvas size to its box ---
@@ -273,8 +253,10 @@ export function createView(
       probe?.drawStart(); // before the picking: its pass costs GPU time too
       // :hover: which object is under the mouse, then uHover[] for every slot
       if (scene.hover.length > 0) {
-        const id = pick(scene);
-        gl!.uniform1fv(scene.uHover, hoverValues(scene.hover, id));
+        const id = picker.poll(); // the answer to an earlier request, if it came back
+        if (id !== null && pointer) hovered = id;
+        requestPick(scene);
+        gl!.uniform1fv(scene.uHover, hoverValues(scene.hover, hovered));
       }
       gl!.drawArrays(gl!.TRIANGLES, 0, 3);
       probe?.drawEnd();
@@ -294,6 +276,7 @@ export function createView(
       probe?.shaderBuilt(performance.now() - start);
       if (scene) gl.deleteProgram(scene.program);
       scene = next;
+      hovered = 0; // the ids belong to the new scene now
       applyCameraSettings(compiled.camera);
     },
     sampleFrames() {
@@ -323,8 +306,7 @@ export function createView(
       if (scene) gl.deleteProgram(scene.program);
       scene = null;
       store.destroy();
-      gl.deleteFramebuffer(pickBuffer);
-      gl.deleteTexture(pickTexture);
+      picker.destroy();
       gl.getExtension("WEBGL_lose_context")?.loseContext();
     },
   };

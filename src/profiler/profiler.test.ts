@@ -81,6 +81,37 @@ describe("createProfiler", () => {
     expect(report.shaderMs).toBe(120);
   });
 
+  it("times the draw on the CPU, from drawStart to drawEnd", () => {
+    let now = 0;
+    const profiler = createProfiler(fakeTimer().timer, () => now);
+    for (const ms of [0.4, 0.5, 9]) {
+      profiler.drawStart();
+      now += ms; // a blocking readPixels would show here
+      profiler.drawEnd();
+    }
+    expect(profiler.report().cpu).toMatchObject({ count: 3, medianMs: 0.5, p99Ms: 9 });
+  });
+
+  it("forgets the CPU times on a new shader too", () => {
+    let now = 0;
+    const profiler = createProfiler(fakeTimer().timer, () => now);
+    profiler.drawStart();
+    now += 2;
+    profiler.drawEnd();
+    profiler.shaderBuilt(50);
+    expect(profiler.report().cpu).toBeNull();
+  });
+
+  it("forgets every sample on reset(), and keeps the shader time", () => {
+    const profiler = createProfiler(fakeTimer().timer);
+    profiler.shaderBuilt(80);
+    frames(profiler, [0, 16, 32]);
+    profiler.reset();
+    frames(profiler, [500]); // no fake 468 ms frame after a reset either
+    expect(profiler.report().frame).toBeNull();
+    expect(profiler.report().shaderMs).toBe(80);
+  });
+
   it("keeps only the last 300 frames", () => {
     const profiler = createProfiler(fakeTimer().timer);
     frames(

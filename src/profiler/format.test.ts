@@ -14,6 +14,7 @@ const report: Report = {
   frame: summary(16.66, 18.21, 25.08),
   fps: 59.6,
   gpu: summary(4.24, 5.12, 7.9),
+  cpu: summary(0.31, 0.52, 0.9),
   resolution: { width: 2400, height: 1350 },
   shaderMs: 142.4,
 };
@@ -21,11 +22,12 @@ const value = (r: Report, label: string) =>
   reportRows(r).find((row) => row.label === label);
 
 describe("reportRows", () => {
-  it("lists fps, frame, gpu, pixels and shader, in that order", () => {
+  it("lists fps, frame, gpu, cpu, pixels and shader, in that order", () => {
     expect(reportRows(report).map((row) => row.label)).toEqual([
       "fps",
       "frame",
       "gpu",
+      "cpu",
       "pixels",
       "shader",
     ]);
@@ -35,6 +37,13 @@ describe("reportRows", () => {
   });
   it("gives the frame time as median, p95 and p99, one decimal", () => {
     expect(value(report, "frame")?.value).toBe("16.7 ms · p95 18.2 · p99 25.1");
+  });
+  it("gives the CPU time of the draw as median and p95", () => {
+    expect(value(report, "cpu")?.value).toBe("0.3 ms · p95 0.5");
+  });
+  it("warns when the draw keeps the CPU more than 4 ms: it is waiting for something", () => {
+    expect(value({ ...report, cpu: summary(6, 8, 9) }, "cpu")?.warning).toBe(true);
+    expect(value(report, "cpu")?.warning).toBe(false);
   });
   it("gives the GPU time as median and p95", () => {
     expect(value(report, "gpu")?.value).toBe("4.2 ms · p95 5.1");
