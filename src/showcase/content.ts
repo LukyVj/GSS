@@ -12,7 +12,7 @@ import everything from "../scene.gss?raw";
 import ripple from "../scenes/ripple.gss?raw";
 import proximity from "../scenes/proximity.gss?raw";
 import watch from "../scenes/watch.gss?raw";
-import orbit from "../scenes/orbit-sequencer.gss?raw";
+import orbit from "../scenes/orbit.gss?raw";
 import perfume from "../scenes/perfume.gss?raw";
 
 import { FIRST_SCENE } from "../docs/guide";
