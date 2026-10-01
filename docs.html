@@ -550,6 +550,29 @@
       <a class="to-playground" href="./playground.html">playground →</a>
     </header>
     <main id="docs"></main>
+    <!-- First paint: one entry (hash or the first). enablePages takes over once the module runs.
+         With JS disabled this script never runs, so the whole reference stays readable. -->
+    <script>
+      (() => {
+        const docs = document.getElementById("docs");
+        if (!docs || !docs.querySelector("article")) return;
+        const raw = decodeURIComponent(location.hash.replace(/^#/, ""));
+        const base = raw.split("--")[0];
+        const entries = [...docs.querySelectorAll(":scope > section > article")];
+        const byId = base && document.getElementById(base);
+        const show =
+          (byId && byId.matches("article") && byId) ||
+          docs.querySelector(`:scope > section#${CSS.escape(base)} > article`) ||
+          entries[0];
+        if (!show) return;
+        for (const article of entries) article.hidden = article !== show;
+        for (const section of docs.querySelectorAll(":scope > section")) {
+          section.hidden = !section.contains(show);
+        }
+        const header = docs.querySelector(":scope > header");
+        if (header) header.hidden = show !== entries[0];
+      })();
+    </script>
     <script type="module" src="/src/docs/main.ts"></script>
   </body>
 </html>

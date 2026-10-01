@@ -1,24 +1,11 @@
 import "../styles/gss-code.css";
-import {
-  PROPERTIES,
-  AT_RULES,
-  SELECTORS,
-  SHAPE_DOCS,
-  FUNCTIONS,
-} from "../compiler/registry/registry";
-import { renderDocs } from "./render";
 import { enableTryIt } from "./playground";
 import { enablePages } from "./pages";
 import { mountSearch } from "./search-box";
 
+// The reference HTML is injected at build / in dev by src/vite/prerender-site.ts.
+// This script only wires the interactive bits (hash pages, Try it, DocSearch).
 const docs = document.querySelector<HTMLElement>("#docs")!;
-docs.innerHTML = renderDocs(
-  PROPERTIES,
-  AT_RULES,
-  SELECTORS,
-  SHAPE_DOCS,
-  FUNCTIONS,
-);
 enableTryIt(docs);
 enablePages(docs);
 mountSearch();

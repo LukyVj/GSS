@@ -88,8 +88,10 @@ export function enablePages(root: HTMLElement): void {
 
   async function show(): Promise<void> {
     const { page, target } = resolvePage(location.hash, index);
-    const article = document.getElementById(page)!;
-    const section = article.closest("section")!;
+    const article = document.getElementById(page);
+    if (!(article instanceof HTMLElement)) return;
+    const section = article.closest("section");
+    if (!(section instanceof HTMLElement)) return;
 
     if (page !== shown) {
       closePlayground(); // a live example must not keep running on a hidden page
