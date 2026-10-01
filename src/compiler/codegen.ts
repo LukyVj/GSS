@@ -760,6 +760,18 @@ const SHAPES: Record<
   },
 };
 
+// The shapes worth a bounding test: their distance walks dozens of segments.
+// Measured (npm run bench, dpr 2, M4 Pro): bounding every object made the scenes of
+// simple shapes slower (spiral +44 %, todal +21 %): for a sphere, the test costs as
+// much as the shape, and one branch per object breaks the straight-line code GPUs
+// run best. Bounding only path and prism keeps what orrery and macropad gained.
+const BOUNDED = new Set(["path", "prism"]);
+
+// The radius of an object's bounding sphere, for the tests
+export function shapeRadius(tag: string, styles: Styles): number | null {
+  return SHAPES[tag](styles, { functions: new Map() }).radius;
+}
+
 // The names of the shapes the compiler can draw: the docs must list them all
 export function shapeNames(): string[] {
   return Object.keys(SHAPES);
@@ -1357,9 +1369,9 @@ export function generateShader(
       transformLines(styles, keyframes),
     );
 
-    // Only a plain union can be skipped: a subtraction, an intersection or a blend
-    // changes the result even when the object is far
-    if (radius === null || !plainUnion(instance)) {
+    // Only a costly shape is worth the test, and only a plain union can be skipped:
+    // a subtraction, an intersection or a blend changes the result even when far
+    if (radius === null || !BOUNDED.has(instance.tag) || !plainUnion(instance)) {
       return [
         ` // ${label(instance)}`,
         `  q = p;`,
