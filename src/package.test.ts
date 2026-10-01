@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 
 // The npm package (gss-lang) and its public page on npm: the README.
 // Read as text, like the scenes: no Node API in the tests.
-const files = import.meta.glob<string>(["../package.json", "../README.md", "../LICENSE"], {
+const files = import.meta.glob<string>(["../package.json", "../README.md", "../LICENSE", "../package-lock.json"], {
   query: "?raw",
   import: "default",
   eager: true,
@@ -12,9 +12,19 @@ const readme = files["../README.md"] ?? "";
 const license = files["../LICENSE"] ?? "";
 
 describe("the npm package", () => {
-  it("can be published, as 0.0.1", () => {
+  it("can be published, as 0.0.2", () => {
     expect(pkg.private).toBeFalsy();
-    expect(pkg.version).toBe("0.0.1");
+    expect(pkg.version).toBe("0.0.2");
+  });
+
+  it("keeps the lockfile, README and CDN entry in sync", () => {
+    const lock = JSON.parse(files["../package-lock.json"]);
+    expect(lock.version).toBe(pkg.version);
+    expect(lock.packages[""].version).toBe(pkg.version);
+    expect(readme).toContain(`npm install gss-lang@${pkg.version}`);
+    expect(readme).toContain(`https://cdn.jsdelivr.net/npm/gss-lang@${pkg.version}/lib/embed.js`);
+    expect(pkg.exports["./embed"]).toBe("./lib/embed.js");
+    expect(pkg.scripts["build:lib"]).toContain("vite.embed.config.ts --outDir lib");
   });
 
   it("says what it is, and where to find more", () => {

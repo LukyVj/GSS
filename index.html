@@ -326,6 +326,7 @@
         padding: 0;
       }
       .pillar {
+        min-width: 0;
         display: flex;
         flex-direction: column;
         gap: 14px;
@@ -502,12 +503,17 @@
       }
       footer nav {
         display: flex;
+        flex-wrap: wrap;
         gap: 24px;
       }
       footer nav a {
         color: var(--gss-ash);
       }
 
+      @media (max-width: 600px) {
+        .topbar .wrap { flex-wrap: wrap; height: auto; min-height: 72px; gap: 12px; padding-top: 12px; padding-bottom: 12px; }
+        .topbar nav { flex-wrap: wrap; gap: 16px; }
+      }
       /* ----- Smaller screens ----- */
       @media (max-width: 960px) {
         .wrap {
@@ -736,6 +742,31 @@ vec2 map(vec3 p) { … }</code></pre>
           <div class="number"><strong>1</strong><span>shader</span></div>
         </div>
       </section>
+      <section class="pillars" id="installation" aria-label="Installation">
+        <div class="wrap">
+          <article class="pillar">
+            <div class="eyebrow">Install · v%GSS_VERSION%</div>
+            <h2>npm package</h2>
+            <p>Compile and render GSS in your application, with TypeScript types included.</p>
+            <pre><code>npm install gss-lang@%GSS_VERSION%</code></pre>
+            <a href="./docs.html#install-package">package setup →</a>
+          </article>
+          <article class="pillar">
+            <div class="eyebrow">Build time</div>
+            <h2>Vite plugin</h2>
+            <p>Included in gss-lang. Import .gss files and ship the runtime with the compiled scene.</p>
+            <pre><code>import gss from "gss-lang/vite";</code></pre>
+            <a href="./docs.html#install-vite">Vite setup →</a>
+          </article>
+          <article class="pillar">
+            <div class="eyebrow">No build step</div>
+            <h2>CDN</h2>
+            <p>Load the versioned browser module, then add a &lt;gss-scene&gt; to your page.</p>
+            <pre><code>&lt;script type="module" src="https://cdn.jsdelivr.net/npm/gss-lang@%GSS_VERSION%/lib/embed.js"&gt;&lt;/script&gt;</code></pre>
+            <a href="./docs.html#install-cdn">CDN setup →</a>
+          </article>
+        </div>
+      </section>
     </main>
 
     <footer>
@@ -745,6 +776,8 @@ vec2 map(vec3 p) { … }</code></pre>
           shader.</span
         >
         <nav aria-label="Footer">
+          <a href="https://www.npmjs.com/package/gss-lang/v/%GSS_VERSION%" aria-label="GSS version %GSS_VERSION%">v%GSS_VERSION%</a>
+          <a href="./docs.html#installation">installation</a>
           <a href="./playground.html">playground</a>
           <a href="./docs.html">docs</a>
           <a href="./showcase.html">showcase</a>

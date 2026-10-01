@@ -146,6 +146,41 @@
         color: var(--gss-bone);
         cursor: pointer;
       }
+      .docs-footer { padding: 24px; color: var(--gss-dim); border-top: 1px solid var(--gss-line); font-size: 12px; }
+      .toc-group { margin: 3px 0; }
+      .toc-group > summary {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 44px;
+        box-sizing: border-box;
+        padding: 8px 10px;
+        border: 1px solid transparent;
+        border-radius: 4px;
+        list-style: none;
+        color: var(--gss-ash);
+        cursor: pointer;
+        user-select: none;
+      }
+      .toc-group > summary::-webkit-details-marker { display: none; }
+      .toc-group > summary::marker { content: ""; }
+      .toc-group > summary:hover { background: var(--gss-raised); color: var(--gss-bone); }
+      .toc-group > summary:focus-visible {
+        outline: 2px solid var(--gss-signal);
+        outline-offset: -2px;
+        background: var(--gss-raised);
+      }
+      .toc-group[open] > summary { color: var(--gss-bone); }
+      .toc-group[data-current] > summary { color: var(--gss-signal); }
+      .toc-group-title { flex: 1; font-size: 12px; font-weight: 500; }
+      .toc-group-count { font-size: 10px; color: var(--gss-dim); font-variant-numeric: tabular-nums; }
+      .toc-group[data-current] .toc-group-count { color: var(--gss-signal); }
+      .toc-chevron { flex: none; fill: none; stroke: currentColor; stroke-width: 1.5; transition: transform 150ms ease; }
+      .toc-group[open] > summary .toc-chevron { transform: rotate(90deg); }
+      .toc .toc-group > ul { margin: 2px 0 10px 10px; padding-left: 10px; border-left: 1px solid var(--gss-line); }
+      .toc .toc-group li a { margin-left: 0; padding: 7px 10px; overflow-wrap: anywhere; }
+      @media (prefers-reduced-motion: reduce) { .toc-chevron { transition: none; } }
+      .toc .toc-category { color: var(--gss-dim); }
       .toc h3 {
         margin: 18px 0 6px;
         font-weight: 400;
@@ -203,7 +238,7 @@
           margin-top: 8px;
         }
         .toc ul {
-          columns: 11rem;
+          columns: 1;
         }
         .toc li a {
           margin-left: 0;
@@ -550,6 +585,7 @@
       <a class="to-playground" href="./playground.html">playground →</a>
     </header>
     <main id="docs"></main>
+    <footer class="docs-footer">GSS <a href="https://www.npmjs.com/package/gss-lang/v/%GSS_VERSION%">v%GSS_VERSION%</a> · <a href="#installation">installation</a></footer>
     <!-- First paint: one entry (hash or the first). enablePages takes over once the module runs.
          With JS disabled this script never runs, so the whole reference stays readable. -->
     <script>

@@ -111,6 +111,14 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 | Profiler (dev only)        | a panel over the playground scene, `perf` button or Alt+P: fps, frame, GPU and CPU time, real pixels, shader build time; over budget in signal                               | 64         |
 | Bench                      | `npm run bench:compare -- main --dpr 2`: another commit against the working tree, 3 alternating rounds, images compared pixel by pixel, report in `bench-results/compare.md` | 64         |
 
+## Release 0.0.2 preparation
+
+- [x] Package and lockfile version set to 0.0.2; version displayed in site footers.
+- [x] Installation docs: Embedding a scene, npm, included Vite plugin, and versioned CDN module shipped in the package (decision 85).
+- [x] Documentation grouped by subject with alphabetical sorting and explicit order overrides (decision 85).
+- [x] Changelog and README updated for decisions 73–85 and the new showcase scenes.
+- [ ] Publish 0.0.2 to npm, create its tag/release, then deploy the site with the versioned CDN instructions.
+
 ## Priorities
 
 1. [x] Loops: **option B chosen** (decision 52): `* n` + `calc(sibling-index())`, as in CSS. `@for` / `@each` later, only to change the shape at each step or to walk through a list
@@ -153,7 +161,7 @@ Next, on this page:
 
 - [x] Landing page (`/`, decision 51)
 - [x] Root README
-- [ ] Rename the folder / GitHub repo `csl` → `gss` (the npm package is already `gss-lang`)
+- [x] GitHub repository renamed to `GSS`; the local folder remains `csl`
 - [x] npm publishing: `gss-lang` 0.0.1
 
 ### Playground
@@ -221,6 +229,8 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 - Composing surface effects (a "textual shader graph"): to be split before deciding: deforming the shape with noise (a `displace` property, it changes the SDF and can slow the ray march), a `toon` material next to the others, and lighting effects (rim light, fresnel).
 
 ## Done recently
+
+- Prepared 0.0.2: versioned installation and CDN package entry, site footer version, documentation navigation grouped by subject (decision 85)
 
 - `filter` on objects and groups: pixel filters on their own pixels (and in reflections), `blur()` and `bloom()` as layers carried in the alpha (decision 84)
 - `filter` on the scene: `brightness()`, `contrast()`, `saturate()`, `grayscale()`, `sepia()`, `hue-rotate()`, `invert()`, `grain()` in the scene's shader, `blur()` and `bloom()` as passes after it (decision 83)

@@ -56,13 +56,15 @@ fragment shader: signed distance fields, raymarched in WebGL2. No Three.js, no m
 
 ## Install
 
-Three ways to put a scene on a page.
+Three ways to put a scene on a page, using `gss-lang@0.0.2`. The CDN URL becomes available when this version is published.
+
+The [installation guide](https://www.gss-lang.dev/docs#installation) covers npm, Vite and CDN setup.
 
 **A tag, no build step.** Load `embed.js` once, then point a `<gss-scene>` at a `.gss` file, or
 write the scene inside it:
 
 ```html
-<script type="module" src="https://www.gss-lang.dev/embed.js"></script>
+<script type="module" src="https://cdn.jsdelivr.net/npm/gss-lang@0.0.2/lib/embed.js"></script>
 
 <gss-scene src="logo.gss"></gss-scene>
 <gss-scene controls="none">
@@ -73,7 +75,7 @@ write the scene inside it:
 **A function, with any bundler.** The compiler runs in the page:
 
 ```sh
-npm install gss-lang
+npm install gss-lang@0.0.2
 ```
 
 ```js
@@ -84,7 +86,7 @@ scene.update(otherSource);
 scene.destroy();
 ```
 
-**Compiled at build time, with Vite.** The page ships a small runtime and the shader, not the
+**Compiled at build time, with Vite.** The plugin is included in `gss-lang@0.0.2`; no separate plugin package is needed. The page ships a small runtime and the shader, not the
 compiler:
 
 ```js
@@ -126,13 +128,16 @@ and a readable path toward the shader underneath. It is not meant to replace GLS
   shortcuts `gold`, `chrome`, `ice`.
 - **Textures**: `texture: url("dirt.png")` projected on each face, a different image per face
   (the Minecraft grass block), `image-rendering: pixelated` and `texture-size` to repeat it.
-- **Motion**: `@keyframes` and `animation`, computed on the GPU.
+- **Motion**: `@keyframes`, animation controls and easings (including `steps()`), computed on the GPU; `transition` for hover changes.
 - **Math**: `calc()`, `min()`, `max()`, `clamp()`, trigonometry, and `sibling-index()` /
   `sibling-count()` for CSS-style loops.
 - **Variables**: `--size: 2` and `var(--size, 1)`, inherited from the scene to groups to objects,
   and animatable in `@keyframes`.
 - **Colors**: hex, `rgb()`, `hsl()` and the CSS named colors (`tomato`), with math and `var()`
   inside: `hsl(calc(sibling-index() * 45) 90% 60%)`.
+- **Gradients and filters**: linear and radial gradients on backgrounds and objects; color filters, blur, bloom and grain on scenes, objects and groups.
+- **Responsive scenes**: `@media`, `light-dark()` and conditional `if()` values.
+- **Generative values**: deterministic `random()`, inverse trigonometry, rounding, logarithms and `progress()`.
 - **The scene**: `floor`, `background`, `light`, `ambient` and an orbit camera.
 
 Every property, shape, selector and function has its page in the
@@ -160,7 +165,9 @@ only holds what changes every frame (time, camera, the hovered object) and sends
 
 ## Status
 
-Version 0.0.1: early, and moving fast. The syntax may still change between versions.
+Version 0.0.2 (release preparation): early, and moving fast. The syntax may still change between versions.
+
+See the [changelog](https://github.com/LukyVj/GSS/blob/main/CHANGELOG.md) for release history and unreleased changes.
 
 ## License
 

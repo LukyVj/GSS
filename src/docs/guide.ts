@@ -1,3 +1,4 @@
+import { VERSION, CDN_URL } from "../version";
 import { EMBED_SNIPPETS } from "../embed/snippets";
 import { escapeHtml } from "./escape";
 import { highlightCode } from "./highlight-code";
@@ -41,11 +42,15 @@ export const GETTING_STARTED: GuideEntry[] = [
       "Every property and at-rule is described below, each with examples you can try.",
     ],
   },
+];
+
+export const INSTALLATION: GuideEntry[] = [
   {
     anchor: "embedding",
     label: "Embedding a scene",
     paragraphs: [
-      'A GSS scene can live on any page, three ways. <b>A tag</b>, with no build step: load <code>embed.js</code> once, then write <code>&lt;gss-scene src="logo.gss"&gt;</code>, or put the code in a <code>&lt;script type="text/gss"&gt;</code> inside it. <b>A function</b>: <code>mount(canvas, source)</code> from the <code>gss-lang</code> package compiles in the page. <b>A build step</b>: with the Vite plugin, <code>import logo from "./logo.gss"</code> compiles at build time, and <code>mount</code> from <code>gss-lang/runtime</code> draws it without shipping the compiler (about 10 kB).',
+      `Current package: <code>gss-lang@${VERSION}</code>. Choose npm, the Vite plugin, or the versioned CDN script below.`,
+      'A GSS scene can live on any page, three ways. <b>A tag</b>, with no build step: load <code>embed.js</code> once, then write <code>&lt;gss-scene src="logo.gss"&gt;</code>, or put the code in a <code>&lt;script type="text/gss"&gt;</code> inside it. <b>A function</b>: <code>mount(canvas, source)</code> from the <code>gss-lang</code> package compiles in the page. <b>A build step</b>: with the Vite plugin, <code>import logo from "./logo.gss"</code> compiles at build time, and <code>mount</code> from <code>gss-lang/runtime</code> draws it without shipping the compiler.',
       ...EMBED_SNIPPETS.flatMap((way) => [
         `<b>${escapeHtml(way.title)}</b> (${escapeHtml(way.who)})`,
         `<pre><code class="gss">${highlightCode(way.lang, way.code)}</code></pre>`,
@@ -54,3 +59,35 @@ export const GETTING_STARTED: GuideEntry[] = [
     ],
   },
 ];
+
+INSTALLATION.push(
+  {
+    anchor: "install-package",
+    label: "Package (npm)",
+    paragraphs: [
+      `Install <code>gss-lang@${VERSION}</code> in your application. The package includes the compiler, renderer and TypeScript declarations.`,
+      `<pre><code class="sh">npm install gss-lang@${VERSION}</code></pre>`,
+      `<pre><code class="js">${highlightCode("js", EMBED_SNIPPETS[1].code)}</code></pre>`,
+      "Pass an existing canvas element to <code>mount</code>. Use <code>scene.update(source)</code> to replace the scene and <code>scene.destroy()</code> when removing it.",
+    ],
+  },
+  {
+    anchor: "install-vite",
+    label: "Vite plugin",
+    paragraphs: [
+      "The Vite plugin is included in the same package. It compiles .gss imports at build time so the browser only loads the renderer and compiled scene.",
+      `<pre><code class="sh">npm install gss-lang@${VERSION}\nnpm install --save-dev vite</code></pre>`,
+      `<pre><code class="js">${highlightCode("js", EMBED_SNIPPETS[2].code)}</code></pre>`,
+      'For TypeScript, add <code>"gss-lang/client"</code> to <code>compilerOptions.types</code> in tsconfig.json. Use <code>gss-lang/runtime</code> to draw the compiled scene.',
+    ],
+  },
+  {
+    anchor: "install-cdn",
+    label: "CDN (no build step)",
+    paragraphs: [
+      `Load the standalone browser module for <code>v${VERSION}</code> from jsDelivr. The version is pinned so updates do not change your scene unexpectedly. No npm install or bundler is needed.`,
+      `<pre><code class="html">${highlightCode("html", EMBED_SNIPPETS[0].code)}</code></pre>`,
+      `The script registers <code>&lt;gss-scene&gt;</code>. Its URL is <a href="${CDN_URL}">${CDN_URL}</a>. Use a .gss URL in <code>src</code>, or write inline GSS as shown above. Serve the page over HTTP(S).`,
+    ],
+  },
+);

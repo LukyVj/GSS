@@ -1,7 +1,7 @@
 {
   "name": "gss-lang",
-  "version": "0.0.1",
-  "description": "Write 3D scenes in CSS: selectors, the cascade, @keyframes, and more compiled into a single WebGL2 shader.",
+  "version": "0.0.2",
+  "description": "Write 3D scenes in CSS: selectors, the cascade, @keyframes, and more compiled into a GLSL shader.",
   "keywords": [
     "css",
     "webgl",
@@ -28,7 +28,8 @@
     },
     "./client": {
       "types": "./types/client.d.ts"
-    }
+    },
+    "./embed": "./lib/embed.js"
   },
   "files": [
     "lib",
@@ -42,7 +43,7 @@
     "format": "node scripts/format-gss.mjs",
     "format:check": "node scripts/format-gss.mjs --check",
     "generate-vscode-extension": "cd editors/vscode && npm install && npm run package",
-    "build:lib": "vite build -c vite.lib.config.ts && tsc -p tsconfig.lib.json",
+    "build:lib": "vite build -c vite.lib.config.ts && vite build -c vite.embed.config.ts --outDir lib && tsc -p tsconfig.lib.json",
     "captures": "node scripts/capture-showcase.mjs",
     "bench": "node scripts/bench.mjs run",
     "bench:compare": "node scripts/bench.mjs compare",

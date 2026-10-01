@@ -10,7 +10,8 @@ import { formatGss } from "./format";
 import { escapeHtml } from "./escape";
 import { highlightGss } from "./highlight";
 import { highlightSyntax } from "./highlight-code";
-import { GETTING_STARTED, type GuideEntry } from "./guide";
+import { groupEntries } from "./navigation";
+import { GETTING_STARTED, INSTALLATION, type GuideEntry } from "./guide";
 
 export { escapeHtml }; // the tests and other pages import it from here
 
@@ -132,7 +133,7 @@ export function renderShape(
     : `<dt>Own properties</dt>
         <dd>${links || "none"}</dd>
         <dt>Also</dt>
-        <dd><a href="#object-properties">every object property</a></dd>`;
+        <dd><a href="#object-properties">geometry properties</a></dd>`;
   return `
     <article class="property" id="shape-${escapeHtml(shape.name)}">
       <h3><code>${escapeHtml(shape.name)}</code></h3>
@@ -149,13 +150,20 @@ export function renderShape(
 type Section = {
   id: string;
   title: string;
+  category?: string;
   entries: { anchor: string; label: string; html: string }[];
 };
 
 function renderToc(sections: Section[]): string {
   const groups = sections.map(
-    (section) => `
-      <h3><a href="#${section.id}">${section.title}</a></h3>
+    (section, i) => `
+      ${section.category !== sections[i - 1]?.category ? `<h3 class="toc-category">${escapeHtml(section.category ?? "Reference")}</h3>` : ""}
+      <details class="toc-group" data-group="${escapeHtml(section.id)}"${section.id === "getting-started" ? " open" : ""}>
+        <summary>
+          <span class="toc-group-title">${escapeHtml(section.title)}</span>
+          <span class="toc-group-count" aria-hidden="true">${section.entries.length}</span>
+          <svg class="toc-chevron" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><path d="m6 4 4 4-4 4" /></svg>
+        </summary>
       <ul>
         ${section.entries
           .map(
@@ -163,7 +171,8 @@ function renderToc(sections: Section[]): string {
               `<li><a href="#${escapeHtml(entry.anchor)}"><code>${escapeHtml(entry.label)}</code></a></li>`,
           )
           .join("\n")}
-      </ul>`,
+      </ul>
+      </details>`,
   );
   return `
      <div class="toc-slot">
@@ -222,7 +231,7 @@ function renderGuideEntry(entry: GuideEntry): string {
 
 function renderSection(section: Section): string {
   return `
-    <section id="${section.id}">
+    <section id="${section.id}" data-category="${escapeHtml(section.category ?? "")}">
       <h2>${section.title}</h2>
       ${section.entries.map((entry) => entry.html).join("\n")}
     </section>`;
@@ -243,11 +252,11 @@ export function renderDocs(
       html: renderProperty(property),
     }));
 
-  const sections: Section[] = [
+  const original: Section[] = [
     {
       id: "getting-started",
       title: "Getting started",
-      entries: GETTING_STARTED.map((entry) => ({
+      entries: [...GETTING_STARTED, ...INSTALLATION].map((entry) => ({
         anchor: entry.anchor,
         label: entry.label,
         html: renderGuideEntry(entry),
@@ -300,6 +309,8 @@ export function renderDocs(
       entries: propertyEntries((property) => property.appliesTo === "scene"),
     },
   ];
+
+  const sections = groupEntries(original.flatMap((section) => section.entries));
 
   return `
     <header>

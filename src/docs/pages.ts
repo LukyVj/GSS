@@ -1,3 +1,4 @@
+import { enableTocGroups } from "./toc-groups";
 import { encodeCode } from "../runtime/share";
 import { mountCopyPage } from "./copy-page";
 import { closePlayground } from "./playground";
@@ -84,6 +85,7 @@ export function enablePages(root: HTMLElement): void {
     toggle.setAttribute("aria-expanded", String(open));
   });
 
+  const revealGroup = enableTocGroups(root);
   let shown: string | null = null;
 
   async function show(): Promise<void> {
@@ -104,6 +106,7 @@ export function enablePages(root: HTMLElement): void {
       for (const a of root.querySelectorAll(".toc a[aria-current]")) a.removeAttribute("aria-current");
       const currentLink = root.querySelector<HTMLElement>(`.toc a[href="#${CSS.escape(page)}"]`);
       currentLink?.setAttribute("aria-current", "page");
+      revealGroup(currentLink);
       // Keep it in view in the scrolling contents (the toc is sticky, so it is the offset parent)
       if (toc && currentLink && toc.scrollHeight > toc.clientHeight) {
         toc.scrollTop = currentLink.offsetTop - toc.clientHeight / 2;
@@ -119,7 +122,8 @@ export function enablePages(root: HTMLElement): void {
       crumbs.className = "crumbs";
       const current = document.createElement("span");
       current.textContent = titleOf(article);
-      crumbs.append(`${section.querySelector("h2")?.textContent?.toLowerCase() ?? ""} / `, current);
+      const category = section.dataset.category;
+      crumbs.append(`${category ? category + " / " : ""}${section.querySelector("h2")?.textContent ?? ""} / `, current);
       bar.append(crumbs, mountCopyPage(article));
       article.prepend(bar);
 

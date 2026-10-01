@@ -1,3 +1,5 @@
+import { VERSION, CDN_URL } from "../version";
+
 // The three ways to put a scene on a page (decision 63), shown on the showcase and in the docs
 export const EMBED_SNIPPETS: {
   title: string;
@@ -7,19 +9,19 @@ export const EMBED_SNIPPETS: {
 }[] = [
   {
     title: "A tag",
-    who: "no build step",
+    who: `CDN · v${VERSION} · no build step`,
     lang: "html",
-    code: `<script type="module" src="https://www.gss-lang.dev/embed.js"></script>\n\n<gss-scene src="logo.gss"></gss-scene>\n<gss-scene controls="none">\n  <script type="text/gss"> @scene { sphere; } </script>\n</gss-scene>`,
+    code: `<script type="module" src="${CDN_URL}"></script>\n\n<gss-scene src="logo.gss"></gss-scene>\n<gss-scene controls="none">\n  <script type="text/gss"> @scene { sphere; } </script>\n</gss-scene>`,
   },
   {
     title: "A function",
-    who: "npm i gss-lang",
+    who: `npm install gss-lang@${VERSION}`,
     lang: "js",
     code: `import { mount } from "gss-lang";\n\nconst scene = mount(canvas, "@scene { sphere; }");\nscene.update(otherSource);\nscene.destroy();`,
   },
   {
     title: "A build step",
-    who: "Vite, compiled ahead",
+    who: `gss-lang@${VERSION} · compiled with Vite`,
     lang: "js",
     code: `// vite.config.ts\nimport gss from "gss-lang/vite";\nexport default { plugins: [gss()] };\n\n// main.ts: the compiler stays out of the page\nimport { mount } from "gss-lang/runtime";\nimport logo from "./logo.gss";\nmount(canvas, logo);`,
   },

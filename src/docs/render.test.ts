@@ -174,17 +174,17 @@ describe("renderDocs", () => {
   });
 
   it("documents the selectors between the at-rules and the properties", () => {
-    const selectors = html.indexOf('<section id="selectors">');
-    expect(selectors).toBeGreaterThan(html.indexOf('<section id="at-rules">'));
+    const selectors = html.indexOf('<section id="selectors"');
+    expect(selectors).toBeGreaterThan(html.indexOf('<section id="at-rules"'));
     expect(selectors).toBeLessThan(
-      html.indexOf('<section id="object-properties">'),
+      html.indexOf('<section id="object-properties"'),
     );
   });
   it("documents the shapes between the selectors and the properties", () => {
-    const shapes = html.indexOf('<section id="shapes">');
-    expect(shapes).toBeGreaterThan(html.indexOf('<section id="selectors">'));
+    const shapes = html.indexOf('<section id="shapes"');
+    expect(shapes).toBeGreaterThan(html.indexOf('<section id="selectors"'));
     expect(shapes).toBeLessThan(
-      html.indexOf('<section id="object-properties">'),
+      html.indexOf('<section id="object-properties"'),
     );
     for (const shape of SHAPE_DOCS) {
       expect(html, shape.name).toContain(`id="shape-${shape.name}"`);

@@ -1,5 +1,6 @@
 import type { Plugin, ViteDevServer } from "vite";
 import { createServer } from "vite";
+import { VERSION } from "../version.ts";
 
 // Injects docs / home / showcase HTML at transformIndexHtml so those pages are
 // readable without JS. Playground stays client-rendered.
@@ -45,6 +46,7 @@ export function prerenderSite(): Plugin {
     transformIndexHtml: {
       order: "pre",
       async handler(html, ctx) {
+        html = html.replaceAll("%GSS_VERSION%", VERSION);
         const name = pageName(ctx.filename || ctx.path || "");
         if (name === "docs.html") {
           const { prerenderDocsHtml } = await load<{
