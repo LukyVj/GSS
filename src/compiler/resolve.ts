@@ -57,7 +57,7 @@ function triggersOf(
     if (!ancestor.hover) continue;
     // the groups of this object that match "#g"
     const groups = instance.groups.filter((group) =>
-      matchesCompound(ancestor, group),
+      matchesCompound(ancestor, group, instances),
     );
     // the objects inside one of these groups
     triggers = triggers.filter((other) =>
@@ -255,19 +255,31 @@ function parseCompound(tokens: Token[]): SimpleSelector {
   return selector;
 }
 
-// Does this selector target this instance?
+// Does this selector target this instance? The scene (every object) is
+// needed for :has(), which looks inside the groups.
 export function matches(
   selector: SimpleSelector,
   instance: SceneInstance,
+  scene: SceneInstance[],
 ): boolean {
-  if (!matchesCompound(selector, instance)) return false;
+  return matchesAmong(selector, instance, instance.groups, scene);
+}
+
+// The node, and its ancestors among "groups" (from the outermost to the innermost)
+function matchesAmong(
+  selector: SimpleSelector,
+  node: SceneInstance,
+  groups: SceneInstance[],
+  scene: SceneInstance[],
+): boolean {
+  if (!matchesCompound(selector, node, scene)) return false;
 
   // The ancestors, read from right to left like a browser does: each one must be
-  // one of the instance's groups, further out than the previous one
+  // one of the groups, further out than the previous one
   const ancestors = selector.ancestors ?? [];
-  let g = instance.groups.length - 1; // the innermost group first
+  let g = groups.length - 1; // the innermost group first
   for (let a = ancestors.length - 1; a >= 0; a--) {
-    while (g >= 0 && !matchesCompound(ancestors[a], instance.groups[g])) g--;
+    while (g >= 0 && !matchesCompound(ancestors[a], groups[g], scene)) g--;
     if (g < 0) return false; // no group left for this ancestor
     g--; // the next ancestor must be further out
   }
@@ -278,12 +290,41 @@ export function matches(
 function matchesCompound(
   selector: SimpleSelector,
   instance: SceneInstance,
+  scene: SceneInstance[],
 ): boolean {
   if (selector.tag !== null && selector.tag !== instance.tag) return false;
   if (selector.id !== null && selector.id !== instance.id) return false;
-  return selector.classes.every((className) =>
-    instance.classes.includes(className),
+  if (
+    !selector.classes.every((className) => instance.classes.includes(className))
+  )
+    return false;
+  // :has(): a group that holds a match for one of the selectors
+  if (!selector.has) return true;
+  return (
+    instance.tag === "group" &&
+    selector.has.some((inner) =>
+      inside(instance, scene).some(({ node, groups }) =>
+        matchesAmong(inner, node, groups, scene),
+      ),
+    )
   );
+}
+
+// Everything inside a group, at any depth: its objects and the groups between, each
+// with its ancestors inside the group (the group itself and what holds it do not count)
+function inside(
+  group: SceneInstance,
+  scene: SceneInstance[],
+): { node: SceneInstance; groups: SceneInstance[] }[] {
+  const found = new Map<SceneInstance, SceneInstance[]>();
+  for (const object of scene) {
+    const depth = object.groups.indexOf(group);
+    if (depth === -1) continue; // not inside this group
+    const between = object.groups.slice(depth + 1);
+    found.set(object, between);
+    between.forEach((node, i) => found.set(node, between.slice(0, i)));
+  }
+  return [...found].map(([node, groups]) => ({ node, groups }));
 }
 
 // ⬇️ TA MISSION : return a number as big as the selector is specific
@@ -335,7 +376,7 @@ export function resolveStyles(
     const styles: Styles = {};
     for (const important of [false, true]) {
       for (const { rule, selector } of sortedRules) {
-        if (!matches(selector, instance)) continue;
+        if (!matches(selector, instance, instances)) continue;
         if (needsHover(selector) && !hovered) continue;
         if (selector.face !== face) continue; // a face rule styles its face, the other rules the object
         for (const declaration of rule.declarations) {
@@ -360,9 +401,11 @@ export function resolveStyles(
   const groups = [...new Set(instances.flatMap((instance) => instance.groups))];
   for (const { rule, selector } of sortedRules) {
     if (!needsHover(selector)) continue;
-    const stylesGroups = groups.some((group) => matches(selector, group));
+    const stylesGroups = groups.some((group) =>
+      matches(selector, group, instances),
+    );
     const stylesObjects = instances.some((instance) =>
-      matches(selector, instance),
+      matches(selector, instance, instances),
     );
     if (stylesGroups && !stylesObjects) {
       throw errorAt(
@@ -384,7 +427,7 @@ export function resolveStyles(
         sortedRules
           .filter(
             ({ selector }) =>
-              needsHover(selector) && matches(selector, instance),
+              needsHover(selector) && matches(selector, instance, instances),
           )
           .flatMap(({ selector }) => triggersOf(selector, instance, instances)),
       ),

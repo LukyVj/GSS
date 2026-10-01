@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 import { tokenize } from "./tokenizer";
 import { parseSelector, specificity, needsHover } from "./resolve";
 import { parse } from "./parser";
+import { expandScene } from "./expand";
+import { resolveStyles } from "./resolve";
 
 const selector = (text: string) => parseSelector(tokenize(text));
 
@@ -88,5 +90,74 @@ describe(":has(): specificity and hover", () => {
     expect(needsHover(selector("#g:has(sphere:hover) cube"))).toBe(true);
     expect(needsHover(selector("#g:has(#inner:hover sphere) cube"))).toBe(true);
     expect(needsHover(selector("#g:has(sphere, cube:hover)"))).toBe(true);
+  });
+});
+
+// Step 3: a group matches when something inside it matches
+function styled(source: string) {
+  const stylesheet = parse(tokenize(source));
+  return resolveStyles(expandScene(stylesheet.scene), stylesheet.rules);
+}
+// The color each object ends up with, by id
+const colors = (source: string) =>
+  Object.fromEntries(
+    styled(source).map((o) => [o.id, o.styles["color"]?.[0]?.value ?? null]),
+  );
+
+const SCENE =
+  "@scene { group#a { sphere#s; cube#c1; } group#b { cube#c2; } group#out { group#in { sphere#s2; } cube#c3; } } ";
+
+describe(":has(): which groups match", () => {
+  it("keeps the groups that hold a match", () => {
+    expect(
+      colors(SCENE + "group:has(#s) cube { color: #ff0000; }"),
+    ).toMatchObject({
+      c1: "ff0000",
+      c2: null,
+    });
+  });
+
+  it("looks at everything inside, at any depth", () => {
+    expect(
+      colors(SCENE + "#out:has(sphere) cube { color: #ff0000; }"),
+    ).toMatchObject({
+      c3: "ff0000",
+    });
+  });
+
+  it("reads a descendant selector inside, from the group down", () => {
+    const rules =
+      "#out:has(#in sphere) cube { color: #ff0000; } #a:has(#in sphere) cube { color: #00ff00; }";
+    expect(colors(SCENE + rules)).toMatchObject({ c3: "ff0000", c1: null });
+    // #out is outside #out: it does not count inside its own :has()
+    expect(
+      colors(SCENE + "#out:has(#out sphere) cube { color: #ff0000; }"),
+    ).toMatchObject({
+      c3: null,
+    });
+  });
+
+  it("finds a group inside, too", () => {
+    expect(
+      colors(SCENE + "#out:has(group) cube { color: #ff0000; }"),
+    ).toMatchObject({
+      c3: "ff0000",
+      c1: null,
+    });
+  });
+
+  it("matches one selector of the list", () => {
+    expect(
+      colors(SCENE + "group:has(#nope, #c2) cube { color: #ff0000; }"),
+    ).toMatchObject({
+      c1: null,
+      c2: "ff0000",
+    });
+  });
+
+  it("styles the group itself", () => {
+    const groups = styled(SCENE + "#a:has(sphere) { translate: 0 1 0; }")[0]
+      .groupStyles;
+    expect(groups[0]["translate"]).toBeDefined();
   });
 });
