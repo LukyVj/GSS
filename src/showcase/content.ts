@@ -9,6 +9,8 @@ import orrery from "../scenes/orrery.gss?raw";
 import macropad from "../scenes/macropad.gss?raw";
 import tidal from "../scenes/todal.gss?raw";
 import everything from "../scene.gss?raw";
+import ripple from "../scenes/ripple.gss?raw";
+
 import { FIRST_SCENE } from "../docs/guide";
 import { formatGss } from "../docs/format";
 import { PROPERTIES, SELECTORS } from "../compiler/registry/registry";
@@ -184,5 +186,10 @@ export const INSPIRATION: Inspiration[] = [
     slug: "hover-group",
     title: "Hover a group",
     code: example(SELECTORS, ":hover", 1),
+  },
+  {
+    slug: "ripple",
+    title: "Ripples, a grid of cells that ripple",
+    code: ripple,
   },
 ];

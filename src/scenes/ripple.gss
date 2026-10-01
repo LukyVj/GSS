@@ -1,0 +1,174 @@
+/* Ripple pad: closest cousin to a proximity grid (CodePen-style).
+   Hover a cell: it rises with transition. :has() wakes the rim, stem and core.
+   Continuous distance falloff is not in GSS yet — this is the group-reaction pattern. */
+
+@scene {
+  group#board {
+    group#pad {
+      group.row * 5 {
+        cube.cell * 5
+      }
+    }
+    torus#rim cylinder#stem sphere#core capsule.beacon * 4
+  }
+  plane#pool
+}
+
+scene {
+  --ink: #e8e6e1;
+  --accent: #ff5a36;
+  --glow: hsl(200 90% 60%);
+  --case: #3a3a42;
+  background: #0a0a0c;
+  floor: #111114;
+  light: 140deg 32deg;
+  ambient: 0.32;
+  dpr: auto;
+  camera-target: 0 0.85 0;
+  camera-distance: 9;
+  camera-angle: 28deg 26deg;
+  camera-spin: 120s;
+}
+
+/* ----- Grid: sibling-index, var, calc ----- */
+#pad .row {
+  translate: 0 0 calc(sibling-index() * 0.72 - 1.44);
+}
+
+.cell {
+  --i: sibling-index();
+  size: 0.58;
+  corner-radius: 0.08;
+  translate: calc(var(--i) * 0.72 - 1.44) 0.29 0;
+  color: var(--ink);
+  material: metal(0.45);
+  transition: 0.35s ease-out;
+  animation: idle 3s ease-in-out alternate;
+  animation-delay: calc(sibling-index() * -0.12s);
+}
+
+.cell:hover {
+  translate: calc(var(--i) * 0.72 - 1.44) 0.78 0;
+  color: var(--accent);
+  scale: 1.12;
+  transition: 0.22s cubic-bezier(0.3, -0.4, 0.7, 1.4);
+}
+
+/* ----- Shared pieces woken by :has(.cell:hover) ----- */
+#rim {
+  translate: 0 0.04 0;
+  radius: 2.4;
+  thickness: 0.055;
+  rotate-x: 90deg;
+  color: #6a6a72;
+  material: chrome;
+  transition: 0.4s ease-out;
+}
+
+#stem {
+  translate: 0 0.65 0;
+  radius: 0.07;
+  height: 1.1;
+  color: var(--case);
+  material: metal(0.55);
+  transition: 0.4s ease-out;
+}
+
+#core {
+  translate: 0 1.35 0;
+  radius: 0.28;
+  color: var(--glow);
+  material: jelly(0.4);
+  transition: 0.45s ease-out;
+  animation: pulse 2.4s ease-in-out alternate;
+}
+
+#board:has(.cell:hover) #rim {
+  color: var(--accent);
+  scale: 1.06;
+}
+
+#board:has(.cell:hover) #stem {
+  color: var(--accent);
+  scale: 1.08;
+}
+
+#board:has(.cell:hover) #core {
+  color: tomato;
+  scale: 1.35;
+}
+
+/* ----- Beacons: longhands d’anim + trig ----- */
+.beacon {
+  --a: calc(sibling-index() * 90deg + 45deg);
+  radius: 0.08;
+  height: 0.45;
+  translate: calc(cos(var(--a)) * 3.1) 0.35 calc(sin(var(--a)) * 3.1);
+  color: rgb(255 210 120);
+  material: metal(0.3);
+  animation: glow 2s ease-in-out;
+  animation-delay: calc(sibling-index() * 0.2s);
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+  transition: 0.35s ease-out;
+}
+
+#board:has(.cell:hover) .beacon {
+  color: #ffffff;
+  scale: 1.4;
+}
+
+#pool {
+  translate: 0 0.01 0;
+  rotate-x: 90deg;
+  size: 5.2;
+  color: #9ab8ff;
+  material: metal(0.05);
+}
+
+@keyframes idle {
+  from {
+    color: var(--ink);
+  }
+  to {
+    color: hsl(220 12% 78%);
+  }
+}
+
+@keyframes pulse {
+  from {
+    scale: 1;
+  }
+  to {
+    scale: 1.12;
+  }
+}
+
+@keyframes glow {
+  from {
+    color: rgb(255 210 120);
+  }
+  to {
+    color: hsl(40 100% 85%);
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  scene {
+    --ink: #d8d4cc;
+    --accent: #3d7bff;
+    --glow: hsl(210 100% 65%);
+    --case: #c8c4bc;
+    background: #050508;
+    floor: #0c0c10;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cell, #core, .beacon {
+    animation: none;
+  }
+  scene {
+    camera-spin: none;
+  }
+}
