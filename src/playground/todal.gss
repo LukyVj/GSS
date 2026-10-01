@@ -1,0 +1,175 @@
+/*
+ * TIDAL / a kinetic breathing instrument
+ * 0-4 seconds: inhale / petals open and the pearl rises.
+ * 4-10 seconds: exhale / petals close and the pearl falls.
+ * The orbiting marker completes one lap per breath.
+ * Hover a petal to reveal its warm underside color.
+ * Procedural animation, not live sensor data.
+ */
+
+@scene {
+  cylinder#plinth;
+  cylinder#deck;
+  torus#rim;
+
+  group#dial {
+    cube.tick * 24;
+  }
+
+  group#cycle {
+    sphere#cursor;
+  }
+
+  group#flower {
+    group#petals {
+      cube.petal * 12;
+    }
+    group#crown {
+      torus.ripple * 3;
+    }
+    sphere#pearl;
+    torus#cradle;
+  }
+}
+
+scene {
+  --cycle: 10s;
+  --ink: #18252b;
+  --ivory: #f2e8d6;
+  --accent: #ff7048;
+  --water: #7dd7ca;
+  background: #101b22;
+  floor: #18252b;
+  ambient: 0.3;
+  light: 135deg 55deg;
+  camera-target: 0 0.85 0;
+  camera-distance: 7.8;
+  camera-angle: 28deg 42deg;
+}
+
+#plinth {
+  radius: 2.3;
+  height: 0.22;
+  translate: 0 0.11 0;
+  color: var(--ink);
+  material: metal(0.48);
+}
+
+#deck {
+  radius: 2.2;
+  height: 0.06;
+  translate: 0 0.25 0;
+  color: #31454a;
+  material: matte();
+}
+
+#rim {
+  radius: 2.24;
+  thickness: 0.028;
+  translate: 0 0.245 0;
+  color: var(--ivory);
+  material: metal(0.32);
+}
+
+/* Isolated siblings: changing * 24 preserves the circular layout. */
+.tick {
+  --angle: calc((sibling-index() - 1) * 1turn / sibling-count());
+  size: 0.035 0.024 0.13;
+  corner-radius: 0.008;
+  translate: calc(sin(var(--angle)) * 2.04) 0.293 calc(cos(var(--angle)) * 2.04);
+  rotate-y: var(--angle);
+  color: #839b99;
+  material: matte();
+}
+
+/* Clockwise from +z: 40% of a revolution marks the phase change. */
+#cycle {
+  animation: orbit var(--cycle) linear;
+}
+
+#cursor {
+  radius: 0.075;
+  translate: 0 0.37 2.04;
+  color: var(--accent);
+  material: jelly(0.35);
+}
+
+#flower {
+  translate: 0 0.64 0;
+}
+
+/* An opening flower, computed independently for each radial petal. */
+.petal {
+  --angle: calc((sibling-index() - 1) * 1turn / sibling-count());
+  --open: 0;
+  --reach: calc(0.83 + var(--open) * 0.42);
+  size: 0.34 0.14 1.04;
+  corner-radius: 0.065;
+  translate: calc(sin(var(--angle)) * var(--reach)) calc(0.12 + var(--open) * 0.26) calc(cos(var(--angle)) * var(--reach));
+  rotate-y: var(--angle);
+  rotate-x: calc(-52deg + var(--open) * 64deg);
+  color: hsl(calc(16 + sibling-index() * 2.2) 80% 70%);
+  material: metal(0.38);
+  animation: breathe var(--cycle) ease-in-out;
+}
+
+.petal:hover {
+  color: #ff7048;
+}
+
+/* Three thin rings rise into a stepped crown around the central pearl. */
+.ripple {
+  --open: 0;
+  --level: sibling-index();
+  radius: calc(0.44 + var(--level) * 0.14);
+  thickness: 0.018;
+  translate: 0 calc(0.1 + var(--level) * 0.09 + var(--open) * var(--level) * 0.18) 0;
+  color: var(--water);
+  material: metal(0.24);
+  animation: breathe var(--cycle) ease-in-out;
+}
+
+#cradle {
+  radius: 0.4;
+  thickness: 0.075;
+  translate: 0 0.03 0;
+  color: var(--ivory);
+  material: metal(0.36);
+}
+
+#pearl {
+  radius: 0.36;
+  translate: 0 0.42 0;
+  color: var(--water);
+  material: jelly(0.45);
+  animation: pearl var(--cycle) ease-in-out;
+}
+
+@keyframes breathe {
+  0%, 100% {
+    --open: 0;
+  }
+  40% {
+    --open: 1;
+  }
+}
+
+@keyframes pearl {
+  0%, 100% {
+    translate: 0 0.42 0;
+    scale: 0.86;
+  }
+  40% {
+    translate: 0 1.12 0;
+    scale: 1.12;
+  }
+}
+
+@keyframes orbit {
+  from {
+    rotate-y: 0deg;
+  }
+  to {
+    rotate-y: 360deg;
+  }
+}

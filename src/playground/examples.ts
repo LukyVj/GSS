@@ -1,5 +1,6 @@
 import sceneSource from "../scene.gss?raw";
 import logoSource from "./logo.gss?raw";
+import orrerySource from "./orrery.gss?raw";
 import { FIRST_SCENE } from "../docs/guide";
 import { formatGss } from "../docs/format";
 import { PROPERTIES, AT_RULES, FUNCTIONS } from "../compiler/registry";
@@ -20,6 +21,7 @@ export const EXAMPLES: Example[] = [
   { group: "Start here", name: "First scene", code: formatGss(FIRST_SCENE) },
   { group: "Start here", name: "GSS logo", code: logoSource },
   { group: "Start here", name: "Test scene (every feature)", code: sceneSource },
+  { group: "Start here", name: "L'Orrery (everything at once)", code: orrerySource },
   ...AT_RULES.flatMap((atRule) => fromReference(`@${atRule.name}`, atRule.examples)),
   ...FUNCTIONS.flatMap((fn) => fromReference(fn.name, fn.examples)),
   ...PROPERTIES.flatMap((property) => fromReference(property.name, property.examples)),

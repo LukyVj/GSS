@@ -127,12 +127,20 @@ describe("formatGss with comments", () => {
   it("gives the same result when run twice", () => {
     expect(formatGss(formatGss(scene))).toBe(formatGss(scene));
   });
+
+  it("keeps a comment on its own line after an element without ;", () => {
+    const code =
+      "@scene {\n  prism#star\n\n  /* drops */\n  sphere.drop * 2\n}\n";
+    expect(formatGss(code)).toBe(code);
+  });
 });
 
 describe("formatGss with groups", () => {
   it("puts one element per line, with or without ;", () => {
     expect(
-      formatGss("@scene { sphere#foo group#letters { cube#L cube#U; cube#C } }"),
+      formatGss(
+        "@scene { sphere#foo group#letters { cube#L cube#U; cube#C } }",
+      ),
     ).toBe(
       `@scene {
   sphere#foo

@@ -1,0 +1,303 @@
+/* Macro pad: a product hero in one style sheet.
+   Hover a key: it goes down and lights up. Hover the knob: it glows.
+   Re-theme the whole pad with the four variables of scene. */
+
+@scene {
+  group#pad {
+    cube#case;
+    cube#plate;
+    capsule#led;
+
+    /* Row 1: media keys */
+    group.row#media {
+      group.key#prev {
+        cube.cap
+        prism.legend
+      }
+      group.key#play {
+        cube.cap
+        prism.legend
+      }
+      group.key#pause {
+        cube.cap
+        prism.legend
+      }
+      group.key#next {
+        cube.cap
+        prism.legend
+      }
+    }
+
+    /* Row 2: the wordmark, one letter per key */
+    group.row#word {
+      group.key#g {
+        cube.cap
+        path.letter
+      }
+      group.key.s * 2 {
+        cube.cap
+        path.letter
+      }
+      group.key#dot {
+        cube.cap
+        sphere.bead
+      }
+    }
+
+    /* Row 3: arrows, one triangle turned four ways */
+    group.row#arrows {
+      group.key#left {
+        cube.cap
+        prism.legend
+      }
+      group.key#down {
+        cube.cap
+        prism.legend
+      }
+      group.key#up {
+        cube.cap
+        prism.legend
+      }
+      group.key#right {
+        cube.cap
+        prism.legend
+      }
+    }
+
+    /* The knob and its level meter */
+    group#dial {
+      cylinder#knob
+      capsule#notch
+    }
+    group#meter {
+      cube.tick.on * 7
+      cube.tick * 4
+    }
+  }
+}
+
+/* ----- Theme: change these four, the whole pad follows ----- */
+scene {
+  --accent: #ff5a36;
+  --case: #2a2a31;
+  --cap: #16161b;
+  --ink: #e8e6e1;
+
+  background: #0a0a0c;
+  floor: #111114;
+  light: 140deg 40deg;
+  ambient: 0.22;
+  camera-target: 0.45 0.15 -0.3;
+  camera-distance: 8.4;
+  camera-angle: 162deg 42deg;
+}
+
+/* ----- The body ----- */
+#case {
+  size: 6.6 0.5 3.9;
+  corner-radius: 0.22;
+  translate: 0.45 0.25 0;
+  color: var(--case);
+  material: metal(0.45);
+}
+
+#plate {
+  size: 4.2 0.06 3.2;
+  corner-radius: 0.04;
+  translate: 0 0.52 0;
+  color: #0a0a0c;
+}
+
+/* Underglow: a jelly bar that breathes between the accent and the ink */
+#led {
+  radius: 0.06;
+  height: 5.6;
+  rotate-z: 90deg;
+  translate: 0.45 0.12 -1.98;
+  material: jelly(0.3);
+  animation: underglow 6s linear;
+}
+
+/* ----- Rows and keys: a CSS-style loop ----- */
+#media {
+  translate: 0 0 1;
+}
+
+#word {
+  translate: 0 0 0;
+}
+
+#arrows {
+  translate: 0 0 -1;
+}
+
+.key {
+  translate: calc(sibling-index() * 1 - 2.5) 0 0;
+}
+
+.cap {
+  --press: 0;
+  size: 0.86 0.4 0.86;
+  corner-radius: 0.12;
+  translate: 0 calc(0.76 - var(--press)) 0;
+  color: var(--cap);
+  material: metal(0.6);
+}
+
+/* Legends lie on the top of their key */
+.legend,
+.letter {
+  --press: 0;
+  translate: 0 calc(0.97 - var(--press)) 0;
+  rotate-x: -90deg;
+  color: var(--ink);
+}
+
+.legend {
+  depth: 0.04;
+  scale: 0.2;
+}
+
+/* ----- Hover: the key goes down, the cap takes the accent ----- */
+.key:hover .cap {
+  --press: 0.14;
+  color: var(--accent);
+}
+
+.key:hover .legend,
+.key:hover .letter {
+  --press: 0.14;
+  color: #0a0a0c;
+}
+
+/* ----- Row 1: previous, play, pause, next ----- */
+#prev .legend {
+  d: path("M-1 -0.8 H-0.7 V0.8 H-1 Z M1 -0.8 L-0.5 0 L1 0.8 Z");
+}
+
+#play .legend {
+  d: polygon(-0.7 -0.9, 0.9 0, -0.7 0.9);
+}
+
+#pause .legend {
+  d: path("M-0.8 -0.8 H-0.25 V0.8 H-0.8 Z M0.25 -0.8 H0.8 V0.8 H0.25 Z");
+}
+
+#next .legend {
+  d: path("M1 -0.8 H0.7 V0.8 H1 Z M-1 -0.8 L0.5 0 L-1 0.8 Z");
+}
+
+/* ----- Row 2: g s s ● ----- */
+.letter {
+  view-box: 0 0 32 32;
+  stroke-width: 2.6;
+  scale: 0.028;
+}
+
+#g .letter {
+  d: path("M21 14 A5 5 0 1 1 11 14 A5 5 0 1 1 21 14 M21 9 V21 C21 26 13 26.5 11.5 24");
+}
+
+.s .letter {
+  d: path("M21 11 C19 8.5 11 8.5 11 12.5 C11 16.5 21 15.5 21 19.5 C21 23.5 13 23.5 11 21");
+}
+
+/* The dot of the wordmark, the one accent at rest */
+.bead {
+  --press: 0;
+  radius: 0.2;
+  translate: 0 calc(1.06 - var(--press)) 0;
+  color: var(--accent);
+  material: jelly(0.55);
+}
+
+#dot .cap {
+  color: var(--ink);
+  material: matte();
+}
+
+#dot:hover .bead {
+  --press: 0.14;
+  color: var(--ink);
+}
+
+/* ----- Row 3: one triangle, turned four ways ----- */
+#arrows .legend {
+  d: polygon(-0.8 0.6, 0.8 0.6, 0 -0.8); /* y goes down, like SVG */
+}
+
+#left .legend {
+  rotate-z: -90deg;
+}
+
+#down .legend {
+  rotate-z: 180deg;
+}
+
+#right .legend {
+  rotate-z: 90deg;
+}
+
+/* ----- The knob, turned by an invisible hand ----- */
+#dial {
+  translate: 2.8 0.5 0.55;
+  animation: turn 3.5s ease-in-out alternate;
+}
+
+#knob {
+  radius: 0.5;
+  height: 0.4;
+  translate: 0 0.2 0;
+  color: #c9c7c2;
+  material: metal(0.25);
+}
+
+#notch {
+  radius: 0.05;
+  height: 0.34;
+  rotate-x: 90deg;
+  translate: 0 0.42 -0.26;
+  color: var(--accent);
+}
+
+#dial:hover #knob {
+  color: var(--accent);
+  scale: 1.06;
+}
+
+/* The level meter: 11 ticks on an arc around the knob, 7 of them lit.
+   In their own group, so sibling-index() counts the ticks only, like in CSS:
+   .tick.on * 7 then .tick * 4 are numbered 1 to 11, one arc. */
+#meter {
+  translate: 2.8 0.5 0.55;
+}
+
+.tick {
+  --a: calc(sibling-index() * 24deg + 150deg);
+  size: 0.07 0.05 0.2;
+  translate: calc(cos(var(--a)) * 0.78) 0.03 calc(sin(var(--a)) * 0.78);
+  rotate-y: calc(-1 * var(--a) + 90deg);
+  color: #3a3a42;
+}
+
+.on {
+  color: var(--accent);
+}
+
+@keyframes turn {
+  from {
+    rotate-y: 50deg;
+  }
+  to {
+    rotate-y: -130deg;
+  }
+}
+
+@keyframes underglow {
+  0%, 100% {
+    color: var(--accent);
+  }
+  50% {
+    color: var(--ink);
+  }
+}

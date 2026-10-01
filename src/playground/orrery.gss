@@ -1,0 +1,306 @@
+/* L'Orrery: a fairground planetarium on a Minecraft plinth.
+   Every feature of GSS, in one scene. Hover the planets, the lamps and the sun. */
+
+@scene {
+  /* The plinth: 3 rows of 3 grass blocks, and a sign in front */
+  group#plinth {
+    group.row * 3 {
+      cube.block * 3
+    }
+    cube#sign
+  }
+
+  /* The sky machine: a sun, its ice ring, five planets and a dirt moon */
+  sphere#sun
+  torus#ring
+  group#orbit {
+    sphere.planet * 5
+    sphere#moon
+  }
+
+  /* The logo, floating above it all: { ● } */
+  group#logo {
+    path#brace * 2
+    sphere#dot
+  }
+
+  /* Three lamps around the plinth */
+  group.lamp * 3 {
+    cylinder.post
+    cone.shade
+    sphere.bulb
+  }
+
+  /* A ring of petals, a mirror pool, a chrome star */
+  cube.petal * 8
+  plane#pool
+  prism#star
+
+  /* Two drops that melt into each other, and a block with a bite taken out */
+  sphere.drop * 2
+  capsule#totem
+  sphere#bite
+}
+
+/* ----- The scene ----- */
+scene {
+  --ink: #e6e6e6;
+  --orbit: 1.7;
+  background: hsl(240 30% 5%);
+  floor: rgb(20 20 26);
+  light: 120deg 35deg;
+  ambient: 0.28;
+  camera-target: 0 1.6 0;
+  camera-distance: 10;
+  camera-angle: 35deg 20deg;
+  camera-spin: 90s;
+}
+
+/* Defaults: every object, beaten by anything more specific */
+* {
+  color: var(--ink);
+}
+
+/* ----- The plinth: textures, faces, image-rendering, sibling-index() ----- */
+#plinth .row {
+  translate: 0 0 calc(sibling-index() * 0.9 - 1.8);
+}
+
+#plinth .block {
+  size: 0.9;
+  translate: calc(sibling-index() * 0.9 - 1.8) 0.45 0;
+  texture: url("/textures/grass-side.png");
+  image-rendering: pixelated;
+}
+
+#plinth .block::top {
+  texture: url("/textures/grass-top.png");
+}
+
+#plinth .block::bottom {
+  texture: url("/textures/dirt.png");
+}
+
+#sign {
+  size: 0.5;
+  translate: 0 0.25 1.9;
+  rotate-y: calc(pi * 1rad / 12);
+  texture: url("/textures/dirt.png");
+  image-rendering: crisp-edges;
+}
+
+#sign::face(front) {
+  texture: url("/textures/grass-top.png");
+}
+
+/* ----- The sun: jelly, a breathing animation, :hover ----- */
+#sun {
+  translate: 0 2.4 0;
+  radius: 0.5;
+  color: hsl(22 100% 55%);
+  material: jelly(0.35);
+  animation: breathe 3s ease-in-out alternate;
+}
+
+#sun:hover {
+  color: gold;
+}
+
+/* The ring: ice, tilted, turning slowly */
+#ring {
+  translate: 0 2.4 0;
+  radius: 0.95;
+  thickness: 0.05;
+  rotate-x: 18deg;
+  material: ice;
+  animation: tilt 8s linear;
+}
+
+/* ----- The planets: a CSS-style loop with cos(), sin(), sqrt() and var() ----- */
+#orbit {
+  translate: 0 2.4 0;
+  animation: turn 14s linear;
+}
+
+#orbit .planet {
+  --a: calc(sibling-index() * 1turn / sibling-count());
+  translate: calc(cos(var(--a)) * var(--orbit)) calc(sin(sibling-index() * 70deg) * 0.25) calc(sin(var(--a)) * var(--orbit));
+  radius: calc(sqrt(sibling-index()) * 0.08);
+  color: hsl(calc(sibling-index() * 72) 80% 62%);
+  material: metal(0.35);
+}
+
+#orbit:hover .planet {
+  scale: 1.6;
+  color: #ffffff;
+}
+
+#moon {
+  translate: calc(var(--orbit, 1.6) + 0.6) 0.3 0;
+  radius: 0.16;
+  texture: url("/textures/dirt.png");
+  texture-size: 0.2;
+}
+
+/* ----- The logo: paths, view-box, numbered ids, an animated variable ----- */
+#logo {
+  --lift: 0;
+  translate: 0 calc(4.2 + var(--lift)) 0;
+  animation: bob 2.5s ease-in-out alternate;
+}
+
+#logo path {
+  d: path("M12.5 4.5C9.5 4.5 9 6 9 8.5v4c0 2-1 3.5-3.5 3.5C8 16 9 17.5 9 19.5v4c0 2.5.5 4 3.5 4");
+  view-box: 0 0 32 32;
+  stroke-width: 2.4;
+  scale: 0.05;
+}
+
+#brace-2 {
+  rotate-y: 180deg;
+}
+
+#dot {
+  radius: 0.23;
+  color: tomato !important; /* !important: beats #logo:hover below */
+  material: jelly(0.6);
+}
+
+#logo:hover path {
+  color: #ff5a36;
+}
+
+#logo:hover #dot {
+  color: #ffffff; /* never shown: the !important above wins, like CSS */
+  scale: 1.3;
+}
+
+/* ----- The lamps: groups placed in a loop, a list, pow(), color animation ----- */
+.lamp {
+  translate: calc(cos(sibling-index() * 120deg + 30deg) * 3) 0 calc(sin(sibling-index() * 120deg + 30deg) * 3);
+}
+
+.post,
+.shade {
+  color: #3a3a42;
+  material: metal(0.5);
+}
+
+.post {
+  translate: 0 0.8 0;
+  radius: 0.05;
+  height: 1.6;
+}
+
+.shade {
+  translate: 0 1.75 0;
+  radius: 0.3 0.08;
+  height: 0.3;
+}
+
+.bulb {
+  translate: 0 1.52 0;
+  radius: calc(pow(1.25, sibling-index()) * 0.07);
+  animation: glow 4s ease-in-out;
+}
+
+.lamp:hover .bulb {
+  scale: 1.8;
+}
+
+/* ----- The petals: clamp(), abs(), tan(), min(), max() ----- */
+.petal {
+  size: 0.16 calc(clamp(0.3, abs(sin(sibling-index() * 45deg)) * 1.2, 0.9)) 0.16;
+  corner-radius: 0.05;
+  translate: calc(cos(sibling-index() * 45deg) * 4.2) calc(min(0.45, max(0.15, tan(sibling-index() * 10deg) * 0.3))) calc(sin(sibling-index() * 45deg) * 4.2);
+  rotate-y: calc(sibling-index() * -45deg);
+  color: hsl(calc(sibling-index() * 45) 85% 60%);
+  animation: sway 2s ease-in-out alternate;
+}
+
+/* ----- The pool, the star ----- */
+#pool {
+  translate: 0 0.01 3.4;
+  rotate-x: 90deg;
+  size: 2.4 1.2;
+  color: #9ab8ff;
+  material: metal(0.05);
+}
+
+#star {
+  translate: -3.6 1.4 -1.4;
+  d: polygon(0 -1, -0.25 -0.34, -0.95 -0.31, -0.4 0.13, -0.59 0.81, 0 0.42, 0.59 0.81, 0.4 0.13, 0.95 -0.31, 0.25 -0.34);
+  depth: 0.2;
+  scale: 0.5;
+  material: chrome;
+  animation: turn 6s linear;
+}
+
+/* ----- Operations: a smooth union, a subtraction ----- */
+.drop {
+  translate: calc(3.2 + sibling-index() * 0.35) 0.5 -2.2;
+  radius: 0.35;
+  color: hsl(190 90% 55%);
+  material: glass(1.45, frosted 0.2);
+  blend: 0.3; /* a smooth union: the two drops melt together */
+}
+
+#totem {
+  translate: 3.6 0.6 1.6;
+  radius: 0.35;
+  height: 1.2;
+  color: rgb(255 200 80);
+}
+
+#bite {
+  translate: 3.85 0.9 1.6;
+  radius: 0.28;
+  operation: subtract;
+  blend: 0.08;
+}
+
+/* ----- The animations ----- */
+@keyframes breathe {
+  from {
+    scale: 1;
+  }
+  to {
+    scale: 1.08;
+  }
+}
+
+@keyframes tilt {
+  to {
+    rotate-y: 1turn;
+  }
+}
+
+@keyframes turn {
+  to {
+    rotate-y: -1turn;
+  }
+}
+
+@keyframes bob {
+  to {
+    --lift: 0.3;
+  }
+}
+
+@keyframes glow {
+  0%, 100% {
+    color: #ffd27a;
+  }
+  50% {
+    color: hsl(40 100% 85%);
+  }
+}
+
+@keyframes sway {
+  from {
+    rotate-z: -6deg;
+  }
+  to {
+    rotate-z: 6deg;
+  }
+}

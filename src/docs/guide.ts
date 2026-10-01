@@ -45,7 +45,7 @@ export const GETTING_STARTED: GuideEntry[] = [
     anchor: "embedding",
     label: "Embedding a scene",
     paragraphs: [
-      'A GSS scene can live on any page, three ways (decision 63). <b>A tag</b>, with no build step: load <code>embed.js</code> once, then write <code>&lt;gss-scene src="logo.gss"&gt;</code>, or put the code in a <code>&lt;script type="text/gss"&gt;</code> inside it. <b>A function</b>: <code>mount(canvas, source)</code> from the <code>gss-lang</code> package compiles in the page. <b>A build step</b>: with the Vite plugin, <code>import logo from "./logo.gss"</code> compiles at build time, and <code>mount</code> from <code>gss-lang/runtime</code> draws it without shipping the compiler (about 10 kB).',
+      'A GSS scene can live on any page, three ways. <b>A tag</b>, with no build step: load <code>embed.js</code> once, then write <code>&lt;gss-scene src="logo.gss"&gt;</code>, or put the code in a <code>&lt;script type="text/gss"&gt;</code> inside it. <b>A function</b>: <code>mount(canvas, source)</code> from the <code>gss-lang</code> package compiles in the page. <b>A build step</b>: with the Vite plugin, <code>import logo from "./logo.gss"</code> compiles at build time, and <code>mount</code> from <code>gss-lang/runtime</code> draws it without shipping the compiler (about 10 kB).',
       ...EMBED_SNIPPETS.flatMap((way) => [
         `<b>${escapeHtml(way.title)}</b> (${escapeHtml(way.who)})`,
         `<pre><code class="gss">${highlightCode(way.lang, way.code)}</code></pre>`,

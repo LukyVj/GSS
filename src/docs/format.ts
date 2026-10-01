@@ -44,6 +44,8 @@ export function formatGss(code: string): string {
 
     // Code written on the line after a comment stays on the next line
     if (previous?.token.type === "COMMENT" && newlines > 0) needBreak = true;
+    // A comment that starts a line in the source keeps its line
+    if (token.type === "COMMENT" && newlines > 0) needBreak = true;
 
     if (!previous) {
       // the very first token: nothing before it
