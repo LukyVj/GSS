@@ -1,21 +1,21 @@
-import { tokenize } from "./tokenizer";
-import { parse } from "./parser";
-import { expandScene } from "./expand";
-import { resolveStyles, resolveSceneStyles, FACES, type Face } from "./resolve";
-import { generateShader, hoverSlots } from "./codegen";
-import { validateProperties, validateKeyframes } from "./validate";
-import { readCamera, type CameraSettings } from "./camera";
-import { resolveMath, type CalcContext } from "./calc";
-import type { Styles } from "./resolve";
-import type { Declaration, Keyframes, Stylesheet } from "./ast";
-import type { Token } from "./tokenizer";
-import { errorAt, rememberSpan, spanOf } from "./errors";
-import { resolveVars, usesVariables, hasVar, type Variables } from "./vars";
-import { PROPERTIES } from "./registry";
-import { resolveColors, resolveNamedColors } from "./colors";
-import { sceneTextures } from "./textures";
-import { readDpr, type Dpr } from "./dpr";
-import { readTransition, type Transition } from "./transition";
+import { tokenize } from "./syntax/tokenizer";
+import { parse } from "./syntax/parser";
+import { expandScene } from "./cascade/expand";
+import { resolveStyles, resolveSceneStyles, FACES, type Face } from "./cascade/resolve";
+import { generateShader, hoverSlots } from "./shader/codegen";
+import { validateProperties, validateKeyframes } from "./cascade/validate";
+import { readCamera, type CameraSettings } from "./features/camera";
+import { resolveMath, type CalcContext } from "./values/calc";
+import type { Styles } from "./cascade/resolve";
+import type { Declaration, Keyframes, Stylesheet } from "./syntax/ast";
+import type { Token } from "./syntax/tokenizer";
+import { errorAt, rememberSpan, spanOf } from "./syntax/errors";
+import { resolveVars, usesVariables, hasVar, type Variables } from "./cascade/vars";
+import { PROPERTIES } from "./registry/registry";
+import { resolveColors, resolveNamedColors } from "./values/colors";
+import { sceneTextures } from "./features/textures";
+import { readDpr, type Dpr } from "./features/dpr";
+import { readTransition, type Transition } from "./features/transition";
 
 // Everything the runtime needs to display a scene
 export type CompiledScene = {

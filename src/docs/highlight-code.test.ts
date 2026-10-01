@@ -6,7 +6,7 @@ import {
   highlightCode,
 } from "./highlight-code";
 import { EMBED_SNIPPETS } from "../embed/snippets";
-import { PROPERTIES, AT_RULES, FUNCTIONS } from "../compiler/registry";
+import { PROPERTIES, AT_RULES, FUNCTIONS } from "../compiler/registry/registry";
 
 // The docs color more than GSS: the syntax lines of the reference, and the HTML and
 // JavaScript of "Embedding a scene" (decision 63), with the palette of GSS code.

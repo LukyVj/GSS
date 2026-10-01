@@ -1,4 +1,4 @@
-import type { Dpr } from "../compiler/dpr";
+import type { Dpr } from "../compiler/features/dpr";
 
 // The ratio the canvas renders at: the author's dpr, against the screen's
 export function pixelRatio(dpr: Dpr, screen: number): number {

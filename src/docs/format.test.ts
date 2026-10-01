@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { formatGss } from "./format";
 import scene from "../scene.gss?raw";
 import { compileGSS } from "../compiler";
-import { PROPERTIES, AT_RULES } from "../compiler/registry";
+import { PROPERTIES, AT_RULES } from "../compiler/registry/registry";
 
 describe("formatGss", () => {
   it("puts each declaration on its own line", () => {

@@ -1,13 +1,13 @@
 import { describe, it, expect, afterAll } from "vitest";
 import { compileOnGpu, closeGpu } from "./gpu";
 import { compileGSS, compileScene } from "../compiler";
-import { toShadertoy } from "../compiler/shadertoy";
+import { toShadertoy } from "../compiler/shader/shadertoy";
 import {
   PROPERTIES,
   SELECTORS,
   SHAPE_DOCS,
   FUNCTIONS,
-} from "../compiler/registry";
+} from "../compiler/registry/registry";
 import sceneSource from "../scene.gss?raw";
 import { FIRST_SCENE } from "../docs/guide";
 import logoSource from "../scenes/logo.gss?raw";

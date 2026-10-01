@@ -6,7 +6,7 @@ import { connectEditor, theme } from "./runtime/editor";
 import { glslLanguage } from "./runtime/glsl";
 import { encodeCode, decodeCode } from "./runtime/share";
 import { compileGSS, compileScene } from "./compiler";
-import { toShadertoy } from "./compiler/shadertoy";
+import { toShadertoy } from "./compiler/shader/shadertoy";
 import { EXAMPLES, renderExampleOptions } from "./playground/examples";
 import { statusParts, fpsText } from "./runtime/status";
 import { mountSearch } from "./docs/search-box";

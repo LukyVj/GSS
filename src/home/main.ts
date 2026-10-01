@@ -2,7 +2,7 @@ import "../styles/gss-code.css";
 import { highlightGss } from "../docs/highlight";
 import { formatGss } from "../docs/format";
 import { FIRST_SCENE } from "../docs/guide";
-import { PROPERTIES, SELECTORS, SHAPE_DOCS } from "../compiler/registry";
+import { PROPERTIES, SELECTORS, SHAPE_DOCS } from "../compiler/registry/registry";
 import { createRenderer } from "../runtime/renderer";
 import { connectEditor } from "../runtime/editor";
 import { encodeCode } from "../runtime/share";

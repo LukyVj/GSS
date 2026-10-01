@@ -1,11 +1,11 @@
-import type { CameraSettings } from "../compiler/camera";
+import type { CameraSettings } from "../compiler/features/camera";
 import type { CompiledScene } from "../compiler";
 import { createTextureStore, resolveImage } from "./textures";
 import { pickPixel, hoverValues } from "./hover";
 import { createPicker } from "./picker";
 import { createClock } from "./clock";
 import type { FrameProbe } from "../profiler/profiler";
-import type { Dpr } from "../compiler/dpr";
+import type { Dpr } from "../compiler/features/dpr";
 import { pixelRatio } from "./dpr";
 import { createTransitions } from "./transitions";
 import { pickVariant, watchMedia, matchesNow } from "./media";

@@ -18,7 +18,7 @@ import {
   type AtRuleDef,
   SELECTORS,
   SHAPE_DOCS,
-} from "../compiler/registry";
+} from "../compiler/registry/registry";
 
 const rotateX: PropertyDef = {
   name: "rotate-x",

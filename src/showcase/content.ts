@@ -11,7 +11,7 @@ import tidal from "../scenes/todal.gss?raw";
 import everything from "../scene.gss?raw";
 import { FIRST_SCENE } from "../docs/guide";
 import { formatGss } from "../docs/format";
-import { PROPERTIES, SELECTORS } from "../compiler/registry";
+import { PROPERTIES, SELECTORS } from "../compiler/registry/registry";
 export { EMBED_SNIPPETS } from "../embed/snippets";
 
 // What showcase.html shows (decision 63). The scenes are .gss files in src/scenes/:

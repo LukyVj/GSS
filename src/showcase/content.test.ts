@@ -7,7 +7,7 @@ import {
   FUNCTIONS,
   AT_RULES,
   SHAPE_DOCS,
-} from "../compiler/registry";
+} from "../compiler/registry/registry";
 
 // Decision 63: every scene of the showcase compiles (gpu.test.ts compiles its shader too),
 // and every link to the docs lands on a real entry.

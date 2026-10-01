@@ -1,4 +1,4 @@
-import { scan, type Located } from "../compiler/tokenizer";
+import { scan, type Located } from "../compiler/syntax/tokenizer";
 import { escapeHtml } from "./escape";
 
 // One colored piece of code: [start, end) in the text, and what it is

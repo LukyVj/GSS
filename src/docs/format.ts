@@ -1,4 +1,4 @@
-import { scan } from "../compiler/tokenizer";
+import { scan } from "../compiler/syntax/tokenizer";
 
 // Rewrites GSS with one style (decision 33). It only moves whitespace and keeps comments.
 export function formatGss(code: string): string {

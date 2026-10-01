@@ -3,7 +3,7 @@ import logoSource from "../scenes/logo.gss?raw";
 import orrerySource from "../scenes/orrery.gss?raw";
 import { FIRST_SCENE } from "../docs/guide";
 import { formatGss } from "../docs/format";
-import { PROPERTIES, AT_RULES, FUNCTIONS } from "../compiler/registry";
+import { PROPERTIES, AT_RULES, FUNCTIONS } from "../compiler/registry/registry";
 
 // The scenes of the "Examples" menu. The reference ones come from the registry,
 // so a new documented example shows up here with no change.

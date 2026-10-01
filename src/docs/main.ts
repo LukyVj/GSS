@@ -5,7 +5,7 @@ import {
   SELECTORS,
   SHAPE_DOCS,
   FUNCTIONS,
-} from "../compiler/registry";
+} from "../compiler/registry/registry";
 import { renderDocs } from "./render";
 import { enableTryIt } from "./playground";
 import { enablePages } from "./pages";

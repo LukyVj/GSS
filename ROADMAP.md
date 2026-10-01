@@ -138,7 +138,7 @@ A page of real use cases, for designers, creative coders and developers, needs s
 Next, on this page:
 
 - [ ] **Lucas's demos** replace the six starter use-case scenes (now in `src/scenes/`, with the LLM one coming from a real, unedited run), then `npm run captures`. Started: L'Orrery, the macro pad and Tidal are in the inspiration grid, with their captures
-- [ ] Home page: the logo reveal (the SVG mark in front, the same logo live in GSS behind, a slider between the two), in progress
+- [x] Home page: the logo reveal (the SVG mark in front, the same logo live in GSS behind, a slider between the two)
 - [ ] Captures of the registry examples show the light default floor: to revisit with the floor decision
 - [x] A license, then `npm publish` (and the `npm i gss-lang` / GitHub links on the home page)
 - [ ] Ctrl/Cmd + wheel to zoom an embedded scene, if the wheel that stops the page scroll gets in the way
@@ -195,6 +195,7 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median: orrery 20 ms, tod
 - [ ] Report several errors per compile (today it stops at the first one)
 - [x] Document `floor: none` in the registry
 - [x] Update `DECISIONS.md` (groups: decisions 45 to 48)
+- [ ] Split `shader/codegen.ts` (about 1,750 lines) by concern, and move `readAngle` / `readNumber` to `values/`
 - [ ] Align the TextMate highlighting of the extension with `classifyGss` (web)
 
 ## Out of scope
@@ -211,6 +212,8 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median: orrery 20 ms, tod
 
 ## Done recently
 
+- Home page: the logo reveal, the SVG mark and the same logo live in GSS on either side of a slider (`src/home/logo-reveal.ts`)
+- `src/compiler/` sorted by pipeline stage: `syntax/`, `cascade/`, `values/`, `features/`, `shader/`, `registry/`, end-to-end tests in `tests/` (decision 72)
 - Scenes gathered in `src/scenes/`; three of Lucas's scenes in the showcase (L'Orrery, the macro pad, Tidal) with their captures
 - Release 0.0.1: `gss-lang` on npm (passed the staged review), Apache-2.0 license, public README, `CONTRIBUTING.md`, tag `v0.0.1`
 - `@media`, like CSS: one version of the scene per combination of its queries, switched when the screen changes (decision 71)

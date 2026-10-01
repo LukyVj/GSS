@@ -1,6 +1,6 @@
 // transition: each slot of uHover[] glides from 0 to 1 and back, instead of jumping.
 // The shader already mixes rest and :hover with it (decision 62): only the number moves.
-import type { Transition } from "../compiler/transition";
+import type { Transition } from "../compiler/features/transition";
 import { ease } from "./easing";
 
 type Pair = { enter: Transition | null; leave: Transition | null };

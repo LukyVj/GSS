@@ -1,6 +1,6 @@
 // Computes an easing in JavaScript, for the transitions. The @keyframes compute
 // the same curves in the shader (codegen.ts). Only the type comes from the compiler.
-import type { Easing } from "../compiler/easing";
+import type { Easing } from "../compiler/values/easing";
 
 // The eased progress at the moment t (0 to 1; held outside)
 export function ease(easing: Easing, t: number): number {

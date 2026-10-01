@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { ease } from "./easing";
-import type { Easing } from "../compiler/easing";
+import type { Easing } from "../compiler/values/easing";
 
 const bezier = (x1: number, y1: number, x2: number, y2: number): Easing => ({
   type: "cubic-bezier",

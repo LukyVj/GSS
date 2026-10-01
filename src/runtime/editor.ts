@@ -33,8 +33,8 @@ import { setDiagnostics, lintGutter, type Diagnostic } from "@codemirror/lint";
 import type { Renderer } from "./renderer";
 import { classifyGss } from "../docs/highlight";
 import { formatGss } from "../docs/format";
-import { scan } from "../compiler/tokenizer";
-import { GssError } from "../compiler/errors";
+import { scan } from "../compiler/syntax/tokenizer";
+import { GssError } from "../compiler/syntax/errors";
 import type { Stats } from "./status";
 
 // Where the editor goes, the OK / Error badge (optional: the playground has a

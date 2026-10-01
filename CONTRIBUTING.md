@@ -13,7 +13,8 @@ npm run format     # format the .gss files (npm run format:check to only list th
 
 | Path | What lives there |
 | --- | --- |
-| `src/compiler/` | tokenizer, parser, cascade, validation, variables, math, colors, GLSL codegen, the registry |
+| `src/compiler/` | `index.ts` (`compileScene()`, the pipeline), then one folder per stage: `syntax/` (tokenizer, parser), `cascade/` (selectors, validation, variables), `values/` (math, colors, easings, SVG paths), `features/` (animation, transition, camera, textures…), `shader/` (GLSL codegen, Shadertoy export), `registry/`, and `tests/` for the end-to-end tests |
+| `src/scenes/` | the `.gss` scenes of the playground, the showcase and the bench |
 | `src/runtime/` | WebGL2 renderer, camera, :hover picking, editor, share links |
 | `src/embed/`, `src/vite/` | the npm package: `mount()`, `<gss-scene>`, the Vite plugin |
 | `src/docs/` | the generated reference and the syntax highlighter |
@@ -23,7 +24,7 @@ npm run format     # format the .gss files (npm run format:check to only list th
 | `DESIGN.md` | the visual identity ("Distance field") |
 
 Every property, shape, selector and function is described once in the registry
-(`src/compiler/registry.ts`): the reference and the tests of its examples are generated from it.
+(`src/compiler/registry/registry.ts`): the reference and the tests of its examples are generated from it.
 
 ## Decisions
 

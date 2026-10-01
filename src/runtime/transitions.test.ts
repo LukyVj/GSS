@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { createTransitions } from "./transitions";
-import type { Transition } from "../compiler/transition";
-import type { Easing } from "../compiler/easing";
+import type { Transition } from "../compiler/features/transition";
+import type { Easing } from "../compiler/values/easing";
 
 const LINEAR: Easing = {
   type: "linear",

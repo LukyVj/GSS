@@ -4,7 +4,7 @@ import type {
   SelectorDef,
   ShapeDef,
   FunctionDef,
-} from "../compiler/registry";
+} from "../compiler/registry/registry";
 import { formatGss } from "./format";
 import { escapeHtml } from "./escape";
 import { highlightGss } from "./highlight";
