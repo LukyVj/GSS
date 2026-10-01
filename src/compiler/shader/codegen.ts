@@ -1,5 +1,7 @@
 import type { Token } from "../syntax/tokenizer";
 import { type Easing, stepsShape } from "../values/easing";
+import { backgroundFunction, gradientLines, gradientMean, isGradient } from "./gradient";
+import { closingParen } from "../values/calc";
 import { readAnimation, type AnimationSpec } from "../features/animation";
 import { readTransition } from "../features/transition";
 import { errorAt, locate } from "../syntax/errors";
@@ -270,22 +272,7 @@ function textureCode(
   );
 
   // The same moves as in map(): the groups from the outside in, then the object
-  const spaces = textured.map((instance) => {
-    const nodes = [...instance.groupStyles, instance.styles];
-    return [
-      `vec3 space${instance.index}(vec3 p) {  // ${label(instance)}`,
-      "  vec3 q = p;",
-      ...nodes.flatMap((styles, n) =>
-        transformLines(
-          styles,
-          keyframes,
-          n === nodes.length - 1 ? hoverOf(instance) : undefined,
-        ),
-      ),
-      "  return q;",
-      "}",
-    ].join("\n");
-  });
+  const spaces = textured.map((instance) => spaceFunction(instance, keyframes, hoverOf));
 
   const branches = textured.map((instance) => {
     const id = glslFloat(instance.index);
@@ -937,6 +924,144 @@ function readColor(value: Token[] | undefined, fallback = "vec3(0.9)"): string {
   }
   const rgb = locate(token, () => hexToRgb(token.value));
   return `vec3(${rgb.map(glslFloat).join(", ")})`;
+}
+
+// The background: a constant color, or a gradient drawn over the canvas
+function backgroundCode(value: Token[] | undefined): string {
+  if (isGradient(value)) return backgroundFunction(value);
+  return `const vec3 BACKGROUND = ${readColor(value, "vec3(0.03)")};`;
+}
+
+// ----- Gradients on objects (decision 82) -----
+
+// The gradient an object is painted with, from its color or the first argument of its
+// material (which wins, like a material's own color), and its styles where that gradient
+// is replaced by its mean color: what getMaterial() and the reflections see.
+function objectGradient(
+  instance: StyledInstance,
+  keyframes: Keyframes[],
+  hover: Hover | undefined,
+): { gradient: Token[] | null; styles: Styles } {
+  const styles = instance.styles;
+  const hash = (value: Token[]): Token => ({ type: "HASH", value: gradientMean(value) });
+  let gradient: Token[] | null = null;
+  let changed: Styles = styles;
+
+  const color = styles["color"];
+  if (isGradient(color)) {
+    gradient = color;
+    changed = { ...changed, color: [hash(color)] };
+  }
+  const material = styles["material"];
+  // material: metal(linear-gradient(…), 0.2): a gradient as the first argument
+  const opensGradient =
+    material?.[1]?.type === "PUNCT" &&
+    material[1].value === "(" &&
+    material[2]?.type === "IDENT" &&
+    material[3]?.type === "PUNCT" &&
+    material[3].value === "(" &&
+    isGradient(material.slice(2, closingParen(material, 3) + 1));
+  if (material && opensGradient) {
+    const end = closingParen(material, 3);
+    gradient = material.slice(2, end + 1);
+    changed = { ...changed, material: [material[0], material[1], hash(gradient), ...material.slice(end + 1)] };
+  }
+  if (!gradient) return { gradient: null, styles };
+
+  // A gradient is not animated: say so rather than ignore a color that would never show
+  const name = styles["animation"]?.[0];
+  const played = name?.type === "IDENT" ? keyframes.findLast((k) => k.name === name.value) : undefined;
+  if (played?.frames.some((f) => f.declarations.some((d) => d.property === "color")))
+    throw errorAt(styles["animation"], `${label(instance)} is painted with a gradient: its color cannot be animated`);
+  if (hover && JSON.stringify(hover.styles["color"]) !== JSON.stringify(color))
+    throw errorAt(hover.styles["color"] ?? gradient, `${label(instance)} is painted with a gradient: :hover cannot change its color`);
+  return { gradient, styles: changed };
+}
+
+// The rectangle a gradient covers: the object seen from the front, x right and y up
+// (seen from above for a plane, the top of the picture away from the camera)
+function gradientBox(instance: StyledInstance): { size: number[]; at: string } {
+  const styles = instance.styles;
+  const front = (w: number, h: number) => ({ size: [w, h], at: "q.xy" });
+  switch (instance.tag) {
+    case "cube": {
+      const [x, y] = readSize(styles["size"]);
+      return front(x, y);
+    }
+    case "sphere": {
+      const d = 2 * readNumber(styles["radius"], "radius", 0.5);
+      return front(d, d);
+    }
+    case "torus": {
+      const r = readNumber(styles["radius"], "radius", 1);
+      const t = readNumber(styles["thickness"], "thickness", 0.28);
+      return front(2 * (r + t), 2 * t);
+    }
+    case "cylinder":
+    case "capsule":
+      return front(
+        2 * readNumber(styles["radius"], "radius", instance.tag === "capsule" ? 0.25 : 0.5),
+        readNumber(styles["height"], "height", 1),
+      );
+    case "cone":
+      return front(2 * Math.max(...readRadii(styles["radius"])), readNumber(styles["height"], "height", 1));
+    case "plane": {
+      const [w, d] = readFlatSize(styles["size"]);
+      return { size: [w, d], at: "vec2(q.x, -q.z)" };
+    }
+  }
+  const r = shapeRadius(instance.tag, styles) ?? 1; // path, prism: their bounding sphere
+  return front(2 * r, 2 * r);
+}
+
+// The space of an object: the same moves as in map(), groups from the outside in, then the object
+function spaceFunction(
+  instance: StyledInstance,
+  keyframes: Keyframes[],
+  hoverOf: (instance: StyledInstance) => Hover | undefined,
+): string {
+  const nodes = [...instance.groupStyles, instance.styles];
+  return [
+    `vec3 space${instance.index}(vec3 p) {  // ${label(instance)}`,
+    "  vec3 q = p;",
+    ...nodes.flatMap((styles, n) =>
+      transformLines(styles, keyframes, n === nodes.length - 1 ? hoverOf(instance) : undefined),
+    ),
+    "  return q;",
+    "}",
+  ].join("\n");
+}
+
+// gradientColor(): the color of a painted object at the point that was hit
+function gradientCode(
+  painted: { instance: StyledInstance; gradient: Token[] }[],
+  textured: Set<StyledInstance>,
+  keyframes: Keyframes[],
+  hoverOf: (instance: StyledInstance) => Hover | undefined,
+) {
+  if (painted.length === 0) return { functions: "", call: "" };
+  const spaces = painted
+    .filter(({ instance }) => !textured.has(instance)) // a textured object has its space already
+    .map(({ instance }) => spaceFunction(instance, keyframes, hoverOf));
+  const branches = painted.map(({ instance, gradient }) => {
+    const { size, at } = gradientBox(instance);
+    return [
+      `  if (id == ${glslFloat(instance.index)}) {  // ${label(instance)}`,
+      `    vec3 q = space${instance.index}(p);`,
+      `    vec2 size = vec2(${size.map(glslFloat).join(", ")});`,
+      `    vec2 at = ${at} + 0.5 * size;`,
+      ...gradientLines(gradient).map((line) => `  ${line}`),
+      "    return col;",
+      "  }",
+    ].join("\n");
+  });
+  return {
+    functions: [
+      ...spaces,
+      ["vec3 gradientColor(float id, vec3 p, vec3 color) {", ...branches, "  return color;", "}"].join("\n"),
+    ].join("\n\n"),
+    call: "    m.color = gradientColor(id, p, m.color);",
+  };
 }
 
 // Material keywords: shortcuts written in GSS
@@ -1783,13 +1908,18 @@ export function generateShader(
     ].join("\n");
   });
 
+  // The objects painted with a gradient (decision 82)
+  const painted: { instance: StyledInstance; gradient: Token[] }[] = [];
   const materialLines = instances.map((instance) => {
+    const { gradient, styles } = objectGradient(instance, keyframes, hoverOf(instance));
+    if (gradient) painted.push({ instance, gradient });
+    instance = gradient ? { ...instance, styles } : instance;
     const color = hoverValue(
       instance.styles,
       keyframes,
       "color",
       readColor,
-      hoverOf(instance),
+      gradient ? undefined : hoverOf(instance), // a gradient's color does not change on :hover
     );
     const material = readMaterial(instance.styles["material"], color);
     return `  if (id == ${glslFloat(instance.index)}) return ${material};  // ${label(instance)}`;
@@ -1827,6 +1957,13 @@ export function generateShader(
     : "";
   const animate = animateCode(hoisted);
   const textures = textureCode(instances, keyframes, hoverOf);
+  const textured = new Set(
+    instances.filter(
+      (instance) =>
+        sceneTextures([instance]).length > 0,
+    ),
+  );
+  const gradients = gradientCode(painted, textured, keyframes, hoverOf);
   const materials = materialLines.join("\n");
   // One line in main() for each material the scene uses
   const shadeCalls = Object.entries(SHADE_CALLS)
@@ -1841,7 +1978,7 @@ export function generateShader(
         "// The easings of the animations: only those the scene uses",
         used(
           EASINGS,
-          [map, animate, textures.functions, textures.call, materials].join("\n"),
+          [map, animate, textures.functions, gradients.functions, textures.call, materials].join("\n"),
         ),
       ),
     )
@@ -1876,9 +2013,15 @@ uniform vec2 uPick;`
         section(
           "// Textures: each image seen from the axis the surface faces most",
           textures.functions,
-        ),
+        ) +
+          (gradients.functions
+            ? `\n\n// Gradients on objects: the color at the point that was hit\n${gradients.functions}`
+            : ""),
       )
-      .replace("/*@TEXTURE_CALL*/", moreLines(textures.call))
+      .replace(
+        "/*@TEXTURE_CALL*/",
+        moreLines([gradients.call, textures.call].filter(Boolean).join("\n")),
+      )
       .replace(
         "/*@MATERIALS_USED*/",
         section(
@@ -1909,9 +2052,23 @@ uniform vec2 uPick;`
           ? readTranslate(sceneStyles["camera-target"])
           : "vec3(0.0, 0.5, 0.0)",
       )
+      // A color is a constant; a gradient a function of the pixel (decision 81)
       .replace(
-        "/*@BACKGROUND*/",
-        readColor(sceneStyles["background"], "vec3(0.03)"),
+        "const vec3 BACKGROUND = /*@BACKGROUND*/;",
+        backgroundCode(sceneStyles["background"]),
+      )
+      // The background gradient needs the camera, and the reflections the gradients of objects
+      .replace(
+        "  vec3 up = cross(forward, right);\n",
+        isGradient(sceneStyles["background"])
+          ? "  vec3 up = cross(forward, right);\n  camForward = forward;\n  camRight = right;\n  camUp = up;\n"
+          : "  vec3 up = cross(forward, right);\n",
+      )
+      .replace(
+        "return diffuse(n, getMaterial(hit.y).color);",
+        painted.length > 0
+          ? "return diffuse(n, gradientColor(hit.y, p, getMaterial(hit.y).color));"
+          : "return diffuse(n, getMaterial(hit.y).color);",
       )
       .replace(
         "vec2 march(vec3 ro, vec3 rd) {\n",

@@ -4,8 +4,16 @@
 import type { Token } from "../syntax/tokenizer";
 import { errorAt, rememberSpan, spanAcross } from "../syntax/errors";
 
-// Where the value is read: the position of the object among its siblings, if it is an object
-export type CalcContext = { siblingIndex: number; siblingCount: number } | null;
+// Where the value is read: the position of the object among its siblings, if it is an object.
+// tag, id and groups (when known) give random() a seed of its own for each object.
+type Node = { tag: string; id: string | null; siblingIndex: number };
+export type CalcContext = {
+  siblingIndex: number;
+  siblingCount: number;
+  tag?: string;
+  id?: string | null;
+  groups?: Node[];
+} | null;
 
 // A computed quantity: 90 with unit "deg", 2 with unit "" (a plain number), 50 with "%"
 type Quantity = { value: number; unit: string };
@@ -35,6 +43,7 @@ export const MATH_FUNCTIONS = [
   "log",
   "exp",
   "progress",
+  "random",
   "sibling-index",
   "sibling-count",
 ] as const;
@@ -67,9 +76,14 @@ const describe = (q: Quantity) =>
 
 // ----- The value: math functions are replaced by their result, the other tokens stay -----
 
-export function resolveMath(value: Token[], context: CalcContext): Token[] {
+export function resolveMath(
+  value: Token[],
+  context: CalcContext,
+  property = "",
+): Token[] {
   if (!value.some((_, i) => isMathCall(value, i))) return value; // nothing to compute: same array
   const out: Token[] = [];
+  const randoms = { count: 0 }; // the random() calls of this value, numbered in order
   let i = 0;
   while (i < value.length) {
     if (!isMathCall(value, i)) {
@@ -79,7 +93,7 @@ export function resolveMath(value: Token[], context: CalcContext): Token[] {
     }
     const end = closingParen(value, i + 1);
     const call = value.slice(i, end + 1);
-    const reader = new Reader(call, context);
+    const reader = new Reader(call, context, property, randoms);
     const result = reader.expression();
     reader.finish();
     out.push(toToken(result, call));
@@ -147,10 +161,19 @@ class Reader {
   private i = 0;
   private readonly tokens: Token[];
   private readonly context: CalcContext;
+  private readonly property: string;
+  private readonly randoms: { count: number };
 
-  constructor(tokens: Token[], context: CalcContext) {
+  constructor(
+    tokens: Token[],
+    context: CalcContext,
+    property = "",
+    randoms = { count: 0 },
+  ) {
     this.tokens = tokens;
     this.context = context;
+    this.property = property;
+    this.randoms = randoms;
   }
 
   private peek(): Token | undefined {
@@ -262,6 +285,7 @@ class Reader {
       throw this.error(`${name}() cannot be used inside math`);
     this.i += 2; // the name and "("
     const args: Quantity[] = [];
+    if (name === "random") return this.random();
     // round(up, 2.5, 1): the rounding strategy comes first, as a keyword
     let strategy = "nearest";
     const first = this.peek();
@@ -413,6 +437,57 @@ class Reader {
     throw this.error(`${name}() cannot be used inside math`);
   }
 
+  // random([--name || element-shared | fixed <number>,]? min, max, step?), like CSS.
+  // Computed once, at compile time: the same value at every reload. By default each
+  // object, property and call gets its own value; --name shares one between the calls
+  // of an object that use it, element-shared between objects, fixed gives the value.
+  private random(): Quantity {
+    let name = "";
+    let shared = false;
+    let fixed: number | null = null;
+    const example = "random(0.2, 1.4) or random(0deg, 360deg, 45deg)";
+    // The options, before the first comma
+    while (this.peek()?.type === "IDENT") {
+      const word = (this.peek() as { value: string }).value;
+      if (word.startsWith("--") && !name) name = word;
+      else if (word === "element-shared" && !shared) shared = true;
+      else if (word === "fixed" && fixed === null && !name && !shared) {
+        this.i++;
+        const n = this.peek();
+        if (n?.type !== "NUMBER" || n.value < 0 || n.value >= 1)
+          throw this.error("random(fixed …) expects a number from 0 to just below 1, like: random(fixed 0.5, 0, 10)");
+        fixed = n.value;
+      } else break;
+      this.i++;
+      if (this.isPunct(",")) {
+        this.i++;
+        break;
+      }
+    }
+    const args: Quantity[] = [this.sum()];
+    while (this.isPunct(",")) {
+      this.i++;
+      args.push(this.sum());
+    }
+    this.expect(")", "random()");
+    if (args.length !== 2 && args.length !== 3)
+      throw this.error(`random() takes a minimum, a maximum and an optional step, like: ${example}`);
+    const unit = this.sameUnit(args, "random");
+    const [min, max, step] = args.map((q) => q.value);
+
+    // The seed: what makes this call different from the others
+    const call = ++this.randoms.count;
+    const where = name || `${this.property}#${call}`;
+    const who = shared ? "*" : elementKey(this.context);
+    const r = fixed ?? unitRandom(`${who}|${where}|${min}|${max}|${step ?? ""}`);
+
+    if (step === undefined || step <= 0 || max < min)
+      return { value: min + r * (max - min), unit };
+    // With a step: one of min, min + step, … up to max
+    const choices = Math.floor((max - min) / step + 1e-9) + 1;
+    return { value: min + Math.floor(r * choices) * step, unit };
+  }
+
   private sameUnit(args: Quantity[], name: string): string {
     const unit = args[0].unit;
     const other = args.find((a) => a.unit !== unit);
@@ -450,4 +525,27 @@ class Reader {
     if (b.unit === a.unit) return { value: a.value / b.value, unit: "" }; // 90deg / 30deg = 3
     throw this.error(`Cannot divide ${describe(a)} by ${describe(b)}`);
   }
+}
+
+// The place of an object in @scene, which stays the same when objects are added after it:
+// "group#ring:2 > sphere:3"
+function elementKey(context: CalcContext): string {
+  if (!context) return "scene";
+  const name = (n: { tag?: string; id?: string | null; siblingIndex: number }) =>
+    `${n.tag ?? ""}${n.id ? `#${n.id}` : ""}:${n.siblingIndex}`;
+  return [...(context.groups ?? []), context].map(name).join(" > ");
+}
+
+// A number from 0 to just below 1, always the same for the same text:
+// the text is hashed (FNV-1a), then mixed (mulberry32)
+function unitRandom(text: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < text.length; i++) {
+    h ^= text.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  let t = (h + 0x6d2b79f5) | 0;
+  t = Math.imul(t ^ (t >>> 15), t | 1);
+  t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
 }

@@ -199,3 +199,42 @@ describe("calc() in a scene", () => {
     ).toThrow(/only works in a rule that styles objects/);
   });
 });
+
+describe("resolveMath: random() (decision 81)", () => {
+  const sphere = (i: number): CalcContext => ({ siblingIndex: i, siblingCount: 9, tag: "sphere", id: null, groups: [] });
+  const n = (value: string, context: CalcContext = sphere(1), property = "radius") =>
+    (resolveMath(tokenize(value), context, property)[0] as { value: number }).value;
+
+  it("stays between min and max, and is the same at every compile", () => {
+    const a = n("random(0.2, 1.4)");
+    expect(a).toBeGreaterThanOrEqual(0.2);
+    expect(a).toBeLessThan(1.4);
+    expect(n("random(0.2, 1.4)")).toBe(a);
+  });
+
+  it("differs per object, per property and per call; keeps the unit", () => {
+    const values = [1, 2, 3, 4, 5].map((i) => n("random(0, 1)", sphere(i)));
+    expect(new Set(values).size).toBe(5);
+    expect(n("random(0, 1)", sphere(1), "scale")).not.toBe(n("random(0, 1)", sphere(1), "radius"));
+    const [x, , y] = resolveMath(tokenize("random(0, 1) 0 random(0, 1)"), sphere(1), "translate") as { value: number }[];
+    expect(x.value).not.toBe(y.value);
+    expect(resolveMath(tokenize("random(0deg, 90deg)"), sphere(1))[0]).toMatchObject({ type: "DIMENSION", unit: "deg" });
+  });
+
+  it("shares a value with --name inside an object, between objects with element-shared", () => {
+    const [x, , y] = resolveMath(tokenize("random(--r, 0, 1) 0 random(--r, 0, 1)"), sphere(1), "translate") as { value: number }[];
+    expect(x.value).toBe(y.value);
+    expect(n("random(element-shared, 0, 1)", sphere(1))).toBe(n("random(element-shared, 0, 1)", sphere(7)));
+  });
+
+  it("snaps to its step, and takes a fixed value", () => {
+    for (let i = 1; i <= 20; i++) expect([0, 45, 90, 135, 180]).toContain(n("random(0deg, 180deg, 45deg)", sphere(i)));
+    expect(n("random(fixed 0.5, 0, 10)")).toBe(5);
+  });
+
+  it("says what is wrong", () => {
+    expect(() => n("random(1)")).toThrow("random() takes a minimum, a maximum");
+    expect(() => n("random(0, 1deg)")).toThrow("random() mixes");
+    expect(() => n("random(fixed 2, 0, 1)")).toThrow("random(fixed …)");
+  });
+});

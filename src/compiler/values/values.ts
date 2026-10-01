@@ -26,17 +26,25 @@ export function readFunction(value: Token[]): FunctionCall | null {
   const inside = value.slice(2, -1);
   if (inside.length === 0) return { name: name.value, args: [] };
 
+  // The commas of this call, not those of a call inside it: metal(linear-gradient(a, b), 0.2)
+  let depth = 0;
+  const topComma = inside.map((token) => {
+    if (isPunct(token, "(")) depth++;
+    if (isPunct(token, ")")) depth--;
+    return depth === 0 && isPunct(token, ",");
+  });
+
   // 4. No comma: each token is one argument, like rgb(255 90 54)
-  if (!inside.some((token) => isPunct(token, ","))) {
+  if (!topComma.includes(true)) {
     return { name: name.value, args: inside.map((token) => [token]) };
   }
 
   // 5. Commas: a new argument starts after each one
   const args: Token[][] = [[]];
-  for (const token of inside) {
-    if (isPunct(token, ",")) args.push([]);
+  inside.forEach((token, i) => {
+    if (topComma[i]) args.push([]);
     else args[args.length - 1].push(token);
-  }
+  });
   if (args.some((arg) => arg.length === 0)) {
     throw new Error(`${name.value}( … ) has an empty argument`);
   }

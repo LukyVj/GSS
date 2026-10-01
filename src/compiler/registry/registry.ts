@@ -84,10 +84,10 @@ export const PROPERTIES: PropertyDef[] = [
     name: "color",
     appliesTo: "object",
     animatable: true,
-    syntax: "<color>",
+    syntax: "<color> | <gradient>",
     initial: "#e6e6e6",
     description:
-      "Sets the base color of the object's surface: a hex color (#ff5a36), rgb(), hsl() or one of the 148 CSS named colors (tomato). Everything is turned into a hex color by the compiler.",
+      "Sets the base color of the object's surface: a hex color (#ff5a36), rgb(), hsl() or one of the 148 CSS named colors (tomato), turned into a hex color by the compiler. It can also be a gradient (linear-gradient(), radial-gradient()), painted on the object as seen from the front, and taken by every material. A gradient is not animated, and :hover cannot change it.",
     examples: [
       {
         name: "color",
@@ -106,7 +106,7 @@ export const PROPERTIES: PropertyDef[] = [
       "matte([<color>]) | metal([<color>,] [<roughness>]) | jelly([<color>,] [<density>]) | gold | chrome | jelly | glass([<color>,] [<refraction-index>] [, [frosted | wavy | hammered | blurred] <frost>]) | glass | ice",
     initial: "matte()",
     description:
-      "Sets how the surface of the object reacts to light. matte() only scatters light, like chalk. metal() reflects the scene: roughness goes from 0, a mirror, to 1, a brushed metal (0.2 by default). Without a color, the material uses the color property, like currentColor in CSS, so color stays animatable. jelly() lets light through its thin parts, like a gummy candy: density goes from 0, clear, to 1, deep (0.5 by default). gold, chrome and jelly are shortcuts for metal(#d4af37, 0.2), metal(#ffffff, 0.05) and jelly(). glass() lets you see through the object, bent by its refraction index (1 to 3, 1.5 by default: 1.33 is water, 2.4 is diamond). The frost, from 0 to 1, comes with an optional style: frosted (white patches, the default), wavy (big waves), hammered (small bumps) or blurred (soft blur). glass is glass(), ice is glass(#cfeaff, 1.31, frosted 0.25).",
+      "Sets how the surface of the object reacts to light. matte() only scatters light, like chalk. metal() reflects the scene: roughness goes from 0, a mirror, to 1, a brushed metal (0.2 by default). Without a color, the material uses the color property, like currentColor in CSS, so color stays animatable. jelly() lets light through its thin parts, like a gummy candy: density goes from 0, clear, to 1, deep (0.5 by default). gold, chrome and jelly are shortcuts for metal(#d4af37, 0.2), metal(#ffffff, 0.05) and jelly(). glass() lets you see through the object, bent by its refraction index (1 to 3, 1.5 by default: 1.33 is water, 2.4 is diamond). The frost, from 0 to 1, comes with an optional style: frosted (white patches, the default), wavy (big waves), hammered (small bumps) or blurred (soft blur). glass is glass(), ice is glass(#cfeaff, 1.31, frosted 0.25). The color of a material can also be a gradient: metal(linear-gradient(#ffd27a, #ff5a36), 0.2).",
     examples: [
       {
         name: "material",
@@ -678,14 +678,18 @@ export const PROPERTIES: PropertyDef[] = [
   {
     name: "background",
     appliesTo: "scene",
-    syntax: "<color>",
+    syntax: "<color> | <gradient>",
     initial: "#080808",
     description:
-      "Sets the color of the background, visible wherever there is no object and no floor.",
+      "Sets the background, visible wherever there is no object and no floor: a color, or a gradient drawn over the canvas like a CSS background (linear-gradient(), radial-gradient() and their repeating forms).",
     examples: [
       {
         name: "background",
         code: "@scene { cube; } cube { translate: 0 0.5 0; } scene { background: #42429f; }",
+      },
+      {
+        name: "background with a gradient",
+        code: "@scene { sphere; } sphere { translate: 0 1 0; color: #ff5a36; } scene { floor: none; background: radial-gradient(circle at 50% 40%, #2a2a3a, #07070a); }",
       },
     ],
   },
@@ -1150,6 +1154,32 @@ export const FUNCTIONS: FunctionDef[] = [
     ],
   },
   {
+    name: "linear-gradient(), radial-gradient()",
+    anchor: "fn-gradients",
+    covers: ["linear-gradient", "radial-gradient", "repeating-linear-gradient", "repeating-radial-gradient"],
+    syntax: "linear-gradient([<angle> | to <side> <side>?]?, <color> <percentage>{0,2}, …) | radial-gradient([circle | ellipse]? [closest-side | farthest-side | closest-corner | farthest-corner]? [at <position>]?, <color> <percentage>{0,2}, …)",
+    description:
+      "Gradients, like CSS, for the background of the scene, the color of an object and the color of a material. In the background, the gradient covers the canvas and follows its size; reflections and glass see it in the direction they look. On an object, it covers the object seen from the front, from left to right and from bottom to top (a plane is seen from above): to top goes from its bottom to its top, whatever its size, and it turns and moves with it. linear-gradient() goes to bottom by default; it takes an angle (0deg up, 90deg right) or to a side or a corner. radial-gradient() is an ellipse reaching the farthest corner from the center by default; it takes circle or ellipse, a size keyword and a position (at 30% 40%, at top). Each color can have one or two positions; the missing ones are spread like CSS, and two colors at the same place make a hard edge. repeating-linear-gradient() and repeating-radial-gradient() repeat the stops. Colors are mixed in sRGB, like CSS with hex colors.",
+    examples: [
+      {
+        name: "linear-gradient()",
+        code: "@scene { cube; } cube { translate: 0 0.5 0; color: #f4f1ea; } scene { floor: none; background: linear-gradient(to top right, #ff5a36, #3a7bff); }",
+      },
+      {
+        name: "radial-gradient()",
+        code: "@scene { sphere; } sphere { translate: 0 1 0; material: glass; } scene { floor: none; background: radial-gradient(circle closest-side, #ffd27a, #ff5a36 60%, #1a0f2e); }",
+      },
+      {
+        name: "linear-gradient() on objects",
+        code: "@scene { cylinder; sphere; cube; } cylinder { radius: 0.4; height: 2; translate: -1.4 1 0; color: linear-gradient(#ff5a36, #ffd27a); } sphere { radius: 0.7; translate: 0 0.7 0; material: metal(radial-gradient(circle at 35% 65%, #ffffff, #3a7bff 40%, #10183a), 0.15); } cube { size: 1; translate: 1.4 0.5 0; rotate-y: 30deg; color: repeating-linear-gradient(45deg, #3ad16b 0% 10%, #f4f1ea 10% 20%); }",
+      },
+      {
+        name: "repeating-linear-gradient() and repeating-radial-gradient()",
+        code: "@scene { sphere#a; sphere#b; } sphere { radius: 0.6; translate: 0 1 0; material: chrome; } #a { translate: -0.8 1 0; } #b { translate: 0.8 1 0; } scene { floor: none; background: repeating-linear-gradient(45deg, #111 0% 5%, #2a2a3a 5% 10%); }",
+      },
+    ],
+  },
+  {
     name: "rgb()",
     anchor: "fn-rgb",
     covers: ["rgb", "rgba"],
@@ -1318,6 +1348,42 @@ export const FUNCTIONS: FunctionDef[] = [
       {
         name: "var()",
         code: "@scene { sphere * 3; } sphere { --lift: 0; radius: 0.3; translate: calc(sibling-index() * 0.9 - 1.8) calc(0.4 + var(--lift) * sibling-index()) 0; color: #ff5a36; animation: rise 2s ease-in-out alternate; } @keyframes rise { to { --lift: 0.4; } }",
+      },
+    ],
+  },
+  {
+    name: "random()",
+    anchor: "fn-random",
+    covers: ["random"],
+    syntax: "random([--<name> || element-shared | fixed <number>,]? <min>, <max>, <step>?)",
+    description:
+      "A random value between a minimum and a maximum, like CSS: random(0.2, 1.4), random(0deg, 360deg). With a step, one of min, min + step, … up to max: random(0deg, 180deg, 45deg). The value is chosen once, when the scene compiles, and stays the same at every reload: each object, property and call gets its own, so a multiplied object scatters its copies with one rule. A --name shares one value between the calls of an object that use it (the same random number for x and z); element-shared gives every object the same value; fixed 0.25 sets the random number yourself, from 0 to just below 1. The values must share a unit.",
+    examples: [
+      {
+        name: "random()",
+        code: "@scene { sphere.star * 30; } .star { radius: random(0.05, 0.2); translate: random(-2.5, 2.5) random(0.3, 2.2) random(-2, 1); color: hsl(random(180, 260) 80% 70%); }",
+      },
+      {
+        name: "random() with a step and --name",
+        code: "@scene { cube.block * 16; } .block { --s: random(--size, 0.2, 0.5); size: var(--s); translate: calc(mod(sibling-index() - 1, 4) * 0.8 - 1.2) calc(var(--s) / 2) calc(round(down, calc((sibling-index() - 1) / 4)) * 0.8 - 1.2); rotate-y: random(0deg, 90deg, 15deg); color: oklch(70% 0.15 random(0, 360, 60)); }",
+      },
+    ],
+  },
+  {
+    name: "if()",
+    anchor: "fn-if",
+    covers: ["if"],
+    syntax: "if(<condition>: <value>; …; else: <value>)",
+    description:
+      "Picks a value by condition, like CSS: the first branch whose condition is true gives its value. A condition is media(<query>), true when the screen matches the query, like @media; style(--x), true when the custom property is set on the object (or inherited), and style(--x: <value>), when it has that value; or else, always true. not, and, or combine them (and and or cannot be mixed without parentheses). If no branch is true the value is an error, so end with else. A media() query makes a version of the scene for it, like @media, and counts as one of its queries.",
+    examples: [
+      {
+        name: "if() with style()",
+        code: "@scene { group#warm { sphere * 3 } group#cool { sphere * 3 } } #warm { --theme: warm; translate: -1 0 0; } #cool { --theme: cool; translate: 1 0 0; } sphere { radius: 0.3; translate: 0 calc(sibling-index() * 0.7) 0; color: if(style(--theme: warm): #ff5a36; else: #3a7bff); }",
+      },
+      {
+        name: "if() with media()",
+        code: "@scene { sphere; } sphere { radius: if(media(width < 600px): 0.4; else: 0.8); translate: 0 1 0; color: if(media(prefers-color-scheme: dark): #7cb4ff; else: #ff5a36); }",
       },
     ],
   },

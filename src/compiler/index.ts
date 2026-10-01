@@ -11,6 +11,7 @@ import type { Declaration, Keyframes, Stylesheet } from "./syntax/ast";
 import type { Token } from "./syntax/tokenizer";
 import { errorAt, rememberSpan, spanOf } from "./syntax/errors";
 import { resolveVars, usesVariables, hasVar, type Variables } from "./cascade/vars";
+import { mediaQueriesOf, resolveIf } from "./values/conditionals";
 import { PROPERTIES } from "./registry/registry";
 import {
   type ColorScheme,
@@ -57,6 +58,7 @@ export function compileScene(source: string): CompiledScene {
     ...new Set([
       ...stylesheet.rules.flatMap((rule) => (rule.media ? [rule.media] : [])),
       ...(lightDark ? [DARK_QUERY] : []),
+      ...mediaQueriesOf(tokens),
     ]),
   ];
   if (queries.length === 0) return compileStylesheet(stylesheet);
@@ -70,7 +72,6 @@ export function compileScene(source: string): CompiledScene {
     );
   }
   // Like CSS, a rule inside a matching @media joins the cascade where it is written
-  const dark = queries.indexOf(DARK_QUERY);
   const variants = Array.from({ length: 2 ** queries.length }, (_, mask) =>
     compileStylesheet(
       {
@@ -80,7 +81,7 @@ export function compileScene(source: string): CompiledScene {
             !rule.media || (mask & (1 << queries.indexOf(rule.media))) !== 0,
         ),
       },
-      dark >= 0 && (mask & (1 << dark)) !== 0 ? "dark" : "light",
+      new Set(queries.filter((_, n) => (mask & (1 << n)) !== 0)),
     ),
   );
   return { ...variants[0], media: { queries, variants } };
@@ -89,9 +90,9 @@ export function compileScene(source: string): CompiledScene {
 // One version of the scene: the rules that apply, compiled
 function compileStylesheet(
   stylesheet: Stylesheet,
-  scheme: ColorScheme = "light",
+  media: Set<string> = new Set(),
 ): CompiledScene {
-  colorScheme = scheme;
+  activeMedia = media;
   validateProperties(stylesheet.rules);
   validateKeyframes(stylesheet.keyframes);
   const instances = expandScene(stylesheet.scene);
@@ -231,7 +232,11 @@ function animateVariables(
     const compute = (property: string, value: Token[]) =>
       colorsOf(
         property,
-        resolveMath(resolveVars(value, frameVariables), context),
+        resolveMath(
+          resolveIf(resolveVars(value, frameVariables), frameVariables, activeMedia),
+          context,
+          property,
+        ),
       );
 
     // The properties the frame writes itself
@@ -275,7 +280,7 @@ function keepSpan(computed: Declaration, from: Declaration): Declaration {
 function computeMath(styles: Styles, context: CalcContext): Styles {
   const computed: Styles = {};
   for (const [property, value] of Object.entries(styles))
-    computed[property] = resolveMath(value, context);
+    computed[property] = resolveMath(value, context, property);
   return computed;
 }
 
@@ -288,7 +293,11 @@ function computeKeyframes(keyframes: Keyframes[]): Keyframes[] {
       declarations: frame.declarations.map((declaration) => {
         const value = colorsOf(
           declaration.property,
-          resolveMath(declaration.value, null),
+          resolveMath(
+            resolveIf(declaration.value, {}, activeMedia),
+            null,
+            declaration.property,
+          ),
         );
         if (value === declaration.value) return declaration; // nothing computed: same object
         const computed = { ...declaration, value };
@@ -314,7 +323,7 @@ function computeVars(styles: Styles, variables: Variables): Styles {
   const computed: Styles = {};
   for (const [property, value] of Object.entries(styles)) {
     if (property.startsWith("--")) continue;
-    computed[property] = resolveVars(value, variables);
+    computed[property] = resolveIf(resolveVars(value, variables), variables, activeMedia);
   }
   return computed;
 }
@@ -322,10 +331,12 @@ function computeVars(styles: Styles, variables: Variables): Styles {
 // One value, with rgb(), hsl() and the named colors turned into #rrggbb (decision 58).
 // The property is needed: material: gold is a material, color: gold is a color.
 function colorsOf(property: string, value: Token[]): Token[] {
-  return resolveNamedColors(property, resolveColors(value, colorScheme));
+  const scheme: ColorScheme = activeMedia.has(DARK_QUERY) ? "dark" : "light";
+  return resolveNamedColors(property, resolveColors(value, scheme));
 }
-// The color scheme of the version being compiled, read by light-dark() (decision 79)
-let colorScheme: ColorScheme = "light";
+// The queries true in the version being compiled: read by light-dark() (decision 79)
+// and the media() of if() (decision 81)
+let activeMedia = new Set<string>();
 
 // Every value of a set of styles, through colorsOf
 function computeColors(styles: Styles): Styles {

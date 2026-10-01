@@ -131,7 +131,14 @@ export function parse(tokens: Token[]): Stylesheet {
     }
     expectPunct(":");
     const value: Token[] = [];
-    while (peek() && !isPunct(peek(), ";") && !isPunct(peek(), "}")) {
+    // A ";" between parentheses belongs to the value: if(media(…): 1; else: 2)
+    let depth = 0;
+    while (
+      peek() &&
+      (depth > 0 || (!isPunct(peek(), ";") && !isPunct(peek(), "}")))
+    ) {
+      if (isPunct(peek(), "(")) depth++;
+      if (isPunct(peek(), ")")) depth--;
       value.push(next());
     }
 
@@ -277,7 +284,7 @@ export function parse(tokens: Token[]): Stylesheet {
 
 // Tokens back to text, with a space where the source had one: the query of a
 // @media, which the browser reads (matchMedia)
-function textOf(tokens: Token[]): string {
+export function textOf(tokens: Token[]): string {
   return tokens
     .map((token, i) => {
       const before = tokens[i - 1];
