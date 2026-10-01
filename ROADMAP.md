@@ -113,7 +113,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 5. [ ] Animation controls (delay / iteration-count / reverse)
 6. [ ] `@media` + `prefers-reduced-motion`
 7. [ ] Selectors / nesting (combinators `>` `+` `~`, etc.)
-8. [ ] `:hover` ✅ decision 62 (picking pass → `uHover[]`), `transition` ✅ decision 68 (one per object; per-property lists later); still to do: `:has()` (`#g:has(sphere:hover) cube`) ← **next**
+8. [x] `:hover` ✅ decision 62 (picking pass → `uHover[]`), `transition` ✅ decision 68 (one per object; per-property lists later), `:has()` ✅ decision 69 (`#g:has(sphere:hover) cube`, any selector inside)
 9. [ ] `transform-origin`
 10. [ ] Fog
 11. [x] `sibling-index()` + `sibling-count()` (decision 52)
@@ -206,6 +206,7 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median: orrery 20 ms, tod
 
 ## Done recently
 
+- `:has()`, like CSS: a group that holds a match, at compile time or under the mouse (`#g:has(sphere:hover) cube`), any selector inside (decision 69)
 - Easings (`ease`, `ease-in`, `ease-out`, `cubic-bezier()`, `linear()`) in `@keyframes` and `transition`, which glides `:hover` in both directions like CSS (decision 68)
 - `scene { dpr: auto | max | <number>; }`: the pixel density of the render, chosen by the author (decision 67)
 - Performance tools and two speed-ups with an identical image (Oct. 1): the dev profiler and the bench (decision 64), `:hover` without a GPU wait (decision 65), bounding spheres for `path` and `prism` in `map()` (decision 66)
@@ -482,7 +483,7 @@ A score for how well a CSS notion carries over to GSS (a style language → an S
 | `:nth-child()` / `:nth-of-type()` / `:nth-last-*`                                                                                                                                                                                                                                                                   |  0.85 | Compile-time index                                                      |
 | `:first-child` / `:last-child` / `:only-child` / `:first-of-type` / `:last-of-type` / `:only-of-type` / `:empty`                                                                                                                                                                                                    |   0.8 | Scene structure                                                         |
 | `:is()` / `:where()` / `:not()`                                                                                                                                                                                                                                                                                     |   0.6 | Selector utilities                                                      |
-| `:has()`                                                                                                                                                                                                                                                                                                            |   0.9 | Next to `:hover`: more triggers, resolved at compile time (decision 62) |
+| `:has()`                                                                                                                                                                                                                                                                                                            |   0.9 | Already in GSS (decision 69)                                             |
 | `:root` / `:scope`                                                                                                                                                                                                                                                                                                  |   0.6 | Root / scope                                                            |
 | `:lang()` / `:dir()`                                                                                                                                                                                                                                                                                                |   0.2 | I18n DOM                                                                |
 | Link/visited/any-link/local-link/target\*                                                                                                                                                                                                                                                                           |   0.1 | Navigation HTML                                                         |

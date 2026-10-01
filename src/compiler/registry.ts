@@ -531,10 +531,21 @@ export const SELECTORS: SelectorDef[] = [
     anchor: "selector-hover",
     specificity: "100, like a class, added to the rest",
     description:
-      "A pseudo-class, like CSS: the rule applies while the mouse is over the object. It can go anywhere after the shape name (cube:hover.big) and on a group of a descendant selector: #letters:hover cube lifts every cube of #letters as soon as the mouse is over any object of the group, like hovering a child hovers its parent in CSS. The :hover rules join the cascade like any other: #a { color: blue; } beats cube:hover { color: red; }, and a normal !important beats them all. A :hover rule changes the animatable properties only (translate, rotate-x, rotate-y, rotate-z, scale, color, and variables), never a face, and it styles objects, not groups: #g:hover { translate: 0 1 0; } is an error, write #g:hover cube. For now the change is instant; transition comes next.",
+      "A pseudo-class, like CSS: the rule applies while the mouse is over the object. It can go anywhere after the shape name (cube:hover.big) and on a group of a descendant selector: #letters:hover cube lifts every cube of #letters as soon as the mouse is over any object of the group, like hovering a child hovers its parent in CSS. The :hover rules join the cascade like any other: #a { color: blue; } beats cube:hover { color: red; }, and a normal !important beats them all. A :hover rule changes the animatable properties only (translate, rotate-x, rotate-y, rotate-z, scale, color, and variables), never a face, and it styles objects, not groups: #g:hover { translate: 0 1 0; } is an error, write #g:hover cube. With transition, the change glides instead of jumping.",
     examples: [
       "@scene { cube#a; cube#b; } cube { translate: -0.8 0.5 0; color: #e6e6e6; } #b { translate: 0.8 0.5 0; } cube:hover { translate: -0.8 1 0; color: #ff5a36; rotate-y: 45deg; } #b:hover { translate: 0.8 1 0; }",
       "@scene { group#letters { cube#l1; cube#l2; cube#l3; } sphere; } #letters { translate: -1.6 0.5 0; } #letters cube { size: 0.4 1 0.4; color: #e6e6e6; } #l2 { translate: 0.7 0 0; } #l3 { translate: 1.4 0 0; } #letters:hover cube { color: #ff5a36; scale: 1.15; } sphere { translate: 1.4 0.5 0; radius: 0.5; }",
+    ],
+  },
+  {
+    name: ":has()",
+    anchor: "selector-has",
+    specificity: "the most specific selector inside, added to the rest, like CSS",
+    description:
+      "A pseudo-class, like CSS: a group matches when something inside it, at any depth, matches the selector in the parentheses. #g:has(sphere) cube styles the cubes of the groups that hold a sphere, once, when the scene is compiled. With :hover inside, it reacts to the mouse: #g:has(sphere:hover) cube changes the cubes of #g while a sphere of #g is under the mouse, so hovering one object can move another. Inside the parentheses, any selector works: a descendant selector, read from the group down (#g:has(#inner sphere:hover)), or a list, where one match is enough (#g:has(sphere:hover, cube:hover)). :has() goes on a group: an object holds nothing, so cube:has(sphere) is an error, and a :has() cannot hold another one.",
+    examples: [
+      "@scene { group#a { sphere#sa; cube#ca; } group#b { cube#cb; } } #a { translate: -1 0 0; } #b { translate: 1 0 0; } sphere { translate: 0 1.4 0; radius: 0.3; } cube { translate: 0 0.5 0; color: #e6e6e6; } group:has(sphere) cube { color: #3a7bff; }",
+      "@scene { group#lamp { sphere#bulb; cylinder#stand; } } #bulb { translate: 0 1.6 0; radius: 0.35; color: #e6e6e6; } #stand { translate: 0 0.6 0; radius: 0.08; height: 1.2; color: #888888; transition: 0.3s ease-out; } #lamp:has(#bulb:hover) #stand { color: #ff5a36; scale: 1.2; }",
     ],
   },
   {
