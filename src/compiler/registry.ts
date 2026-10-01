@@ -402,6 +402,18 @@ export const PROPERTIES: PropertyDef[] = [
       "@scene { cube; } cube { translate: 0 0.5 0; } scene { background: #42429f; }",
     ],
   },
+  {
+    name: "dpr",
+    appliesTo: "scene",
+    syntax: "auto | max | <number>",
+    initial: "auto",
+    description:
+      "Sets the pixel density of the render, like the device pixel ratio of the screen. auto follows the screen up to 2. max follows the screen, however dense: the sharpest image, and the slowest. A number from 0.25 to 4 sets the density, never above the screen's: below 1, the render is coarser and faster.",
+    examples: [
+      "@scene { cube; } cube { translate: 0 0.5 0; } scene { dpr: max; }",
+      "@scene { cube; } cube { translate: 0 0.5 0; } scene { dpr: 0.5; }",
+    ],
+  },
 ];
 
 export const AT_RULES: AtRuleDef[] = [
