@@ -1,3 +1,4 @@
+import { inlineAnimations } from "./inline-animations";
 import { describe, it, expect } from "vitest";
 import { compileScene, compileGSS } from "..";
 import { toShadertoy } from "../shader/shadertoy";
@@ -17,7 +18,9 @@ function materialLine(shader: string, id: number): string {
 }
 
 // The part of map() for one object: from its comment to the next blank line
-function mapPart(shader: string, label: string): string {
+// The part of map() for one object, with the animated values put back in place
+function mapPart(compiled: string, label: string): string {
+  const shader = inlineAnimations(compiled);
   const start = shader.indexOf(` // ${label}\n`);
   if (start === -1) throw new Error(`No map() part for ${label}`);
   const end = shader.indexOf("\n\n", start);

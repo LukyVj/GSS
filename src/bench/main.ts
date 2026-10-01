@@ -86,7 +86,7 @@ async function diff(before: string, after: string, tolerance = 2) {
   const out = new ImageData(a.width, a.height);
   const result =
     a.width === b.width && a.height === b.height
-      ? diffPixels(a.data, b.data, tolerance, out.data)
+      ? diffPixels(a.data, b.data, tolerance, out.data, a.width)
       : diffPixels(a.data, new Uint8ClampedArray(0));
   canvas.getContext("2d")!.putImageData(out, 0, 0);
   return { ...result, png: result.changed > 0 ? canvas.toDataURL("image/png") : null };

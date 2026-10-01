@@ -1,3 +1,4 @@
+import { inlineAnimations } from "../tests/inline-animations";
 import { describe, it, expect } from "vitest";
 import { readAngle } from "./codegen";
 import { compileGSS } from "../index";
@@ -452,7 +453,7 @@ describe("animation", () => {
       cube { animation: spin 4s; }
       @keyframes spin { to { rotate-y: 1turn; } }
     `);
-    expect(shader).toContain("q.xz *= rot(mix(0.0, 6.283,");
+    expect(inlineAnimations(shader)).toContain("q.xz *= rot(mix(0.0, 6.283,");
   });
 
   it("animates scale", () => {
@@ -461,7 +462,7 @@ describe("animation", () => {
       sphere { animation: pulse 1s alternate; }
       @keyframes pulse { to { scale: 1.5; } }
     `);
-    expect(shader).toContain("q /= mix(1.0, 1.5,");
+    expect(inlineAnimations(shader)).toContain("q /= mix(1.0, 1.5,");
   });
 
   it("animates color", () => {

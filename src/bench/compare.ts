@@ -135,19 +135,60 @@ const range = (xs: number[]): [number, number] | null =>
 
 // ----- Rendering -----
 
-export type PixelDiff = { changed: number; total: number; maxDelta: number };
+export type PixelDiff = { changed: number; total: number; maxDelta: number; stray: number };
+
+// The share of the pixels that may be stray before the image counts as changed:
+// a few silhouette pixels are GPU rounding, a whole shifted outline is not.
+export const STRAY_BUDGET = 0.0005;
 
 // Two RGBA images of the same size, pixel by pixel. A pixel has changed when one of
 // its channels moved by more than `tolerance` (0-255). `out`, if given, receives an
-// image of the differences: changed pixels in red, the others as a dim grey of `a`.
+// image of the differences: changed pixels in red, stray ones in yellow, the others
+// as a dim grey of `a`.
+//
+// With `width`, a changed pixel is stray when it is GPU rounding, not a change of the
+// scene (decision 74):
+// - an edge flip: the silhouette moved by one pixel, its new color is already in `a`
+//   around it and its old color still in `b` (a horizon line can be a row of them);
+// - or an isolated pixel: none of its 8 neighbours changed. Moving the same arithmetic
+//   in the shader rounds a grazing ray (a contour, a reflection) a little differently,
+//   one pixel here and there; a real change of the scene changes patches of pixels.
 export function diffPixels(
   a: Uint8ClampedArray,
   b: Uint8ClampedArray,
   tolerance = 2,
   out?: Uint8ClampedArray,
+  width?: number,
 ): PixelDiff {
   const total = a.length / 4;
-  if (a.length !== b.length) return { changed: total, total, maxDelta: 255 };
+  if (a.length !== b.length) return { changed: total, total, maxDelta: 255, stray: 0 };
+  const height = width ? total / width : 0;
+  const near = (x: Uint8ClampedArray, i: number, y: Uint8ClampedArray, j: number) =>
+    Math.abs(x[i] - y[j]) <= tolerance &&
+    Math.abs(x[i + 1] - y[j + 1]) <= tolerance &&
+    Math.abs(x[i + 2] - y[j + 2]) <= tolerance &&
+    Math.abs(x[i + 3] - y[j + 3]) <= tolerance;
+  // The 8 neighbours of pixel p
+  const neighbours = (p: number): number[] => {
+    const px = p % width!;
+    const py = (p - px) / width!;
+    const list: number[] = [];
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        const qx = px + dx;
+        const qy = py + dy;
+        if ((dx === 0 && dy === 0) || qx < 0 || qy < 0 || qx >= width! || qy >= height) continue;
+        list.push(qy * width! + qx);
+      }
+    }
+    return list;
+  };
+  // Is the color of `x` at pixel p found in `y` around p?
+  const around = (x: Uint8ClampedArray, y: Uint8ClampedArray, p: number) =>
+    neighbours(p).some((q) => near(x, p * 4, y, q * 4));
+
+  // 1. Which pixels changed
+  const changedAt = new Uint8Array(total);
   let changed = 0;
   let maxDelta = 0;
   for (let i = 0; i < a.length; i += 4) {
@@ -158,27 +199,49 @@ export function diffPixels(
       Math.abs(a[i + 3] - b[i + 3]),
     );
     if (delta > maxDelta) maxDelta = delta;
-    const isChanged = delta > tolerance;
-    if (isChanged) changed++;
+    if (delta > tolerance) {
+      changedAt[i / 4] = 1;
+      changed++;
+    }
+  }
+
+  // 2. Which of them are stray
+  let stray = 0;
+  for (let p = 0; p < total; p++) {
+    const i = p * 4;
+    const isChanged = changedAt[p] === 1;
+    const isStray =
+      isChanged &&
+      !!width &&
+      ((around(b, a, p) && around(a, b, p)) || neighbours(p).every((q) => changedAt[q] === 0));
+    if (isStray) stray++;
     if (out) {
       const grey = (a[i] + a[i + 1] + a[i + 2]) / 12; // a quarter of the brightness
       out[i] = isChanged ? 255 : grey;
-      out[i + 1] = isChanged ? 0 : grey;
+      out[i + 1] = isStray ? 220 : isChanged ? 0 : grey;
       out[i + 2] = isChanged ? 0 : grey;
       out[i + 3] = 255;
     }
   }
-  return { changed, total, maxDelta };
+  return { changed, total, maxDelta, stray };
 }
 
 export type VisualRow = PixelDiff & {
   image: string;
-  verdict: "identical" | "changed" | "missing";
+  // stray: every changed pixel is stray, and there are few of them
+  verdict: "identical" | "stray" | "changed" | "missing";
 };
 
 export function visualVerdict(image: string, diff: PixelDiff | null): VisualRow {
-  if (!diff) return { image, changed: 0, total: 0, maxDelta: 0, verdict: "missing" };
-  return { image, ...diff, verdict: diff.changed === 0 ? "identical" : "changed" };
+  if (!diff) return { image, changed: 0, total: 0, maxDelta: 0, stray: 0, verdict: "missing" };
+  const stray = diff.stray ?? 0;
+  const verdict =
+    diff.changed === 0
+      ? "identical"
+      : stray === diff.changed && stray <= diff.total * STRAY_BUDGET
+        ? "stray"
+        : "changed";
+  return { image, ...diff, stray, verdict };
 }
 
 // ----- The report -----
@@ -186,7 +249,7 @@ export function visualVerdict(image: string, diff: PixelDiff | null): VisualRow 
 export function hasRegression(perf: PerfRow[], visual: VisualRow[]): boolean {
   return (
     perf.some((row) => row.judged && row.verdict === "worse") ||
-    visual.some((row) => row.verdict !== "identical")
+    visual.some((row) => row.verdict === "changed" || row.verdict === "missing")
   );
 }
 
@@ -195,6 +258,13 @@ const spread = (r: [number, number] | null) =>
   r === null || r[0] === r[1] ? "" : ` <sub>${r[0].toFixed(2)}–${r[1].toFixed(2)}</sub>`;
 const pct = (x: number | null) => (x === null ? "—" : `${x > 0 ? "+" : ""}${x.toFixed(1)} %`);
 const MARK: Record<Verdict, string> = { better: "✅ better", same: "same", worse: "❌ worse", "n/a": "n/a" };
+
+const VISUAL: Record<VisualRow["verdict"], string> = {
+  identical: "✅ identical",
+  stray: "✅ stray pixels only",
+  changed: "❌ changed",
+  missing: "❌ missing",
+};
 
 export function toMarkdown(
   before: BenchReport,
@@ -228,11 +298,13 @@ export function toMarkdown(
     "",
     "## Rendering",
     "",
-    "| image | changed pixels | max Δ | verdict |",
-    "| --- | --- | --- | --- |",
+    `A changed pixel is stray (GPU rounding) when the silhouette only moved by one pixel, or when none of its neighbours changed: accepted up to ${STRAY_BUDGET * 100} % of the image.`,
+    "",
+    "| image | changed pixels | stray | max Δ | verdict |",
+    "| --- | --- | --- | --- | --- |",
     ...visual.map(
       (r) =>
-        `| ${r.image} | ${r.changed} / ${r.total} | ${r.maxDelta} | ${r.verdict === "identical" ? "✅ identical" : `❌ ${r.verdict}`} |`,
+        `| ${r.image} | ${r.changed} / ${r.total} | ${r.stray} | ${r.maxDelta} | ${VISUAL[r.verdict]} |`,
     ),
   ];
   const errors = Object.entries(after.scenes).filter(([, s]) => s.error);
