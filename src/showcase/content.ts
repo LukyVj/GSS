@@ -123,7 +123,7 @@ export const USE_CASES: UseCase[] = [
     scene: llm,
     snippet: {
       lang: "html",
-      code: `<script type="module" src="https://gss-lang.dev/embed.js"></script>\n\n<gss-scene>\n  <script type="text/gss">\n    /* what the model wrote */\n  </script>\n</gss-scene>`,
+      code: `<script type="module" src="https://www.gss-lang.dev/embed.js"></script>\n\n<gss-scene>\n  <script type="text/gss">\n    /* what the model wrote */\n  </script>\n</gss-scene>`,
     },
     features: [
       ["group", "shape-group"],
