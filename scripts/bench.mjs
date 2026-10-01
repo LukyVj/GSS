@@ -5,11 +5,15 @@
 //   npm run bench -- --ref main        bench another commit (bench-results/main)
 //   node scripts/bench.mjs diff a b    compare two runs already in bench-results/
 //
-// Options: --scenes orrery,macropad   --seconds 4   --headless   --swiftshader
+// Options: --scenes orrery,macropad   --seconds 4   --rounds 3   --dpr 2   --headless   --swiftshader
 //
 // For each scene, in a real Chromium:
 //   - two images with time stopped at 0: mouse outside, then mouse over the middle (:hover)
 //   - the profiler for --seconds, mouse outside then mouse over the middle
+// compare measures each version --rounds times (3 by default), alternating
+// (main, current, main, current…): a change only counts when every round agrees,
+// so the noise of the machine cannot pass for a regression. --dpr 2 renders like
+// a Retina screen (4 times the pixels): the GPU then has real work to do.
 // Another commit is benched in a git worktree (.bench-worktrees/), with today's bench
 // and profiler copied in: the same measuring tool on the old engine.
 // The comparison goes to bench-results/compare.md (and the terminal); exit code 1 when
@@ -50,6 +54,8 @@ const flag = (name) => {
 const options = {
   scenes: option("scenes", DEFAULT_SCENES.join(",")).split(","),
   seconds: Number(option("seconds", "4")),
+  rounds: Number(option("rounds", "0")), // 0: 3 for compare, 1 for a single run
+  dpr: Number(option("dpr", "1")),
   ref: option("ref", null),
   swiftshader: flag("swiftshader"),
   headless: false,
@@ -60,10 +66,14 @@ const git = (...args) => execFileSync("git", args, { cwd: REPO, encoding: "utf8"
 const safe = (ref) => ref.replace(/[^\w.-]+/g, "_");
 
 // ----- Run the bench on a folder (the repo, or a worktree) -----
-async function bench(root, label, ref) {
+// Round 1 starts bench-results/<label>/ over and takes the images; the next rounds
+// only add their timings to report.json.
+async function bench(root, label, ref, round = 1) {
   const out = join(RESULTS, label);
-  rmSync(out, { recursive: true, force: true });
-  mkdirSync(out, { recursive: true });
+  if (round === 1) {
+    rmSync(out, { recursive: true, force: true });
+    mkdirSync(out, { recursive: true });
+  }
 
   const server = await createServer({ root, configFile: join(root, "vite.config.ts"), logLevel: "error", server: { port: 5210 } });
   await server.listen();
@@ -75,7 +85,7 @@ async function bench(root, label, ref) {
       ? ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"]
       : ["--ignore-gpu-blocklist", "--enable-privileged-webgl-extensions"],
   });
-  const page = await browser.newPage({ viewport: { width: 1040, height: 620 }, deviceScaleFactor: 1 });
+  const page = await browser.newPage({ viewport: { width: 1040, height: 620 }, deviceScaleFactor: options.dpr });
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
 
@@ -95,13 +105,18 @@ async function bench(root, label, ref) {
     return page.evaluate(() => window.__bench.report());
   };
 
-  const report = { label, ref, date: new Date().toISOString(), renderer: "", userAgent: "", seconds: options.seconds, scenes: {} };
+  const file = join(out, "report.json");
+  const report =
+    round === 1
+      ? { label, ref, date: new Date().toISOString(), renderer: "", userAgent: "", seconds: options.seconds, dpr: options.dpr, rounds: 0, scenes: {} }
+      : JSON.parse(readFileSync(file, "utf8"));
+  report.rounds = round;
   for (const scene of options.scenes) {
-    process.stdout.write(`  ${label}: ${scene} `);
+    process.stdout.write(`  ${label} (round ${round}): ${scene} `);
     errors.length = 0;
-    // 1. The images, time stopped
-    let error = await open(`scene=${scene}&mode=still`);
-    if (!error) {
+    // 1. The images, time stopped (once: they do not change from one round to the next)
+    let error = round === 1 ? await open(`scene=${scene}&mode=still`) : null;
+    if (!error && round === 1) {
       // A fixed clip, not the element: no wait for it to be "stable" between frames
       const shot = async () => {
         await page.evaluate(() => window.__bench.pause()); // the last frame stays on the canvas
@@ -119,7 +134,7 @@ async function bench(root, label, ref) {
     // 2. The timings, the scene alive
     error ||= await open(`scene=${scene}&mode=run`);
     if (error || errors.length > 0) {
-      report.scenes[scene] = { error: error || errors.join("; ") };
+      report.scenes[scene] = { error: error || errors.join("; "), shaderMs: null, hoverOff: [], hoverOn: [] };
       console.log(`· error: ${report.scenes[scene].error}`);
       continue;
     }
@@ -127,10 +142,15 @@ async function bench(root, label, ref) {
     const hoverOn = await measure(MIDDLE);
     report.renderer = await page.evaluate(() => window.__bench.renderer());
     report.userAgent = await page.evaluate(() => navigator.userAgent);
-    report.scenes[scene] = { shaderMs: hoverOn?.shaderMs ?? null, hoverOff: pick(hoverOff), hoverOn: pick(hoverOn) };
+    const result = (report.scenes[scene] ??= { shaderMs: null, hoverOff: [], hoverOn: [] });
+    if (!result.error) {
+      result.shaderMs = hoverOn?.shaderMs ?? result.shaderMs;
+      result.hoverOff.push(pick(hoverOff));
+      result.hoverOn.push(pick(hoverOn));
+    }
     console.log(`· timings`);
   }
-  writeFileSync(join(out, "report.json"), JSON.stringify(report, null, 2));
+  writeFileSync(file, JSON.stringify(report, null, 2));
   await browser.close();
   await server.close();
   return out;
@@ -202,22 +222,27 @@ if (command === "diff") {
   await compare(argv[0], argv[1]);
 } else if (command === "compare") {
   const ref = argv[0] ?? "main";
-  console.log(`Bench ${ref} (worktree), then the working tree (${currentRef()})`);
+  const rounds = options.rounds || 3;
+  const head = currentRef();
+  console.log(`Bench ${ref} (worktree) and the working tree (${head}), ${rounds} rounds each, alternating, dpr ${options.dpr}`);
   const dir = worktree(ref);
   try {
-    await bench(dir, safe(ref), git("rev-parse", "--short", ref));
+    for (let round = 1; round <= rounds; round++) {
+      await bench(dir, safe(ref), git("rev-parse", "--short", ref), round);
+      await bench(REPO, "current", head, round);
+    }
   } finally {
     git("worktree", "remove", "--force", dir);
   }
-  await bench(REPO, "current", currentRef());
   await compare(safe(ref), "current");
-} else if (options.ref) {
-  const dir = worktree(options.ref);
-  try {
-    await bench(dir, safe(options.ref), git("rev-parse", "--short", options.ref));
-  } finally {
-    git("worktree", "remove", "--force", dir);
-  }
 } else {
-  await bench(REPO, "current", currentRef());
+  const rounds = options.rounds || 1;
+  const dir = options.ref ? worktree(options.ref) : REPO;
+  const label = options.ref ? safe(options.ref) : "current";
+  const ref = options.ref ? git("rev-parse", "--short", options.ref) : currentRef();
+  try {
+    for (let round = 1; round <= rounds; round++) await bench(dir, label, ref, round);
+  } finally {
+    if (options.ref) git("worktree", "remove", "--force", dir);
+  }
 }

@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   verdict,
+  median,
   comparePerf,
   diffPixels,
   visualVerdict,
@@ -17,53 +18,75 @@ const summary = (medianMs: number, p95Ms = medianMs, p99Ms = p95Ms) => ({
   p95Ms,
   p99Ms,
 });
-const measure = (gpu: number, cpu: number, frameP95 = 17): Measure => ({
-  fps: 60,
-  frame: summary(16.7, frameP95),
-  gpu: summary(gpu, gpu * 1.2),
+const measure = (gpu: number, cpu: number, gpuP95 = gpu * 1.2): Measure => ({
+  fps: 120,
+  frame: summary(8.3, 9.2),
+  gpu: summary(gpu, gpuP95),
   cpu: summary(cpu, cpu * 1.2),
 });
-const report = (label: string, gpu: number, cpu: number): BenchReport => ({
+// One scene, measured in several rounds: gpu and cpu medians of each round
+const report = (label: string, rounds: [gpu: number, cpu: number][], dpr = 1): BenchReport => ({
   label,
   ref: label,
   date: "2026-10-01",
-  renderer: "Apple M2",
+  renderer: "Apple M4 Pro",
   userAgent: "test",
   seconds: 4,
-  scenes: { orrery: { shaderMs: 120, hoverOff: measure(gpu, 0.3), hoverOn: measure(gpu, cpu) } },
+  dpr,
+  rounds: rounds.length,
+  scenes: {
+    orrery: {
+      shaderMs: 120,
+      hoverOff: rounds.map(([gpu]) => measure(gpu, 0.1)),
+      hoverOn: rounds.map(([gpu, cpu]) => measure(gpu, cpu)),
+    },
+  },
+});
+const row = (rows: ReturnType<typeof comparePerf>, hover: string, metric: string) =>
+  rows.find((r) => r.hover === hover && r.metric === metric);
+
+describe("median", () => {
+  it("is the middle value, or the mean of the two middle ones", () => {
+    expect(median([3, 1, 2])).toBe(2);
+    expect(median([4, 1, 3, 2])).toBe(2.5);
+  });
 });
 
 describe("verdict", () => {
-  it("calls the noise of two runs the same", () => {
-    expect(verdict(8, 8.4, 0.1, 0.3)).toBe("same"); // +5 %: noise
+  it("is worse when the medians differ enough AND every round agrees", () => {
+    expect(verdict([4, 4.1, 4.2], [5, 5.1, 5.3], 0.1, 0.3)).toBe("worse");
   });
-  it("needs both a relative and an absolute change", () => {
-    expect(verdict(0.5, 0.9, 0.1, 0.3)).toBe("worse"); // +80 % and +0.4 ms
-    expect(verdict(0.1, 0.3, 0.1, 0.3)).toBe("same"); // +200 %, but only +0.2 ms
+  it("is the same when the rounds overlap, however far the medians", () => {
+    // the noise of one machine: an after round is as good as a before round
+    expect(verdict([4, 4.1, 6], [5, 5.1, 3.9], 0.1, 0.3)).toBe("same");
   });
-  it("sees an improvement too", () => {
-    expect(verdict(6, 0.4, 0.25, 0.3)).toBe("better");
+  it("needs a change bigger than the absolute floor", () => {
+    expect(verdict([0.1, 0.1, 0.1], [0.2, 0.2, 0.2], 0.1, 0.3)).toBe("same"); // +100 %, +0.1 ms
   });
-  it("says n/a when one side was not measured", () => {
-    expect(verdict(null, 4, 0.1, 0.3)).toBe("n/a");
+  it("sees an improvement the same way", () => {
+    expect(verdict([5.2, 5.0, 5.9], [0.3, 0.4, 0.3], 0.25, 0.3)).toBe("better");
+  });
+  it("says n/a when a side was never measured", () => {
+    expect(verdict([], [4], 0.1, 0.3)).toBe("n/a");
   });
 });
 
 describe("comparePerf", () => {
-  it("compares every metric, mouse off and on", () => {
-    const rows = comparePerf(report("main", 8, 6), report("branch", 8, 0.4));
-    const cpuOn = rows.find((r) => r.hover === "on" && r.metric === "cpu median");
-    expect(cpuOn).toMatchObject({ before: 6, after: 0.4, verdict: "better" });
-    expect(rows.filter((r) => r.verdict === "worse")).toEqual([]);
+  const before = report("main", [[6.3, 4.1], [6.1, 4.3], [6.5, 3.9]]);
+  const after = report("branch", [[3.4, 0.4], [3.5, 0.3], [3.3, 0.4]]);
+
+  it("compares the medians of the rounds, mouse off and on", () => {
+    const cpu = row(comparePerf(before, after), "on", "cpu median");
+    expect(cpu).toMatchObject({ before: 4.1, after: 0.4, verdict: "better", judged: true });
+    expect(cpu?.beforeRange).toEqual([3.9, 4.3]);
   });
-  it("gives the change in percent", () => {
-    const rows = comparePerf(report("a", 10, 1), report("b", 12, 1));
-    expect(rows.find((r) => r.hover === "off" && r.metric === "gpu median")?.deltaPercent).toBeCloseTo(20);
+  it("shows the p95 without judging them", () => {
+    expect(row(comparePerf(before, after), "on", "gpu p95")?.judged).toBe(false);
   });
   it("skips a scene that failed in either run", () => {
-    const broken = report("b", 8, 1);
+    const broken = report("b", [[6, 4]]);
     broken.scenes.orrery.error = "WebGL lost";
-    expect(comparePerf(report("a", 8, 1), broken)).toEqual([]);
+    expect(comparePerf(before, broken)).toEqual([]);
   });
 });
 
@@ -94,23 +117,38 @@ describe("diffPixels", () => {
 
 describe("the verdict of a whole comparison", () => {
   const same = visualVerdict("orrery.png", { changed: 0, total: 4, maxDelta: 1 });
+  const steady = report("a", [[4, 1], [4.1, 1], [4, 1.1]]);
 
-  it("is clean when nothing got worse and every image is identical", () => {
-    expect(hasRegression(comparePerf(report("a", 8, 6), report("b", 8, 0.4)), [same])).toBe(false);
+  it("is clean when no judged metric got worse and every image is identical", () => {
+    expect(hasRegression(comparePerf(steady, report("b", [[4.1, 1], [4, 1], [4.1, 1]])), [same])).toBe(false);
   });
-  it("is a regression when a metric got worse", () => {
-    expect(hasRegression(comparePerf(report("a", 8, 1), report("b", 12, 1)), [same])).toBe(true);
+  it("is a regression when a median got worse in every round", () => {
+    const slower = report("b", [[5, 1], [5.2, 1], [5.1, 1]]);
+    expect(hasRegression(comparePerf(steady, slower), [same])).toBe(true);
+  });
+  it("is not a regression when only a p95 moved", () => {
+    const jumpy = report("b", [[4, 1], [4.1, 1], [4, 1]]);
+    jumpy.scenes.orrery.hoverOff = [1, 2, 3].map(() => measure(4, 0.1, 9)); // p95 ×2
+    expect(hasRegression(comparePerf(steady, jumpy), [same])).toBe(false);
   });
   it("is a regression when one pixel changed, or an image is missing", () => {
     expect(hasRegression([], [visualVerdict("a.png", { changed: 1, total: 4, maxDelta: 30 })])).toBe(true);
     expect(hasRegression([], [visualVerdict("a.png", null)])).toBe(true);
   });
-  it("writes it all as a markdown report", () => {
-    const before = report("main", 8, 6);
-    const after = report("branch", 8, 0.4);
+  it("writes it all as a markdown report, with the range of the rounds", () => {
+    const before = report("main", [[6.3, 4.1], [6.1, 4.3], [6.5, 3.9]]);
+    const after = report("branch", [[3.4, 0.4], [3.5, 0.3], [3.3, 0.4]]);
     const md = toMarkdown(before, after, comparePerf(before, after), [same]);
     expect(md).toContain("✅ no regression");
-    expect(md).toContain("| orrery | on | cpu median | 6.00 | 0.40 | -93.3 % | ✅ better |");
+    expect(md).toContain("3 round(s) per version");
+    expect(md).toContain(
+      "| orrery | on | cpu median | 4.10 <sub>3.90–4.30</sub> | 0.40 <sub>0.30–0.40</sub> | -90.2 % | ✅ better |",
+    );
+    expect(md).toContain("info: ");
     expect(md).toContain("| orrery.png | 0 / 4 | 1 | ✅ identical |");
+  });
+  it("warns when the two runs were not rendered at the same dpr", () => {
+    const md = toMarkdown(steady, report("b", [[4, 1]], 2), [], [same]);
+    expect(md).toContain("not comparable: dpr 1 before, 2 after");
   });
 });
