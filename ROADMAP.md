@@ -110,7 +110,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 2. [x] `var()` ✅ decision 55, inherited and animatable (+ `calc()` ✅ decision 52, with `min()`, `max()`, `clamp()`, `abs()`, `sqrt()`, `pow()`, `sin()`, `cos()`, `tan()`)
 3. [ ] Functional colors: `rgb()`, `hsl()` and the named colors ✅ decision 58; still to do: `oklch()`, `oklab()`, `hwb()`, `color-mix()`
 4. [x] Textures: `texture: url("…")`, one image per face, `::face()` (decision 59)
-5. [ ] Animation controls (delay / iteration-count / reverse)
+5. [x] Animation controls ✅ decision 70: delay, iteration count, direction, fill mode, and the six longhands
 6. [ ] `@media` + `prefers-reduced-motion`
 7. [ ] Selectors / nesting (combinators `>` `+` `~`, etc.)
 8. [x] `:hover` ✅ decision 62 (picking pass → `uHover[]`), `transition` ✅ decision 68 (one per object; per-property lists later), `:has()` ✅ decision 69 (`#g:has(sphere:hover) cube`, any selector inside)
@@ -206,6 +206,7 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median: orrery 20 ms, tod
 
 ## Done recently
 
+- Animation controls: delay, iteration count, direction, fill mode, and `animation-duration`, `-delay`, `-iteration-count`, `-direction`, `-fill-mode`, `-timing-function` (decision 70)
 - `:has()`, like CSS: a group that holds a match, at compile time or under the mouse (`#g:has(sphere:hover) cube`), any selector inside (decision 69)
 - Easings (`ease`, `ease-in`, `ease-out`, `cubic-bezier()`, `linear()`) in `@keyframes` and `transition`, which glides `:hover` in both directions like CSS (decision 68)
 - `scene { dpr: auto | max | <number>; }`: the pixel density of the render, chosen by the author (decision 67)
@@ -238,12 +239,12 @@ A score for how well a CSS notion carries over to GSS (a style language → an S
 | ------------------------------------- | ----: | ------------------------------- |
 | `animation` (shorthand)               |   1.0 | Already in GSS                  |
 | `animation-name`                      |   1.0 | Tied to `@keyframes`            |
-| `animation-duration`                  |   1.0 | Priority: animation controls    |
-| `animation-timing-function`           |   0.9 | Easings → compact curve         |
-| `animation-delay`                     |   1.0 | Roadmap priority #5             |
-| `animation-iteration-count`           |   1.0 | Roadmap priority #5             |
-| `animation-direction`                 |   1.0 | reverse planned                 |
-| `animation-fill-mode`                 |   0.8 | Maps to holding the start/end   |
+| `animation-duration`                  |   1.0 | Already in GSS (decision 70)    |
+| `animation-timing-function`           |   1.0 | Already in GSS (decision 70)    |
+| `animation-delay`                     |   1.0 | Already in GSS (decision 70)    |
+| `animation-iteration-count`           |   1.0 | Already in GSS (decision 70)    |
+| `animation-direction`                 |   1.0 | Already in GSS (decision 70)    |
+| `animation-fill-mode`                 |   1.0 | Already in GSS (decision 70)    |
 | `animation-play-state`                |   0.7 | Runtime pause possible          |
 | `animation-composition`               |   0.5 | Blending tracks, later          |
 | `animation-timeline`                  |   0.5 | If reframed (scene time/scroll) |
@@ -483,7 +484,7 @@ A score for how well a CSS notion carries over to GSS (a style language → an S
 | `:nth-child()` / `:nth-of-type()` / `:nth-last-*`                                                                                                                                                                                                                                                                   |  0.85 | Compile-time index                                                      |
 | `:first-child` / `:last-child` / `:only-child` / `:first-of-type` / `:last-of-type` / `:only-of-type` / `:empty`                                                                                                                                                                                                    |   0.8 | Scene structure                                                         |
 | `:is()` / `:where()` / `:not()`                                                                                                                                                                                                                                                                                     |   0.6 | Selector utilities                                                      |
-| `:has()`                                                                                                                                                                                                                                                                                                            |   0.9 | Already in GSS (decision 69)                                             |
+| `:has()`                                                                                                                                                                                                                                                                                                            |   1.0 | Already in GSS (decision 69)                                             |
 | `:root` / `:scope`                                                                                                                                                                                                                                                                                                  |   0.6 | Root / scope                                                            |
 | `:lang()` / `:dir()`                                                                                                                                                                                                                                                                                                |   0.2 | I18n DOM                                                                |
 | Link/visited/any-link/local-link/target\*                                                                                                                                                                                                                                                                           |   0.1 | Navigation HTML                                                         |
