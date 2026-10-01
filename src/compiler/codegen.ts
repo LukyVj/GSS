@@ -5,7 +5,13 @@ import { FACES, type Face, type StyledInstance, type Styles } from "./resolve";
 import type { Keyframes } from "./ast";
 import { readFunction, readPolygon } from "./values";
 import { readSvgPath, type Point } from "./svgpath";
-import { pathFunction, polygonFunction, type ViewBox } from "./path";
+import {
+  pathFunction,
+  polygonFunction,
+  pathRadius,
+  polygonRadius,
+  type ViewBox,
+} from "./path";
 import { readRendering, readTexture, sceneTextures } from "./textures";
 
 // What an object looks like when hovered, and its number in uHover[]
@@ -652,10 +658,16 @@ function readViewBox(value: Token[] | undefined): ViewBox | null {
 }
 
 // The GLSL shape of each type of object. "q" is the point, already moved.
-// Each shape turns the object's styles into GLSL. "q" is the point, already moved.
+// Each shape turns the object's styles into GLSL, and gives the radius of a sphere,
+// centered on its origin, that holds the whole shape: map() skips the object when
+// even that sphere is further than the nearest object found so far (null: no sphere,
+// the object is always drawn). Every shape below is an exact distance, so the
+// distance to the shape is never less than the distance to its sphere.
+type Shape = { code: string; radius: number | null };
+
 const SHAPES: Record<
   string,
-  (styles: Styles, context: ShapeContext) => string
+  (styles: Styles, context: ShapeContext) => Shape
 > = {
   cube: (styles) => {
     const half = readSize(styles["size"]).map((n) => n / 2);
@@ -663,24 +675,38 @@ const SHAPES: Record<
       readNumber(styles["corner-radius"], "corner-radius", 0.08, true),
       ...half,
     );
-    return `sdRoundBox(q, ${vec3(half)}, ${glslFloat(corner)})`;
+    return {
+      code: `sdRoundBox(q, ${vec3(half)}, ${glslFloat(corner)})`,
+      radius: Math.hypot(...half), // the corner of the box
+    };
   },
-  sphere: (styles) =>
-    `sdSphere(q, ${glslFloat(readNumber(styles["radius"], "radius", 0.5))})`,
+  sphere: (styles) => {
+    const radius = readNumber(styles["radius"], "radius", 0.5);
+    return { code: `sdSphere(q, ${glslFloat(radius)})`, radius };
+  },
   torus: (styles) => {
     const radius = readNumber(styles["radius"], "radius", 1);
     const thickness = readNumber(styles["thickness"], "thickness", 0.28);
-    return `sdTorus(q, vec2(${glslFloat(radius)}, ${glslFloat(thickness)}))`;
+    return {
+      code: `sdTorus(q, vec2(${glslFloat(radius)}, ${glslFloat(thickness)}))`,
+      radius: radius + thickness,
+    };
   },
   cylinder: (styles) => {
     const radius = readNumber(styles["radius"], "radius", 0.5);
     const height = readNumber(styles["height"], "height", 1);
-    return `sdCylinder(q, ${glslFloat(height / 2)}, ${glslFloat(radius)})`;
+    return {
+      code: `sdCylinder(q, ${glslFloat(height / 2)}, ${glslFloat(radius)})`,
+      radius: Math.hypot(radius, height / 2), // the rim of a cap
+    };
   },
   cone: (styles) => {
     const [bottom, top] = readRadii(styles["radius"]);
     const height = readNumber(styles["height"], "height", 1);
-    return `sdCappedCone(q, ${glslFloat(height / 2)}, ${glslFloat(bottom)}, ${glslFloat(top)})`;
+    return {
+      code: `sdCappedCone(q, ${glslFloat(height / 2)}, ${glslFloat(bottom)}, ${glslFloat(top)})`,
+      radius: Math.hypot(Math.max(bottom, top), height / 2), // the rim of the wider cap
+    };
   },
   capsule: (styles) => {
     const radius = readNumber(styles["radius"], "radius", 0.25);
@@ -692,7 +718,10 @@ const SHAPES: Record<
         `capsule height must be at least twice its radius (${glslFloat(radius * 2)}), like: height: ${radius * 2};`,
       );
     }
-    return `sdCapsule(q, ${glslFloat(half)}, ${glslFloat(radius)})`;
+    return {
+      code: `sdCapsule(q, ${glslFloat(half)}, ${glslFloat(radius)})`,
+      radius: height / 2, // the tip of a cap
+    };
   },
   // A tube along an SVG path (decision 35)
   path: (styles, context) => {
@@ -705,7 +734,7 @@ const SHAPES: Record<
       pathFunction("NAME", lines, width, viewBox),
     );
     const name = useFunction(context, code);
-    return `${name}(q)`;
+    return { code: `${name}(q)`, radius: pathRadius(lines, width, viewBox) };
   },
   // A polygon, filled, then given a depth
   prism: (styles, context) => {
@@ -715,12 +744,19 @@ const SHAPES: Record<
     const code = locate(styles["d"], () =>
       polygonFunction("NAME", contours, depth, viewBox),
     );
-    return `${useFunction(context, code)}(q)`;
+    return {
+      code: `${useFunction(context, code)}(q)`,
+      radius: polygonRadius(contours, depth, viewBox),
+    };
   },
   // A thin box: the ray could jump over a surface with no thickness
   plane: (styles) => {
     const [width, depth] = readFlatSize(styles["size"]);
-    return `sdRoundBox(q, ${vec3([width / 2, 0.01, depth / 2])}, 0.0)`;
+    const half = [width / 2, 0.01, depth / 2];
+    return {
+      code: `sdRoundBox(q, ${vec3(half)}, 0.0)`,
+      radius: Math.hypot(...half),
+    };
   },
 };
 
@@ -1267,6 +1303,23 @@ export function generateShader(
     return slot === -1 ? undefined : { styles: instance.hoverStyles, slot };
   };
   const context: ShapeContext = { functions: new Map() };
+
+  // What an object must beat to matter. With only plain unions, map() is a plain min():
+  // an object further than the floor can never be the nearest, so the floor counts
+  // from the start. Otherwise the order of the operations matters, and only the
+  // objects already combined count (res.x).
+  const plainUnion = (instance: StyledInstance) =>
+    readOperation(instance.styles["operation"]) === "opU" &&
+    readNumber(instance.styles["blend"], "blend", 0, true) === 0;
+  const floorStyle = sceneStyles["floor"];
+  const hasFloor = !(
+    floorStyle?.length === 1 &&
+    floorStyle[0].type === "IDENT" &&
+    floorStyle[0].value === "none"
+  );
+  const nearest =
+    hasFloor && instances.every(plainUnion) ? "min(res.x, p.y)" : "res.x";
+
   const mapLines = instances.map((instance) => {
     const shape = SHAPES[instance.tag];
     if (!shape) {
@@ -1274,7 +1327,7 @@ export function generateShader(
         `Unknown object: "${instance.tag}". Available: ${Object.keys(SHAPES).join(", ")}`,
       );
     }
-    const shapeCode = shape(instance.styles, context);
+    const { code: shapeCode, radius } = shape(instance.styles, context);
     // Every node from the outside in: the groups, then the object itself
     const nodes = [...instance.groupStyles, instance.styles];
     // q was divided by every scale, so the distance is multiplied back by all of them
@@ -1300,13 +1353,42 @@ export function generateShader(
         ? `${SMOOTH[operation]}(res, ${shapeValue}, ${glslFloat(blend)})`
         : `${operation}(res, ${shapeValue})`;
 
+    const groupLines = instance.groupStyles.flatMap((styles) =>
+      transformLines(styles, keyframes),
+    );
+
+    // Only a plain union can be skipped: a subtraction, an intersection or a blend
+    // changes the result even when the object is far
+    if (radius === null || !plainUnion(instance)) {
+      return [
+        ` // ${label(instance)}`,
+        `  q = p;`,
+        ...groupLines,
+        ...transformLines(instance.styles, keyframes, hover),
+        ` res = ${combine};`,
+      ].join("\n");
+    }
+
+    // The bounding sphere: tested after the object's own translate and before its
+    // rotations (a sphere looks the same from every side), so a skipped object costs
+    // neither its rotations nor its shape. Its distance, back in scene units: the
+    // object's own scale grows the sphere, the groups' scales grow everything.
+    const ownScale = scales[last];
+    const groupScales = scales.slice(0, last);
+    // A little bigger, rounded up: the GPU computes in 32-bit floats, and a sphere
+    // smaller than the shape would skip an object that touches the ray
+    const safeRadius = Math.ceil((radius + 0.001) * 10000) / 10000;
+    const sphere = `(length(q) - ${glslFloat(safeRadius)} * ${ownScale})${groupScales.map((scale) => ` * ${scale}`).join("")}`;
     return [
       ` // ${label(instance)}`,
       `  q = p;`,
-      ...nodes.flatMap((styles, n) =>
-        transformLines(styles, keyframes, n === last ? hover : undefined),
-      ),
-      ` res = ${combine};`,
+      ...groupLines,
+      `  q -= ${hoverValue(instance.styles, keyframes, "translate", readTranslate, hover)};`,
+      `  if (${sphere} <= ${nearest}) { // its bounding sphere could be the nearest`,
+      ...rotationLines(instance.styles, keyframes, hover).map((line) => `  ${line}`),
+      `    q /= ${ownScale};`,
+      `   res = ${combine};`,
+      `  }`,
     ].join("\n");
   });
 

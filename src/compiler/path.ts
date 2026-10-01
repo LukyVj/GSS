@@ -161,3 +161,45 @@ ${body.join("\n")}
   return extrude(s * sqrt(d), p.z, ${h});
 }`.replace(/NAME/g, name);
 }
+
+// ----- Bounding spheres (map() skips an object when even its sphere is further than
+// the nearest object found so far). Centered on the object's origin, in its own units.
+
+// How far the farthest corner of a box is from the origin: the box fits in that circle
+function reach(box: ViewBox): number {
+  const x = Math.max(Math.abs(box.x), Math.abs(box.x + box.width));
+  const y = Math.max(Math.abs(box.y), Math.abs(box.y + box.height));
+  return Math.hypot(x, y);
+}
+
+// The points in scene coordinates: centered on the view-box (or on the points), y up
+function toSceneBox(points: Point[], viewBox: ViewBox | null): ViewBox {
+  const box = viewBox ?? boxOf(points);
+  const cx = box.x + box.width / 2;
+  const cy = box.y + box.height / 2;
+  return boxOf(points.map(({ x, y }) => ({ x: x - cx, y: cy - y })));
+}
+
+// A path: its points, widened by half the stroke. The sphere also holds what the
+// shader returns far from the path (the distance to the box of the segments, minus
+// half the stroke). null when there is nothing to hold (no point).
+export function pathRadius(
+  lines: Point[][],
+  strokeWidth: number,
+  viewBox: ViewBox | null,
+): number | null {
+  const points = lines.flat();
+  if (points.length === 0) return null;
+  return reach(toSceneBox(points, viewBox)) + strokeWidth / 2;
+}
+
+// A prism: its contours, and half its depth in z
+export function polygonRadius(
+  contours: Point[][],
+  depth: number,
+  viewBox: ViewBox | null,
+): number | null {
+  const points = contours.flat();
+  if (points.length === 0) return null;
+  return Math.hypot(reach(toSceneBox(points, viewBox)), depth / 2);
+}
