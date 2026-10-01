@@ -51,6 +51,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 | Textures     | `texture: url("…")`, `image-rendering: pixelated`, `texture-size`                                  | 59     |
 | Combinations | `operation: union \| subtract \| intersect`, `blend` (smooth union)                                | 18, 19 |
 | Animation    | `animation`; animatable: `translate`, `rotate-*`, `scale`, `color` (also what `:hover` can change) | 24, 62 |
+| Transition   | `transition: 0.3s ease-out`, one per object; easings: keywords, `cubic-bezier()`, `linear()`         | 68     |
 
 ### Materials
 
@@ -112,7 +113,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 5. [ ] Animation controls (delay / iteration-count / reverse)
 6. [ ] `@media` + `prefers-reduced-motion`
 7. [ ] Selectors / nesting (combinators `>` `+` `~`, etc.)
-8. [ ] `:hover` ✅ decision 62 (picking pass → `uHover[]`); still to do: `transition` ← **next**, then `:has()` (`#g:has(sphere:hover) cube`)
+8. [ ] `:hover` ✅ decision 62 (picking pass → `uHover[]`), `transition` ✅ decision 68 (one per object; per-property lists later); still to do: `:has()` (`#g:has(sphere:hover) cube`) ← **next**
 9. [ ] `transform-origin`
 10. [ ] Fog
 11. [x] `sibling-index()` + `sibling-count()` (decision 52)
@@ -205,6 +206,7 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median: orrery 20 ms, tod
 
 ## Done recently
 
+- Easings (`ease`, `ease-in`, `ease-out`, `cubic-bezier()`, `linear()`) in `@keyframes` and `transition`, which glides `:hover` in both directions like CSS (decision 68)
 - `scene { dpr: auto | max | <number>; }`: the pixel density of the render, chosen by the author (decision 67)
 - Performance tools and two speed-ups with an identical image (Oct. 1): the dev profiler and the bench (decision 64), `:hover` without a GPU wait (decision 65), bounding spheres for `path` and `prism` in `map()` (decision 66)
 - Embedding and showcase: `<gss-scene>` / `embed.js`, `mount()`, the Vite plugin, a runtime without the compiler (10 kB), `showcase.html`, `npm run captures` (decision 63)
@@ -245,7 +247,7 @@ A score for how well a CSS notion carries over to GSS (a style language → an S
 | `animation-composition`               |   0.5 | Blending tracks, later          |
 | `animation-timeline`                  |   0.5 | If reframed (scene time/scroll) |
 | `animation-range` / `-start` / `-end` |   0.5 | Same, timelines                 |
-| `transition` (shorthand)              |   1.0 | With `:hover` (priority #8)     |
+| `transition` (shorthand)              |   1.0 | Already in GSS (decision 68)    |
 | `transition-property`                 |   1.0 | Same                            |
 | `transition-duration`                 |   1.0 | Same                            |
 | `transition-delay`                    |   1.0 | Same                            |
