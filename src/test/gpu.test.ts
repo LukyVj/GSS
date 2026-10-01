@@ -26,28 +26,28 @@ describe("compileOnGpu", () => {
 
 describe("every documented example compiles on the GPU", () => {
   for (const property of PROPERTIES) {
-    for (const example of property.examples) {
+    for (const { code: example } of property.examples) {
       it(`${property.name}: ${example}`, async () => {
         expect(await compileOnGpu(compileGSS(example))).toBe("");
       });
     }
   }
   for (const shape of SHAPE_DOCS) {
-    for (const example of shape.examples) {
+    for (const { code: example } of shape.examples) {
       it(`${shape.name}: ${example}`, async () => {
         expect(await compileOnGpu(compileGSS(example))).toBe("");
       });
     }
   }
   for (const selector of SELECTORS) {
-    for (const example of selector.examples) {
+    for (const { code: example } of selector.examples) {
       it(`${selector.name}: ${example}`, async () => {
         expect(await compileOnGpu(compileGSS(example))).toBe("");
       });
     }
   }
   for (const fn of FUNCTIONS) {
-    for (const example of fn.examples) {
+    for (const { code: example } of fn.examples) {
       it(`${fn.name}: ${example}`, async () => {
         expect(await compileOnGpu(compileGSS(example))).toBe("");
       });

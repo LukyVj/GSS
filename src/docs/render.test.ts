@@ -26,7 +26,7 @@ const rotateX: PropertyDef = {
   syntax: "<angle>",
   initial: "0deg",
   description: "Rotates the object around the x axis.",
-  examples: ["@scene { cube; } cube { rotate-x: 45deg; }"],
+  examples: [{ code: "@scene { cube; } cube { rotate-x: 45deg; }" }],
 };
 
 describe("escapeHtml", () => {
@@ -80,7 +80,7 @@ const keyframes: AtRuleDef = {
   name: "keyframes",
   syntax: "@keyframes <name> { <offset> { <declaration>* } }",
   description: "Defines the steps of an animation.",
-  examples: ["@keyframes k { to { scale: 2; } }"],
+  examples: [{ code: "@keyframes k { to { scale: 2; } }" }],
 };
 
 describe("renderAtRule", () => {

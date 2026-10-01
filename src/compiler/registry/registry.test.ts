@@ -21,7 +21,7 @@ describe("registry", () => {
 
   it("uses the property in each of its examples", () => {
     for (const property of PROPERTIES) {
-      for (const example of property.examples) {
+      for (const { code: example } of property.examples) {
         expect(example, property.name).toContain(`${property.name}:`);
       }
     }
@@ -29,7 +29,7 @@ describe("registry", () => {
 
   describe("every documented example compiles", () => {
     for (const property of PROPERTIES) {
-      for (const example of property.examples) {
+      for (const { code: example } of property.examples) {
         it(`${property.name}: ${example}`, () => {
           expect(() => compileGSS(example)).not.toThrow();
         });
@@ -86,7 +86,7 @@ describe("at-rules", () => {
 
   it("uses the at-rule in each of its examples", () => {
     for (const atRule of AT_RULES) {
-      for (const example of atRule.examples) {
+      for (const { code: example } of atRule.examples) {
         expect(example, atRule.name).toContain(`@${atRule.name}`);
       }
     }
@@ -94,7 +94,7 @@ describe("at-rules", () => {
 
   describe("every documented example compiles", () => {
     for (const atRule of AT_RULES) {
-      for (const example of atRule.examples) {
+      for (const { code: example } of atRule.examples) {
         it(`@${atRule.name}: ${example}`, () => {
           expect(() => compileGSS(example)).not.toThrow();
         });
@@ -118,7 +118,7 @@ describe("selectors", () => {
 
   describe("every documented example compiles", () => {
     for (const selector of SELECTORS) {
-      for (const example of selector.examples) {
+      for (const { code: example } of selector.examples) {
         it(`${selector.name}: ${example}`, () => {
           expect(() => compileGSS(example)).not.toThrow();
         });
@@ -149,7 +149,7 @@ describe("shapes", () => {
 
   it("uses the shape in each of its examples", () => {
     for (const shape of SHAPE_DOCS) {
-      for (const example of shape.examples) {
+      for (const { code: example } of shape.examples) {
         expect(example, shape.name).toContain(`@scene { ${shape.name}`);
       }
     }
@@ -157,7 +157,7 @@ describe("shapes", () => {
 
   describe("every documented example compiles", () => {
     for (const shape of SHAPE_DOCS) {
-      for (const example of shape.examples) {
+      for (const { code: example } of shape.examples) {
         it(`${shape.name}: ${example}`, () => {
           expect(() => compileGSS(example)).not.toThrow();
         });
@@ -188,7 +188,7 @@ describe("functions", () => {
 
   describe("every documented example compiles", () => {
     for (const fn of FUNCTIONS) {
-      for (const example of fn.examples) {
+      for (const { code: example } of fn.examples) {
         it(`${fn.name}: ${example}`, () => {
           expect(() => compileGSS(example)).not.toThrow();
         });

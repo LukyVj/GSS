@@ -1,0 +1,79 @@
+/* Proximity falloff (1D steps): a CodePen-style cousin.
+   Hover a cell: it grows most; neighbours follow by + / :has(+…) chains.
+   Continuous 2D hypot() falloff still needs a hover index — this is stepped, along the row. */
+
+@scene {
+  cube.cell * 14;
+}
+
+scene {
+  --ink: #e8e6e1;
+  --hot: #ff5a36;
+  --warm: #ff8f66;
+  --soft: #ffc4a8;
+  background: #0a0a0c;
+  floor: #111114;
+  light: 160deg 28deg;
+  ambient: 0.34;
+  dpr: auto;
+  camera-target: 0 0.7 0;
+  camera-distance: 11;
+  camera-angle: 0deg 18deg;
+}
+
+.cell {
+  --i: sibling-index();
+  size: 0.55;
+  corner-radius: 0.1;
+  translate: calc(var(--i) * 0.68 - 4.76) 0.35 0;
+  color: var(--ink);
+  material: metal(0.4);
+  transition: 0.28s ease-out;
+}
+
+/* Farther steps first, then closer — cascade picks one scale per object */
+.cell:hover + .cell + .cell + .cell,
+.cell:has(+ .cell + .cell + .cell:hover) {
+  scale: 1.08;
+  color: var(--soft);
+  transition: 0.35s ease-out;
+}
+
+.cell:hover + .cell + .cell,
+.cell:has(+ .cell + .cell:hover) {
+  scale: 1.18;
+  color: var(--warm);
+  transition: 0.3s ease-out;
+}
+
+.cell:hover + .cell,
+.cell:has(+ .cell:hover) {
+  scale: 1.3;
+  color: var(--hot);
+  translate: calc(var(--i) * 0.68 - 4.76) 0.55 0;
+  transition: 0.25s ease-out;
+}
+
+.cell:hover {
+  scale: 1.45;
+  color: tomato;
+  translate: calc(var(--i) * 0.68 - 4.76) 0.75 0;
+  transition: 0.2s cubic-bezier(0.3, -0.4, 0.7, 1.4);
+}
+
+@media (prefers-color-scheme: dark) {
+  scene {
+    --ink: #d2d0cc;
+    --hot: #3d7bff;
+    --warm: #7aa2ff;
+    --soft: #b3c7ff;
+    background: #050508;
+    floor: #0c0c10;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cell {
+    transition: none;
+  }
+}

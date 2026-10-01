@@ -44,8 +44,8 @@ cube {
   it("never changes what an example means", () => {
     for (const { examples } of [...PROPERTIES, ...AT_RULES]) {
       for (const example of examples) {
-        expect(compileGSS(formatGss(example)), example).toBe(
-          compileGSS(example),
+        expect(compileGSS(formatGss(example.code)), example.code).toBe(
+          compileGSS(example.code),
         );
       }
     }

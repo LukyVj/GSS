@@ -4,6 +4,7 @@ import type {
   SelectorDef,
   ShapeDef,
   FunctionDef,
+  Example,
 } from "../compiler/registry/registry";
 import { formatGss } from "./format";
 import { escapeHtml } from "./escape";
@@ -15,14 +16,14 @@ export { escapeHtml }; // the tests and other pages import it from here
 
 // Each example in its own code block, indented, with a button to try it live.
 // The button carries the code, so the page script needs nothing else.
-function renderExamples(examples: string[]): string {
+function renderExamples(examples: Example[]): string {
   return examples
     .map(
       (example) => `
       <div class="example">
-        <pre><code class="gss">${highlightGss(formatGss(example))}</code></pre>
-        <button type="button" class="try" data-example="${escapeHtml(example)}">Try it</button>
-      </div>`,
+        <pre><code class="gss">${highlightGss(formatGss(example.code))}</code></pre>
+        <button type="button" class="try" data-example="${escapeHtml(example.code)}">Try it</button>
+      </div> ${example.name ? `<p class="example-name">${escapeHtml(example.name)}</p>` : ""}`,
     )
     .join("\n");
 }
@@ -212,7 +213,7 @@ function renderGuideEntry(entry: GuideEntry): string {
     <article class="guide" id="${escapeHtml(entry.anchor)}">
       <h3>${escapeHtml(entry.label)}</h3>
       ${paragraphs(entry.paragraphs)}
-      ${entry.example ? renderExamples([entry.example]) : ""}
+      ${entry.example ? renderExamples([{ code: entry.example }]) : ""}
       ${paragraphs(entry.after)}
     </article>`;
 }

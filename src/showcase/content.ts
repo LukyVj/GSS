@@ -10,6 +10,7 @@ import macropad from "../scenes/macropad.gss?raw";
 import tidal from "../scenes/todal.gss?raw";
 import everything from "../scene.gss?raw";
 import ripple from "../scenes/ripple.gss?raw";
+import proximity from "../scenes/proximity.gss?raw";
 
 import { FIRST_SCENE } from "../docs/guide";
 import { formatGss } from "../docs/format";
@@ -143,11 +144,11 @@ export const USE_CASES: UseCase[] = [
 export type Inspiration = { slug: string; title: string; code: string };
 
 const example = (
-  list: { name: string; examples: string[] }[],
+  list: { name: string; examples: { code: string }[] }[],
   name: string,
   i = 0,
 ): string => {
-  const found = list.find((entry) => entry.name === name)?.examples[i];
+  const found = list.find((entry) => entry.name === name)?.examples[i]?.code;
   if (!found) throw new Error(`showcase: no example ${i} for ${name}`);
   return formatGss(found);
 };
@@ -191,5 +192,10 @@ export const INSPIRATION: Inspiration[] = [
     slug: "ripple",
     title: "Ripples, a grid of cells that ripple",
     code: ripple,
+  },
+  {
+    slug: "proximity",
+    title: "Proximity falloff (1D steps)",
+    code: proximity,
   },
 ];

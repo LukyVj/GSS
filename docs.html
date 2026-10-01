@@ -562,7 +562,7 @@
         const byId = base && document.getElementById(base);
         const show =
           (byId && byId.matches("article") && byId) ||
-          docs.querySelector(`:scope > section#${CSS.escape(base)} > article`) ||
+          (base && docs.querySelector(`:scope > section#${CSS.escape(base)} > article`)) ||
           entries[0];
         if (!show) return;
         for (const article of entries) article.hidden = article !== show;
