@@ -43,28 +43,65 @@ export const FACES: Face[] = [
 // ::top is ::face(top): the faces a Minecraft-style block changes most
 const SHORTCUTS: Face[] = ["top", "bottom"];
 
-// The objects that must be hovered for this selector to match this instance
+// The objects that must be hovered for this selector to match this node (an object,
+// or a group inside a :has()). "groups": the node's ancestors the selector may use.
 function triggersOf(
   selector: SimpleSelector,
-  instance: SceneInstance,
-  instances: SceneInstance[],
-): number[] {
-  let triggers = instances; // everything, then each :hover narrows it down
-  if (selector.hover) {
-    triggers = triggers.filter((other) => other === instance); // only the object itself
-  }
+  node: SceneInstance,
+  groups: SceneInstance[],
+  scene: SceneInstance[],
+): SceneInstance[] {
+  let triggers = scene; // everything, then each :hover and :has() narrows it down
+  const keep = (allowed: SceneInstance[]) => {
+    triggers = triggers.filter((other) => allowed.includes(other));
+  };
+  // One part of the selector, and the nodes it matched
+  const narrow = (part: SimpleSelector, matched: SceneInstance[]) => {
+    // cube:hover → the object itself; #g:hover → any object inside the group
+    if (part.hover) keep(matched.flatMap((m) => hoveredBy(m, scene)));
+    // #g:has(sphere:hover) → the spheres inside #g
+    const has = part.has ?? [];
+    if (has.some((inner) => needsHover(inner))) {
+      const found = matched.map((m) => hasTriggers(has, m, scene));
+      // null: true without the mouse in one of the groups, so nothing to narrow
+      if (found.every((f): f is SceneInstance[] => f !== null))
+        keep(found.flat());
+    }
+  };
+  narrow(selector, [node]);
   for (const ancestor of selector.ancestors ?? []) {
-    if (!ancestor.hover) continue;
-    // the groups of this object that match "#g"
-    const groups = instance.groups.filter((group) =>
-      matchesCompound(ancestor, group, instances),
-    );
-    // the objects inside one of these groups
-    triggers = triggers.filter((other) =>
-      other.groups.some((group) => groups.includes(group)),
+    // the groups of this node that match "#g"
+    narrow(
+      ancestor,
+      groups.filter((group) => matchesCompound(ancestor, group, scene)),
     );
   }
-  return triggers.map((other) => other.index);
+  return triggers;
+}
+
+// Hovering a group means hovering one of its objects
+function hoveredBy(node: SceneInstance, scene: SceneInstance[]): SceneInstance[] {
+  return node.tag === "group"
+    ? scene.filter((object) => object.groups.includes(node))
+    : [node];
+}
+
+// The objects that, hovered, make "group:has(list)" true. null: it is true anyway,
+// since a selector of the list without :hover already matches inside the group.
+function hasTriggers(
+  list: SimpleSelector[],
+  group: SceneInstance,
+  scene: SceneInstance[],
+): SceneInstance[] | null {
+  const found: SceneInstance[] = [];
+  for (const inner of list) {
+    for (const { node, groups } of inside(group, scene)) {
+      if (!matchesAmong(inner, node, groups, scene)) continue;
+      if (!needsHover(inner)) return null;
+      found.push(...triggersOf(inner, node, groups, scene));
+    }
+  }
+  return found;
 }
 
 // How a face is written, for the messages: ::top, ::face(front)
@@ -429,7 +466,10 @@ export function resolveStyles(
             ({ selector }) =>
               needsHover(selector) && matches(selector, instance, instances),
           )
-          .flatMap(({ selector }) => triggersOf(selector, instance, instances)),
+          .flatMap(({ selector }) =>
+            triggersOf(selector, instance, instance.groups, instances),
+          )
+          .map((other) => other.index),
       ),
     ].sort((a, b) => a - b),
     hoverStyles: cascade(instance, undefined, true),

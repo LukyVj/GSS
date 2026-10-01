@@ -4,6 +4,7 @@ import { parseSelector, specificity, needsHover } from "./resolve";
 import { parse } from "./parser";
 import { expandScene } from "./expand";
 import { resolveStyles } from "./resolve";
+import { compileScene } from "./index";
 
 const selector = (text: string) => parseSelector(tokenize(text));
 
@@ -159,5 +160,72 @@ describe(":has(): which groups match", () => {
     const groups = styled(SCENE + "#a:has(sphere) { translate: 0 1 0; }")[0]
       .groupStyles;
     expect(groups[0]["translate"]).toBeDefined();
+  });
+});
+
+// Step 4: :has(sphere:hover): which objects, hovered, set the hover state.
+// In SCENE, the objects are numbered 1 to 5: s, c1, c2, s2, c3.
+const triggers = (rules: string) =>
+  Object.fromEntries(styled(SCENE + rules).map((o) => [o.id, o.hoverTriggers]));
+
+describe(":has(): the objects that trigger the hover", () => {
+  it("is the hovered object found inside the group", () => {
+    expect(triggers("#a:has(sphere:hover) cube { scale: 2; }")).toMatchObject({
+      c1: [1],
+      c2: [],
+    });
+  });
+
+  it("looks at every group the rule matches, at any depth", () => {
+    expect(
+      triggers("group:has(sphere:hover) cube { scale: 2; }"),
+    ).toMatchObject({
+      c1: [1],
+      c2: [],
+      c3: [4],
+    });
+  });
+
+  it("reads a hovered group inside: any object in it", () => {
+    expect(triggers("#out:has(#in:hover) cube { scale: 2; }")).toMatchObject({
+      c3: [4],
+    });
+    expect(
+      triggers("#out:has(#in sphere:hover) cube { scale: 2; }"),
+    ).toMatchObject({
+      c3: [4],
+    });
+  });
+
+  it("adds the triggers of every selector of the list", () => {
+    expect(
+      triggers("#a:has(sphere:hover, cube:hover) cube { scale: 2; }"),
+    ).toMatchObject({
+      c1: [1, 2],
+    });
+  });
+
+  it("combines with a :hover on the object itself", () => {
+    expect(
+      triggers("#a:has(sphere:hover) cube:hover { scale: 2; }"),
+    ).toMatchObject({
+      c1: [],
+    }); // the sphere and the cube cannot both be under the mouse
+  });
+
+  it("gives the cube a hover slot that the sphere sets, in the compiled scene", () => {
+    const compiled = compileScene(
+      "@scene { group#g { sphere#s; cube#c; } } #g:has(sphere:hover) cube { scale: 1.5; }",
+    );
+    expect(compiled.hover).toEqual([[1]]);
+    expect(compiled.shader).toContain("uHover[0]");
+  });
+
+  it("refuses a property :hover cannot change", () => {
+    expect(() =>
+      compileScene(
+        "@scene { group#g { sphere; cube; } } #g:has(sphere:hover) cube { radius: 2; }",
+      ),
+    ).toThrow("cannot change on :hover");
   });
 });
