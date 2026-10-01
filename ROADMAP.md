@@ -111,7 +111,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 3. [ ] Functional colors: `rgb()`, `hsl()` and the named colors ✅ decision 58; still to do: `oklch()`, `oklab()`, `hwb()`, `color-mix()`
 4. [x] Textures: `texture: url("…")`, one image per face, `::face()` (decision 59)
 5. [x] Animation controls ✅ decision 70: delay, iteration count, direction, fill mode, and the six longhands
-6. [ ] `@media` + `prefers-reduced-motion`
+6. [x] `@media` ✅ decision 71: any media query the browser knows (width, orientation, `prefers-color-scheme`, `prefers-reduced-motion`…), up to 4 per scene
 7. [ ] Selectors / nesting (combinators `>` `+` `~`, etc.)
 8. [x] `:hover` ✅ decision 62 (picking pass → `uHover[]`), `transition` ✅ decision 68 (one per object; per-property lists later), `:has()` ✅ decision 69 (`#g:has(sphere:hover) cube`, any selector inside)
 9. [ ] `transform-origin`
@@ -160,7 +160,7 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median: orrery 20 ms, tod
 - [ ] **A sphere around the whole scene** (prepared, not applied): a ray that passes by it meets no object, so `march()` finds the floor at once (most of the sky and of the far floor). The sphere holds every object at every moment of its animations and hovered, read from the GLSL (`mix()` of constants with weights in [0, 1]); rotating groups make it larger. Measured in software rendering: −27 to −50 % on the GPU. It also ends the lost rays at the far edge of the floor (below), so a few pixels of the horizon change
 - [ ] Bounds on whole groups, one test per group (the radii of the simple shapes are already computed)
 - [ ] Animations computed once per frame on the CPU and sent as uniforms (todal: 61 `iTime` in `map()`)
-- [x] `scene { dpr: auto | max | <number>; }`: the pixel density of the render, chosen by the author (decision 67). Still to do with `@media` (priority #6): `@media (max-width: 600px) { scene { dpr: 1; } }`
+- [x] `scene { dpr: auto | max | <number>; }`: the pixel density of the render, chosen by the author (decision 67). With `@media` (decision 71): `@media (max-width: 600px) { scene { dpr: 1; } }`
 
 ### Shapes / rendering
 
@@ -206,6 +206,7 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median: orrery 20 ms, tod
 
 ## Done recently
 
+- `@media`, like CSS: one version of the scene per combination of its queries, switched when the screen changes (decision 71)
 - Animation controls: delay, iteration count, direction, fill mode, and `animation-duration`, `-delay`, `-iteration-count`, `-direction`, `-fill-mode`, `-timing-function` (decision 70)
 - `:has()`, like CSS: a group that holds a match, at compile time or under the mouse (`#g:has(sphere:hover) cube`), any selector inside (decision 69)
 - Easings (`ease`, `ease-in`, `ease-out`, `cubic-bezier()`, `linear()`) in `@keyframes` and `transition`, which glides `:hover` in both directions like CSS (decision 68)
@@ -441,9 +442,9 @@ A score for how well a CSS notion carries over to GSS (a style language → an S
 | Feature                                                                                                                                                                                                                                                                 | Score | Short note                                           |
 | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----: | ---------------------------------------------------- |
 | `@keyframes`                                                                                                                                                                                                                                                            |   1.0 | Already in GSS                                       |
-| `@media`                                                                                                                                                                                                                                                                |   1.0 | Priority #6                                          |
-| `prefers-reduced-motion` (media feature)                                                                                                                                                                                                                                |   1.0 | Explicitly planned                                   |
-| `prefers-color-scheme` / `prefers-contrast` / `prefers-reduced-transparency` / `prefers-reduced-data`                                                                                                                                                                   |   0.7 | Useful variants for the scene/UI                     |
+| `@media`                                                                                                                                                                                                                                                                |   1.0 | Already in GSS (decision 71)                         |
+| `prefers-reduced-motion` (media feature)                                                                                                                                                                                                                                |   1.0 | Already in GSS (decision 71)                         |
+| `prefers-color-scheme` / `prefers-contrast` / `prefers-reduced-transparency` / `prefers-reduced-data`                                                                                                                                                                   |   1.0 | Already in GSS, through @media (decision 71)         |
 | `hover` / `any-hover` / `pointer` / `any-pointer` (MF)                                                                                                                                                                                                                  |   0.6 | Input capability                                     |
 | `width` / `height` / `aspect-ratio` / `orientation` / `resolution` (MF)                                                                                                                                                                                                 |   0.7 | Viewport → quality/LOD                               |
 | Other media features (`color-gamut`, `dynamic-range`, `display-mode`, `forced-colors`, `scripting`, `update`, `scan`, `shape`, `grid`, device-_, overflow-_, viewport-segments, video-dynamic-range, inverted-colors, monochrome, color-index, `-webkit-*`/`-moz-*` MF) |  0.35 | Niche / vendor                                       |
