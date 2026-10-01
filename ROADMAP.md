@@ -85,6 +85,9 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 | `:hover`: a 1-pixel picking pass under the mouse, `uHover[]` mixed into every hovered property                                                           | 62       |
 | `:hover` read without waiting for the GPU: a pixel buffer and a fence (`runtime/picker.ts`)                                                              | 65       |
 | `map()` skips a `path` or a `prism` whose bounding sphere is further than the nearest object: same image, macropad −37 %, logo −50 % on the GPU at dpr 2 | 66       |
+| Animations and `:hover` computed once per pixel, in `animate()`                                                                                          | 75       |
+| A sphere around the whole scene: a ray that passes by it only meets the floor                                                                            | 76       |
+| One bounding test per group of 3 objects or more                                                                                                         | 77       |
 
 ### Tools
 
@@ -159,19 +162,19 @@ Next, on this page:
 
 ### Performance
 
-Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median: orrery 20 ms, todal 25–28 ms, macropad 17 ms, test scene 6 ms, spiral 4.5 ms, logo 2 ms. Budget: 16.7 ms at 60 fps, 8.3 ms at 120 Hz. Every item below must keep the image (the bench compares it pixel by pixel).
+Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 75–77: orrery 7.5 ms (was 20.3), todal 3.9 ms (24.3), macropad 4.0 ms (17.4), test scene 5.2 ms, spiral 3.7 ms, logo 2.8 ms: every scene under the 8.3 ms of 120 Hz. Every item below must keep the image (the bench compares it pixel by pixel; stray pixels from GPU rounding are accepted, decision 74).
 
-- [ ] **Animations once per pixel** (branch `perf/animate`, not merged): every animated or hovered translate, rotation and scale becomes a global computed by `animate()` at the start of `main()`, instead of at every call of `map()` (about 150 per pixel). Same arithmetic, moved (the `map()` of every scene is the same text once the values are put back). Measured: orrery −24 % on the GPU in a first run, inconclusive in a second (busy machine); 17 edge pixels out of 2 million changed (see the open question on edge pixels in `DECISIONS.md`)
-- [ ] **A sphere around the whole scene** (prepared, not applied): a ray that passes by it meets no object, so `march()` finds the floor at once (most of the sky and of the far floor). The sphere holds every object at every moment of its animations and hovered, read from the GLSL (`mix()` of constants with weights in [0, 1]); rotating groups make it larger. Measured in software rendering: −27 to −50 % on the GPU. It also ends the lost rays at the far edge of the floor (below), so a few pixels of the horizon change
-- [ ] Bounds on whole groups, one test per group (the radii of the simple shapes are already computed)
-- [ ] Animations computed once per frame on the CPU and sent as uniforms (todal: 61 `iTime` in `map()`)
+- [x] **Animations once per pixel**, in `animate()` (decision 75): L'Orrery 20.3 → 9.2 ms
+- [x] **A sphere around the whole scene** (decision 76): a ray that passes by it only meets the floor; todal −18 %, spiral −15 %
+- [x] **Bounds on whole groups**, one test per group of 3 objects or more (decision 77): macropad 16.6 → 4.0 ms, todal 19.4 → 3.9 ms
+- Set aside: animations computed on the CPU and sent as uniforms (decision 75: after `animate()`, it would only save one evaluation per pixel, and the image would change)
 - [x] `scene { dpr: auto | max | <number>; }`: the pixel density of the render, chosen by the author (decision 67). With `@media` (decision 71): `@media (max-width: 600px) { scene { dpr: 1; } }`
 
 ### Shapes / rendering
 
 - [x] Solid fill of a path: `prism` with `d: path(…)`, holes included (decision 50)
 - [ ] `lathe` (mentioned as a future shape)
-- [ ] Lost ray: when `march` runs out of its 100 steps without hitting anything or passing `MAX_DIST`, `main()` treats it as a hit
+- [ ] Lost ray: when `march` runs out of its 100 steps without hitting anything or passing `MAX_DIST`, `main()` treats it as a hit (fixed for rays that pass by the sphere of the scene, decision 76; still there in scenes without one)
 - [ ] Fade the floor into the background: the floor stops sharply at `MAX_DIST` (related to fog, priority #10)
 - [ ] Soft shadows, that can be turned off (`scene { shadows: none; }`?)
 - [ ] Optional antialiasing (4× the cost)
@@ -185,6 +188,11 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median: orrery 20 ms, tod
 - [ ] Unmirror the −x, −z and bottom faces
 - [ ] Textures in reflections and glass (`trace()` → `textureColor()`)
 - [ ] `image-rendering` per face; `url(dirt.png)` without quotes; an atlas
+
+### Rendering passes / runtime API
+
+- [ ] **Post-processing as a `filter` list on the scene**: the scene is drawn into a texture (color, plus depth and normals), then small shaders run on the image, in order, like CSS `filter`: `scene { filter: bloom(.8, 1.4) grain(.05) contrast(1.1); }`. Opens bloom, grain, chromatic aberration, depth of field, `backdrop-filter` later, and a fog drawn from the depth. Still one raymarcher for the whole scene (never one shader per object). Cost: one more pass and framebuffers, only when `filter` is used; the Shadertoy export would need its Buffers A, B…
+- [ ] **Custom properties set from JS without recompiling**: `scene.setProperty('--speed', 8)` on what `mount()` / `<gss-scene>` return, like `element.style.setProperty`. A variable declared as drivable (close to `@property`) becomes a uniform; the others stay resolved at compile time. Lets a page drive a scene from the scroll, a slider or data
 
 ### Backend
 
@@ -209,9 +217,12 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median: orrery 20 ms, tod
 - When to rename the `csl` folder and repo → `gss` (the npm package already ships as `gss-lang`).
 - Gamma correction: more natural light, but it changes the look of every existing scene.
 - Shadows on by default or not (cost: one more ray march per pixel).
+- Author-written shaders: `@shader hologram { … }` with a GLSL body and its own parameters, used as `shader: hologram; --intensity: 1.5;` (an escape hatch, like Houdini's `paint()`). Powerful, but how to report errors in the GLSL, keep the Shadertoy export, and stay a language an LLM writes without mistakes?
+- Composing surface effects (a "textual shader graph"): to be split before deciding: deforming the shape with noise (a `displace` property, it changes the SDF and can slow the ray march), a `toon` material next to the others, and lighting effects (rim light, fresnel).
 
 ## Done recently
 
+- Performance with the same image (decisions 74–77): `animate()`, the sphere of the scene, bounds on groups; L'Orrery 20.3 → 7.5 ms, macropad 17.4 → 4.0 ms, todal 24.3 → 3.9 ms at dpr 2; the bench accepts stray pixels (GPU rounding)
 - Child (`>`), adjacent sibling (`+`) and subsequent sibling (`~`) combinators, including mixed chains, `:hover` and relative `:has()` selectors (decision 73)
 
 - Home page: the logo reveal, the SVG mark and the same logo live in GSS on either side of a slider (`src/home/logo-reveal.ts`)
@@ -324,7 +335,7 @@ A score for how well a CSS notion carries over to GSS (a style language → an S
 
 | Feature                                                               | Score | Short note                                  |
 | --------------------------------------------------------------------- | ----: | ------------------------------------------- |
-| `filter`                                                              |  0.85 | Shader post-process                         |
+| `filter`                                                              |  0.85 | Post-process passes on the scene (Later)    |
 | fog (GSS / atmosphere, not a strict CSS property)                     |   1.0 | Roadmap priority #10; fog-like post-process |
 | `backdrop-filter`                                                     |   0.6 | Post-process behind the object              |
 | `mask` (+ clip/composite/image/mode/origin/position/repeat/size/type) |  0.55 | CSG / alpha mask adjacent                   |
