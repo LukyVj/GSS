@@ -1601,6 +1601,60 @@ function enclosing(spheres: Sphere[]): Sphere {
   return { center: box.middle, radius };
 }
 
+// ----- Bounds on whole groups -----
+// A group of several objects gets one test around all of them: when the point is
+// further from the group's sphere than the nearest object so far, none of its objects
+// can be nearer, and map() skips them all (their transforms and their shapes). Only
+// plain unions can be skipped, and only when every object's sphere is known (the
+// same spheres as the sphere of the scene: every moment of the animations, hovered).
+// Nested groups get their own test inside their parent's.
+const GROUP_MIN = 3; // fewer objects: the test costs about what it saves
+
+function groupBounds(
+  instances: StyledInstance[],
+  codes: string[],
+  spheres: (Sphere | null)[],
+  plainUnion: (instance: StyledInstance) => boolean,
+  nearest: string,
+): string {
+  const indent = (code: string) => code.replace(/^/gm, "  ");
+  const emit = (members: number[], depth: number): string[] => {
+    const out: string[] = [];
+    let i = 0;
+    while (i < members.length) {
+      const group = instances[members[i]].groups[depth];
+      let j = i + 1;
+      while (group && j < members.length && instances[members[j]].groups[depth] === group) j++;
+      const run = members.slice(i, j);
+      const bounded =
+        group &&
+        run.length >= GROUP_MIN &&
+        run.every((m) => spheres[m] !== null && plainUnion(instances[m]));
+      if (!group) out.push(codes[members[i]]);
+      else if (!bounded) out.push(...emit(run, depth + 1));
+      else {
+        const sphere = enclosing(run.map((m) => spheres[m]!));
+        // A little bigger, rounded up: the GPU computes in 32-bit floats
+        const r = Math.ceil((sphere.radius + 0.001) * 10000) / 10000;
+        const center = vec3(sphere.center.map((c) => Math.round(c * 10000) / 10000));
+        // the center is rounded to 0.0001: the radius grows by as much as it may move
+        const safe = Math.ceil((r + 0.0001) * 10000) / 10000;
+        out.push(
+          [
+            ` // ${label(group as StyledInstance)}: ${run.length} objects, one test for all`,
+            `  if (length(p - ${center}) - ${glslFloat(safe)} <= ${nearest}) {`,
+            indent(emit(run, depth + 1).join("\n\n")),
+            "  }",
+          ].join("\n"),
+        );
+      }
+      i = j;
+    }
+    return out;
+  };
+  return emit(instances.map((_, i) => i), 0).join("\n\n");
+}
+
 export function generateShader(
   instances: StyledInstance[],
   sceneStyles: Styles = {},
@@ -1743,7 +1797,7 @@ export function generateShader(
     .map(([code, name]) => code.replaceAll("NAME", name))
     .join("\n\n");
 
-  const map = mapLines.join("\n\n");
+  const map = groupBounds(instances, mapLines, spheres, plainUnion, nearest);
   // A blend adds a fillet up to its distance around the objects it joins
   const maxBlend = Math.max(0, ...instances.map((i) => readNumber(i.styles["blend"], "blend", 0, true)));
   const known = spheres.every((s): s is Sphere => s !== null) && spheres.length > 0;
