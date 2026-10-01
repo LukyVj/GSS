@@ -64,9 +64,9 @@ export function mountPanel(statusbar: HTMLElement): void {
   });
   setInterval(render, 500); // twice a second: readable, and cheap
 
-  let remembered = false;
+  let remembered = true;
   try {
-    remembered = localStorage.getItem("gss-perf") === "1";
+    remembered = localStorage.getItem("gss-perf") !== "0";
   } catch {}
   setVisible(remembered);
 }

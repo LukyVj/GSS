@@ -10,6 +10,7 @@ import { toShadertoy } from "./compiler/shader/shadertoy";
 import { EXAMPLES, renderExampleOptions } from "./playground/examples";
 import { statusParts, fpsText } from "./runtime/status";
 import { mountSearch } from "./docs/search-box";
+import { profile, mountPanel } from "./profiler/panel";
 
 mountSearch();
 
@@ -17,13 +18,10 @@ mountSearch();
 const $ = <T extends HTMLElement>(selector: string) =>
   document.querySelector<T>(selector)!;
 
-// Dev only: the performance panel. In a build, import.meta.env.DEV is false:
-// the import never happens, and the profiler is not in the bundle.
-const perf = import.meta.env.DEV ? await import("./profiler/panel") : null;
 const renderer = createRenderer($<HTMLCanvasElement>("#scene"), {
-  profile: perf?.profile,
+  profile,
 });
-perf?.mountPanel($(".statusbar"));
+mountPanel($(".statusbar"));
 
 // A shared link opens its scene; otherwise the first example
 const start = (await decodeCode(location.hash)) ?? EXAMPLES[0].code;

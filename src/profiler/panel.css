@@ -1,5 +1,4 @@
-/* The performance panel: dev only, over the top-right corner of the scene.
-   Imported by panel.ts, so a production build never ships it. */
+/* The performance panel, over the top-right corner of the playground scene. */
 
 @import "../styles/tokens.css";
 
@@ -10,7 +9,8 @@
   z-index: 1;
   margin: 12px;
   padding: 10px 12px;
-  min-width: 240px;
+  width: min(266px, calc(100% - 24px));
+  box-sizing: border-box;
   background: rgb(
     10 10 12 / 0.86
   ); /* --gss-void, the scene shows through a little */
@@ -73,4 +73,31 @@
 .perf-toggle[aria-pressed="true"] {
   color: var(--gss-signal);
   border-color: var(--gss-signal);
+}
+
+@media (max-width: 720px) {
+  .perf-panel {
+    margin: 8px;
+    width: min(266px, calc(100% - 16px));
+    padding: 8px 10px;
+  }
+
+  .statusbar,
+  .statusbar .stats {
+    gap: 12px;
+  }
+
+  .statusbar {
+    padding: 0 12px;
+  }
+
+  .statusbar .stats > :nth-child(n + 3) {
+    display: none;
+  }
+
+  .perf-toggle {
+    flex-shrink: 0;
+    height: 28px;
+    margin-left: auto;
+  }
 }

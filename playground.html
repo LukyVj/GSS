@@ -170,7 +170,7 @@
       /* On a phone: the scene on top, the editor below */
       @media (max-width: 720px) {
         body {
-          grid-template-columns: 1fr;
+          grid-template-columns: minmax(0, 1fr);
           grid-template-rows: 52px minmax(0, 1fr) 40vh 32px;
           grid-template-areas: "top" "scene" "editor" "status";
         }
