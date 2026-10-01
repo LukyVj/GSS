@@ -94,3 +94,16 @@ it("the Shadertoy export compiles once Shadertoy wraps it", async () => {
   const wrapped = `${SHADERTOY_HEADER}\n${code}\nvoid main() { mainImage(fragColor, gl_FragCoord.xy); }`;
   expect(await compileOnGpu(wrapped)).toBe("");
 });
+
+describe("every pass of a documented filter compiles on the GPU (decision 83)", () => {
+  for (const property of PROPERTIES) {
+    for (const { code: example } of property.examples) {
+      const passes = compileScene(example).passes ?? [];
+      passes.forEach((pass, n) => {
+        it(`${property.name}, pass ${n + 1}: ${example}`, async () => {
+          expect(await compileOnGpu(pass.shader)).toBe("");
+        });
+      });
+    }
+  }
+});

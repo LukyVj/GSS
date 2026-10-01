@@ -2,6 +2,7 @@ import type { Token } from "../syntax/tokenizer";
 import { type Easing, stepsShape } from "../values/easing";
 import { backgroundFunction, gradientLines, gradientMean, isGradient } from "./gradient";
 import { closingParen } from "../values/calc";
+import { buildPasses, GRAIN, objectFilters, readSteps } from "../features/filter";
 import { readAnimation, type AnimationSpec } from "../features/animation";
 import { readTransition } from "../features/transition";
 import { errorAt, locate } from "../syntax/errors";
@@ -1957,6 +1958,50 @@ export function generateShader(
     : "";
   const animate = animateCode(hoisted);
   const textures = textureCode(instances, keyframes, hoverOf);
+  // filter: the filters that read only their own pixel end the shader (decision 83);
+  // on objects, on their own pixels, and their layer in the alpha for the passes (decision 84)
+  const objects = objectFilters(instances);
+  const { sceneLines } = buildPasses(
+    objects.layers,
+    sceneStyles["filter"] ? readSteps(sceneStyles["filter"]) : [],
+  );
+  const byIndex = new Map(instances.map((instance) => [instance.index, instance]));
+  const objectFilter =
+    objects.pixel.size > 0
+      ? [
+          "// filter on objects: the filters that read only their own pixel, on the pixels of each object",
+          "vec3 objectFilter(float id, vec3 c) {",
+          ...[...objects.pixel].flatMap(([index, lines]) => [
+            `  if (id == ${glslFloat(index)}) {  // ${label(byIndex.get(index)!)}`,
+            ...lines.map((l) => `    ${l}`),
+            "    return c;",
+            "  }",
+          ]),
+          "  return c;",
+          "}",
+        ].join("\n")
+      : "";
+  const objectLayer =
+    objects.layers.length > 0
+      ? [
+          "// filter on objects: the layer of each object with a blur() or a bloom(), carried in the alpha",
+          "float objectLayer(float id) {",
+          ...[...objects.layerOf].map(
+            ([index, layer]) => `  if (id == ${glslFloat(index)}) return ${glslFloat(layer)} / 255.0;  // ${label(byIndex.get(index)!)}`,
+          ),
+          "  return 0.0;",
+          "}",
+        ].join("\n")
+      : "";
+  const filterLines = [
+    ...(objectFilter ? ["  if (t < MAX_DIST) col = objectFilter(id, col);"] : []),
+    ...(sceneLines.length
+      ? ["  // filter: the pixel filters, before the passes (if any)", "  vec3 c = col;", ...sceneLines.map((l) => `  ${l}`), "  col = c;"]
+      : []),
+    "",
+  ].join("\n");
+  const alpha = objectLayer ? "t < MAX_DIST ? objectLayer(id) : 0.0" : "1.0";
+  const filterFunctions = [objectFilter, objectLayer].filter(Boolean).join("\n\n");
   const textured = new Set(
     instances.filter(
       (instance) =>
@@ -2073,6 +2118,20 @@ uniform vec2 uPick;`
       .replace(
         "vec2 march(vec3 ro, vec3 rd) {\n",
         `vec2 march(vec3 ro, vec3 rd) {\n${sceneSphereCode}`,
+      )
+      .replace("  outColor = vec4(col, 1.0);\n}", `${filterLines}  outColor = vec4(col, ${alpha});\n}`)
+      .replace(
+        "void main() {",
+        [
+          ...((filterLines + filterFunctions).includes("grain(") ? [GRAIN] : []),
+          ...(filterFunctions ? [filterFunctions] : []),
+          "void main() {",
+        ].join("\n\n"),
+      )
+      // Reflections see the filters of the objects they meet
+      .replace(
+        /return (diffuse\(n, .*\));  \/\/ its color, lit/,
+        objectFilter ? "return objectFilter(hit.y, $1);  // its color, lit, filtered" : "return $1;  // its color, lit",
       )
       // The animations of this pixel, computed once before anything calls map()
       .replace(

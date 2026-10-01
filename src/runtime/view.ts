@@ -9,6 +9,7 @@ import type { Dpr } from "../compiler/features/dpr";
 import { pixelRatio } from "./dpr";
 import { createTransitions } from "./transitions";
 import { pickVariant, watchMedia, matchesNow } from "./media";
+import { createPost } from "./post";
 
 // Draws compiled GSS scenes in a canvas, with a camera the mouse can move.
 // It never imports the compiler (decision 63): a page that embeds a scene compiled
@@ -97,11 +98,8 @@ export function createView(
     return shader;
   }
 
-  function createGpuScene(
-    fragSource: string,
-    files: string[],
-    hover: number[][],
-  ): GpuScene {
+  // A program: the giant triangle and a fragment shader
+  function link(fragSource: string): WebGLProgram {
     const vertex = compileShader(gl!.VERTEX_SHADER, VERTEX_SOURCE);
     const fragment = compileShader(gl!.FRAGMENT_SHADER, fragSource);
     const program = gl!.createProgram()!;
@@ -115,6 +113,18 @@ export function createView(
       gl!.deleteProgram(program);
       throw new Error(log ?? "Program linking error");
     }
+    return program;
+  }
+
+  // filter: the passes after the scene, when it has some (decision 83)
+  const post = createPost(gl, link);
+
+  function createGpuScene(
+    fragSource: string,
+    files: string[],
+    hover: number[][],
+  ): GpuScene {
+    const program = link(fragSource);
     return {
       program,
       uResolution: gl!.getUniformLocation(program, "iResolution"),
@@ -271,7 +281,19 @@ export function createView(
           transitions.update(targets, now, reducedMotion),
         );
       }
-      gl!.drawArrays(gl!.TRIANGLES, 0, 3);
+      if (post.active()) {
+        // filter: the scene into an image, then the passes; blur(4px) is 4 CSS pixels
+        const ratio = canvas.width / Math.max(canvas.clientWidth, 1);
+        post.render(
+          () => gl!.drawArrays(gl!.TRIANGLES, 0, 3),
+          canvas.width,
+          canvas.height,
+          clock.seconds,
+          ratio,
+        );
+      } else {
+        gl!.drawArrays(gl!.TRIANGLES, 0, 3);
+      }
       probe?.drawEnd();
     }
     frameId = requestAnimationFrame(frame);
@@ -286,6 +308,12 @@ export function createView(
       compiled.textures,
       compiled.hover,
     ); // GLSL errors
+    try {
+      post.set(compiled.passes); // GLSL errors of the passes
+    } catch (error) {
+      gl!.deleteProgram(next.program);
+      throw error;
+    }
     probe?.shaderBuilt(performance.now() - start);
     if (scene) gl!.deleteProgram(scene.program);
     scene = next;
@@ -342,6 +370,7 @@ export function createView(
       cancelAnimationFrame(frameId);
       if (scene) gl.deleteProgram(scene.program);
       scene = null;
+      post.destroy();
       store.destroy();
       picker.destroy();
       gl.getExtension("WEBGL_lose_context")?.loseContext();

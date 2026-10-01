@@ -191,7 +191,7 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 
 ### Rendering passes / runtime API
 
-- [ ] **Post-processing as a `filter` list on the scene**: the scene is drawn into a texture (color, plus depth and normals), then small shaders run on the image, in order, like CSS `filter`: `scene { filter: bloom(.8, 1.4) grain(.05) contrast(1.1); }`. Opens bloom, grain, chromatic aberration, depth of field, `backdrop-filter` later, and a fog drawn from the depth. Still one raymarcher for the whole scene (never one shader per object). Cost: one more pass and framebuffers, only when `filter` is used; the Shadertoy export would need its Buffers A, B…
+- [x] **Post-processing as a `filter` list on the scene** ✅ decision 83: the pixel filters at the end of the scene's shader, `blur()` and `bloom()` as passes (`runtime/post.ts`). Still to do: `drop-shadow()` and `opacity()` (transparency), `backdrop-filter`, a fog drawn from the depth, the passes in the Shadertoy export (Buffers A, B…)
 - [ ] **Custom properties set from JS without recompiling**: `scene.setProperty('--speed', 8)` on what `mount()` / `<gss-scene>` return, like `element.style.setProperty`. A variable declared as drivable (close to `@property`) becomes a uniform; the others stay resolved at compile time. Lets a page drive a scene from the scroll, a slider or data
 
 ### Backend
@@ -222,6 +222,8 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 
 ## Done recently
 
+- `filter` on objects and groups: pixel filters on their own pixels (and in reflections), `blur()` and `bloom()` as layers carried in the alpha (decision 84)
+- `filter` on the scene: `brightness()`, `contrast()`, `saturate()`, `grayscale()`, `sepia()`, `hue-rotate()`, `invert()`, `grain()` in the scene's shader, `blur()` and `bloom()` as passes after it (decision 83)
 - `random()` (stable at every reload), `if()` with `media()` / `style()`, gradients in `background`, `color` and materials (decision 82) (`linear-`, `radial-`, `repeating-`), the media range syntax `(width < 600px)` (decision 81)
 - `steps()`, `step-start` and `step-end`, in `@keyframes` and `transition` (decision 80)
 - The rest of the CSS color functions: `hwb()`, `lab()`, `lch()`, `oklab()`, `oklch()`, `color()`, `color-mix()`, `light-dark()` (one version of the scene per color scheme), `contrast-color()` (decision 79)
@@ -339,7 +341,7 @@ A score for how well a CSS notion carries over to GSS (a style language → an S
 
 | Feature                                                               | Score | Short note                                  |
 | --------------------------------------------------------------------- | ----: | ------------------------------------------- |
-| `filter`                                                              |  0.85 | Post-process passes on the scene (Later)    |
+| `filter`                                                              |   1.0 | Already in GSS on the scene, objects and groups (dec. 83, 84)  |
 | fog (GSS / atmosphere, not a strict CSS property)                     |   1.0 | Roadmap priority #10; fog-like post-process |
 | `backdrop-filter`                                                     |   0.6 | Post-process behind the object              |
 | `mask` (+ clip/composite/image/mode/origin/position/repeat/size/type) |  0.55 | CSG / alpha mask adjacent                   |
@@ -542,7 +544,7 @@ A score for how well a CSS notion carries over to GSS (a style language → an S
 | `alpha()` / `light-dark()` / `contrast-color()`                                                                                                   |   0.7 | `light-dark()` and `contrast-color()` already in (dec. 79); `alpha()` waits for transparency |
 | `device-cmyk()` / `dynamic-range-limit-mix()` / `palette-mix()`                                                                                   |   0.2 | Niche print/HDR/fonts                                                                      |
 | `cubic-bezier()` / `linear()` / `steps()`                                                                                                         |   1.0 | Already in GSS (dec. 68, 80)                                                               |
-| `blur()` / `brightness()` / `contrast()` / `grayscale()` / `hue-rotate()` / `invert()` / `opacity()` / `saturate()` / `sepia()` / `drop-shadow()` |   0.8 | `filter` post                                                                              |
+| `blur()` / `brightness()` / `contrast()` / `grayscale()` / `hue-rotate()` / `invert()` / `opacity()` / `saturate()` / `sepia()` / `drop-shadow()` |   1.0 | Already in GSS (dec. 83), plus `bloom()` and `grain()`; `opacity()`, `drop-shadow()` need transparency |
 | `translate*()` / `rotate*()` / `scale*()`                                                                                                         |   0.9 | Already GSS concepts                                                                       |
 | `skew()` / `skewX()` / `skewY()`                                                                                                                  |   0.4 | Skew ≠ SDF exact                                                                           |
 | `matrix()` / `matrix3d()` / `perspective()`                                                                                                       |   0.5 | Generic matrix                                                                             |

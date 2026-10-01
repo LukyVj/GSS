@@ -35,7 +35,9 @@ export function renderProperty(property: PropertyDef): string {
       ? "objects"
       : property.appliesTo === "scene"
         ? "the scene"
-        : property.appliesTo.join(", ");
+        : property.appliesTo === "everywhere"
+          ? "the scene, objects and groups"
+          : property.appliesTo.join(", ");
 
   return `
     <article class="property" id="${escapeHtml(property.name)}">

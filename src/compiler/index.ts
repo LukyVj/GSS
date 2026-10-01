@@ -22,6 +22,7 @@ import {
 import { sceneTextures } from "./features/textures";
 import { readDpr, type Dpr } from "./features/dpr";
 import { readTransition, type Transition } from "./features/transition";
+import { buildPasses, objectFilters, readSteps, type Pass } from "./features/filter";
 
 // Everything the runtime needs to display a scene
 export type CompiledScene = {
@@ -31,6 +32,8 @@ export type CompiledScene = {
   objects: number; // instances drawn, for the status bar (decision 42)
   textures: string[]; // the image files the runtime loads, once each
   hover: number[][]; // for each slot of uHover[], the ids that, hovered, set it to 1
+  // filter: the passes drawn after the scene, when a filter reads its neighbours (decision 83)
+  passes?: Pass[];
   // @media: the queries, and the scene for every combination of them. variants[mask]
   // is the scene when the queries whose bit is set in mask match (bit 0: queries[0]).
   // The fields above are variants[0], the scene when none matches.
@@ -177,7 +180,13 @@ function compileStylesheet(
   const shared = computeKeyframes(
     stylesheet.keyframes.filter((k) => !usesVariablesIn(k)),
   );
+  // filter: the layers of the objects first, then the scene (decisions 83, 84)
+  const { passes } = buildPasses(
+    objectFilters(styled).layers,
+    computedScene["filter"] ? readSteps(computedScene["filter"]) : [],
+  );
   return {
+    ...(passes.length > 0 ? { passes } : {}),
     shader: generateShader(styled, computedScene, [...shared, ...copies]),
     camera: readCamera(computedScene),
     dpr: readDpr(computedScene),

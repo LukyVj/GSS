@@ -20,7 +20,7 @@ export type Example = {
 
 export type PropertyDef = {
   name: string;
-  appliesTo: "object" | "scene" | Shape[]; // Shape[]: only these shapes
+  appliesTo: "object" | "scene" | "everywhere" | Shape[]; // Shape[]: only these shapes; everywhere: the scene too
   syntax: string;
   initial: string;
   description: string;
@@ -676,6 +676,29 @@ export const PROPERTIES: PropertyDef[] = [
     ],
   },
   {
+    name: "filter",
+    appliesTo: "everywhere",
+    syntax: "none | <filter-function>+",
+    initial: "none",
+    description:
+      "Post-processing, like CSS filter: a list of functions applied in order, on the whole image (scene { filter }), on an object, or on a group and everything in it. On an object or a group, the filters change only its own pixels, and reflections see them too: a blur() spreads it over what is around it, a bloom() makes only its bright parts glow. Like CSS, an object's filter comes before its group's, and the scene's comes last; on an object, the filters that read only their own pixel come before blur() and bloom(), and an object and its group cannot both have a blur() or a bloom(). brightness(), contrast(), saturate(), grayscale(), sepia(), invert() take a number or a percentage (1 or 100% changes nothing; grayscale(), sepia() and invert() go up to 1), hue-rotate() an angle; they cost almost nothing. grain() adds a film-like noise that moves at every frame (0.1 by default). blur() blurs by a length in px, like CSS; bloom() makes the bright parts glow: an amount (0.6 by default) and a radius in px (16px by default). blur() and bloom() read the pixels around each pixel: the scene is first drawn into an image, then blurred, which costs more as the radius grows. opacity() and drop-shadow() need transparency, which GSS does not have. The Shadertoy export keeps the filters that read only their own pixel, not blur() and bloom().",
+    examples: [
+      { name: "brightness()", code: "@scene { sphere; } sphere { translate: 0 1 0; color: #ff5a36; } scene { filter: brightness(1.4); }" },
+      { name: "contrast()", code: "@scene { sphere; cube; } sphere { translate: -0.8 0.6 0; color: #ff5a36; } cube { translate: 0.8 0.5 0; color: #3a7bff; } scene { filter: contrast(1.6); }" },
+      { name: "saturate()", code: "@scene { sphere; cube; } sphere { translate: -0.8 0.6 0; color: #ff5a36; } cube { translate: 0.8 0.5 0; color: #3a7bff; } scene { filter: saturate(2); }" },
+      { name: "grayscale()", code: "@scene { sphere; cube; } sphere { translate: -0.8 0.6 0; color: #ff5a36; } cube { translate: 0.8 0.5 0; color: #3a7bff; } scene { filter: grayscale(1); }" },
+      { name: "sepia()", code: "@scene { sphere; cube; } sphere { translate: -0.8 0.6 0; color: #ff5a36; } cube { translate: 0.8 0.5 0; color: #3a7bff; } scene { filter: sepia(0.8); }" },
+      { name: "hue-rotate()", code: "@scene { sphere; cube; } sphere { translate: -0.8 0.6 0; color: #ff5a36; } cube { translate: 0.8 0.5 0; color: #3a7bff; } scene { filter: hue-rotate(120deg); }" },
+      { name: "invert()", code: "@scene { sphere; } sphere { translate: 0 1 0; color: #ff5a36; } scene { filter: invert(1); }" },
+      { name: "grain()", code: "@scene { sphere; } sphere { translate: 0 1 0; color: #ff5a36; } scene { background: #1a1a22; filter: grain(0.15); }" },
+      { name: "blur()", code: "@scene { sphere; cube; } sphere { translate: -0.8 0.6 0; color: #ff5a36; } cube { translate: 0.8 0.5 0; color: #3a7bff; } scene { filter: blur(3px); }" },
+      { name: "bloom()", code: "@scene { sphere.light * 5; } .light { radius: 0.25; translate: calc(sibling-index() * 0.8 - 2.4) 0.8 0; color: hsl(calc(sibling-index() * 40) 100% 70%); } scene { floor: none; background: #07070a; ambient: 1; filter: bloom(0.9, 20px); }" },
+      { name: "filter on objects", code: "@scene { sphere#a; sphere#b; sphere#c; } sphere { radius: 0.5; color: #ff5a36; } #a { translate: -1.3 0.6 0; filter: grayscale(1); } #b { translate: 0 0.6 0; filter: blur(4px); } #c { translate: 1.3 0.6 0; filter: hue-rotate(180deg) brightness(1.3); }" },
+      { name: "filter on a group", code: "@scene { group#lights { sphere * 4 } cube; } #lights { filter: bloom(0.9, 18px); } #lights sphere { radius: 0.2; translate: calc(sibling-index() * 0.7 - 1.75) 1.4 0; color: #ffd27a; } cube { translate: 0 0.5 0; color: #3a7bff; } scene { floor: none; background: #07070a; }" },
+      { name: "filters together", code: "@scene { torus; sphere; } torus { translate: 0 1 0; rotate-x: 70deg; color: #ffd27a; material: gold; } sphere { radius: 0.3; translate: 0 1 0; color: #ff5a36; } scene { floor: none; background: radial-gradient(#2a2a3a, #07070a); filter: contrast(1.1) saturate(1.3) bloom(0.7, 18px) grain(0.06); }" },
+    ],
+  },
+  {
     name: "background",
     appliesTo: "scene",
     syntax: "<color> | <gradient>",
@@ -1080,6 +1103,7 @@ export const SHAPE_DOCS: ShapeDef[] = [
     description:
       "Not a shape: it holds objects and other groups, like <g> in SVG, and draws nothing itself. Its translate, rotations and scale apply to everything inside it, and the positions of its children become relative to it: move the group, everything follows. Other properties (color, material, size…) are not passed down to its children; to style them, use a descendant selector: #letters cube.",
     takes: [
+      "filter",
       "translate",
       "rotate-x",
       "rotate-y",

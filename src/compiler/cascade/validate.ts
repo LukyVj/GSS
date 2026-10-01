@@ -38,7 +38,7 @@ export function validateProperties(rules: Rule[]): void {
         );
       }
 
-      if (isScene && property.appliesTo !== "scene") {
+      if (isScene && property.appliesTo !== "scene" && property.appliesTo !== "everywhere") {
         throw errorAt(
           declaration,
           `"${declaration.property}" only applies to objects.`,
