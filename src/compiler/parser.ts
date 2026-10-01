@@ -172,9 +172,12 @@ export function parse(tokens: Token[]): Stylesheet {
   // #a, #b { ... }: one rule per selector, sharing the same declarations, like CSS
   function parseRules(): Rule[] {
     const selectors: Token[][] = [[]]; // the last one is the selector being read
+    let depth = 0; // inside :has( … ), a comma belongs to the selector
     while (peek() && !isPunct(peek(), "{")) {
       const token = next();
-      if (isPunct(token, ",")) {
+      if (isPunct(token, "(")) depth++;
+      if (isPunct(token, ")")) depth--;
+      if (depth === 0 && isPunct(token, ",")) {
         if (selectors[selectors.length - 1].length === 0)
           throw errorAt(token, 'Selector expected before ","');
         selectors.push([]); // a new, empty selector starts

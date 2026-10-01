@@ -1,5 +1,6 @@
 import type { Rule } from "./ast";
 import { errorAt, spanOf } from "./errors";
+import { closingParen } from "./calc";
 import type { Token } from "./tokenizer";
 import type { SceneInstance } from "./expand";
 
@@ -25,6 +26,7 @@ export type SimpleSelector = {
   ancestors?: SimpleSelector[];
   face?: Face;
   hover?: boolean; // cube:hover, #g:hover
+  has?: SimpleSelector[]; // #g:has(sphere, cube:hover): something inside matches one of them
 };
 
 // The faces a pseudo-element can style, in the object's space: cube::face(front).
@@ -89,13 +91,32 @@ function tokenToText(token: Token): string {
   return String(token.value);
 }
 
+// "sphere, #a cube:hover" → [sphere] and [#a cube:hover]; a comma inside ( ) stays
+function splitAtCommas(tokens: Token[]): Token[][] {
+  if (tokens.length === 0) return [];
+  const parts: Token[][] = [[]];
+  let depth = 0;
+  for (const token of tokens) {
+    if (token.type === "PUNCT" && token.value === "(") depth++;
+    if (token.type === "PUNCT" && token.value === ")") depth--;
+    if (depth === 0 && token.type === "PUNCT" && token.value === ",")
+      parts.push([]);
+    else parts[parts.length - 1].push(token);
+  }
+  return parts;
+}
+
 // "#letters #S #left" → #left, with the ancestors #letters and #S.
 // The tokenizer skips spaces, so we find them back with the positions of the tokens.
 export function parseSelector(tokens: Token[]): SimpleSelector {
   const compounds: Token[][] = [[]];
+  let depth = 0; // inside :has( … ), a space belongs to the selector in it
   tokens.forEach((token, i) => {
-    if (i > 0 && spaceBetween(tokens[i - 1], token)) compounds.push([]);
+    if (depth === 0 && i > 0 && spaceBetween(tokens[i - 1], token))
+      compounds.push([]);
     compounds[compounds.length - 1].push(token);
+    if (token.type === "PUNCT" && token.value === "(") depth++;
+    if (token.type === "PUNCT" && token.value === ")") depth--;
   });
   const selectors = compounds.map(parseCompound);
   const selector = selectors[selectors.length - 1];
@@ -190,11 +211,32 @@ function parseCompound(tokens: Token[]): SimpleSelector {
       if (next?.type === "IDENT" && next.value === "hover") {
         selector.hover = true;
         i += 2;
+      } else if (next?.type === "IDENT" && next.value === "has") {
+        // :has(…), like CSS: the selectors between the parentheses, split at the commas
+        if (selector.has)
+          throw errorAt(
+            tokens,
+            "A part of a selector takes one :has(), with a list inside if needed: #g:has(sphere, cube)",
+          );
+        const close = closingParen(tokens, i + 2);
+        const parts = splitAtCommas(tokens.slice(i + 3, close));
+        if (parts.length === 0)
+          throw errorAt(
+            tokens,
+            ":has() needs a selector, like: #g:has(sphere:hover) cube",
+          );
+        selector.has = parts.map((part) => parseSelector(part));
+        const nested = (inner: SimpleSelector) =>
+          inner.has !== undefined ||
+          (inner.ancestors ?? []).some((a) => a.has !== undefined);
+        if (selector.has.some(nested))
+          throw errorAt(tokens, "A :has() cannot hold another :has()");
+        i = close + 1;
       } else {
         const name = next?.type === "IDENT" ? `:${next.value}` : ":";
         throw errorAt(
           tokens,
-          `Unknown pseudo-class "${name}": GSS knows :hover`,
+          `Unknown pseudo-class "${name}": GSS knows :hover and :has()`,
         );
       }
     } else {
@@ -202,6 +244,13 @@ function parseCompound(tokens: Token[]): SimpleSelector {
       throw errorAt(tokens, `Selector not supported: "${text}"`);
     }
   }
+
+  // An object holds nothing: :has() matches a group, written group or #g / .g
+  if (selector.has && selector.tag !== null && selector.tag !== "group")
+    throw errorAt(
+      tokens,
+      ":has() goes on a group: an object holds nothing, like: #g:has(sphere:hover) cube",
+    );
 
   return selector;
 }
