@@ -68,6 +68,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 | `floor`                                                           | floor color, or `none`                                                         |
 | `background`                                                      | background color                                                               |
 | `light`, `ambient`                                                | direction of the sun, ambient light                                            |
+| `dpr`                                                             | pixel density of the render: `auto` (the screen, up to 2), `max`, a number (dec. 67) |
 | `camera-target`, `camera-distance`, `camera-angle`, `camera-spin` | camera (mouse orbit; automatic turn as a duration, `none` by default, dec. 54) |
 
 ### Rendering
@@ -158,7 +159,7 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median: orrery 20 ms, tod
 - [ ] **A sphere around the whole scene** (prepared, not applied): a ray that passes by it meets no object, so `march()` finds the floor at once (most of the sky and of the far floor). The sphere holds every object at every moment of its animations and hovered, read from the GLSL (`mix()` of constants with weights in [0, 1]); rotating groups make it larger. Measured in software rendering: −27 to −50 % on the GPU. It also ends the lost rays at the far edge of the floor (below), so a few pixels of the horizon change
 - [ ] Bounds on whole groups, one test per group (the radii of the simple shapes are already computed)
 - [ ] Animations computed once per frame on the CPU and sent as uniforms (todal: 61 `iTime` in `map()`)
-- [ ] `scene { dpr: max; }`, `dpr: 2`, `dpr: 1`: the pixel density of the render, chosen by the author (today always `min(devicePixelRatio, 2)`). `max` follows the screen. With `@media` (priority #6), it can change with the screen: `@media (max-width: 600px) { scene { dpr: 1; } }`
+- [x] `scene { dpr: auto | max | <number>; }`: the pixel density of the render, chosen by the author (decision 67). Still to do with `@media` (priority #6): `@media (max-width: 600px) { scene { dpr: 1; } }`
 
 ### Shapes / rendering
 
@@ -204,6 +205,7 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median: orrery 20 ms, tod
 
 ## Done recently
 
+- `scene { dpr: auto | max | <number>; }`: the pixel density of the render, chosen by the author (decision 67)
 - Performance tools and two speed-ups with an identical image (Oct. 1): the dev profiler and the bench (decision 64), `:hover` without a GPU wait (decision 65), bounding spheres for `path` and `prism` in `map()` (decision 66)
 - Embedding and showcase: `<gss-scene>` / `embed.js`, `mount()`, the Vite plugin, a runtime without the compiler (10 kB), `showcase.html`, `npm run captures` (decision 63)
 - `:hover`: triggers, a second cascade, `uHover[]` in the shader and a picking pass, on the home page, the playground and every "Try it" (decision 62)
