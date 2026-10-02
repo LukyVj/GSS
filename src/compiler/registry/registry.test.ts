@@ -50,6 +50,7 @@ describe("registry", () => {
         "rotate-z",
         "scale",
         "offset-distance",
+        "background",
       ]);
     });
 
@@ -59,8 +60,10 @@ describe("registry", () => {
     // If a property is marked animatable, the compiler must really animate it
     for (const property of animatable) {
       it(`animates ${property.name}`, () => {
+        // A property of the scene is animated by the scene (decision 103)
+        const target = property.appliesTo === "scene" ? "scene" : "cube";
         const shader = compileGSS(
-          `@scene { cube; } cube { ${NEEDS[property.name] ?? ""} animation: k 1s; } @keyframes k { to { ${property.name}: ${property.initial}; } }`,
+          `@scene { cube; } ${target} { ${NEEDS[property.name] ?? ""} animation: k 1s; } @keyframes k { to { ${property.name}: ${property.initial}; } }`,
         );
         expect(shader).toContain("mix(");
       });

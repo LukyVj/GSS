@@ -12,9 +12,8 @@
 //   transforms.ts  the moves into a node's space, and animate() (decision 75)
 //   bounds.ts      the sphere of the scene and bounds on groups (decisions 76, 77)
 //   textures.ts    texture, ::face() (decision 59)
-//   gradients.ts   gradients in the background and on objects (decisions 81, 82)
+//   gradients.ts   gradients in the background and on objects (decisions 81, 82), animated (102, 103)
 //   filters.ts     filter on the scene and on objects (decisions 83, 84)
-import type { Token } from "../../syntax/tokenizer";
 import type { Keyframes } from "../../syntax/ast";
 import type { StyledInstance, Styles } from "../../cascade/resolve";
 import { errorAt } from "../../syntax/errors";
@@ -29,7 +28,7 @@ import { readColor, readLight, readScale, readTranslate } from "./read";
 import { readOperation, SMOOTH } from "./operations";
 import { BOUNDED, SHAPES, type ShapeContext } from "./shapes";
 import { textureCode } from "./textures";
-import { backgroundCode, gradientCode, objectGradient } from "./gradients";
+import { backgroundCode, gradientCode, objectGradient, type Painted } from "./gradients";
 import { readMaterial } from "./materials";
 import { activeSlots, hoverSlots, hoverValue, useTimelines } from "./animation";
 import { sceneTimelines } from "../../features/timeline";
@@ -48,9 +47,10 @@ export function generateShader(
   keyframes: Keyframes[] = [],
 ): string {
   // scroll() and view(): one component of uTimeline each (decision 96)
-  const timelines = sceneTimelines(
-    instances.flatMap((instance) => [...instance.groupStyles, instance.styles]),
-  );
+  const timelines = sceneTimelines([
+    sceneStyles,
+    ...instances.flatMap((instance) => [...instance.groupStyles, instance.styles]),
+  ]);
   useTimelines(timelines);
   // The motion paths a scene animates along: one GLSL function each (decision 97)
   const offsetFunctions = useOffsetFunctions();
@@ -172,18 +172,15 @@ export function generateShader(
   });
 
   // The objects painted with a gradient (decision 82)
-  const painted: { instance: StyledInstance; gradient: Token[] }[] = [];
+  const painted: Painted[] = [];
   const materialLines = instances.map((instance) => {
-    const { gradient, styles } = objectGradient(instance, keyframes, hoverOf(instance));
-    if (gradient) painted.push({ instance, gradient });
+    const { painted: gradient, styles } = objectGradient(instance, keyframes, hoverOf(instance));
+    if (gradient) painted.push(gradient);
     instance = gradient ? { ...instance, styles } : instance;
-    const color = hoverValue(
-      instance.styles,
-      keyframes,
-      "color",
-      readColor,
-      gradient ? undefined : hoverOf(instance), // a gradient's color does not change on :hover
-    );
+    // A gradient moves in gradientColor(): getMaterial() keeps the mean of its rest
+    const color = gradient
+      ? readColor(instance.styles["color"])
+      : hoverValue(instance.styles, keyframes, "color", readColor, hoverOf(instance));
     const material = readMaterial(instance.styles["material"], color);
     return `  if (id == ${glslFloat(instance.index)}) return ${material};  // ${label(instance)}`;
   });
@@ -229,6 +226,9 @@ export function generateShader(
     ),
   );
   const gradients = gradientCode(painted, textured, keyframes, hoverOf);
+  // A color is a constant; a gradient a function of the pixel (decision 81); either one
+  // can follow an animation of the scene (decision 103)
+  const background = backgroundCode(sceneStyles, keyframes);
   const materials = materialLines.join("\n");
   // One line in main() for each material the scene uses
   const shadeCalls = Object.entries(SHADE_CALLS)
@@ -243,7 +243,7 @@ export function generateShader(
         "// The easings of the animations: only those the scene uses",
         used(
           EASINGS,
-          [map, animate, textures.functions, gradients.functions, textures.call, materials].join("\n"),
+          [map, animate, textures.functions, gradients.functions, textures.call, materials, background].join("\n"),
         ),
       ),
     )
@@ -332,10 +332,9 @@ uniform vec2 uPick;`
           ? readTranslate(sceneStyles["camera-target"])
           : "vec3(0.0, 0.5, 0.0)",
       )
-      // A color is a constant; a gradient a function of the pixel (decision 81)
       .replace(
         "const vec3 BACKGROUND = /*@BACKGROUND*/;",
-        backgroundCode(sceneStyles["background"]),
+        background,
       )
       // The background gradient needs the camera, and the reflections the gradients of objects
       .replace(

@@ -31,8 +31,9 @@ export function isGradient(value: Token[] | undefined): value is Token[] {
   return !!call && GRADIENT_FUNCTIONS.includes(call.name);
 }
 
-// The GLSL of the background: a function of the ray's direction, and BACKGROUND that calls it
-export function backgroundFunction(value: Token[]): string {
+// The GLSL of the background: a function of the ray's direction, and BACKGROUND that calls it.
+// moving: the numbers an animation of the scene changes (decision 103)
+export function backgroundFunction(gradient: Gradient, moving: Map<string, string> = new Map()): string {
   return [
     "// The camera, for the background: set at the start of main()",
     "vec3 camForward;",
@@ -49,7 +50,7 @@ export function backgroundFunction(value: Token[]): string {
     "  // Through the camera onto the canvas; a ray going sideways or back reaches its edge",
     "  vec2 at = z > 0.001 ? 1.5 * d / z * size.y + 0.5 * size : 0.5 * size + normalize(d + 1e-6) * 1e4;",
     "  at = clamp(at, vec2(0.0), size); // like CSS, nothing exists outside the box: its edge",
-    ...gradientLines(value),
+    ...linesOf(gradient, moving),
     "  return col;",
     "}",
     "#define BACKGROUND background(rd)",
@@ -58,9 +59,7 @@ export function backgroundFunction(value: Token[]): string {
 
 // The color of a gradient written on an object: the color the reflections see
 export function gradientMean(value: Token[]): string {
-  const call = readFunction(value)!;
-  const first = call.args[0];
-  const stops = readStops(first && !isColor(first[0]) ? call.args.slice(1) : call.args, value, call.name);
+  const { stops } = readGradient(value);
   const rgb = [0, 1, 2].map((i) => {
     const values = stops.map((s) => Number(s.color.slice(5, -1).split(", ")[i]));
     return Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 255);
@@ -68,30 +67,92 @@ export function gradientMean(value: Token[]): string {
   return rgb.map((c) => c.toString(16).padStart(2, "0")).join("");
 }
 
-// The lines that compute `vec3 col` from `vec2 at` and `vec2 size`
-export function gradientLines(value: Token[]): string[] {
+// A gradient read into its numbers: what an animation can change (decision 102)
+export type Gradient = {
+  name: string; // linear-gradient, repeating-radial-gradient…
+  shape: string; // radial: circle or ellipse, and its size; an animation cannot change it
+  direction: number | { x: number; y: number }; // linear: an angle in radians, or a side or corner
+  center: [number, number]; // radial, conic: from the top left corner, fractions of the box
+  from: number; // conic: the start angle, in turns
+  stops: { color: string; at: number }[];
+};
+
+export function readGradient(value: Token[]): Gradient {
   const call = readFunction(value)!;
   const radial = call.name.includes("radial");
   const conic = call.name.includes("conic");
-  const repeating = call.name.startsWith("repeating");
   const [first, ...rest] = call.args;
   // The first argument is the direction (or shape) unless it starts with a color
   const hasSetup = first && !isColor(first[0]);
   const setup = hasSetup ? first : [];
+  const gradient: Gradient = { name: call.name, shape: "", direction: Math.PI, center: [0.5, 0.5], from: 0, stops: [] };
   // The setup first: its errors say more than those of the stops it leaves behind
-  const t = conic ? conicT(setup, value) : radial ? radialT(setup, value) : linearT(setup, value);
-  const stops = readStops(hasSetup ? rest : call.args, value, call.name);
+  if (conic) Object.assign(gradient, readConic(setup, value));
+  else if (radial) Object.assign(gradient, readRadial(setup, value));
+  else gradient.direction = readLinear(setup, value);
+  gradient.stops = readStops(hasSetup ? rest : call.args, value, call.name) as Gradient["stops"];
+  return gradient;
+}
 
-  const lines = [...t];
-  const t0 = stops[0].at!;
-  const tn = stops[stops.length - 1].at!;
-  if (repeating && tn > t0) lines.push(`  t = ${f(t0)} + mod(t - ${f(t0)}, ${f(tn - t0)});`);
-  lines.push(`  vec3 col = ${stops[0].color};`);
+// The numbers of a gradient that can change, each with a name: angle, cx, cy, from, at0…, color0…
+export function channels(gradient: Gradient): string[] {
+  const kind = gradient.name.includes("conic") ? "conic" : gradient.name.includes("radial") ? "radial" : "linear";
+  return [
+    ...(kind === "linear" ? ["angle"] : ["cx", "cy"]),
+    ...(kind === "conic" ? ["from"] : []),
+    ...gradient.stops.flatMap((_, i) => [`at${i}`, `color${i}`]),
+  ];
+}
+
+// One number of a gradient, in GLSL
+export function channel(gradient: Gradient, name: string): string {
+  if (name === "angle") {
+    const d = gradient.direction;
+    if (typeof d === "number") return f(+d.toFixed(6));
+    // A corner depends on the size of the box: the angle of its direction
+    if (d.x && d.y) return `atan(${f(d.x)} * size.y, ${f(d.y)} * size.x)`;
+    // A side, like CSS: to top 0deg, to right 90deg, to bottom 180deg, to left 270deg
+    return f(+(d.x ? (d.x > 0 ? Math.PI / 2 : (3 * Math.PI) / 2) : d.y > 0 ? 0 : Math.PI).toFixed(6));
+  }
+  if (name === "cx") return f(gradient.center[0]);
+  if (name === "cy") return f(1 - gradient.center[1]); // y goes up in the shader
+  if (name === "from") return f(+gradient.from.toFixed(6));
+  const stop = gradient.stops[Number(name.replace(/\D+/, ""))];
+  return name.startsWith("at") ? f(stop.at) : stop.color;
+}
+
+// The lines that compute `vec3 col` from `vec2 at` and `vec2 size`
+export function gradientLines(value: Token[]): string[] {
+  return linesOf(readGradient(value));
+}
+
+// The lines of a gradient. moving: the GLSL of the numbers an animation or :hover changes
+// (decision 102); the others are written as constants, like a still gradient.
+export function linesOf(gradient: Gradient, moving: Map<string, string> = new Map()): string[] {
+  const { name, stops } = gradient;
+  const radial = name.includes("radial");
+  const conic = name.includes("conic");
+  const repeating = name.startsWith("repeating");
+  const get = (key: string) => moving.get(key) ?? channel(gradient, key);
+
+  const lines = conic ? conicT(gradient, moving, get) : radial ? radialT(gradient, get) : linearT(gradient, moving);
+  const last = stops.length - 1;
+  const t0 = stops[0].at;
+  const tn = stops[last].at;
+  if (repeating && (moving.has("at0") || moving.has(`at${last}`)))
+    lines.push(`  t = ${get("at0")} + mod(t - ${get("at0")}, max(${get(`at${last}`)} - ${get("at0")}, 0.00001));`);
+  else if (repeating && tn > t0) lines.push(`  t = ${f(t0)} + mod(t - ${f(t0)}, ${f(tn - t0)});`);
+  lines.push(`  vec3 col = ${get("color0")};`);
   for (let i = 1; i < stops.length; i++) {
-    const a = stops[i - 1].at!;
-    const b = stops[i].at!;
-    const weight = b > a ? `clamp((t - ${f(a)}) / ${f(b - a)}, 0.0, 1.0)` : `step(${f(a)}, t)`;
-    lines.push(`  col = mix(col, ${stops[i].color}, ${weight});`);
+    const a = stops[i - 1].at;
+    const b = stops[i].at;
+    const weight =
+      moving.has(`at${i - 1}`) || moving.has(`at${i}`)
+        ? `clamp((t - ${get(`at${i - 1}`)}) / max(${get(`at${i}`)} - ${get(`at${i - 1}`)}, 0.00001), 0.0, 1.0)`
+        : b > a
+          ? `clamp((t - ${f(a)}) / ${f(b - a)}, 0.0, 1.0)`
+          : `step(${f(a)}, t)`;
+    lines.push(`  col = mix(col, ${get(`color${i}`)}, ${weight});`);
   }
   return lines;
 }
@@ -157,9 +218,8 @@ function readStops(args: Token[][], value: Token[], name: string): Stop[] {
 // An angle unit, in radians
 const TURN: Record<string, number> = { deg: Math.PI / 180, rad: 1, grad: Math.PI / 200, turn: 2 * Math.PI };
 
-// t around the center: 0 at the start angle, 1 a full turn later, clockwise from the top
-// like CSS (CSS Images 4). "from <angle>" turns the start, "at <position>" moves the center.
-function conicT(setup: Token[], value: Token[]): string[] {
+// conic-gradient(): "from <angle>" turns the start, "at <position>" moves the center
+function readConic(setup: Token[], value: Token[]): Pick<Gradient, "from" | "center"> {
   const error = (what: string) =>
     errorAt(value, `conic-gradient(): ${what}, like: conic-gradient(from 90deg at 30% 40%, …)`);
   const at = setup.findIndex((t) => isWord(t, "at"));
@@ -172,40 +232,57 @@ function conicT(setup: Token[], value: Token[]): string[] {
       throw error("it starts with from <angle>, at <position>, or both");
     from = (angle.value * TURN[angle.unit]) / (2 * Math.PI);
   }
-  const [cx, cy] = readPosition(where, at >= 0, error);
+  return { from, center: readPosition(where, at >= 0, error) };
+}
+
+// t around the center: 0 at the start angle, 1 a full turn later, clockwise from the top
+// like CSS (CSS Images 4)
+function conicT(gradient: Gradient, moving: Map<string, string>, get: (key: string) => string): string[] {
+  const from = moving.has("from") || gradient.from ? ` - ${get("from")}` : "";
   return [
-    `  vec2 c = vec2(${f(cx)}, ${f(1 - cy)}) * size;`, // y goes up in the shader
+    `  vec2 c = vec2(${get("cx")}, ${get("cy")}) * size;`, // y goes up in the shader
     "  vec2 p = at - c;",
     "  // atan(x, y): 0 straight up, a quarter turn to the right, like CSS",
-    `  float t = fract((p.x == 0.0 && p.y == 0.0 ? 0.0 : atan(p.x, p.y)) / 6.2831853${from ? ` - ${f(+from.toFixed(6))}` : ""});`,
+    `  float t = fract((p.x == 0.0 && p.y == 0.0 ? 0.0 : atan(p.x, p.y)) / 6.2831853${from});`,
   ];
 }
 
-// t along the gradient line: 0 at its start, 1 at its end (CSS Images 3)
-function linearT(setup: Token[], value: Token[]): string[] {
+// linear-gradient(): an angle, or to a side or a corner (to bottom by default)
+function readLinear(setup: Token[], value: Token[]): Gradient["direction"] {
   const error = () =>
     errorAt(value, "linear-gradient() starts with an angle or a side, like: linear-gradient(to top right, …) or linear-gradient(45deg, …)");
-  let dir = "vec2(0.0, -1.0)"; // to bottom, the default (y goes up in the shader)
   if (setup.length === 1 && setup[0].type === "DIMENSION") {
     const turn: Record<string, number> = { deg: Math.PI / 180, rad: 1, turn: 2 * Math.PI };
     const t = setup[0];
     if (!(t.unit in turn)) throw error();
-    const a = t.value * turn[t.unit]; // 0deg points up, 90deg right
-    dir = `vec2(${f(+Math.sin(a).toFixed(6))}, ${f(+Math.cos(a).toFixed(6))})`;
-  } else if (setup.length > 0) {
-    if (!isWord(setup[0], "to") || setup.length < 2 || setup.length > 3) throw error();
-    let x = 0;
-    let y = 0;
-    for (const side of setup.slice(1)) {
-      if (isWord(side, "left") && !x) x = -1;
-      else if (isWord(side, "right") && !x) x = 1;
-      else if (isWord(side, "top") && !y) y = 1;
-      else if (isWord(side, "bottom") && !y) y = -1;
-      else throw error();
-    }
-    // A corner: the line is perpendicular to the diagonal between the two other corners
-    dir = x && y ? `normalize(vec2(${f(x)} * size.y, ${f(y)} * size.x))` : `vec2(${f(x)}, ${f(y)})`;
+    return t.value * turn[t.unit]; // 0deg points up, 90deg right
   }
+  if (setup.length === 0) return { x: 0, y: -1 }; // to bottom (y goes up in the shader)
+  if (!isWord(setup[0], "to") || setup.length < 2 || setup.length > 3) throw error();
+  let x = 0;
+  let y = 0;
+  for (const side of setup.slice(1)) {
+    if (isWord(side, "left") && !x) x = -1;
+    else if (isWord(side, "right") && !x) x = 1;
+    else if (isWord(side, "top") && !y) y = 1;
+    else if (isWord(side, "bottom") && !y) y = -1;
+    else throw error();
+  }
+  return { x, y };
+}
+
+// t along the gradient line: 0 at its start, 1 at its end (CSS Images 3)
+function linearT(gradient: Gradient, moving: Map<string, string>): string[] {
+  const d = gradient.direction;
+  const a = typeof d === "number" ? d : 0;
+  const dir = moving.has("angle")
+    ? `vec2(sin(${moving.get("angle")}), cos(${moving.get("angle")}))` // the angle turns (decision 102)
+    : typeof d === "number"
+      ? `vec2(${f(+Math.sin(a).toFixed(6))}, ${f(+Math.cos(a).toFixed(6))})`
+      : // A corner: the line is perpendicular to the diagonal between the two other corners
+        d.x && d.y
+        ? `normalize(vec2(${f(d.x)} * size.y, ${f(d.y)} * size.x))`
+        : `vec2(${f(d.x)}, ${f(d.y)})`;
   return [
     `  vec2 dir = ${dir};`,
     "  vec2 p = at - 0.5 * size;",
@@ -213,8 +290,8 @@ function linearT(setup: Token[], value: Token[]): string[] {
   ];
 }
 
-// t from the center (0) to the ending shape (1): circle or ellipse, sized like CSS
-function radialT(setup: Token[], value: Token[]): string[] {
+// radial-gradient(): circle or ellipse, its size, and "at <position>"
+function readRadial(setup: Token[], value: Token[]): Pick<Gradient, "shape" | "center"> {
   const error = (what: string) => errorAt(value, `radial-gradient(): ${what}, like: radial-gradient(circle closest-side at 30% 40%, …)`);
   const at = setup.findIndex((t) => isWord(t, "at"));
   const shapeWords = at >= 0 ? setup.slice(0, at) : setup;
@@ -227,16 +304,19 @@ function radialT(setup: Token[], value: Token[]): string[] {
       size = (word as { value: string }).value;
     else throw error("the shape is circle or ellipse, the size a side or corner keyword");
   }
+  return { shape: `${circle ? "circle" : "ellipse"} ${size}`, center: readPosition(where, at >= 0, error) };
+}
 
-  const [cx, cy] = readPosition(where, at >= 0, error);
-
+// t from the center (0) to the ending shape (1): circle or ellipse, sized like CSS
+function radialT(gradient: Gradient, get: (key: string) => string): string[] {
+  const [shape, size] = gradient.shape.split(" ");
   const lines = [
-    `  vec2 c = vec2(${f(cx)}, ${f(1 - cy)}) * size;`, // y goes up in the shader
+    `  vec2 c = vec2(${get("cx")}, ${get("cy")}) * size;`, // y goes up in the shader
     "  vec2 p = at - c;",
     "  vec2 near = min(c, size - c);",
     "  vec2 far = max(c, size - c);",
   ];
-  if (circle) {
+  if (shape === "circle") {
     const r: Record<string, string> = {
       "closest-side": "min(near.x, near.y)",
       "farthest-side": "max(far.x, far.y)",

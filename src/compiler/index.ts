@@ -230,14 +230,20 @@ function compileStylesheet(
   }
 
   const computedScene =
-    errors.run(() =>
-      computeColors(
+    errors.run(() => {
+      const computed = computeColors(
         computeMath(
           resolveCurrentColor(computeVars(sceneStyles, rootVariables), "scene"),
           null,
         ),
-      ),
-    ) ?? {};
+      );
+      // The scene plays an animation too: its background, and its variables (decision 103)
+      checkSceneAnimation(sceneStyles, stylesheet.keyframes);
+      const copy = animateVariables(sceneStyles, rootVariables, null, stylesheet.keyframes, copies.length + 1);
+      if (!copy) return computed;
+      copies.push(copy.keyframes);
+      return { ...computed, animation: [copy.name, ...computed["animation"].slice(1)] };
+    }) ?? {};
   // @keyframes with variables are only played through their copies
   const shared = computeKeyframes(
     stylesheet.keyframes.filter((k) => !usesVariablesIn(k)),
@@ -270,7 +276,7 @@ function compileStylesheet(
   ]);
   const active = activeSlots(styled).map((instance) => instance.activeTriggers);
   const timelines = errors.run(() =>
-    sceneTimelines(styled.flatMap((instance) => [...instance.groupStyles, instance.styles])),
+    sceneTimelines([computedScene, ...styled.flatMap((instance) => [...instance.groupStyles, instance.styles])]),
   );
   errors.throwIfAny();
   return {
@@ -314,6 +320,21 @@ function usesVariablesIn(animation: Keyframes): boolean {
       (d) => d.property.startsWith("--") || hasVar(d.value),
     ),
   );
+}
+
+// On the scene, an animation changes the background and variables, nothing else: the
+// other properties of a frame belong to objects (decision 103)
+function checkSceneAnimation(styles: Styles, keyframes: Keyframes[]): void {
+  const name = styles["animation"]?.[0];
+  if (name?.type !== "IDENT") return;
+  const found = keyframes.findLast((k) => k.name === name.value);
+  for (const frame of found?.frames ?? [])
+    for (const declaration of frame.declarations)
+      if (declaration.property !== "background" && !declaration.property.startsWith("--"))
+        throw errorAt(
+          declaration,
+          `On the scene, an animation only changes background and variables: ${declaration.property} is a property of objects (in @keyframes ${found!.name})`,
+        );
 }
 
 // A @keyframes that sets or reads variables cannot be shared: its values depend on

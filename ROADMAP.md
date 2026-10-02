@@ -15,7 +15,7 @@ What the language and the tools can do today. Each feature is detailed in the re
 | Scene structure      | `@scene { cube.corner * 4; torus#hero; }`, `;` optional between elements                                                                                                                    | 2, 11, 46             |
 | Multiplication       | `cube * 12`; numbered ids: `cube#petal * 12` → `#petal-1` … `#petal-12`                                                                                                                     | 3                     |
 | Groups               | `group#g { … }`: transforms and animation apply to the children, positions are relative                                                                                                     | 45, 48                |
-| Scene styling        | `scene { floor; background (a color or a gradient); light; ambient; camera-* }`                                                                                                                                     | 11, 15, 16            |
+| Scene styling        | `scene { floor; background (a color or a gradient, animatable, dec. 103); light; ambient; camera-* }`                                                                                                              | 11, 15, 16            |
 | Selectors            | `<shape>`, `.class`, `#id`, `*`, lists `a, b`, descendant `a b`, child `a > b`, siblings `a + b` / `a ~ b`, faces `::face(front)`, `::top`, `::bottom`, `:hover` (on objects and their groups), `:active` (pressed), `:has()` (`#g:has(sphere:hover) cube`), `:nth-child(An+B [of S])` and its family, `:first-child`…, `:not()` | 4, 37, 47, 59, 62, 69, 73, 92, 93, 95 |
 | Cascade              | specificity (id 10,000, class 100, tag 1), last one wins, `!important` in 2 passes                                                                                                          | 4, 38                 |
 | Animation            | `@keyframes` (`from`, `to`, `%`), `animation: name duration [easing] [delay] [count \| infinite] [direction] [fill-mode]` and the six longhands, computed in the shader; driven by the scroll with `animation-timeline: scroll()` / `view()` | 21, 22, 23, 24, 70, 96 |
@@ -23,7 +23,7 @@ What the language and the tools can do today. Each feature is detailed in the re
 | Media queries        | `@media (…) { … }`: any query the browser knows (width, orientation, `prefers-color-scheme`, `prefers-reduced-motion`…), up to 4 per scene, switched live; range syntax (`width < 600px`); `if(media(…))` and `light-dark()` add their own (dec. 79, 81)                                   | 71                    |
 | Math                 | `calc()`, `min()`, `max()`, `clamp()`, `abs()`, `sqrt()`, `pow()`, trigonometry and its inverses (`asin()` … `atan2()`), `sign()`, `round()`, `mod()`, `rem()`, `hypot()`, `log()`, `exp()`, `progress()`, `random()`, `pi`, `e` | 52, 78, 81               |
 | Variables            | `--size: 2`, `var(--size, 1)`; inherited scene → group → object, a variable can use another, animatable in `@keyframes`                                                                     | 55                    |
-| Colors               | `#ff5a36`, `rgb()`, `hsl()`, `hwb()`, `lab()`, `lch()`, `oklab()`, `oklch()`, `color()`, `color-mix()`, `light-dark()`, `contrast-color()`, `currentColor` (dec. 94), the 148 CSS names (`tomato`) where a color is expected; a gradient (`linear-`, `radial-`, `conic-`, dec. 82, 98) in `color` or a material; math and `var()` inside | 58, 79                |
+| Colors               | `#ff5a36`, `rgb()`, `hsl()`, `hwb()`, `lab()`, `lch()`, `oklab()`, `oklch()`, `color()`, `color-mix()`, `light-dark()`, `contrast-color()`, `currentColor` (dec. 94), the 148 CSS names (`tomato`) where a color is expected; a gradient (`linear-`, `radial-`, `conic-`, dec. 82, 98) in `color` or a material, animated in `color` (dec. 102); math and `var()` inside | 58, 79                |
 | CSS-style loops      | `sibling-index()`, `sibling-count()`: each copy of a `* n` gets its own value                                                                                                               | 52                    |
 | Units                | angles `deg` `rad` `turn` (always with a unit), durations `s` `ms`, `%`                                                                                                                     | 9, 17, 20             |
 | Modern CSS functions | commas or spaces: `metal(#d4af37, 0.2)`, `polygon(0 1, 1 0, -1 0)`                                                                                                                          | 28                    |
@@ -53,7 +53,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 | Look         | `color`, `material`                                                                                | 26     |
 | Textures     | `texture: url("…")`, `image-rendering: pixelated`, `texture-size`                                  | 59     |
 | Combinations | `operation: union \| subtract \| intersect`, `blend` (smooth union)                                | 18, 19 |
-| Animation    | `animation`; animatable: `translate`, `rotate-*`, `scale`, `color` (also what `:hover` can change) | 24, 62 |
+| Animation    | `animation`; animatable: `translate`, `rotate-*`, `scale`, `color` (a gradient too), `offset-distance` (also what `:hover` can change); on the scene, `background` | 24, 62, 102, 103 |
 | Transition   | `transition: 0.3s ease-out`, one per object; easings: keywords, `cubic-bezier()`, `linear()`       | 68     |
 
 ### Materials
@@ -132,7 +132,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 
 **Next, in Lucas's order** (Oct. 2, after 0.0.3; replaces the list of Oct. 1):
 
-1. **Animated gradients**: lift the limit of decision 82 (a gradient is not animated, `:hover` cannot change it)
+1. ~~**Animated gradients**~~ ✅ decisions 102, 103: a gradient changes into another of the same kind in `@keyframes` and on `:hover`, through a variable too; the scene plays an animation, so its `background` moves (a flat, moving image)
 2. **`setProperty()` from JS** (see Rendering passes / runtime API)
 3. **Nesting** with `&`
 4. **`transform-origin`**

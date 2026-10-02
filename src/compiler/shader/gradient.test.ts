@@ -106,12 +106,12 @@ describe("gradients on objects (decision 82)", () => {
     expect(sceneOf("color: #ff0000;")).not.toContain("gradientColor");
   });
 
-  it("refuses to animate or hover the color of a painted object", () => {
+  it("keeps the gradient of a material still: its color cannot change (decision 102)", () => {
     expect(() =>
-      compileScene("@scene { cube } cube { color: linear-gradient(red, blue); animation: a 1s; } @keyframes a { to { color: red; } }"),
-    ).toThrow("its color cannot be animated");
+      compileScene("@scene { cube } cube { material: metal(linear-gradient(red, blue)); animation: a 1s; } @keyframes a { to { color: red; } }"),
+    ).toThrow("is painted with the gradient of its material: its color cannot change");
     expect(() =>
-      compileScene("@scene { cube } cube { color: linear-gradient(red, blue); } cube:hover { color: red; }"),
-    ).toThrow(":hover cannot change its color");
+      compileScene("@scene { cube } cube { material: metal(linear-gradient(red, blue)); } cube:hover { color: red; }"),
+    ).toThrow("is painted with the gradient of its material: its color cannot change");
   });
 });

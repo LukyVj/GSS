@@ -87,7 +87,7 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "<color> | <gradient>",
     initial: "#e6e6e6",
     description:
-      "Sets the base color of the object's surface: a hex color (#ff5a36), rgb(), hsl() or one of the 148 CSS named colors (tomato), turned into a hex color by the compiler. It can also be a gradient (linear-gradient(), radial-gradient()), painted on the object as seen from the front, and taken by every material. A gradient is not animated, and :hover cannot change it.",
+      "Sets the base color of the object's surface: a hex color (#ff5a36), rgb(), hsl() or one of the 148 CSS named colors (tomato), turned into a hex color by the compiler. It can also be a gradient (linear-gradient(), radial-gradient(), conic-gradient()), painted on the object as seen from the front, and taken by every material. A gradient can be animated and changed by :hover: it changes into another gradient of the same kind with as many colors, and each of its numbers moves on its own, the angle, the center, the positions and the colors. Through a variable, like a registered @property in CSS, one number is enough: linear-gradient(var(--angle), …) turns when a @keyframes changes --angle. A color cannot change into a gradient.",
     examples: [
       {
         name: "color",
@@ -96,6 +96,14 @@ export const PROPERTIES: PropertyDef[] = [
       {
         name: "color",
         code: "@scene { sphere#a; sphere#b; } #a { translate: 0.8 0.5 0; color: tomato; } #b { translate: -0.8 0.5 0; color: hsl(210 80% 60%); }",
+      },
+      {
+        name: "animated gradient",
+        code: "@scene { plane; } plane { size: 4 3; translate: 0 0.05 0; --angle: 0deg; color: linear-gradient(var(--angle), #ff6540, #722cff); animation: spin 6s; } scene { camera-angle: 0deg 60deg; } @keyframes spin { to { --angle: 1turn; } }",
+      },
+      {
+        name: "gradient on :hover",
+        code: "@scene { cube; } cube { translate: 0 0.5 0; color: radial-gradient(circle at 30% 70%, #ffd27a, #ff5a36); transition: 0.4s; } cube:hover { color: radial-gradient(circle at 70% 30%, #7ad2ff, #3a3aff); }",
       },
     ],
   },
@@ -296,12 +304,12 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "animation",
-    appliesTo: "object",
+    appliesTo: "everywhere",
     syntax:
       "<keyframes-name> <time> [<easing>] [<time>] [<number> | infinite] [normal | reverse | alternate | alternate-reverse] [none | forwards | backwards | both]",
     initial: "none",
     description:
-      "Plays a @keyframes animation on the object, like CSS. After the name: the duration (s or ms), then if needed an easing, a delay, a number of iterations, a direction and a fill mode, in any order. Unlike CSS, an animation loops forever unless you give it a number of iterations. The second time is the delay: the animation starts after it, or partway with a negative delay. A number plays that many times (1.5 stops halfway through the second), infinite loops. alternate plays it forward then backward, reverse backward, alternate-reverse backward first. The fill mode says what the object shows outside the animation: none, its own value, like CSS; backwards, the first frame during the delay; forwards, the last frame once it is over; both, the two. The easing shapes each step: linear, the default, keeps a constant speed; ease, ease-in, ease-out and ease-in-out speed up and slow down; cubic-bezier() and linear() draw your own curve; steps() moves by jumps. In an animation, ease-in-out is computed as a smoothstep, a very close curve. Each part also has its own property: animation-duration, animation-delay, animation-iteration-count, animation-direction, animation-fill-mode and animation-timing-function, which win over what animation says. Animatable properties: translate, rotate-x, rotate-y, rotate-z, scale, color and offset-distance. On a group, it animates translate, the rotations and scale of the whole group.",
+      "Plays a @keyframes animation on the object, like CSS. After the name: the duration (s or ms), then if needed an easing, a delay, a number of iterations, a direction and a fill mode, in any order. Unlike CSS, an animation loops forever unless you give it a number of iterations. The second time is the delay: the animation starts after it, or partway with a negative delay. A number plays that many times (1.5 stops halfway through the second), infinite loops. alternate plays it forward then backward, reverse backward, alternate-reverse backward first. The fill mode says what the object shows outside the animation: none, its own value, like CSS; backwards, the first frame during the delay; forwards, the last frame once it is over; both, the two. The easing shapes each step: linear, the default, keeps a constant speed; ease, ease-in, ease-out and ease-in-out speed up and slow down; cubic-bezier() and linear() draw your own curve; steps() moves by jumps. In an animation, ease-in-out is computed as a smoothstep, a very close curve. Each part also has its own property: animation-duration, animation-delay, animation-iteration-count, animation-direction, animation-fill-mode and animation-timing-function, which win over what animation says. Animatable properties: translate, rotate-x, rotate-y, rotate-z, scale, color (a gradient too) and offset-distance, and background on the scene. On a group, it animates translate, the rotations and scale of the whole group. On the scene, it animates the background and the variables of the scene that the background uses; the objects do not follow the variables a scene animates, they play their own animation.",
     examples: [
       {
         name: "animation",
@@ -323,11 +331,15 @@ export const PROPERTIES: PropertyDef[] = [
         name: "animation",
         code: "@scene { cube; } cube { translate: 0 3 0; color: #ff5a36; animation: drop 1s ease-in 0.5s 1 both; } @keyframes drop { to { translate: 0 0.5 0; rotate-y: -90deg; } }",
       },
+      {
+        name: "animation on the scene",
+        code: "@scene { sphere; } sphere { translate: 0 1 0; color: #ff5a36; } scene { floor: none; background: #101018; animation: dusk 4s ease-in-out alternate; } @keyframes dusk { to { background: #3a1f4a; } }",
+      },
     ],
   },
   {
     name: "animation-duration",
-    appliesTo: "object",
+    appliesTo: "everywhere",
     syntax: "<time>",
     initial: "0s",
     description:
@@ -341,7 +353,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "animation-delay",
-    appliesTo: "object",
+    appliesTo: "everywhere",
     syntax: "<time>",
     initial: "0s",
     description:
@@ -355,7 +367,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "animation-iteration-count",
-    appliesTo: "object",
+    appliesTo: "everywhere",
     syntax: "<number> | infinite",
     initial: "infinite",
     description:
@@ -369,7 +381,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "animation-direction",
-    appliesTo: "object",
+    appliesTo: "everywhere",
     syntax: "normal | reverse | alternate | alternate-reverse",
     initial: "normal",
     description:
@@ -383,7 +395,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "animation-fill-mode",
-    appliesTo: "object",
+    appliesTo: "everywhere",
     syntax: "none | forwards | backwards | both",
     initial: "none",
     description:
@@ -397,7 +409,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "animation-timing-function",
-    appliesTo: "object",
+    appliesTo: "everywhere",
     syntax: "<easing>",
     initial: "linear",
     description:
@@ -411,7 +423,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "animation-timeline",
-    appliesTo: "object",
+    appliesTo: "everywhere",
     syntax:
       "auto | scroll([root | nearest] || [block | inline | x | y]) | view([block | inline | x | y])",
     initial: "auto",
@@ -810,10 +822,11 @@ export const PROPERTIES: PropertyDef[] = [
   {
     name: "background",
     appliesTo: "scene",
+    animatable: true,
     syntax: "<color> | <gradient>",
     initial: "#080808",
     description:
-      "Sets the background, visible wherever there is no object and no floor: a color, or a gradient drawn over the canvas like a CSS background (linear-gradient(), radial-gradient() and their repeating forms).",
+      "Sets the background, visible wherever there is no object and no floor: a color, or a gradient drawn over the canvas like a CSS background (linear-gradient(), radial-gradient(), conic-gradient() and their repeating forms). The scene can animate it, with animation on the scene: a color into another color, a gradient into another gradient of the same kind with as many colors, or through the variables of the scene. A scene without objects and without a floor is then a flat, moving image.",
     examples: [
       {
         name: "background",
@@ -822,6 +835,10 @@ export const PROPERTIES: PropertyDef[] = [
       {
         name: "background with a gradient",
         code: "@scene { sphere; } sphere { translate: 0 1 0; color: #ff5a36; } scene { floor: none; background: radial-gradient(circle at 50% 40%, #2a2a3a, #07070a); }",
+      },
+      {
+        name: "animated background",
+        code: "@scene { } scene { floor: none; --x: 20%; background: radial-gradient(circle at var(--x) 40%, #ffb36b, #ff6540 30%, #722cff 70%, #171322); animation: drift 8s ease-in-out alternate; filter: grain(0.06); } @keyframes drift { to { --x: 80%; } }",
       },
     ],
   },

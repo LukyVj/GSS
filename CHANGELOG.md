@@ -6,6 +6,11 @@ The 0.0.1 history was reconstructed from GitHub.
 
 ## Unreleased
 
+### Added
+
+- Animated gradients: a gradient in `color` changes into another gradient of the same kind in `@keyframes`, on `:hover` and `:active` (with `transition`), its angle, center, stop positions and colors each moving on their own. Through a variable, like a registered `@property`: `linear-gradient(var(--angle), …)` turns when `@keyframes` changes `--angle`.
+- The scene plays an animation: `scene { animation: … }` animates `background`, a color or a gradient, directly or through the scene's variables, on time or with `scroll()` and `view()`. With `@scene { }` and `floor: none`, the scene becomes a flat, moving image.
+
 ## [0.0.3] — 2026-10-02
 
 ### Changed
