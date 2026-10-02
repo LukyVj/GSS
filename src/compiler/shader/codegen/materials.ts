@@ -3,6 +3,7 @@ import type { Token } from "../../syntax/tokenizer";
 import { tokenize } from "../../syntax/tokenizer";
 import { errorAt } from "../../syntax/errors";
 import { readFunction } from "../../values/values";
+import { clampComputed } from "../../values/calc";
 import { glslFloat } from "./glsl";
 import { readColor } from "./read";
 
@@ -47,12 +48,8 @@ function readFrost(arg: Token[] | undefined): string {
         );
       }
       style = token.value;
-    } else if (
-      token.type === "NUMBER" &&
-      token.value >= 0 &&
-      token.value <= 1
-    ) {
-      amount = token.value;
+    } else if (token.type === "NUMBER" && clampComputed(token, 0, 1) >= 0 && clampComputed(token, 0, 1) <= 1) {
+      amount = clampComputed(token, 0, 1); // calc(2) is 1, like CSS
     } else {
       throw errorAt(
         token,

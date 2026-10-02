@@ -2,6 +2,7 @@
 import type { Token } from "../syntax/tokenizer";
 import type { Point } from "./svgpath";
 import { errorAt } from "../syntax/errors";
+import { clampComputed } from "./calc";
 
 export type FunctionCall = {
   name: string; // "metal"
@@ -85,18 +86,15 @@ export function readNumber(
 ): number {
   if (!value) return fallback;
   const [token] = value;
-  if (
-    value.length !== 1 ||
-    token.type !== "NUMBER" ||
-    token.value < 0 ||
-    (token.value === 0 && !allowZero)
-  ) {
+  // A computed number below 0 is 0 when 0 is allowed, like CSS. Else no number is the closest.
+  const n = token?.type === "NUMBER" ? clampComputed(token, allowZero ? 0 : -Infinity) : NaN;
+  if (value.length !== 1 || !(n > 0 || (n === 0 && allowZero))) {
     throw errorAt(
       value,
       `${property} expects one positive number, like: ${property}: 2;`,
     );
   }
-  return token.value;
+  return n;
 }
 
 // Reads an angle (deg, rad, turn; 0 alone) and returns radians

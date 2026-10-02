@@ -4,7 +4,7 @@
 // Like calc.ts and vars.ts: the rest of the compiler only ever sees a HASH token.
 import type { Token } from "../syntax/tokenizer";
 import { errorAt, rememberSpan, spanAcross } from "../syntax/errors";
-import { closingParen } from "./calc";
+import { clampComputed, closingParen } from "./calc";
 import { NAMED_COLORS } from "./named-colors";
 import {
   type Rgb,
@@ -413,10 +413,11 @@ function readColorMix(args: Token[], call: Token[], scheme: ColorScheme): Rgb {
     const percentages = part.filter((t) => t.type === "PERCENTAGE");
     const color = part.filter((t) => t.type !== "PERCENTAGE");
     if (percentages.length > 1) throw errorAt(call, "color-mix() takes one percentage per color");
-    const p = percentages[0] as { value: number } | undefined;
-    if (p && (p.value < 0 || p.value > 100))
+    const p = percentages[0] as Token & { value: number } | undefined;
+    const value = p && clampComputed(p, 0, 100); // calc(140%) is 100%, like CSS
+    if (value !== undefined && (value < 0 || value > 100))
       throw errorAt(call, "color-mix() takes percentages from 0% to 100%");
-    return { rgb: readColorToken(color, call), p: p?.value };
+    return { rgb: readColorToken(color, call), p: value };
   });
 
   // The percentages, like CSS: one missing is the rest of 100%, both missing is 50% each

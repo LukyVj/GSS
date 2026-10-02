@@ -4,6 +4,7 @@ import type { Token } from "../syntax/tokenizer";
 import type { Styles } from "../cascade/resolve";
 import { findEasing, readEasing, type Easing } from "../values/easing";
 import { errorAt } from "../syntax/errors";
+import { clampComputed } from "../values/calc";
 import { readTimeline, type Timeline } from "./timeline";
 
 export type Direction =
@@ -53,7 +54,7 @@ function seconds(token: Token): number | null {
 // 3, 1.5 or infinite → a number of iterations; anything else → null
 function iterationsOf(token: Token): number | null {
   if (token.type === "IDENT" && token.value === "infinite") return Infinity;
-  if (token.type === "NUMBER" && token.value >= 0) return token.value;
+  if (token.type === "NUMBER" && clampComputed(token, 0) >= 0) return clampComputed(token, 0); // calc(-2) is 0, like CSS
   return null;
 }
 

@@ -2,7 +2,7 @@
 // One reading here; the runtime (transitions) and the shader (@keyframes) compute them.
 import type { Token } from "../syntax/tokenizer";
 import { readFunction } from "./values";
-import { closingParen } from "./calc";
+import { clampComputed, closingParen } from "./calc";
 import { errorAt } from "../syntax/errors";
 
 // How a progress from 0 to 1 is bent over time
@@ -64,11 +64,11 @@ export function readEasing(value: Token[]): Easing | null {
 
 function readBezier(args: Token[][], value: Token[]): Easing {
   if (args.length !== 4) throw errorAt(value, BEZIER_ERROR);
-  const [x1, y1, x2, y2] = args.map((arg) => {
+  const [x1, y1, x2, y2] = args.map((arg, i) => {
     const [token] = arg;
     if (arg.length !== 1 || token.type !== "NUMBER")
       throw errorAt(value, BEZIER_ERROR);
-    return token.value;
+    return i % 2 === 0 ? clampComputed(token, 0, 1) : token.value; // a computed x is clamped, like CSS
   });
   // x is time: it stays between 0 and 1. y can overshoot (a bounce).
   if (x1 < 0 || x1 > 1 || x2 < 0 || x2 > 1) throw errorAt(value, BEZIER_ERROR);

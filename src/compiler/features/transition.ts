@@ -3,6 +3,7 @@
 import type { Token } from "../syntax/tokenizer";
 import { findEasing, type Easing } from "../values/easing";
 import { errorAt } from "../syntax/errors";
+import { clampComputed } from "../values/calc";
 
 export type Transition = {
   duration: number; // in seconds
@@ -22,11 +23,11 @@ const EASE: Easing = {
 const ERROR =
   "transition expects a duration, then an easing and a delay if needed, like: transition: 0.3s ease-out;";
 
-// "0.3s" → 0.3, "300ms" → 0.3, anything else → null
-function seconds(token: Token): number | null {
+// "0.3s" → 0.3, "300ms" → 0.3, anything else → null. A computed time is clamped at `min`, like CSS.
+function seconds(token: Token, min = -Infinity): number | null {
   if (token.type !== "DIMENSION") return null;
-  if (token.unit === "s") return token.value;
-  if (token.unit === "ms") return token.value / 1000;
+  if (token.unit === "s") return clampComputed(token, min);
+  if (token.unit === "ms") return clampComputed(token, min * 1000) / 1000;
   return null;
 }
 
@@ -58,7 +59,7 @@ export function readTransition(value: Token[] | undefined): Transition | null {
         token,
         `transition applies to every property :hover changes: write transition: 0.3s, without "${token.value}"`,
       );
-    const time = seconds(token);
+    const time = seconds(token, times.length === 0 ? 0 : -Infinity); // the duration is never negative
     if (time === null) throw errorAt(value, ERROR);
     times.push(time);
   }

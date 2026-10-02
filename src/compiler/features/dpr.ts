@@ -1,5 +1,6 @@
 import type { Styles } from "../cascade/resolve";
 import { errorAt } from "../syntax/errors";
+import { clampComputed } from "../values/calc";
 
 // The pixel density of the render, chosen by the author.
 // auto: the screen, up to 2 · max: the screen · a number: never more than the screen
@@ -25,8 +26,10 @@ export function readDpr(sceneStyles: Styles): Dpr {
     return token.value;
 
   // Case 3: a number in range
-  if (token.type === "NUMBER" && token.value >= 0.25 && token.value <= 4)
-    return token.value;
+  if (token.type === "NUMBER") {
+    const dpr = clampComputed(token, 0.25, 4);
+    if (dpr >= 0.25 && dpr <= 4) return dpr;
+  }
 
   // Case 4: anything else
   throw errorAt(value, error);

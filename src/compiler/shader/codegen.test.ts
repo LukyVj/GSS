@@ -106,10 +106,12 @@ describe("generateShader", () => {
     expect(rotation).toBeLessThan(distance); // and it comes before
   });
 
-  it("shows the value calc() computed when the radius is negative", () => {
-    expect(() =>
-      compileGSS("@scene { cone } cone { radius: calc(-1 * 0.5); }"),
-    ).toThrow("got -0.5");
+  it("shows the value it got when the radius is negative", () => {
+    expect(() => compileGSS("@scene { cone } cone { radius: -0.5; }")).toThrow("got -0.5");
+  });
+
+  it("clamps a negative radius computed by calc() at 0, like CSS", () => {
+    expect(() => compileGSS("@scene { cone } cone { radius: calc(-1 * 0.5) 0.2; }")).not.toThrow();
   });
 });
 

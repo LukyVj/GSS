@@ -7,6 +7,7 @@
 import type { Token } from "../syntax/tokenizer";
 import { errorAt } from "../syntax/errors";
 import { readFunction } from "../values/values";
+import { clampComputed } from "../values/calc";
 
 // One pass after the scene: its fragment shader, and the images it reads
 // (0 = the scene, n = what pass n - 1 drew). Each pass draws the next image; the last one,
@@ -83,7 +84,8 @@ function readStep(name: string, call: Token[]): Step | null {
   // An amount: a number or a percentage (50% is 0.5), never negative, like CSS
   const amount = (token: Token | undefined, initial: number, max = Infinity) => {
     if (!token) return initial;
-    const n = token.type === "NUMBER" ? token.value : token.type === "PERCENTAGE" ? token.value / 100 : NaN;
+    const n =
+      token.type === "NUMBER" ? clampComputed(token, 0) : token.type === "PERCENTAGE" ? clampComputed(token, 0) / 100 : NaN;
     if (!(n >= 0)) throw errorAt(call, `${name}() expects a positive number or a percentage, like: ${name}(0.5)`);
     return Math.min(n, max);
   };

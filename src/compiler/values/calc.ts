@@ -151,6 +151,16 @@ export function closingParen(tokens: Token[], open: number): number {
   );
 }
 
+// The tokens a math function gave. A WeakSet, like the spans: no field is added to the tokens.
+const computed = new WeakSet<Token>();
+
+// A value is checked against the range its property allows. Like CSS, a value written as is
+// that falls outside is an error, but a computed one is clamped to the range:
+// calc(4 * 40% - 20%) is 100% in color-mix(). The caller still refuses what is out of range.
+export function clampComputed(token: Token & { value: number }, min: number, max = Infinity): number {
+  return computed.has(token) ? Math.min(Math.max(token.value, min), max) : token.value;
+}
+
 // The result, as a token the rest of the compiler already reads. It keeps the position
 // of the whole call, so an error about it underlines "calc(…)".
 function toToken(quantity: Quantity, call: Token[]): Token {
@@ -161,6 +171,7 @@ function toToken(quantity: Quantity, call: Token[]): Token {
       : quantity.unit === "%"
         ? { type: "PERCENTAGE", value }
         : { type: "DIMENSION", value, unit: quantity.unit };
+  computed.add(token);
   const span = spanAcross(call);
   if (span) rememberSpan(token, span);
   return token;

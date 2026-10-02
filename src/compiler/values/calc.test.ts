@@ -3,6 +3,15 @@ import { resolveMath, type CalcContext } from "./calc";
 import { tokenize } from "../syntax/tokenizer";
 import { compileGSS } from "../index";
 import { GssError } from "../syntax/errors";
+import { resolveColors } from "./colors";
+import { readEasing } from "./easing";
+import { readNumber } from "./values";
+import { readSteps } from "../features/filter";
+import { readTransition } from "../features/transition";
+import { readAnimation } from "../features/animation";
+import { readDpr } from "../features/dpr";
+import { readRadii, readSize } from "../shader/codegen/read";
+import { readMaterial } from "../shader/codegen/materials";
 
 // "calc(2 * 3)" → the tokens left once the math is computed
 const compute = (value: string, context: CalcContext = null) => resolveMath(tokenize(value), context);
@@ -256,3 +265,64 @@ describe("a misspelled function inside math", () => {
   });
 });
 
+
+describe("a computed value out of its range is clamped to it, like CSS (decision 104)", () => {
+  const at = (source: string) => compute(source, third);
+
+  it("clamps the percentages of color-mix(), and keeps the error for a percentage written as is", () => {
+    expect(resolveColors(at("color-mix(in srgb, red, blue calc(sibling-index() * 40% + 20%))"))).toEqual(
+      tokenize("#0000ff"),
+    );
+    expect(resolveColors(at("color-mix(in srgb, red, blue calc(-20%))"))).toEqual(tokenize("#ff0000"));
+    expect(() => resolveColors(tokenize("color-mix(in srgb, red, blue 140%)"))).toThrow(
+      "color-mix() takes percentages from 0% to 100%",
+    );
+  });
+
+  it("compiles a row of objects whose mix goes past 100%", () => {
+    expect(() =>
+      compileGSS(
+        "@scene { cube.step * 6; } .step { color: color-mix(in oklab, #ff5a36, #3a7bff calc(sibling-index() * 40% - 20%)); }",
+      ),
+    ).not.toThrow();
+  });
+
+  it("clamps the amounts of filter functions at 0", () => {
+    expect(readSteps(at("brightness(calc(-0.5)) saturate(calc(-50%))"))).toEqual(
+      readSteps(tokenize("brightness(0) saturate(0)")),
+    );
+    expect(() => readSteps(tokenize("brightness(-0.5)"))).toThrow("brightness() expects a positive number");
+  });
+
+  it("clamps the x of cubic-bezier() between 0 and 1", () => {
+    expect(readEasing(at("cubic-bezier(calc(1.5), 0, calc(-1), 1)"))).toEqual(
+      readEasing(tokenize("cubic-bezier(1, 0, 0, 1)")),
+    );
+    expect(() => readEasing(tokenize("cubic-bezier(1.5, 0, 0, 1)"))).toThrow();
+  });
+
+  it("clamps a transition duration and an iteration count at 0", () => {
+    expect(readTransition(at("calc(-1s) 0.2s"))).toEqual(readTransition(tokenize("0s 0.2s")));
+    expect(readAnimation({ animation: at("up 2s calc(-2)") })).toEqual(
+      readAnimation({ animation: tokenize("up 2s 0") }),
+    );
+    expect(readAnimation({ "animation-iteration-count": at("calc(-2)"), animation: tokenize("up 2s") })).toEqual(
+      readAnimation({ "animation-iteration-count": tokenize("0"), animation: tokenize("up 2s") }),
+    );
+  });
+
+  it("clamps the numbers of GSS that have a range: blend, radius, frost, dpr", () => {
+    expect(readNumber(at("calc(-1)"), "blend", 0, true)).toBe(0);
+    expect(readRadii(at("calc(-1) 0.2"))).toEqual([0, 0.2]);
+    expect(readMaterial(at("glass(#ffffff, 1.5, calc(2))"), "vec3(1.0)")).toBe(
+      readMaterial(tokenize("glass(#ffffff, 1.5, 1)"), "vec3(1.0)"),
+    );
+    expect(readDpr({ dpr: at("calc(10)") })).toBe(4);
+    expect(readDpr({ dpr: at("calc(0)") })).toBe(0.25);
+  });
+
+  it("keeps the error when no value of the range is the closest: a size, a radius must be more than 0", () => {
+    expect(() => readNumber(at("calc(-1)"), "radius", 0.5)).toThrow("radius expects one positive number");
+    expect(() => readSize(at("calc(-1)"))).toThrow("size expects one or three positive numbers");
+  });
+});

@@ -2,6 +2,7 @@
 import type { Token } from "../../syntax/tokenizer";
 import { errorAt, locate } from "../../syntax/errors";
 import { readAngle, readNumber } from "../../values/values";
+import { clampComputed } from "../../values/calc";
 import { glslFloat, round } from "./glsl";
 
 export function hexToRgb(hex: string): [number, number, number] {
@@ -58,9 +59,9 @@ export function readRadii(value: Token[] | undefined): number[] {
     "radius expects one or two positive numbers, like: radius: 0.5 0.2;";
   if (!value) return [0.5, 0];
   const numbers = value.map((token) => {
-    if (token.type !== "NUMBER" || token.value < 0)
-      throw errorAt(token, `${errorMessage} (got ${token.value})`);
-    return token.value;
+    const n = token.type === "NUMBER" ? clampComputed(token, 0) : NaN; // a computed radius below 0 is 0
+    if (!(n >= 0)) throw errorAt(token, `${errorMessage} (got ${token.value})`);
+    return n;
   });
 
   if (numbers.length === 1) return [numbers[0], 0];
