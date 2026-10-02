@@ -49,14 +49,18 @@ describe("registry", () => {
         "rotate-y",
         "rotate-z",
         "scale",
+        "offset-distance",
       ]);
     });
+
+    // What a property needs to mean something: offset-distance moves along offset-path
+    const NEEDS: Record<string, string> = { "offset-distance": "offset-path: ray(0deg);" };
 
     // If a property is marked animatable, the compiler must really animate it
     for (const property of animatable) {
       it(`animates ${property.name}`, () => {
         const shader = compileGSS(
-          `@scene { cube; } cube { animation: k 1s; } @keyframes k { to { ${property.name}: ${property.initial}; } }`,
+          `@scene { cube; } cube { ${NEEDS[property.name] ?? ""} animation: k 1s; } @keyframes k { to { ${property.name}: ${property.initial}; } }`,
         );
         expect(shader).toContain("mix(");
       });

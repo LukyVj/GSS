@@ -7,6 +7,7 @@ import { readTransition } from "../../features/transition";
 import { glslFloat, label, vec3, type Hover } from "./glsl";
 import { ROTATIONS, readRotation, readScale, readTranslate } from "./read";
 import { hoverValue } from "./animation";
+import { offsetReach } from "./offset";
 
 // ----- The sphere around the whole scene -----
 // A ray that passes by it meets no object: march() then only has the floor left,
@@ -119,6 +120,10 @@ export function objectSphere(
     const value = (property: string, read: (value: Token[] | undefined) => string) =>
       hoverValue(nodes[n], keyframes, property, read, nodeHover);
     const steady = !nodeHover || steadyTransitions(instance);
+    // A motion path, inside the node's scale: anywhere within its reach (decision 97)
+    const reach = offsetReach(nodes[n], keyframes, nodeHover);
+    if (reach === null) return null;
+    if (reach > 0) sphere = { center: [0, 0, 0], radius: length3(sphere.center) + sphere.radius + reach };
     const scales = anchors(value("scale", readScale), steady);
     const translates = anchors(value("translate", readTranslate), steady);
     if (!scales || !translates) return null;

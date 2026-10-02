@@ -33,6 +33,7 @@ import { backgroundCode, gradientCode, objectGradient } from "./gradients";
 import { readMaterial } from "./materials";
 import { activeSlots, hoverSlots, hoverValue, useTimelines } from "./animation";
 import { sceneTimelines } from "../../features/timeline";
+import { offsetLines, offsetReach, useOffsetFunctions } from "./offset";
 import { animateCode, createHoisted, hoist, rotationLines, transformLines } from "./transforms";
 import { enclosing, groupBounds, objectSphere, sceneMiss, type Sphere } from "./bounds";
 import { GRAIN } from "../../features/filter";
@@ -51,6 +52,8 @@ export function generateShader(
     instances.flatMap((instance) => [...instance.groupStyles, instance.styles]),
   );
   useTimelines(timelines);
+  // The motion paths a scene animates along: one GLSL function each (decision 97)
+  const offsetFunctions = useOffsetFunctions();
   const hovers = hoverSlots(instances);
   const actives = activeSlots(instances);
   // uHover[]: the hover slots, then the :active ones (decision 95)
@@ -94,8 +97,11 @@ export function generateShader(
         `Unknown object: "${instance.tag}". Available: ${Object.keys(SHAPES).join(", ")}`,
       );
     }
-    const { code: shapeCode, radius } = shape(instance.styles, context);
-    spheres.push(radius === null ? null : objectSphere(radius, instance, keyframes, hoverOf(instance)));
+    const { code: shapeCode, radius: shapeRadius } = shape(instance.styles, context);
+    // A motion path takes the shape away from the object's origin (decision 97)
+    const reach = offsetReach(instance.styles, keyframes, hoverOf(instance));
+    const radius = shapeRadius === null || reach === null ? null : shapeRadius + reach;
+    spheres.push(shapeRadius === null ? null : objectSphere(shapeRadius, instance, keyframes, hoverOf(instance)));
     // Every node from the outside in: the groups, then the object itself
     const nodes = [...instance.groupStyles, instance.styles];
     // q was divided by every scale, so the distance is multiplied back by all of them
@@ -159,6 +165,7 @@ export function generateShader(
       `  if (${sphere} <= ${nearest}) { // its bounding sphere could be the nearest`,
       ...rotationLines(instance.styles, keyframes, hover, hoisted).map((line) => `  ${line}`),
       `    q /= ${ownScale};`,
+      ...offsetLines(instance.styles, keyframes, hover, hoisted).map((line) => `  ${line}`),
       `   res = ${combine};`,
       `  }`,
     ].join("\n");
@@ -251,7 +258,14 @@ export function generateShader(
       )
       .replace(
         "/*@SHAPES*/",
-        section("// Shapes written by GSS (path…)", functions),
+        section("// Shapes written by GSS (path…)", functions) +
+          (offsetFunctions.size > 0
+            ? "\n\n" +
+              section(
+                "// Motion paths: the point at a distance along each one, and its direction",
+                [...offsetFunctions].map(([code, name]) => code.replace("NAME", name)).join("\n\n"),
+              )
+            : ""),
       )
       .replace("/*@MAP*/", map)
       .replace("/*@TEXTURE_UNIFORMS*/", textures.uniforms)

@@ -49,6 +49,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 | Family       | Properties                                                                                         | Dec.   |
 | ------------ | -------------------------------------------------------------------------------------------------- | ------ |
 | Transforms   | `translate`, `rotate-x`, `rotate-y`, `rotate-z`, `scale` (uniform)                                 | 13     |
+| Motion path  | `offset-path: path()` / `ray()`, `offset-distance` (animatable), `offset-rotate`                    | 97     |
 | Look         | `color`, `material`                                                                                | 26     |
 | Textures     | `texture: url("…")`, `image-rendering: pixelated`, `texture-size`                                  | 59     |
 | Combinations | `operation: union \| subtract \| intersect`, `blend` (smooth union)                                | 18, 19 |
@@ -112,6 +113,12 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 | Profiler                   | a panel over the playground scene, public, closed by default and lazy (nothing measured before it opens), `perf` button or Alt+P (remembered), WebGL2 and WebGPU (timestamp queries when available): fps, frame, GPU and CPU time, real pixels, shader build time; over budget in signal | 64, 87, 91 |
 | Bench                      | `npm run bench:compare -- main --dpr 2`: another commit against the working tree, 3 alternating rounds, images compared pixel by pixel, report in `bench-results/compare.md` | 64         |
 
+## Release 0.0.3 (prepared)
+
+- [x] Package and lockfile version set to 0.0.3; README, installation snippets and changelog follow.
+- [x] Everything since 0.0.2: WebGPU (decisions 90, 91), every error at once (86), the public profiler (87), autocompletion (89), the Essentials (92–96).
+- [ ] Lucas: publish to npm, tag `v0.0.3`, deploy the site (the versioned CDN URL works only once npm has the version).
+
 ## Release 0.0.2 ✅
 
 - [x] Package and lockfile version set to 0.0.2; version displayed in site footers.
@@ -122,7 +129,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 
 ## Priorities
 
-**Next, in Lucas's order** (Oct. 1, evening; the Essentials below go first, Oct. 2): ~~`filter`~~ ✅ (decisions 83, 84), then **motion path** (`offset-path: path()` / `ray()`, #12 below), **`conic-gradient()`**, **`setProperty()` from JS** (see Rendering passes / runtime API). After them: nesting with `&`, `transform-origin`, fog.
+**Next, in Lucas's order** (Oct. 1, evening; the Essentials below go first, Oct. 2): ~~`filter`~~ ✅ (decisions 83, 84), then ~~**motion path**~~ ✅ (decision 97), **`conic-gradient()`**, **`setProperty()` from JS** (see Rendering passes / runtime API). After them: nesting with `&`, `transform-origin`, fog.
 
 **Essentials** (added by Lucas, Oct. 2), **before the motion path**, in the order suggested by Claude: structure first (compile time, no runtime cost), then interaction, then scroll.
 
@@ -144,7 +151,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 9. [ ] `transform-origin`
 10. [ ] Fog
 11. [x] `sibling-index()` + `sibling-count()` (decision 52)
-12. [ ] Motion path
+12. [x] Motion path ✅ decision 97: `offset-path: path()` / `ray()`, `offset-distance`, `offset-rotate`, in the xy plane like the `path` shape. Later: `offset-position`, `offset-anchor`, the `offset` shorthand, `circle()` as a path
 
 ## Embedding and showcase (decision 63)
 
@@ -334,8 +341,8 @@ A score for how well a CSS notion carries over to GSS (a style language → an S
 | `scale`                                               |   1.0 | Already in (uniform, SDF)              |
 | `perspective` / `perspective-origin`                  |   0.7 | Rather the scene camera                |
 | `backface-visibility`                                 |   0.3 | Raster faces                           |
-| `offset` / `offset-path` / `offset-distance`          |   0.9 | Motion path, priority #12              |
-| `offset-rotate` / `offset-anchor` / `offset-position` |   0.8 | Motion path, continued                 |
+| `offset` / `offset-path` / `offset-distance`          |   0.9 | `offset-path`, `offset-distance`: already in GSS (decision 97); `offset` to do |
+| `offset-rotate` / `offset-anchor` / `offset-position` |   0.8 | `offset-rotate`: already in GSS (decision 97); the others to do |
 
 #### Colors, opacity, compositing
 

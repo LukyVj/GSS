@@ -301,7 +301,7 @@ export const PROPERTIES: PropertyDef[] = [
       "<keyframes-name> <time> [<easing>] [<time>] [<number> | infinite] [normal | reverse | alternate | alternate-reverse] [none | forwards | backwards | both]",
     initial: "none",
     description:
-      "Plays a @keyframes animation on the object, like CSS. After the name: the duration (s or ms), then if needed an easing, a delay, a number of iterations, a direction and a fill mode, in any order. Unlike CSS, an animation loops forever unless you give it a number of iterations. The second time is the delay: the animation starts after it, or partway with a negative delay. A number plays that many times (1.5 stops halfway through the second), infinite loops. alternate plays it forward then backward, reverse backward, alternate-reverse backward first. The fill mode says what the object shows outside the animation: none, its own value, like CSS; backwards, the first frame during the delay; forwards, the last frame once it is over; both, the two. The easing shapes each step: linear, the default, keeps a constant speed; ease, ease-in, ease-out and ease-in-out speed up and slow down; cubic-bezier() and linear() draw your own curve; steps() moves by jumps. In an animation, ease-in-out is computed as a smoothstep, a very close curve. Each part also has its own property: animation-duration, animation-delay, animation-iteration-count, animation-direction, animation-fill-mode and animation-timing-function, which win over what animation says. Animatable properties: translate, rotate-x, rotate-y, rotate-z, scale and color. On a group, it animates translate, the rotations and scale of the whole group.",
+      "Plays a @keyframes animation on the object, like CSS. After the name: the duration (s or ms), then if needed an easing, a delay, a number of iterations, a direction and a fill mode, in any order. Unlike CSS, an animation loops forever unless you give it a number of iterations. The second time is the delay: the animation starts after it, or partway with a negative delay. A number plays that many times (1.5 stops halfway through the second), infinite loops. alternate plays it forward then backward, reverse backward, alternate-reverse backward first. The fill mode says what the object shows outside the animation: none, its own value, like CSS; backwards, the first frame during the delay; forwards, the last frame once it is over; both, the two. The easing shapes each step: linear, the default, keeps a constant speed; ease, ease-in, ease-out and ease-in-out speed up and slow down; cubic-bezier() and linear() draw your own curve; steps() moves by jumps. In an animation, ease-in-out is computed as a smoothstep, a very close curve. Each part also has its own property: animation-duration, animation-delay, animation-iteration-count, animation-direction, animation-fill-mode and animation-timing-function, which win over what animation says. Animatable properties: translate, rotate-x, rotate-y, rotate-z, scale, color and offset-distance. On a group, it animates translate, the rotations and scale of the whole group.",
     examples: [
       {
         name: "animation",
@@ -424,6 +424,57 @@ export const PROPERTIES: PropertyDef[] = [
       {
         name: "rise into view",
         code: "@scene { sphere * 3; } sphere { --x: calc(sibling-index() - 2); radius: 0.35; translate: var(--x) 0.35 0; color: #3a7bff; animation: rise 1s ease-out; animation-timeline: view(); } sphere:nth-child(2) { animation-iteration-count: 2; animation-direction: alternate; } @keyframes rise { to { translate: var(--x) 1.6 0; color: #3ad16b; } }",
+      },
+    ],
+  },
+  {
+    name: "offset-path",
+    appliesTo: "object",
+    syntax: "none | path(<string>) | ray(<angle>)",
+    initial: "none",
+    description:
+      "A motion path, like CSS: the way the object travels along, placed by offset-distance and turned by offset-rotate. path() takes the d of an SVG path, in the object's own xy plane, facing the camera like the path shape: centered on itself, y up, one path unit for one scene unit, so a path shape with the same d draws the track the object follows. For a path on the floor, turn a group with rotate-x: 90deg. A path that ends with Z is closed: the object goes round it. ray() is a straight line from the object's place, at an angle: 0deg up, 90deg right, like CSS. Like CSS, the motion path comes after translate, the rotations and scale: translate moves the whole path, scale scales it. It works on groups too.",
+    examples: [
+      {
+        name: "along a track",
+        code: '@scene { path#track; sphere#ball; } #track { translate: 0 1.2 0; d: path("M-2 0 C-1 2 1 -2 2 0"); stroke-width: 0.04; color: #555555; } #ball { translate: 0 1.2 0; radius: 0.2; color: #ff5a36; offset-path: path("M-2 0 C-1 2 1 -2 2 0"); animation: go 3s ease-in-out alternate; } @keyframes go { to { offset-distance: 100%; } }',
+      },
+      {
+        name: "round a closed path, turned along it",
+        code: '@scene { cube; } cube { translate: 0 1.2 0; size: 0.6 0.25 0.25; color: #3a7bff; offset-path: path("M-1.5 0 A1.5 1 0 1 1 1.5 0 A1.5 1 0 1 1 -1.5 0 Z"); animation: lap 4s linear; } @keyframes lap { to { offset-distance: 100%; } }',
+      },
+    ],
+  },
+  {
+    name: "offset-distance",
+    appliesTo: "object",
+    animatable: true,
+    syntax: "<number> | <percentage>",
+    initial: "0",
+    description:
+      "How far along its offset-path the object is: a number, in the units of the path, or a percentage of its length, like CSS. Animate it with @keyframes, a transition on :hover or the scroll. On an open path, the object stops at its ends; on a closed path (with Z), it goes round, so 150% is halfway round the second lap. A ray has no length: give it a number.",
+    examples: [
+      {
+        name: "three places on one path",
+        code: '@scene { sphere * 3; } sphere { translate: 0 1 0; radius: 0.25; color: #e6e6e6; offset-path: path("M-2 0 Q0 2 2 0"); offset-distance: calc((sibling-index() - 1) * 50%); } sphere:nth-child(2) { color: #ff5a36; }',
+      },
+      {
+        name: "on :hover, along a ray",
+        code: "@scene { cube; } cube { translate: -1 0.4 0; size: 0.5; color: #ff5a36; offset-path: ray(45deg); offset-rotate: 0deg; transition: 0.5s ease-out; } cube:hover { offset-distance: 1.5; }",
+      },
+    ],
+  },
+  {
+    name: "offset-rotate",
+    appliesTo: "object",
+    syntax: "[auto | reverse] || <angle>",
+    initial: "auto",
+    description:
+      "How the object turns on its offset-path, like CSS. auto, the default, turns its x axis along the path, like a car on a road; reverse turns it the other way. An angle alone keeps a fixed turn, like rotate-z; with auto or reverse, it is added to the turn along the path: auto 90deg. Write offset-rotate: 0deg to keep the object upright.",
+    examples: [
+      {
+        name: "along the path, or upright",
+        code: '@scene { cube#along; cube#upright; } cube { size: 0.5 0.2 0.2; color: #ff5a36; offset-path: path("M-2 0 C-1 2 1 -2 2 0"); animation: go 3s ease-in-out alternate; } #along { translate: 0 1.6 0; } #upright { translate: 0 0.6 0; color: #3a7bff; offset-rotate: 0deg; } @keyframes go { to { offset-distance: 100%; } }',
       },
     ],
   },
@@ -962,7 +1013,7 @@ export const SELECTORS: SelectorDef[] = [
     anchor: "selector-hover",
     specificity: "100, like a class, added to the rest",
     description:
-      "A pseudo-class, like CSS: the rule applies while the mouse is over the object. It can go anywhere after the shape name (cube:hover.big) on a preceding sibling (sphere:hover + cube), or on a group: #letters:hover cube lifts every cube of #letters as soon as the mouse is over any object of the group, like hovering a child hovers its parent in CSS. The :hover rules join the cascade like any other: #a { color: blue; } beats cube:hover { color: red; }, and a normal !important beats them all. A :hover rule changes the animatable properties only (translate, rotate-x, rotate-y, rotate-z, scale, color, and variables), never a face, and it styles objects, not groups: #g:hover { translate: 0 1 0; } is an error, write #g:hover cube. With transition, the change glides instead of jumping.",
+      "A pseudo-class, like CSS: the rule applies while the mouse is over the object. It can go anywhere after the shape name (cube:hover.big) on a preceding sibling (sphere:hover + cube), or on a group: #letters:hover cube lifts every cube of #letters as soon as the mouse is over any object of the group, like hovering a child hovers its parent in CSS. The :hover rules join the cascade like any other: #a { color: blue; } beats cube:hover { color: red; }, and a normal !important beats them all. A :hover rule changes the animatable properties only (translate, rotate-x, rotate-y, rotate-z, scale, color, offset-distance, and variables), never a face, and it styles objects, not groups: #g:hover { translate: 0 1 0; } is an error, write #g:hover cube. With transition, the change glides instead of jumping.",
     examples: [
       {
         name: "selector-hover",
@@ -1216,6 +1267,9 @@ export const SHAPE_DOCS: ShapeDef[] = [
       "animation-fill-mode",
       "animation-timing-function",
       "animation-timeline",
+      "offset-path",
+      "offset-distance",
+      "offset-rotate",
     ],
     examples: [
       {

@@ -4,6 +4,7 @@ import type { StyledInstance, Styles } from "../../cascade/resolve";
 import { label, type Hover } from "./glsl";
 import { ROTATIONS, readRotation, readScale, readTranslate } from "./read";
 import { hoverValue } from "./animation";
+import { offsetLines } from "./offset";
 
 // ----- Animations, computed once per pixel -----
 // An animated value (or one :hover changes) depends on the time, not on the point.
@@ -18,7 +19,7 @@ export function createHoisted(): Hoisted {
 
 // The expression as it is when it is constant; otherwise the name of its global
 // (two objects with the same animation share it)
-export function hoist(hoisted: Hoisted | undefined, type: "float" | "vec3" | "mat2", expr: string): string {
+export function hoist(hoisted: Hoisted | undefined, type: "float" | "vec3" | "vec4" | "mat2", expr: string): string {
   if (!hoisted || !/\b(iTime|uHover|uTimeline)\b/.test(expr)) return expr;
   const key = `${type} ${expr}`;
   let name = hoisted.names.get(key);
@@ -71,6 +72,7 @@ export function transformLines(
     `  q -= ${hoist(hoisted, "vec3", hoverValue(styles, keyframes, "translate", readTranslate, hover))};`,
     ...rotationLines(styles, keyframes, hover, hoisted),
     `  q /= ${hoist(hoisted, "float", hoverValue(styles, keyframes, "scale", readScale, hover))};`,
+    ...offsetLines(styles, keyframes, hover, hoisted), // the motion path, after scale like CSS
   ];
 }
 

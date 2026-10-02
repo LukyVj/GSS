@@ -667,6 +667,22 @@ The public development hooks carry WebGPU types, so `@webgpu/types` is a type-on
 
 **Why**: the scroll is how a page tells a story; a 3D scene that turns, opens or rises as you scroll is the most asked-for effect of landing pages, and CSS already has the syntax designers and LLMs know.
 
+## 97. Motion path: `offset-path`, `offset-distance`, `offset-rotate`
+
+**Decision**: the CSS motion path. `offset-path: path("…") | ray(<angle>) | none`, `offset-distance` (animatable: `@keyframes`, `:hover`, the scroll), `offset-rotate: [auto | reverse] || <angle>`. On objects and groups.
+
+- **The plane** (Lucas, Oct. 2): the path is in the node's own **xy plane**, facing the camera, with the rules of the `path` shape (decision 35): centered on itself, y up, one path unit for one scene unit. A `path` shape and an `offset-path` with the same `d` draw a track and the way along it, one over the other. A path on the floor is a group turned with `rotate-x: 90deg`. (Claude first suggested the xz plane, before noticing that `path` and `prism` stand in xy.)
+- **The order**, like CSS: translate, the rotations, scale, then the offset. `translate` moves the whole path, `scale` scales it.
+- **`offset-distance`**: a number is a length along the path in its units (GSS has no `px`); a percentage is a share of its length. An open path stops at its ends; a path ending with `Z` is closed and goes round, like CSS. A ray has no length: a percentage is an error.
+- **`ray(<angle>)`**: 0deg up, clockwise, like CSS (y up in the scene); no size keyword, no `contain` (the scene has no containing block).
+- **`offset-rotate`**: `auto` (the default, like CSS) turns the node's x axis along the path; `reverse` the other way; an angle turns like `rotate-z`, added to `auto` / `reverse` when both are written.
+- **The shader**: a fixed distance is computed at compile time (two lines on `q.xy`, constants; no turn when the direction is already x). A moving distance calls `offsetPathN(s)`, a function written per path, segment by segment like the `path` shape (cut 4 times finer than a prism, so the motion shows no corner), returning the point and the direction; it is computed once per pixel in `animate()` (decision 75). The bounding spheres grow by the reach of the path (decisions 66, 76, 77); a ray at a moving distance gives up its sphere.
+- `offset-distance` or `offset-rotate` without `offset-path` is an error (CSS ignores them).
+
+**Differences from CSS**: no `offset-position`, `offset-anchor` or `offset` shorthand, no basic shapes (`circle()`, `inset()`…) or `url()` as a path, no `ray()` size; the path is centered on itself like the `path` shape, not placed in a containing block. The direction changes by segment (the segments are short enough not to show).
+
+**Why**: "make it follow this curve" is the next thing after keyframes, and designers draw curves in Figma: an SVG `d` becomes a trajectory with no math. With `animation-timeline: scroll()` (decision 96), an object travels along a path as the page scrolls.
+
 ## Open questions
 
 - **Targeting multiplied ids**: should `#hero` target `hero-1`, `hero-2` and `hero-3`?
