@@ -15,7 +15,7 @@ What the language and the tools can do today. Each feature is detailed in the re
 | Scene structure      | `@scene { cube.corner * 4; torus#hero; }`, `;` optional between elements                                                                                                                    | 2, 11, 46             |
 | Multiplication       | `cube * 12`; numbered ids: `cube#petal * 12` → `#petal-1` … `#petal-12`                                                                                                                     | 3                     |
 | Groups               | `group#g { … }`: transforms and animation apply to the children, positions are relative                                                                                                     | 45, 48                |
-| Scene styling        | `scene { floor; background (a color or a gradient, animatable, dec. 103); light; ambient; camera-* }`                                                                                                              | 11, 15, 16            |
+| Scene styling        | `scene { floor; background (a color or a gradient, animatable, dec. 103); light; ambient; fog (dec. 108); camera-* }`                                                                                              | 11, 15, 16, 108       |
 | Selectors            | `<shape>`, `.class`, `#id`, `*`, lists `a, b`, descendant `a b`, child `a > b`, siblings `a + b` / `a ~ b`, faces `::face(front)`, `::top`, `::bottom`, `:hover` (on objects and their groups), `:active` (pressed), `:has()` (`#g:has(sphere:hover) cube`), `:nth-child(An+B [of S])` and its family, `:first-child`…, `:not()`, nesting with `&` | 4, 37, 47, 59, 62, 69, 73, 92, 93, 95, 106 |
 | Cascade              | specificity (id 10,000, class 100, tag 1), last one wins, `!important` in 2 passes                                                                                                          | 4, 38                 |
 | Animation            | `@keyframes` (`from`, `to`, `%`), `animation: name duration [easing] [delay] [count \| infinite] [direction] [fill-mode]` and the six longhands, computed in the shader; driven by the scroll with `animation-timeline: scroll()` / `view()` | 21, 22, 23, 24, 70, 96 |
@@ -72,6 +72,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 | `floor`                                                           | floor color, or `none`                                                               |
 | `background`                                                      | background color                                                                     |
 | `light`, `ambient`                                                | direction of the sun, ambient light                                                  |
+| `fog`                                                             | `none`, or `[<color>] <start> <end>` from the camera (dec. 108)                       |
 | `dpr`                                                             | pixel density of the render: `auto` (the screen, up to 2), `max`, a number (dec. 67) |
 | `camera-target`, `camera-distance`, `camera-angle`, `camera-spin` | camera (mouse orbit; automatic turn as a duration, `none` by default, dec. 54)       |
 
@@ -136,7 +137,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 2. **`setProperty()` from JS**: first step ✅ decision 105 (`@property`, `setProperty()` / `getPropertyValue()` / `removeProperty()`, in `translate`, `rotate-*`, `scale`, `color`, `offset-distance`, `background`). Second step ✅: inside `calc()` and the math functions, and the color functions (`hsl(var(--hue) …)`, `color-mix()`…), computed on the GPU. Third step ✅, Lucas's choice "everywhere": the sizes of shapes (without their bounding spheres), the numbers of a gradient, materials, `light`, `ambient`, `floor`, `camera-target`, `blend`, `offset-rotate`, `texture-size`, filters (with a `"<length>"` syntax in px, the passes included). Not read at run time: the copies of `* n`, `d`, `view-box`, the timings, the camera the mouse moves, `dpr`. The playground panel of sliders: later (Playground, below)
 3. ~~**Nesting** with `&`~~ ✅ decision 106: rules inside rules, `&`, a descendant without `&`, `@media` inside a rule; unfolded by the parser
 4. ~~**`transform-origin`**~~ ✅ decision 107: keywords and percentages on the box of the object, numbers from its center like `translate`; animatable, on groups with numbers
-5. **Fog**
+5. ~~**Fog**~~ ✅ decision 108: `fog: [<color>] <start> <end>` on the scene, into the background behind each object or a color that covers the background too; animatable, readable from `@property`
 6. ~~`:nth-child()`~~ ✅ already done (decision 92)
 7. **A noise image function**, usable wherever a gradient is (`background`, `color`, materials), modelled on SVG `feTurbulence`. The first step toward 2D compositions: several `background` layers with `background-blend-mode`, then `mask-image` and a displacement like `feDisplacementMap`, rather than a separate 2D mode
 8. **Several lights, and colored lights**
@@ -162,7 +163,7 @@ Done from the list of Oct. 1: ~~`filter`~~ ✅ (decisions 83, 84), ~~motion path
 7. [ ] Selectors / nesting: combinators `>` `+` `~` ✅ decision 73 (including relative selectors in `:has()`); nested style rules with `&` ✅ decision 106
 8. [x] `:hover` ✅ decision 62 (picking pass → `uHover[]`), `transition` ✅ decision 68 (one per object; per-property lists later), `:has()` ✅ decision 69 (`#g:has(sphere:hover) cube`, any selector inside)
 9. [x] `transform-origin` ✅ decision 107
-10. [ ] Fog
+10. [x] Fog ✅ decision 108
 11. [x] `sibling-index()` + `sibling-count()` (decision 52)
 12. [x] Motion path ✅ decision 97: `offset-path: path()` / `ray()`, `offset-distance`, `offset-rotate`, in the xy plane like the `path` shape. Later: `offset-position`, `offset-anchor`, the `offset` shorthand, `circle()` as a path
 
@@ -216,7 +217,7 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 - [x] Solid fill of a path: `prism` with `d: path(…)`, holes included (decision 50)
 - [ ] `lathe` (mentioned as a future shape)
 - [ ] Lost ray: when `march` runs out of its 100 steps without hitting anything or passing `MAX_DIST`, `main()` treats it as a hit (fixed for rays that pass by the sphere of the scene, decision 76; still there in scenes without one)
-- [ ] Fade the floor into the background: the floor stops sharply at `MAX_DIST` (related to fog, priority #10)
+- [x] Fade the floor into the background: the floor stops sharply at `MAX_DIST` ✅ a fog that ends before it hides the edge (decision 108)
 - [ ] Soft shadows, that can be turned off (`scene { shadows: none; }`?)
 - [ ] Optional antialiasing (4× the cost)
 - [ ] Measure the compile time of large scenes; if needed, loop in `calcNormal` so `map()` is copied only once
@@ -400,7 +401,7 @@ A score for how well a CSS notion carries over to GSS (a style language → an S
 | Feature                                                               | Score | Short note                                  |
 | --------------------------------------------------------------------- | ----: | ------------------------------------------- |
 | `filter`                                                              |   1.0 | Already in GSS on the scene, objects and groups (dec. 83, 84)  |
-| fog (GSS / atmosphere, not a strict CSS property)                     |   1.0 | Roadmap priority #10; fog-like post-process |
+| fog (GSS / atmosphere, not a strict CSS property)                     |   1.0 | Already in GSS (dec. 108)                   |
 | `backdrop-filter`                                                     |   0.6 | Post-process behind the object              |
 | `mask` (+ clip/composite/image/mode/origin/position/repeat/size/type) |  0.55 | CSG / alpha mask adjacent                   |
 | `mask-border` (+ longhands)                                           |   0.2 | Box mask image                              |

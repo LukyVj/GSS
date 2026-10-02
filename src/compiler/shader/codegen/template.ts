@@ -131,7 +131,7 @@ void main() {/*@PICK_PIXEL*/
     vec3 n = calcNormal(p);
     Material m = getMaterial(id);/*@TEXTURE_CALL*/
     col = diffuse(n, m.color);/*@SHADE_CALLS*/
-  }
+  }/*@FOG*/
 
   outColor = vec4(col, 1.0);
 }

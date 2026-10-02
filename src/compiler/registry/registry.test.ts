@@ -52,6 +52,7 @@ describe("registry", () => {
         "transform-origin",
         "offset-distance",
         "background",
+        "fog",
       ]);
     });
 

@@ -804,6 +804,18 @@ A range whose bound is excluded keeps its error, computed or not: no number is t
 **Different from CSS**: in CSS, a length is measured from the top left corner of the box, y down. In GSS, a number is a point of the object's own space, from its center and y up, like `translate` and every position in GSS; it also works on a group, which has no box (Lucas's choice). The keywords and the percentages are those of CSS. There is no `transform-box`: the box is the shape's own.
 **Accepted limits**: a group takes numbers only; the box of a path or a prism is the box of its bounding sphere, not of its outline.
 
+## 108. `fog`: the scene fades with the distance
+
+**Decision**: `scene { fog: none | [<color>] <start> <end> }`, `none` by default (Lucas's choices for each point below). The distances are measured from the camera, along the ray: no fog before the start, only fog after the end, linear between (`fogAmount(t)`, `codegen/fog.ts`). In `main()`, after the lighting and the reflections of the material and before the filters of the scene, `col = mix(col, <fog color>, fogAmount(t))`.
+- **Without a color**, the fog color is `BACKGROUND`: each object fades into the background seen behind it, a gradient or an animated background included, and the background itself does not change (it is mixed with itself).
+- **With a color**, `fogAmount()` is 1 for a ray that meets nothing (`t >= MAX_DIST`), so the background becomes the fog color too: past the end of the fog, only the fog is seen, even when the fog ends beyond the scene. The color comes first or last, a hex color, a name (`tomato`, read where a color is expected among the distances) or a color function.
+- **Moving**: `fog` is animatable on the scene, with `animation` or through the variables of the scene, like `background` (decision 103 now lets a frame of the scene set `fog`). `none` is a fog that starts and ends at `MAX_DIST` with the background as its color, so an animation can move from `none` into a fog. A color and the background mix between frames too. `fog` reads `@property` variables (`<color>` and `<number>`), kept at 0 or more on the GPU.
+- **The values**: the start and the end are numbers, 0 or more, the end not before the start (an error otherwise; a computed distance below 0 is 0, decision 104). The same start and end give a sharp edge (`step()`). Two known distances write `clamp((t - start) / (end - start), 0.0, 1.0)` with the difference computed; otherwise `max(end - start, 0.00001)` divides.
+- `fog: none`, or no `fog`, writes nothing: every shader without fog is identical, byte for byte (251 shaders of the scenes and registry examples).
+**Why**: Lucas's fifth item after 0.0.3: depth in a scene, and a way to hide the sharp end of the floor 20 units away.
+**Different from CSS**: CSS has no fog; its syntax follows the shorthands of CSS (a color first or last, then numbers), and the docs say the scene ends 20 units from the camera.
+**Accepted limits**: the fog is applied once, to what the camera sees: the reflections and refractions show the objects without fog, and the background they reflect is the scene's own, not the fog color. The fog is linear (no exponential density) and the same at every height (no ground fog). The colored lights of the next step may tint it later.
+
 ## Open questions
 
 - **Targeting multiplied ids**: should `#hero` target `hero-1`, `hero-2` and `hero-3`?

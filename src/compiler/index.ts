@@ -408,6 +408,7 @@ const LIVE_PROPERTIES = [
   "depth",
   "texture-size",
   "background",
+  "fog",
 ];
 
 function refuseLive(property: string, value: Token[]): void {
@@ -448,18 +449,18 @@ function usesVariablesIn(animation: Keyframes): boolean {
   );
 }
 
-// On the scene, an animation changes the background and variables, nothing else: the
-// other properties of a frame belong to objects (decision 103)
+// On the scene, an animation changes the background, the fog and variables, nothing else:
+// the other properties of a frame belong to objects (decisions 103, 108)
 function checkSceneAnimation(styles: Styles, keyframes: Keyframes[]): void {
   const name = styles["animation"]?.[0];
   if (name?.type !== "IDENT") return;
   const found = keyframes.findLast((k) => k.name === name.value);
   for (const frame of found?.frames ?? [])
     for (const declaration of frame.declarations)
-      if (declaration.property !== "background" && !declaration.property.startsWith("--"))
+      if (!["background", "fog"].includes(declaration.property) && !declaration.property.startsWith("--"))
         throw errorAt(
           declaration,
-          `On the scene, an animation only changes background and variables: ${declaration.property} is a property of objects (in @keyframes ${found!.name})`,
+          `On the scene, an animation only changes background, fog and variables: ${declaration.property} is a property of objects (in @keyframes ${found!.name})`,
         );
 }
 

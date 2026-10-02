@@ -58,7 +58,9 @@ export function resolveNamedColors(property: string, value: Token[]): Token[] {
   if (COLOR_PROPERTIES.includes(property) && value.length === 1) {
     return [named(value[0])];
   }
-  // 2. material: metal(tomato, 0.2) → the token right after "metal ("
+  // 2. fog: tomato 4 16 → the color among the distances
+  if (property === "fog") return value.map(named);
+  // 3. material: metal(tomato, 0.2) → the token right after "metal ("
   if (property === "material") {
     return value.map((token, i) =>
       isFirstArgument(value, i) ? named(token) : token,

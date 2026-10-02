@@ -35,6 +35,7 @@ import { sceneTimelines } from "../../features/timeline";
 import { offsetLines, offsetReach, useOffsetFunctions } from "./offset";
 import { animateCode, createHoisted, hoist, originOf, rotationLines, transformLines } from "./transforms";
 import { objectBox } from "./origin";
+import { fogCode } from "./fog";
 import { enclosing, groupBounds, objectSphere, sceneMiss, type Sphere } from "./bounds";
 import { GRAIN } from "../../features/filter";
 import { filterCode } from "./filters";
@@ -254,6 +255,7 @@ export function generateShader(
   // A color is a constant; a gradient a function of the pixel (decision 81); either one
   // can follow an animation of the scene (decision 103)
   const background = backgroundCode(sceneStyles, keyframes);
+  const fog = fogCode(sceneStyles, keyframes); // off by default
   const materials = materialLines.join("\n");
   // One line in main() for each material the scene uses
   const shadeCalls = Object.entries(SHADE_CALLS)
@@ -352,9 +354,11 @@ uniform vec2 uPick;`
             "// The lighting of metal, jelly and glass, and what it calls: only what the scene uses",
             used(SHADING, shadeCalls),
           ),
+          ...(fog ? [fog.functions] : []),
         ].join("\n\n"),
       )
       .replace("/*@SHADE_CALLS*/", moreLines(shadeCalls))
+      .replace("/*@FOG*/", fog?.line ?? "")
       .replace(
         "/*@FLOOR*/",
         noFloor ? "vec3(0.0)" : liveRead("floor", (value) => readColor(value, "vec3(0.91, 0.89, 0.86)"))(floor),

@@ -224,6 +224,45 @@ describe("transform-origin turns around its point, like a group moved there", ()
   }, 60000);
 });
 
+// The fog: at its end, only the fog is seen; without a color, only the background
+describe("the fog covers the scene, on both backends", () => {
+  const objects = "@scene { cube; sphere; } cube { translate: -0.6 0.5 0; color: red; } sphere { translate: 0.7 0.6 0.3; color: blue; material: chrome; }";
+  const sky = "background: linear-gradient(#ffffff, #3a7bff);";
+  const same = (pixels: number[], reference: number[]) =>
+    pixels.filter((v, i) => Math.abs(v - reference[i]) > 40).length / pixels.length;
+
+  it("with a color, a full fog leaves only its color, the background too", async () => {
+    const { gl, gpu } = await render(`${objects} scene { ${sky} fog: #00ff00 0 0.001; }`);
+    for (const pixels of [gl, gpu])
+      for (let i = 0; i < pixels.length; i += 4) expect([pixels[i], pixels[i + 1], pixels[i + 2]]).toEqual([0, 255, 0]);
+  }, 60000);
+
+  it("without a color, a full fog leaves only the background", async () => {
+    const a = await render(`${objects} scene { ${sky} fog: 0 0.001; }`);
+    const b = await render(`@scene { } scene { ${sky} floor: none; }`);
+    expect(same(a.gl, b.gl)).toBe(0);
+    expect(same(a.gpu, b.gpu)).toBe(0);
+  }, 60000);
+
+  it("set from JS, like the same fog written", async () => {
+    const vars = '@property --c { syntax: "<color>"; inherits: false; initial-value: #dfe7ef; } @property --far { syntax: "<number>"; inherits: false; initial-value: 6; }';
+    const a = await render(`${vars} ${objects} scene { fog: var(--c) 3 var(--far); }`);
+    const b = await render(`${objects} scene { fog: #dfe7ef 3 6; }`);
+    expect(same(a.gl, b.gl)).toBeLessThan(0.002);
+    expect(same(a.gpu, b.gpu)).toBeLessThan(0.002);
+    // and the fog is there: the background takes its color
+    expect(a.gl.slice(0, 3)).toEqual([223, 231, 239]);
+  }, 60000);
+
+  it("past the end of the scene, the background is the fog, even when the fog ends farther", async () => {
+    const { gl, gpu } = await render(`${objects} scene { ${sky} floor: none; fog: #00ff00 25 30; }`);
+    for (const pixels of [gl, gpu]) {
+      expect(pixels.slice(0, 3)).toEqual([0, 255, 0]); // the background
+      expect(pixels.some((v, i) => i % 4 === 0 && v > 150 && pixels[i + 1] < 60)).toBe(true); // the red cube, clear
+    }
+  }, 60000);
+});
+
 describe("the default camera does not mirror the scene", () => {
   const front = "scene { floor: none; background: #000000; camera-target: 0 0 0; camera-angle: 0deg 0deg; camera-distance: 5; light: 0deg 0deg; ambient: 1; }";
   // The mean column and row of the pixels where `channel` wins, per backend

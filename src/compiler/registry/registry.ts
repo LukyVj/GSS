@@ -862,6 +862,29 @@ export const PROPERTIES: PropertyDef[] = [
     ],
   },
   {
+    name: "fog",
+    appliesTo: "scene",
+    animatable: true,
+    syntax: "none | [ <color> ]? <number> <number> [ <color> ]?",
+    initial: "none",
+    description:
+      "Fills the scene with fog, measured from the camera: no fog before the first number, only fog after the second, and more and more of it between. Without a color, each object fades into the background seen behind it, gradients included: the far objects melt into the sky. With a color, the fog takes that color, and so does the background, since past the end of the fog only the fog is seen. The scene draws nothing more than 20 units away from the camera: a fog that ends before that hides the far edge of the floor. The scene can animate it, with animation on the scene or through its variables, and it can move from none into a fog. The reflections and the refractions show the objects without fog.",
+    examples: [
+      {
+        name: "into the background",
+        code: "@scene { cube * 7; } cube { size: 0.6; translate: calc((sibling-index() - 4) * -1.1) 0.3 calc(sibling-index() * -1.6); color: #ff5a36; } scene { background: #c9d6e3; fog: 3 13; }",
+      },
+      {
+        name: "a colored fog",
+        code: "@scene { sphere * 5; } sphere { radius: 0.4; translate: 0 0.4 calc(sibling-index() * -2); color: #3a7bff; } scene { fog: #e8e0d4 2 11; camera-angle: 20deg 12deg; }",
+      },
+      {
+        name: "the fog rolls in",
+        code: "@scene { cylinder * 9; } cylinder { radius: 0.15; height: 1.6; translate: calc((sibling-index() - 5) * -0.9) 0.8 calc(sibling-index() * -1.2); color: #e6e6e6; } scene { background: #1a1d2b; floor: #2a2e40; fog: none; animation: roll 6s ease-in-out infinite alternate; } @keyframes roll { to { fog: 1 7; } }",
+      },
+    ],
+  },
+  {
     name: "dpr",
     appliesTo: "scene",
     syntax: "auto | max | <number>",
