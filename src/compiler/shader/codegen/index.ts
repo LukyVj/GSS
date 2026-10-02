@@ -305,12 +305,17 @@ uniform vec2 uPick;`
         ),
       )
       .replace("/*@MATERIALS*/", moreLines(materials))
+      // The filters before the lighting: the reflections of trace() call objectFilter()
       .replace(
         "/*@SHADING*/",
-        section(
-          "// The lighting of metal, jelly and glass, and what it calls: only what the scene uses",
-          used(SHADING, shadeCalls),
-        ),
+        [
+          ...((filterLines + filterFunctions).includes("grain(") ? [GRAIN] : []),
+          ...(filterFunctions ? [filterFunctions] : []),
+          section(
+            "// The lighting of metal, jelly and glass, and what it calls: only what the scene uses",
+            used(SHADING, shadeCalls),
+          ),
+        ].join("\n\n"),
       )
       .replace("/*@SHADE_CALLS*/", moreLines(shadeCalls))
       .replace(
@@ -350,14 +355,6 @@ uniform vec2 uPick;`
         `vec2 march(vec3 ro, vec3 rd) {\n${sceneSphereCode}`,
       )
       .replace("  outColor = vec4(col, 1.0);\n}", `${filterLines}  outColor = vec4(col, ${alpha});\n}`)
-      .replace(
-        "void main() {",
-        [
-          ...((filterLines + filterFunctions).includes("grain(") ? [GRAIN] : []),
-          ...(filterFunctions ? [filterFunctions] : []),
-          "void main() {",
-        ].join("\n\n"),
-      )
       // Reflections see the filters of the objects they meet
       .replace(
         /return (diffuse\(n, .*\));  \/\/ its color, lit/,

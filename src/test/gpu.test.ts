@@ -115,3 +115,10 @@ it("the watch compiles on WebGL2 in every media variant", async () => {
     expect(await compileOnGpu(variant.shader)).toBe("");
   }
 }, 30000);
+
+// The reflections call objectFilter(): it is written before them
+it("a filtered object next to a metal compiles on WebGL2", async () => {
+  const scene =
+    "@scene { sphere#a; sphere#b; } #a { filter: brightness(1.2) grain(0.05); } #b { translate: 1 1 0; material: metal(0.2); }";
+  expect(await compileOnGpu(compileGSS(scene))).toBe("");
+});

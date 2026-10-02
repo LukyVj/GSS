@@ -16,6 +16,10 @@ The 0.0.1 history was reconstructed from GitHub.
 
 - Motion path, like CSS: `offset-path: path("…")` or `ray(<angle>)`, `offset-distance` (a length or a percentage, animatable with `@keyframes`, `:hover` and the scroll) and `offset-rotate` (`auto`, `reverse`, an angle). The path stands in the object's xy plane like the `path` shape, so a tube and an object following it share the same `d`.
 
+### Fixed
+
+- A scene with a `filter` on an object and a metal, jelly or glass material no longer fails to compile on WebGL2: the reflections apply the object's filters without error.
+
 ## [0.0.3] — 2026-10-02 (prepared, not yet published)
 
 ### Added
