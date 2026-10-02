@@ -979,6 +979,53 @@ export const SELECTORS: SelectorDef[] = [
     ],
   },
   {
+    name: ":nth-child(), :nth-last-child()",
+    anchor: "selector-nth-child",
+    specificity: "100, like a class, plus the most specific selector after of",
+    description:
+      "A pseudo-class, like CSS: the object's position among its siblings, the elements of the same @scene block or group, counted from 1. It takes An+B: a number (:nth-child(3)), odd, even, or a formula where n runs from 0 up: 2n+1 is 1, 3, 5…, 3n is every third, -n+3 is the first three. Each copy of a * n is a sibling of its own, so in @scene { cube * 4; sphere; }, cube:nth-child(odd) is cubes 1 and 3, and the sphere is child 5; that is also what sibling-index() counts. Groups count as siblings, and the count starts again inside each group. :nth-last-child() counts from the end: :nth-last-child(-n+2) is the last two. With of, only the siblings that match the selector list count, and the object must match it: :nth-child(2 of .red) is the second .red. The position is read once, when the scene is compiled: of cannot hold :hover yet.",
+    examples: [
+      {
+        name: "odd, and every third",
+        code: "@scene { cube * 7; } cube { size: 0.6; translate: calc((sibling-index() - 4) * 0.8) 0.3 0; color: #e6e6e6; } cube:nth-child(odd) { color: #ff5a36; } cube:nth-child(3n) { translate: calc((sibling-index() - 4) * 0.8) 1 0; }",
+      },
+      {
+        name: "even of .lit, and the last child",
+        code: "@scene { sphere.lit * 3; sphere * 2; sphere.lit * 3; } sphere { radius: 0.3; translate: calc((sibling-index() - 4.5) * 0.75) 0.4 0; color: #555555; } .lit { color: #e6e6e6; } :nth-child(even of .lit) { color: #3a7bff; } :nth-last-child(1) { scale: 1.3; }",
+      },
+    ],
+  },
+  {
+    name: ":nth-of-type(), :nth-last-of-type()",
+    anchor: "selector-nth-of-type",
+    specificity: "100, like a class",
+    description:
+      "Like :nth-child(), counting only the siblings of the same shape: in @scene { cube * 2; sphere; cube; }, cube:nth-of-type(3) is the last cube, though it is the fourth child. The type is the shape name (cube, sphere, group…), like the tag of an HTML element. It takes the same An+B, but no of.",
+    examples: [
+      {
+        name: "even cubes, last sphere",
+        code: "@scene { cube * 2; sphere; cube * 2; sphere; } * { translate: calc((sibling-index() - 3.5) * 0.9) 0.4 0; color: #e6e6e6; } cube { size: 0.6; } sphere { radius: 0.35; } cube:nth-of-type(even) { color: #ff5a36; } sphere:nth-last-of-type(1) { color: #3a7bff; }",
+      },
+    ],
+  },
+  {
+    name: ":first-child, :last-child, :only-child, :first-of-type, :last-of-type, :only-of-type",
+    anchor: "selector-first-child",
+    specificity: "100, like a class",
+    description:
+      "Shortcuts, like CSS: :first-child is :nth-child(1), :last-child is :nth-last-child(1), and :only-child is an object without siblings. The -of-type versions count only the siblings of the same shape: cube:first-of-type is the first cube of its block, even after a sphere. They take no argument. They read the order of @scene, not the position in 3D.",
+    examples: [
+      {
+        name: "first and last child",
+        code: "@scene { cube * 5; } cube { size: 0.6; translate: calc((sibling-index() - 3) * 0.9) 0.3 0; color: #e6e6e6; } cube:first-child { color: #ff5a36; } cube:last-child { color: #3a7bff; }",
+      },
+      {
+        name: "first of type, only child",
+        code: "@scene { group#a { sphere; cube * 2; } group#b { cube; } } #a { translate: -1 0 0; } #b { translate: 1.4 0 0; } * { color: #e6e6e6; } sphere { translate: 0 1.2 0; radius: 0.3; } cube { size: 0.5; translate: calc(sibling-index() * 0.6 - 0.9) 0.25 0; } cube:first-of-type { color: #ff5a36; } cube:only-child { color: #3a7bff; }",
+      },
+    ],
+  },
+  {
     name: "!important",
     anchor: "selector-important",
     specificity: "Beats every declaration without it",

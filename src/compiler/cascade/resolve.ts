@@ -31,7 +31,49 @@ export type SimpleSelector = {
   face?: Face;
   hover?: boolean; // cube:hover, #g:hover
   has?: SimpleSelector[]; // #g:has(sphere, cube:hover): something inside matches one of them
+  structural?: Structural[]; // :nth-child(odd), :first-of-type…: all of them must match
 };
+
+// :nth-child(An+B of S) and its family, read at compile time (decision 92).
+// The position counts from 1 among the siblings, the copies of a * n one by one,
+// like sibling-index(): of the same shape for *-of-type, from the end for nth-last-*.
+export type Structural = {
+  ofType: boolean;
+  last: boolean;
+  a: number;
+  b: number;
+  of?: SimpleSelector[]; // :nth-child(2 of .red): only the siblings that match count
+  only?: boolean; // :only-child, :only-of-type: the one sibling that counts
+};
+
+const NTH: Record<string, Pick<Structural, "ofType" | "last">> = {
+  "nth-child": { ofType: false, last: false },
+  "nth-last-child": { ofType: false, last: true },
+  "nth-of-type": { ofType: true, last: false },
+  "nth-last-of-type": { ofType: true, last: true },
+};
+// The shortcuts, like CSS: :first-child is :nth-child(1), :only-child is first and last
+const at1 = (ofType: boolean, last: boolean, only = false): Structural => ({
+  ofType,
+  last,
+  a: 0,
+  b: 1,
+  ...(only ? { only } : {}),
+});
+const SHORTHANDS: Record<string, Structural> = {
+  "first-child": at1(false, false),
+  "last-child": at1(false, true),
+  "only-child": at1(false, false, true),
+  "first-of-type": at1(true, false),
+  "last-of-type": at1(true, true),
+  "only-of-type": at1(true, false, true),
+};
+const PSEUDO_CLASSES = [
+  ":hover",
+  ":has()",
+  ...Object.keys(NTH).map((name) => `:${name}()`),
+  ...Object.keys(SHORTHANDS).map((name) => `:${name}`),
+];
 
 // The faces a pseudo-element can style, in the object's space: cube::face(front).
 // top is +y, bottom -y, front +z, back -z, right +x, left -x (decision 59)
@@ -140,6 +182,31 @@ function splitAtCommas(tokens: Token[]): Token[][] {
     else parts[parts.length - 1].push(token);
   }
   return parts;
+}
+
+// An+B, like CSS: odd, even, 3, n, -n+3, 2n + 1. The spaces only go around the sign of B.
+function parseAnB(tokens: Token[], where: Token[], name: string): [number, number] {
+  const text = tokens
+    .map(
+      (token, i) =>
+        (i > 0 && spaceBetween(tokens[i - 1], token) ? " " : "") +
+        tokenToText(token),
+    )
+    .join("")
+    .toLowerCase();
+  if (text === "odd") return [2, 1];
+  if (text === "even") return [2, 0];
+  if (/^[+-]?\d+$/.test(text)) return [0, parseInt(text, 10)];
+  const formula = /^([+-]?)(\d*)n(?:\s*([+-])\s*(\d+))?$/.exec(text);
+  if (!formula)
+    throw errorAt(
+      where,
+      `:${name}() takes An+B, like :${name}(2n+1), :${name}(odd), :${name}(even) or :${name}(3)`,
+    );
+  const [, sign, digits, bSign, bDigits] = formula;
+  const a = (sign === "-" ? -1 : 1) * (digits === "" ? 1 : parseInt(digits, 10));
+  const b = bDigits === undefined ? 0 : (bSign === "-" ? -1 : 1) * parseInt(bDigits, 10);
+  return [a, b];
 }
 
 // "#letters #S #left" → #left, with the ancestors #letters and #S.
@@ -306,11 +373,58 @@ function parseCompound(tokens: Token[]): SimpleSelector {
         if (selector.has.some(nested))
           throw errorAt(tokens, "A :has() cannot hold another :has()");
         i = close + 1;
+      } else if (next?.type === "IDENT" && next.value in NTH) {
+        // :nth-child(An+B [of S]), like CSS
+        const name = next.value;
+        const open = tokens[i + 2];
+        if (open?.type !== "PUNCT" || open.value !== "(")
+          throw errorAt(tokens, `:${name}() needs An+B, like :${name}(odd)`);
+        const close = closingParen(tokens, i + 2);
+        const inside = tokens.slice(i + 3, close);
+        const at = inside.findIndex(
+          (token) => token.type === "IDENT" && token.value === "of",
+        );
+        const formula = at === -1 ? inside : inside.slice(0, at);
+        const [a, b] = parseAnB(formula, tokens, name);
+        const structural: Structural = { ...NTH[name], a, b };
+        if (at !== -1) {
+          if (structural.ofType)
+            throw errorAt(
+              tokens,
+              `:${name}() counts the siblings of the same shape: it takes no "of", only :nth-child() and :nth-last-child() do`,
+            );
+          const parts = splitAtCommas(inside.slice(at + 1));
+          if (parts.length === 0)
+            throw errorAt(
+              tokens,
+              `"of" needs a selector, like :${name}(2 of .red)`,
+            );
+          structural.of = parts.map((part) => parseSelector(part));
+          if (structural.of.some(needsHover))
+            throw errorAt(
+              tokens,
+              `:${name}(… of S) cannot hold :hover yet: the order of the objects is read once, when the scene is compiled`,
+            );
+        }
+        selector.structural = [...(selector.structural ?? []), structural];
+        i = close + 1;
+      } else if (next?.type === "IDENT" && next.value in SHORTHANDS) {
+        const open = tokens[i + 2];
+        if (open?.type === "PUNCT" && open.value === "(")
+          throw errorAt(
+            tokens,
+            `:${next.value} takes no argument; for a position, use :nth-child(3)`,
+          );
+        selector.structural = [
+          ...(selector.structural ?? []),
+          SHORTHANDS[next.value],
+        ];
+        i += 2;
       } else {
         const name = next?.type === "IDENT" ? `:${next.value}` : ":";
         throw errorAt(
           tokens,
-          `Unknown pseudo-class "${name}": GSS knows :hover and :has()`,
+          `Unknown pseudo-class "${name}": GSS knows ${PSEUDO_CLASSES.slice(0, -1).join(", ")} and ${PSEUDO_CLASSES[PSEUDO_CLASSES.length - 1]}`,
         );
       }
     } else {
@@ -403,10 +517,41 @@ function matchesCompound(
     !selector.classes.every((className) => instance.classes.includes(className))
   )
     return false;
+  if (
+    selector.structural &&
+    !selector.structural.every((s) => matchesPosition(s, instance, scene))
+  )
+    return false;
   if (!selector.has) return true;
   return selector.has.some((inner) =>
     sceneNodes(scene).some((node) => matches(inner, node, scene, instance)),
   );
+}
+
+// Is the instance at a position An+B among its siblings (the ones that count)?
+function matchesPosition(
+  structural: Structural,
+  instance: SceneInstance,
+  scene: SceneInstance[],
+): boolean {
+  const { of } = structural;
+  if (of && !of.some((inner) => matches(inner, instance, scene))) return false;
+  const parent = instance.groups[instance.groups.length - 1];
+  const counted = sceneNodes(scene)
+    .filter(
+      (node) =>
+        node.groups[node.groups.length - 1] === parent &&
+        (!structural.ofType || node.tag === instance.tag) &&
+        (!of || of.some((inner) => matches(inner, node, scene))),
+    )
+    .sort((x, y) => x.siblingIndex - y.siblingIndex);
+  const at = counted.indexOf(instance);
+  if (structural.only) return counted.length === 1;
+  const position = structural.last ? counted.length - at : at + 1;
+  const { a, b } = structural;
+  if (a === 0) return position === b;
+  const n = (position - b) / a;
+  return n >= 0 && Number.isInteger(n);
 }
 
 // ⬇️ TA MISSION : return a number as big as the selector is specific
@@ -417,6 +562,12 @@ export function specificity(selector: SimpleSelector): number {
     (selector.tag ? 1 : 0) +
     (selector.face ? 1 : 0) +
     (selector.hover ? 100 : 0) + // a pseudo-class counts like a class, like CSS
+    // :nth-child(… of S) adds its most specific selector, like CSS
+    (selector.structural ?? []).reduce(
+      (sum, s) =>
+        sum + 100 + Math.max(0, ...(s.of ?? []).map((inner) => specificity(inner))),
+      0,
+    ) +
     // :has() weighs like its most specific selector, like CSS
     Math.max(0, ...(selector.has ?? []).map((inner) => specificity(inner)));
   // Like CSS, preceding compounds add up: "#letters cube" beats "cube" and "#letters"

@@ -8,6 +8,8 @@ The 0.0.1 history was reconstructed from GitHub.
 
 ### Added
 
+- Structural pseudo-classes, like CSS: `:nth-child(An+B [of S])`, `:nth-last-child()`, `:nth-of-type()`, `:nth-last-of-type()` (`odd`, `even`, `3`, `2n+1`, `-n+3`…), and `:first-child`, `:last-child`, `:only-child`, `:first-of-type`, `:last-of-type`, `:only-of-type`. The copies of a `* n` are siblings one by one, so `:nth-child()` counts like `sibling-index()`: in `@scene { cube * 4; sphere; }`, `cube:nth-child(odd)` is cubes 1 and 3. Resolved at compile time, at no rendering cost.
+
 - Performance panel for WebGPU: FPS, frame/CPU percentiles, resolution and shader/pipeline preparation time, plus asynchronous GPU timestamps spanning picking, scene rendering and post-processing when `timestamp-query` is available. Profiling remains lazy until the panel is opened and works with automatic backend selection.
 
 - Dual GLSL/WGSL compilation for scenes, filter passes and media variants. Native WebGPU runtime with textures, camera controls, animation, hover picking and post-processing; `mountAsync()` selects WebGPU with a WebGL2 fallback or forces either backend. Existing synchronous APIs retain WebGL2. The playground includes backend selection and a WGSL tab; `<gss-scene backend="auto">` opts into WebGPU.

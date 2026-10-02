@@ -599,6 +599,21 @@ The public development hooks carry WebGPU types, so `@webgpu/types` is a type-on
 
 **Validation**: unit tests cover unsupported timestamps, nanosecond conversion, deferred readback, pending-query limits, reset/disposal and optional-feature acquisition failure. Chromium tests exercise the WebGPU panel with numeric GPU measurements when timestamps are supported, CPU/FPS statistics, and switching back to WebGL2. Software-renderer timing demonstrates correct instrumentation, not physical GPU performance.
 
+## 92. Structural pseudo-classes: `:nth-child()` and its family
+
+**Decision**: GSS takes the structural pseudo-classes of CSS, with their syntax and their behavior: `:nth-child(An+B [of S])`, `:nth-last-child()`, `:nth-of-type()`, `:nth-last-of-type()`, and the shortcuts `:first-child`, `:last-child`, `:only-child`, `:first-of-type`, `:last-of-type`, `:only-of-type`. They are read at compile time, on the tree of `@scene`, like the combinators (decision 73): no shader cost.
+
+- **Siblings**: the elements of the same `@scene` block or group, groups (empty ones included) counted like objects. **The copies of a `* n` are siblings one by one** (confirmed by Lucas, Oct. 2): in `@scene { cube * 4; sphere; }`, `cube:nth-child(odd)` is cubes 1 and 3 and the sphere is child 5. `:nth-child()` and `sibling-index()` (decision 52) always count the same way.
+- **Type** = the shape name (`cube`, `sphere`, `group`…), the tag of the element.
+- **An+B** like CSS: `odd`, `even`, an integer, `n`, `-n+3`, `2n + 1` (spaces only around the sign of B), case-insensitive. Anything else is an error that shows the accepted forms.
+- **`of S`**: a selector list, any selector except `:hover`; only the siblings that match S count, and the object must match S. Not on the `-of-type` forms, like CSS.
+- **Specificity** like CSS: 100 per pseudo-class (a shortcut counts once, `:only-child` included), plus the most specific selector of `of S`.
+- They combine with everything else: `:hover`, combinators, inside and around `:has()` (`group:has(> sphere:last-child)`).
+
+**Differences from CSS**: none in the matching itself. `of S` refuses `:hover` for now (the order would change with the mouse; the picking pass would need an inverted trigger, like `:not(:hover)`), with a clear error.
+
+**Why**: the vision example of GSS (`.corner:nth-child(odd)`) and every LLM write these selectors; with `* n` they style one copy out of two or three without a class per copy. Reading them at compile time keeps the cascade the only place that decides, and costs nothing at render.
+
 ## Open questions
 
 - **Targeting multiplied ids**: should `#hero` target `hero-1`, `hero-2` and `hero-3`?
