@@ -5,6 +5,7 @@
 import type { Token } from "../syntax/tokenizer";
 import { errorAt, rememberSpan, spanAcross } from "../syntax/errors";
 import { clampComputed, closingParen } from "./calc";
+import { glslFloat } from "../shader/codegen/glsl";
 import { NAMED_COLORS } from "./named-colors";
 import {
   type Rgb,
@@ -106,7 +107,12 @@ export function resolveColors(
     const call = value.slice(i, end + 1); // rgb ( … )
     const args = value.slice(i + 2, end); // only what is between the parentheses
     const name = (value[i] as { value: string }).value;
-    out.push(toHash(readCall(name, args, call, scheme), call));
+    // A variable set from JS inside: the color is computed on the GPU (decision 105)
+    out.push(
+      args.some((t) => t.type === "EXPR")
+        ? liveColor(name, args, call, scheme)
+        : toHash(readCall(name, args, call, scheme), call),
+    );
     i = end + 1;
   }
   return out;
@@ -462,4 +468,199 @@ function toHash(rgb: Rgb, call: Token[]): Token {
   const span = spanAcross(call);
   if (span) rememberSpan(token, span); // an error about it underlines rgb(…)
   return token;
+}
+
+
+// ----- Colors that a variable set from JS changes (decision 105) -----
+// hsl(var(--hue) 80% 60%) is not known at compile time: the call becomes GLSL, with the
+// functions of codegen/color-library.ts, clipped to sRGB like toHash().
+
+type Live = Extract<Token, { type: "EXPR" }>;
+const f = (n: number) => glslFloat(Math.round(n * 1e6) / 1e6);
+const percentCode = (code: string, full: number) => (full === 1 ? `(${code} / 100.0)` : `(${code} / 100.0 * ${f(full)})`);
+
+function liveColor(name: string, args: Token[], call: Token[], scheme: ColorScheme): Token {
+  const first = args.find((t): t is Live => t.type === "EXPR");
+  // light-dark() picks one of its colors: that color as it is
+  if (name === "light-dark") {
+    const colors = colorArguments(args, call, scheme, "light-dark(#fff, #111)");
+    if (colors.length !== 2) throw errorAt(call, "light-dark() takes two colors, like: light-dark(#fff, #111)");
+    const picked = colors[scheme === "dark" ? 1 : 0];
+    return picked.length === 1 && picked[0].type === "EXPR" ? picked[0] : toHash(readColorToken(picked, call), call);
+  }
+  const code = `clamp(${liveCall(name, args, call, scheme)}, 0.0, 1.0)`;
+  const token: Token = { type: "EXPR", value: first?.value ?? "", code, syntax: "color" };
+  const span = spanAcross(call);
+  if (span) rememberSpan(token, span);
+  return token;
+}
+
+// The GLSL of one call, a vec3 in sRGB
+function liveCall(name: string, args: Token[], call: Token[], scheme: ColorScheme): string {
+  const hue = (t: Token) => liveHue(t, call);
+  const share = (t: Token) => livePercent(t, call);
+  switch (name) {
+    case "rgb":
+    case "rgba": {
+      const channels = channelsOf(args, call, "rgb(255 90 54)").map((t) => {
+        if (t.type === "NUMBER") return f(bound(t.value, 0, 255) / 255);
+        if (t.type === "PERCENTAGE") return f(bound(t.value, 0, 100) / 100);
+        if (t.type === "EXPR" && t.syntax === "number") return `clamp(${t.code}, 0.0, 255.0) / 255.0`;
+        if (t.type === "EXPR" && t.syntax === "percentage") return `clamp(${t.code}, 0.0, 100.0) / 100.0`;
+        throw errorAt(call, "rgb() expects numbers or percentages, like: rgb(255 90 54)");
+      });
+      return `vec3(${channels.join(", ")})`;
+    }
+    case "hsl":
+    case "hsla": {
+      const [h, s, l] = channelsOf(args, call, "hsl(20 100% 60%)");
+      return `colorHsl(${hue(h)}, ${share(s)}, ${share(l)})`;
+    }
+    case "hwb": {
+      const [h, w, b] = channelsOf(args, call, "hwb(20 10% 20%)");
+      return `colorHwb(${hue(h)}, ${share(w)}, ${share(b)})`;
+    }
+    case "lab": {
+      const [l, a, b] = channelsOf(args, call, "lab(60 50 40)");
+      return `colorLab(vec3(${liveScaled(l, 100, call, [0, 100])}, ${liveScaled(a, 125, call)}, ${liveScaled(b, 125, call)}))`;
+    }
+    case "lch": {
+      const [l, c, h] = channelsOf(args, call, "lch(60 60 40)");
+      return `colorLab(colorFromPolar(vec3(${liveScaled(l, 100, call, [0, 100])}, ${liveScaled(c, 150, call, [0, Infinity])}, ${hue(h)})))`;
+    }
+    case "oklab": {
+      const [l, a, b] = channelsOf(args, call, "oklab(0.7 0.15 0.1)");
+      return `colorOklab(vec3(${liveScaled(l, 1, call, [0, 1])}, ${liveScaled(a, 0.4, call)}, ${liveScaled(b, 0.4, call)}))`;
+    }
+    case "oklch": {
+      const [l, c, h] = channelsOf(args, call, "oklch(70% 0.15 30)");
+      return `colorOklab(colorFromPolar(vec3(${liveScaled(l, 1, call, [0, 1])}, ${liveScaled(c, 0.4, call, [0, Infinity])}, ${hue(h)})))`;
+    }
+    case "color": {
+      const [space, ...rest] = args;
+      const example = "color(display-p3 1 0.4 0.2)";
+      if (space?.type !== "IDENT" || !(space.value in COLOR_SPACES))
+        throw errorAt(call, `color() starts with a color space (${Object.keys(COLOR_SPACES).join(", ")}), like: ${example}`);
+      const channels = `vec3(${channelsOf(rest, call, example).map((t) => liveScaled(t, 1, call)).join(", ")})`;
+      const into: Record<string, string> = {
+        srgb: channels,
+        "srgb-linear": `colorFromLinear(${channels})`,
+        "display-p3": `colorP3(${channels})`,
+        xyz: `colorXyz(${channels})`,
+        "xyz-d65": `colorXyz(${channels})`,
+        "xyz-d50": `colorXyzD50(${channels})`,
+      };
+      return into[space.value];
+    }
+    case "color-mix":
+      return liveMix(args, call, scheme);
+    case "contrast-color": {
+      const colors = colorArguments(args, call, scheme, "contrast-color(#3a7bff)");
+      if (colors.length !== 1) throw errorAt(call, "contrast-color() takes one color, like: contrast-color(#3a7bff)");
+      return `colorContrast(${liveColorCode(colors[0], call)})`;
+    }
+  }
+  throw errorAt(call, `${name}() is not a color function`);
+}
+
+// A color argument in GLSL: a color set from JS, or a constant
+function liveColorCode(part: Token[], call: Token[]): string {
+  if (part.length === 1 && part[0].type === "EXPR") {
+    if (part[0].syntax !== "color") throw errorAt(call, `${part[0].value} is a <${part[0].syntax}>, not a color`);
+    return part[0].code;
+  }
+  return `vec3(${readColorToken(part, call).map(f).join(", ")})`;
+}
+
+// A hue in degrees, from 0 to 360, like readHue()
+function liveHue(token: Token, call: Token[]): string {
+  if (token.type === "EXPR" && token.syntax === "number") return `mod(${token.code}, 360.0)`;
+  if (token.type === "EXPR" && token.syntax === "angle") return `mod(degrees(${token.code}), 360.0)`;
+  return f(readHue(token, call));
+}
+
+// A percentage as a share, from 0 to 1, like unit(percentOf())
+function livePercent(token: Token, call: Token[]): string {
+  if (token.type === "EXPR" && (token.syntax === "number" || token.syntax === "percentage"))
+    return `clamp(${token.code} / 100.0, 0.0, 1.0)`;
+  return f(unit(percentOf(token, call)));
+}
+
+// A number, or a percentage of `full`, kept between low and high, like scaled() and bound()
+function liveScaled(token: Token, full: number, call: Token[], range?: [number, number]): string {
+  if (token.type === "EXPR" && (token.syntax === "number" || token.syntax === "percentage")) {
+    const value = token.syntax === "number" ? token.code : percentCode(token.code, full);
+    if (!range) return value;
+    return range[1] === Infinity ? `max(${value}, ${f(range[0])})` : `clamp(${value}, ${f(range[0])}, ${f(range[1])})`;
+  }
+  const value = scaled(token, full, call);
+  return f(range ? bound(value, range[0], range[1]) : value);
+}
+
+// color-mix() with a color or a percentage set from JS
+function liveMix(args: Token[], call: Token[], scheme: ColorScheme): string {
+  const example = "color-mix(in oklch, tomato 30%, #3a7bff)";
+  const [method, ...colors] = colorArguments(args, call, scheme, example);
+  const [keyword, space, ...hue] = method;
+  if (keyword?.type !== "IDENT" || keyword.value !== "in" || space?.type !== "IDENT" || !(space.value in MIX_SPACES))
+    throw errorAt(call, `color-mix() starts with "in" and a color space (${Object.keys(MIX_SPACES).join(", ")}), like: ${example}`);
+  const hueMethod = hue.map((t) => (t as { value: unknown }).value).join(" ");
+  if (hue.length > 0 && (MIX_SPACES[space.value].hue === undefined || !["shorter hue", "longer hue"].includes(hueMethod)))
+    throw errorAt(call, `color-mix() takes "shorter hue" or "longer hue", in a space with a hue (hsl, hwb, lch, oklch)`);
+  if (colors.length !== 2) throw errorAt(call, `color-mix() mixes two colors, like: ${example}`);
+
+  const read = colors.map((part) => {
+    const percentages = part.filter((t) => t.type === "PERCENTAGE" || (t.type === "EXPR" && t.syntax === "percentage"));
+    const color = part.filter((t) => !percentages.includes(t));
+    if (percentages.length > 1) throw errorAt(call, "color-mix() takes one percentage per color");
+    const p = percentages[0];
+    let percent: { value?: number; code?: string } | undefined;
+    if (p?.type === "EXPR") percent = { code: `clamp(${p.code}, 0.0, 100.0)` };
+    else if (p) {
+      const value = clampComputed(p as Token & { value: number }, 0, 100);
+      if (value < 0 || value > 100) throw errorAt(call, "color-mix() takes percentages from 0% to 100%");
+      percent = { value };
+    }
+    return { code: liveColorCode(color, call), percent };
+  });
+
+  // The share of the second color, like readColorMix()
+  let [p1, p2] = read.map((c) => c.percent);
+  let t: string;
+  if (p1?.code === undefined && p2?.code === undefined) {
+    let [a, b] = [p1?.value, p2?.value];
+    if (a === undefined && b === undefined) a = b = 50;
+    else if (a === undefined) a = 100 - b!;
+    else if (b === undefined) b = 100 - a;
+    const sum = a + b!;
+    if (sum === 0) throw errorAt(call, "color-mix() needs percentages that do not add up to 0%");
+    if (sum < 100) throw errorAt(call, "GSS has no transparency yet: the percentages of color-mix() must add up to 100% or more");
+    t = f(b! / sum);
+  } else {
+    const code = (p: { value?: number; code?: string } | undefined) => p?.code ?? f(p!.value!);
+    if (!p1) p1 = { code: `(100.0 - ${code(p2)})` };
+    if (!p2) p2 = { code: `(100.0 - ${code(p1)})` };
+    t = `(${code(p2)} / (${code(p1)} + ${code(p2)}))`;
+  }
+
+  const [a, b] = read.map((c) => c.code);
+  const longer = hueMethod === "longer hue" ? "1.0" : "0.0";
+  switch (space.value) {
+    case "srgb":
+      return `mix(${a}, ${b}, ${t})`;
+    case "srgb-linear":
+      return `colorFromLinear(mix(colorToLinear(${a}), colorToLinear(${b}), ${t}))`;
+    case "oklab":
+      return `colorOklab(mix(colorToOklab(${a}), colorToOklab(${b}), ${t}))`;
+    case "lab":
+      return `colorLab(mix(colorToLab(${a}), colorToLab(${b}), ${t}))`;
+    case "oklch":
+      return `colorMixOklch(${a}, ${b}, ${t}, ${longer})`;
+    case "lch":
+      return `colorMixLch(${a}, ${b}, ${t}, ${longer})`;
+    case "hsl":
+      return `colorMixHsl(${a}, ${b}, ${t}, ${longer})`;
+    default:
+      return `colorMixHwb(${a}, ${b}, ${t}, ${longer})`;
+  }
 }

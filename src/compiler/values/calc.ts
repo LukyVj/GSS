@@ -3,6 +3,7 @@
 // the rest of the compiler only ever sees plain numbers and dimensions.
 import type { Token } from "../syntax/tokenizer";
 import { errorAt, rememberSpan, spanAcross } from "../syntax/errors";
+import { glslFloat } from "../shader/codegen/glsl";
 
 // Where the value is read: the position of the object among its siblings, if it is an object.
 // tag, id and groups (when known) give random() a seed of its own for each object.
@@ -15,8 +16,31 @@ export type CalcContext = {
   groups?: Node[];
 } | null;
 
-// A computed quantity: 90 with unit "deg", 2 with unit "" (a plain number), 50 with "%"
-type Quantity = { value: number; unit: string };
+// A computed quantity: 90 with unit "deg", 2 with unit "" (a plain number), 50 with "%".
+// A quantity that depends on a variable set from JS (@property, decision 105) is not known
+// at compile time: code is its GLSL (angles in degrees, like value), name the variable.
+type Quantity = { value: number; unit: string; code?: string; name?: string };
+
+const isLive = (q: Quantity) => q.code !== undefined;
+// A quantity in GLSL: its code, or its value as a float
+const glsl = (q: Quantity) => q.code ?? glslFloat(Math.round(q.value * 1e6) / 1e6);
+// A quantity computed on the GPU, from these quantities (the first variable names it)
+const live = (code: string, unit: string, from: Quantity[]): Quantity => ({
+  value: NaN,
+  unit,
+  code,
+  name: from.find(isLive)?.name,
+});
+// GLSL in radians from GLSL in degrees: degrees(x) gives x back, without the round trip
+function toRadians(code: string): string {
+  const inner = code.match(/^degrees\((.*)\)$/)?.[1];
+  if (inner !== undefined) {
+    let depth = 0;
+    const closesLast = [...inner].every((c) => (depth += c === "(" ? 1 : c === ")" ? -1 : 0) >= 0);
+    if (closesLast && depth === 0) return inner;
+  }
+  return `radians(${code})`;
+}
 
 // The functions that compute something. Any other name( is left alone (metal(), path()…),
 // but the math inside its arguments is still computed: metal(#fff, calc(0.1 * 2)).
@@ -164,6 +188,7 @@ export function clampComputed(token: Token & { value: number }, min: number, max
 // The result, as a token the rest of the compiler already reads. It keeps the position
 // of the whole call, so an error about it underlines "calc(…)".
 function toToken(quantity: Quantity, call: Token[]): Token {
+  if (isLive(quantity)) return liveToken(quantity, call);
   const value = Math.round(quantity.value * 1e9) / 1e9; // cos(90deg) is 6e-17: that is 0
   const token: Token =
     quantity.unit === ""
@@ -172,6 +197,19 @@ function toToken(quantity: Quantity, call: Token[]): Token {
         ? { type: "PERCENTAGE", value }
         : { type: "DIMENSION", value, unit: quantity.unit };
   computed.add(token);
+  const span = spanAcross(call);
+  if (span) rememberSpan(token, span);
+  return token;
+}
+
+// A result computed on the GPU: the token var() gives for a registered variable, with
+// the GLSL of the whole math. An angle goes back to radians, like the uniforms.
+function liveToken(quantity: Quantity, call: Token[]): Token {
+  const syntax = quantity.unit === "" ? "number" : quantity.unit === "%" ? "percentage" : quantity.unit === "deg" ? "angle" : null;
+  if (!syntax)
+    throw errorAt(call, `${quantity.name} is set from JS: a ${quantity.unit} value cannot come from it yet`);
+  const code = syntax === "angle" ? toRadians(quantity.code!) : quantity.code!;
+  const token: Token = { type: "EXPR", value: quantity.name!, code, syntax };
   const span = spanAcross(call);
   if (span) rememberSpan(token, span);
   return token;
@@ -289,6 +327,14 @@ class Reader {
       }
       return this.take(normalize({ value: token.value, unit: token.unit }));
     }
+    // A variable set from JS (decision 105): its uniform, an angle in degrees like the others
+    if (token.type === "EXPR") {
+      if (token.syntax === "color")
+        throw this.error(`${token.value} is a color: math works on numbers, angles and percentages`);
+      const unit = token.syntax === "angle" ? "deg" : token.syntax === "percentage" ? "%" : "";
+      const code = token.syntax === "angle" ? `degrees(${token.code})` : token.code;
+      return this.take({ value: NaN, unit, code, name: token.value });
+    }
     if (token.type === "PUNCT" && token.value === "(") {
       this.i++;
       const inside = this.sum();
@@ -346,6 +392,7 @@ class Reader {
   }
 
   private apply(name: string, args: Quantity[], strategy = "nearest"): Quantity {
+    if (args.some(isLive)) return this.applyLive(name, args, strategy);
     const count = (n: number, example: string) => {
       if (args.length !== n)
         throw this.error(
@@ -477,6 +524,100 @@ class Reader {
     throw this.error(`${name}() cannot be used inside math`);
   }
 
+  // The same functions with an argument known only on the GPU (decision 105): the units
+  // are checked as above, the value is written in GLSL
+  private applyLive(name: string, args: Quantity[], strategy: string): Quantity {
+    const count = (n: number, example: string) => {
+      if (args.length !== n)
+        throw this.error(`${name}() takes ${n} argument${n === 1 ? "" : "s"}, like: ${example}`);
+    };
+    const plain = (q: Quantity) => {
+      if (q.unit !== "") throw this.error(`${name}() expects a number, not ${describe(q)}`);
+      return glsl(q);
+    };
+    const radians = (q: Quantity) => (q.unit === "deg" ? toRadians(glsl(q)) : plain(q));
+    const [a, b] = args.map(glsl);
+    const out = (code: string, unit = "") => live(code, unit, args);
+    switch (name) {
+      case "calc":
+        count(1, "calc(2 * 30deg)");
+        return args[0];
+      case "min":
+      case "max": {
+        const unit = this.sameUnit(args, name);
+        return out(args.map(glsl).reduce((acc, x) => `${name}(${acc}, ${x})`), unit);
+      }
+      case "clamp": {
+        count(3, "clamp(0, calc(sibling-index() * 0.2), 1)");
+        const unit = this.sameUnit(args, name);
+        const [low, value, high] = args.map(glsl);
+        return out(`min(max(${value}, ${low}), ${high})`, unit);
+      }
+      case "abs":
+      case "sign":
+        count(1, `${name}(-2)`);
+        return out(`${name}(${a})`, name === "abs" ? args[0].unit : "");
+      case "sqrt":
+      case "exp":
+        count(1, `${name}(2)`);
+        return out(`${name}(${plain(args[0])})`);
+      case "pow":
+        count(2, "pow(2, 3)");
+        return out(`pow(${plain(args[0])}, ${plain(args[1])})`);
+      case "sin":
+      case "cos":
+      case "tan":
+        count(1, `${name}(30deg)`);
+        return out(`${name}(${radians(args[0])})`);
+      case "asin":
+      case "acos":
+      case "atan":
+        count(1, `${name}(0.5)`);
+        return out(`degrees(${name}(${plain(args[0])}))`, "deg");
+      case "atan2":
+        count(2, "atan2(1, -1)");
+        this.sameUnit(args, name);
+        return out(`degrees(atan(${a}, ${b}))`, "deg");
+      case "round": {
+        if (args.length !== 1 && args.length !== 2)
+          throw this.error("round() takes a value and a step, like: round(2.6, 0.5) or round(down, 2.6, 0.5)");
+        const step = args[1] ?? { value: 1, unit: args[0].unit };
+        const unit = this.sameUnit([args[0], step], name);
+        const ratio = `(${a} / ${glsl(step)})`;
+        const rounded =
+          strategy === "up" ? `ceil(${ratio})`
+          : strategy === "down" ? `floor(${ratio})`
+          : strategy === "to-zero" ? `trunc(${ratio})`
+          : `floor(${ratio} + 0.5)`; // halfway goes up, like CSS
+        return out(`(${rounded} * ${glsl(step)})`, unit);
+      }
+      case "mod":
+      case "rem": {
+        count(2, `${name}(7, 3)`);
+        const unit = this.sameUnit(args, name);
+        // mod() takes the sign of the divisor, like GLSL's mod(); rem() the sign of the value
+        return out(name === "mod" ? `mod(${a}, ${b})` : `(${a} - ${b} * trunc((${a} / ${b})))`, unit);
+      }
+      case "hypot": {
+        const unit = this.sameUnit(args, name);
+        return out(`sqrt(${args.map(glsl).map((x) => `${x} * ${x}`).join(" + ")})`, unit);
+      }
+      case "log": {
+        if (args.length !== 1 && args.length !== 2)
+          throw this.error("log() takes a number and an optional base, like: log(8, 2)");
+        const value = `log(${plain(args[0])})`;
+        return out(args[1] ? `(${value} / log(${plain(args[1])}))` : value);
+      }
+      case "progress": {
+        count(3, "progress(sibling-index(), 1, sibling-count())");
+        this.sameUnit(args, name);
+        const [value, start, end] = args.map(glsl);
+        return out(`clamp((${value} - ${start}) / (${end} - ${start}), 0.0, 1.0)`);
+      }
+    }
+    throw this.error(`${name}() cannot be used inside math`);
+  }
+
   // random([--name || element-shared | fixed <number>,]? min, max, step?), like CSS.
   // Computed once, at compile time: the same value at every reload. By default each
   // object, property and call gets its own value; --name shares one between the calls
@@ -512,6 +653,9 @@ class Reader {
     this.expect(")", "random()");
     if (args.length !== 2 && args.length !== 3)
       throw this.error(`random() takes a minimum, a maximum and an optional step, like: ${example}`);
+    const fromJs = args.find(isLive);
+    if (fromJs)
+      throw this.error(`random() cannot use ${fromJs.name}: a random value is chosen once, when the scene compiles`);
     const unit = this.sameUnit(args, "random");
     const [min, max, step] = args.map((q) => q.value);
 
@@ -544,6 +688,7 @@ class Reader {
         `Cannot ${operator === "+" ? "add" : "subtract"} ${describe(a)} and ${describe(b)}`,
       );
     }
+    if (isLive(a) || isLive(b)) return live(`(${glsl(a)} ${operator} ${glsl(b)})`, a.unit, [a, b]);
     return {
       value: operator === "+" ? a.value + b.value : a.value - b.value,
       unit: a.unit,
@@ -556,10 +701,16 @@ class Reader {
         `Cannot multiply ${describe(a)} by ${describe(b)}: one of them must be a number`,
       );
     }
+    if (isLive(a) || isLive(b)) return live(`(${glsl(a)} * ${glsl(b)})`, a.unit || b.unit, [a, b]);
     return { value: a.value * b.value, unit: a.unit || b.unit };
   }
 
   private divide(a: Quantity, b: Quantity): Quantity {
+    if (isLive(a) || isLive(b)) {
+      const unit = b.unit === "" ? a.unit : b.unit === a.unit ? "" : null;
+      if (unit === null) throw this.error(`Cannot divide ${describe(a)} by ${describe(b)}`);
+      return live(`(${glsl(a)} / ${glsl(b)})`, unit, [a, b]);
+    }
     if (b.value === 0) throw this.error("Division by zero");
     if (b.unit === "") return { value: a.value / b.value, unit: a.unit };
     if (b.unit === a.unit) return { value: a.value / b.value, unit: "" }; // 90deg / 30deg = 3

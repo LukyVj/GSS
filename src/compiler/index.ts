@@ -368,8 +368,16 @@ function refuseLive(property: string, value: Token[]): void {
   if (!token) return;
   if (!LIVE_PROPERTIES.includes(property))
     throw errorAt(value, `${token.value} is set from JS: it can go in ${LIVE_PROPERTIES.slice(0, -1).join(", ")} and background, for now`);
-  if (value.some((t, i) => t.type === "IDENT" && value[i + 1]?.type === "PUNCT" && value[i + 1].value === "("))
-    throw errorAt(value, `${token.value} is set from JS: it cannot go inside calc() or another function yet`);
+}
+
+// Once the math and the colors are computed: the math around a registered variable is
+// written in GLSL (calc.ts); any other function around it does not read it yet
+function refuseLiveCalls(value: Token[]): Token[] {
+  const token = value.find((t) => t.type === "EXPR");
+  const call = value.findIndex((t, i) => t.type === "IDENT" && value[i + 1]?.type === "PUNCT" && value[i + 1].value === "(");
+  if (token && call >= 0)
+    throw errorAt(value, `${token.value} is set from JS: it cannot go inside ${(value[call] as { value: string }).value}() yet`);
+  return value;
 }
 
 // Does a @keyframes block set a variable, or read one?
@@ -427,7 +435,7 @@ function animateVariables(
       const resolved = resolveIf(resolveVars(value, frameVariables), frameVariables, activeMedia);
       refuseLive(property, resolved);
       refuseInColor(property, resolved);
-      return colorsOf(property, resolveMath(resolved, context, property));
+      return refuseLiveCalls(colorsOf(property, resolveMath(resolved, context, property)));
     };
 
     // The properties the frame writes itself
@@ -540,7 +548,7 @@ let activeMedia = new Set<string>();
 function computeColors(styles: Styles): Styles {
   const computed: Styles = {};
   for (const [property, value] of Object.entries(styles))
-    computed[property] = colorsOf(property, value);
+    computed[property] = refuseLiveCalls(colorsOf(property, value));
   return computed;
 }
 

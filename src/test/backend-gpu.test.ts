@@ -89,6 +89,36 @@ it("setProperty() changes the scene without compiling again (decision 105)", asy
   for (const pixels of [after.gl, after.gpu]) expect(pixels[center + 2]).toBeGreaterThan(pixels[center]);
 }, 60000);
 
+// A color computed on the GPU from a variable set from JS is the color the compiler
+// computes from the same value (decision 105): same image, on both backends
+describe("the color functions give the same color on the GPU as at compile time", () => {
+  const VARS = '@property --h { syntax: "<number>"; inherits: false; initial-value: 40; } @property --p { syntax: "<percentage>"; inherits: false; initial-value: 30%; } @property --c { syntax: "<color>"; inherits: false; initial-value: #3a7bff; }';
+  const front = "scene { floor: none; background: #000000; camera-target: 0 0 0; camera-angle: 0deg 0deg; camera-distance: 4; ambient: 1; } cube { size: 3; }";
+  const colors: [string, string][] = [
+    ["rgb(var(--h) 90 54)", "rgb(40 90 54)"],
+    ["hsl(var(--h) 80% 60%)", "hsl(40 80% 60%)"],
+    ["hwb(var(--h) 10% 20%)", "hwb(40 10% 20%)"],
+    ["lab(60 var(--h) 30)", "lab(60 40 30)"],
+    ["lch(60 50 var(--h))", "lch(60 50 40)"],
+    ["oklab(0.7 0.1 calc(var(--h) / 400))", "oklab(0.7 0.1 0.1)"],
+    ["oklch(70% 0.15 var(--h))", "oklch(70% 0.15 40)"],
+    ["color(display-p3 1 var(--p) 0.2)", "color(display-p3 1 30% 0.2)"],
+    ["color(xyz-d50 0.3 0.25 var(--p))", "color(xyz-d50 0.3 0.25 30%)"],
+    ["contrast-color(var(--c))", "contrast-color(#3a7bff)"],
+    ...["srgb", "srgb-linear", "oklab", "lab", "oklch", "lch", "hsl", "hwb"].map(
+      (space): [string, string] => [`color-mix(in ${space}, var(--c), #ff5a36 var(--p))`, `color-mix(in ${space}, #3a7bff, #ff5a36 30%)`],
+    ),
+    ["color-mix(in oklch longer hue, var(--c), #ff5a36)", "color-mix(in oklch longer hue, #3a7bff, #ff5a36)"],
+  ];
+  for (const [live, still] of colors) it(still, async () => {
+    const a = await render(`${VARS} @scene { cube; } ${front} cube { color: ${live}; }`);
+    const b = await render(`@scene { cube; } ${front} cube { color: ${still}; }`);
+    const center = (36 * 96 + 48) * 4;
+    for (const [pixels, reference] of [[a.gl, b.gl], [a.gpu, b.gpu]])
+      for (let c = 0; c < 3; c++) expect(Math.abs(pixels[center + c] - reference[center + c])).toBeLessThanOrEqual(2);
+  }, 60000);
+});
+
 // The screen is seen like a CSS page: x to the right, y up, z toward the viewer
 describe("the default camera does not mirror the scene", () => {
   const front = "scene { floor: none; background: #000000; camera-target: 0 0 0; camera-angle: 0deg 0deg; camera-distance: 5; light: 0deg 0deg; ambient: 1; }";

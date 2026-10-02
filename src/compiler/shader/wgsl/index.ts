@@ -60,7 +60,8 @@ class Lowering {
     // Signatures are known before expressions are lowered (forward calls included).
     for (let i = 0; i < this.tokens.length; i++) {
       if (this.tokens[i] === "struct") this.structs.set(this.tokens[i + 1], []);
-      if (this.tokens[i + 2] === "(" && this.isType(this.tokens[i])) {
+      // type name ( : not vec3((…) inside an expression, which calc() can write (decision 105)
+      if (this.tokens[i + 2] === "(" && this.isType(this.tokens[i]) && /^[A-Za-z_]\w*$/.test(this.tokens[i + 1])) {
         const args: string[] = [];
         let j = i + 3;
         while (this.tokens[j] !== ")") {
@@ -345,7 +346,7 @@ class Lowering {
     }
     // atan(y, x) in GLSL is atan2(y, x) in WGSL (conic-gradient(), decision 98)
     if (name === "atan") return { code: `${args.length === 2 ? "atan2" : "atan"}(${codes()})`, type: args[0].type };
-    if (["abs", "sign", "floor", "ceil", "round", "fract", "sqrt", "exp", "sin", "cos", "normalize", "reflect", "refract", "cross"].includes(name))
+    if (["abs", "sign", "floor", "ceil", "round", "trunc", "fract", "sqrt", "exp", "log", "sin", "cos", "tan", "asin", "acos", "degrees", "radians", "normalize", "reflect", "refract", "cross"].includes(name))
       return { code: `${name}(${codes()})`, type: args[0].type };
     throw new Error(`WGSL lowering: unsupported function ${name}`);
   }

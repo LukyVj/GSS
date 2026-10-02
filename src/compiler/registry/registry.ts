@@ -904,7 +904,7 @@ export const AT_RULES: AtRuleDef[] = [
     name: "property",
     syntax: '@property --<name> { syntax: "<number>" | "<angle>" | "<percentage>" | "<color>"; inherits: true | false; initial-value: <value>; }',
     description:
-      "Registers a variable that the page sets from JavaScript without compiling the scene again, like CSS @property. The syntax says what it holds: a number, an angle, a percentage or a color; inherits is required, like CSS; initial-value is its value until the page sets another one. A registered variable has one value for the whole scene, like a variable on :root: scene { --speed: 8; } gives its start value, and declaring it on an object, a group, a :hover rule or a @keyframes frame is an error. From the page, the scene that mount() returns (or the scene property of <gss-scene>) sets it: scene.setProperty(\"--lift\", \"2\"), with a string like CSS (\"90deg\", \"50%\", any CSS color) or a number for a <number>; scene.getPropertyValue(\"--lift\") reads it back, scene.removeProperty(\"--lift\") returns to the start value. The value stays when the scene is updated, as long as the variable keeps its syntax. For now, a registered variable goes in translate, rotate-x, rotate-y, rotate-z, scale, color, offset-distance and background, written alone (translate: 0 var(--lift) 0), not inside calc() or another function. The Shadertoy export keeps the initial values.",
+      "Registers a variable that the page sets from JavaScript without compiling the scene again, like CSS @property. The syntax says what it holds: a number, an angle, a percentage or a color; inherits is required, like CSS; initial-value is its value until the page sets another one. A registered variable has one value for the whole scene, like a variable on :root: scene { --speed: 8; } gives its start value, and declaring it on an object, a group, a :hover rule or a @keyframes frame is an error. From the page, the scene that mount() returns (or the scene property of <gss-scene>) sets it: scene.setProperty(\"--lift\", \"2\"), with a string like CSS (\"90deg\", \"50%\", any CSS color) or a number for a <number>; scene.getPropertyValue(\"--lift\") reads it back, scene.removeProperty(\"--lift\") returns to the start value. The value stays when the scene is updated, as long as the variable keeps its syntax. For now, a registered variable goes in translate, rotate-x, rotate-y, rotate-z, scale, color, offset-distance and background: alone (translate: 0 var(--lift) 0), inside the math functions (calc(var(--lift) * 2), sin(), clamp()… computed by the GPU at every frame), and inside the color functions (hsl(var(--hue) 80% 60%), oklch(), color-mix()…, computed in the same color spaces as the others). A value known only when the scene runs cannot be refused like a value written as is: in color-mix(), a percentage set from JavaScript is kept between 0% and 100%, and percentages that add up to less than 100% are scaled up to 100% instead of being an error. random() cannot use it: a random value is chosen once. The Shadertoy export keeps the initial values.",
     examples: [
       {
         name: "property",
@@ -913,6 +913,10 @@ export const AT_RULES: AtRuleDef[] = [
       {
         name: "property",
         code: '@property --tint { syntax: "<color>"; inherits: false; initial-value: #3a7bff; } @property --turn { syntax: "<angle>"; inherits: false; initial-value: 30deg; } @scene { cube; } scene { --tint: #ff5a36; } cube { translate: 0 0.8 0; rotate-y: var(--turn); color: var(--tint); }',
+      },
+      {
+        name: "property",
+        code: '@property --hue { syntax: "<number>"; inherits: false; initial-value: 20; } @scene { sphere * 5; } sphere { radius: 0.35; translate: calc(sibling-index() * 0.8 - 2.4) calc(0.6 + sin(var(--hue) * 1deg) * 0.3) 0; color: oklch(70% 0.16 calc(var(--hue) + sibling-index() * 30)); }',
       },
     ],
   },
@@ -1558,7 +1562,7 @@ export const FUNCTIONS: FunctionDef[] = [
     syntax:
       "color-mix(in <space> [shorter | longer hue]?, <color> <percentage>?, <color> <percentage>?)",
     description:
-      "Mixes two colors in a color space, like CSS: srgb, srgb-linear, lab, lch, oklab, oklch, hsl or hwb. Without percentages, half of each; with one, the other color takes the rest; with both, they are scaled to add up to 100%. They cannot add up to less, since GSS has no transparency. In a space with a hue, the hue goes the shorter way round the wheel, or the longer one with longer hue; a gray takes the hue of the other color. oklab gives the most even mixes; mixing in srgb goes through duller middle colors.",
+      "Mixes two colors in a color space, like CSS: srgb, srgb-linear, lab, lch, oklab, oklch, hsl or hwb. Without percentages, half of each; with one, the other color takes the rest; with both, they are scaled to add up to 100%. They cannot add up to less, since GSS has no transparency; a percentage set from JavaScript (a variable registered with @property) is only known when the scene runs, so there it is kept between 0% and 100%, and percentages that add up to less are scaled up to 100% instead of being an error. In a space with a hue, the hue goes the shorter way round the wheel, or the longer one with longer hue; a gray takes the hue of the other color. oklab gives the most even mixes; mixing in srgb goes through duller middle colors.",
     examples: [
       {
         name: "color-mix()",

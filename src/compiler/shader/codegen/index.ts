@@ -37,6 +37,7 @@ import { animateCode, createHoisted, hoist, rotationLines, transformLines } from
 import { enclosing, groupBounds, objectSphere, sceneMiss, type Sphere } from "./bounds";
 import { GRAIN } from "../../features/filter";
 import { filterCode } from "./filters";
+import { COLOR_LIBRARY } from "./color-library";
 
 export { activeSlots, hoverSlots } from "./animation";
 export { shapeNames, shapeRadius } from "./shapes";
@@ -303,10 +304,19 @@ uniform vec2 uPick;`
       )
       .replace(
         "/*@MATERIALS_USED*/",
-        section(
-          "// The metal, jelly and glass materials: only those getMaterial() uses",
-          used(MATERIALS, materials),
-        ),
+        [
+          // The colors a variable set from JS changes (decision 105)
+          section(
+            "// The color spaces of CSS: only those the colors set from JS use",
+            used(COLOR_LIBRARY, [materials, background, gradients.functions].join("\n")),
+          ),
+          section(
+            "// The metal, jelly and glass materials: only those getMaterial() uses",
+            used(MATERIALS, materials),
+          ),
+        ]
+          .filter(Boolean)
+          .join("\n\n"),
       )
       .replace("/*@MATERIALS*/", moreLines(materials))
       // The filters before the lighting: the reflections of trace() call objectFilter()
