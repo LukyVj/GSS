@@ -1,0 +1,300 @@
+@scene {
+  group#reactor {
+    group#heart {
+      prism#core;
+      torus#collar;
+    }
+
+    group#crown {
+      prism.blade * 12;
+    }
+
+    group#orbit-a {
+      path.track;
+      group.satellites {
+        sphere.satellite * 4;
+      }
+    }
+
+    group#orbit-b {
+      path.track;
+      group.satellites {
+        sphere.satellite * 3;
+      }
+    }
+  }
+
+  cylinder#pedestal;
+  torus#base-light;
+}
+
+scene {
+  --gold: #ffd28a;
+  --cyan: #8affed;
+  --pink: #ff82bc;
+
+  background: radial-gradient(
+    circle at 50% 40%,
+    #242335,
+    #070910
+  );
+
+  floor: #10121b;
+  camera-distance: 10;
+  camera-angle: 12deg 18deg;
+  camera-target: 0 2.2 0;
+  light: 35deg 65deg;
+  ambient: 0.45;
+  dpr: 0.9;
+  filter: contrast(1.08) grain(0.025);
+}
+
+/* Everything floats together. */
+
+#reactor {
+  translate: 0 2.5 0;
+  animation: levitate 5s ease-in-out alternate;
+}
+
+@keyframes levitate {
+  to {
+    translate: 0 2.75 0;
+  }
+}
+
+/* A solid, extruded star inside a golden collar. */
+
+#heart {
+  animation: heart-turn 24s linear;
+}
+
+#core {
+  d: polygon(
+    0 -0.85,
+    0.22 -0.22,
+    0.85 0,
+    0.22 0.22,
+    0 0.85,
+    -0.22 0.22,
+    -0.85 0,
+    -0.22 -0.22
+  );
+  depth: 0.38;
+  color: var(--gold);
+  material: metal(0.16);
+  filter: brightness(1.2) bloom(1.45);
+  transition: 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+#core:hover {
+  scale: 1.12;
+  color: #fff1cc;
+}
+
+#core:active {
+  scale: 0.82;
+  color: #ffffff;
+  transition: 0.12s ease-out;
+}
+
+#collar {
+  radius: 1.02;
+  thickness: 0.045;
+  rotate-x: 90deg;
+  color: var(--gold);
+  material: metal(0.24);
+}
+
+@keyframes heart-turn {
+  to {
+    rotate-y: 1turn;
+    rotate-z: 1turn;
+  }
+}
+
+/* Twelve radial fins, positioned with compile-time math. */
+
+#crown {
+  animation: crown-turn 48s linear reverse;
+}
+
+.blade {
+  --angle: calc(
+    (sibling-index() - 1) * 360deg / sibling-count()
+  );
+
+  d: polygon(
+    -0.11 -0.34,
+    0.11 -0.24,
+    0.08 0.34,
+    -0.08 0.24
+  );
+  depth: 0.14;
+
+  translate:
+    calc(cos(var(--angle)) * 1.55)
+    calc(sin(var(--angle)) * 1.55)
+    0;
+
+  rotate-z: calc(var(--angle) - 90deg);
+  color: var(--gold);
+  material: metal(0.3);
+  transition: 0.65s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.blade:nth-child(even) {
+  color: #b8c8df;
+  scale: 0.8;
+}
+
+.blade:hover {
+  scale: 1.25;
+  color: #ffffff;
+}
+
+/* Press the star: the entire crown opens. */
+
+#reactor:has(#core:active) .blade {
+  translate:
+    calc(cos(var(--angle)) * 2.05)
+    calc(sin(var(--angle)) * 2.05)
+    0;
+
+  rotate-z: calc(var(--angle) - 45deg);
+  color: var(--cyan);
+  scale: 1.15;
+}
+
+@keyframes crown-turn {
+  to {
+    rotate-z: 1turn;
+  }
+}
+
+/* Shared SVG geometry for tracks and moving satellites. */
+
+#orbit-a,
+#orbit-b {
+  --orbit: path(
+    "M-2.2 0 A2.2 2.2 0 1 1 2.2 0 A2.2 2.2 0 1 1 -2.2 0 Z"
+  );
+}
+
+#orbit-a {
+  --tint: var(--cyan);
+  rotate-x: 58deg;
+  rotate-y: -28deg;
+  animation: orbit-precession 32s linear;
+}
+
+#orbit-b {
+  --tint: var(--pink);
+  rotate-x: -48deg;
+  rotate-y: 35deg;
+  scale: 1.12;
+  animation: orbit-precession 43s linear reverse;
+}
+
+.track {
+  d: var(--orbit);
+  stroke-width: 0.025;
+  color: var(--tint);
+  material: metal(0.35);
+  filter: brightness(1.35) bloom(1, 8px);
+}
+
+.satellites {
+  filter: brightness(1.6) bloom(1, 14px);
+}
+
+.satellite {
+  radius: 0.095;
+  color: var(--tint);
+  material: matte();
+
+  offset-path: var(--orbit);
+  offset-rotate: 0deg;
+
+  animation: lap 12s linear;
+  animation-delay: calc(
+    (sibling-index() - 1) * -12s / sibling-count()
+  );
+
+  transition: 0.3s ease-out;
+}
+
+#orbit-b .satellite {
+  radius: 0.12;
+  animation-duration: 15s;
+  animation-direction: reverse;
+  animation-delay: calc(
+    (sibling-index() - 1) * -15s / sibling-count()
+  );
+}
+
+.satellite:hover {
+  scale: 1.8;
+  color: #ffffff;
+}
+
+#reactor:has(#core:active) .satellite {
+  scale: 1.6;
+  color: #ffffff;
+}
+
+@keyframes lap {
+  from {
+    offset-distance: 0%;
+  }
+  to {
+    offset-distance: 100%;
+  }
+}
+
+@keyframes orbit-precession {
+  to {
+    rotate-z: 1turn;
+  }
+}
+
+
+
+/* A dark plinth anchors the floating machine. */
+
+#pedestal {
+  radius: 1.45;
+  height: 0.22;
+  translate: 0 0.11 0;
+  color: #283044;
+  material: metal(0.4);
+}
+
+#base-light {
+  radius: 1.3;
+  thickness: 0.025;
+  translate: 0 0.235 0;
+  color: var(--cyan);
+  filter: brightness(1.5) bloom(0.7, 12px);
+}
+
+/* Responsive rendering and reduced motion. */
+
+@media (max-width: 600px) {
+  scene {
+    camera-distance: 13;
+    dpr: 0.75;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .satellite {
+    offset-distance: calc(
+      (sibling-index() - 1) * 100% / sibling-count()
+    );
+  }
+}

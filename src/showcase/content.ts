@@ -14,6 +14,7 @@ import proximity from "../scenes/proximity.gss?raw";
 import watch from "../scenes/watch.gss?raw";
 import orbit from "../scenes/orbit.gss?raw";
 import perfume from "../scenes/perfume.gss?raw";
+import starorbit from "../scenes/starorbit.gss?raw";
 
 import { FIRST_SCENE } from "../docs/guide";
 import { formatGss } from "../docs/format";
@@ -215,5 +216,10 @@ export const INSPIRATION: Inspiration[] = [
     slug: "perfume",
     title: "A perfume bottle, with a glass ball and a crown",
     code: perfume,
+  },
+  {
+    slug: "starorbit",
+    title: "A star orbiting a planet, with a glass ball and a crown",
+    code: starorbit,
   },
 ];
