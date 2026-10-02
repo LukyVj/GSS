@@ -3,6 +3,7 @@
 // editor.ts plugs them into CodeMirror.
 import { scan, type Token } from "../compiler/syntax/tokenizer";
 import { parseSelector, isSceneSelector, needsPointer } from "../compiler/cascade/resolve";
+import { nestSelector } from "../compiler/syntax/nesting";
 import { PROPERTIES, SHAPE_DOCS, type PropertyDef } from "../compiler/registry/registry";
 
 // The blocks a position can be in: the structure of @scene (and its groups), a
@@ -57,8 +58,13 @@ export function propertySuggestions(
 function blockOf(prelude: Token[], parent: Block | undefined): Block {
   if (parent?.kind === "scene") return { kind: "scene" }; // a group inside @scene
   if (parent?.kind === "keyframes") return { kind: "frame" };
-  if (parent && parent.kind !== "media") return { kind: "unknown" }; // GSS has no nesting yet
   const [first] = prelude;
+  if (parent?.kind === "rule") {
+    // Nesting: a rule inside a rule, or a @media that keeps the selector of the rule
+    if (first?.type === "AT_KEYWORD") return first.value === "media" ? parent : { kind: "unknown" };
+    return first ? { kind: "rule", selector: nestSelector(parent.selector, prelude) } : { kind: "unknown" };
+  }
+  if (parent && parent.kind !== "media") return { kind: "unknown" };
   if (first?.type === "AT_KEYWORD") {
     if (first.value === "scene") return { kind: "scene" };
     if (first.value === "keyframes") return { kind: "keyframes" };

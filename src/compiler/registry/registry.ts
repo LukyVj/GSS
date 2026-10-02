@@ -1061,6 +1061,23 @@ export const SELECTORS: SelectorDef[] = [
     ],
   },
   {
+    name: "&",
+    anchor: "selector-nesting",
+    specificity: "The sum of the rule around it and of the nested selector",
+    description:
+      "Nesting, like CSS: a rule can hold other rules, and & stands for the selector of the rule around it. In #g { &:hover { … } }, the nested rule is #g:hover; in .a { #g & { … } }, it is #g .a. A nested selector without & gets the parent in front, followed by a space: #g { cube { … } } is #g cube, and #g { > sphere { … } } is #g > sphere. & also works inside :has() and :not(). Rules nest at any depth, and a @media can go inside a rule: its declarations then apply to that rule when the query matches. The declarations written after a nested rule come after it in the cascade, like CSS. With a list as the parent, a, b { & c { … } } gives a c and b c, and each one keeps its own specificity, where CSS gives both the specificity of the most specific selector of the list.",
+    examples: [
+      {
+        name: "a group and what it holds",
+        code: "@scene { group#row { cube.a * 3; sphere; } } #row { color: #e6e6e6; cube { size: 0.6; translate: calc((sibling-index() - 2.5) * -1) 0.3 0; &:hover { color: #ff5a36; } } > sphere { radius: 0.35; translate: -1.5 0.35 0; color: #3a7bff; } }",
+      },
+      {
+        name: "a @media inside a rule",
+        code: "@scene { torus; } torus { radius: 0.8; thickness: 0.25; rotate-x: 70deg; color: #3a7bff; @media (max-width: 600px) { color: #ff5a36; } }",
+      },
+    ],
+  },
+  {
     name: "::face(), ::top, ::bottom",
     anchor: "selector-face",
     specificity: "1, like a tag, added to the rest",

@@ -16,7 +16,7 @@ What the language and the tools can do today. Each feature is detailed in the re
 | Multiplication       | `cube * 12`; numbered ids: `cube#petal * 12` → `#petal-1` … `#petal-12`                                                                                                                     | 3                     |
 | Groups               | `group#g { … }`: transforms and animation apply to the children, positions are relative                                                                                                     | 45, 48                |
 | Scene styling        | `scene { floor; background (a color or a gradient, animatable, dec. 103); light; ambient; camera-* }`                                                                                                              | 11, 15, 16            |
-| Selectors            | `<shape>`, `.class`, `#id`, `*`, lists `a, b`, descendant `a b`, child `a > b`, siblings `a + b` / `a ~ b`, faces `::face(front)`, `::top`, `::bottom`, `:hover` (on objects and their groups), `:active` (pressed), `:has()` (`#g:has(sphere:hover) cube`), `:nth-child(An+B [of S])` and its family, `:first-child`…, `:not()` | 4, 37, 47, 59, 62, 69, 73, 92, 93, 95 |
+| Selectors            | `<shape>`, `.class`, `#id`, `*`, lists `a, b`, descendant `a b`, child `a > b`, siblings `a + b` / `a ~ b`, faces `::face(front)`, `::top`, `::bottom`, `:hover` (on objects and their groups), `:active` (pressed), `:has()` (`#g:has(sphere:hover) cube`), `:nth-child(An+B [of S])` and its family, `:first-child`…, `:not()`, nesting with `&` | 4, 37, 47, 59, 62, 69, 73, 92, 93, 95, 106 |
 | Cascade              | specificity (id 10,000, class 100, tag 1), last one wins, `!important` in 2 passes                                                                                                          | 4, 38                 |
 | Animation            | `@keyframes` (`from`, `to`, `%`), `animation: name duration [easing] [delay] [count \| infinite] [direction] [fill-mode]` and the six longhands, computed in the shader; driven by the scroll with `animation-timeline: scroll()` / `view()` | 21, 22, 23, 24, 70, 96 |
 | Easings              | `linear`, `ease`, `ease-in`, `ease-out`, `ease-in-out`, `step-start`, `step-end`, `cubic-bezier()`, `linear()`, `steps()`, in `@keyframes` and `transition` | 68, 80                |
@@ -134,7 +134,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 
 1. ~~**Animated gradients**~~ ✅ decisions 102, 103: a gradient changes into another of the same kind in `@keyframes` and on `:hover`, through a variable too; the scene plays an animation, so its `background` moves (a flat, moving image)
 2. **`setProperty()` from JS**: first step ✅ decision 105 (`@property`, `setProperty()` / `getPropertyValue()` / `removeProperty()`, in `translate`, `rotate-*`, `scale`, `color`, `offset-distance`, `background`). Second step ✅: inside `calc()` and the math functions, and the color functions (`hsl(var(--hue) …)`, `color-mix()`…), computed on the GPU. Next steps, Lucas's choice "everywhere": the sizes of shapes (without their bounding spheres), the numbers of a gradient, materials, `light`, `ambient`, `floor`, filters
-3. **Nesting** with `&`
+3. ~~**Nesting** with `&`~~ ✅ decision 106: rules inside rules, `&`, a descendant without `&`, `@media` inside a rule; unfolded by the parser
 4. **`transform-origin`**
 5. **Fog**
 6. ~~`:nth-child()`~~ ✅ already done (decision 92)
@@ -159,7 +159,7 @@ Done from the list of Oct. 1: ~~`filter`~~ ✅ (decisions 83, 84), ~~motion path
 4. [x] Textures: `texture: url("…")`, one image per face, `::face()` (decision 59)
 5. [x] Animation controls ✅ decision 70: delay, iteration count, direction, fill mode, and the six longhands
 6. [x] `@media` ✅ decision 71: any media query the browser knows (width, orientation, `prefers-color-scheme`, `prefers-reduced-motion`…), up to 4 per scene
-7. [ ] Selectors / nesting: combinators `>` `+` `~` ✅ decision 73 (including relative selectors in `:has()`); nested style rules with `&` still to do
+7. [ ] Selectors / nesting: combinators `>` `+` `~` ✅ decision 73 (including relative selectors in `:has()`); nested style rules with `&` ✅ decision 106
 8. [x] `:hover` ✅ decision 62 (picking pass → `uHover[]`), `transition` ✅ decision 68 (one per object; per-property lists later), `:has()` ✅ decision 69 (`#g:has(sphere:hover) cube`, any selector inside)
 9. [ ] `transform-origin`
 10. [ ] Fog
@@ -564,7 +564,7 @@ A score for how well a CSS notion carries over to GSS (a style language → an S
 | Descendant `a b` | 1.0 | Already in GSS |
 | Child `>` / adjacent `+` / sibling `~` | 1.0 | Already in GSS (dec. 73) |
 | Column `\|\|` | 0.0 | Tables |
-| `&` nesting | 0.9 | Nesting, strong |
+| `&` nesting | 1.0 | Already in GSS (dec. 106) |
 | Attribute selectors | 0.4 | Few attributes in GSS |
 | `:hover` | 1.0 | Already in GSS (dec. 62) |
 | `:active` / `:focus` / `:focus-visible` / `:focus-within` | 1.0 / 0.5 | `:active`: roadmap (Essentials); focus: interaction host |
@@ -629,7 +629,7 @@ A score for how well a CSS notion carries over to GSS (a style language → an S
 | -------------------------------------------------------------------- | ----: | ------------------------------------------------- |
 | Cascade & specificity                                                |   0.9 | Already in (with `!important`)                    |
 | Inheritance                                                          |   0.7 | Scene/group properties                            |
-| Nesting                                                              |   0.9 | Priority #7 (next)                                |
+| Nesting                                                              |   1.0 | Already in GSS (dec. 106)                         |
 | Custom properties / variables                                        |   1.0 | Already in GSS (dec. 55)                          |
 | Shorthand properties                                                 |   0.8 | Pattern GSS                                       |
 | Values & units                                                       |   0.9 | Numbers, angles, colors                           |

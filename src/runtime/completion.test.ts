@@ -87,4 +87,12 @@ describe("only the properties the rule can take", () => {
   it("a rule inside @media", () => {
     expect(suggest("@media (max-width: 600px) { scene { d| } }")!.names).toContain("dpr");
   });
+
+  it("a nested rule: the selector with the parent in place of &", () => {
+    const hovered = suggest("cube { color: red; &:hover { |} }")!.names;
+    expect(hovered).toContain("color");
+    expect(hovered).not.toContain("material"); // like cube:hover
+    expect(suggest("#g { sphere { ra| } }")!.names).toContain("radius");
+    expect(suggest("scene { @media (max-width: 600px) { d| } }")!.names).toContain("dpr");
+  });
 });

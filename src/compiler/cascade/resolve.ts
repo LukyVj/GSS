@@ -1,5 +1,6 @@
 import type { Rule } from "../syntax/ast";
-import { errorAt, spanOf } from "../syntax/errors";
+import { errorAt } from "../syntax/errors";
+import { spaceBetween } from "../syntax/nesting";
 import { closingParen } from "../values/calc";
 import type { Token } from "../syntax/tokenizer";
 import { sceneNodes, type SceneInstance } from "./expand";
@@ -163,13 +164,6 @@ export function faceSelector(face: Face): string {
 
 const FACES_HELP =
   "a face is ::face(top), ::face(bottom), ::face(front), ::face(back), ::face(left) or ::face(right); ::top and ::bottom are shortcuts";
-
-// Was there a space (or a comment) between these two tokens in the source?
-function spaceBetween(before: Token, after: Token): boolean {
-  const a = spanOf(before);
-  const b = spanOf(after);
-  return a !== undefined && b !== undefined && a.end < b.start;
-}
 
 function tokenToText(token: Token): string {
   if (token.type === "HASH") return `#${token.value}`;

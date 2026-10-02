@@ -5,7 +5,7 @@ export type Token =
   | { type: "HASH"; value: string } // #hero, #ff5a36
   | { type: "AT_KEYWORD"; value: string } // @scene, @keyframes
   | { type: "NUMBER"; value: number } // 1, 0.28, -2.5
-  | { type: "PUNCT"; value: string } // { } : ; , ( ) . * + - / > ~ < = (< and = for media ranges)
+  | { type: "PUNCT"; value: string } // { } : ; , ( ) . * + - / > ~ < = & (< and = for media ranges, & for nesting)
   | { type: "DIMENSION"; value: number; unit: string } // 70deg, 24s
   | { type: "PERCENTAGE"; value: number } // 50%, 12.5%
   | { type: "STRING"; value: string } // "M0 0 L1 1", without the quotes
@@ -18,7 +18,7 @@ export type PropertySyntax = "number" | "angle" | "percentage" | "color";
 
 import { ErrorSink, GssError, rememberSpan } from "./errors";
 
-const PUNCTUATION = "{}:;,().*+-/!>~<=";
+const PUNCTUATION = "{}:;,().*+-/!>~<=&";
 
 function isDigit(char: string): boolean {
   return char >= "0" && char <= "9";

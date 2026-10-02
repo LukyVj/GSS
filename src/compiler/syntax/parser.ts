@@ -8,6 +8,7 @@ import type {
   Keyframe,
 } from "./ast";
 import { ErrorSink, errorAt, errorsOf, rememberSpan, spanAcross, spanOf } from "./errors";
+import { isAmpersand, nestSelector } from "./nesting";
 
 // Reading goes on after an error (decision 86): the error is kept, the parser skips to
 // the end of the declaration, the element or the rule, and reads the rest. errors:
@@ -246,8 +247,9 @@ export function parse(tokens: Token[], errors?: ErrorSink): Stylesheet {
     return declarations;
   }
 
-  // #a, #b { ... }: one rule per selector, sharing the same declarations, like CSS
-  function parseRules(): Rule[] {
+  // #a, #b { ... }: one rule per selector, sharing the same declarations, like CSS.
+  // Inside a rule (parents), each selector is nested in each selector of the parent.
+  function parseRules(parents?: Token[][], media?: string): Rule[] {
     const selectors: Token[][] = [[]]; // the last one is the selector being read
     let depth = 0; // inside :has( … ), a comma belongs to the selector
     while (peek() && !isPunct(peek(), "{")) {
@@ -264,9 +266,95 @@ export function parse(tokens: Token[], errors?: ErrorSink): Stylesheet {
     }
     if (selectors[selectors.length - 1].length === 0)
       throw errorAt(peek(), 'Selector expected before "{"');
+    const ampersand = parents ? undefined : selectors.flat().find(isAmpersand);
+    if (ampersand)
+      throw errorAt(
+        ampersand,
+        "& stands for the selector of the rule around it: write it inside a rule, like: cube { &:hover { color: white; } }",
+      );
 
-    const declarations = parseDeclarationBlock();
-    return selectors.map((selector) => ({ selector, declarations }));
+    const full = parents
+      ? parents.flatMap((parent) => selectors.map((selector) => nestSelector(parent, selector)))
+      : selectors;
+    return parseRuleBlock(full, media);
+  }
+
+  // { color: red; &:hover { … } @media (…) { … } }: the declarations of a rule, and the
+  // rules nested in it (nesting, like CSS). Everything is unfolded into flat rules, in the
+  // order of the text: the declarations after a nested rule come after it in the cascade.
+  function parseRuleBlock(selectors: Token[][], media?: string): Rule[] {
+    const open = peek();
+    expectPunct("{");
+    const rules: Rule[] = [];
+    let declarations: Declaration[] = [];
+    let nested = false; // a block with no nested rule gives one rule per selector, even empty
+    const flush = () => {
+      if (declarations.length > 0 || !nested)
+        for (const selector of selectors)
+          rules.push(media ? { selector, declarations, media } : { selector, declarations });
+      declarations = [];
+    };
+    while (!isPunct(peek(), "}")) {
+      const token = peek();
+      if (!token) throw errorAt(open, 'Block never closed: "}" missing');
+      if (token.type === "AT_KEYWORD" || startsRule()) {
+        if (declarations.length > 0) flush();
+        nested = true;
+        const read = attempt(
+          () => (token.type === "AT_KEYWORD" ? parseNestedAt(selectors, media) : parseRules(selectors, media)),
+          () => skipStatement(true),
+        );
+        rules.push(...(read ?? []));
+      } else {
+        const declaration = attempt(parseDeclaration, skipDeclaration);
+        if (declaration) declarations.push(declaration);
+      }
+    }
+    next(); // we consume the "}"
+    flush();
+    return rules;
+  }
+
+  // Does a rule start here, and not a declaration? A "{" comes before the next ";" or "}"
+  function startsRule(): boolean {
+    let depth = 0;
+    for (let i = pos; i < tokens.length; i++) {
+      const token = tokens[i];
+      if (isPunct(token, "(")) depth++;
+      if (isPunct(token, ")")) depth--;
+      if (depth > 0) continue;
+      if (isPunct(token, "{")) return true;
+      if (isPunct(token, ";") || isPunct(token, "}")) return false;
+    }
+    return false;
+  }
+
+  // @media inside a rule: its declarations and rules go to the selectors of the rule
+  function parseNestedAt(selectors: Token[][], outer?: string): Rule[] {
+    const at = next();
+    if (at.type === "AT_KEYWORD" && ["scene", "keyframes", "property"].includes(at.value as string))
+      throw errorAt(at, `@${at.value} goes outside the rules`);
+    if (at.type !== "AT_KEYWORD" || at.value !== "media")
+      throw errorAt(at, `@${at.value} isn't supported yet`);
+    const query = readMediaQuery(at);
+    if (outer && (outer.includes(",") || query.includes(",")))
+      throw errorAt(
+        at,
+        "@media inside @media cannot join a list of queries: write the rule in a @media of its own",
+      );
+    return parseRuleBlock(selectors, outer ? `${outer} and ${query}` : query);
+  }
+
+  // The query of a @media, as text: (max-width: 600px)
+  function readMediaQuery(at: Token): string {
+    const prelude: Token[] = [];
+    while (peek() && !isPunct(peek(), "{")) prelude.push(next());
+    if (prelude.length === 0)
+      throw errorAt(
+        at,
+        "@media needs a query, like: @media (max-width: 600px) { scene { dpr: 1; } }",
+      );
+    return textOf(prelude);
   }
 
   // @keyframes float { from { ... } 50% { ... } to { ... } }
@@ -298,15 +386,8 @@ export function parse(tokens: Token[], errors?: ErrorSink): Stylesheet {
 
   // @media (max-width: 600px) { rules }: each rule remembers its query, like CSS
   function parseMedia(at: Token): Rule[] {
-    const prelude: Token[] = [];
-    while (peek() && !isPunct(peek(), "{")) prelude.push(next());
-    if (prelude.length === 0)
-      throw errorAt(
-        at,
-        "@media needs a query, like: @media (max-width: 600px) { scene { dpr: 1; } }",
-      );
+    const media = readMediaQuery(at);
     const open = next(); // the "{"
-    const media = textOf(prelude);
     const rules: Rule[] = [];
     while (!isPunct(peek(), "}")) {
       const token = peek();
@@ -317,12 +398,9 @@ export function parse(tokens: Token[], errors?: ErrorSink): Stylesheet {
             token,
             "@media holds rules only, for now: write @scene and @keyframes outside it",
           );
-        return parseRules();
+        return parseRules(undefined, media);
       }, () => skipStatement(true));
-      for (const rule of read ?? []) {
-        rule.media = media;
-        rules.push(rule);
-      }
+      rules.push(...(read ?? []));
     }
     next(); // the "}"
     return rules;

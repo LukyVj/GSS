@@ -24,6 +24,7 @@ export const ENTRY_ORDER: Record<string, number> = {
   "selector-child": -9,
   "selector-adjacent": -8,
   "selector-sibling": -7,
+  "selector-nesting": -6,
   animation: -10,
   "fn-calc": -10,
 };
@@ -31,7 +32,7 @@ export const DOC_GROUPS: NavGroup[] = [
   { id: "getting-started", title: "Getting started", category: "Start here", order: 0, anchors: ["why-gss", "first-scene"] },
   { id: "installation", title: "Installation", category: "Start here", order: 1, anchors: ["embedding", "install-package", "install-vite", "install-cdn"] },
   { id: "at-rules", title: "At-rules", category: "Language", order: 10, anchors: ["at-scene", "at-media", "at-keyframes", "at-property"] },
-  { id: "selectors", title: "Selectors and cascade", category: "Language", order: 11, anchors: ["selector-type", "selector-class", "selector-id", "selector-universal", "selector-list", "selector-descendant", "selector-child", "selector-adjacent", "selector-sibling", "selector-face", "selector-hover", "selector-active", "selector-has", "selector-not", "selector-nth-child", "selector-nth-of-type", "selector-first-child", "selector-important"] },
+  { id: "selectors", title: "Selectors and cascade", category: "Language", order: 11, anchors: ["selector-type", "selector-class", "selector-id", "selector-universal", "selector-list", "selector-descendant", "selector-child", "selector-adjacent", "selector-sibling", "selector-nesting", "selector-face", "selector-hover", "selector-active", "selector-has", "selector-not", "selector-nth-child", "selector-nth-of-type", "selector-first-child", "selector-important"] },
   { id: "variables-conditions", title: "Variables and conditions", category: "Language", order: 12, anchors: ["fn-var", "fn-if"] },
   { id: "values", title: "Math", category: "Language", order: 13, anchors: ["fn-calc", "fn-trig", "fn-inverse-trig", "fn-min-max-clamp", "fn-abs-sqrt-pow", "fn-stepped", "fn-exponential", "fn-progress", "fn-random", "fn-sibling-index", "fn-sibling-count"] },
   { id: "shapes", title: "Shapes and groups", category: "Structure", order: 20, anchors: ["shape-cube", "shape-sphere", "shape-torus", "shape-cylinder", "shape-cone", "shape-capsule", "shape-plane", "shape-path", "shape-prism", "shape-group"] },

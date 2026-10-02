@@ -144,6 +144,21 @@
     "selector": {
       "patterns": [
         {
+          "match": "(@)(media)\\b",
+          "captures": {
+            "1": {
+              "name": "punctuation.definition.keyword.gss"
+            },
+            "2": {
+              "name": "keyword.control.at-rule.media.gss"
+            }
+          }
+        },
+        {
+          "match": "&",
+          "name": "entity.name.tag.nesting.gss"
+        },
+        {
           "match": "(#)[\\w-]+",
           "name": "entity.other.attribute-name.id.gss",
           "captures": {
@@ -201,6 +216,9 @@
       "patterns": [
         {
           "include": "#comment"
+        },
+        {
+          "include": "#nested-rule"
         },
         {
           "include": "#declaration"
@@ -320,6 +338,21 @@
               "name": "constant.character.escape.gss"
             }
           ]
+        }
+      ]
+    },
+    "nested-rule": {
+      "begin": "(?=[^;{}]*\\{)",
+      "end": "(?<=\\})",
+      "patterns": [
+        {
+          "include": "#comment"
+        },
+        {
+          "include": "#selector"
+        },
+        {
+          "include": "#rule-block"
         }
       ]
     }
