@@ -113,12 +113,12 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 | Profiler                   | a panel over the playground scene, public, closed by default and lazy (nothing measured before it opens), `perf` button or Alt+P (remembered), WebGL2 and WebGPU (timestamp queries when available): fps, frame, GPU and CPU time, real pixels, shader build time; over budget in signal | 64, 87, 91 |
 | Bench                      | `npm run bench:compare -- main --dpr 2`: another commit against the working tree, 3 alternating rounds, images compared pixel by pixel, report in `bench-results/compare.md` | 64         |
 
-## Release 0.0.3 (prepared)
+## Release 0.0.3 ✅
 
 - [x] Package and lockfile version set to 0.0.3; README, installation snippets and changelog follow.
 - [x] Everything since 0.0.2: WebGPU (decisions 90, 91), every error at once (86), the public profiler (87), autocompletion (89), the Essentials (92–96).
 - [x] What was unreleased goes into 0.0.3 too: motion path (decision 97), `conic-gradient()` (98), the screen no longer mirrored (99), the object filter order fix (100). The announcement film shows them as 0.0.3.
-- [ ] Lucas: publish to npm, tag `v0.0.3`, deploy the site (the versioned CDN URL works only once npm has the version).
+- [x] Published on npm (Oct. 2), tag `v0.0.3`, site deployed; the versioned CDN URL answers.
 
 ## Release 0.0.2 ✅
 
@@ -252,6 +252,7 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 
 ## Done recently
 
+- Release 0.0.3 on npm, tag `v0.0.3`, site deployed (with motion path, `conic-gradient()` and the unmirrored screen)
 - A filtered object next to a metal, jelly or glass compiles on WebGL2: the object filters are written before the reflections that call them (decision 100)
 - WGSL and native WebGPU rendering next to GLSL / WebGL2, automatic backend with fallback, WGSL tab and backend selection in the playground, profiler on both backends (decisions 90, 91)
 - A misspelled function inside math suggests the one it was meant to be (`slibling-index()` → `sibling-index()`)
