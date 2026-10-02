@@ -1,18 +1,41 @@
 import "./panel.css";
-import { createProfiler } from "./profiler";
+import { createProfiler, type FrameProbe } from "./profiler";
 import { createGpuTimer } from "./gpu-timer";
 import { reportRows } from "./format";
 
 let profiler: ReturnType<typeof createProfiler> | null = null;
+let context: WebGL2RenderingContext | null = null; // the scene's, kept until the panel opens
+let wanted = false; // the panel has been opened at least once
+let lastShaderMs: number | null = null; // the build before the panel opened, shown when it does
 
 // Where the visitor's choice is kept. Not "gss-perf": while the panel was open by
 // default, every visit saved "1" there, so it would keep the panel open for them.
 export const STORAGE_KEY = "gss-perf-panel";
 
-// Given to createRenderer: view.ts calls it once, with its WebGL context
-export function profile(gl: WebGL2RenderingContext) {
-  profiler = createProfiler(createGpuTimer(gl));
-  return profiler;
+// Given to createRenderer: view.ts calls it once, with its WebGL context.
+// Nothing is measured until the panel is first opened (decision 87): no GPU timer,
+// no query, the probe's calls do nothing. Once opened, it keeps measuring.
+export function profile(gl: WebGL2RenderingContext): FrameProbe {
+  context = gl;
+  if (wanted) start();
+  return {
+    frameStart: (now, width, height) => profiler?.frameStart(now, width, height),
+    drawStart: () => profiler?.drawStart(),
+    drawEnd: () => profiler?.drawEnd(),
+    shaderBuilt: (ms) => {
+      lastShaderMs = ms;
+      profiler?.shaderBuilt(ms);
+    },
+  };
+}
+
+// The profiler, made the first time the panel opens (or when the scene's context
+// arrives, if the panel was already open)
+function start(): void {
+  wanted = true;
+  if (profiler || !context) return;
+  profiler = createProfiler(createGpuTimer(context));
+  if (lastShaderMs !== null) profiler.shaderBuilt(lastShaderMs);
 }
 
 // The panel over the scene, its toggle in the status bar; Alt+P shows or hides it.
@@ -52,6 +75,7 @@ export function mountPanel(statusbar: HTMLElement): void {
   // remember: only a choice of the visitor is kept, never the default
   function setVisible(next: boolean, remember = true) {
     visible = next;
+    if (next) start();
     panel.hidden = !next;
     toggle.setAttribute("aria-pressed", String(visible));
     if (remember) {

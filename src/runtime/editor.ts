@@ -211,6 +211,11 @@ export const theme = EditorView.theme(
       color: "var(--gss-error-text)",
       fontSize: "12px",
       whiteSpace: "pre-wrap",
+      // Its text must not widen the editor: with no size of its own, the block takes
+      // the width of the code and the message wraps inside it, instead of running past
+      // the edge (CodeMirror does not wrap lines, so .cm-content grows to its widest child)
+      contain: "inline-size",
+      overflowWrap: "anywhere",
     },
     ".cm-tooltip": {
       backgroundColor: "var(--gss-raised)",
