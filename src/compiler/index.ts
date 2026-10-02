@@ -394,6 +394,7 @@ const LIVE_PROPERTIES = [
   "rotate-y",
   "rotate-z",
   "scale",
+  "transform-origin",
   "color",
   "offset-distance",
   "offset-rotate",

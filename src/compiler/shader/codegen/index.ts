@@ -33,7 +33,8 @@ import { readMaterial } from "./materials";
 import { activeSlots, hoverSlots, hoverValue, useTimelines } from "./animation";
 import { sceneTimelines } from "../../features/timeline";
 import { offsetLines, offsetReach, useOffsetFunctions } from "./offset";
-import { animateCode, createHoisted, hoist, rotationLines, transformLines } from "./transforms";
+import { animateCode, createHoisted, hoist, originOf, rotationLines, transformLines } from "./transforms";
+import { objectBox } from "./origin";
 import { enclosing, groupBounds, objectSphere, sceneMiss, type Sphere } from "./bounds";
 import { GRAIN } from "../../features/filter";
 import { filterCode } from "./filters";
@@ -141,15 +142,21 @@ export function generateShader(
     const groupLines = instance.groupStyles.flatMap((styles) =>
       transformLines(styles, keyframes, undefined, hoisted),
     );
+    // transform-origin (decision 107): the bounding sphere is centered on it, so it needs
+    // a point known at compile time
+    const box = () => objectBox(instance);
+    const origin = originOf(instance.styles, keyframes, hover, hoisted, box);
+    const point = origin === null ? [0, 0, 0] : origin.match(/^vec3\((.*)\)$/)?.[1].split(",").map(Number);
+    const fixed = point?.length === 3 && point.every(Number.isFinite) ? point : null;
 
     // Only a costly shape is worth the test, and only a plain union can be skipped:
     // a subtraction, an intersection or a blend changes the result even when far
-    if (radius === null || !BOUNDED.has(instance.tag) || !plainUnion(instance)) {
+    if (radius === null || !BOUNDED.has(instance.tag) || !plainUnion(instance) || !fixed) {
       return [
         ` // ${label(instance)}`,
         `  q = p;`,
         ...groupLines,
-        ...transformLines(instance.styles, keyframes, hover, hoisted),
+        ...transformLines(instance.styles, keyframes, hover, hoisted, box),
         ` res = ${combine};`,
       ].join("\n");
     }
@@ -158,21 +165,27 @@ export function generateShader(
     // rotations (a sphere looks the same from every side), so a skipped object costs
     // neither its rotations nor its shape. Its distance, back in scene units: the
     // object's own scale grows the sphere, the groups' scales grow everything.
+    // Turned around a transform-origin, the object stays within its radius plus the
+    // distance to the origin, around the origin.
     const ownScale = scales[last];
     const groupScales = scales.slice(0, last);
     // A little bigger, rounded up: the GPU computes in 32-bit floats, and a sphere
     // smaller than the shape would skip an object that touches the ray
-    const safeRadius = Math.ceil((radius + 0.001) * 10000) / 10000;
-    const sphere = `(length(q) - ${glslFloat(safeRadius)} * ${ownScale})${groupScales.map((scale) => ` * ${scale}`).join("")}`;
+    const reachOfOrigin = Math.hypot(fixed[0], fixed[1], fixed[2]);
+    const safeRadius = Math.ceil((radius + reachOfOrigin + 0.001) * 10000) / 10000;
+    const around = origin ? `q - ${origin}` : "q";
+    const sphere = `(length(${around}) - ${glslFloat(safeRadius)} * ${ownScale})${groupScales.map((scale) => ` * ${scale}`).join("")}`;
     return [
       ` // ${label(instance)}`,
       `  q = p;`,
       ...groupLines,
       `  q -= ${hoist(hoisted, "vec3", hoverValue(instance.styles, keyframes, "translate", readTranslate, hover))};`,
       `  if (${sphere} <= ${nearest}) { // its bounding sphere could be the nearest`,
+      ...(origin ? [`    q -= ${origin};`] : []),
       ...rotationLines(instance.styles, keyframes, hover, hoisted).map((line) => `  ${line}`),
       `    q /= ${ownScale};`,
       ...offsetLines(instance.styles, keyframes, hover, hoisted).map((line) => `  ${line}`),
+      ...(origin ? [`    q += ${origin};`] : []),
       `   res = ${combine};`,
       `  }`,
     ].join("\n");

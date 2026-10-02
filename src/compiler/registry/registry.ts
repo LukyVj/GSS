@@ -253,6 +253,25 @@ export const PROPERTIES: PropertyDef[] = [
     ],
   },
   {
+    name: "transform-origin",
+    appliesTo: "object",
+    animatable: true,
+    syntax: "[ left | center | right | top | bottom | <percentage> | <number> ]{1,2} <number>?",
+    initial: "center",
+    description:
+      "The point the object turns and scales around, like CSS: rotate-x, rotate-y, rotate-z and scale keep it in place, and a motion path carries it along the path. The keywords and the percentages are read on the box of the object, like CSS: left and 0% are its left side, right and 100% its right side, top and 0% its top, bottom and 100% its bottom; two keywords can come in any order (top left). A number is a point of the object's own space, from its center, with y up, like translate: transform-origin: 0 0.5 0 is 0.5 above the center. The third value, z, is a number. On a group, which has no box, it takes numbers and center. Unlike CSS, where a length is measured from the top left corner, a number is measured from the center, as everything is in GSS.",
+    examples: [
+      {
+        name: "a door on its hinge",
+        code: "@scene { cube#door; cube#frame; } #frame { size: 0.1 1.6 0.1; translate: -0.6 0.8 0; color: #3a7bff; } #door { size: 1.1 1.5 0.08; translate: 0 0.8 0; transform-origin: left; animation: open 3s ease-in-out infinite alternate; color: #ff5a36; } @keyframes open { to { rotate-y: -80deg; } }",
+      },
+      {
+        name: "grow from the floor",
+        code: "@scene { cylinder * 5; } cylinder { radius: 0.18; height: 1.2; translate: calc((sibling-index() - 3) * -0.5) 0 0; transform-origin: bottom; animation: grow 1.5s calc(sibling-index() * 0.15s) ease-out infinite alternate; color: #ff5a36; } @keyframes grow { from { scale: 0.2; } }",
+      },
+    ],
+  },
+  {
     name: "operation",
     appliesTo: "object",
     syntax: "union | subtract | intersect",
@@ -1353,6 +1372,7 @@ export const SHAPE_DOCS: ShapeDef[] = [
       "rotate-y",
       "rotate-z",
       "scale",
+      "transform-origin",
       "animation",
       "animation-duration",
       "animation-delay",

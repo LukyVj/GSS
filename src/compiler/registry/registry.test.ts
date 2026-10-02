@@ -49,6 +49,7 @@ describe("registry", () => {
         "rotate-y",
         "rotate-z",
         "scale",
+        "transform-origin",
         "offset-distance",
         "background",
       ]);

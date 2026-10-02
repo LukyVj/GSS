@@ -189,6 +189,41 @@ describe("filters set from JS render like the same values written", () => {
 });
 
 // The screen is seen like a CSS page: x to the right, y up, z toward the viewer
+// transform-origin: an object turned and scaled around a point draws what a group moved
+// to that point draws, the bounding spheres of the object and of the scene included
+describe("transform-origin turns around its point, like a group moved there", () => {
+  const front = "scene { floor: none; background: #000000; camera-target: 1.5 1 0; camera-angle: 10deg 15deg; camera-distance: 6; }";
+  const cases: [string, string, string][] = [
+    [
+      "a cube around its left side",
+      "@scene { cube; } cube { size: 1.6 0.4 0.4; translate: 0 1 0; transform-origin: left; rotate-z: 50deg; scale: 1.3; color: red; }",
+      "@scene { group#g { cube; } } #g { translate: -0.8 1 0; rotate-z: 50deg; scale: 1.3; } cube { size: 1.6 0.4 0.4; translate: 0.8 0 0; color: red; }",
+    ],
+    [
+      // A sphere just in front of the prism, and before it in map(): a bounding sphere
+      // too small would let it hide the prism from the march
+      "a prism around a far point, with its bounding sphere",
+      "@scene { sphere; prism; } prism { d: polygon(0 1, 1 -1, -1 -1); depth: 0.4; translate: 0 1 0; transform-origin: 1.5 0 0; rotate-z: 180deg; color: red; } sphere { radius: 0.3; translate: 3.6 1 0.7; color: blue; }",
+      "@scene { sphere; group#g { prism; } } #g { translate: 1.5 1 0; rotate-z: 180deg; } prism { d: polygon(0 1, 1 -1, -1 -1); depth: 0.4; translate: -1.5 0 0; color: red; } sphere { radius: 0.3; translate: 3.6 1 0.7; color: blue; }",
+    ],
+  ];
+  cases.push([
+    "an origin set from JS",
+    '@property --o { syntax: "<number>"; inherits: false; initial-value: 1.5; } @scene { sphere; prism; } prism { d: polygon(0 1, 1 -1, -1 -1); depth: 0.4; translate: 0 1 0; transform-origin: var(--o) 0 0; rotate-z: 180deg; color: red; } sphere { radius: 0.3; translate: 3.6 1 0.7; color: blue; }',
+    cases[1][2],
+  ]);
+  for (const [name, around, group] of cases) it(name, async () => {
+    const a = await render(`${around} ${front}`);
+    const b = await render(`${group} ${front}`);
+    for (const [pixels, reference] of [[a.gl, b.gl], [a.gpu, b.gpu]]) {
+      // Not a pixel apart: an object a little off would change a few hundred
+      const apart = pixels.filter((v, i) => Math.abs(v - reference[i]) > 40).length;
+      expect(apart / pixels.length).toBeLessThan(0.002);
+      expect(pixels.some((v, i) => i % 4 === 0 && v > 60)).toBe(true);
+    }
+  }, 60000);
+});
+
 describe("the default camera does not mirror the scene", () => {
   const front = "scene { floor: none; background: #000000; camera-target: 0 0 0; camera-angle: 0deg 0deg; camera-distance: 5; light: 0deg 0deg; ambient: 1; }";
   // The mean column and row of the pixels where `channel` wins, per backend

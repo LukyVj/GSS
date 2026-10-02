@@ -8,6 +8,7 @@ import { glslFloat, label, vec3, type Hover } from "./glsl";
 import { ROTATIONS, readRotation, readScale, readTranslate } from "./read";
 import { hoverValue } from "./animation";
 import { offsetReach } from "./offset";
+import { objectBox, readOrigin } from "./origin";
 
 // ----- The sphere around the whole scene -----
 // A ray that passes by it meets no object: march() then only has the floor left,
@@ -106,7 +107,8 @@ function steadyTransitions(instance: StyledInstance): boolean {
 
 // One object's sphere in the scene, through its own transforms and its groups', from
 // the inside out. A node maps its child's space to its parent's: scale, rotate,
-// then translate. null when a value is not known at compile time.
+// then translate, the first two around its transform-origin. null when a value is not
+// known at compile time.
 export function objectSphere(
   radius: number,
   instance: StyledInstance,
@@ -126,7 +128,17 @@ export function objectSphere(
     if (reach > 0) sphere = { center: [0, 0, 0], radius: length3(sphere.center) + sphere.radius + reach };
     const scales = anchors(value("scale", readScale), steady);
     const translates = anchors(value("translate", readTranslate), steady);
-    if (!scales || !translates) return null;
+    const size = n === nodes.length - 1 ? () => objectBox(instance) : undefined; // a group has no box
+    const origins = anchors(value("transform-origin", readOrigin(size)), steady);
+    if (!scales || !translates || !origins) return null;
+    // transform-origin (decision 107): to the origin, scale and rotate, then back
+    const around = boxOfPoints(origins);
+    const toOrigin = (sign: number) =>
+      (sphere = {
+        center: sphere.center.map((c, i) => c + sign * around.middle[i]),
+        radius: sphere.radius + around.reach,
+      });
+    toOrigin(-1);
     // Scale: anywhere between the smallest and the largest
     const factors = scales.map((s) => Math.abs(s[0]));
     const [low, high] = [Math.min(...factors), Math.max(...factors)];
@@ -138,6 +150,7 @@ export function objectSphere(
     // Rotation, at any angle: the sphere is centered on the node's origin
     const rotated = ROTATIONS.some(([property]) => value(property, readRotation) !== "0.0");
     if (rotated) sphere = { center: [0, 0, 0], radius: length3(sphere.center) + sphere.radius };
+    toOrigin(1);
     // Translate: anywhere in the box of its values
     const box = boxOfPoints(translates);
     sphere = {

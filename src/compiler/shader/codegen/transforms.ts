@@ -5,6 +5,7 @@ import { label, type Hover } from "./glsl";
 import { ROTATIONS, readRotation, readScale, readTranslate } from "./read";
 import { hoverValue } from "./animation";
 import { offsetLines } from "./offset";
+import { objectBox, readOrigin, type Box } from "./origin";
 
 // ----- Animations, computed once per pixel -----
 // An animated value (or one :hover changes) depends on the time, not on the point.
@@ -60,19 +61,37 @@ export function rotationLines(
   return lines;
 }
 
+// transform-origin in GLSL, or null at the center: then no line is written (decision 107).
+// box: the size of the object; none for a group.
+export function originOf(
+  styles: Styles,
+  keyframes: Keyframes[],
+  hover?: Hover,
+  hoisted?: Hoisted,
+  box?: Box,
+): string | null {
+  const origin = hoverValue(styles, keyframes, "transform-origin", readOrigin(box), hover);
+  return origin === "vec3(0.0)" ? null : hoist(hoisted, "vec3", origin);
+}
+
 // The lines that move q into the space of one node (a group or an object)
-// hover: only for the object itself, never for its groups
+// hover: only for the object itself, never for its groups. box: the size of the object.
 export function transformLines(
   styles: Styles,
   keyframes: Keyframes[],
   hover?: Hover,
   hoisted?: Hoisted,
+  box?: Box,
 ): string[] {
+  // Like CSS, transform-origin goes around everything else: to the point, then back
+  const origin = originOf(styles, keyframes, hover, hoisted, box);
   return [
     `  q -= ${hoist(hoisted, "vec3", hoverValue(styles, keyframes, "translate", readTranslate, hover))};`,
+    ...(origin ? [`  q -= ${origin};`] : []),
     ...rotationLines(styles, keyframes, hover, hoisted),
     `  q /= ${hoist(hoisted, "float", hoverValue(styles, keyframes, "scale", readScale, hover))};`,
     ...offsetLines(styles, keyframes, hover, hoisted), // the motion path, after scale like CSS
+    ...(origin ? [`  q += ${origin};`] : []),
   ];
 }
 
@@ -87,7 +106,9 @@ export function spaceFunction(
     `vec3 space${instance.index}(vec3 p) {  // ${label(instance)}`,
     "  vec3 q = p;",
     ...nodes.flatMap((styles, n) =>
-      transformLines(styles, keyframes, n === nodes.length - 1 ? hoverOf(instance) : undefined),
+      n === nodes.length - 1
+        ? transformLines(styles, keyframes, hoverOf(instance), undefined, () => objectBox(instance))
+        : transformLines(styles, keyframes),
     ),
     "  return q;",
     "}",

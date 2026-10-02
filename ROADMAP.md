@@ -48,7 +48,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 
 | Family       | Properties                                                                                         | Dec.   |
 | ------------ | -------------------------------------------------------------------------------------------------- | ------ |
-| Transforms   | `translate`, `rotate-x`, `rotate-y`, `rotate-z`, `scale` (uniform); x to the right, like CSS        | 13, 99 |
+| Transforms   | `translate`, `rotate-x`, `rotate-y`, `rotate-z`, `scale` (uniform), `transform-origin`; x to the right, like CSS | 13, 99, 107 |
 | Motion path  | `offset-path: path()` / `ray()`, `offset-distance` (animatable), `offset-rotate`                    | 97     |
 | Look         | `color`, `material`                                                                                | 26     |
 | Textures     | `texture: url("…")`, `image-rendering: pixelated`, `texture-size`                                  | 59     |
@@ -135,7 +135,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 1. ~~**Animated gradients**~~ ✅ decisions 102, 103: a gradient changes into another of the same kind in `@keyframes` and on `:hover`, through a variable too; the scene plays an animation, so its `background` moves (a flat, moving image)
 2. **`setProperty()` from JS**: first step ✅ decision 105 (`@property`, `setProperty()` / `getPropertyValue()` / `removeProperty()`, in `translate`, `rotate-*`, `scale`, `color`, `offset-distance`, `background`). Second step ✅: inside `calc()` and the math functions, and the color functions (`hsl(var(--hue) …)`, `color-mix()`…), computed on the GPU. Third step ✅, Lucas's choice "everywhere": the sizes of shapes (without their bounding spheres), the numbers of a gradient, materials, `light`, `ambient`, `floor`, `camera-target`, `blend`, `offset-rotate`, `texture-size`, filters (with a `"<length>"` syntax in px, the passes included). Not read at run time: the copies of `* n`, `d`, `view-box`, the timings, the camera the mouse moves, `dpr`. The playground panel of sliders: later (Playground, below)
 3. ~~**Nesting** with `&`~~ ✅ decision 106: rules inside rules, `&`, a descendant without `&`, `@media` inside a rule; unfolded by the parser
-4. **`transform-origin`**
+4. ~~**`transform-origin`**~~ ✅ decision 107: keywords and percentages on the box of the object, numbers from its center like `translate`; animatable, on groups with numbers
 5. **Fog**
 6. ~~`:nth-child()`~~ ✅ already done (decision 92)
 7. **A noise image function**, usable wherever a gradient is (`background`, `color`, materials), modelled on SVG `feTurbulence`. The first step toward 2D compositions: several `background` layers with `background-blend-mode`, then `mask-image` and a displacement like `feDisplacementMap`, rather than a separate 2D mode
@@ -161,7 +161,7 @@ Done from the list of Oct. 1: ~~`filter`~~ ✅ (decisions 83, 84), ~~motion path
 6. [x] `@media` ✅ decision 71: any media query the browser knows (width, orientation, `prefers-color-scheme`, `prefers-reduced-motion`…), up to 4 per scene
 7. [ ] Selectors / nesting: combinators `>` `+` `~` ✅ decision 73 (including relative selectors in `:has()`); nested style rules with `&` ✅ decision 106
 8. [x] `:hover` ✅ decision 62 (picking pass → `uHover[]`), `transition` ✅ decision 68 (one per object; per-property lists later), `:has()` ✅ decision 69 (`#g:has(sphere:hover) cube`, any selector inside)
-9. [ ] `transform-origin`
+9. [x] `transform-origin` ✅ decision 107
 10. [ ] Fog
 11. [x] `sibling-index()` + `sibling-count()` (decision 52)
 12. [x] Motion path ✅ decision 97: `offset-path: path()` / `ray()`, `offset-distance`, `offset-rotate`, in the xy plane like the `path` shape. Later: `offset-position`, `offset-anchor`, the `offset` shorthand, `circle()` as a path
@@ -351,7 +351,7 @@ A score for how well a CSS notion carries over to GSS (a style language → an S
 | Feature                                               | Score | Short note                             |
 | ----------------------------------------------------- | ----: | -------------------------------------- |
 | `transform`                                           |   0.9 | Already split (translate/rotate/scale) |
-| `transform-origin`                                    |   1.0 | Roadmap priority #9                    |
+| `transform-origin`                                    |   1.0 | Already in GSS (dec. 107)              |
 | `transform-style`                                     |   0.6 | 3D groups already; preserve-3d limited |
 | `transform-box`                                       |   0.3 | Box CSS                                |
 | `translate`                                           |   1.0 | Already in GSS                         |
