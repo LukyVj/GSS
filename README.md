@@ -56,7 +56,7 @@ fragment shaders: signed distance fields, raymarched in WebGL2 or WebGPU. No Thr
 
 ## Install
 
-Three ways to put a scene on a page, using `gss-lang@0.0.3`. The CDN URL becomes available when this version is published.
+Three ways to put a scene on a page, using `gss-lang@0.0.3`.
 
 The [installation guide](https://www.gss-lang.dev/docs#installation) covers npm, Vite and CDN setup.
 

@@ -6,23 +6,20 @@ The 0.0.1 history was reconstructed from GitHub.
 
 ## Unreleased
 
+## [0.0.3] — 2026-10-02
+
 ### Changed
 
 - The screen is no longer mirrored: +x is on the right, like CSS, and `rotate-y` and `rotate-z` now turn like CSS `rotateY()` and `rotate()` (clockwise). Gradients, conic gradients, textures, `path` and `prism` shapes and motion paths now appear as written, no longer flipped left to right. The default `light` becomes `-45deg 54.7deg`, so a scene without `light` is lit as before, from the upper left. Every scene, example and showcase of the site was mirrored to keep its look. **A scene written for an earlier version** shows mirrored: negate the x of `translate` and `camera-target`, the angles of `rotate-y` and `rotate-z`, and the first angle of `light` and `camera-angle`.
+
+- A misspelled function inside math names the function it was meant to be: `Unknown function slibling-index(): did you mean sibling-index()?`
+- The playground's performance panel is closed by default; the `perf` button or Alt+P opens it, and that choice is remembered.
 
 ### Added
 
 - `conic-gradient()` and `repeating-conic-gradient()`, like CSS: `from <angle>`, `at <position>`, stops placed with angles or percentages; in backgrounds, on objects and in materials.
 
 - Motion path, like CSS: `offset-path: path("…")` or `ray(<angle>)`, `offset-distance` (a length or a percentage, animatable with `@keyframes`, `:hover` and the scroll) and `offset-rotate` (`auto`, `reverse`, an angle). The path stands in the object's xy plane like the `path` shape, so a tube and an object following it share the same `d`.
-
-### Fixed
-
-- A scene with a `filter` on an object and a metal, jelly or glass material no longer fails to compile on WebGL2 (it rendered on WebGPU only). Reflections still show the object's filters.
-
-## [0.0.3] — 2026-10-02 (prepared, not yet published)
-
-### Added
 
 - Scroll-driven animations, like CSS: `animation-timeline: scroll()` (the scroll of the page or of the nearest scroll container, any axis) and `view()` (the scene crossing the screen). The progress of the scroll replaces the time; iterations, direction and easing still apply. In the playground and the docs, a slider over the scene stands in for the scroll.
 
@@ -42,10 +39,9 @@ The 0.0.1 history was reconstructed from GitHub.
 
 - Every error of a compile is reported at once, not only the first: after an error, the tokenizer and the parser go on reading (to the end of the declaration, the element or the rule), then, once the text reads, every wrong property, value, variable or object is reported. The playground and every "Try it" underline each one and write it under its line, the status bar counts them, and the Vite plugin lists each error with its line and column. One error is still thrown as a `GssError`; several as a `GssErrors`, a `GssError` whose `errors` lists them in the order of the text.
 
-### Changed
+### Fixed
 
-- A misspelled function inside math names the function it was meant to be: `Unknown function slibling-index(): did you mean sibling-index()?`
-- The playground's performance panel is closed by default; the `perf` button or Alt+P opens it, and that choice is remembered.
+- A scene with a `filter` on an object and a metal, jelly or glass material no longer fails to compile on WebGL2 (it rendered on WebGPU only). Reflections still show the object's filters.
 
 ## [0.0.2] — 2026-10-01
 

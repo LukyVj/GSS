@@ -237,12 +237,12 @@ export const INSPIRATION: Inspiration[] = [
     code: steve2,
   },
   {
-    slug: "steveHouse",
+    slug: "steve-house",
     title: "Minecraft Steve house animation",
     code: steveHouse,
   },
   {
-    slug: "stevePortal",
+    slug: "steve-portal",
     title: "Minecraft Steve portal animation",
     code: stevePortal,
   },
