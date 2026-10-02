@@ -126,7 +126,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 
 **Essentials** (added by Lucas, Oct. 2), **before the motion path**, in the order suggested by Claude: structure first (compile time, no runtime cost), then interaction, then scroll.
 
-- [ ] **`:nth-child(an+b [of S])`**, `:nth-last-child()`, `:nth-of-type()`, `:nth-last-of-type()`, with `odd` / `even`: resolved at compile time on the tree of `@scene`; the copies of a `* n` are siblings, so `:nth-child(odd)` and `sibling-index()` count the same way (decision 52)
+- [ ] **`:nth-child(an+b [of S])`**, `:nth-last-child()`, `:nth-of-type()`, `:nth-last-of-type()`, with `odd` / `even`: resolved at compile time on the tree of `@scene`; the copies of a `* n` are siblings, so `:nth-child(odd)` and `sibling-index()` count the same way (decision 52; confirmed by Lucas, Oct. 2: in `@scene { cube * 4; sphere; }`, `cube:nth-child(odd)` is cubes 1 and 3, the sphere is child 5)
 - [ ] **`:first-child`**, `:last-child`, `:only-child`, `:first-of-type`, `:last-of-type`, `:only-of-type` (shortcuts of the above; "type" = the shape: `cube`, `sphere`, `group`…)
 - [ ] **`:not(<selector list>)`**: compile time, specificity of its most specific argument like CSS; first version without `:hover` / `:active` inside (an inverted hover trigger), a clear error until then
 - [ ] **`currentColor`** (also `currentcolor`): the object's own `color` wherever a color is expected, resolved after the cascade like `var()`: `color-mix(in oklab, currentColor 60%, white)`, the stops of a gradient, a material's color, `light-dark()`; on `:hover`, the hovered color. `color: currentColor` would refer to itself (GSS does not inherit `color` from a group): an error, like a `var()` that loops
