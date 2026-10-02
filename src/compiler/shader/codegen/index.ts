@@ -31,13 +31,14 @@ import { BOUNDED, SHAPES, type ShapeContext } from "./shapes";
 import { textureCode } from "./textures";
 import { backgroundCode, gradientCode, objectGradient } from "./gradients";
 import { readMaterial } from "./materials";
-import { hoverSlots, hoverValue } from "./animation";
+import { activeSlots, hoverSlots, hoverValue, useTimelines } from "./animation";
+import { sceneTimelines } from "../../features/timeline";
 import { animateCode, createHoisted, hoist, rotationLines, transformLines } from "./transforms";
 import { enclosing, groupBounds, objectSphere, sceneMiss, type Sphere } from "./bounds";
 import { GRAIN } from "../../features/filter";
 import { filterCode } from "./filters";
 
-export { hoverSlots } from "./animation";
+export { activeSlots, hoverSlots } from "./animation";
 export { shapeNames, shapeRadius } from "./shapes";
 
 export function generateShader(
@@ -45,11 +46,26 @@ export function generateShader(
   sceneStyles: Styles = {},
   keyframes: Keyframes[] = [],
 ): string {
-  const slots = hoverSlots(instances);
-  // The hover state of one object, or undefined when it cannot be hovered
+  // scroll() and view(): one component of uTimeline each (decision 96)
+  const timelines = sceneTimelines(
+    instances.flatMap((instance) => [...instance.groupStyles, instance.styles]),
+  );
+  useTimelines(timelines);
+  const hovers = hoverSlots(instances);
+  const actives = activeSlots(instances);
+  // uHover[]: the hover slots, then the :active ones (decision 95)
+  const slots = [...hovers, ...actives];
+  // The hover and pressed states of one object, or undefined when it has neither
   const hoverOf = (instance: StyledInstance): Hover | undefined => {
-    const slot = slots.indexOf(instance);
-    return slot === -1 ? undefined : { styles: instance.hoverStyles, slot };
+    const hover = hovers.indexOf(instance);
+    const active = actives.indexOf(instance);
+    const layers: Hover = [
+      ...(hover === -1 ? [] : [{ styles: instance.hoverStyles, slot: hover, state: ":hover" as const }]),
+      ...(active === -1
+        ? []
+        : [{ styles: instance.activeStyles, slot: hovers.length + active, state: ":active" as const }]),
+    ];
+    return layers.length > 0 ? layers : undefined;
   };
   const context: ShapeContext = { functions: new Map() };
   const hoisted = createHoisted(); // the animated values of map(): computed by animate()
@@ -241,11 +257,14 @@ export function generateShader(
       .replace("/*@TEXTURE_UNIFORMS*/", textures.uniforms)
       .replace(
         "/*@HOVER_UNIFORM*/",
-        slots.length > 0
-          ? `uniform float uHover[${slots.length}]; // 0 at rest, 1 hovered
+        (timelines.length > 0
+          ? `uniform vec4 uTimeline; // scroll() and view(): the progress of each, 0 to 1${slots.length > 0 ? "\n" : ""}`
+          : "") +
+          (slots.length > 0
+            ? `uniform float uHover[${slots.length}]; // 0 at rest, 1 hovered
 uniform bool uPicking; // true: draw the id of the object under uPick, not its color
 uniform vec2 uPick;`
-          : "",
+            : ""),
       )
       .replace("/*@PICK_PIXEL*/", slots.length > 0 ? PICK_PIXEL : "")
       .replace("/*@PIXEL*/", slots.length > 0 ? "pixel" : "gl_FragCoord.xy")

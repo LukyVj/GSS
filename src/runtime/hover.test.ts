@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { pickPixel, decodeId, hoverValues } from "./hover";
+import { pickPixel, decodeId, hoverValues, pointerValues, createPress } from "./hover";
 
 // Step 4b of :hover, the part without the GPU: where the mouse is, which object
 // the picking pass found, and what goes in uHover[].
@@ -49,5 +49,59 @@ describe("hoverValues", () => {
 
   it("is a Float32Array, what gl.uniform1fv takes", () => {
     expect(hoverValues(hover, 1)).toBeInstanceOf(Float32Array);
+  });
+});
+
+describe("pointerValues", () => {
+  // hover slots: #a (id 1), then #b (id 2); one :active slot after them: #b pressed
+  const hover = [[1], [2]];
+  const active = [[2]];
+
+  it("puts the :active slots after the :hover slots", () => {
+    expect([...pointerValues(hover, active, 2, 0)]).toEqual([0, 1, 0]);
+    expect([...pointerValues(hover, active, 2, 2)]).toEqual([0, 1, 1]);
+  });
+
+  it("presses the object pressed, even when the pointer has left it, like CSS", () => {
+    expect([...pointerValues(hover, active, 1, 2)]).toEqual([1, 0, 1]);
+  });
+
+  it("is hoverValues without :active", () => {
+    expect([...pointerValues(hover, undefined, 1, 0)]).toEqual([...hoverValues(hover, 1)]);
+  });
+});
+
+describe("createPress", () => {
+  it("presses the object under the pointer when the button goes down", () => {
+    const press = createPress();
+    press.down(3);
+    expect(press.id).toBe(3);
+    press.up();
+    expect(press.id).toBe(0);
+  });
+
+  it("waits for the picking pass when nothing was under the pointer yet (a touch)", () => {
+    const press = createPress();
+    press.down(0);
+    expect(press.id).toBe(0);
+    press.picked(4); // the first answer of the picking pass, one or two frames later
+    expect(press.id).toBe(4);
+    press.picked(5); // moving while pressed keeps the pressed object
+    expect(press.id).toBe(4);
+  });
+
+  it("ignores the picking pass when nothing is pressed", () => {
+    const press = createPress();
+    press.picked(2);
+    expect(press.id).toBe(0);
+  });
+
+  it("forgets the press when the scene changes", () => {
+    const press = createPress();
+    press.down(2);
+    press.reset();
+    expect(press.id).toBe(0);
+    press.picked(2);
+    expect(press.id).toBe(0);
   });
 });

@@ -35,6 +35,7 @@ const renderer = await createRendererAsync($<HTMLCanvasElement>("#scene"), {
   backend,
   profile,
   profileWebGPU,
+  scrollSlider: true, // the playground does not scroll: a slider stands in for scroll()
 }).catch(error => {
   $("#error").textContent = error instanceof Error ? error.message : String(error);
   $("#error").hidden = false;

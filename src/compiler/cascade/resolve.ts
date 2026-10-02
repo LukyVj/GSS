@@ -16,7 +16,12 @@ export type StyledInstance = SceneInstance & {
   faceStyles: Record<Face, Styles>; // what cube::face(front), cube::top… set
   hoverTriggers: number[]; // the objects that, hovered, put this one in its hover state
   hoverStyles: Styles;
+  activeTriggers: number[]; // the objects that, pressed, put this one in its active state
+  activeStyles: Styles; // pressed: the :active rules on top of the :hover ones
 };
+
+// The states the pointer gives: :hover (under the pointer) and :active (pressed)
+type PointerState = "hover" | "active";
 
 // A simple selector: cube, .corner, #hero, or a combination like cube#left.corner
 export type SimpleSelector = {
@@ -30,8 +35,10 @@ export type SimpleSelector = {
   relative?: Combinator; // a leading combinator, only inside :has()
   face?: Face;
   hover?: boolean; // cube:hover, #g:hover
+  active?: boolean; // cube:active, #g:active: pressed (decision 95)
   has?: SimpleSelector[]; // #g:has(sphere, cube:hover): something inside matches one of them
   structural?: Structural[]; // :nth-child(odd), :first-of-type…: all of them must match
+  not?: SimpleSelector[][]; // :not(.a, cube):not(#b): no selector of any list may match
 };
 
 // :nth-child(An+B of S) and its family, read at compile time (decision 92).
@@ -70,7 +77,9 @@ const SHORTHANDS: Record<string, Structural> = {
 };
 const PSEUDO_CLASSES = [
   ":hover",
+  ":active",
   ":has()",
+  ":not()",
   ...Object.keys(NTH).map((name) => `:${name}()`),
   ...Object.keys(SHORTHANDS).map((name) => `:${name}`),
 ];
@@ -96,6 +105,7 @@ function triggersOf(
   node: SceneInstance,
   scene: SceneInstance[],
   anchor?: SceneInstance,
+  state: PointerState = "hover",
 ): SceneInstance[] {
   const parts = [...(selector.ancestors ?? []), selector];
   const found = new Set<SceneInstance>();
@@ -103,12 +113,12 @@ function triggersOf(
     let triggers = scene;
     parts.forEach((part, i) => {
       const matched = path[i];
-      if (part.hover) {
+      if (part[state]) {
         const allowed = hoveredBy(matched, scene);
         triggers = triggers.filter((other) => allowed.includes(other));
       }
-      if (part.has?.some(needsHover)) {
-        const allowed = hasTriggers(part.has, matched, scene);
+      if (part.has?.some((inner) => needs(inner, state))) {
+        const allowed = hasTriggers(part.has, matched, scene, state);
         if (allowed !== null)
           triggers = triggers.filter((other) => allowed.includes(other));
       }
@@ -118,7 +128,7 @@ function triggersOf(
   return [...found];
 }
 
-// Hovering a group means hovering one of its drawable objects.
+// Hovering (or pressing) a group means hovering one of its drawable objects.
 function hoveredBy(
   node: SceneInstance,
   scene: SceneInstance[],
@@ -133,13 +143,14 @@ function hasTriggers(
   list: SimpleSelector[],
   anchor: SceneInstance,
   scene: SceneInstance[],
+  state: PointerState,
 ): SceneInstance[] | null {
   const found: SceneInstance[] = [];
   for (const inner of list) {
     for (const node of sceneNodes(scene)) {
       if (!matches(inner, node, scene, anchor)) continue;
-      if (!needsHover(inner)) return null;
-      found.push(...triggersOf(inner, node, scene, anchor));
+      if (!needs(inner, state)) return null;
+      found.push(...triggersOf(inner, node, scene, anchor, state));
     }
   }
   return found;
@@ -352,6 +363,9 @@ function parseCompound(tokens: Token[]): SimpleSelector {
       if (next?.type === "IDENT" && next.value === "hover") {
         selector.hover = true;
         i += 2;
+      } else if (next?.type === "IDENT" && next.value === "active") {
+        selector.active = true;
+        i += 2;
       } else if (next?.type === "IDENT" && next.value === "has") {
         // :has(…), like CSS: the selectors between the parentheses, split at the commas
         if (selector.has)
@@ -367,11 +381,32 @@ function parseCompound(tokens: Token[]): SimpleSelector {
             ":has() needs a selector, like: #g:has(sphere:hover) cube",
           );
         selector.has = parts.map((part) => parseSelector(part, true));
-        const nested = (inner: SimpleSelector) =>
-          inner.has !== undefined ||
-          (inner.ancestors ?? []).some((a) => a.has !== undefined);
+        const holdsHas = (part: SimpleSelector): boolean =>
+          part.has !== undefined ||
+          (part.not ?? []).some((list) => list.some(nested));
+        const nested = (inner: SimpleSelector): boolean =>
+          [inner, ...(inner.ancestors ?? [])].some(holdsHas);
         if (selector.has.some(nested))
           throw errorAt(tokens, "A :has() cannot hold another :has()");
+        i = close + 1;
+      } else if (next?.type === "IDENT" && next.value === "not") {
+        // :not(…), like CSS: a list of selectors, none of which may match (decision 93)
+        const close = closingParen(tokens, i + 2);
+        const parts = splitAtCommas(tokens.slice(i + 3, close));
+        if (parts.length === 0)
+          throw errorAt(tokens, ":not() needs a selector, like: cube:not(.red)");
+        const list = parts.map((part) => parseSelector(part));
+        if (list.some(needsPointer))
+          throw errorAt(
+            tokens,
+            ":not() cannot hold :hover or :active yet: write the rule for the hovered state, and its opposite without :hover",
+          );
+        if (list.some((inner) => inner.face !== undefined))
+          throw errorAt(
+            tokens,
+            ":not() takes selectors of objects, not a face: cube:not(.grass)::top",
+          );
+        selector.not = [...(selector.not ?? []), list];
         i = close + 1;
       } else if (next?.type === "IDENT" && next.value in NTH) {
         // :nth-child(An+B [of S]), like CSS
@@ -400,10 +435,10 @@ function parseCompound(tokens: Token[]): SimpleSelector {
               `"of" needs a selector, like :${name}(2 of .red)`,
             );
           structural.of = parts.map((part) => parseSelector(part));
-          if (structural.of.some(needsHover))
+          if (structural.of.some(needsPointer))
             throw errorAt(
               tokens,
-              `:${name}(… of S) cannot hold :hover yet: the order of the objects is read once, when the scene is compiled`,
+              `:${name}(… of S) cannot hold :hover or :active yet: the order of the objects is read once, when the scene is compiled`,
             );
         }
         selector.structural = [...(selector.structural ?? []), structural];
@@ -522,6 +557,12 @@ function matchesCompound(
     !selector.structural.every((s) => matchesPosition(s, instance, scene))
   )
     return false;
+  if (
+    selector.not?.some((list) =>
+      list.some((inner) => matches(inner, instance, scene)),
+    )
+  )
+    return false;
   if (!selector.has) return true;
   return selector.has.some((inner) =>
     sceneNodes(scene).some((node) => matches(inner, node, scene, instance)),
@@ -562,6 +603,13 @@ export function specificity(selector: SimpleSelector): number {
     (selector.tag ? 1 : 0) +
     (selector.face ? 1 : 0) +
     (selector.hover ? 100 : 0) + // a pseudo-class counts like a class, like CSS
+    (selector.active ? 100 : 0) +
+    // each :not() weighs like its most specific selector, like CSS
+    (selector.not ?? []).reduce(
+      (sum, list) =>
+        sum + Math.max(0, ...list.map((inner) => specificity(inner))),
+      0,
+    ) +
     // :nth-child(… of S) adds its most specific selector, like CSS
     (selector.structural ?? []).reduce(
       (sum, s) =>
@@ -578,10 +626,24 @@ export function specificity(selector: SimpleSelector): number {
 // Does this selector need a hovered object? cube:hover, #g:hover cube,
 // or #g:has(sphere:hover) cube
 export function needsHover(selector: SimpleSelector): boolean {
+  return needs(selector, "hover");
+}
+
+// Does it need a pressed object? cube:active, #g:active cube, #g:has(sphere:active) cube
+export function needsActive(selector: SimpleSelector): boolean {
+  return needs(selector, "active");
+}
+
+// Does it depend on the pointer at all: :hover or :active?
+export function needsPointer(selector: SimpleSelector): boolean {
+  return needsHover(selector) || needsActive(selector);
+}
+
+function needs(selector: SimpleSelector, state: PointerState): boolean {
   return [selector, ...(selector.ancestors ?? [])].some(
     (part) =>
-      part.hover === true ||
-      (part.has ?? []).some((inner) => needsHover(inner)),
+      part[state] === true ||
+      (part.has ?? []).some((inner) => needs(inner, state)),
   );
 }
 
@@ -601,17 +663,19 @@ export function resolveStyles(
       (a, b) =>
         specificity(a.selector) - specificity(b.selector) || a.order - b.order,
     );
-  // The cascade for one instance (an object or a group), or for one face of an object
+  // The cascade for one instance (an object or a group), or for one face of an object.
+  // state: at rest, hovered, or pressed (the :hover rules still apply when pressed)
   function cascade(
     instance: SceneInstance,
     face?: Face,
-    hovered = false,
+    state: "rest" | PointerState = "rest",
   ): Styles {
     const styles: Styles = {};
     for (const important of [false, true]) {
       for (const { rule, selector } of sortedRules) {
         if (!matches(selector, instance, instances)) continue;
-        if (needsHover(selector) && !hovered) continue;
+        if (needsHover(selector) && state === "rest") continue;
+        if (needsActive(selector) && state !== "active") continue;
         if (selector.face !== face) continue; // a face rule styles its face, the other rules the object
         for (const declaration of rule.declarations) {
           if (
@@ -634,7 +698,7 @@ export function resolveStyles(
   // Every group of the scene, once: a Set keeps each group only once
   const groups = [...new Set(instances.flatMap((instance) => instance.groups))];
   for (const { rule, selector } of sortedRules) {
-    if (!needsHover(selector)) continue;
+    if (!needsPointer(selector)) continue;
     const stylesGroups = groups.some((group) =>
       matches(selector, group, instances),
     );
@@ -642,9 +706,10 @@ export function resolveStyles(
       matches(selector, instance, instances),
     );
     if (stylesGroups && !stylesObjects) {
+      const name = needsHover(selector) ? ":hover" : ":active";
       throw errorAt(
         rule.selector,
-        "A :hover rule cannot style a group yet: style its objects, like #g:hover cube",
+        `A ${name} rule cannot style a group yet: style its objects, like #g${name} cube`,
       );
     }
   }
@@ -661,13 +726,29 @@ export function resolveStyles(
         sortedRules
           .filter(
             ({ selector }) =>
-              needsHover(selector) && matches(selector, instance, instances),
+              needsHover(selector) &&
+              !needsActive(selector) && // cube:hover:active waits for the press
+              matches(selector, instance, instances),
           )
           .flatMap(({ selector }) => triggersOf(selector, instance, instances))
           .map((other) => other.index),
       ),
     ].sort((a, b) => a - b),
-    hoverStyles: cascade(instance, undefined, true),
+    hoverStyles: cascade(instance, undefined, "hover"),
+    activeTriggers: [
+      ...new Set(
+        sortedRules
+          .filter(
+            ({ selector }) =>
+              needsActive(selector) && matches(selector, instance, instances),
+          )
+          .flatMap(({ selector }) =>
+            triggersOf(selector, instance, instances, undefined, "active"),
+          )
+          .map((other) => other.index),
+      ),
+    ].sort((a, b) => a - b),
+    activeStyles: cascade(instance, undefined, "active"),
   }));
 }
 

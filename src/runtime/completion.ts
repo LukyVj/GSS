@@ -2,7 +2,7 @@
 // properties the rule can take, from the registry (decision 89). Pure functions here;
 // editor.ts plugs them into CodeMirror.
 import { scan, type Token } from "../compiler/syntax/tokenizer";
-import { parseSelector, isSceneSelector, needsHover } from "../compiler/cascade/resolve";
+import { parseSelector, isSceneSelector, needsPointer } from "../compiler/cascade/resolve";
 import { PROPERTIES, SHAPE_DOCS, type PropertyDef } from "../compiler/registry/registry";
 
 // The blocks a position can be in: the structure of @scene (and its groups), a
@@ -80,7 +80,7 @@ function forSelector(tokens: Token[]): PropertyDef[] {
   if (isSceneSelector(selector))
     return PROPERTIES.filter((p) => p.appliesTo === "scene" || p.appliesTo === "everywhere");
   if (selector.face !== undefined) return PROPERTIES.filter((p) => p.name === "texture");
-  if (needsHover(selector))
+  if (needsPointer(selector))
     return PROPERTIES.filter((p) => p.animatable || p.name === "transition");
   const group = SHAPE_DOCS.find((shape) => shape.name === "group");
   if (selector.tag === "group" && group?.takes)

@@ -2,8 +2,9 @@ import type { CompiledScene } from "../compiler";
 import type { AsyncView, BackendOptions } from "./backend";
 import { createClock } from "./clock";
 import { pixelRatio } from "./dpr";
-import { pickPixel, hoverValues, decodeId } from "./hover";
+import { pickPixel, pointerValues, createPress, decodeId } from "./hover";
 import { createTransitions } from "./transitions";
+import { createScrollSlider, timelineValues } from "./timeline";
 import { matchesNow, pickVariant, watchMedia } from "./media";
 import { resolveImage } from "./textures";
 
@@ -51,6 +52,8 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
   let root: CompiledScene | null = null;
   let stopMedia = () => {};
   let hovered = 0;
+  const press = createPress(); // :active (decision 95)
+  const slider = options.scrollSlider ? createScrollSlider(canvas) : null; // decision 96
   let reducedMotion = false;
   let transitions = createTransitions([]);
   let settings: CompiledScene["camera"] | null = null;
@@ -74,6 +77,11 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
     on("pointerdown", e => { camera.dragging = true; canvas.setPointerCapture(e.pointerId); });
     on("wheel", e => { e.preventDefault(); camera.dist = Math.min(Math.max(camera.dist + e.deltaY * 0.01, 3), 15); }, { passive: false });
   }
+  on("pointerdown", e => { pointer = { x: e.clientX, y: e.clientY }; press.down(hovered); });
+  const unpress = () => press.up(); // released anywhere, like CSS
+  window.addEventListener("pointerup", unpress);
+  window.addEventListener("pointercancel", unpress);
+  listeners.push(() => { window.removeEventListener("pointerup", unpress); window.removeEventListener("pointercancel", unpress); });
   on("pointermove", e => {
     pointer = { x: e.clientX, y: e.clientY };
     if (!camera.dragging) return;
@@ -145,7 +153,9 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
     if (!compiled.wgsl || compiled.passes?.some(p => !p.wgsl)) throw new Error("This scene has no WGSL target. Recompile it with compile(source) or the current GSS Vite plugin.");
     const count = Math.max(compiled.textures.length, compiled.passes?.length ? 3 : 0);
     if (count > device.limits.maxSampledTexturesPerShaderStage) throw new Error("This scene exceeds the WebGPU device's texture limit");
-    const size = 48 + 16 * Math.max(1, compiled.hover.length);
+    const slots = compiled.hover.length + (compiled.active?.length ?? 0);
+    // uTimeline goes after the hover slots (decision 96)
+    const size = 48 + 16 * Math.max(1, slots) + (compiled.timelines ? 16 : 0);
     if (size > device.limits.maxUniformBufferBindingSize) throw new Error("This scene exceeds the WebGPU device's uniform buffer limit");
     const layout = device.createBindGroupLayout({ entries: [
       { binding: 0, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform", minBindingSize: size } },
@@ -163,7 +173,7 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
     const passes = compiled.passes ?? [];
     const pipelines: Pipeline[] = [{ pipeline: await pipeline(compiled.wgsl, passes.length ? "rgba8unorm" : format), inputs: [], textures: compiled.textures }];
     for (const [i, pass] of passes.entries()) pipelines.push({ pipeline: await pipeline(pass.wgsl!, i === passes.length - 1 ? format : "rgba8unorm"), inputs: pass.inputs, textures: [] });
-    const picking = compiled.hover.length ? await pipeline(compiled.wgsl, "rgba8unorm") : null;
+    const picking = slots ? await pipeline(compiled.wgsl, "rgba8unorm") : null;
     return {
       compiled, layout, pipelines, picking,
       uniforms: device.createBuffer({ size, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST }),
@@ -179,7 +189,8 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
     if (scene) release(scene);
     scene = next;
     probe?.shaderBuilt(performance.now() - start);
-    hovered = 0; pickGeneration++;
+    hovered = 0; press.reset(); pickGeneration++;
+    slider?.show(compiled.timelines !== undefined);
     transitions = createTransitions(compiled.transitions);
     if (resetCamera) {
       const next = compiled.camera;
@@ -212,8 +223,10 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
       bindings(current);
       const v = current.values;
       v.set([canvas.width, canvas.height, 1, clock.seconds, camera.yaw, camera.pitch, camera.dist, canvas.width / Math.max(canvas.clientWidth, 1), 0, 0, 0, 0]);
-      const targets = transitions.update(hoverValues(current.compiled.hover, hovered), now, reducedMotion);
+      const targets = transitions.update(pointerValues(current.compiled.hover, current.compiled.active, hovered, press.id), now, reducedMotion);
       targets.forEach((value, i) => { v[12 + 4 * i] = value; });
+      const { timelines, hover, active } = current.compiled;
+      if (timelines) v.set(timelineValues(timelines, canvas, slider?.value() ?? null), 12 + 4 * Math.max(1, hover.length + (active?.length ?? 0)));
       device.queue.writeBuffer(current.uniforms, 0, v);
       const encoder = device.createCommandEncoder();
       let picking = false;
@@ -235,7 +248,7 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
       if (picking) {
         const generation = pickGeneration;
         void readback.mapAsync(GPUMapMode.READ).then(() => {
-          if (!destroyed && generation === pickGeneration && pointer) hovered = decodeId(new Uint8Array(readback.getMappedRange(), 0, 4));
+          if (!destroyed && generation === pickGeneration && pointer) { hovered = decodeId(new Uint8Array(readback.getMappedRange(), 0, 4)); press.picked(hovered); }
           readback.unmap();
         }).catch(error => { if (!destroyed) console.error("GSS WebGPU picking:", error); }).finally(() => { pickPending = false; });
       }
@@ -272,7 +285,7 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
       if (destroyed) return;
       destroyed = true; revision++; pickGeneration++; playing = false;
       cancelAnimationFrame(frameId); stopMedia(); listeners.forEach(stop => stop());
-      probe?.destroy?.();
+      probe?.destroy?.(); slider?.destroy();
       if (scene) release(scene); scene = null;
       for (const entry of textures.values()) { entry.image.onload = null; entry.image.onerror = null; entry.texture.destroy(); }
       textures.clear(); fallback.destroy(); pickTexture.destroy(); readback.destroy(); context.unconfigure(); device.destroy();

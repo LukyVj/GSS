@@ -57,8 +57,9 @@ export function objectGradient(
   const played = name?.type === "IDENT" ? keyframes.findLast((k) => k.name === name.value) : undefined;
   if (played?.frames.some((f) => f.declarations.some((d) => d.property === "color")))
     throw errorAt(styles["animation"], `${label(instance)} is painted with a gradient: its color cannot be animated`);
-  if (hover && JSON.stringify(hover.styles["color"]) !== JSON.stringify(color))
-    throw errorAt(hover.styles["color"] ?? gradient, `${label(instance)} is painted with a gradient: :hover cannot change its color`);
+  for (const layer of hover ?? [])
+    if (JSON.stringify(layer.styles["color"]) !== JSON.stringify(color))
+      throw errorAt(layer.styles["color"] ?? gradient, `${label(instance)} is painted with a gradient: ${layer.state} cannot change its color`);
   return { gradient, styles: changed };
 }
 

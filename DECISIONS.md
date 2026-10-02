@@ -614,6 +614,59 @@ The public development hooks carry WebGPU types, so `@webgpu/types` is a type-on
 
 **Why**: the vision example of GSS (`.corner:nth-child(odd)`) and every LLM write these selectors; with `* n` they style one copy out of two or three without a class per copy. Reading them at compile time keeps the cascade the only place that decides, and costs nothing at render.
 
+## 93. `:not()`
+
+**Decision**: `:not(<selector list>)`, like CSS (Selectors 4): the object matches when no selector of the list matches it. Any selector goes inside, complex ones included, read from the object outwards (`cube:not(#g cube)`: every cube outside `#g`), the structural pseudo-classes (decision 92) and `:has()` (`group:not(:has(sphere))`). Several `:not()` can follow each other. Read at compile time: no shader cost.
+
+- **Specificity** like CSS: each `:not()` weighs like the most specific selector of its list (`:not(*)` weighs 0).
+- **Errors**: an empty `:not()`; a face inside (a pseudo-element, invalid in `:not()` in CSS too); a leading combinator; a `:has()` reached through `:not()` inside another `:has()` (CSS forbids nested `:has()`).
+
+**Differences from CSS**: `:hover` inside `:not()` is an error for now. `:not(:hover)` would be a trigger that switches off when its object is hovered: the picking pass and `uHover[]` can carry it (a slot that goes from 1 to 0), but the cascade would need a third state between rest and hover. Written the other way round (the rest state, and a `:hover` rule for the change), every case already works.
+
+**Why**: the most written CSS pseudo-class after `:hover`; with `* n` and the structural pseudo-classes, it says "all but these" without a class on each object.
+
+## 94. `currentColor`
+
+**Decision**: the CSS keyword `currentColor` (any case, like CSS) is the object's own `color`, wherever a color is expected: in a color function (`color-mix(in oklab, currentColor 60%, white)`, `light-dark()`), in the stops of a gradient, as a material's color. It is replaced like a variable, after `var()` and before the math and the colors (decisions 52, 55, 58): the code generator never sees it.
+
+- **The color it reads** is the object's `color` after `var()`, so `calc()`, `sibling-index()` and color functions inside it work. An object without `color` reads the initial `#e6e6e6`. In the hover state, it reads the hovered color.
+- **In a variable**, it is read where the variable is used, with the color of the object that uses it (`scene { --shade: color-mix(in srgb, currentColor, black); }` darkens each object's own color): the same rule as every variable (decision 55).
+- **As a material's color**, `metal(currentColor, 0.2)` is `metal(0.2)`: the material already takes `color` when it has none of its own (decision 26), so `color` stays animated, changes on `:hover`, and can be a gradient.
+
+**Errors**: `color: currentColor` (also through a variable, inside a function or in a `@keyframes` frame) refers to itself; the scene has no color (`scene { floor: currentColor; }`); a gradient `color` mixed or placed in a stop (`color-mix()` of a gradient means nothing).
+
+**Differences from CSS**: CSS resolves `color: currentColor` to the inherited color; GSS does not inherit `color` from a group, hence the error. Outside the material's own color, `currentColor` is read once, with the color at rest (or the hovered color in the hover state): a `@keyframes` that animates `color` does not move a `color-mix()` of it, since `material` is not animatable.
+
+**Why**: one rule tints many objects of different colors (a lighter shell, a darker gradient) without a variable per object; with `:nth-child()` (decision 92), colors set per object and shared derived styles stay apart, as in CSS.
+
+## 95. `:active`
+
+**Decision**: `:active`, like CSS: the object is pressed, with the mouse button or a finger. It goes wherever `:hover` goes (decision 62): on the object, on a group (`#g:active cube`: pressing any object of `#g`), through combinators (`sphere:active + cube`), inside `:has()` (`#lamp:has(#switch:active) #bulb`). Same limits as `:hover`: the animatable properties only (plus variables and `transition`), objects not groups, not on a face, not inside `:not()` or `:nth-child(… of S)`. Specificity 100, like a class.
+
+- **The press**, like CSS: the object under the pointer when the button goes down, until it goes up, even if the pointer leaves it (the button is listened to on the window). A touch has no hover before it: the press also aims the picking pass, and its first answer picks the object.
+- **The pressed state is drawn over the hovered one**: a pressed object is under the pointer, so its styles are the cascade with the `:hover` and the `:active` rules. One more cascade per object, `activeStyles`, next to `hoverStyles`, with its own triggers (`activeTriggers`).
+- **The shader**: `:active` reuses `uHover[]`, with slots of its own after the hover slots, and the same picking pass. A property is `mix(mix(rest, hovered, uHover[h]), pressed, uHover[a])`; a layer that changes nothing is left out. A scene without `:active` compiles exactly as before (shaders compared byte for byte on every scene and example), and the WGSL lowering, the uniform layout and the Shadertoy export (every slot at 0, at rest) do not change.
+- **`transition`**: pressing takes the transition of the pressed state, releasing the one of the hovered state, like CSS (the transition of the state the object goes to).
+- `CompiledScene.active`: for each `:active` slot, the ids that set it to 1; absent when the scene has no `:active`.
+
+**Differences from CSS**: the same approximations as `:hover` (one hovered and one pressed state per object, the triggers of all its rules together). A rule with both (`cube:hover:active`) is read as pressed.
+
+**Why**: the second interaction a designer reaches for after `:hover`: buttons, switches, a scene that answers a tap on a phone, where `:hover` does not exist.
+
+## 96. `animation-timeline: scroll()` and `view()`
+
+**Decision**: scroll-driven animations, with the syntax of CSS: `animation: spin 1s linear; animation-timeline: scroll();`. The progress of the timeline, from 0 to 1, replaces the time of the animation; `@keyframes`, easings and everything else do not change.
+
+- **`scroll([root | nearest] || [block | inline | x | y])`**: the scroll of a scroll container, from its start to its end. `nearest` (the default, like CSS) is the closest ancestor of the scene that scrolls on that axis, across the shadow root of `<gss-scene>`; `root` is the page. **`view([block | inline | x | y])`**: the scene's canvas crossing its scroll container, 0 when its start edge enters at the end (the bottom), 1 when its end edge leaves at the start (the top). GSS writes horizontally: `block` is vertical.
+- **Timing**, like CSS: the whole timeline is the whole animation. The duration and the delay do not count (the shorthand still needs a duration); the iteration count and the direction do. `infinite`, the GSS default (decision 70), plays once along a timeline. No fill mode is needed: the progress stays between 0 and 1.
+- **The shader**: `uniform vec4 uTimeline`, one component per different timeline of the scene (4 at most, an error beyond), written only when the scene uses one, so every other scene compiles exactly as before (compared byte for byte). The progress replaces `iTime` in `playback()`: `uTimeline.x` alone for one normal iteration, `playhead(uTimeline.x * n, 1.0, n, dir)` otherwise. In WGSL, `timeline` comes after the `hover` array, so no other offset moves. Shadertoy shows the start (`const vec4 uTimeline = vec4(0.0)`).
+- **The runtime** reads the progress every frame from the layout (`scrollTop`, `getBoundingClientRect()`): no scroll listener, and a container that starts scrolling is found. `CompiledScene.timelines` says what each component follows.
+- **In the playground, the docs and the home page**, which do not scroll, a slider over the scene stands in for the scroll (`scrollSlider` option of the view); it shows only while the scene has a timeline and drives every timeline at once.
+
+**Differences from CSS**: no `animation-range`, no named timelines (`scroll-timeline-name`, `view-timeline-name`, `timeline-scope`), no `view()` inset, no `self` scroller (the canvas does not scroll): each one is a clear error or not read yet. The writing mode is always horizontal. `@keyframes` time-based delays are ignored, as CSS does for scroll timelines.
+
+**Why**: the scroll is how a page tells a story; a 3D scene that turns, opens or rises as you scroll is the most asked-for effect of landing pages, and CSS already has the syntax designers and LLMs know.
+
 ## Open questions
 
 - **Targeting multiplied ids**: should `#hero` target `hero-1`, `hero-2` and `hero-3`?

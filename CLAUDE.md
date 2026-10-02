@@ -6,9 +6,9 @@ gss-lang.dev; npm package: `gss-lang`.
 
 ## Read first
 
-- `ROADMAP.md`: what GSS already does, and what comes next. The **Essentials** section (Oct. 2) comes
-  before the motion path; the next item is `:not()`.
-- `DECISIONS.md`: every design decision, numbered. The next one is **93**. Add a decision for every
+- `ROADMAP.md`: what GSS already does, and what comes next. The **Essentials** section (Oct. 2) is done;
+  the next item is the motion path.
+- `DECISIONS.md`: every design decision, numbered. The next one is **97**. Add a decision for every
   new feature or behavior change.
 - `CONTRIBUTING.md`: where things live. `CHANGELOG.md`: user-facing changes, under "Unreleased".
 

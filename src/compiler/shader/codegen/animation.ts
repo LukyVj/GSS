@@ -5,6 +5,7 @@ import type { StyledInstance, Styles } from "../../cascade/resolve";
 import { errorAt } from "../../syntax/errors";
 import { type Easing, stepsShape } from "../../values/easing";
 import { readAnimation, type AnimationSpec } from "../../features/animation";
+import { timelineCode, type Timeline } from "../../features/timeline";
 import { glslFloat, round, type Hover } from "./glsl";
 
 // The objects that can be hovered, in scene order: each one gets a slot in uHover[]
@@ -12,7 +13,13 @@ export function hoverSlots(instances: StyledInstance[]): StyledInstance[] {
   return instances.filter((instance) => instance.hoverTriggers.length > 0);
 }
 
-// A property at rest, or mixed with its hovered value when :hover changes it
+// The objects that can be pressed (:active): their slots come after the hover slots
+export function activeSlots(instances: StyledInstance[]): StyledInstance[] {
+  return instances.filter((instance) => instance.activeTriggers.length > 0);
+}
+
+// A property at rest, or mixed with its hovered value when :hover changes it,
+// then with its pressed value when :active changes it further
 export function hoverValue(
   styles: Styles,
   keyframes: Keyframes[],
@@ -21,10 +28,20 @@ export function hoverValue(
   hover?: Hover,
 ): string {
   const rest = animatedValue(styles, keyframes, property, read);
-  if (!hover) return rest; // this object cannot be hovered
-  const hovered = animatedValue(hover.styles, keyframes, property, read);
-  if (hovered === rest) return rest; // :hover does not change this property
-  return `mix(${rest}, ${hovered}, uHover[${hover.slot}])`;
+  let value = rest;
+  let target = rest; // the value of the state below this layer
+  for (const layer of hover ?? []) {
+    const next = animatedValue(layer.styles, keyframes, property, read);
+    if (next !== target) value = `mix(${value}, ${next}, uHover[${layer.slot}])`;
+    target = next; // a layer that changes nothing more is left out
+  }
+  return value;
+}
+
+// The timelines of the scene being generated: scroll() and view() (decision 96)
+let timelines: Timeline[] = [];
+export function useTimelines(list: Timeline[]): void {
+  timelines = list;
 }
 
 const DIRECTION_NUMBERS = {
@@ -44,6 +61,18 @@ function playback(spec: AnimationSpec): {
   active: string | null;
 } {
   const { duration, delay, iterations, direction, fill } = spec;
+  // scroll(), view(): the progress of the timeline is the whole animation, like CSS.
+  // The duration and the delay do not count; infinite (the GSS default) plays once.
+  if (spec.timeline) {
+    const at = timelineCode(spec.timeline, timelines);
+    const n = iterations === Infinity ? 1 : iterations;
+    if (n === 1 && direction === "normal") return { progress: at, active: null };
+    if (n === 1 && direction === "reverse") return { progress: `(1.0 - ${at})`, active: null };
+    return {
+      progress: `playhead(${at} * ${glslFloat(n)}, 1.0, ${glslFloat(n)}, ${DIRECTION_NUMBERS[direction]})`,
+      active: null,
+    };
+  }
   const plain = delay === 0 && iterations === Infinity;
   const time = `iTime / ${glslFloat(duration)}`;
   if (plain && direction === "normal")

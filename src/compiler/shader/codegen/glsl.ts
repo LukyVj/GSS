@@ -2,8 +2,10 @@
 // vectors, the parts of the template, and the label of an object in comments
 import type { StyledInstance, Styles } from "../../cascade/resolve";
 
-// What an object looks like when hovered, and its number in uHover[]
-export type Hover = { styles: Styles; slot: number };
+// What an object looks like when hovered (or pressed), and its number in uHover[]
+export type HoverLayer = { styles: Styles; slot: number; state: ":hover" | ":active" };
+// The layers mixed over the rest state: hovered, then pressed (decision 95)
+export type Hover = HoverLayer[];
 
 // Rounds to 3 decimals: the numbers GSS writes stay short
 export function round(n: number): number {

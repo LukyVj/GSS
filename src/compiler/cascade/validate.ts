@@ -1,6 +1,6 @@
 import type { Declaration, Keyframe, Rule, Keyframes } from "../syntax/ast";
 import { PROPERTIES } from "../registry/registry";
-import { parseSelector, isSceneSelector, needsHover } from "./resolve";
+import { parseSelector, isSceneSelector, needsHover, needsPointer } from "./resolve";
 import { ErrorSink, errorAt } from "../syntax/errors";
 
 // Throws if a rule uses a property that is not in the registry,
@@ -13,8 +13,9 @@ export function validateProperties(rules: Rule[], errors?: ErrorSink): Rule[] {
   for (const rule of rules) {
     const declarations = sink.run(() => {
       const selector = parseSelector(rule.selector);
-      if (needsHover(selector) && selector.face !== undefined) {
-        throw errorAt(rule.selector, "A face cannot change on :hover yet");
+      if (needsPointer(selector) && selector.face !== undefined) {
+        const state = needsHover(selector) ? ":hover" : ":active";
+        throw errorAt(rule.selector, `A face cannot change on ${state} yet`);
       }
       return rule.declarations.filter(
         (declaration) => sink.run(() => checkDeclaration(rule, declaration)) !== undefined,
@@ -33,7 +34,8 @@ function checkDeclaration(rule: Rule, declaration: Declaration): true {
 
   const selector = parseSelector(rule.selector);
   const isScene = isSceneSelector(selector);
-  const hover = needsHover(selector);
+  const hover = needsPointer(selector);
+  const state = needsHover(selector) ? ":hover" : ":active";
   const property = PROPERTIES.find((p) => p.name === declaration.property);
 
   if (!property) {
@@ -45,7 +47,7 @@ function checkDeclaration(rule: Rule, declaration: Declaration): true {
     const animatable = PROPERTIES.filter((p) => p.animatable).map((p) => p.name);
     throw errorAt(
       declaration,
-      `"${declaration.property}" cannot change on :hover. Animatable properties: ${animatable.join(", ")}.`,
+      `"${declaration.property}" cannot change on ${state}. Animatable properties: ${animatable.join(", ")}.`,
     );
   }
 

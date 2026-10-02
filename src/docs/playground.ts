@@ -43,7 +43,7 @@ function openPlayground(example: HTMLElement, code: string): void {
   example.classList.add("is-open");
   example.querySelector("button.try")!.textContent = "Close";
 
-  const renderer = createRenderer(panel.querySelector("canvas")!);
+  const renderer = createRenderer(panel.querySelector("canvas")!, { scrollSlider: true });
   const editor = connectEditor(
     {
       host: panel.querySelector(".code-host")!,

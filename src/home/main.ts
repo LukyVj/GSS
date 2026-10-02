@@ -34,7 +34,7 @@ const DEMO_SCENE = `${FIRST_SCENE.replace("glass(1.5, frosted 0.3)", "jelly(0.6)
 // ----- Live: the real compiler and renderer, started when the section comes into view
 // (a WebGL context and a shader compile are not free: no cost for visitors who don't scroll) -----
 function startDemo(): void {
-  const renderer = createRenderer($<HTMLCanvasElement>("#demo-scene"));
+  const renderer = createRenderer($<HTMLCanvasElement>("#demo-scene"), { scrollSlider: true });
   const editor = connectEditor(
     { host: $("#demo-code"), error: $("#demo-error") },
     renderer,

@@ -410,6 +410,24 @@ export const PROPERTIES: PropertyDef[] = [
     ],
   },
   {
+    name: "animation-timeline",
+    appliesTo: "object",
+    syntax: "auto | scroll([root | nearest] || [block | inline | x | y]) | view([block | inline | x | y])",
+    initial: "auto",
+    description:
+      "Drives the animation with the scroll of the page instead of the time, like CSS scroll-driven animations. auto, the default, plays it in time. scroll() follows a scroll container from its start (0%) to its end (100%): nearest, the default, is the closest one around the scene, root is the page; the axis is block (vertical, the default), inline (horizontal), y or x. view() follows the scene itself crossing its scroll container: 0% when it enters at the bottom, 100% when it leaves at the top. The whole timeline is the whole animation, so the duration and the delay do not count: write any duration, like animation: spin 1s linear; animation-timeline: scroll();. The number of iterations and the direction still do, and an animation without an iteration count plays once along the scroll. Scrolling back plays it backwards, and the easing applies as usual. Write it after animation, which needs a name and a duration. A scene takes up to 4 different timelines. In the playground, which does not scroll, a slider stands in for the scroll; the Shadertoy export shows the start.",
+    examples: [
+      {
+        name: "turn with the page",
+        code: "@scene { cube; } cube { translate: 0 0.6 0; corner-radius: 0.1; color: #ff5a36; animation: turn 1s linear; animation-timeline: scroll(); } @keyframes turn { from { rotate-y: 0deg; } to { rotate-y: 360deg; translate: 0 1.6 0; } }",
+      },
+      {
+        name: "rise into view",
+        code: "@scene { sphere * 3; } sphere { --x: calc(sibling-index() - 2); radius: 0.35; translate: var(--x) 0.35 0; color: #3a7bff; animation: rise 1s ease-out; animation-timeline: view(); } sphere:nth-child(2) { animation-iteration-count: 2; animation-direction: alternate; } @keyframes rise { to { translate: var(--x) 1.6 0; color: #3ad16b; } }",
+      },
+    ],
+  },
+  {
     name: "size",
     appliesTo: ["cube", "plane"],
     syntax: "<number>{1,3} (cube) | <number>{1,2} (plane: width depth)",
@@ -957,6 +975,23 @@ export const SELECTORS: SelectorDef[] = [
     ],
   },
   {
+    name: ":active",
+    anchor: "selector-active",
+    specificity: "100, like a class, added to the rest",
+    description:
+      "A pseudo-class, like CSS: the rule applies while the object is pressed, with the mouse button or a finger. Like CSS, the object pressed stays pressed until the button goes up, even if the pointer leaves it. A pressed object is under the pointer, so the :hover rules still apply while it is pressed, and :active wins over them at equal specificity when written after them: cube:hover { scale: 1.1; } cube:active { scale: 0.95; } gives a button that grows under the mouse and sinks when clicked. It goes wherever :hover goes: on a preceding sibling (sphere:active + cube), on a group (#g:active cube presses every cube of #g when any of its objects is pressed), inside :has() (#lamp:has(#switch:active) #bulb). It changes the animatable properties only, and styles objects, not groups. With transition, pressing takes the transition of the :active rule, and releasing the one of the hovered state. On a touch screen, the finger presses the object it lands on.",
+    examples: [
+      {
+        name: "a button that sinks when pressed",
+        code: "@scene { cube#button; } #button { size: 1.2 0.3 1.2; corner-radius: 0.1; translate: 0 0.15 0; color: #e6e6e6; transition: 0.25s ease-out; } #button:hover { color: #ff5a36; translate: 0 0.25 0; } #button:active { translate: 0 0.05 0; color: #c2401f; transition: 0.06s; }",
+      },
+      {
+        name: "press one, move another",
+        code: "@scene { group#lamp { cylinder#switch; sphere#bulb; } } #switch { radius: 0.3; height: 0.2; translate: -0.8 0.1 0; color: #888888; } #switch:active { scale: 0.9; } #bulb { radius: 0.45; translate: 0.6 0.6 0; color: #555555; transition: 0.4s ease-out; } #lamp:has(#switch:active) #bulb { color: #ffd27a; scale: 1.15; }",
+      },
+    ],
+  },
+  {
     name: ":has()",
     anchor: "selector-has",
     specificity:
@@ -975,6 +1010,23 @@ export const SELECTORS: SelectorDef[] = [
       {
         name: "selector-has",
         code: "@scene { group#lamp { sphere#bulb; cylinder#stand; } } #bulb { translate: 0 1.6 0; radius: 0.35; color: #e6e6e6; } #stand { translate: 0 0.6 0; radius: 0.08; height: 1.2; color: #888888; transition: 0.3s ease-out; } #lamp:has(#bulb:hover) #stand { color: #ff5a36; scale: 1.2; }",
+      },
+    ],
+  },
+  {
+    name: ":not()",
+    anchor: "selector-not",
+    specificity: "its most specific selector, added to the rest, like CSS",
+    description:
+      "A pseudo-class, like CSS: the object matches when none of the selectors in the parentheses does. cube:not(.red) is every cube without the class red; :not(.red, torus) leaves out both. Any selector works inside, read from the object outwards like the rest: cube:not(#g cube) is every cube outside the group #g, cube:not(:first-child, :last-child) the cubes in the middle, group:not(:has(sphere)) the groups without a sphere. Several :not() can follow each other: :not(.a):not(.b). It weighs like the most specific selector of its list, like CSS: cube:not(#hero) beats #hero alone. It is read once, when the scene is compiled: :hover cannot go inside it yet, nor a face.",
+    examples: [
+      {
+        name: "every cube but the red ones",
+        code: "@scene { cube.red; cube * 3; cube.red; } cube { size: 0.6; translate: calc((sibling-index() - 3) * 0.9) 0.3 0; } .red { color: #ff5a36; } cube:not(.red) { color: #e6e6e6; translate: calc((sibling-index() - 3) * 0.9) 0.8 0; }",
+      },
+      {
+        name: "the ones in the middle",
+        code: "@scene { sphere * 6; } sphere { radius: 0.3; translate: calc((sibling-index() - 3.5) * 0.75) 0.4 0; color: #e6e6e6; } sphere:not(:first-child, :last-child) { color: #3a7bff; }",
       },
     ],
   },
@@ -1163,6 +1215,7 @@ export const SHAPE_DOCS: ShapeDef[] = [
       "animation-direction",
       "animation-fill-mode",
       "animation-timing-function",
+      "animation-timeline",
     ],
     examples: [
       {
@@ -1397,6 +1450,24 @@ export const FUNCTIONS: FunctionDef[] = [
       {
         name: "contrast-color()",
         code: "@scene { cube; sphere; } scene { --bg: #3a7bff; background: var(--bg); } cube { translate: 0 0.5 0; color: var(--bg); } sphere { radius: 0.3; translate: 0 1.3 0; color: contrast-color(var(--bg)); }",
+      },
+    ],
+  },
+  {
+    name: "currentColor",
+    anchor: "fn-currentcolor",
+    covers: [],
+    syntax: "currentColor",
+    description:
+      "A keyword, like CSS: the object's own color, wherever a color is expected. color-mix(in oklab, currentColor 60%, white) is a lighter version of whatever color the object has, so one rule can tint many objects of different colors. As a material's color, metal(currentColor, 0.2) is the same as metal(0.2): the material follows the color, animated, changed on :hover, or a gradient. It also works in the stops of a gradient, in light-dark() and in a variable, where it is read with the color of the object that uses the variable. An object without color uses the initial #e6e6e6. Like CSS, it is written currentColor or currentcolor. color: currentColor is an error, since GSS does not inherit color from a group, and the scene has no color for currentColor to read.",
+    examples: [
+      {
+        name: "a lighter shell for every color",
+        code: "@scene { sphere * 3; } sphere { radius: 0.4; translate: calc((sibling-index() - 2) * 1.1) 0.5 0; material: jelly(color-mix(in oklab, currentColor 55%, white), 0.4); } sphere:nth-child(1) { color: #ff5a36; } sphere:nth-child(2) { color: #3ad16b; } sphere:nth-child(3) { color: #3a7bff; }",
+      },
+      {
+        name: "in a variable",
+        code: "@scene { cube#a; cube#b; } scene { --shade: linear-gradient(currentColor, color-mix(in srgb, currentColor, black 60%)); } cube { size: 0.8; material: metal(var(--shade), 0.3); } #a { translate: -0.7 0.4 0; color: #ff5a36; } #b { translate: 0.7 0.4 0; color: #3a7bff; }",
       },
     ],
   },

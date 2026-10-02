@@ -8,6 +8,14 @@ The 0.0.1 history was reconstructed from GitHub.
 
 ### Added
 
+- Scroll-driven animations, like CSS: `animation-timeline: scroll()` (the scroll of the page or of the nearest scroll container, any axis) and `view()` (the scene crossing the screen). The progress of the scroll replaces the time; iterations, direction and easing still apply. In the playground and the docs, a slider over the scene stands in for the scroll.
+
+- `:active`, like CSS: the object pressed with the mouse or a finger, until the button goes up. It goes wherever `:hover` goes (groups, combinators, `:has()`), is drawn over the hovered state, and takes `transition`. On WebGL2 and WebGPU; scenes without `:active` compile as before.
+
+- `currentColor`: the object's own color wherever a color is expected, like CSS: in `color-mix()`, `light-dark()`, gradient stops, a material (`metal(currentColor, 0.2)` follows the animated or hovered color) and variables, read with the color of the object that uses them.
+
+- `:not(<selector list>)`, like CSS: any selector inside, complex ones, `:nth-child()` and `:has()` included (`cube:not(#g cube)`, `group:not(:has(sphere))`); it weighs like its most specific selector. Resolved at compile time.
+
 - Structural pseudo-classes, like CSS: `:nth-child(An+B [of S])`, `:nth-last-child()`, `:nth-of-type()`, `:nth-last-of-type()` (`odd`, `even`, `3`, `2n+1`, `-n+3`…), and `:first-child`, `:last-child`, `:only-child`, `:first-of-type`, `:last-of-type`, `:only-of-type`. The copies of a `* n` are siblings one by one, so `:nth-child()` counts like `sibling-index()`: in `@scene { cube * 4; sphere; }`, `cube:nth-child(odd)` is cubes 1 and 3. Resolved at compile time, at no rendering cost.
 
 - Performance panel for WebGPU: FPS, frame/CPU percentiles, resolution and shader/pipeline preparation time, plus asynchronous GPU timestamps spanning picking, scene rendering and post-processing when `timestamp-query` is available. Profiling remains lazy until the panel is opened and works with automatic backend selection.

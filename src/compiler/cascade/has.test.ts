@@ -60,7 +60,7 @@ describe(":has(): the parser", () => {
   });
 
   it("names :has() among the pseudo-classes GSS knows", () => {
-    expect(() => selector("cube:focus")).toThrow(":hover, :has(), ");
+    expect(() => selector("cube:focus")).toThrow(":hover, :active, :has(), ");
   });
 });
 

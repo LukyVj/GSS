@@ -4,6 +4,7 @@ import type { Token } from "../syntax/tokenizer";
 import type { Styles } from "../cascade/resolve";
 import { findEasing, readEasing, type Easing } from "../values/easing";
 import { errorAt } from "../syntax/errors";
+import { readTimeline, type Timeline } from "./timeline";
 
 export type Direction =
   "normal" | "reverse" | "alternate" | "alternate-reverse";
@@ -17,6 +18,7 @@ export type AnimationSpec = {
   direction: Direction;
   fill: Fill;
   easing: Easing | null; // null: linear, the GSS default
+  timeline?: Timeline; // scroll() or view(): its progress replaces the time (decision 96)
 };
 
 const DIRECTIONS: Direction[] = [
@@ -34,6 +36,7 @@ export const ANIMATION_LONGHANDS = [
   "animation-direction",
   "animation-fill-mode",
   "animation-timing-function",
+  "animation-timeline",
 ];
 
 const SHORTHAND_ERROR =
@@ -188,5 +191,8 @@ export function readAnimation(styles: Styles): AnimationSpec | null {
       );
     spec.easing = read;
   }
+  const timeline = styles["animation-timeline"];
+  const read = timeline ? readTimeline(timeline) : null;
+  if (read) spec.timeline = read;
   return spec;
 }

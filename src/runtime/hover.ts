@@ -29,3 +29,48 @@ export function hoverValues(hover: number[][], id: number): Float32Array {
     triggers.includes(id) ? 1 : 0,
   );
 }
+
+// uHover[] with :active (decision 95): the hover slots, then the pressed slots, which
+// are 1 while their trigger is pressed (pressed: the id of the pressed object, 0: none)
+export function pointerValues(
+  hover: number[][],
+  active: number[][] | undefined,
+  hovered: number,
+  pressed: number,
+): Float32Array {
+  if (!active) return hoverValues(hover, hovered);
+  return Float32Array.from([
+    ...hoverValues(hover, hovered),
+    ...active.map((triggers) => (pressed !== 0 && triggers.includes(pressed) ? 1 : 0)),
+  ]);
+}
+
+// The pressed object, like CSS: the one under the pointer when the button goes down,
+// until it goes up, even if the pointer leaves it. A touch has no hover before it:
+// the first answer of the picking pass after the press decides then.
+export function createPress() {
+  let id = 0;
+  let waiting = false; // pressed over nothing known yet: the next pick decides
+  return {
+    get id() {
+      return id;
+    },
+    down(hovered: number) {
+      id = hovered;
+      waiting = hovered === 0;
+    },
+    picked(found: number) {
+      if (!waiting) return;
+      id = found;
+      waiting = false;
+    },
+    up() {
+      id = 0;
+      waiting = false;
+    },
+    reset() {
+      id = 0;
+      waiting = false;
+    },
+  };
+}

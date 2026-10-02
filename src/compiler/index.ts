@@ -2,7 +2,7 @@ import { tokenize } from "./syntax/tokenizer";
 import { parse } from "./syntax/parser";
 import { expandScene } from "./cascade/expand";
 import { resolveStyles, resolveSceneStyles, FACES, type Face } from "./cascade/resolve";
-import { generateShader, hoverSlots } from "./shader/codegen";
+import { activeSlots, generateShader, hoverSlots } from "./shader/codegen";
 import { validateProperties, validateKeyframes } from "./cascade/validate";
 import { readCamera, type CameraSettings } from "./features/camera";
 import { resolveMath, type CalcContext } from "./values/calc";
@@ -12,6 +12,8 @@ import type { Token } from "./syntax/tokenizer";
 import { ErrorSink, errorAt, rememberSpan, spanOf } from "./syntax/errors";
 import { resolveVars, usesVariables, hasVar, type Variables } from "./cascade/vars";
 import { mediaQueriesOf, resolveIf } from "./values/conditionals";
+import { refuseInColor, resolveCurrentColor } from "./values/current-color";
+import { sceneTimelines, type Timeline } from "./features/timeline";
 import { PROPERTIES } from "./registry/registry";
 import {
   type ColorScheme,
@@ -37,13 +39,19 @@ export type CompiledScene = {
   objects: number; // instances drawn, for the status bar (decision 42)
   textures: string[]; // the image files the runtime loads, once each
   hover: number[][]; // for each slot of uHover[], the ids that, hovered, set it to 1
+  // :active (decision 95): for each slot after the hover slots, the ids that, pressed,
+  // set it to 1. Absent when no rule uses :active.
+  active?: number[][];
+  // scroll() and view() (decision 96): what each component of uTimeline follows.
+  // Absent when every animation runs on time.
+  timelines?: Timeline[];
   // filter: the passes drawn after the scene, when a filter reads its neighbours (decision 83)
   passes?: Pass[];
   // @media: the queries, and the scene for every combination of them. variants[mask]
   // is the scene when the queries whose bit is set in mask match (bit 0: queries[0]).
   // The fields above are variants[0], the scene when none matches.
   media?: { queries: string[]; variants: CompiledScene[] };
-  // for each slot of uHover[], how it glides to 1 (enter) and back to 0 (leave)
+  // for each slot of uHover[] (hover, then active), how it glides to 1 (enter) and back to 0 (leave)
   transitions: { enter: Transition | null; leave: Transition | null }[];
 };
 
@@ -147,7 +155,10 @@ function compileStylesheet(
     context: CalcContext,
   ): Styles {
     const computed = computeColors(
-      computeMath(computeVars(styles, variables), context),
+      computeMath(
+        resolveCurrentColor(computeVars(styles, variables), "object"),
+        context,
+      ),
     );
     const copy = animateVariables(
       styles,
@@ -190,11 +201,17 @@ function compileStylesheet(
       ...seenAt(levels.length - 2),
       ...customProperties(instance.hoverStyles),
     };
+    // Pressed: the :active rules on top of the :hover ones, with their variables
+    const activeVariables: Variables = {
+      ...seenAt(levels.length - 2),
+      ...customProperties(instance.activeStyles),
+    };
 
     return {
       ...instance,
       styles: computeNode(instance.styles, seenAt(levels.length - 1), instance),
       hoverStyles: computeNode(instance.hoverStyles, hoverVariables, instance),
+      activeStyles: computeNode(instance.activeStyles, activeVariables, instance),
       groupStyles: instance.groupStyles.map((styles, g) =>
         computeNode(styles, seenAt(g + 1), instance.groups[g]),
       ),
@@ -214,7 +231,12 @@ function compileStylesheet(
 
   const computedScene =
     errors.run(() =>
-      computeColors(computeMath(computeVars(sceneStyles, rootVariables), null)),
+      computeColors(
+        computeMath(
+          resolveCurrentColor(computeVars(sceneStyles, rootVariables), "scene"),
+          null,
+        ),
+      ),
     ) ?? {};
   // @keyframes with variables are only played through their copies
   const shared = computeKeyframes(
@@ -235,11 +257,20 @@ function compileStylesheet(
   // After the cascade and var(): the texture an object really ends up with
   const textures = errors.run(() => sceneTextures(styled));
   // Like CSS: the transition of the state the object goes to
-  const transitions = errors.run(() =>
-    hoverSlots(styled).map((instance) => ({
+  // Pressing takes the transition of :active, releasing the one of the hovered state
+  const transitions = errors.run(() => [
+    ...hoverSlots(styled).map((instance) => ({
       enter: readTransition(instance.hoverStyles["transition"]),
       leave: readTransition(instance.styles["transition"]),
     })),
+    ...activeSlots(styled).map((instance) => ({
+      enter: readTransition(instance.activeStyles["transition"]),
+      leave: readTransition(instance.hoverStyles["transition"]),
+    })),
+  ]);
+  const active = activeSlots(styled).map((instance) => instance.activeTriggers);
+  const timelines = errors.run(() =>
+    sceneTimelines(styled.flatMap((instance) => [...instance.groupStyles, instance.styles])),
   );
   errors.throwIfAny();
   return {
@@ -250,6 +281,8 @@ function compileStylesheet(
     objects: instances.length,
     textures: textures!,
     hover: hoverSlots(styled).map((instance) => instance.hoverTriggers),
+    ...(active.length > 0 ? { active } : {}),
+    ...(timelines!.length > 0 ? { timelines } : {}),
     transitions: transitions!,
   };
 }
@@ -310,15 +343,11 @@ function animateVariables(
     // At this moment of the animation, the variables of the frame win
     const frameVariables: Variables = { ...variables };
     for (const d of set) frameVariables[d.property] = d.value;
-    const compute = (property: string, value: Token[]) =>
-      colorsOf(
-        property,
-        resolveMath(
-          resolveIf(resolveVars(value, frameVariables), frameVariables, activeMedia),
-          context,
-          property,
-        ),
-      );
+    const compute = (property: string, value: Token[]) => {
+      const resolved = resolveIf(resolveVars(value, frameVariables), frameVariables, activeMedia);
+      refuseInColor(property, resolved);
+      return colorsOf(property, resolveMath(resolved, context, property));
+    };
 
     // The properties the frame writes itself
     const declarations: Declaration[] = own.map((d) =>
@@ -377,6 +406,7 @@ function computeAnimation(animation: Keyframes): Keyframes {
     frames: animation.frames.map((frame) => ({
       ...frame,
       declarations: frame.declarations.map((declaration) => {
+        refuseInColor(declaration.property, declaration.value);
         const value = colorsOf(
           declaration.property,
           resolveMath(

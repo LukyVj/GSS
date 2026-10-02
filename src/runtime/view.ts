@@ -1,13 +1,15 @@
 import type { CameraSettings } from "../compiler/features/camera";
 import type { CompiledScene } from "../compiler";
 import { createTextureStore, resolveImage } from "./textures";
-import { pickPixel, hoverValues } from "./hover";
+import { pickPixel, pointerValues, createPress } from "./hover";
 import { createPicker } from "./picker";
 import { createClock } from "./clock";
 import type { FrameProbe } from "../profiler/profiler";
 import type { Dpr } from "../compiler/features/dpr";
 import { pixelRatio } from "./dpr";
 import { createTransitions } from "./transitions";
+import { createScrollSlider, timelineValues } from "./timeline";
+import type { Timeline } from "../compiler/features/timeline";
 import { pickVariant, watchMedia, matchesNow } from "./media";
 import { createPost } from "./post";
 
@@ -36,6 +38,9 @@ export type ViewOptions = {
   base?: string;
   // Dev only: gets the WebGL context, returns what to tell about each frame
   profile?: (gl: WebGL2RenderingContext) => FrameProbe;
+  // The playground and the docs, which do not scroll: a slider stands in for the
+  // scroll of the page when a scene uses scroll() or view() (decision 96)
+  scrollSlider?: boolean;
 };
 
 // The vertex shader: a giant triangle that covers the whole canvas.
@@ -53,11 +58,15 @@ type GpuScene = {
   uTime: WebGLUniformLocation | null;
   uCamera: WebGLUniformLocation | null;
   uDist: WebGLUniformLocation | null;
+  // scroll() and view(): what each component of uTimeline follows (decision 96)
+  timelines?: Timeline[];
+  uTimeline: WebGLUniformLocation | null;
   // One per image of the scene, in the order of uTexture0, uTexture1…
   textures: WebGLTexture[];
   uTextures: (WebGLUniformLocation | null)[];
   // :hover: for each slot of uHover[], the ids that set it to 1 (empty: no :hover)
   hover: number[][];
+  active?: number[][]; // :active: the slots after the hover slots (decision 95)
   uHover: WebGLUniformLocation | null;
   uPicking: WebGLUniformLocation | null;
   uPick: WebGLUniformLocation | null;
@@ -80,6 +89,8 @@ export function createView(
   // (picker.ts). The answer comes one or two frames later; until then, the last one holds.
   const picker = createPicker(gl);
   let hovered = 0; // the id under the mouse, as last read back (0: nothing)
+  const press = createPress(); // :active: the object pressed, until the button goes up
+  const slider = options.scrollSlider ? createScrollSlider(canvas) : null;
   let dpr: Dpr = "auto"; // the pixel density the scene asks for (scene { dpr })
   let transitions = createTransitions([]); // how each hover slot glides (transition)
   let reducedMotion = false; // freeze(): transitions jump, like the animations stop
@@ -123,6 +134,8 @@ export function createView(
     fragSource: string,
     files: string[],
     hover: number[][],
+    active?: number[][],
+    timelines?: Timeline[],
   ): GpuScene {
     const program = link(fragSource);
     return {
@@ -131,11 +144,14 @@ export function createView(
       uTime: gl!.getUniformLocation(program, "iTime"),
       uCamera: gl!.getUniformLocation(program, "uCamera"),
       uDist: gl!.getUniformLocation(program, "uDist"),
+      timelines,
+      uTimeline: gl!.getUniformLocation(program, "uTimeline"),
       textures: files.map((file) => store.get(resolveImage(file, base))),
       uTextures: files.map((_, i) =>
         gl!.getUniformLocation(program, `uTexture${i}`),
       ),
       hover,
+      active,
       uHover: gl!.getUniformLocation(program, "uHover"),
       uPicking: gl!.getUniformLocation(program, "uPicking"),
       uPick: gl!.getUniformLocation(program, "uPick"),
@@ -183,6 +199,17 @@ export function createView(
       { passive: false },
     );
   }
+
+  // :active: pressed on the object under the pointer; a touch has no hover before it,
+  // so the press also aims the picking pass (decision 95)
+  canvas.addEventListener("pointerdown", (e) => {
+    pointer = { x: e.clientX, y: e.clientY };
+    press.down(hovered);
+  });
+  // Released anywhere, like CSS: the button can go up outside the canvas
+  const release = () => press.up();
+  window.addEventListener("pointerup", release);
+  window.addEventListener("pointercancel", release);
 
   canvas.addEventListener("pointermove", (e) => {
     pointer = { x: e.clientX, y: e.clientY }; // before the return: hover works without a drag
@@ -263,6 +290,11 @@ export function createView(
       gl!.uniform1f(scene.uTime, clock.seconds);
       gl!.uniform2f(scene.uCamera, camera.yaw, camera.pitch);
       gl!.uniform1f(scene.uDist, camera.dist);
+      if (scene.timelines)
+        gl!.uniform4fv(
+          scene.uTimeline,
+          timelineValues(scene.timelines, canvas, slider?.value() ?? null),
+        );
       // Each image on its own texture unit, and each uTextureN told which unit to read
       scene.textures.forEach((texture, i) => {
         gl!.activeTexture(gl!.TEXTURE0 + i);
@@ -271,11 +303,14 @@ export function createView(
       });
       probe?.drawStart(); // before the picking: its pass costs GPU time too
       // :hover: which object is under the mouse, then uHover[] for every slot
-      if (scene.hover.length > 0) {
+      if (scene.hover.length + (scene.active?.length ?? 0) > 0) {
         const id = picker.poll(); // the answer to an earlier request, if it came back
-        if (id !== null && pointer) hovered = id;
+        if (id !== null && pointer) {
+          hovered = id;
+          press.picked(id);
+        }
         requestPick(scene);
-        const targets = hoverValues(scene.hover, hovered);
+        const targets = pointerValues(scene.hover, scene.active, hovered, press.id);
         gl!.uniform1fv(
           scene.uHover,
           transitions.update(targets, now, reducedMotion),
@@ -307,6 +342,8 @@ export function createView(
       compiled.shader,
       compiled.textures,
       compiled.hover,
+      compiled.active,
+      compiled.timelines,
     ); // GLSL errors
     try {
       post.set(compiled.passes); // GLSL errors of the passes
@@ -319,6 +356,8 @@ export function createView(
     scene = next;
     shown = compiled;
     hovered = 0; // the ids belong to the new scene now
+    press.reset();
+    slider?.show(compiled.timelines !== undefined);
     dpr = compiled.dpr;
     transitions = createTransitions(compiled.transitions);
     if (resetCamera) applyCameraSettings(compiled.camera);
@@ -367,6 +406,9 @@ export function createView(
     destroy() {
       probe?.destroy?.();
       stopMedia();
+      window.removeEventListener("pointerup", release);
+      window.removeEventListener("pointercancel", release);
+      slider?.destroy();
       playing = false;
       cancelAnimationFrame(frameId);
       if (scene) gl.deleteProgram(scene.program);

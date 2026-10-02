@@ -60,8 +60,8 @@ describe(":hover in a selector", () => {
   });
 
   it("explains an unknown pseudo-class", () => {
-    expect(() => selector("cube:active")).toThrow(
-      'Unknown pseudo-class ":active": GSS knows :hover',
+    expect(() => selector("cube:focus")).toThrow(
+      'Unknown pseudo-class ":focus": GSS knows :hover',
     );
     expect(() => selector("cube:")).toThrow(/Unknown pseudo-class/);
   });
