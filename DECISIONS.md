@@ -569,6 +569,12 @@ Documentation navigation is grouped by subject in `src/docs/navigation.ts`: Star
 **Why**: every feature since decision 59 added to the same file, and its size was the first thing in the way of reading it, reviewing it or teaching it. A file per part of the shader says where a new feature goes.
 **Checked**: tests and TypeScript green; the shaders and Shadertoy exports of the 193 scenes and registry examples are byte for byte the same before and after.
 
+## 89. The editor suggests property names, from the registry
+
+**Decision**: in the playground and every "Try it", typing a property name opens a list of the properties the rule can take (`runtime/completion.ts`, `propertySuggestions(code, pos)`, wired with `@codemirror/autocomplete` in `editor.ts`). It reads the code up to the cursor with the tokenizer (comments and unfinished code included) and knows which block it is in: a rule, a frame of `@keyframes`, `@scene`, `@media`. A name is expected right after `{` or `;`, or while one word is being typed there; never in a value, a selector, `@scene`, outside a rule, or for a custom property (`--x`). The list follows what `validate.ts` accepts: `scene` takes the scene's properties; a shape, the object properties and its own (`sphere` gets `radius`, not `corner-radius`); a class, an id or `*`, every object property; `group`, what a group takes; `:hover`, what can be animated, and `transition`; a face, `texture`; a frame, what can be animated. Each suggestion shows the syntax of the registry, and its description beside the list; choosing one writes `name: `, ready for the value (just the name when a `:` already follows). The list opens as soon as a letter is typed, or with Ctrl+Space on an empty line.
+**Why**: the registry already knows every property and where it applies; the editor offering exactly those is how someone who knows CSS discovers what GSS has, without leaving the code.
+**Accepted limits**: property names only, not values (`material: g…` does not suggest `gold`), nor shapes in `@scene`, nor selectors. The VS Code extension does not have it yet.
+
 ## Open questions
 
 - **Targeting multiplied ids**: should `#hero` target `hero-1`, `hero-2` and `hero-3`?

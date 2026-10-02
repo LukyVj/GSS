@@ -8,6 +8,8 @@ The 0.0.1 history was reconstructed from GitHub.
 
 ### Added
 
+- The editor of the playground and of the reference suggests property names while you type, only those the rule can take (the scene, a shape, a group, `:hover`, a face, a `@keyframes` frame), each with its syntax and description.
+
 - Every error of a compile is reported at once, not only the first: after an error, the tokenizer and the parser go on reading (to the end of the declaration, the element or the rule), then, once the text reads, every wrong property, value, variable or object is reported. The playground and every "Try it" underline each one and write it under its line, the status bar counts them, and the Vite plugin lists each error with its line and column. One error is still thrown as a `GssError`; several as a `GssErrors`, a `GssError` whose `errors` lists them in the order of the text.
 
 ### Changed

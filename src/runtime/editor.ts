@@ -28,7 +28,14 @@ import {
   indentOnInput,
   indentService,
 } from "@codemirror/language";
-import { closeBrackets, closeBracketsKeymap } from "@codemirror/autocomplete";
+import {
+  autocompletion,
+  closeBrackets,
+  closeBracketsKeymap,
+  type Completion,
+  type CompletionContext,
+  type CompletionResult,
+} from "@codemirror/autocomplete";
 import { setDiagnostics, lintGutter, type Diagnostic } from "@codemirror/lint";
 import type { Renderer } from "./renderer";
 import { classifyGss } from "../docs/highlight";
@@ -36,6 +43,7 @@ import { formatGss } from "../docs/format";
 import { scan } from "../compiler/syntax/tokenizer";
 import { GssError, GssErrors } from "../compiler/syntax/errors";
 import type { Stats } from "./status";
+import { propertySuggestions } from "./completion";
 
 // Where the editor goes, the OK / Error badge (optional: the playground has a
 // status bar instead, fed by onStats), and the message of an error with no place
@@ -161,6 +169,39 @@ const errorLine = StateField.define<DecorationSet>({
   provide: (field) => EditorView.decorations.from(field),
 });
 
+// ----- Autocompletion of property names, from the registry (decision 89) -----
+
+function gssCompletions(context: CompletionContext): CompletionResult | null {
+  const word = context.matchBefore(/[\w-]*/);
+  // Nothing typed: only when asked (Ctrl+Space), not after every { or ;
+  if (!word || (word.from === word.to && !context.explicit)) return null;
+  const found = propertySuggestions(context.state.doc.toString(), context.pos);
+  if (!found) return null;
+  return {
+    from: found.from,
+    options: found.properties.map(
+      (property): Completion => ({
+        label: property.name,
+        type: "property",
+        detail: property.syntax,
+        info: property.description,
+        // "color: ", ready for the value; just the name when a ":" already follows
+        apply: (view, _completion, from, to) => {
+          const colon = view.state.sliceDoc(to, to + 1) === ":";
+          const text = colon ? property.name : `${property.name}: `;
+          view.dispatch({
+            changes: { from, to, insert: text },
+            selection: { anchor: from + text.length },
+          });
+        },
+      }),
+    ),
+    validFor: /^[\w-]*$/,
+  };
+}
+
+const gssAutocomplete = autocompletion({ override: [gssCompletions], icons: false });
+
 // ----- The editor -----
 
 // Shared with the GLSL tab (src/runtime/glsl.ts)
@@ -217,6 +258,21 @@ export const theme = EditorView.theme(
       contain: "inline-size",
       overflowWrap: "anywhere",
     },
+    ".cm-tooltip.cm-tooltip-autocomplete > ul": { fontFamily: "inherit", maxHeight: "16em" },
+    ".cm-tooltip-autocomplete ul li": { padding: "2px 10px" },
+    ".cm-tooltip-autocomplete ul li[aria-selected]": {
+      backgroundColor: "var(--gss-isoline)",
+      color: "var(--gss-bone)",
+    },
+    ".cm-completionMatchedText": { textDecoration: "none", color: "var(--gss-signal)" },
+    ".cm-completionDetail": { color: "var(--gss-ash)", fontStyle: "normal", marginLeft: "1.5em" },
+    ".cm-tooltip.cm-completionInfo": {
+      maxWidth: "340px",
+      padding: "8px 10px",
+      fontSize: "12px",
+      lineHeight: "1.5",
+      whiteSpace: "normal",
+    },
     ".cm-tooltip": {
       backgroundColor: "var(--gss-raised)",
       border: "1px solid var(--gss-isoline)",
@@ -258,6 +314,7 @@ export function connectEditor(
         gssIndent,
         reindentOnBrace,
         gssColors,
+        gssAutocomplete,
         errorLine,
         lintGutter(),
         EditorState.tabSize.of(2),

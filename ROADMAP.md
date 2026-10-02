@@ -102,6 +102,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 | Brand page                 | `/brand` (`brand.html`): marks, wordmark, lockup, icons, social cards                                                                                                        | 57         |
 | Shadertoy export           | `→ shadertoy` button in the playground, images in `iChannel0`…`3` (at most 4)                                                                                                | 60         |
 | Analytics                  | DocSearch Insights (Algolia) + Umami, events through `track()`                                                                                                               | 61         |
+| Autocompletion             | property names while typing, only those the rule can take (scene, shape, group, `:hover`, face, `@keyframes`), with their syntax and description | 89         |
 | Formatter                  | `formatGss`, `Shift+Alt+F` in the playground                                                                                                                                 | 33         |
 | VS Code / Cursor extension | highlighting, formatter, icon for `.gss` files                                                                                                                               | 33         |
 | Design                     | `DESIGN.md` "Distance field", tokens in `src/styles/tokens.css`, what every page shares in `src/styles/site.css` (`@layer site`: a page's own `<style>` always wins)         | –          |
@@ -214,6 +215,7 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 - [x] Document `floor: none` in the registry
 - [x] Update `DECISIONS.md` (groups: decisions 45 to 48)
 - [x] Split `shader/codegen.ts` by concern into `shader/codegen/`, and move `readAngle` / `readNumber` to `values/` ✅ decision 88
+- [ ] Autocompletion: values (`gold`, `ease-out`…), shapes in `@scene`, and the same suggestions in the VS Code extension
 - [ ] Align the TextMate highlighting of the extension with `classifyGss` (web)
 
 ## Out of scope
@@ -231,6 +233,8 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 - Composing surface effects (a "textual shader graph"): to be split before deciding: deforming the shape with noise (a `displace` property, it changes the SDF and can slow the ray march), a `toon` material next to the others, and lighting effects (rim light, fresnel).
 
 ## Done recently
+
+- Autocompletion of property names in the playground and every "Try it", from the registry, filtered by what the rule targets (decision 89)
 
 - Every error of a compile at once: the tokenizer and the parser go on after an error, then every value error once the text reads; all underlined in the editor, counted in the status bar, listed with line and column by the Vite plugin (decision 86)
 - The performance panel is public on gss-lang.dev, closed by default (decision 87)
