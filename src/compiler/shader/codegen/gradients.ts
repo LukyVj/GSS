@@ -30,7 +30,8 @@ export function backgroundCode(styles: Styles, keyframes: Keyframes[]): string {
     return backgroundFunction(gradient, moving);
   }
   refuseGradients(styles, keyframes, "background", undefined);
-  const still = readColor(value, "vec3(0.03)");
+  // A variable set from JS is read at every pixel too (decision 105)
+  const still = styles["background"]?.some((token) => token.type === "EXPR") ? "" : readColor(value, "vec3(0.03)");
   const color = animatedValue(styles, keyframes, "background", (v) => readColor(v, "vec3(0.03)"));
   if (color === still) return `const vec3 BACKGROUND = ${still};`;
   return [

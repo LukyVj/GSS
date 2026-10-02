@@ -9,7 +9,12 @@ The 0.0.1 history was reconstructed from GitHub.
 ### Added
 
 - Animated gradients: a gradient in `color` changes into another gradient of the same kind in `@keyframes`, on `:hover` and `:active` (with `transition`), its angle, center, stop positions and colors each moving on their own. Through a variable, like a registered `@property`: `linear-gradient(var(--angle), …)` turns when `@keyframes` changes `--angle`.
+- `@property` and `setProperty()`: a variable registered like CSS (`syntax`, `inherits`, `initial-value`; numbers, angles, percentages, colors) is set from the page without compiling again: `scene.setProperty("--lift", "2")`, `getPropertyValue()`, `removeProperty()`, on what `mount()` returns and on `<gss-scene>`. It drives `translate`, `rotate-*`, `scale`, `color`, `offset-distance` and `background` for now.
 - The scene plays an animation: `scene { animation: … }` animates `background`, a color or a gradient, directly or through the scene's variables, on time or with `scroll()` and `view()`. With `@scene { }` and `floor: none`, the scene becomes a flat, moving image.
+
+### Fixed
+
+- A value computed by `calc()` or `sibling-index()` that goes out of its range is clamped to it, like CSS, instead of being an error: `color-mix(in oklab, #ff5a36, #3a7bff calc(sibling-index() * 40% - 20%))` holds the last copies at 100%. The same goes for filter amounts, the x of `cubic-bezier()`, a transition duration, `animation-iteration-count`, `blend`, `ambient`, `corner-radius`, the radii of a cone, the frost of `glass()` and `dpr`. A value written as is outside its range is still an error.
 
 ## [0.0.3] — 2026-10-02
 

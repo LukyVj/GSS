@@ -12,6 +12,7 @@ import { createScrollSlider, timelineValues } from "./timeline";
 import type { Timeline } from "../compiler/features/timeline";
 import { pickVariant, watchMedia, matchesNow } from "./media";
 import { createPost } from "./post";
+import { createProperties } from "./properties";
 
 // Draws compiled GSS scenes in a canvas, with a camera the mouse can move.
 // It never imports the compiler (decision 63): a page that embeds a scene compiled
@@ -29,6 +30,11 @@ export type View = {
   freeze(frozen: boolean): void;
   // Stops the loop and frees the GPU (browsers limit the number of WebGL canvases)
   destroy(): void;
+  // @property (decision 105): a variable the scene registers, set from the page without
+  // compiling again, like element.style.setProperty(). The value stays when the scene changes.
+  setProperty(name: string, value: string | number): void;
+  getPropertyValue(name: string): string;
+  removeProperty(name: string): void;
 };
 
 export type ViewOptions = {
@@ -70,6 +76,7 @@ type GpuScene = {
   uHover: WebGLUniformLocation | null;
   uPicking: WebGLUniformLocation | null;
   uPick: WebGLUniformLocation | null;
+  uProperties: WebGLUniformLocation | null; // @property (decision 105)
 };
 
 export function createView(
@@ -96,6 +103,7 @@ export function createView(
   let reducedMotion = false; // freeze(): transitions jump, like the animations stop
   let shown: CompiledScene | null = null; // the version on screen (@media)
   let stopMedia = () => {}; // stops listening to the @media queries of the scene
+  const properties = createProperties(); // @property: what the page set (decision 105)
 
   function compileShader(type: number, source: string): WebGLShader {
     const shader = gl!.createShader(type)!;
@@ -155,6 +163,7 @@ export function createView(
       uHover: gl!.getUniformLocation(program, "uHover"),
       uPicking: gl!.getUniformLocation(program, "uPicking"),
       uPick: gl!.getUniformLocation(program, "uPick"),
+      uProperties: gl!.getUniformLocation(program, "uProperties"),
     };
   }
 
@@ -290,6 +299,8 @@ export function createView(
       gl!.uniform1f(scene.uTime, clock.seconds);
       gl!.uniform2f(scene.uCamera, camera.yaw, camera.pitch);
       gl!.uniform1f(scene.uDist, camera.dist);
+      const values = properties.values();
+      if (values) gl!.uniform4fv(scene.uProperties, values);
       if (scene.timelines)
         gl!.uniform4fv(
           scene.uTimeline,
@@ -355,6 +366,7 @@ export function createView(
     if (scene) gl!.deleteProgram(scene.program);
     scene = next;
     shown = compiled;
+    properties.use(compiled.properties);
     hovered = 0; // the ids belong to the new scene now
     press.reset();
     slider?.show(compiled.timelines !== undefined);
@@ -403,6 +415,9 @@ export function createView(
       clock.freeze(frozen);
       reducedMotion = frozen;
     },
+    setProperty: properties.set,
+    getPropertyValue: properties.get,
+    removeProperty: properties.remove,
     destroy() {
       probe?.destroy?.();
       stopMedia();

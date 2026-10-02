@@ -7,6 +7,7 @@ import { createTransitions } from "./transitions";
 import { createScrollSlider, timelineValues } from "./timeline";
 import { matchesNow, pickVariant, watchMedia } from "./media";
 import { resolveImage } from "./textures";
+import { createProperties } from "./properties";
 
 type ImageEntry = { texture: GPUTexture; image: HTMLImageElement };
 type Pipeline = { pipeline: GPURenderPipeline; inputs: number[]; textures: string[] };
@@ -55,6 +56,7 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
   const press = createPress(); // :active (decision 95)
   const slider = options.scrollSlider ? createScrollSlider(canvas) : null; // decision 96
   let reducedMotion = false;
+  const properties = createProperties(); // @property: what the page set (decision 105)
   let transitions = createTransitions([]);
   let settings: CompiledScene["camera"] | null = null;
   const camera = { yaw: 0, pitch: 0, dist: 8, dragging: false };
@@ -154,8 +156,8 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
     const count = Math.max(compiled.textures.length, compiled.passes?.length ? 3 : 0);
     if (count > device.limits.maxSampledTexturesPerShaderStage) throw new Error("This scene exceeds the WebGPU device's texture limit");
     const slots = compiled.hover.length + (compiled.active?.length ?? 0);
-    // uTimeline goes after the hover slots (decision 96)
-    const size = 48 + 16 * Math.max(1, slots) + (compiled.timelines ? 16 : 0);
+    // uTimeline goes after the hover slots (decision 96), uProperties after it (decision 105)
+    const size = 48 + 16 * Math.max(1, slots) + (compiled.timelines ? 16 : 0) + 16 * (compiled.properties?.length ?? 0);
     if (size > device.limits.maxUniformBufferBindingSize) throw new Error("This scene exceeds the WebGPU device's uniform buffer limit");
     const layout = device.createBindGroupLayout({ entries: [
       { binding: 0, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform", minBindingSize: size } },
@@ -188,6 +190,7 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
     if (destroyed || ticket !== revision) { release(next); return; }
     if (scene) release(scene);
     scene = next;
+    properties.use(compiled.properties);
     probe?.shaderBuilt(performance.now() - start);
     hovered = 0; press.reset(); pickGeneration++;
     slider?.show(compiled.timelines !== undefined);
@@ -226,7 +229,10 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
       const targets = transitions.update(pointerValues(current.compiled.hover, current.compiled.active, hovered, press.id), now, reducedMotion);
       targets.forEach((value, i) => { v[12 + 4 * i] = value; });
       const { timelines, hover, active } = current.compiled;
-      if (timelines) v.set(timelineValues(timelines, canvas, slider?.value() ?? null), 12 + 4 * Math.max(1, hover.length + (active?.length ?? 0)));
+      const after = 12 + 4 * Math.max(1, hover.length + (active?.length ?? 0));
+      if (timelines) v.set(timelineValues(timelines, canvas, slider?.value() ?? null), after);
+      const values = properties.values();
+      if (values) v.set(values, after + (timelines ? 4 : 0));
       device.queue.writeBuffer(current.uniforms, 0, v);
       const encoder = device.createCommandEncoder();
       let picking = false;
@@ -281,6 +287,9 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
     pause() { playing = false; cancelAnimationFrame(frameId); },
     play() { if (playing || destroyed) return; playing = true; clock.resume(performance.now()); frameId = requestAnimationFrame(frame); },
     freeze(frozen) { clock.freeze(frozen); reducedMotion = frozen; },
+    setProperty: properties.set,
+    getPropertyValue: properties.get,
+    removeProperty: properties.remove,
     destroy() {
       if (destroyed) return;
       destroyed = true; revision++; pickGeneration++; playing = false;

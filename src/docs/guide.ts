@@ -69,6 +69,7 @@ INSTALLATION.push(
       `<pre><code class="sh">npm install gss-lang@${VERSION}</code></pre>`,
       `<pre><code class="js">${highlightCode("js", EMBED_SNIPPETS[1].code)}</code></pre>`,
       "Pass an existing canvas element to <code>mount</code>. Use <code>scene.update(source)</code> to replace the scene and <code>scene.destroy()</code> when removing it.",
+      'A variable the scene registers with <code>@property</code> is set from the page without compiling again, like a CSS custom property: <code>scene.setProperty("--lift", "2")</code>, <code>scene.getPropertyValue("--lift")</code>, <code>scene.removeProperty("--lift")</code>. Drive it from a slider, the scroll or your data.',
     ],
   },
   {

@@ -26,6 +26,12 @@ import { readDpr, type Dpr } from "./features/dpr";
 import { readTransition, type Transition } from "./features/transition";
 import { buildPasses, objectFilters, readSteps, type Pass } from "./features/filter";
 import { generateWGSL } from "./shader/wgsl";
+import {
+  propertyFloats,
+  propertyToken,
+  readPropertyRules,
+  type RegisteredProperty,
+} from "./features/properties";
 
 export type CompileOptions = { target?: "glsl" | "dual" };
 
@@ -47,6 +53,9 @@ export type CompiledScene = {
   timelines?: Timeline[];
   // filter: the passes drawn after the scene, when a filter reads its neighbours (decision 83)
   passes?: Pass[];
+  // @property (decision 105): the variables the page sets from JS, in the order of
+  // uProperties[], with the 4 floats each starts from. Absent when there is none.
+  properties?: RegisteredProperty[];
   // @media: the queries, and the scene for every combination of them. variants[mask]
   // is the scene when the queries whose bit is set in mask match (bit 0: queries[0]).
   // The fields above are variants[0], the scene when none matches.
@@ -143,7 +152,11 @@ function compileStylesheet(
 
   // The scene is the root of the variables, like :root in CSS
   const sceneStyles = errors.run(() => resolveSceneStyles(stylesheet.rules)) ?? {};
-  const rootVariables = customProperties(sceneStyles);
+  // @property (decision 105): each registered variable reads its uniform; the scene gives
+  // its start value, or its initial-value does
+  const registered = errors.run(() => registeredProperties(stylesheet, sceneStyles)) ?? [];
+  const live: Variables = Object.fromEntries(registered.map((p, i) => [p.name, [propertyToken(p, i)]]));
+  const rootVariables = { ...customProperties(sceneStyles), ...live };
 
   // The copies of @keyframes made for one object, when they use variables (decision 55)
   const copies: Keyframes[] = [];
@@ -185,6 +198,15 @@ function compileStylesheet(
     return computed ? [computed] : [];
   });
   function computeInstance(instance: (typeof resolved)[number]) {
+    // A registered variable has one value for the whole scene (decision 105)
+    for (const styles of [
+      instance.styles,
+      instance.hoverStyles,
+      instance.activeStyles,
+      ...instance.groupStyles,
+      ...FACES.map((face) => instance.faceStyles[face]),
+    ])
+      for (const name of Object.keys(live)) if (styles[name]) throw oneValue(name, styles[name]);
     // Level 0 = the scene, 1… = the groups from the outside in, last = the object
     const levels = [
       rootVariables,
@@ -257,7 +279,7 @@ function compileStylesheet(
         computedScene["filter"] ? readSteps(computedScene["filter"]) : [],
       ).passes,
   );
-  const shader = checkedShader(styled, computedScene, [...shared, ...copies], errors);
+  const shader = checkedShader(styled, computedScene, [...shared, ...copies], errors, registered.length);
   const camera = errors.run(() => readCamera(computedScene));
   const dpr = errors.run(() => readDpr(computedScene));
   // After the cascade and var(): the texture an object really ends up with
@@ -281,6 +303,7 @@ function compileStylesheet(
   errors.throwIfAny();
   return {
     ...(passes!.length > 0 ? { passes } : {}),
+    ...(registered.length > 0 ? { properties: registered } : {}),
     shader: shader!,
     camera: camera!,
     dpr: dpr!,
@@ -300,17 +323,53 @@ function checkedShader(
   sceneStyles: Styles,
   keyframes: Keyframes[],
   errors: ErrorSink,
+  properties: number,
 ): string | undefined {
   const whole = new ErrorSink();
-  const shader = whole.run(() => generateShader(styled, sceneStyles, keyframes));
+  const shader = whole.run(() => generateShader(styled, sceneStyles, keyframes, properties));
   if (shader !== undefined) return shader;
   const before = errors.size;
-  errors.run(() => generateShader([], sceneStyles, keyframes));
+  errors.run(() => generateShader([], sceneStyles, keyframes, properties));
   for (const instance of styled)
-    errors.run(() => generateShader([instance], sceneStyles, keyframes));
+    errors.run(() => generateShader([instance], sceneStyles, keyframes, properties));
   // An error that needs several objects together: the one the whole scene gave
   if (errors.size === before) whole.list.forEach((error) => errors.add(error));
   return undefined;
+}
+
+// The variables registered with @property (decision 105), with the 4 floats each starts
+// from: the value the scene gives it, or its initial-value. A frame cannot set one.
+function registeredProperties(stylesheet: Stylesheet, sceneStyles: Styles): RegisteredProperty[] {
+  const rules = readPropertyRules(stylesheet.properties);
+  for (const animation of stylesheet.keyframes)
+    for (const frame of animation.frames)
+      for (const d of frame.declarations)
+        if (rules.some((rule) => rule.name === d.property)) throw oneValue(d.property, d);
+  const variables = customProperties(sceneStyles);
+  return rules.map((rule) => {
+    const start = sceneStyles[rule.name];
+    const value = start ? resolveIf(resolveVars(start, variables), variables, activeMedia) : rule.initial;
+    const computed = colorsOf(rule.syntax === "color" ? "color" : "", resolveMath(value, null));
+    const what = start ? `${rule.name} on the scene` : `the initial-value of ${rule.name}`;
+    return { name: rule.name, syntax: rule.syntax, initial: propertyFloats(rule.syntax, computed, what) };
+  });
+}
+
+function oneValue(name: string, at: object): Error {
+  return errorAt(at, `${name} is registered with @property: it has one value for the whole scene, set on scene or from JS`);
+}
+
+// The properties a registered variable can go in, for now (decision 105): those the
+// shader already computes at every frame
+const LIVE_PROPERTIES = ["translate", "rotate-x", "rotate-y", "rotate-z", "scale", "color", "offset-distance", "background"];
+
+function refuseLive(property: string, value: Token[]): void {
+  const token = value.find((t) => t.type === "EXPR");
+  if (!token) return;
+  if (!LIVE_PROPERTIES.includes(property))
+    throw errorAt(value, `${token.value} is set from JS: it can go in ${LIVE_PROPERTIES.slice(0, -1).join(", ")} and background, for now`);
+  if (value.some((t, i) => t.type === "IDENT" && value[i + 1]?.type === "PUNCT" && value[i + 1].value === "("))
+    throw errorAt(value, `${token.value} is set from JS: it cannot go inside calc() or another function yet`);
 }
 
 // Does a @keyframes block set a variable, or read one?
@@ -366,6 +425,7 @@ function animateVariables(
     for (const d of set) frameVariables[d.property] = d.value;
     const compute = (property: string, value: Token[]) => {
       const resolved = resolveIf(resolveVars(value, frameVariables), frameVariables, activeMedia);
+      refuseLive(property, resolved);
       refuseInColor(property, resolved);
       return colorsOf(property, resolveMath(resolved, context, property));
     };
@@ -461,6 +521,7 @@ function computeVars(styles: Styles, variables: Variables): Styles {
   for (const [property, value] of Object.entries(styles)) {
     if (property.startsWith("--")) continue;
     computed[property] = resolveIf(resolveVars(value, variables), variables, activeMedia);
+    refuseLive(property, computed[property]);
   }
   return computed;
 }

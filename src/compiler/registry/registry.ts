@@ -901,6 +901,22 @@ export const AT_RULES: AtRuleDef[] = [
     ],
   },
   {
+    name: "property",
+    syntax: '@property --<name> { syntax: "<number>" | "<angle>" | "<percentage>" | "<color>"; inherits: true | false; initial-value: <value>; }',
+    description:
+      "Registers a variable that the page sets from JavaScript without compiling the scene again, like CSS @property. The syntax says what it holds: a number, an angle, a percentage or a color; inherits is required, like CSS; initial-value is its value until the page sets another one. A registered variable has one value for the whole scene, like a variable on :root: scene { --speed: 8; } gives its start value, and declaring it on an object, a group, a :hover rule or a @keyframes frame is an error. From the page, the scene that mount() returns (or the scene property of <gss-scene>) sets it: scene.setProperty(\"--lift\", \"2\"), with a string like CSS (\"90deg\", \"50%\", any CSS color) or a number for a <number>; scene.getPropertyValue(\"--lift\") reads it back, scene.removeProperty(\"--lift\") returns to the start value. The value stays when the scene is updated, as long as the variable keeps its syntax. For now, a registered variable goes in translate, rotate-x, rotate-y, rotate-z, scale, color, offset-distance and background, written alone (translate: 0 var(--lift) 0), not inside calc() or another function. The Shadertoy export keeps the initial values.",
+    examples: [
+      {
+        name: "property",
+        code: '@property --lift { syntax: "<number>"; inherits: false; initial-value: 1; } @scene { sphere; } sphere { translate: 0 var(--lift) 0; radius: 0.5; color: #ff5a36; }',
+      },
+      {
+        name: "property",
+        code: '@property --tint { syntax: "<color>"; inherits: false; initial-value: #3a7bff; } @property --turn { syntax: "<angle>"; inherits: false; initial-value: 30deg; } @scene { cube; } scene { --tint: #ff5a36; } cube { translate: 0 0.8 0; rotate-y: var(--turn); color: var(--tint); }',
+      },
+    ],
+  },
+  {
     name: "media",
     syntax: "@media <media-query> { <rule> … }",
     description:

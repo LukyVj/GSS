@@ -21,7 +21,7 @@ export async function mountAsync(
   try { await view.show(compiled); }
   catch (error) { view.destroy(); throw error; }
   const lifecycle = observe(canvas, view);
-  return { ...lifecycle, backend: view.backend, update: next => view.show(next) };
+  return { ...lifecycle, ...variables(view), backend: view.backend, update: next => view.show(next) };
 }
 
 export type MountOptions = ViewOptions;
@@ -34,6 +34,11 @@ export type GssScene = {
   play(): void;
   // Frees the GPU (a browser keeps about 16 WebGL contexts)
   destroy(): void;
+  // A variable the scene registers with @property, set without compiling again, like
+  // element.style.setProperty(): scene.setProperty("--speed", "8")
+  setProperty(name: string, value: string | number): void;
+  getPropertyValue(name: string): string;
+  removeProperty(name: string): void;
 };
 
 export function mount(
@@ -44,7 +49,16 @@ export function mount(
   const view = createView(canvas, options);
   try { view.show(compiled); }
   catch (error) { view.destroy(); throw error; }
-  return { ...observe(canvas, view), update: next => view.show(next) };
+  return { ...observe(canvas, view), ...variables(view), update: next => view.show(next) };
+}
+
+// @property (decision 105): the variables of the scene, set from the page
+function variables(view: Pick<GssScene, "setProperty" | "getPropertyValue" | "removeProperty">) {
+  return {
+    setProperty: view.setProperty,
+    getPropertyValue: view.getPropertyValue,
+    removeProperty: view.removeProperty,
+  };
 }
 
 function observe(canvas: HTMLCanvasElement, view: Pick<GssScene, "pause" | "play" | "destroy"> & { freeze(frozen: boolean): void }) {

@@ -8,7 +8,13 @@ export type Token =
   | { type: "PUNCT"; value: string } // { } : ; , ( ) . * + - / > ~ < = (< and = for media ranges)
   | { type: "DIMENSION"; value: number; unit: string } // 70deg, 24s
   | { type: "PERCENTAGE"; value: number } // 50%, 12.5%
-  | { type: "STRING"; value: string }; // "M0 0 L1 1", without the quotes
+  | { type: "STRING"; value: string } // "M0 0 L1 1", without the quotes
+  // Never written: what var() gives for a variable registered with @property (decision 105).
+  // value is its name, code the GLSL that reads it (uProperties[0].x)
+  | { type: "EXPR"; value: string; code: string; syntax: PropertySyntax };
+
+// The syntaxes of @property that GSS reads (decision 105)
+export type PropertySyntax = "number" | "angle" | "percentage" | "color";
 
 import { ErrorSink, GssError, rememberSpan } from "./errors";
 

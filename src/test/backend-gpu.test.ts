@@ -22,8 +22,8 @@ beforeAll(async () => {
 }, 60000);
 afterAll(async () => { await browser?.close(); await server?.close(); });
 
-async function render(source: string, hover = false) {
-  return page.evaluate(async ({ compiled, hover }) => {
+async function render(source: string, hover = false, set?: [string, string]) {
+  return page.evaluate(async ({ compiled, hover, set }) => {
     const createViewAsync = (window as any).__createViewAsync;
     async function capture(backend: string) {
       const canvas = document.createElement("canvas");
@@ -32,6 +32,7 @@ async function render(source: string, hover = false) {
       const view = await createViewAsync(canvas, { backend });
       view.freeze(true);
       await view.show(compiled);
+      if (set) view.setProperty(...set); // @property (decision 105)
       if (hover) {
         const box = canvas.getBoundingClientRect();
         canvas.dispatchEvent(new PointerEvent("pointermove", { clientX: box.left + 48, clientY: box.top + 36 }));
@@ -48,7 +49,7 @@ async function render(source: string, hover = false) {
       return pixels;
     }
     return { gl: await capture("webgl"), gpu: await capture("webgpu") };
-  }, { compiled: compileScene(source), hover });
+  }, { compiled: compileScene(source), hover, set });
 }
 const cases: [string, string, boolean?][] = [
   ["matte and camera", "@scene { sphere; } sphere { color: red; translate: 0 1 0; }"],
@@ -77,6 +78,16 @@ describe("WebGPU and WebGL2 render the same scenes", () => {
     }
   }, 60000);
 });
+
+// A variable set from JS reaches the uniform, after the hover slots, on both backends
+it("setProperty() changes the scene without compiling again (decision 105)", async () => {
+  const source = '@property --tint { syntax: "<color>"; inherits: false; initial-value: #ff0000; } @scene { sphere; } scene { camera-angle: 0deg 0deg; camera-distance: 5; camera-target: 0 0 0; floor: none; ambient: 1; } sphere { radius: 1; color: var(--tint); } sphere:hover { scale: 1.1; }';
+  const center = (36 * 96 + 48) * 4;
+  const before = await render(source);
+  const after = await render(source, false, ["--tint", "rgb(0 0 255)"]);
+  for (const pixels of [before.gl, before.gpu]) expect(pixels[center]).toBeGreaterThan(pixels[center + 2]);
+  for (const pixels of [after.gl, after.gpu]) expect(pixels[center + 2]).toBeGreaterThan(pixels[center]);
+}, 60000);
 
 // The screen is seen like a CSS page: x to the right, y up, z toward the viewer
 describe("the default camera does not mirror the scene", () => {

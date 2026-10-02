@@ -45,6 +45,7 @@ export function generateShader(
   instances: StyledInstance[],
   sceneStyles: Styles = {},
   keyframes: Keyframes[] = [],
+  properties = 0, // the variables registered with @property: uProperties[] (decision 105)
 ): string {
   // scroll() and view(): one component of uTimeline each (decision 96)
   const timelines = sceneTimelines([
@@ -274,6 +275,9 @@ export function generateShader(
         (timelines.length > 0
           ? `uniform vec4 uTimeline; // scroll() and view(): the progress of each, 0 to 1${slots.length > 0 ? "\n" : ""}`
           : "") +
+          (properties > 0
+            ? `uniform vec4 uProperties[${properties}]; // @property: the variables set from JS${slots.length > 0 ? "\n" : ""}`
+            : "") +
           (slots.length > 0
             ? `uniform float uHover[${slots.length}]; // 0 at rest, 1 hovered
 uniform bool uPicking; // true: draw the id of the object under uPick, not its color

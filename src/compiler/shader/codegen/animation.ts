@@ -7,6 +7,7 @@ import { type Easing, stepsShape } from "../../values/easing";
 import { readAnimation, type AnimationSpec } from "../../features/animation";
 import { timelineCode, type Timeline } from "../../features/timeline";
 import { glslFloat, round, type Hover } from "./glsl";
+import { liveRead } from "./properties";
 
 // The objects that can be hovered, in scene order: each one gets a slot in uHover[]
 export function hoverSlots(instances: StyledInstance[]): StyledInstance[] {
@@ -168,6 +169,7 @@ export function animatedValue(
   property: string,
   read: (value: Token[] | undefined) => string,
 ): string {
+  read = liveRead(property, read); // a variable set from JS (decision 105)
   const own = read(styles[property]);
   const animation = readAnimation(styles);
   if (!animation) return own;

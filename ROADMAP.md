@@ -21,7 +21,7 @@ What the language and the tools can do today. Each feature is detailed in the re
 | Animation            | `@keyframes` (`from`, `to`, `%`), `animation: name duration [easing] [delay] [count \| infinite] [direction] [fill-mode]` and the six longhands, computed in the shader; driven by the scroll with `animation-timeline: scroll()` / `view()` | 21, 22, 23, 24, 70, 96 |
 | Easings              | `linear`, `ease`, `ease-in`, `ease-out`, `ease-in-out`, `step-start`, `step-end`, `cubic-bezier()`, `linear()`, `steps()`, in `@keyframes` and `transition` | 68, 80                |
 | Media queries        | `@media (…) { … }`: any query the browser knows (width, orientation, `prefers-color-scheme`, `prefers-reduced-motion`…), up to 4 per scene, switched live; range syntax (`width < 600px`); `if(media(…))` and `light-dark()` add their own (dec. 79, 81)                                   | 71                    |
-| Math                 | `calc()`, `min()`, `max()`, `clamp()`, `abs()`, `sqrt()`, `pow()`, trigonometry and its inverses (`asin()` … `atan2()`), `sign()`, `round()`, `mod()`, `rem()`, `hypot()`, `log()`, `exp()`, `progress()`, `random()`, `pi`, `e` | 52, 78, 81               |
+| Math                 | `calc()`, `min()`, `max()`, `clamp()`, `abs()`, `sqrt()`, `pow()`, trigonometry and its inverses (`asin()` … `atan2()`), `sign()`, `round()`, `mod()`, `rem()`, `hypot()`, `log()`, `exp()`, `progress()`, `random()`, `pi`, `e` | 52, 78, 81, 104          |
 | Variables            | `--size: 2`, `var(--size, 1)`; inherited scene → group → object, a variable can use another, animatable in `@keyframes`                                                                     | 55                    |
 | Colors               | `#ff5a36`, `rgb()`, `hsl()`, `hwb()`, `lab()`, `lch()`, `oklab()`, `oklch()`, `color()`, `color-mix()`, `light-dark()`, `contrast-color()`, `currentColor` (dec. 94), the 148 CSS names (`tomato`) where a color is expected; a gradient (`linear-`, `radial-`, `conic-`, dec. 82, 98) in `color` or a material, animated in `color` (dec. 102); math and `var()` inside | 58, 79                |
 | CSS-style loops      | `sibling-index()`, `sibling-count()`: each copy of a `* n` gets its own value                                                                                                               | 52                    |
@@ -133,7 +133,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 **Next, in Lucas's order** (Oct. 2, after 0.0.3; replaces the list of Oct. 1):
 
 1. ~~**Animated gradients**~~ ✅ decisions 102, 103: a gradient changes into another of the same kind in `@keyframes` and on `:hover`, through a variable too; the scene plays an animation, so its `background` moves (a flat, moving image)
-2. **`setProperty()` from JS** (see Rendering passes / runtime API)
+2. **`setProperty()` from JS**: first step ✅ decision 105 (`@property`, `setProperty()` / `getPropertyValue()` / `removeProperty()`, in `translate`, `rotate-*`, `scale`, `color`, `offset-distance`, `background`). Next steps, Lucas's choice "everywhere": inside `calc()`, the color functions (`hsl(var(--hue) …)`), the sizes of shapes (without their bounding spheres), materials, `light`, `ambient`, `floor`, filters
 3. **Nesting** with `&`
 4. **`transform-origin`**
 5. **Fog**
@@ -233,7 +233,7 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 ### Rendering passes / runtime API
 
 - [x] **Post-processing as a `filter` list on the scene** ✅ decision 83: the pixel filters at the end of the scene's shader, `blur()` and `bloom()` as passes (`runtime/post.ts`). Still to do: `drop-shadow()` and `opacity()` (transparency), `backdrop-filter`, a fog drawn from the depth, the passes in the Shadertoy export (Buffers A, B…)
-- [ ] **Custom properties set from JS without recompiling**: `scene.setProperty('--speed', 8)` on what `mount()` / `<gss-scene>` return, like `element.style.setProperty`. A variable declared as drivable (close to `@property`) becomes a uniform; the others stay resolved at compile time. Lets a page drive a scene from the scroll, a slider or data
+- [~] **Custom properties set from JS without recompiling** (first step ✅ decision 105): `scene.setProperty('--speed', 8)` on what `mount()` / `<gss-scene>` return, like `element.style.setProperty`. A variable declared as drivable (close to `@property`) becomes a uniform; the others stay resolved at compile time. Lets a page drive a scene from the scroll, a slider or data
 
 ### Backend
 

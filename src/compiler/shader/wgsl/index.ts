@@ -39,6 +39,7 @@ class Lowering {
   private structs = new Map<string, Field[]>();
   private uniforms = new Map<string, string>();
   private hover = 0;
+  private properties = 0;
   private gradient = false;
   private serial = 0;
 
@@ -94,7 +95,12 @@ class Lowering {
         const name = this.take();
         this.uniforms.set(name, type);
         this.symbols.set(name, type);
-        if (this.accept("[")) { this.hover = Number(this.take()); this.expect("]"); }
+        if (this.accept("[")) {
+          const size = Number(this.take());
+          if (name === "uProperties") this.properties = size; // @property (decision 105)
+          else this.hover = size;
+          this.expect("]");
+        }
         this.expect(";");
         continue;
       }
@@ -123,8 +129,9 @@ class Lowering {
     }
     const textures = [...this.uniforms].filter(([, type]) => type === TYPES.sampler2D);
     return [
-      // scroll() and view() (decision 96): after hover, so that no other offset moves
-      `struct GssUniforms {\n  resolutionTime: vec4<f32>,\n  cameraDistanceRatio: vec4<f32>,\n  pick: vec4<f32>,\n  hover: array<vec4<f32>, ${Math.max(1, this.hover)}>,\n${this.uniforms.has("uTimeline") ? "  timeline: vec4<f32>,\n" : ""}}`,
+      // scroll() and view() (decision 96): after hover, so that no other offset moves;
+      // @property (decision 105) after them
+      `struct GssUniforms {\n  resolutionTime: vec4<f32>,\n  cameraDistanceRatio: vec4<f32>,\n  pick: vec4<f32>,\n  hover: array<vec4<f32>, ${Math.max(1, this.hover)}>,\n${this.uniforms.has("uTimeline") ? "  timeline: vec4<f32>,\n" : ""}${this.properties ? `  properties: array<vec4<f32>, ${this.properties}>,\n` : ""}}`,
       "@group(0) @binding(0) var<uniform> gss: GssUniforms;",
       ...(textures.length ? ["@group(0) @binding(1) var gssSampler: sampler;"] : []),
       ...textures.map(([name], i) => `@group(0) @binding(${i + 2}) var ${nameOf(name)}: texture_2d<f32>;`),
@@ -260,7 +267,7 @@ class Lowering {
         const uniform: Record<string, string> = {
           iResolution: "gss.resolutionTime.xyz", iTime: "gss.resolutionTime.w",
           uCamera: "gss.cameraDistanceRatio.xy", uDist: "gss.cameraDistanceRatio.z", uRatio: "gss.cameraDistanceRatio.w",
-          uPick: "gss.pick.xy", uPicking: "(gss.pick.z != 0.0)", uHover: "gss.hover", uTimeline: "gss.timeline",
+          uPick: "gss.pick.xy", uPicking: "(gss.pick.z != 0.0)", uHover: "gss.hover", uTimeline: "gss.timeline", uProperties: "gss.properties",
         };
         expr = { code: this.uniforms.has(token) ? uniform[token] ?? nameOf(token) : nameOf(token), type };
       }

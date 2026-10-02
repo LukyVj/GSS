@@ -134,6 +134,13 @@ function readDistance(path: OffsetPath, value: Token[] | undefined): string {
   if (!value) return "0.0";
   const [token] = value;
   if (value.length === 1 && token.type === "NUMBER") return glslFloat(round(token.value));
+  // A variable set from JS (decision 105): a number, or a share of the path's length
+  if (value.length === 1 && token.type === "EXPR" && token.syntax === "number") return token.code;
+  if (value.length === 1 && token.type === "EXPR" && token.syntax === "percentage") {
+    if (path.type === "ray")
+      throw errorAt(value, "A ray has no length: give offset-distance in units, like: offset-distance: 2;");
+    return `(${token.code} / 100.0 * ${glslFloat(round(path.length))})`;
+  }
   if (value.length === 1 && token.type === "PERCENTAGE") {
     if (path.type === "ray")
       throw errorAt(value, "A ray has no length: give offset-distance in units, like: offset-distance: 2;");

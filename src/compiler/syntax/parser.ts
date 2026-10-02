@@ -329,7 +329,7 @@ export function parse(tokens: Token[], errors?: ErrorSink): Stylesheet {
   }
 
   // The whole file: a sequence of @scene and rules
-  const stylesheet: Stylesheet = { scene: [], rules: [], keyframes: [] };
+  const stylesheet: Stylesheet = { scene: [], rules: [], keyframes: [], properties: [] };
 
   // One @scene, @keyframes, @media or rule
   function parseStatement(): void {
@@ -347,6 +347,10 @@ export function parse(tokens: Token[], errors?: ErrorSink): Stylesheet {
         stylesheet.keyframes.push(parseKeyframes());
       } else if (token.value === "media") {
         stylesheet.rules.push(...parseMedia(token));
+      } else if (token.value === "property") {
+        // @property --speed { syntax: "<number>"; … }: read in features/properties.ts
+        const name = next();
+        stylesheet.properties.push({ name, descriptors: parseDeclarationBlock() });
       } else {
         throw errorAt(token, `@${token.value} isn't supported yet`);
       }

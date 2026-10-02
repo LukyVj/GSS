@@ -5,6 +5,13 @@ export type Stylesheet = {
   scene: SceneElement[];
   rules: Rule[];
   keyframes: Keyframes[]; // all the @keyframes blocks
+  properties: PropertyRule[]; // the @property rules (decision 105)
+};
+
+// @property --speed { syntax: "<number>"; inherits: false; initial-value: 4; }
+export type PropertyRule = {
+  name: Token; // the IDENT after @property, as written (for the errors)
+  descriptors: Declaration[];
 };
 
 // A line of @scene: cube.corner * 4;

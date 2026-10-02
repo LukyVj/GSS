@@ -2,6 +2,7 @@
 // Shadertoy writes the header itself (#version, precision, iResolution, iTime…)
 // and calls mainImage(fragColor, fragCoord) instead of main().
 import type { CompiledScene } from "..";
+import { glslFloat } from "./codegen/glsl";
 
 // GLSL wants "1.0", not "1"
 function float(n: number): string {
@@ -30,7 +31,7 @@ ${lines.join("\n")}
 `;
 }
 
-export function toShadertoy({ shader, camera }: CompiledScene): string {
+export function toShadertoy({ shader, camera, properties }: CompiledScene): string {
   const channels = channelDefines(shader);
   const body = shader
     // 0. No picking in Shadertoy: every object stays at rest. Before step 1,
@@ -40,6 +41,11 @@ export function toShadertoy({ shader, camera }: CompiledScene): string {
       return `const float uHover[${n}] = float[${n}](${zeros}); // :hover needs the GSS runtime\n`;
     })
     .replace(/^uniform vec4 uTimeline;.*\n/m, "const vec4 uTimeline = vec4(0.0); // scroll() needs the GSS runtime: the start\n")
+    // @property (decision 105): the variables keep their initial values
+    .replace(/^uniform vec4 uProperties\[(\d+)\];.*\n/m, (_, n) => {
+      const values = (properties ?? []).map((p) => `vec4(${p.initial.map(glslFloat).join(", ")})`).join(", ");
+      return `const vec4 uProperties[${n}] = vec4[${n}](${values}); // set from JS with the GSS runtime: the initial values\n`;
+    })
     .replace(/^uniform bool uPicking;.*\n/m, "const bool uPicking = false;\n")
     .replace(/^uniform vec2 uPick;.*\n/m, "const vec2 uPick = vec2(0.0);\n")
     // 1. What Shadertoy already writes: the header, its uniforms, the output

@@ -20,7 +20,7 @@ export function createHoisted(): Hoisted {
 // The expression as it is when it is constant; otherwise the name of its global
 // (two objects with the same animation share it)
 export function hoist(hoisted: Hoisted | undefined, type: "float" | "vec3" | "vec4" | "mat2", expr: string): string {
-  if (!hoisted || !/\b(iTime|uHover|uTimeline)\b/.test(expr)) return expr;
+  if (!hoisted || !/\b(iTime|uHover|uTimeline|uProperties)\b/.test(expr)) return expr;
   const key = `${type} ${expr}`;
   let name = hoisted.names.get(key);
   if (!name) {
