@@ -1,7 +1,7 @@
 import { inlineAnimations } from "../tests/inline-animations";
 import { describe, it, expect } from "vitest";
 import { compileGSS } from "../index";
-import { shapeRadius } from "./codegen";
+import { shapeRadius } from "./codegen/shapes";
 import { tokenize } from "../syntax/tokenizer";
 import { pathRadius, polygonRadius } from "./path";
 

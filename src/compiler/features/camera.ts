@@ -1,7 +1,7 @@
 import type { Styles } from "../cascade/resolve";
 import { errorAt } from "../syntax/errors";
 import type { Token } from "../syntax/tokenizer";
-import { readAngle, readNumber } from "../shader/codegen";
+import { readAngle, readNumber } from "../values/values";
 
 // The camera settings the runtime needs. They are not written in the shader:
 // main.ts starts from them, then the mouse changes them.

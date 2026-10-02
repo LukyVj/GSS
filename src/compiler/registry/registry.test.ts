@@ -4,7 +4,7 @@ import { PROPERTIES, AT_RULES, SELECTORS, SHAPE_DOCS, FUNCTIONS } from "./regist
 import { MATH_FUNCTIONS } from "../values/calc";
 import { GRADIENT_FUNCTIONS } from "../shader/gradient";
 import { COLOR_FUNCTIONS } from "../values/colors";
-import { shapeNames } from "../shader/codegen";
+import { shapeNames } from "../shader/codegen/shapes";
 import { compileGSS } from "../index";
 
 describe("registry", () => {

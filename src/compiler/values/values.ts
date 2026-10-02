@@ -74,3 +74,57 @@ export function readPolygon(value: Token[]): Point[] | null {
   }
   return points;
 }
+
+
+// Reads one number, or returns the fallback when the property is not set
+export function readNumber(
+  value: Token[] | undefined,
+  property: string,
+  fallback: number,
+  allowZero = false,
+): number {
+  if (!value) return fallback;
+  const [token] = value;
+  if (
+    value.length !== 1 ||
+    token.type !== "NUMBER" ||
+    token.value < 0 ||
+    (token.value === 0 && !allowZero)
+  ) {
+    throw errorAt(
+      value,
+      `${property} expects one positive number, like: ${property}: 2;`,
+    );
+  }
+  return token.value;
+}
+
+// Reads an angle (deg, rad, turn; 0 alone) and returns radians
+export function readAngle(value: Token[]): number {
+  const [token] = value;
+
+  // One token expected
+  if (value.length !== 1) {
+    throw errorAt(value, "An angle is expected, like: 70deg");
+  }
+
+  // Special case: 0 without unit is accepted, like in CSS
+  if (token.type === "NUMBER" && token.value === 0) {
+    return 0;
+  }
+
+  // Everything else must have a unit
+  if (token.type !== "DIMENSION") {
+    throw errorAt(value, "An angle must have a unit, like: 70deg");
+  }
+
+  // The units
+  if (token.unit === "deg") return (token.value * Math.PI) / 180;
+  if (token.unit === "rad") return token.value;
+  if (token.unit === "turn") return token.value * 2 * Math.PI;
+
+  throw errorAt(
+    value,
+    `Unknown angle unit: "${token.unit}". Use deg, rad or turn.`,
+  );
+}

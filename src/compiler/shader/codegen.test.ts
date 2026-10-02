@@ -1,6 +1,6 @@
 import { inlineAnimations } from "../tests/inline-animations";
 import { describe, it, expect } from "vitest";
-import { readAngle } from "./codegen";
+import { readAngle } from "../values/values";
 import { compileGSS } from "../index";
 
 export const SHAPE_FUNCTIONS = [

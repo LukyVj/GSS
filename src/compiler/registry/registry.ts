@@ -993,7 +993,7 @@ export const SELECTORS: SelectorDef[] = [
   },
 ];
 
-// Every shape of SHAPES in codegen.ts must be documented here: a test checks it
+// Every shape of SHAPES in shader/codegen/shapes.ts must be documented here: a test checks it
 export const SHAPE_DOCS: ShapeDef[] = [
   {
     name: "cube",
