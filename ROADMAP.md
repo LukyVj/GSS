@@ -233,6 +233,7 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 - [x] Split `shader/codegen.ts` by concern into `shader/codegen/`, and move `readAngle` / `readNumber` to `values/` ✅ decision 88
 - [ ] Autocompletion: values (`gold`, `ease-out`…), shapes in `@scene`, and the same suggestions in the VS Code extension
 - [ ] Align the TextMate highlighting of the extension with `classifyGss` (web)
+- [ ] `gpu.test.ts` compiles the scenes of the inspiration grid (`INSPIRATION`), not only the use cases: `starorbit` broke WebGL2 without a test failing (decision 100)
 
 ## Out of scope
 
@@ -250,6 +251,7 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 
 ## Done recently
 
+- A filtered object next to a metal, jelly or glass compiles on WebGL2: the object filters are written before the reflections that call them (decision 100)
 - WGSL and native WebGPU rendering next to GLSL / WebGL2, automatic backend with fallback, WGSL tab and backend selection in the playground, profiler on both backends (decisions 90, 91)
 - A misspelled function inside math suggests the one it was meant to be (`slibling-index()` → `sibling-index()`)
 

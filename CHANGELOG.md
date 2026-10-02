@@ -18,7 +18,7 @@ The 0.0.1 history was reconstructed from GitHub.
 
 ### Fixed
 
-- A scene with a `filter` on an object and a metal, jelly or glass material no longer fails to compile on WebGL2: the reflections apply the object's filters without error.
+- A scene with a `filter` on an object and a metal, jelly or glass material no longer fails to compile on WebGL2 (it rendered on WebGPU only). Reflections still show the object's filters.
 
 ## [0.0.3] — 2026-10-02 (prepared, not yet published)
 

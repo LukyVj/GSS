@@ -711,6 +711,16 @@ The public development hooks carry WebGPU types, so `@webgpu/types` is a type-on
 
 **Why**: GSS takes the behavior of CSS where a CSS notion exists, and the mirror broke it everywhere x appears: `translate`, `rotate-y`, `rotate-z`, gradients, images, SVG paths. A logo pasted from Figma came out backwards.
 
+## 100. The object filters are written before the lighting of metal, jelly and glass
+
+**Decision**: in the shader, `grain()`, `objectFilter()` and `objectLayer()` are written just before the lighting of metal, jelly and glass (`shadeMetal()`, `trace()`…), no longer just before `main()`. `trace()`, which draws the reflections and refractions, calls `objectFilter()` (decision 84), and GLSL refuses a call to a function written further down: a scene with a pixel `filter` on an object and a metal, jelly or glass material did not compile on WebGL2 (`'objectFilter' : no matching overloaded function found`). WGSL accepts functions in any order, so WebGPU rendered it, and the fallback and the captures failed.
+
+- A function placed above, not a prototype (`vec3 objectFilter(float id, vec3 c);`): the WGSL is lowered from the GLSL by a typed parser, and a prototype would have been one more construct for it to read.
+- `gpu.test.ts` compiles a filtered object next to a metal on WebGL2. The test of decision 84 only read the shader's text.
+- Every scene of `src/scenes/` and every registry example compiled before and after, in GLSL and WGSL: the shaders are the same, byte for byte, except the one scene that had the bug (`starorbit.gss`, in progress). Without metal, jelly or glass, the lighting section is empty and the filters stay where they were, just before `main()`.
+
+**Why**: the reflections must see the filters of the objects they meet (decision 84), and the scene must compile on every backend.
+
 ## Open questions
 
 - **Targeting multiplied ids**: should `#hero` target `hero-1`, `hero-2` and `hero-3`?
