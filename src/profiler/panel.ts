@@ -5,13 +5,18 @@ import { reportRows } from "./format";
 
 let profiler: ReturnType<typeof createProfiler> | null = null;
 
+// Where the visitor's choice is kept. Not "gss-perf": while the panel was open by
+// default, every visit saved "1" there, so it would keep the panel open for them.
+export const STORAGE_KEY = "gss-perf-panel";
+
 // Given to createRenderer: view.ts calls it once, with its WebGL context
 export function profile(gl: WebGL2RenderingContext) {
   profiler = createProfiler(createGpuTimer(gl));
   return profiler;
 }
 
-// The panel over the scene, its toggle in the status bar; Alt+P shows or hides it
+// The panel over the scene, its toggle in the status bar; Alt+P shows or hides it.
+// Public on gss-lang.dev (decision 87), hidden until someone opens it.
 export function mountPanel(statusbar: HTMLElement): void {
   const panel = document.createElement("section");
   panel.className = "perf-panel";
@@ -44,13 +49,16 @@ export function mountPanel(statusbar: HTMLElement): void {
 
   let visible = false; // the state lives here; the DOM only shows it
 
-  function setVisible(next: boolean) {
+  // remember: only a choice of the visitor is kept, never the default
+  function setVisible(next: boolean, remember = true) {
     visible = next;
     panel.hidden = !next;
     toggle.setAttribute("aria-pressed", String(visible));
-    try {
-      localStorage.setItem("gss-perf", visible ? "1" : "0"); // remembered across reloads
-    } catch {} // private window: just not remembered
+    if (remember) {
+      try {
+        localStorage.setItem(STORAGE_KEY, visible ? "1" : "0"); // remembered across reloads
+      } catch {} // private window: just not remembered
+    }
     render();
   }
 
@@ -64,9 +72,11 @@ export function mountPanel(statusbar: HTMLElement): void {
   });
   setInterval(render, 500); // twice a second: readable, and cheap
 
-  let remembered = true;
+  // Closed by default (decision 87): opened with the perf button or Alt+P, and then
+  // remembered across reloads
+  let remembered = false;
   try {
-    remembered = localStorage.getItem("gss-perf") !== "0";
+    remembered = localStorage.getItem(STORAGE_KEY) === "1";
   } catch {}
-  setVisible(remembered);
+  setVisible(remembered, false);
 }
