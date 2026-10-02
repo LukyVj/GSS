@@ -23,8 +23,8 @@ Selectors, the cascade and <code>@keyframes</code>, compiled into a single rayma
 ---
 
 GSS (GPU Style Sheets) is a 3D language for people who already speak CSS. You declare shapes in a
-`@scene`, style them with selectors, and the compiler turns the whole thing into one GLSL
-fragment shader: signed distance fields, raymarched in WebGL2. No Three.js, no meshes, no UVs.
+`@scene`, style them with selectors, and the compiler turns the whole thing into GLSL and WGSL
+fragment shaders: signed distance fields, raymarched in WebGL2 or WebGPU. No Three.js, no meshes, no UVs.
 
 ```css
 @scene {
@@ -107,6 +107,30 @@ works (`controls="none"` keeps only `:hover`). It starts when it comes into view
 leaves it, and stands still under `prefers-reduced-motion`. Images are read next to the `.gss`
 file, like `url()` in a stylesheet.
 
+**WebGPU, with a WebGL2 fallback.** Use the asynchronous API to select a rendering backend:
+
+```js
+import { mountAsync } from "gss-lang";
+
+const scene = await mountAsync(canvas, "@scene { sphere; }", { backend: "auto" });
+console.log(scene.backend); // "webgpu" or "webgl"
+await scene.update(otherSource);
+scene.destroy();
+```
+
+`mountAsync` is also available from `gss-lang/runtime` for Vite-compiled scenes.
+`auto` (the default for this API) tries WebGPU, then uses WebGL2 if adapter or device acquisition
+fails. Use `backend: "webgpu"` or `"webgl"` to force a backend. WebGPU requires HTTPS or localhost.
+The synchronous `mount()` API keeps using WebGL2. A tag can opt in with
+`<gss-scene backend="auto" src="logo.gss"></gss-scene>`; its `scene.update()` then returns a promise.
+
+`compile(source)` includes both targets: `scene.shader` is GLSL, `scene.wgsl` is WGSL, including
+filter passes and media variants. `compile(source, { target: "glsl" })` omits WGSL when only WebGL2
+is needed. Older precompiled scenes without WGSL work with WebGL2; recompile them to use WebGPU.
+Shader errors reject an asynchronous update while keeping the previous scene visible. Runtime
+device loss is reported through a `gss-error` event on the canvas; recreate the scene with a new
+canvas to recover. Automatic fallback is an initialization feature, not device-loss recovery.
+
 ## Why
 
 Front-end developers already know how to describe what things look like. The moment they want to
@@ -146,7 +170,9 @@ Every property, shape, selector and function has its page in the
 ## How it works
 
 ```
-GSS text → tokenizer → parser → scene expansion → cascade → validation → GLSL codegen → WebGL2
+GSS text → tokenizer → parser → scene expansion → cascade → validation → shader generation
+                                                                       ├─ GLSL → WebGL2
+                                                                       └─ WGSL → WebGPU
 ```
 
 Everything that can be decided at compile time is: the cascade, the selectors, the units,
@@ -156,8 +182,11 @@ only holds what changes every frame (time, camera, the hovered object) and sends
 ## Tools
 
 - **Playground**: [gss-lang.dev/playground](https://www.gss-lang.dev/playground). Every error
-  of a scene at once, each under its line; examples, the generated GLSL, share by URL, export to
-  Shadertoy, a formatter (`Shift+Alt+F`) and a performance panel (`Alt+P`).
+  of a scene at once, each under its line; examples, generated GLSL and WGSL, backend selection,
+  share by URL, export to Shadertoy, a formatter (`Shift+Alt+F`) and a performance panel (`Alt+P`)
+  for WebGL2 and WebGPU. It shows FPS, frame and CPU times, resolution, shader preparation time,
+  and GPU time when the backend exposes timer queries. WebGPU uses optional `timestamp-query`;
+  without it, GPU time is marked unavailable while the other measurements remain available.
 - **Reference**: [gss-lang.dev/docs](https://www.gss-lang.dev/docs), searchable, one live example
   per entry.
 - **Showcase**: [gss-lang.dev/showcase](https://www.gss-lang.dev/showcase), what you can make, for
