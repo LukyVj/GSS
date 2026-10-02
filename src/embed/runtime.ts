@@ -1,9 +1,28 @@
 import type { CompiledScene } from "../compiler";
 import { createView, type ViewOptions } from "../runtime/view";
+import { createViewAsync, type BackendOptions } from "../runtime/backend";
 
 // gss-lang/runtime: draws a scene compiled at build time (the Vite plugin),
 // without shipping the compiler (decision 63). gss-lang (index.ts) adds GSS text.
 export type { CompiledScene };
+export type { Backend, BackendOptions } from "../runtime/backend";
+
+export type AsyncGssScene = Omit<GssScene, "update"> & {
+  readonly backend: "webgl" | "webgpu";
+  update(compiled: CompiledScene): Promise<void>;
+};
+
+export async function mountAsync(
+  canvas: HTMLCanvasElement,
+  compiled: CompiledScene,
+  options: BackendOptions = {},
+): Promise<AsyncGssScene> {
+  const view = await createViewAsync(canvas, options);
+  try { await view.show(compiled); }
+  catch (error) { view.destroy(); throw error; }
+  const lifecycle = observe(canvas, view);
+  return { ...lifecycle, backend: view.backend, update: next => view.show(next) };
+}
 
 export type MountOptions = ViewOptions;
 
@@ -23,7 +42,12 @@ export function mount(
   options: MountOptions = {},
 ): GssScene {
   const view = createView(canvas, options);
-  view.show(compiled);
+  try { view.show(compiled); }
+  catch (error) { view.destroy(); throw error; }
+  return { ...observe(canvas, view), update: next => view.show(next) };
+}
+
+function observe(canvas: HTMLCanvasElement, view: Pick<GssScene, "pause" | "play" | "destroy"> & { freeze(frozen: boolean): void }) {
 
   let visible = true;
   let paused = false; // by the page, with pause(): the screen does not wake it up
@@ -49,7 +73,6 @@ export function mount(
   motion?.addEventListener("change", onMotion);
 
   return {
-    update: (next) => view.show(next),
     pause() {
       paused = true;
       update();

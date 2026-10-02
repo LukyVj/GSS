@@ -219,9 +219,17 @@
         <button type="button" role="tab" data-tab="glsl" aria-selected="false">
           glsl
         </button>
+        <button type="button" role="tab" data-tab="wgsl" aria-selected="false">
+          wgsl
+        </button>
       </div>
       <span class="spacer"></span>
       <div id="docsearch"></div>
+      <select id="backend" class="button" aria-label="Rendering backend">
+        <option value="auto">auto</option>
+        <option value="webgpu">WebGPU</option>
+        <option value="webgl">WebGL2</option>
+      </select>
       <select id="examples" class="button" aria-label="Examples">
         <option value="" selected disabled>examples</option>
       </select>

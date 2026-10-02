@@ -6,6 +6,7 @@ export type GpuTimer = {
   end(): void; // after the draw
   collect(): number[]; // the frames measured since the last call, in ms (often empty)
   destroy(): void;
+  reset?(): void;
 };
 
 const MAX_PENDING = 8;

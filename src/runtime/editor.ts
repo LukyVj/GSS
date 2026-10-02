@@ -37,7 +37,7 @@ import {
   type CompletionResult,
 } from "@codemirror/autocomplete";
 import { setDiagnostics, lintGutter, type Diagnostic } from "@codemirror/lint";
-import type { Renderer } from "./renderer";
+import type { Renderer, AsyncRenderer } from "./renderer";
 import { classifyGss } from "../docs/highlight";
 import { formatGss } from "../docs/format";
 import { scan } from "../compiler/syntax/tokenizer";
@@ -285,7 +285,7 @@ export const theme = EditorView.theme(
 // Shows the code in a CodeMirror editor, and recompiles the scene after each change
 export function connectEditor(
   { host, status, error }: EditorElements,
-  renderer: Renderer,
+  renderer: Renderer | AsyncRenderer,
   source: string,
 ): Editor {
   const compileListeners: ((code: string) => void)[] = [];
@@ -297,6 +297,8 @@ export function connectEditor(
   }
   let lastCompiled: string | null = null; // the last code that compiled
   let typingTimer: number | undefined;
+  let destroyed = false;
+  let loadRevision = 0;
 
   const view = new EditorView({
     parent: host,
@@ -380,13 +382,20 @@ export function connectEditor(
   function tryLoad(): void {
     const code = view.state.doc.toString();
     const start = performance.now();
-    let compiled;
+    const revision = ++loadRevision;
+    const current = () => !destroyed && revision === loadRevision && view.state.doc.toString() === code;
     try {
-      compiled = renderer.load(code);
+      const result = renderer.load(code);
+      if (result instanceof Promise) {
+        void result.then(compiled => { if (current()) loaded(compiled, code, start); })
+          .catch(caught => { if (current()) showError(caught); });
+      } else loaded(result, code, start);
     } catch (caught) {
       showError(caught);
-      return;
     }
+  }
+
+  function loaded(compiled: Awaited<ReturnType<Renderer["load"]>>, code: string, start: number) {
     const compileMs = performance.now() - start;
     if (status) {
       status.textContent = "OK";
@@ -400,7 +409,8 @@ export function connectEditor(
     emitStats({
       errors: 0,
       objects: compiled.objects,
-      glslLines: compiled.shader.split("\n").length,
+      glslLines: ("backend" in renderer && renderer.backend === "webgpu" ? compiled.wgsl! : compiled.shader).split("\n").length,
+      ...("backend" in renderer && renderer.backend === "webgpu" ? { shaderLanguage: "wgsl" as const } : {}),
       compileMs,
     });
     for (const listener of compileListeners) listener(code);
@@ -426,6 +436,8 @@ export function connectEditor(
       if (lastStats !== null) listener(lastStats);
     },
     destroy() {
+      destroyed = true;
+      loadRevision++;
       clearTimeout(typingTimer);
       view.destroy();
     },

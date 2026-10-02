@@ -1,4 +1,4 @@
-import { mount, type EmbeddedScene } from "./index";
+import { mount, mountAsync, type EmbeddedScene, type AsyncEmbeddedScene } from "./index";
 import { readControls, sourceUrl } from "./options";
 
 // <gss-scene>: a GSS scene in any page, without a build step (decision 63).
@@ -23,11 +23,11 @@ const STYLE = `
 `;
 
 export class GssSceneElement extends HTMLElement {
-  static observedAttributes = ["src", "controls"];
+  static observedAttributes = ["src", "controls", "backend"];
 
   #canvas: HTMLCanvasElement;
   #error: HTMLPreElement;
-  #scene: EmbeddedScene | null = null;
+  #scene: EmbeddedScene | AsyncEmbeddedScene | null = null;
   #waiting: IntersectionObserver | null = null;
   #started = false;
   #run = 0; // the latest start(): an older fetch that arrives late is dropped
@@ -56,6 +56,7 @@ export class GssSceneElement extends HTMLElement {
   }
 
   disconnectedCallback(): void {
+    this.#run++;
     this.#waiting?.disconnect();
     this.#waiting = null;
     this.#stop();
@@ -71,7 +72,7 @@ export class GssSceneElement extends HTMLElement {
   }
 
   // The scene, to pause(), play() or update() it from a script
-  get scene(): EmbeddedScene | null {
+  get scene(): EmbeddedScene | AsyncEmbeddedScene | null {
     return this.#scene;
   }
 
@@ -82,10 +83,28 @@ export class GssSceneElement extends HTMLElement {
       const { code, base } = await this.#readSource();
       if (run !== this.#run) return;
       this.#stop(); // controls are set when the view is made: a change starts again
-      this.#scene = mount(this.#canvas, code, {
+      // A canvas cannot switch between WebGL and WebGPU contexts.
+      const canvas = this.#canvas.cloneNode() as HTMLCanvasElement;
+      this.#canvas.replaceWith(canvas);
+      this.#canvas = canvas;
+      canvas.addEventListener("gss-error", event => {
+        if (canvas !== this.#canvas) return;
+        const error = (event as CustomEvent).detail;
+        const message = error instanceof Error ? error.message : String(error);
+        this.#error.textContent = message;
+        this.#error.hidden = false;
+        this.dispatchEvent(new CustomEvent("error", { detail: message }));
+      });
+      const options = {
         base,
         controls: readControls(this.getAttribute("controls")),
-      });
+      };
+      const backend = this.getAttribute("backend");
+      if (backend !== null && !["auto", "webgl", "webgpu"].includes(backend))
+        throw new Error('backend must be "auto", "webgl" or "webgpu"');
+      const scene = backend === null ? mount(canvas, code, options) : await mountAsync(canvas, code, { ...options, backend: backend as "auto" | "webgl" | "webgpu" });
+      if (run !== this.#run) { scene.destroy(); return; }
+      this.#scene = scene;
       this.#error.hidden = true;
       this.dispatchEvent(new Event("load"));
     } catch (error) {

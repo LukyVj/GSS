@@ -1,3 +1,4 @@
+/// <reference types="@webgpu/types" preserve="true" />
 import { summarize, createSamples, type Summary } from "./stats";
 import type { GpuTimer } from "./gpu-timer";
 
@@ -6,7 +7,11 @@ export type FrameProbe = {
   frameStart(now: number, width: number, height: number): void;
   drawStart(): void;
   drawEnd(): void;
-  shaderBuilt(ms: number): void; // GLSL compile + link, in ms
+  shaderBuilt(ms: number): void; // GPU shader/pipeline preparation, in ms
+  timestampWrites?(first: boolean, last: boolean): GPURenderPassTimestampWrites | undefined;
+  resolveTimestamps?(encoder: GPUCommandEncoder): void;
+  timestampsSubmitted?(): void;
+  destroy?(): void;
 };
 
 export type Report = {
@@ -57,6 +62,7 @@ export function createProfiler(
 
     // Forgets every sample (the bench calls it between two measures)
     reset() {
+      timer.reset?.();
       intervals.clear();
       gpu.clear();
       cpu.clear();

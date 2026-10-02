@@ -5,6 +5,7 @@ export type Stats = {
   objects: number; // instances in the scene
   glslLines: number; // lines of the generated shader
   compileMs: number; // duration of the last compile, in milliseconds
+  shaderLanguage?: "glsl" | "wgsl";
 };
 
 // 1 → "1 object", anything else → "n objects"
@@ -16,7 +17,7 @@ export function plural(count: number, word: string): string {
 export function statusParts(stats: Stats): string[] {
   if (stats.errors > 0) return [plural(stats.errors, "error")];
   const ms = stats.compileMs < 1 ? "<1" : Math.round(stats.compileMs);
-  return ["ok", plural(stats.objects, "object"), `glsl ${plural(stats.glslLines, "line")}`, `compiled in ${ms} ms`];
+  return ["ok", plural(stats.objects, "object"), `${stats.shaderLanguage ?? "glsl"} ${plural(stats.glslLines, "line")}`, `compiled in ${ms} ms`];
 }
 
 // Frames drawn over a duration → "60 fps"

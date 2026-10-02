@@ -365,6 +365,7 @@ export function createView(
       reducedMotion = frozen;
     },
     destroy() {
+      probe?.destroy?.();
       stopMedia();
       playing = false;
       cancelAnimationFrame(frameId);

@@ -1,7 +1,8 @@
 import "./styles/gss-code.css";
 import { EditorState } from "@codemirror/state";
 import { EditorView, lineNumbers } from "@codemirror/view";
-import { createRenderer } from "./runtime/renderer";
+import { createRendererAsync } from "./runtime/renderer";
+import type { Backend } from "./runtime/backend";
 import { connectEditor, theme } from "./runtime/editor";
 import { glslLanguage } from "./runtime/glsl";
 import { encodeCode, decodeCode } from "./runtime/share";
@@ -10,7 +11,7 @@ import { toShadertoy } from "./compiler/shader/shadertoy";
 import { EXAMPLES, renderExampleOptions } from "./playground/examples";
 import { statusParts, fpsText } from "./runtime/status";
 import { mountSearch } from "./docs/search-box";
-import { profile, mountPanel } from "./profiler/panel";
+import { profile, profileWebGPU, mountPanel } from "./profiler/panel";
 
 mountSearch();
 
@@ -18,10 +19,34 @@ mountSearch();
 const $ = <T extends HTMLElement>(selector: string) =>
   document.querySelector<T>(selector)!;
 
-const renderer = createRenderer($<HTMLCanvasElement>("#scene"), {
+const query = new URLSearchParams(location.search);
+const requested = query.get("backend");
+const backend: Backend = requested === "webgl" || requested === "webgpu" ? requested : "auto";
+const backendSelect = $<HTMLSelectElement>("#backend");
+let currentSource: (() => string) | undefined;
+backendSelect.value = backend;
+backendSelect.addEventListener("change", async () => {
+  const url = new URL(location.href);
+  url.searchParams.set("backend", backendSelect.value);
+  if (currentSource) url.hash = await encodeCode(currentSource());
+  location.assign(url.href);
+});
+const renderer = await createRendererAsync($<HTMLCanvasElement>("#scene"), {
+  backend,
   profile,
+  profileWebGPU,
+}).catch(error => {
+  $("#error").textContent = error instanceof Error ? error.message : String(error);
+  $("#error").hidden = false;
+  throw error;
 });
 mountPanel($(".statusbar"));
+backendSelect.title = `Rendering with ${renderer.backend === "webgpu" ? "WebGPU" : "WebGL2"}`;
+$<HTMLCanvasElement>("#scene").addEventListener("gss-error", event => {
+  const error = (event as CustomEvent).detail;
+  $("#error").textContent = error instanceof Error ? error.message : String(error);
+  $("#error").hidden = false;
+});
 
 // A shared link opens its scene; otherwise the first example
 const start = (await decodeCode(location.hash)) ?? EXAMPLES[0].code;
@@ -31,6 +56,7 @@ const editor = connectEditor(
   renderer,
   start,
 );
+currentSource = editor.getCode;
 
 // ----- The status bar: the numbers of the last compile, and the frame rate -----
 
@@ -122,27 +148,29 @@ const glsl = new EditorView({
 $("#glsl").classList.add("gss-dark"); // the color variables of src/styles/gss-code.css
 
 function showGlsl(code: string): void {
-  const shader = compileGSS(code);
+  let shader: string;
+  try { shader = compileGSS(code, tab === "wgsl" ? "wgsl" : "glsl"); }
+  catch { return; } // the GSS editor already displays errors of unfinished code
   glsl.dispatch({
     changes: { from: 0, to: glsl.state.doc.length, insert: shader },
   });
 }
 
-let tab: "gss" | "glsl" = "gss";
+let tab: "gss" | "glsl" | "wgsl" = "gss";
 editor.onCompile((code) => {
-  if (tab === "glsl") showGlsl(code);
+  if (tab !== "gss") showGlsl(code);
 });
 
 for (const button of document.querySelectorAll<HTMLButtonElement>(
   "[data-tab]",
 )) {
   button.addEventListener("click", () => {
-    tab = button.dataset.tab as "gss" | "glsl";
+    tab = button.dataset.tab as typeof tab;
     $("#code").hidden = tab !== "gss";
-    $("#glsl").hidden = tab !== "glsl";
+    $("#glsl").hidden = tab === "gss";
     for (const other of document.querySelectorAll("[data-tab]")) {
       other.setAttribute("aria-selected", String(other === button));
     }
-    if (tab === "glsl") showGlsl(editor.getCode());
+    if (tab !== "gss") showGlsl(editor.getCode());
   });
 }

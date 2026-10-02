@@ -1,10 +1,14 @@
 import "./panel.css";
 import { createProfiler, type FrameProbe } from "./profiler";
 import { createGpuTimer } from "./gpu-timer";
+import type { GpuTimer } from "./gpu-timer";
+import { createWebGPUTimer, type WebGPUTimer } from "./webgpu-timer";
 import { reportRows } from "./format";
 
 let profiler: ReturnType<typeof createProfiler> | null = null;
-let context: WebGL2RenderingContext | null = null; // the scene's, kept until the panel opens
+let timerFactory: (() => GpuTimer | WebGPUTimer) | null = null;
+let timer: GpuTimer | WebGPUTimer | null = null;
+let backendLabel = "WebGL2";
 let wanted = false; // the panel has been opened at least once
 let lastShaderMs: number | null = null; // the build before the panel opened, shown when it does
 
@@ -16,7 +20,17 @@ export const STORAGE_KEY = "gss-perf-panel";
 // Nothing is measured until the panel is first opened (decision 87): no GPU timer,
 // no query, the probe's calls do nothing. Once opened, it keeps measuring.
 export function profile(gl: WebGL2RenderingContext): FrameProbe {
-  context = gl;
+  backendLabel = "WebGL2";
+  return connect(() => createGpuTimer(gl));
+}
+
+export function profileWebGPU(device: GPUDevice): FrameProbe {
+  backendLabel = "WebGPU";
+  return connect(() => createWebGPUTimer(device));
+}
+
+function connect(factory: () => GpuTimer | WebGPUTimer): FrameProbe {
+  timerFactory = factory;
   if (wanted) start();
   return {
     frameStart: (now, width, height) => profiler?.frameStart(now, width, height),
@@ -26,6 +40,10 @@ export function profile(gl: WebGL2RenderingContext): FrameProbe {
       lastShaderMs = ms;
       profiler?.shaderBuilt(ms);
     },
+    timestampWrites: (first, last) => timer && "timestampWrites" in timer ? timer.timestampWrites(first, last) : undefined,
+    resolveTimestamps: encoder => { if (timer && "resolve" in timer) timer.resolve(encoder); },
+    timestampsSubmitted: () => { if (timer && "submitted" in timer) timer.submitted(); },
+    destroy: () => { timer?.destroy(); timer = null; profiler = null; timerFactory = null; },
   };
 }
 
@@ -33,8 +51,9 @@ export function profile(gl: WebGL2RenderingContext): FrameProbe {
 // arrives, if the panel was already open)
 function start(): void {
   wanted = true;
-  if (profiler || !context) return;
-  profiler = createProfiler(createGpuTimer(context));
+  if (profiler || !timerFactory) return;
+  timer = timerFactory();
+  profiler = createProfiler(timer);
   if (lastShaderMs !== null) profiler.shaderBuilt(lastShaderMs);
 }
 
@@ -44,7 +63,7 @@ export function mountPanel(statusbar: HTMLElement): void {
   const panel = document.createElement("section");
   panel.className = "perf-panel";
   panel.hidden = true;
-  panel.innerHTML = "<h2>performance</h2><dl></dl>";
+  panel.innerHTML = `<h2>performance · ${backendLabel}</h2><dl></dl>`;
   document.body.append(panel); // a grid item of <body>: the CSS puts it in the scene cell
   const list = panel.querySelector("dl")!;
 
