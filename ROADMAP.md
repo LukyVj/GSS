@@ -140,6 +140,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 6. ~~`:nth-child()`~~ ✅ already done (decision 92)
 7. **A noise image function**, usable wherever a gradient is (`background`, `color`, materials), modelled on SVG `feTurbulence`. The first step toward 2D compositions: several `background` layers with `background-blend-mode`, then `mask-image` and a displacement like `feDisplacementMap`, rather than a separate 2D mode
 8. **Several lights, and colored lights**
+9. **`texture: element(#id)`** (decision 101): a live image of an HTML element on an object, like CSS `element()`, rendered by HTML-in-Canvas (`layoutsubtree`, `texElementImage2D` / `copyElementImageToTexture`, the `paint` event); the element is a child of `<gss-scene>` or of the `<canvas>`; without the API, the object shows its `color`. Comes with an **HTML tab in the playground** (share links carry it, registry examples can carry HTML). Waits until the future of the API after its origin trial is clearer
 
 Done from the list of Oct. 1: ~~`filter`~~ ✅ (decisions 83, 84), ~~motion path~~ ✅ (decision 97), ~~`conic-gradient()`~~ ✅ (decision 98), the mirrored screen fixed (decision 99).
 
@@ -227,6 +228,7 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 - [ ] Unmirror the −x, −z and bottom faces
 - [ ] Textures in reflections and glass (`trace()` → `textureColor()`)
 - [ ] `image-rendering` per face; `url(dirt.png)` without quotes; an atlas
+- [ ] `texture: element(#id)`: an HTML element as a live texture (Priorities #9, decision 101)
 
 ### Rendering passes / runtime API
 
@@ -616,7 +618,7 @@ A score for how well a CSS notion carries over to GSS (a style language → an S
 | `scroll()` / `view()`                                                                                                                             |   1.0 | Roadmap (Essentials): `animation-timeline`                                                 |
 | `counter()` / `counters()` / `symbols()`                                                                                                          |  0.05 | Counters                                                                                   |
 | Gradients (`linear-` / `radial-` / `conic-` + repeating-\*)                                                                                       |   0.9 | Already in GSS: `linear-`, `radial-`, `conic-` and their `repeating-` forms, in `background`, `color` and materials (dec. 81, 82, 98) |
-| `image()` / `image-set()` / `cross-fade()` / `element()` / `paint()`                                                                              |   0.2 | CSS images                                                                                 |
+| `image()` / `image-set()` / `cross-fade()` / `element()` / `paint()`                                                                              |   0.2 | CSS images; `element()` planned in `texture` (dec. 101)                                    |
 | `-moz-image-rect()`                                                                                                                               |   0.0 | Vendor                                                                                     |
 | `fit-content()` / `minmax()` / `repeat()`                                                                                                         |   0.0 | Grid                                                                                       |
 | Font variant fns (`stylistic`, `styleset`, …)                                                                                                     |   0.0 | Fonts                                                                                      |

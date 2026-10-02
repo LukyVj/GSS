@@ -721,6 +721,25 @@ The public development hooks carry WebGPU types, so `@webgpu/types` is a type-on
 
 **Why**: the reflections must see the filters of the objects they meet (decision 84), and the scene must compile on every backend.
 
+## 101. `texture: element(#id)`: an HTML element as a live texture
+
+**Status**: planned, not built yet (Priorities, after the eight current ones). The choices below are Lucas's (Oct. 2).
+
+**Decision**: `texture: element(#card)` paints a live image of an HTML element of the page on an object, like CSS `element()` (Images 4; `-moz-element()` in Firefox). It goes wherever `url()` goes: `texture`, and `::face()`. HTML and CSS make the content of a surface, GSS makes the world around it.
+
+- **Always live, like CSS**: no `@texture` at-rule, no `update: once | auto | 30fps` property. The image is redrawn when the element's rendering changes, and only then.
+- **Engine: HTML-in-Canvas** (WICG): the `layoutsubtree` attribute on the canvas, `texElementImage2D` (WebGL2), `copyElementImageToTexture` (WebGPU), and the canvas's `paint` event, which says when the element changed. The browser renders the element itself: real CSS, real fonts, nothing approximated.
+- **The element is a child of the scene's canvas**, as the API requires: `<gss-scene>` takes its HTML children (other than `<script type="text/gss">`) as the sources, so `<gss-scene src="card.gss"><article id="card">…</article></gss-scene>`; with `mount()`, the page writes them inside the `<canvas>`. The element stays in the DOM, so it stays accessible.
+- **Without the API**, the texture stays empty and the object shows its `color`, like an image not loaded yet (decision 59): no special case. No html2canvas: a heavy dependency that only approximates the rendering, and the runtime without the compiler must stay small.
+- **The compiler stays pure**: an `element()` is one more texture slot (within the 16 of decision 59), filled by the runtime. The Shadertoy export leaves its channel empty, so the object shows its color (decision 60).
+- **The playground gets an HTML tab from the start**, beside the GSS one, and a share link carries both. A registry example can carry HTML, so the docs' "Try it" shows it too.
+
+**Differences from CSS**: CSS `element()` is an image anywhere an image goes (`background-image`…); in GSS it only goes in `texture`, not in `background`, `color` or a material.
+
+**Why**: one line puts any existing web UI (vanilla, React, Vue…) on a 3D surface. `element()` is CSS's own notion, so an author or an LLM already knows it. This does not reopen decision 2: the HTML is the content of an image, objects are still declared in `@scene`.
+
+**Accepted limits**: Chromium only while the API is in origin trial. Display only: a click on the 3D surface does not reach the HTML (mapping a pixel back through the projection is another project). The −x, −z and bottom faces are mirrored (decision 59), which shows on text: `::face(front)` avoids it. Reflections and glass do not see textures (decision 59). HTML that animates is uploaded to the GPU at every change.
+
 ## Open questions
 
 - **Targeting multiplied ids**: should `#hero` target `hero-1`, `hero-2` and `hero-3`?
