@@ -21,7 +21,8 @@ const $ = <T extends HTMLElement>(selector: string) =>
 
 const query = new URLSearchParams(location.search);
 const requested = query.get("backend");
-const backend: Backend = requested === "webgl" || requested === "webgpu" ? requested : "auto";
+const backend: Backend =
+  requested === "webgl" || requested === "webgpu" ? requested : "auto";
 const backendSelect = $<HTMLSelectElement>("#backend");
 let currentSource: (() => string) | undefined;
 backendSelect.value = backend;
@@ -36,16 +37,18 @@ const renderer = await createRendererAsync($<HTMLCanvasElement>("#scene"), {
   profile,
   profileWebGPU,
   scrollSlider: true, // the playground does not scroll: a slider stands in for scroll()
-}).catch(error => {
-  $("#error").textContent = error instanceof Error ? error.message : String(error);
+}).catch((error) => {
+  $("#error").textContent =
+    error instanceof Error ? error.message : String(error);
   $("#error").hidden = false;
   throw error;
 });
 mountPanel($(".statusbar"));
 backendSelect.title = `Rendering with ${renderer.backend === "webgpu" ? "WebGPU" : "WebGL2"}`;
-$<HTMLCanvasElement>("#scene").addEventListener("gss-error", event => {
+$<HTMLCanvasElement>("#scene").addEventListener("gss-error", (event) => {
   const error = (event as CustomEvent).detail;
-  $("#error").textContent = error instanceof Error ? error.message : String(error);
+  $("#error").textContent =
+    error instanceof Error ? error.message : String(error);
   $("#error").hidden = false;
 });
 
@@ -150,8 +153,11 @@ $("#glsl").classList.add("gss-dark"); // the color variables of src/styles/gss-c
 
 function showGlsl(code: string): void {
   let shader: string;
-  try { shader = compileGSS(code, tab === "wgsl" ? "wgsl" : "glsl"); }
-  catch { return; } // the GSS editor already displays errors of unfinished code
+  try {
+    shader = compileGSS(code, tab === "wgsl" ? "wgsl" : "glsl");
+  } catch {
+    return;
+  } // the GSS editor already displays errors of unfinished code
   glsl.dispatch({
     changes: { from: 0, to: glsl.state.doc.length, insert: shader },
   });
