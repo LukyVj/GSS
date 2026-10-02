@@ -4,7 +4,7 @@ A living list of the next features. Tick an item or move it to **Done recently**
 
 **Rule:** every new feature or entry goes into the **registry** (in the right place) **and** into the **docs** (syntax, example, etc.).
 
-## Already in GSS (Oct. 1, 2026)
+## Already in GSS (Oct. 2, 2026)
 
 What the language and the tools can do today. Each feature is detailed in the registry (so in the docs), and the "why" is in `DECISIONS.md` (column _Dec._).
 
@@ -96,7 +96,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 | Home page                  | `/` (`index.html`), live demo, numbers read from the registry                                                                                                                | 51         |
 | Playground                 | `playground.html`: CodeMirror, code in the URL (sharing), examples, GLSL tab                                                                                                 | 34         |
 | Status bar                 | `ok · 0 objects · glsl 104 lines · compiled in 4 ms · 60 fps`                                                                                                                | 42         |
-| Located errors             | underlined, and written under their line (`15:3 …`)                                                                                                                          | 43         |
+| Located errors             | every error of a compile at once (the text first, then the values), each underlined and written under its line (`15:3 …`); `3 errors` in the status bar; line and column in Vite's terminal | 43, 86     |
 | Generated docs             | `docs.html`, one page per entry, from the registry, live "Try it" everywhere                                                                                                 | 12, 39, 44 |
 | Site                       | [gss-lang.dev](https://gss-lang.dev) on Vercel, clean URLs (`/playground`, `/docs`, `/brand`), Open Graph and X cards                                                        | 56         |
 | Brand page                 | `/brand` (`brand.html`): marks, wordmark, lockup, icons, social cards                                                                                                        | 57         |
@@ -105,21 +105,23 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 | Formatter                  | `formatGss`, `Shift+Alt+F` in the playground                                                                                                                                 | 33         |
 | VS Code / Cursor extension | highlighting, formatter, icon for `.gss` files                                                                                                                               | 33         |
 | Design                     | `DESIGN.md` "Distance field", tokens in `src/styles/tokens.css`, what every page shares in `src/styles/site.css` (`@layer site`: a page's own `<style>` always wins)         | –          |
-| npm package                | [`gss-lang`](https://www.npmjs.com/package/gss-lang) 0.0.1 (tag `v0.0.1`), Apache-2.0: `gss-lang` (compiler + `mount`), `gss-lang/runtime`, `gss-lang/vite`                  | 63         |
+| npm package                | [`gss-lang`](https://www.npmjs.com/package/gss-lang) 0.0.2 (tag `v0.0.2`; 0.0.1: `v0.0.1`), Apache-2.0: `gss-lang` (compiler + `mount`), `gss-lang/runtime`, `gss-lang/vite`, `gss-lang/embed` (pinned CDN module) | 63, 85     |
 | Scenes                     | every demo `.gss` in `src/scenes/` (playground examples, showcase, bench), all compiled by `gpu.test.ts`                                                                     | 63         |
 | Tests                      | Vitest (CPU) + GPU compilation of every registry example (Chromium)                                                                                                          | 12, 25     |
-| Profiler (dev only)        | a panel over the playground scene, `perf` button or Alt+P: fps, frame, GPU and CPU time, real pixels, shader build time; over budget in signal                               | 64         |
+| Profiler                   | a panel over the playground scene, public, closed by default, `perf` button or Alt+P (remembered): fps, frame, GPU and CPU time, real pixels, shader build time; over budget in signal | 64, 87     |
 | Bench                      | `npm run bench:compare -- main --dpr 2`: another commit against the working tree, 3 alternating rounds, images compared pixel by pixel, report in `bench-results/compare.md` | 64         |
 
-## Release 0.0.2 preparation
+## Release 0.0.2 ✅
 
 - [x] Package and lockfile version set to 0.0.2; version displayed in site footers.
 - [x] Installation docs: Embedding a scene, npm, included Vite plugin, and versioned CDN module shipped in the package (decision 85).
 - [x] Documentation grouped by subject with alphabetical sorting and explicit order overrides (decision 85).
 - [x] Changelog and README updated for decisions 73–85 and the new showcase scenes.
-- [ ] Publish 0.0.2 to npm, create its tag/release, then deploy the site with the versioned CDN instructions.
+- [x] Published to npm (Oct. 1, 23:54), tag `v0.0.2`, site deployed with the versioned CDN instructions (`gss-lang@0.0.2` on gss-lang.dev).
 
 ## Priorities
+
+**Next, in Lucas's order** (Oct. 1, evening): ~~`filter`~~ ✅ (decisions 83, 84), then **motion path** (`offset-path: path()` / `ray()`, #12 below), **`conic-gradient()`**, **`setProperty()` from JS** (see Rendering passes / runtime API). After them: nesting with `&`, `transform-origin`, fog.
 
 1. [x] Loops: **option B chosen** (decision 52): `* n` + `calc(sibling-index())`, as in CSS. `@for` / `@each` later, only to change the shape at each step or to walk through a list
 2. [x] `var()` ✅ decision 55, inherited and animatable (+ `calc()` ✅ decision 52, with `min()`, `max()`, `clamp()`, `abs()`, `sqrt()`, `pow()`, `sin()`, `cos()`, `tan()`; every other CSS math function ✅ decision 78)
@@ -208,10 +210,10 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 
 ### Quality / DX
 
-- [ ] Report several errors per compile (today it stops at the first one)
+- [x] Report several errors per compile ✅ decision 86
 - [x] Document `floor: none` in the registry
 - [x] Update `DECISIONS.md` (groups: decisions 45 to 48)
-- [ ] Split `shader/codegen.ts` (about 1,750 lines) by concern, and move `readAngle` / `readNumber` to `values/`
+- [x] Split `shader/codegen.ts` by concern into `shader/codegen/`, and move `readAngle` / `readNumber` to `values/` ✅ decision 88
 - [ ] Align the TextMate highlighting of the extension with `classifyGss` (web)
 
 ## Out of scope
@@ -229,6 +231,11 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 - Composing surface effects (a "textual shader graph"): to be split before deciding: deforming the shape with noise (a `displace` property, it changes the SDF and can slow the ray march), a `toon` material next to the others, and lighting effects (rim light, fresnel).
 
 ## Done recently
+
+- Every error of a compile at once: the tokenizer and the parser go on after an error, then every value error once the text reads; all underlined in the editor, counted in the status bar, listed with line and column by the Vite plugin (decision 86)
+- The performance panel is public on gss-lang.dev, closed by default (decision 87)
+- `shader/codegen.ts` split into `shader/codegen/`, 15 files, shaders byte for byte the same; `readNumber` / `readAngle` in `values/` (decision 88)
+- Release 0.0.2 on npm, tag `v0.0.2`, site deployed
 
 - Prepared 0.0.2: versioned installation and CDN package entry, site footer version, documentation navigation grouped by subject (decision 85)
 

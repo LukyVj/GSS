@@ -2,12 +2,19 @@
 
 Notable changes to GSS, grouped by release. Features developed across several commits are listed once.
 
-The 0.0.1 history was reconstructed from GitHub. The next release also includes the
-committed language changes through `e63daf2` and the release preparation in this working tree.
+The 0.0.1 history was reconstructed from GitHub.
 
 ## Unreleased
 
-## 0.0.2 — prepared, not yet published
+### Added
+
+- Every error of a compile is reported at once, not only the first: after an error, the tokenizer and the parser go on reading (to the end of the declaration, the element or the rule), then, once the text reads, every wrong property, value, variable or object is reported. The playground and every "Try it" underline each one and write it under its line, the status bar counts them, and the Vite plugin lists each error with its line and column. One error is still thrown as a `GssError`; several as a `GssErrors`, a `GssError` whose `errors` lists them in the order of the text.
+
+### Changed
+
+- The playground's performance panel is closed by default; the `perf` button or Alt+P opens it, and that choice is remembered.
+
+## [0.0.2] — 2026-10-01
 
 ### Added
 
@@ -33,6 +40,7 @@ committed language changes through `e63daf2` and the release preparation in this
 
 ### Changed
 
+- The playground's performance panel (frame, GPU and CPU time, real pixels, shader build time) ships on the public site, behind the `perf` button or Alt+P.
 - Accessible collapsible documentation groups with keyboard controls, visible focus, session-persisted expansion and automatic opening for the current page.
 - Documentation sidebar grouped by topic, with alphabetical entry sorting and explicit numeric order overrides; reading order and breadcrumbs follow the same structure.
 

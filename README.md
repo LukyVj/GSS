@@ -155,9 +155,9 @@ only holds what changes every frame (time, camera, the hovered object) and sends
 
 ## Tools
 
-- **Playground**: [gss-lang.dev/playground](https://www.gss-lang.dev/playground). Located errors,
-  examples, the generated GLSL, share by URL, export to Shadertoy, and a formatter
-  (`Shift+Alt+F`).
+- **Playground**: [gss-lang.dev/playground](https://www.gss-lang.dev/playground). Every error
+  of a scene at once, each under its line; examples, the generated GLSL, share by URL, export to
+  Shadertoy, a formatter (`Shift+Alt+F`) and a performance panel (`Alt+P`).
 - **Reference**: [gss-lang.dev/docs](https://www.gss-lang.dev/docs), searchable, one live example
   per entry.
 - **Showcase**: [gss-lang.dev/showcase](https://www.gss-lang.dev/showcase), what you can make, for
