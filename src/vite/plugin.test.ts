@@ -52,3 +52,22 @@ describe("the plugin", () => {
     expect(transform.call({}, "export default 1", "/app/main.ts")).toBeNull();
   });
 });
+
+describe("the errors of a .gss file", () => {
+  it("are all written in Vite's terminal, each with its line and column (decision 86)", () => {
+    const plugin = gss();
+    let message = "";
+    const context = { error: (text: string) => { message = text; throw new Error(text); } };
+    const transform = plugin.transform as (this: unknown, source: string, id: string) => unknown;
+    expect(() =>
+      transform.call(context, "@scene { cube; sphere; }\ncube { size: -1; }\nsphere { radius: -2; }", "/app/a.gss"),
+    ).toThrow();
+    expect(message).toBe(
+      [
+        "2 GSS errors in /app/a.gss",
+        "  2:14  size expects one or three positive numbers, like: size: 2 1 1;",
+        "  3:18  radius expects one positive number, like: radius: 2;",
+      ].join("\n"),
+    );
+  });
+});

@@ -34,7 +34,7 @@ import type { Renderer } from "./renderer";
 import { classifyGss } from "../docs/highlight";
 import { formatGss } from "../docs/format";
 import { scan } from "../compiler/syntax/tokenizer";
-import { GssError } from "../compiler/syntax/errors";
+import { GssError, GssErrors } from "../compiler/syntax/errors";
 import type { Stats } from "./status";
 
 // Where the editor goes, the OK / Error badge (optional: the playground has a
@@ -110,7 +110,7 @@ const reindentOnBrace = EditorState.languageData.of(() => [
   { indentOnInput: /^\s*\}$/ },
 ]);
 
-// ----- A located error, shown under its line (DESIGN.md § 6) -----
+// ----- Located errors, each one shown under its line (DESIGN.md § 6, decision 86) -----
 
 // "15:3  radius only applies to …", as a block between two lines of code
 class ErrorLine extends WidgetType {
@@ -131,8 +131,8 @@ class ErrorLine extends WidgetType {
   }
 }
 
-// null removes the error line
-const setErrorLine = StateEffect.define<{ at: number; text: string } | null>();
+// The error lines of the last compile: [] removes them all
+const setErrorLines = StateEffect.define<{ at: number; text: string }[]>();
 
 // Block widgets must come from a StateField (they change the height of the document)
 const errorLine = StateField.define<DecorationSet>({
@@ -140,16 +140,21 @@ const errorLine = StateField.define<DecorationSet>({
   update(lines, transaction) {
     lines = lines.map(transaction.changes); // it follows the text while typing
     for (const effect of transaction.effects) {
-      if (!effect.is(setErrorLine)) continue;
-      lines = effect.value
-        ? Decoration.set([
-            Decoration.widget({
-              widget: new ErrorLine(effect.value.text),
-              block: true,
-              side: 1,
-            }).range(effect.value.at),
-          ])
-        : Decoration.none;
+      if (!effect.is(setErrorLines)) continue;
+      // Two errors on one line: one block, one error per row
+      const byLine = new Map<number, string[]>();
+      for (const { at, text } of effect.value)
+        byLine.set(at, [...(byLine.get(at) ?? []), text]);
+      lines = Decoration.set(
+        [...byLine].map(([at, texts]) =>
+          Decoration.widget({
+            widget: new ErrorLine(texts.join("\n")),
+            block: true,
+            side: 1,
+          }).range(at),
+        ),
+        true, // sorted by position
+      );
     }
     return lines;
   },
@@ -275,37 +280,39 @@ export function connectEditor(
   host.classList.add("gss-dark"); // the dark palette of src/styles/gss-code.css
 
   function showError(caught: unknown): void {
-    const message = caught instanceof Error ? caught.message : String(caught);
+    // Every error of the compile (decision 86); a GLSL error, for instance, is just one
+    const all: Error[] =
+      caught instanceof GssErrors
+        ? caught.errors
+        : [caught instanceof Error ? caught : new Error(String(caught))];
     if (status) {
-      status.textContent = "Error";
+      status.textContent = all.length > 1 ? `${all.length} errors` : "Error";
       status.className = "status error";
     }
-    emitStats({ errors: 1, objects: 0, glslLines: 0, compileMs: 0 });
+    emitStats({ errors: all.length, objects: 0, glslLines: 0, compileMs: 0 });
 
     // A compile error that knows its place: underline it, and write it under its line
-    if (caught instanceof GssError && caught.start !== undefined) {
-      const length = view.state.doc.length;
-      const from = Math.min(caught.start, length);
-      const to = Math.min(Math.max(caught.end ?? from, from + 1), length);
+    const length = view.state.doc.length;
+    const diagnostics: Diagnostic[] = [];
+    const lines: { at: number; text: string }[] = [];
+    const unplaced: string[] = [];
+    for (const one of all) {
+      if (!(one instanceof GssError) || one.start === undefined) {
+        unplaced.push(one.message);
+        continue;
+      }
+      const from = Math.min(one.start, length);
+      const to = Math.min(Math.max(one.end ?? from, from + 1), length);
       const line = view.state.doc.lineAt(from);
-      const diagnostics: Diagnostic[] = [
-        { from, to, severity: "error", message },
-      ];
-      error.hidden = true;
-      view.dispatch(setDiagnostics(view.state, diagnostics), {
-        effects: setErrorLine.of({
-          at: line.to,
-          text: `${line.number}:${from - line.from + 1}  ${message}`,
-        }),
-      });
-    } else {
-      // No place (a GLSL error, for instance): the message goes under the editor
-      error.textContent = message;
-      error.hidden = false;
-      view.dispatch(setDiagnostics(view.state, []), {
-        effects: setErrorLine.of(null),
-      });
+      diagnostics.push({ from, to, severity: "error", message: one.message });
+      lines.push({ at: line.to, text: `${line.number}:${from - line.from + 1}  ${one.message}` });
     }
+    // No place (a GLSL error, for instance): the message goes under the editor
+    error.textContent = unplaced.join("\n");
+    error.hidden = unplaced.length === 0;
+    view.dispatch(setDiagnostics(view.state, diagnostics), {
+      effects: setErrorLines.of(lines),
+    });
   }
 
   function tryLoad(): void {
@@ -325,7 +332,7 @@ export function connectEditor(
     }
     error.hidden = true;
     view.dispatch(setDiagnostics(view.state, []), {
-      effects: setErrorLine.of(null),
+      effects: setErrorLines.of([]),
     });
     lastCompiled = code;
     emitStats({

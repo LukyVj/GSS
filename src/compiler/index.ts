@@ -6,10 +6,10 @@ import { generateShader, hoverSlots } from "./shader/codegen";
 import { validateProperties, validateKeyframes } from "./cascade/validate";
 import { readCamera, type CameraSettings } from "./features/camera";
 import { resolveMath, type CalcContext } from "./values/calc";
-import type { Styles } from "./cascade/resolve";
+import type { StyledInstance, Styles } from "./cascade/resolve";
 import type { Declaration, Keyframes, Stylesheet } from "./syntax/ast";
 import type { Token } from "./syntax/tokenizer";
-import { errorAt, rememberSpan, spanOf } from "./syntax/errors";
+import { ErrorSink, errorAt, rememberSpan, spanOf } from "./syntax/errors";
 import { resolveVars, usesVariables, hasVar, type Variables } from "./cascade/vars";
 import { mediaQueriesOf, resolveIf } from "./values/conditionals";
 import { PROPERTIES } from "./registry/registry";
@@ -46,9 +46,14 @@ export type CompiledScene = {
 const MAX_QUERIES = 4;
 
 // GSS text → shader + camera settings, and a version per combination of @media
+// A compile reports every error it finds, not only the first one (decision 86): every
+// error of the text first; once the text reads, every error of the values.
 export function compileScene(source: string): CompiledScene {
-  const tokens = tokenize(source);
-  const stylesheet = parse(tokens);
+  const errors = new ErrorSink();
+  const tokens = tokenize(source, errors);
+  const stylesheet = parse(tokens, errors);
+  // An error in the text: what comes after would mostly report its consequences
+  errors.throwIfAny();
   // light-dark() needs a version of the scene per color scheme, like this @media query
   const lightDark = tokens.some(
     (token, i) =>
@@ -76,7 +81,7 @@ export function compileScene(source: string): CompiledScene {
   }
   // Like CSS, a rule inside a matching @media joins the cascade where it is written
   const variants = Array.from({ length: 2 ** queries.length }, (_, mask) =>
-    compileStylesheet(
+    errors.run(() => compileStylesheet(
       {
         ...stylesheet,
         rules: stylesheet.rules.filter(
@@ -85,9 +90,12 @@ export function compileScene(source: string): CompiledScene {
         ),
       },
       new Set(queries.filter((_, n) => (mask & (1 << n)) !== 0)),
-    ),
+    )),
   );
-  return { ...variants[0], media: { queries, variants } };
+  // The same error in several versions of the scene is reported once
+  errors.throwIfAny();
+  const compiled = variants as CompiledScene[];
+  return { ...compiled[0], media: { queries, variants: compiled } };
 }
 
 // One version of the scene: the rules that apply, compiled
@@ -96,12 +104,18 @@ function compileStylesheet(
   media: Set<string> = new Set(),
 ): CompiledScene {
   activeMedia = media;
-  validateProperties(stylesheet.rules);
-  validateKeyframes(stylesheet.keyframes);
-  const instances = expandScene(stylesheet.scene);
+  // Every error of this version; a part that fails is left out, and the rest goes on
+  const errors = new ErrorSink();
+  // Without the wrong rules and declarations: they are reported once, here
+  stylesheet = {
+    ...stylesheet,
+    rules: validateProperties(stylesheet.rules, errors),
+    keyframes: validateKeyframes(stylesheet.keyframes, errors),
+  };
+  const instances = errors.run(() => expandScene(stylesheet.scene)) ?? [];
 
   // The scene is the root of the variables, like :root in CSS
-  const sceneStyles = resolveSceneStyles(stylesheet.rules);
+  const sceneStyles = errors.run(() => resolveSceneStyles(stylesheet.rules)) ?? {};
   const rootVariables = customProperties(sceneStyles);
 
   // The copies of @keyframes made for one object, when they use variables (decision 55)
@@ -134,7 +148,13 @@ function compileStylesheet(
 
   // The cascade picks the values, then var() is replaced, then the math is computed
   // for each object (decisions 52 and 55)
-  const styled = resolveStyles(instances, stylesheet.rules).map((instance) => {
+  const resolved = errors.run(() => resolveStyles(instances, stylesheet.rules)) ?? [];
+  const styled = resolved.flatMap((instance) => {
+    // An object with an error is reported, and the others are still computed
+    const computed = errors.run(() => computeInstance(instance));
+    return computed ? [computed] : [];
+  });
+  function computeInstance(instance: (typeof resolved)[number]) {
     // Level 0 = the scene, 1… = the groups from the outside in, last = the object
     const levels = [
       rootVariables,
@@ -171,35 +191,68 @@ function compileStylesheet(
         ]),
       ) as Record<Face, Styles>,
     };
-  });
+  }
 
-  const computedScene = computeColors(
-    computeMath(computeVars(sceneStyles, rootVariables), null),
-  );
+  const computedScene =
+    errors.run(() =>
+      computeColors(computeMath(computeVars(sceneStyles, rootVariables), null)),
+    ) ?? {};
   // @keyframes with variables are only played through their copies
   const shared = computeKeyframes(
     stylesheet.keyframes.filter((k) => !usesVariablesIn(k)),
+    errors,
   );
   // filter: the layers of the objects first, then the scene (decisions 83, 84)
-  const { passes } = buildPasses(
-    objectFilters(styled).layers,
-    computedScene["filter"] ? readSteps(computedScene["filter"]) : [],
+  const passes = errors.run(
+    () =>
+      buildPasses(
+        objectFilters(styled).layers,
+        computedScene["filter"] ? readSteps(computedScene["filter"]) : [],
+      ).passes,
   );
-  return {
-    ...(passes.length > 0 ? { passes } : {}),
-    shader: generateShader(styled, computedScene, [...shared, ...copies]),
-    camera: readCamera(computedScene),
-    dpr: readDpr(computedScene),
-    objects: instances.length,
-    // After the cascade and var(): the texture an object really ends up with
-    textures: sceneTextures(styled),
-    hover: hoverSlots(styled).map((instance) => instance.hoverTriggers),
-    // Like CSS: the transition of the state the object goes to
-    transitions: hoverSlots(styled).map((instance) => ({
+  const shader = checkedShader(styled, computedScene, [...shared, ...copies], errors);
+  const camera = errors.run(() => readCamera(computedScene));
+  const dpr = errors.run(() => readDpr(computedScene));
+  // After the cascade and var(): the texture an object really ends up with
+  const textures = errors.run(() => sceneTextures(styled));
+  // Like CSS: the transition of the state the object goes to
+  const transitions = errors.run(() =>
+    hoverSlots(styled).map((instance) => ({
       enter: readTransition(instance.hoverStyles["transition"]),
       leave: readTransition(instance.styles["transition"]),
     })),
+  );
+  errors.throwIfAny();
+  return {
+    ...(passes!.length > 0 ? { passes } : {}),
+    shader: shader!,
+    camera: camera!,
+    dpr: dpr!,
+    objects: instances.length,
+    textures: textures!,
+    hover: hoverSlots(styled).map((instance) => instance.hoverTriggers),
+    transitions: transitions!,
   };
+}
+
+// The shader of the scene. When it fails, each object is compiled on its own (and the
+// scene without objects), so every object with an error is reported, not only the first.
+function checkedShader(
+  styled: StyledInstance[],
+  sceneStyles: Styles,
+  keyframes: Keyframes[],
+  errors: ErrorSink,
+): string | undefined {
+  const whole = new ErrorSink();
+  const shader = whole.run(() => generateShader(styled, sceneStyles, keyframes));
+  if (shader !== undefined) return shader;
+  const before = errors.size;
+  errors.run(() => generateShader([], sceneStyles, keyframes));
+  for (const instance of styled)
+    errors.run(() => generateShader([instance], sceneStyles, keyframes));
+  // An error that needs several objects together: the one the whole scene gave
+  if (errors.size === before) whole.list.forEach((error) => errors.add(error));
+  return undefined;
 }
 
 // Does a @keyframes block set a variable, or read one?
@@ -293,9 +346,14 @@ function computeMath(styles: Styles, context: CalcContext): Styles {
   return computed;
 }
 
-// @keyframes are shared by every object that plays them: no sibling-index() in there
-function computeKeyframes(keyframes: Keyframes[]): Keyframes[] {
-  return keyframes.map((animation) => ({
+// @keyframes are shared by every object that plays them: no sibling-index() in there.
+// A @keyframes with an error is reported and left out.
+function computeKeyframes(keyframes: Keyframes[], errors: ErrorSink): Keyframes[] {
+  return keyframes.flatMap((animation) => errors.run(() => [computeAnimation(animation)]) ?? []);
+}
+
+function computeAnimation(animation: Keyframes): Keyframes {
+  return {
     ...animation,
     frames: animation.frames.map((frame) => ({
       ...frame,
@@ -315,7 +373,7 @@ function computeKeyframes(keyframes: Keyframes[]): Keyframes[] {
         return computed;
       }),
     })),
-  }));
+  };
 }
 
 // The custom properties of a set of styles: { "--size": [2] }

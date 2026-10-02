@@ -10,7 +10,7 @@ export type Token =
   | { type: "PERCENTAGE"; value: number } // 50%, 12.5%
   | { type: "STRING"; value: string }; // "M0 0 L1 1", without the quotes
 
-import { GssError, rememberSpan } from "./errors";
+import { ErrorSink, GssError, rememberSpan } from "./errors";
 
 const PUNCTUATION = "{}:;,().*+-/!>~<=";
 
@@ -41,7 +41,17 @@ export type Located = {
 // The formatter and the highlighter need this; the parser only needs tokenize().
 // recover: never throws. The editor colors code while it is being typed,
 // so an unclosed comment or a stray character must not stop it.
-export function scan(source: string, { recover = false } = {}): Located[] {
+// errors: recovers the same way, and keeps each error there (decision 86).
+export function scan(
+  source: string,
+  { recover = false, errors }: { recover?: boolean; errors?: ErrorSink } = {},
+): Located[] {
+  // An error stops the scan, unless it is gathered (errors) or ignored (recover)
+  const fail = (error: GssError): void => {
+    if (errors) errors.add(error);
+    else if (!recover) throw error;
+  };
+  recover ||= errors !== undefined;
   const located: Located[] = [];
   let i = 0; // our position in the text
   let start = 0; // where the token being read begins
@@ -76,11 +86,8 @@ export function scan(source: string, { recover = false } = {}): Located[] {
     // 2. The comments /* ... */ : kept, with their text (the parser never sees them)
     if (char === "/" && next === "*") {
       const end = source.indexOf("*/", i + 2);
-      if (end === -1 && !recover)
-        throw new GssError("Comment never closed", {
-          start: i,
-          end: source.length,
-        });
+      if (end === -1)
+        fail(new GssError("Comment never closed", { start: i, end: source.length }));
       i = end === -1 ? source.length : end + 2; // recovering: the comment runs to the end
       push({ type: "COMMENT", value: source.slice(start, i) });
       continue;
@@ -97,11 +104,7 @@ export function scan(source: string, { recover = false } = {}): Located[] {
       }
       if (charAt(i) !== char) {
         // Recovering, an unclosed string runs to the end of the line
-        if (!recover)
-          throw new GssError("String never closed: a quote is missing", {
-            start,
-            end: i,
-          });
+        fail(new GssError("String never closed: a quote is missing", { start, end: i }));
       } else {
         i++; // the closing quote
       }
@@ -136,15 +139,11 @@ export function scan(source: string, { recover = false } = {}): Located[] {
     if (char === "@" || char === "#") {
       i++;
       const name = readIdent();
-      if (name === "" && recover) {
+      if (name === "") {
+        fail(new GssError(`"${char}" must be followed by a name`, { start, end: i }));
         push({ type: "INVALID", value: char });
         continue;
       }
-      if (name === "")
-        throw new GssError(`"${char}" must be followed by a name`, {
-          start,
-          end: i,
-        });
       push({ type: char === "@" ? "AT_KEYWORD" : "HASH", value: name });
       continue;
     }
@@ -163,23 +162,18 @@ export function scan(source: string, { recover = false } = {}): Located[] {
     }
 
     // 7. Nothing matches: clear error, with the position
-    if (recover) {
-      i++;
-      push({ type: "INVALID", value: char });
-      continue;
-    }
-    throw new GssError(`Unexpected character "${char}"`, {
-      start: i,
-      end: i + 1,
-    });
+    fail(new GssError(`Unexpected character "${char}"`, { start: i, end: i + 1 }));
+    i++;
+    push({ type: "INVALID", value: char });
   }
 
   return located;
 }
 
 // The tokens the parser needs: everything except comments
-export function tokenize(source: string): Token[] {
-  return scan(source)
+// errors: gathers the errors instead of stopping at the first one (decision 86)
+export function tokenize(source: string, errors?: ErrorSink): Token[] {
+  return scan(source, { errors })
     .map((l) => l.token)
     .filter((t): t is Token => t.type !== "COMMENT" && t.type !== "INVALID");
 }

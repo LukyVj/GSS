@@ -1,5 +1,6 @@
 import type { Plugin } from "vite";
 import { compileScene, type CompiledScene } from "../compiler";
+import { describeErrors } from "../compiler/syntax/errors";
 
 // gss-lang/vite (decision 63): `import scene from "./logo.gss"` gives the compiled
 // scene. The compiler runs at build time; the page only ships the runtime and the shader:
@@ -60,9 +61,11 @@ export default function gss(): Plugin {
       try {
         return { code: gssModule(source), map: null };
       } catch (error) {
-        // In Vite's terminal (and its overlay in dev), with the file
-        const message = error instanceof Error ? error.message : String(error);
-        this.error(`GSS: ${message}\n  in ${id}`);
+        // In Vite's terminal (and its overlay in dev), with the file: every error
+        // of the compile, each with its line and column (decision 86)
+        const lines = describeErrors(source, error).split("\n");
+        const title = lines.length > 1 ? `${lines.length} GSS errors` : "GSS error";
+        this.error(`${title} in ${id}\n${lines.map((line) => `  ${line}`).join("\n")}`);
       }
     },
   };

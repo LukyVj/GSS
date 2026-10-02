@@ -7,10 +7,14 @@ import type {
   Keyframes,
   Keyframe,
 } from "./ast";
-import { errorAt, rememberSpan, spanAcross, spanOf } from "./errors";
+import { ErrorSink, errorAt, errorsOf, rememberSpan, spanAcross, spanOf } from "./errors";
 
-export function parse(tokens: Token[]): Stylesheet {
+// Reading goes on after an error (decision 86): the error is kept, the parser skips to
+// the end of the declaration, the element or the rule, and reads the rest. errors:
+// where the errors go; without it, parse() throws them at the end.
+export function parse(tokens: Token[], errors?: ErrorSink): Stylesheet {
   let pos = 0; // our position in the list of tokens
+  const sink = errors ?? new ErrorSink();
 
   // Looks at the current token, without advancing
   const peek = (): Token | undefined => tokens[pos];
@@ -34,6 +38,67 @@ export function parse(tokens: Token[]): Stylesheet {
       throw errorAt(token, `"${value}" expected, but found "${token.value}"`);
     }
   };
+
+  // ----- Recovery -----
+  // Thrown once the end of the file is reached in an error: nothing is left to read
+  const STOP = Symbol("end of file");
+
+  // Reads one part; on an error, keeps it, skips the rest of the part and returns undefined
+  function attempt<T>(read: () => T, skip: () => void): T | undefined {
+    const from = pos;
+    try {
+      return read();
+    } catch (caught) {
+      if (caught === STOP) throw caught;
+      for (const error of errorsOf(caught)) sink.add(error);
+      if (!peek()) throw STOP;
+      const last = tokens[pos - 1];
+      // The error took the ";" that ends the part: the part is over, nothing to skip
+      if (pos > from && isPunct(last, ";")) return undefined;
+      // It took the "}" of the block around: the block must still see it
+      if (pos - 1 > from && isPunct(last, "}")) pos--;
+      if (pos === from) pos++; // always move on, or the same error comes back
+      skip();
+      return undefined;
+    }
+  }
+
+  // After a broken declaration: up to its ";" (taken) or the "}" of its block (left)
+  function skipDeclaration(): void {
+    let depth = 0;
+    while (peek()) {
+      const token = peek();
+      if (depth === 0 && (isPunct(token, ";") || isPunct(token, "}"))) break;
+      if (isPunct(token, "(") || isPunct(token, "{")) depth++;
+      if (isPunct(token, ")") || isPunct(token, "}")) depth--;
+      pos++;
+    }
+    if (isPunct(peek(), ";")) pos++;
+  }
+
+  // After a broken element or rule: up to its ";", or the end of its block { … }.
+  // inBlock: the "}" of the block around it ends the skip, and is left to that block.
+  function skipStatement(inBlock: boolean): void {
+    let depth = 0;
+    while (peek()) {
+      const token = peek()!;
+      if (depth === 0 && isPunct(token, ";")) {
+        pos++;
+        return;
+      }
+      if (isPunct(token, "}")) {
+        if (depth === 0) {
+          if (!inBlock) pos++; // a stray "}" at the top
+          return;
+        }
+        pos++;
+        if (--depth === 0) return; // the block of the broken rule is over
+        continue;
+      }
+      if (isPunct(token, "{")) depth++;
+      pos++;
+    }
+  }
 
   // cube.corner * 4;
   function parseSceneElement(): SceneElement {
@@ -114,7 +179,8 @@ export function parse(tokens: Token[]): Stylesheet {
     const elements: SceneElement[] = [];
     while (!isPunct(peek(), "}")) {
       if (!peek()) throw errorAt(open, `${owner} never closed: "}" missing`);
-      elements.push(parseSceneElement());
+      const element = attempt(parseSceneElement, () => skipStatement(true));
+      if (element) elements.push(element);
     }
     next();
     return elements;
@@ -173,7 +239,8 @@ export function parse(tokens: Token[]): Stylesheet {
     const declarations: Declaration[] = [];
     while (!isPunct(peek(), "}")) {
       if (!peek()) throw errorAt(open, 'Block never closed: "}" missing');
-      declarations.push(parseDeclaration());
+      const declaration = attempt(parseDeclaration, skipDeclaration);
+      if (declaration) declarations.push(declaration);
     }
     next(); // we consume the "}"
     return declarations;
@@ -244,12 +311,15 @@ export function parse(tokens: Token[]): Stylesheet {
     while (!isPunct(peek(), "}")) {
       const token = peek();
       if (!token) throw errorAt(open, '@media never closed: "}" missing');
-      if (token.type === "AT_KEYWORD")
-        throw errorAt(
-          token,
-          "@media holds rules only, for now: write @scene and @keyframes outside it",
-        );
-      for (const rule of parseRules()) {
+      const read = attempt(() => {
+        if (token.type === "AT_KEYWORD")
+          throw errorAt(
+            token,
+            "@media holds rules only, for now: write @scene and @keyframes outside it",
+          );
+        return parseRules();
+      }, () => skipStatement(true));
+      for (const rule of read ?? []) {
         rule.media = media;
         rules.push(rule);
       }
@@ -261,8 +331,14 @@ export function parse(tokens: Token[]): Stylesheet {
   // The whole file: a sequence of @scene and rules
   const stylesheet: Stylesheet = { scene: [], rules: [], keyframes: [] };
 
-  while (peek()) {
+  // One @scene, @keyframes, @media or rule
+  function parseStatement(): void {
     const token = peek()!;
+    if (isPunct(token, "}")) {
+      // A "}" that closes nothing: reported, and the next rule is read as usual
+      sink.add(errorAt(next(), '"}" closes no block'));
+      return;
+    }
     if (token.type === "AT_KEYWORD") {
       next();
       if (token.value === "scene") {
@@ -279,6 +355,13 @@ export function parse(tokens: Token[]): Stylesheet {
     }
   }
 
+  try {
+    while (peek()) attempt(parseStatement, () => skipStatement(false));
+  } catch (caught) {
+    if (caught !== STOP) throw caught;
+  }
+
+  if (!errors) sink.throwIfAny(); // no sink given: the errors are thrown, all at once
   return stylesheet;
 }
 
