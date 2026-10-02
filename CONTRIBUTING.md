@@ -13,7 +13,7 @@ npm run format     # format the .gss files (npm run format:check to only list th
 
 | Path | What lives there |
 | --- | --- |
-| `src/compiler/` | `index.ts` (`compileScene()`, the pipeline), then one folder per stage: `syntax/` (tokenizer, parser), `cascade/` (selectors, validation, variables), `values/` (math, colors, easings, SVG paths), `features/` (animation, transition, camera, textures…), `shader/` (`codegen/`: the code generator, one file per part of the shader; `wgsl/`: the same shader lowered to WGSL; gradients, paths, the Shadertoy export), `registry/`, and `tests/` for the end-to-end tests |
+| `src/compiler/` | `index.ts` (`compileScene()`, the pipeline), then one folder per stage: `syntax/` (tokenizer, parser, nesting), `cascade/` (selectors, validation, variables), `values/` (math, colors, easings, SVG paths), `features/` (animation, transition, camera, textures…), `shader/` (`codegen/`: the code generator, one file per part of the shader; `wgsl/`: the same shader lowered to WGSL; gradients, paths, the Shadertoy export), `registry/`, and `tests/` for the end-to-end tests |
 | `src/scenes/` | the `.gss` scenes of the playground, the showcase and the bench |
 | `src/runtime/` | WebGL2 and WebGPU renderers (`backend.ts` picks one), camera, :hover picking, editor and autocompletion, share links |
 | `src/embed/`, `src/vite/` | the npm package: `mount()`, `<gss-scene>`, the Vite plugin |

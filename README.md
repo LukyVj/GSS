@@ -148,7 +148,8 @@ and a readable path toward the shader underneath. It is not meant to replace GLS
   and `:active` (pressed, with the mouse or a finger).
   `:has()` checks descendants or relative selectors: `group:has(> cube)`, `cube:has(+ sphere:hover)`.
   `:nth-child(odd)`, `:nth-of-type()`, `:first-child`… count the copies of `* n` one by one, and
-  `:not()` leaves some out: `cube:not(:first-child, :last-child)`.
+  `:not()` leaves some out: `cube:not(:first-child, :last-child)`. Rules nest like CSS:
+  `#g { cube { &:hover { color: white; } } }`.
 - **Shapes**: `cube`, `sphere`, `torus`, `cylinder`, `cone`, `capsule`, `plane`, `path` (a tube
   along an SVG path) and `prism` (a `polygon()` or `path()` contour, extruded).
 - **Materials**: `matte()`, `metal()`, `jelly()`, `glass()` with refraction and frost, and the
@@ -156,18 +157,20 @@ and a readable path toward the shader underneath. It is not meant to replace GLS
 - **Textures**: `texture: url("dirt.png")` projected on each face, a different image per face
   (the Minecraft grass block), `image-rendering: pixelated` and `texture-size` to repeat it.
 - **Motion**: `@keyframes`, animation controls and easings (including `steps()`), computed on the GPU; `transition` for hover changes;
-  scroll-driven animations with `animation-timeline: scroll()` and `view()`.
+  scroll-driven animations with `animation-timeline: scroll()` and `view()`; a motion path with `offset-path`,
+  and `transform-origin` to turn and scale around any point (a door on its hinge).
 - **Math**: `calc()`, `min()`, `max()`, `clamp()`, trigonometry, and `sibling-index()` /
   `sibling-count()` for CSS-style loops.
 - **Variables**: `--size: 2` and `var(--size, 1)`, inherited from the scene to groups to objects,
-  and animatable in `@keyframes`.
+  and animatable in `@keyframes`. A variable registered with `@property` is set from the page at any
+  moment, without compiling again: `scene.setProperty("--lift", "2")`.
 - **Colors**: hex, `rgb()`, `hsl()`, `oklch()`, `color-mix()` and the other CSS color functions, the
   CSS named colors (`tomato`) and `currentColor`, with math and `var()` inside:
   `hsl(calc(sibling-index() * 45) 90% 60%)`.
 - **Gradients and filters**: linear, radial and conic gradients on backgrounds and objects, animated with `@keyframes` and `:hover` (the scene animates its background); color filters, blur, bloom and grain on scenes, objects and groups.
 - **Responsive scenes**: `@media`, `light-dark()` and conditional `if()` values.
 - **Generative values**: deterministic `random()`, inverse trigonometry, rounding, logarithms and `progress()`.
-- **The scene**: `floor`, `background`, `light`, `ambient` and an orbit camera.
+- **The scene**: `floor`, `background`, `light`, `ambient`, `fog` and an orbit camera.
 
 Every property, shape, selector and function has its page in the
 [reference](https://www.gss-lang.dev/docs), with a live example to edit.
@@ -182,7 +185,8 @@ GSS text → tokenizer → parser → scene expansion → cascade → validation
 
 Everything that can be decided at compile time is: the cascade, the selectors, the units,
 `var()`, the math and the colors, in that order. The shader receives final values. The runtime
-only holds what changes every frame (time, camera, the hovered and pressed objects, the scroll) and sends it as uniforms.
+only holds what changes every frame (time, camera, the hovered and pressed objects, the scroll, the
+variables the page sets) and sends it as uniforms.
 
 ## Tools
 
@@ -199,7 +203,7 @@ only holds what changes every frame (time, camera, the hovered and pressed objec
 
 ## Status
 
-Version 0.0.3 (release preparation): early, and moving fast. The syntax may still change between versions.
+Version 0.0.3: early, and moving fast. The syntax may still change between versions.
 
 See the [changelog](https://github.com/LukyVj/GSS/blob/main/CHANGELOG.md) for release history and unreleased changes.
 

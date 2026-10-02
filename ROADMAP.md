@@ -22,7 +22,7 @@ What the language and the tools can do today. Each feature is detailed in the re
 | Easings              | `linear`, `ease`, `ease-in`, `ease-out`, `ease-in-out`, `step-start`, `step-end`, `cubic-bezier()`, `linear()`, `steps()`, in `@keyframes` and `transition` | 68, 80                |
 | Media queries        | `@media (…) { … }`: any query the browser knows (width, orientation, `prefers-color-scheme`, `prefers-reduced-motion`…), up to 4 per scene, switched live; range syntax (`width < 600px`); `if(media(…))` and `light-dark()` add their own (dec. 79, 81)                                   | 71                    |
 | Math                 | `calc()`, `min()`, `max()`, `clamp()`, `abs()`, `sqrt()`, `pow()`, trigonometry and its inverses (`asin()` … `atan2()`), `sign()`, `round()`, `mod()`, `rem()`, `hypot()`, `log()`, `exp()`, `progress()`, `random()`, `pi`, `e` | 52, 78, 81, 104          |
-| Variables            | `--size: 2`, `var(--size, 1)`; inherited scene → group → object, a variable can use another, animatable in `@keyframes`                                                                     | 55                    |
+| Variables            | `--size: 2`, `var(--size, 1)`; inherited scene → group → object, a variable can use another, animatable in `@keyframes`; `@property` registers one that the page sets with `setProperty()`, without compiling again | 55, 105               |
 | Colors               | `#ff5a36`, `rgb()`, `hsl()`, `hwb()`, `lab()`, `lch()`, `oklab()`, `oklch()`, `color()`, `color-mix()`, `light-dark()`, `contrast-color()`, `currentColor` (dec. 94), the 148 CSS names (`tomato`) where a color is expected; a gradient (`linear-`, `radial-`, `conic-`, dec. 82, 98) in `color` or a material, animated in `color` (dec. 102); math and `var()` inside | 58, 79                |
 | CSS-style loops      | `sibling-index()`, `sibling-count()`: each copy of a `* n` gets its own value                                                                                                               | 52                    |
 | Units                | angles `deg` `rad` `turn` (always with a unit), durations `s` `ms`, `%`                                                                                                                     | 9, 17, 20             |
@@ -53,7 +53,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 | Look         | `color`, `material`                                                                                | 26     |
 | Textures     | `texture: url("…")`, `image-rendering: pixelated`, `texture-size`                                  | 59     |
 | Combinations | `operation: union \| subtract \| intersect`, `blend` (smooth union)                                | 18, 19 |
-| Animation    | `animation`; animatable: `translate`, `rotate-*`, `scale`, `color` (a gradient too), `offset-distance` (also what `:hover` can change); on the scene, `background` | 24, 62, 102, 103 |
+| Animation    | `animation`; animatable: `translate`, `rotate-*`, `scale`, `transform-origin`, `color` (a gradient too), `offset-distance` (also what `:hover` can change); on the scene, `background` and `fog` | 24, 62, 102, 103, 107, 108 |
 | Transition   | `transition: 0.3s ease-out`, one per object; easings: keywords, `cubic-bezier()`, `linear()`       | 68     |
 
 ### Materials
@@ -90,6 +90,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 | Animations and `:hover` computed once per pixel, in `animate()`                                                                                          | 75       |
 | A sphere around the whole scene: a ray that passes by it only meets the floor                                                                            | 76       |
 | One bounding test per group of 3 objects or more                                                                                                         | 77       |
+| Fog: mixed into the color after the lighting, from the camera; the bounding spheres follow `transform-origin`                                            | 107, 108 |
 
 ### Tools
 
@@ -104,11 +105,11 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 | Brand page                 | `/brand` (`brand.html`): marks, wordmark, lockup, icons, social cards                                                                                                        | 57         |
 | Shadertoy export           | `→ shadertoy` button in the playground, images in `iChannel0`…`3` (at most 4)                                                                                                | 60         |
 | Analytics                  | DocSearch Insights (Algolia) + Umami, events through `track()`                                                                                                               | 61         |
-| Autocompletion             | property names while typing, only those the rule can take (scene, shape, group, `:hover`, face, `@keyframes`), with their syntax and description | 89         |
+| Autocompletion             | property names while typing, only those the rule can take (scene, shape, group, `:hover`, face, `@keyframes`, a nested rule), with their syntax and description | 89, 106    |
 | Formatter                  | `formatGss`, `Shift+Alt+F` in the playground                                                                                                                                 | 33         |
-| VS Code / Cursor extension | highlighting, formatter, icon for `.gss` files                                                                                                                               | 33         |
+| VS Code / Cursor extension | highlighting (nested rules, `&` and `@media` read since decision 106: rebuild the `.vsix` to ship it), formatter, icon for `.gss` files                                                                                                                               | 33, 106    |
 | Design                     | `DESIGN.md` "Distance field", tokens in `src/styles/tokens.css`, what every page shares in `src/styles/site.css` (`@layer site`: a page's own `<style>` always wins)         | –          |
-| npm package                | [`gss-lang`](https://www.npmjs.com/package/gss-lang) 0.0.2 (tag `v0.0.2`; 0.0.1: `v0.0.1`), Apache-2.0: `gss-lang` (compiler + `mount`), `gss-lang/runtime`, `gss-lang/vite`, `gss-lang/embed` (pinned CDN module) | 63, 85     |
+| npm package                | [`gss-lang`](https://www.npmjs.com/package/gss-lang) 0.0.3 (tag `v0.0.3`; 0.0.2: `v0.0.2`, 0.0.1: `v0.0.1`), Apache-2.0: `gss-lang` (compiler + `mount`), `gss-lang/runtime`, `gss-lang/vite`, `gss-lang/embed` (pinned CDN module) | 63, 85     |
 | Scenes                     | every demo `.gss` in `src/scenes/` (playground examples, showcase, bench), all compiled by `gpu.test.ts`                                                                     | 63         |
 | Tests                      | Vitest (CPU) + GPU compilation of every registry example (Chromium)                                                                                                          | 12, 25     |
 | Profiler                   | a panel over the playground scene, public, closed by default and lazy (nothing measured before it opens), `perf` button or Alt+P (remembered), WebGL2 and WebGPU (timestamp queries when available): fps, frame, GPU and CPU time, real pixels, shader build time; over budget in signal | 64, 87, 91 |
@@ -132,6 +133,8 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 ## Priorities
 
 **Next, in Lucas's order** (Oct. 2, after 0.0.3; replaces the list of Oct. 1):
+
+**Next up** (Lucas, Oct. 2 evening: `transform-origin`, then fog, then the lights): **8. Several lights, and colored lights**, before the noise function (7).
 
 1. ~~**Animated gradients**~~ ✅ decisions 102, 103: a gradient changes into another of the same kind in `@keyframes` and on `:hover`, through a variable too; the scene plays an animation, so its `background` moves (a flat, moving image)
 2. **`setProperty()` from JS**: first step ✅ decision 105 (`@property`, `setProperty()` / `getPropertyValue()` / `removeProperty()`, in `translate`, `rotate-*`, `scale`, `color`, `offset-distance`, `background`). Second step ✅: inside `calc()` and the math functions, and the color functions (`hsl(var(--hue) …)`, `color-mix()`…), computed on the GPU. Third step ✅, Lucas's choice "everywhere": the sizes of shapes (without their bounding spheres), the numbers of a gradient, materials, `light`, `ambient`, `floor`, `camera-target`, `blend`, `offset-rotate`, `texture-size`, filters (with a `"<length>"` syntax in px, the passes included). Not read at run time: the copies of `* n`, `d`, `view-box`, the timings, the camera the mouse moves, `dpr`. The playground panel of sliders: later (Playground, below)
@@ -267,6 +270,13 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 
 ## Done recently
 
+- `fog` on the scene: `fog: [<color>] <start> <end>` from the camera, into the background behind each object, or a color that covers the background too; animatable, readable from `@property`; hides the sharp end of the floor (decision 108)
+- `transform-origin`: keywords and percentages on the box of the object, numbers from its center like `translate`, numbers only on a group; animatable, readable from `@property`; the bounding spheres follow it (decision 107)
+- Nesting with `&`, unfolded by the parser: rules inside rules, a descendant without `&`, `&` inside `:has()` / `:not()`, `@media` inside a rule; autocompletion and the VS Code grammar follow (decision 106)
+- `@property` and `setProperty()` / `getPropertyValue()` / `removeProperty()`: registered variables set from the page without compiling again, in three steps: transforms, colors and the background; inside `calc()` and the color functions, computed on the GPU; everywhere a value reaches the shader (decision 105)
+- A computed value out of its range is clamped to it, like CSS: `color-mix(… calc(sibling-index() * 40% - 20%))` no longer fails on the last copies (decision 104)
+- Animated gradients (decision 102) and the scene's own animation of its background (decision 103)
+- The Essentials: `:nth-child()` and its family (decision 92), `:not()` (93), `currentColor` (94), `:active` (95), `animation-timeline: scroll()` / `view()` (96); then the motion path (97), `conic-gradient()` (98), the screen no longer mirrored (99)
 - Release 0.0.3 on npm, tag `v0.0.3`, site deployed (with motion path, `conic-gradient()` and the unmirrored screen)
 - A filtered object next to a metal, jelly or glass compiles on WebGL2: the object filters are written before the reflections that call them (decision 100)
 - WGSL and native WebGPU rendering next to GLSL / WebGL2, automatic backend with fallback, WGSL tab and backend selection in the playground, profiler on both backends (decisions 90, 91)
