@@ -683,6 +683,20 @@ The public development hooks carry WebGPU types, so `@webgpu/types` is a type-on
 
 **Why**: "make it follow this curve" is the next thing after keyframes, and designers draw curves in Figma: an SVG `d` becomes a trajectory with no math. With `animation-timeline: scroll()` (decision 96), an object travels along a path as the page scrolls.
 
+## 98. `conic-gradient()`
+
+**Decision**: `conic-gradient([from <angle>]? [at <position>]?, <color> [<angle> | <percentage>]{0,2}, …)` and `repeating-conic-gradient()`, like CSS (Images 4), wherever the other gradients go (decisions 81, 82): `background`, `color`, the first argument of a material.
+
+- The angle turns clockwise from the top, like CSS, around the center of the gradient's box (the canvas, or the object seen from the front): `t = fract(atan(p.x, p.y) / 2π - from)`. The center itself, where the angle has no direction, is the first color.
+- Its stops take angles as well as percentages, a full turn being 100%; the other gradients still refuse angles. Stops are completed, spread and repeated with the same code as the other gradients.
+- `at <position>` is read by the code `radial-gradient()` already used, moved into `readPosition()` by cut and paste (shaders compared byte for byte on every scene and example).
+- WGSL: `atan(y, x)` lowers to `atan2(y, x)`.
+- The setup (`from`, `at`, the direction of a linear gradient, the shape of a radial one) is now read before the stops, so its error is the one reported.
+
+**Differences from CSS**: colors are mixed in sRGB (like the other GSS gradients), no `in <colorspace>` interpolation; the center pixel is the first color.
+
+**Why**: a color wheel, a pie chart, a dial, the sweep of a clock hand, the stripes of a beach ball: shapes that turn, which linear and radial gradients cannot draw.
+
 ## Open questions
 
 - **Targeting multiplied ids**: should `#hero` target `hero-1`, `hero-2` and `hero-3`?

@@ -7,8 +7,8 @@ gss-lang.dev; npm package: `gss-lang`.
 ## Read first
 
 - `ROADMAP.md`: what GSS already does, and what comes next. The **Essentials** section (Oct. 2) is done;
-  the next item is `conic-gradient()`.
-- `DECISIONS.md`: every design decision, numbered. The next one is **98**. Add a decision for every
+  the next item is `setProperty()` from JS.
+- `DECISIONS.md`: every design decision, numbered. The next one is **99**. Add a decision for every
   new feature or behavior change.
 - `CONTRIBUTING.md`: where things live. `CHANGELOG.md`: user-facing changes, under "Unreleased".
 

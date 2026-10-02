@@ -336,6 +336,8 @@ class Lowering {
       if (name === "mod") return { code: `(${args[0].code} - ${args[1].code} * floor(${args[0].code} / ${args[1].code}))`, type };
       return { code: `${name}(${codes()})`, type };
     }
+    // atan(y, x) in GLSL is atan2(y, x) in WGSL (conic-gradient(), decision 98)
+    if (name === "atan") return { code: `${args.length === 2 ? "atan2" : "atan"}(${codes()})`, type: args[0].type };
     if (["abs", "sign", "floor", "ceil", "round", "fract", "sqrt", "exp", "sin", "cos", "normalize", "reflect", "refract", "cross"].includes(name))
       return { code: `${name}(${codes()})`, type: args[0].type };
     throw new Error(`WGSL lowering: unsupported function ${name}`);

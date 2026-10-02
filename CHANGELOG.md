@@ -8,6 +8,8 @@ The 0.0.1 history was reconstructed from GitHub.
 
 ### Added
 
+- `conic-gradient()` and `repeating-conic-gradient()`, like CSS: `from <angle>`, `at <position>`, stops placed with angles or percentages; in backgrounds, on objects and in materials.
+
 - Motion path, like CSS: `offset-path: path("…")` or `ray(<angle>)`, `offset-distance` (a length or a percentage, animatable with `@keyframes`, `:hover` and the scroll) and `offset-rotate` (`auto`, `reverse`, an angle). The path stands in the object's xy plane like the `path` shape, so a tube and an object following it share the same `d`.
 
 ## [0.0.3] — 2026-10-02 (prepared, not yet published)

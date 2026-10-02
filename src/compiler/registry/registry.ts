@@ -1332,12 +1332,12 @@ export const FUNCTIONS: FunctionDef[] = [
     ],
   },
   {
-    name: "linear-gradient(), radial-gradient()",
+    name: "linear-gradient(), radial-gradient(), conic-gradient()",
     anchor: "fn-gradients",
-    covers: ["linear-gradient", "radial-gradient", "repeating-linear-gradient", "repeating-radial-gradient"],
-    syntax: "linear-gradient([<angle> | to <side> <side>?]?, <color> <percentage>{0,2}, …) | radial-gradient([circle | ellipse]? [closest-side | farthest-side | closest-corner | farthest-corner]? [at <position>]?, <color> <percentage>{0,2}, …)",
+    covers: ["linear-gradient", "radial-gradient", "repeating-linear-gradient", "repeating-radial-gradient", "conic-gradient", "repeating-conic-gradient"],
+    syntax: "linear-gradient([<angle> | to <side> <side>?]?, <color> <percentage>{0,2}, …) | radial-gradient([circle | ellipse]? [closest-side | farthest-side | closest-corner | farthest-corner]? [at <position>]?, <color> <percentage>{0,2}, …) | conic-gradient([from <angle>]? [at <position>]?, <color> [<angle> | <percentage>]{0,2}, …)",
     description:
-      "Gradients, like CSS, for the background of the scene, the color of an object and the color of a material. In the background, the gradient covers the canvas and follows its size; reflections and glass see it in the direction they look. On an object, it covers the object seen from the front, from left to right and from bottom to top (a plane is seen from above): to top goes from its bottom to its top, whatever its size, and it turns and moves with it. linear-gradient() goes to bottom by default; it takes an angle (0deg up, 90deg right) or to a side or a corner. radial-gradient() is an ellipse reaching the farthest corner from the center by default; it takes circle or ellipse, a size keyword and a position (at 30% 40%, at top). Each color can have one or two positions; the missing ones are spread like CSS, and two colors at the same place make a hard edge. repeating-linear-gradient() and repeating-radial-gradient() repeat the stops. Colors are mixed in sRGB, like CSS with hex colors.",
+      "Gradients, like CSS, for the background of the scene, the color of an object and the color of a material. In the background, the gradient covers the canvas and follows its size; reflections and glass see it in the direction they look. On an object, it covers the object seen from the front, from left to right and from bottom to top (a plane is seen from above): to top goes from its bottom to its top, whatever its size, and it turns and moves with it. linear-gradient() goes to bottom by default; it takes an angle (0deg up, 90deg right) or to a side or a corner. radial-gradient() is an ellipse reaching the farthest corner from the center by default; it takes circle or ellipse, a size keyword and a position (at 30% 40%, at top). conic-gradient() turns around a center, clockwise from the top: from 90deg starts it a quarter turn later, at 30% 40% moves the center, and its colors can be placed with angles as well as percentages (a full turn is 100%), for a color wheel, a pie chart or the sweep of a watch hand. Each color can have one or two positions; the missing ones are spread like CSS, and two colors at the same place make a hard edge. repeating-linear-gradient(), repeating-radial-gradient() and repeating-conic-gradient() repeat the stops. Colors are mixed in sRGB, like CSS with hex colors.",
     examples: [
       {
         name: "linear-gradient()",
@@ -1350,6 +1350,10 @@ export const FUNCTIONS: FunctionDef[] = [
       {
         name: "linear-gradient() on objects",
         code: "@scene { cylinder; sphere; cube; } cylinder { radius: 0.4; height: 2; translate: -1.4 1 0; color: linear-gradient(#ff5a36, #ffd27a); } sphere { radius: 0.7; translate: 0 0.7 0; material: metal(radial-gradient(circle at 35% 65%, #ffffff, #3a7bff 40%, #10183a), 0.15); } cube { size: 1; translate: 1.4 0.5 0; rotate-y: 30deg; color: repeating-linear-gradient(45deg, #3ad16b 0% 10%, #f4f1ea 10% 20%); }",
+      },
+      {
+        name: "conic-gradient()",
+        code: "@scene { cube#dial; sphere; } #dial { size: 2 2 0.1; corner-radius: 0.05; translate: -0.4 1.2 0; color: conic-gradient(#ff5a36, #ffd27a, #3ad16b, #3a7bff, #b15aff, #ff5a36); } sphere { radius: 0.5; translate: 1.4 0.5 0.6; material: metal(repeating-conic-gradient(from 45deg, #f4f1ea 0deg 30deg, #111111 30deg 60deg), 0.3); } scene { floor: none; background: conic-gradient(from 180deg at 50% 0%, #1c1c24, #2a2a3a, #1c1c24); }",
       },
       {
         name: "repeating-linear-gradient() and repeating-radial-gradient()",

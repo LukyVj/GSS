@@ -1,5 +1,5 @@
-// Gradients, like CSS: linear-gradient(), radial-gradient() and their repeating- forms
-// (decisions 81 and 82). The geometry is CSS's, over a rectangle `size`, at a point `at`
+// Gradients, like CSS: linear-gradient(), radial-gradient(), conic-gradient() and their
+// repeating- forms (decisions 81, 82 and 98). The geometry is CSS's, over a rectangle `size`, at a point `at`
 // measured from its bottom left corner:
 // - the background: the rectangle is the canvas, and `at` is where the ray points, seen
 //   through the camera (a primary ray lands on its own pixel, a reflection where it goes);
@@ -16,6 +16,8 @@ export const GRADIENT_FUNCTIONS = [
   "radial-gradient",
   "repeating-linear-gradient",
   "repeating-radial-gradient",
+  "conic-gradient",
+  "repeating-conic-gradient",
 ];
 
 type Stop = { color: string; at: number | null };
@@ -70,12 +72,15 @@ export function gradientMean(value: Token[]): string {
 export function gradientLines(value: Token[]): string[] {
   const call = readFunction(value)!;
   const radial = call.name.includes("radial");
+  const conic = call.name.includes("conic");
   const repeating = call.name.startsWith("repeating");
   const [first, ...rest] = call.args;
   // The first argument is the direction (or shape) unless it starts with a color
   const hasSetup = first && !isColor(first[0]);
+  const setup = hasSetup ? first : [];
+  // The setup first: its errors say more than those of the stops it leaves behind
+  const t = conic ? conicT(setup, value) : radial ? radialT(setup, value) : linearT(setup, value);
   const stops = readStops(hasSetup ? rest : call.args, value, call.name);
-  const t = radial ? radialT(hasSetup ? first : [], value) : linearT(hasSetup ? first : [], value);
 
   const lines = [...t];
   const t0 = stops[0].at!;
@@ -113,11 +118,19 @@ function readStops(args: Token[][], value: Token[], name: string): Stop[] {
     const [color, ...positions] = arg;
     if (!isColor(color) || positions.length > 2)
       throw errorAt(value, `${name}() expects colors, each with up to two percentages, like: ${example}`);
-    if (positions.some((p) => p.type !== "PERCENTAGE"))
+    // conic-gradient() also places its stops with angles: a full turn is 100%
+    const conic = name.includes("conic");
+    if (conic && positions.some((p) => p.type !== "PERCENTAGE" && !(p.type === "DIMENSION" && p.unit in TURN)))
+      throw errorAt(value, `The positions of ${name}() are angles or percentages, like: #fff 90deg`);
+    if (!conic && positions.some((p) => p.type !== "PERCENTAGE"))
       throw errorAt(value, `The positions of ${name}() are percentages, like: #fff 20%`);
     const vec = colorOf(color, value);
     if (positions.length === 0) stops.push({ color: vec, at: null });
-    for (const p of positions) stops.push({ color: vec, at: (p as { value: number }).value / 100 });
+    for (const p of positions)
+      stops.push({
+        color: vec,
+        at: p.type === "DIMENSION" ? (p.value * TURN[p.unit]) / (2 * Math.PI) : (p as { value: number }).value / 100,
+      });
   }
   if (stops.length < 2) throw errorAt(value, `${name}() needs at least two colors, like: ${example}`);
   // The first stop is at 0%, the last at 100%; a position never goes back; the others spread
@@ -139,6 +152,33 @@ function readStops(args: Token[][], value: Token[], name: string): Stop[] {
     i = end;
   }
   return stops;
+}
+
+// An angle unit, in radians
+const TURN: Record<string, number> = { deg: Math.PI / 180, rad: 1, grad: Math.PI / 200, turn: 2 * Math.PI };
+
+// t around the center: 0 at the start angle, 1 a full turn later, clockwise from the top
+// like CSS (CSS Images 4). "from <angle>" turns the start, "at <position>" moves the center.
+function conicT(setup: Token[], value: Token[]): string[] {
+  const error = (what: string) =>
+    errorAt(value, `conic-gradient(): ${what}, like: conic-gradient(from 90deg at 30% 40%, …)`);
+  const at = setup.findIndex((t) => isWord(t, "at"));
+  const head = at >= 0 ? setup.slice(0, at) : setup;
+  const where = at >= 0 ? setup.slice(at + 1) : [];
+  let from = 0; // in turns
+  if (head.length > 0) {
+    const angle = head[1];
+    if (!isWord(head[0], "from") || head.length !== 2 || angle.type !== "DIMENSION" || !(angle.unit in TURN))
+      throw error("it starts with from <angle>, at <position>, or both");
+    from = (angle.value * TURN[angle.unit]) / (2 * Math.PI);
+  }
+  const [cx, cy] = readPosition(where, at >= 0, error);
+  return [
+    `  vec2 c = vec2(${f(cx)}, ${f(1 - cy)}) * size;`, // y goes up in the shader
+    "  vec2 p = at - c;",
+    "  // atan(x, y): 0 straight up, a quarter turn to the right, like CSS",
+    `  float t = fract((p.x == 0.0 && p.y == 0.0 ? 0.0 : atan(p.x, p.y)) / 6.2831853${from ? ` - ${f(+from.toFixed(6))}` : ""});`,
+  ];
 }
 
 // t along the gradient line: 0 at its start, 1 at its end (CSS Images 3)
@@ -188,27 +228,7 @@ function radialT(setup: Token[], value: Token[]): string[] {
     else throw error("the shape is circle or ellipse, the size a side or corner keyword");
   }
 
-  // The center, from the top left corner, as fractions of the canvas
-  let cx = 0.5;
-  let cy = 0.5;
-  const fraction = (t: Token, axis: "x" | "y"): number => {
-    if (t.type === "PERCENTAGE") return t.value / 100;
-    if (isWord(t, "center")) return 0.5;
-    if (axis === "x" && isWord(t, "left")) return 0;
-    if (axis === "x" && isWord(t, "right")) return 1;
-    if (axis === "y" && isWord(t, "top")) return 0;
-    if (axis === "y" && isWord(t, "bottom")) return 1;
-    throw error("the position is percentages or left, center, right, top, bottom");
-  };
-  if (at >= 0 && (where.length === 0 || where.length > 2)) throw error("at needs one or two positions");
-  if (where.length === 1) {
-    if (isWord(where[0], "top", "bottom")) cy = fraction(where[0], "y");
-    else cx = fraction(where[0], "x");
-  } else if (where.length === 2) {
-    const swap = isWord(where[0], "top", "bottom") || isWord(where[1], "left", "right");
-    cx = fraction(swap ? where[1] : where[0], "x");
-    cy = fraction(swap ? where[0] : where[1], "y");
-  }
+  const [cx, cy] = readPosition(where, at >= 0, error);
 
   const lines = [
     `  vec2 c = vec2(${f(cx)}, ${f(1 - cy)}) * size;`, // y goes up in the shader
@@ -235,4 +255,36 @@ function radialT(setup: Token[], value: Token[]): string[] {
     lines.push(`  float t = length(p / max(${r[size]}, vec2(0.0001)));`);
   }
   return lines;
+}
+
+// The center of a radial or conic gradient: "at" and one or two positions, from the
+// top left corner, as fractions of the box (CSS <position>)
+function readPosition(
+  where: Token[],
+  written: boolean,
+  error: (what: string) => Error,
+): [number, number] {
+  // The center, from the top left corner, as fractions of the canvas
+  let cx = 0.5;
+  let cy = 0.5;
+  const fraction = (t: Token, axis: "x" | "y"): number => {
+    if (t.type === "PERCENTAGE") return t.value / 100;
+    if (isWord(t, "center")) return 0.5;
+    if (axis === "x" && isWord(t, "left")) return 0;
+    if (axis === "x" && isWord(t, "right")) return 1;
+    if (axis === "y" && isWord(t, "top")) return 0;
+    if (axis === "y" && isWord(t, "bottom")) return 1;
+    throw error("the position is percentages or left, center, right, top, bottom");
+  };
+  if (written && (where.length === 0 || where.length > 2)) throw error("at needs one or two positions");
+  if (where.length === 1) {
+    if (isWord(where[0], "top", "bottom")) cy = fraction(where[0], "y");
+    else cx = fraction(where[0], "x");
+  } else if (where.length === 2) {
+    const swap = isWord(where[0], "top", "bottom") || isWord(where[1], "left", "right");
+    cx = fraction(swap ? where[1] : where[0], "x");
+    cy = fraction(swap ? where[0] : where[1], "y");
+  }
+
+  return [cx, cy];
 }
