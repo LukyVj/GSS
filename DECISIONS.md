@@ -5,7 +5,7 @@
 **Decision**: the whole scene compiles to a single GLSL fragment shader, rendered by raymarching signed distance fields (WebGL2).
 **Why**: no dependency, a tiny runtime, and organic shapes (smooth unions) that plain rasterization cannot do.
 **Accepted limits**: no imported models (GLTF); the cost grows with the number of objects.
-**Later**: a WGSL/WebGPU backend, made possible by an intermediate step separate from GLSL.
+**Later**: a WGSL/WebGPU backend, made possible by an intermediate step separate from GLSL. (Done: decision 90.)
 
 ## 2. Structure lives in `@scene`, not in HTML
 

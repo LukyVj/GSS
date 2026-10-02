@@ -18,6 +18,7 @@ The 0.0.1 history was reconstructed from GitHub.
 
 ### Changed
 
+- A misspelled function inside math names the function it was meant to be: `Unknown function slibling-index(): did you mean sibling-index()?`
 - The playground's performance panel is closed by default; the `perf` button or Alt+P opens it, and that choice is remembered.
 
 ## [0.0.2] — 2026-10-01

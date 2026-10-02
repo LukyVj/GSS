@@ -78,7 +78,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 
 | Feature                                                                                                                                                  | Dec.     |
 | -------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| Everything compiled into **a single GLSL fragment shader**, SDF raymarching, WebGL2, no Three.js                                                         | 1, 5, 30 |
+| Everything compiled into **a single fragment shader**, in GLSL (WebGL2) and WGSL (WebGPU, with a WebGL2 fallback), SDF raymarching, no Three.js | 1, 5, 30, 90 |
 | One reflection (1 bounce), glass refraction (in + out), procedural frost                                                                                 | 29, 31   |
 | Everything is computed, except the images of `texture`: projected on each face (triplanar), at most 16 per scene                                         | 1, 59    |
 | Minimal shader: only the GLSL the scene uses goes in (an empty scene: 104 lines)                                                                         | 53       |
@@ -94,7 +94,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 | Tool                       | Where                                                                                                                                                                        | Dec.       |
 | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
 | Home page                  | `/` (`index.html`), live demo, numbers read from the registry                                                                                                                | 51         |
-| Playground                 | `playground.html`: CodeMirror, code in the URL (sharing), examples, GLSL tab                                                                                                 | 34         |
+| Playground                 | `playground.html`: CodeMirror, code in the URL (sharing), examples, GLSL and WGSL tabs, backend selection (auto, WebGPU, WebGL2) | 34, 90 |
 | Status bar                 | `ok · 0 objects · glsl 104 lines · compiled in 4 ms · 60 fps`                                                                                                                | 42         |
 | Located errors             | every error of a compile at once (the text first, then the values), each underlined and written under its line (`15:3 …`); `3 errors` in the status bar; line and column in Vite's terminal | 43, 86     |
 | Generated docs             | `docs.html`, one page per entry, from the registry, live "Try it" everywhere                                                                                                 | 12, 39, 44 |
@@ -109,7 +109,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 | npm package                | [`gss-lang`](https://www.npmjs.com/package/gss-lang) 0.0.2 (tag `v0.0.2`; 0.0.1: `v0.0.1`), Apache-2.0: `gss-lang` (compiler + `mount`), `gss-lang/runtime`, `gss-lang/vite`, `gss-lang/embed` (pinned CDN module) | 63, 85     |
 | Scenes                     | every demo `.gss` in `src/scenes/` (playground examples, showcase, bench), all compiled by `gpu.test.ts`                                                                     | 63         |
 | Tests                      | Vitest (CPU) + GPU compilation of every registry example (Chromium)                                                                                                          | 12, 25     |
-| Profiler                   | a panel over the playground scene, public, closed by default, `perf` button or Alt+P (remembered): fps, frame, GPU and CPU time, real pixels, shader build time; over budget in signal | 64, 87     |
+| Profiler                   | a panel over the playground scene, public, closed by default and lazy (nothing measured before it opens), `perf` button or Alt+P (remembered), WebGL2 and WebGPU (timestamp queries when available): fps, frame, GPU and CPU time, real pixels, shader build time; over budget in signal | 64, 87, 91 |
 | Bench                      | `npm run bench:compare -- main --dpr 2`: another commit against the working tree, 3 alternating rounds, images compared pixel by pixel, report in `bench-results/compare.md` | 64         |
 
 ## Release 0.0.2 ✅
@@ -216,7 +216,7 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 
 ### Backend
 
-- [ ] WGSL / WebGPU (`"later"` in the docs)
+- [x] WGSL / WebGPU ✅ decisions 90, 91: WGSL generated from the same scene code, native WebGPU runtime, `mountAsync()` / `<gss-scene backend>` with a WebGL2 fallback
 
 ### Quality / DX
 
@@ -242,6 +242,9 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 - Composing surface effects (a "textual shader graph"): to be split before deciding: deforming the shape with noise (a `displace` property, it changes the SDF and can slow the ray march), a `toon` material next to the others, and lighting effects (rim light, fresnel).
 
 ## Done recently
+
+- WGSL and native WebGPU rendering next to GLSL / WebGL2, automatic backend with fallback, WGSL tab and backend selection in the playground, profiler on both backends (decisions 90, 91)
+- A misspelled function inside math suggests the one it was meant to be (`slibling-index()` → `sibling-index()`)
 
 - Autocompletion of property names in the playground and every "Try it", from the registry, filtered by what the rule targets (decision 89)
 
