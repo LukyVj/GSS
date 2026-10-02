@@ -61,14 +61,14 @@ scene {
   background: #d9d5ce;
   floor: #c7c1b8;
 
-  light: 140deg 38deg;
+  light: -140deg 38deg;
   ambient: 0.42;
 
   dpr: auto;
 
   camera-target: 0 1.35 0;
   camera-distance: 7.2;
-  camera-angle: -22deg 12deg;
+  camera-angle: 22deg 12deg;
 }
 
 
@@ -96,7 +96,7 @@ scene {
 #grip {
   size: 0.55 1.5 0.9;
 
-  translate: 1.18 1.42 0.02;
+  translate: -1.18 1.42 0.02;
 
   corner-radius: 0.2;
 
@@ -118,7 +118,7 @@ scene {
   radius: 0.72;
   height: 0.28;
 
-  translate: -0.35 1.45 0.52;
+  translate: 0.35 1.45 0.52;
 
   rotate-x: 90deg;
 
@@ -140,7 +140,7 @@ scene {
   radius: 0.59;
   height: 0.32;
 
-  translate: -0.35 1.45 0.72;
+  translate: 0.35 1.45 0.72;
 
   rotate-x: 90deg;
 
@@ -162,7 +162,7 @@ scene {
   radius: 0.5;
   height: 0.18;
 
-  translate: -0.35 1.45 0.96;
+  translate: 0.35 1.45 0.96;
 
   rotate-x: 90deg;
 
@@ -184,7 +184,7 @@ scene {
   radius: 0.65;
   thickness: 0.035;
 
-  translate: -0.35 1.45 0.64;
+  translate: 0.35 1.45 0.64;
 
   rotate-x: 90deg;
 
@@ -202,7 +202,7 @@ scene {
   radius: 0.555;
   thickness: 0.025;
 
-  translate: -0.35 1.45 0.84;
+  translate: 0.35 1.45 0.84;
 
   rotate-x: 90deg;
 
@@ -220,7 +220,7 @@ scene {
   radius: 0.46;
   thickness: 0.018;
 
-  translate: -0.35 1.45 1.08;
+  translate: 0.35 1.45 1.08;
 
   rotate-x: 90deg;
 
@@ -243,7 +243,7 @@ scene {
 
   scale: 1;
 
-  translate: -0.35 1.45 1.12;
+  translate: 0.35 1.45 1.12;
 
   color: var(--glass);
 
@@ -266,7 +266,7 @@ scene {
 #viewfinder {
   size: 0.58 0.34 0.12;
 
-  translate: 0.68 1.92 0.43;
+  translate: -0.68 1.92 0.43;
 
   corner-radius: 0.09;
 
@@ -287,7 +287,7 @@ scene {
 #screen {
   size: 1.35 0.92 0.07;
 
-  translate: 0.18 1.42 -0.4;
+  translate: -0.18 1.42 -0.4;
 
   corner-radius: 0.08;
 
@@ -309,7 +309,7 @@ scene {
   radius: 0.25;
   height: 0.12;
 
-  translate: 0.7 2.43 0;
+  translate: -0.7 2.43 0;
 
   color: #252529;
 
@@ -329,7 +329,7 @@ scene {
   radius: 0.12;
   height: 0.08;
 
-  translate: 1.05 2.4 0;
+  translate: -1.05 2.4 0;
 
   color: #c9c7c2;
 
@@ -350,7 +350,7 @@ scene {
 
   scale: 1;
 
-  translate: 1.05 2.47 0;
+  translate: -1.05 2.47 0;
 
   color: #e0ded8;
 
@@ -377,7 +377,7 @@ scene {
 
   scale: 0.025;
 
-  translate: 0.8 1.1 0.405;
+  translate: -0.8 1.1 0.405;
 
   color: #d9d7d2;
 
@@ -399,7 +399,7 @@ scene {
   radius: 0.16;
 
   translate:
-    calc(var(--i) * 0.55 - 1.38)
+    calc(1.38 - var(--i) * 0.55)
     0.18
     1.35;
 
@@ -439,7 +439,7 @@ scene {
   scale: 1.4;
 
   translate:
-    calc(var(--i) * 0.55 - 1.38)
+    calc(1.38 - var(--i) * 0.55)
     0.26
     1.35;
 }
@@ -571,37 +571,37 @@ scene {
 
 
 #camera:has(#glass:hover) #lens-base {
-  translate: -0.35 1.45 0.48;
+  translate: 0.35 1.45 0.48;
 }
 
 
 #camera:has(#glass:hover) #ring-1 {
-  translate: -0.35 1.45 0.68;
+  translate: 0.35 1.45 0.68;
 }
 
 
 #camera:has(#glass:hover) #lens-mid {
-  translate: -0.35 1.45 0.82;
+  translate: 0.35 1.45 0.82;
 }
 
 
 #camera:has(#glass:hover) #ring-2 {
-  translate: -0.35 1.45 1.02;
+  translate: 0.35 1.45 1.02;
 }
 
 
 #camera:has(#glass:hover) #lens-front {
-  translate: -0.35 1.45 1.17;
+  translate: 0.35 1.45 1.17;
 }
 
 
 #camera:has(#glass:hover) #ring-3 {
-  translate: -0.35 1.45 1.36;
+  translate: 0.35 1.45 1.36;
 }
 
 
 #camera:has(#glass:hover) #glass {
-  translate: -0.35 1.45 1.58;
+  translate: 0.35 1.45 1.58;
 }
 
 
@@ -633,14 +633,14 @@ scene {
 #shutter:hover {
   scale: 1.12;
 
-  translate: 1.05 2.43 0;
+  translate: -1.05 2.43 0;
 
   color: #ffffff;
 }
 
 
 #camera:has(#shutter:hover) #button {
-  translate: 1.05 2.36 0;
+  translate: -1.05 2.36 0;
 
   color: #ffffff;
 }
@@ -666,7 +666,7 @@ scene {
 
 
 #camera:has(#body:hover) #grip {
-  translate: 1.21 1.42 0.04;
+  translate: -1.21 1.42 0.04;
 }
 
 
@@ -715,14 +715,14 @@ scene {
     radius: 0.18;
 
     translate:
-      calc(var(--i) * 0.64 - 1.6)
+      calc(1.6 - var(--i) * 0.64)
       0.18
       1.4;
   }
 
   .finish:hover {
     translate:
-      calc(var(--i) * 0.64 - 1.6)
+      calc(1.6 - var(--i) * 0.64)
       0.27
       1.4;
   }

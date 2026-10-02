@@ -85,7 +85,7 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
   on("pointermove", e => {
     pointer = { x: e.clientX, y: e.clientY };
     if (!camera.dragging) return;
-    camera.yaw -= e.movementX * 0.01;
+    camera.yaw += e.movementX * 0.01;
     camera.pitch = Math.min(Math.max(camera.pitch + e.movementY * 0.01, 0.05), 1.4);
   });
   on("pointerup", () => { camera.dragging = false; });
@@ -213,7 +213,7 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
     let dt = 0;
     if (scene) dt = clock.tick(now);
     else clock.resume(now);
-    if (settings && !camera.dragging) camera.yaw += dt * settings.spin;
+    if (settings && !camera.dragging) camera.yaw -= dt * settings.spin;
     resize();
     if (scene) {
       probe?.frameStart(now, canvas.width, canvas.height);

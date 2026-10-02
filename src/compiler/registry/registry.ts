@@ -72,7 +72,7 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "<number>{3}",
     initial: "0 0 0",
     description:
-      "Moves the object along the x, y and z axes. The y axis points up, and the floor is at y = 0. On a group, it moves everything inside it, and the positions of its children become relative to the group.",
+      "Moves the object along the x, y and z axes. Like CSS, x points to the right and z toward the viewer; y points up, and the floor is at y = 0. On a group, it moves everything inside it, and the positions of its children become relative to the group.",
     examples: [
       {
         name: "translate",
@@ -95,7 +95,7 @@ export const PROPERTIES: PropertyDef[] = [
       },
       {
         name: "color",
-        code: "@scene { sphere#a; sphere#b; } #a { translate: -0.8 0.5 0; color: tomato; } #b { translate: 0.8 0.5 0; color: hsl(210 80% 60%); }",
+        code: "@scene { sphere#a; sphere#b; } #a { translate: 0.8 0.5 0; color: tomato; } #b { translate: -0.8 0.5 0; color: hsl(210 80% 60%); }",
       },
     ],
   },
@@ -114,11 +114,11 @@ export const PROPERTIES: PropertyDef[] = [
       },
       {
         name: "material",
-        code: "@scene { sphere#a; sphere#b; sphere#c; } #a { translate: -1.3 0.6 0; radius: 0.6; material: gold; } #b { translate: 0 0.6 0; radius: 0.6; material: chrome; } #c { translate: 1.3 0.6 0; radius: 0.6; color: #d4af37; material: metal(0.7); }",
+        code: "@scene { sphere#a; sphere#b; sphere#c; } #a { translate: 1.3 0.6 0; radius: 0.6; material: gold; } #b { translate: 0 0.6 0; radius: 0.6; material: chrome; } #c { translate: -1.3 0.6 0; radius: 0.6; color: #d4af37; material: metal(0.7); }",
       },
       {
         name: "material",
-        code: "@scene { sphere; cube; } sphere { translate: -0.8 0.6 0; radius: 0.6; color: #ff5a36; material: jelly; } cube { translate: 0.8 0.5 0; rotate-y: 30deg; color: #3ad16b; material: jelly(0.3); }",
+        code: "@scene { sphere; cube; } sphere { translate: 0.8 0.6 0; radius: 0.6; color: #ff5a36; material: jelly; } cube { translate: -0.8 0.5 0; rotate-y: -30deg; color: #3ad16b; material: jelly(0.3); }",
       },
       {
         name: "material",
@@ -134,11 +134,11 @@ export const PROPERTIES: PropertyDef[] = [
       },
       {
         name: "material",
-        code: "@scene { sphere; cube; } sphere { translate: 0 0.7 0; radius: 0.6; material: glass; } cube { translate: 0.3 0.5 -1.5; color: #ff5a36; }",
+        code: "@scene { sphere; cube; } sphere { translate: 0 0.7 0; radius: 0.6; material: glass; } cube { translate: -0.3 0.5 -1.5; color: #ff5a36; }",
       },
       {
         name: "material",
-        code: "@scene { sphere#a; sphere#b; cube; } #a { translate: -0.7 0.7 0; radius: 0.6; material: glass(1.5, wavy 0.6); } #b { translate: 0.7 0.7 0; radius: 0.6; material: glass(1.5, blurred 0.6); } cube { translate: 0 0.5 -1.8; color: #ff5a36; }",
+        code: "@scene { sphere#a; sphere#b; cube; } #a { translate: 0.7 0.7 0; radius: 0.6; material: glass(1.5, wavy 0.6); } #b { translate: -0.7 0.7 0; radius: 0.6; material: glass(1.5, blurred 0.6); } cube { translate: 0 0.5 -1.8; color: #ff5a36; }",
       },
     ],
   },
@@ -191,7 +191,7 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "<angle>",
     initial: "0deg",
     description:
-      "Rotates the object around the x axis. On a group, it turns everything inside it around the group's origin.",
+      "Rotates the object around the x axis. Like CSS rotateX(), a positive angle turns its top away from the viewer. On a group, it turns everything inside it around the group's origin.",
     examples: [
       {
         name: "rotate-x",
@@ -206,11 +206,11 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "<angle>",
     initial: "0deg",
     description:
-      "Rotates the object around the y axis. On a group, it turns everything inside it around the group's origin.",
+      "Rotates the object around the y axis. Like CSS rotateY(), a positive angle turns its right side away from the viewer. On a group, it turns everything inside it around the group's origin.",
     examples: [
       {
         name: "rotate-y",
-        code: "@scene { cube; } cube { rotate-y: 45deg; }",
+        code: "@scene { cube; } cube { rotate-y: -45deg; }",
       },
     ],
   },
@@ -221,11 +221,11 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "<angle>",
     initial: "0deg",
     description:
-      "Rotates the object around the z axis. On a group, it turns everything inside it around the group's origin.",
+      "Rotates the object around the z axis. Like CSS rotate(), a positive angle turns it clockwise. On a group, it turns everything inside it around the group's origin.",
     examples: [
       {
         name: "rotate-z",
-        code: "@scene { cube; } cube { rotate-z: 45deg; }",
+        code: "@scene { cube; } cube { rotate-z: -45deg; }",
       },
     ],
   },
@@ -268,7 +268,7 @@ export const PROPERTIES: PropertyDef[] = [
     examples: [
       {
         name: "blend",
-        code: "@scene { sphere#a; sphere#b; } #a { translate: -0.4 1 0; } #b { translate: 0.4 1 0; blend: 0.4; }",
+        code: "@scene { sphere#a; sphere#b; } #a { translate: 0.4 1 0; } #b { translate: -0.4 1 0; blend: 0.4; }",
       },
     ],
   },
@@ -282,15 +282,15 @@ export const PROPERTIES: PropertyDef[] = [
     examples: [
       {
         name: "transition",
-        code: "@scene { cube; } cube { translate: 0 0.5 0; color: #ff5a36; transition: 0.4s ease-out; } cube:hover { scale: 1.3; rotate-y: 45deg; color: #3a7bff; }",
+        code: "@scene { cube; } cube { translate: 0 0.5 0; color: #ff5a36; transition: 0.4s ease-out; } cube:hover { scale: 1.3; rotate-y: -45deg; color: #3a7bff; }",
       },
       {
         name: "transition",
-        code: "@scene { sphere * 5; } sphere { radius: 0.35; translate: calc(sibling-index() * 0.9 - 2.7) 0.4 0; color: #3ad16b; transition: 0.8s cubic-bezier(0.3, -0.4, 0.7, 1.4); } sphere:hover { translate: calc(sibling-index() * 0.9 - 2.7) 1.4 0; transition: 0.4s ease-out; }",
+        code: "@scene { sphere * 5; } sphere { radius: 0.35; translate: calc(2.7 - sibling-index() * 0.9) 0.4 0; color: #3ad16b; transition: 0.8s cubic-bezier(0.3, -0.4, 0.7, 1.4); } sphere:hover { translate: calc(2.7 - sibling-index() * 0.9) 1.4 0; transition: 0.4s ease-out; }",
       },
       {
         name: "transition",
-        code: "@scene { sphere * 5; } sphere { radius: 0.35; translate: calc(sibling-index() * 0.9 - 2.7) 0.4 0; color: #3ad16b; transition: 0.8s cubic-bezier(0.3, -0.4, 0.7, 1.4); } sphere:hover { translate: calc(sibling-index() * 0.9 - 2.7) 1.4 0; transition: 0.4s ease-out; }",
+        code: "@scene { sphere * 5; } sphere { radius: 0.35; translate: calc(2.7 - sibling-index() * 0.9) 0.4 0; color: #3ad16b; transition: 0.8s cubic-bezier(0.3, -0.4, 0.7, 1.4); } sphere:hover { translate: calc(2.7 - sibling-index() * 0.9) 1.4 0; transition: 0.4s ease-out; }",
       },
     ],
   },
@@ -313,7 +313,7 @@ export const PROPERTIES: PropertyDef[] = [
       },
       {
         name: "animation",
-        code: "@scene { cube; } cube { translate: 0 0.5 0; color: #ff5a36; animation: turn 4s linear; } @keyframes turn { to { rotate-y: 1turn; color: #3a7bff; } }",
+        code: "@scene { cube; } cube { translate: 0 0.5 0; color: #ff5a36; animation: turn 4s linear; } @keyframes turn { to { rotate-y: -1turn; color: #3a7bff; } }",
       },
       {
         name: "animation",
@@ -321,7 +321,7 @@ export const PROPERTIES: PropertyDef[] = [
       },
       {
         name: "animation",
-        code: "@scene { cube; } cube { translate: 0 3 0; color: #ff5a36; animation: drop 1s ease-in 0.5s 1 both; } @keyframes drop { to { translate: 0 0.5 0; rotate-y: 90deg; } }",
+        code: "@scene { cube; } cube { translate: 0 3 0; color: #ff5a36; animation: drop 1s ease-in 0.5s 1 both; } @keyframes drop { to { translate: 0 0.5 0; rotate-y: -90deg; } }",
       },
     ],
   },
@@ -419,11 +419,11 @@ export const PROPERTIES: PropertyDef[] = [
     examples: [
       {
         name: "turn with the page",
-        code: "@scene { cube; } cube { translate: 0 0.6 0; corner-radius: 0.1; color: #ff5a36; animation: turn 1s linear; animation-timeline: scroll(); } @keyframes turn { from { rotate-y: 0deg; } to { rotate-y: 360deg; translate: 0 1.6 0; } }",
+        code: "@scene { cube; } cube { translate: 0 0.6 0; corner-radius: 0.1; color: #ff5a36; animation: turn 1s linear; animation-timeline: scroll(); } @keyframes turn { from { rotate-y: 0deg; } to { rotate-y: -360deg; translate: 0 1.6 0; } }",
       },
       {
         name: "rise into view",
-        code: "@scene { sphere * 3; } sphere { --x: calc(sibling-index() - 2); radius: 0.35; translate: var(--x) 0.35 0; color: #3a7bff; animation: rise 1s ease-out; animation-timeline: view(); } sphere:nth-child(2) { animation-iteration-count: 2; animation-direction: alternate; } @keyframes rise { to { translate: var(--x) 1.6 0; color: #3ad16b; } }",
+        code: "@scene { sphere * 3; } sphere { --x: calc(2 - sibling-index()); radius: 0.35; translate: var(--x) 0.35 0; color: #3a7bff; animation: rise 1s ease-out; animation-timeline: view(); } sphere:nth-child(2) { animation-iteration-count: 2; animation-direction: alternate; } @keyframes rise { to { translate: var(--x) 1.6 0; color: #3ad16b; } }",
       },
     ],
   },
@@ -460,7 +460,7 @@ export const PROPERTIES: PropertyDef[] = [
       },
       {
         name: "on :hover, along a ray",
-        code: "@scene { cube; } cube { translate: -1 0.4 0; size: 0.5; color: #ff5a36; offset-path: ray(45deg); offset-rotate: 0deg; transition: 0.5s ease-out; } cube:hover { offset-distance: 1.5; }",
+        code: "@scene { cube; } cube { translate: 1 0.4 0; size: 0.5; color: #ff5a36; offset-path: ray(45deg); offset-rotate: 0deg; transition: 0.5s ease-out; } cube:hover { offset-distance: 1.5; }",
       },
     ],
   },
@@ -647,13 +647,13 @@ export const PROPERTIES: PropertyDef[] = [
     name: "light",
     appliesTo: "scene",
     syntax: "<angle> <angle>",
-    initial: "45deg 54.7deg",
+    initial: "-45deg 54.7deg",
     description:
-      "Sets the direction of the sun: first its azimuth around the vertical axis (0deg points to +z, 90deg to +x), then its elevation above the horizon (90deg is straight overhead).",
+      "Sets the direction of the sun: first its azimuth around the vertical axis (0deg points to +z, 90deg to +x), then its elevation above the horizon (90deg is straight overhead). The default lights the scene from the upper left, in front.",
     examples: [
       {
         name: "light",
-        code: "@scene { cube; } cube { translate: 0 0.5 0; } scene { light: 120deg 30deg; }",
+        code: "@scene { cube; } cube { translate: 0 0.5 0; } scene { light: -120deg 30deg; }",
       },
     ],
   },
@@ -704,11 +704,11 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "<angle> <angle>",
     initial: "0deg 22.9deg",
     description:
-      "Sets the starting position of the camera around its target: first the angle around the vertical axis, then the height above the horizon, from 0deg to 80deg. Dragging with the mouse changes it.",
+      "Sets the starting position of the camera around its target: first the angle around the vertical axis (0deg in front, on +z; 90deg on the right, on +x), then the height above the horizon, from 0deg to 80deg. Dragging with the mouse changes it.",
     examples: [
       {
         name: "camera-angle",
-        code: "@scene { cube; } cube { translate: 0 0.5 0; } scene { camera-angle: 45deg 60deg; }",
+        code: "@scene { cube; } cube { translate: 0 0.5 0; } scene { camera-angle: -45deg 60deg; }",
       },
     ],
   },
@@ -753,17 +753,17 @@ export const PROPERTIES: PropertyDef[] = [
       "Post-processing, like CSS filter: a list of functions applied in order, on the whole image (scene { filter }), on an object, or on a group and everything in it. On an object or a group, the filters change only its own pixels, and reflections see them too: a blur() spreads it over what is around it, a bloom() makes only its bright parts glow. Like CSS, an object's filter comes before its group's, and the scene's comes last; on an object, the filters that read only their own pixel come before blur() and bloom(), and an object and its group cannot both have a blur() or a bloom(). brightness(), contrast(), saturate(), grayscale(), sepia(), invert() take a number or a percentage (1 or 100% changes nothing; grayscale(), sepia() and invert() go up to 1), hue-rotate() an angle; they cost almost nothing. grain() adds a film-like noise that moves at every frame (0.1 by default). blur() blurs by a length in px, like CSS; bloom() makes the bright parts glow: an amount (0.6 by default) and a radius in px (16px by default). blur() and bloom() read the pixels around each pixel: the scene is first drawn into an image, then blurred, which costs more as the radius grows. opacity() and drop-shadow() need transparency, which GSS does not have. The Shadertoy export keeps the filters that read only their own pixel, not blur() and bloom().",
     examples: [
       { name: "brightness()", code: "@scene { sphere; } sphere { translate: 0 1 0; color: #ff5a36; } scene { filter: brightness(1.4); }" },
-      { name: "contrast()", code: "@scene { sphere; cube; } sphere { translate: -0.8 0.6 0; color: #ff5a36; } cube { translate: 0.8 0.5 0; color: #3a7bff; } scene { filter: contrast(1.6); }" },
-      { name: "saturate()", code: "@scene { sphere; cube; } sphere { translate: -0.8 0.6 0; color: #ff5a36; } cube { translate: 0.8 0.5 0; color: #3a7bff; } scene { filter: saturate(2); }" },
-      { name: "grayscale()", code: "@scene { sphere; cube; } sphere { translate: -0.8 0.6 0; color: #ff5a36; } cube { translate: 0.8 0.5 0; color: #3a7bff; } scene { filter: grayscale(1); }" },
-      { name: "sepia()", code: "@scene { sphere; cube; } sphere { translate: -0.8 0.6 0; color: #ff5a36; } cube { translate: 0.8 0.5 0; color: #3a7bff; } scene { filter: sepia(0.8); }" },
-      { name: "hue-rotate()", code: "@scene { sphere; cube; } sphere { translate: -0.8 0.6 0; color: #ff5a36; } cube { translate: 0.8 0.5 0; color: #3a7bff; } scene { filter: hue-rotate(120deg); }" },
+      { name: "contrast()", code: "@scene { sphere; cube; } sphere { translate: 0.8 0.6 0; color: #ff5a36; } cube { translate: -0.8 0.5 0; color: #3a7bff; } scene { filter: contrast(1.6); }" },
+      { name: "saturate()", code: "@scene { sphere; cube; } sphere { translate: 0.8 0.6 0; color: #ff5a36; } cube { translate: -0.8 0.5 0; color: #3a7bff; } scene { filter: saturate(2); }" },
+      { name: "grayscale()", code: "@scene { sphere; cube; } sphere { translate: 0.8 0.6 0; color: #ff5a36; } cube { translate: -0.8 0.5 0; color: #3a7bff; } scene { filter: grayscale(1); }" },
+      { name: "sepia()", code: "@scene { sphere; cube; } sphere { translate: 0.8 0.6 0; color: #ff5a36; } cube { translate: -0.8 0.5 0; color: #3a7bff; } scene { filter: sepia(0.8); }" },
+      { name: "hue-rotate()", code: "@scene { sphere; cube; } sphere { translate: 0.8 0.6 0; color: #ff5a36; } cube { translate: -0.8 0.5 0; color: #3a7bff; } scene { filter: hue-rotate(120deg); }" },
       { name: "invert()", code: "@scene { sphere; } sphere { translate: 0 1 0; color: #ff5a36; } scene { filter: invert(1); }" },
       { name: "grain()", code: "@scene { sphere; } sphere { translate: 0 1 0; color: #ff5a36; } scene { background: #1a1a22; filter: grain(0.15); }" },
-      { name: "blur()", code: "@scene { sphere; cube; } sphere { translate: -0.8 0.6 0; color: #ff5a36; } cube { translate: 0.8 0.5 0; color: #3a7bff; } scene { filter: blur(3px); }" },
-      { name: "bloom()", code: "@scene { sphere.light * 5; } .light { radius: 0.25; translate: calc(sibling-index() * 0.8 - 2.4) 0.8 0; color: hsl(calc(sibling-index() * 40) 100% 70%); } scene { floor: none; background: #07070a; ambient: 1; filter: bloom(0.9, 20px); }" },
-      { name: "filter on objects", code: "@scene { sphere#a; sphere#b; sphere#c; } sphere { radius: 0.5; color: #ff5a36; } #a { translate: -1.3 0.6 0; filter: grayscale(1); } #b { translate: 0 0.6 0; filter: blur(4px); } #c { translate: 1.3 0.6 0; filter: hue-rotate(180deg) brightness(1.3); }" },
-      { name: "filter on a group", code: "@scene { group#lights { sphere * 4 } cube; } #lights { filter: bloom(0.9, 18px); } #lights sphere { radius: 0.2; translate: calc(sibling-index() * 0.7 - 1.75) 1.4 0; color: #ffd27a; } cube { translate: 0 0.5 0; color: #3a7bff; } scene { floor: none; background: #07070a; }" },
+      { name: "blur()", code: "@scene { sphere; cube; } sphere { translate: 0.8 0.6 0; color: #ff5a36; } cube { translate: -0.8 0.5 0; color: #3a7bff; } scene { filter: blur(3px); }" },
+      { name: "bloom()", code: "@scene { sphere.light * 5; } .light { radius: 0.25; translate: calc(2.4 - sibling-index() * 0.8) 0.8 0; color: hsl(calc(sibling-index() * 40) 100% 70%); } scene { floor: none; background: #07070a; ambient: 1; filter: bloom(0.9, 20px); }" },
+      { name: "filter on objects", code: "@scene { sphere#a; sphere#b; sphere#c; } sphere { radius: 0.5; color: #ff5a36; } #a { translate: 1.3 0.6 0; filter: grayscale(1); } #b { translate: 0 0.6 0; filter: blur(4px); } #c { translate: -1.3 0.6 0; filter: hue-rotate(180deg) brightness(1.3); }" },
+      { name: "filter on a group", code: "@scene { group#lights { sphere * 4 } cube; } #lights { filter: bloom(0.9, 18px); } #lights sphere { radius: 0.2; translate: calc(1.75 - sibling-index() * 0.7) 1.4 0; color: #ffd27a; } cube { translate: 0 0.5 0; color: #3a7bff; } scene { floor: none; background: #07070a; }" },
       { name: "filters together", code: "@scene { torus; sphere; } torus { translate: 0 1 0; rotate-x: 70deg; color: #ffd27a; material: gold; } sphere { radius: 0.3; translate: 0 1 0; color: #ff5a36; } scene { floor: none; background: radial-gradient(#2a2a3a, #07070a); filter: contrast(1.1) saturate(1.3) bloom(0.7, 18px) grain(0.06); }" },
     ],
   },
@@ -823,7 +823,7 @@ export const AT_RULES: AtRuleDef[] = [
       },
       {
         name: "scene",
-        code: "@scene {\n  cube#base\n  group#tower {\n    cube#a\n    cube#b\n  }\n}\n#base { translate: -1 0.5 0; }\n#tower { translate: 1 0 0; rotate-y: 30deg; }\n#a { translate: 0 0.5 0; }\n#b { translate: 0 1.5 0; scale: 0.7; }",
+        code: "@scene {\n  cube#base\n  group#tower {\n    cube#a\n    cube#b\n  }\n}\n#base { translate: 1 0.5 0; }\n#tower { translate: -1 0 0; rotate-y: -30deg; }\n#a { translate: 0 0.5 0; }\n#b { translate: 0 1.5 0; scale: 0.7; }",
       },
     ],
   },
@@ -875,7 +875,7 @@ export const SELECTORS: SelectorDef[] = [
     examples: [
       {
         name: "selector-type",
-        code: "@scene { cube; sphere; } cube { translate: -0.8 0.5 0; color: #ff5a36; } sphere { translate: 0.8 0.5 0; }",
+        code: "@scene { cube; sphere; } cube { translate: 0.8 0.5 0; color: #ff5a36; } sphere { translate: -0.8 0.5 0; }",
       },
     ],
   },
@@ -888,7 +888,7 @@ export const SELECTORS: SelectorDef[] = [
     examples: [
       {
         name: "selector-class",
-        code: "@scene { cube#a.red; cube#b; } #a { translate: -0.8 0.5 0; } #b { translate: 0.8 0.5 0; } .red { color: #ff5a36; }",
+        code: "@scene { cube#a.red; cube#b; } #a { translate: 0.8 0.5 0; } #b { translate: -0.8 0.5 0; } .red { color: #ff5a36; }",
       },
     ],
   },
@@ -901,7 +901,7 @@ export const SELECTORS: SelectorDef[] = [
     examples: [
       {
         name: "selector-id",
-        code: "@scene { sphere#hero; sphere; } sphere { translate: 0.8 0.5 0; } #hero { translate: -0.8 0.5 0; color: #ff5a36; }",
+        code: "@scene { sphere#hero; sphere; } sphere { translate: -0.8 0.5 0; } #hero { translate: 0.8 0.5 0; color: #ff5a36; }",
       },
     ],
   },
@@ -914,7 +914,7 @@ export const SELECTORS: SelectorDef[] = [
     examples: [
       {
         name: "selector-universal",
-        code: "@scene { cube; sphere; } * { color: #ff5a36; } cube { translate: -0.8 0.5 0; } sphere { translate: 0.8 0.5 0; color: #3ad16b; }",
+        code: "@scene { cube; sphere; } * { color: #ff5a36; } cube { translate: 0.8 0.5 0; } sphere { translate: -0.8 0.5 0; color: #3ad16b; }",
       },
     ],
   },
@@ -927,7 +927,7 @@ export const SELECTORS: SelectorDef[] = [
     examples: [
       {
         name: "selector-list",
-        code: "@scene { cube#a; cube#b; sphere; } #a, #b { color: #ff5a36; } #a { translate: -1.2 0.5 0; } #b { translate: 0 0.5 0; } sphere { translate: 1.2 0.5 0; }",
+        code: "@scene { cube#a; cube#b; sphere; } #a, #b { color: #ff5a36; } #a { translate: 1.2 0.5 0; } #b { translate: 0 0.5 0; } sphere { translate: -1.2 0.5 0; }",
       },
     ],
   },
@@ -940,7 +940,7 @@ export const SELECTORS: SelectorDef[] = [
     examples: [
       {
         name: "selector-descendant",
-        code: "@scene { cube#a; group#letters { cube#b; cube#c; } } cube { translate: -1.2 0.5 0; } #letters cube { color: #ff5a36; } #b { translate: 0 0.5 0; } #c { translate: 1.2 0.5 0; }",
+        code: "@scene { cube#a; group#letters { cube#b; cube#c; } } cube { translate: 1.2 0.5 0; } #letters cube { color: #ff5a36; } #b { translate: 0 0.5 0; } #c { translate: -1.2 0.5 0; }",
       },
     ],
   },
@@ -953,7 +953,7 @@ export const SELECTORS: SelectorDef[] = [
     examples: [
       {
         name: "selector-child",
-        code: "@scene { group#g { cube#direct; group { cube#nested; } } } cube { translate: -0.8 0.5 0; } #nested { translate: 0.8 0.5 0; } #g > cube { color: #ff5a36; }",
+        code: "@scene { group#g { cube#direct; group { cube#nested; } } } cube { translate: 0.8 0.5 0; } #nested { translate: -0.8 0.5 0; } #g > cube { color: #ff5a36; }",
       },
     ],
   },
@@ -966,7 +966,7 @@ export const SELECTORS: SelectorDef[] = [
     examples: [
       {
         name: "selector-adjacent",
-        code: "@scene { sphere; cube#a; cube#b; } sphere { translate: -1.4 0.5 0; radius: 0.4; } #a { translate: 0 0.5 0; } #b { translate: 1.4 0.5 0; } sphere + cube { color: #ff5a36; } sphere:hover + cube { scale: 1.2; }",
+        code: "@scene { sphere; cube#a; cube#b; } sphere { translate: 1.4 0.5 0; radius: 0.4; } #a { translate: 0 0.5 0; } #b { translate: -1.4 0.5 0; } sphere + cube { color: #ff5a36; } sphere:hover + cube { scale: 1.2; }",
       },
     ],
   },
@@ -979,7 +979,7 @@ export const SELECTORS: SelectorDef[] = [
     examples: [
       {
         name: "selector-sibling",
-        code: "@scene { cube#before; sphere; cube#after * 2; } * { translate: calc((sibling-index() - 2.5) * 1.3) 0.5 0; } sphere { radius: 0.4; } sphere ~ cube { color: #ff5a36; }",
+        code: "@scene { cube#before; sphere; cube#after * 2; } * { translate: calc((sibling-index() - 2.5) * -1.3) 0.5 0; } sphere { radius: 0.4; } sphere ~ cube { color: #ff5a36; }",
       },
     ],
   },
@@ -992,7 +992,7 @@ export const SELECTORS: SelectorDef[] = [
     examples: [
       {
         name: "::face()",
-        code: '@scene { cube.furnace; } .furnace { translate: 0 0.5 0; rotate-y: 30deg; texture: url("/textures/dirt.png"); image-rendering: pixelated; } .furnace::face(front) { texture: url("/textures/grass-top.png"); }',
+        code: '@scene { cube.furnace; } .furnace { translate: 0 0.5 0; rotate-y: -30deg; texture: url("/textures/dirt.png"); image-rendering: pixelated; } .furnace::face(front) { texture: url("/textures/grass-top.png"); }',
       },
       {
         name: "::top",
@@ -1004,7 +1004,7 @@ export const SELECTORS: SelectorDef[] = [
       },
       {
         name: "::face(), ::top and ::bottom together",
-        code: '@scene { cube.grass * 2; } .grass { translate: calc(sibling-index() * 1.4 - 2.1) 0.5 0; rotate-y: 30deg; rotate-x: calc(sibling-index() * 150deg - 150deg); texture: url("/textures/grass-side.png"); image-rendering: pixelated; } .grass::top { texture: url("/textures/grass-top.png"); } .grass::bottom { texture: url("/textures/dirt.png"); } .grass::face(front) { texture: url("/textures/dirt.png"); }',
+        code: '@scene { cube.grass * 2; } .grass { translate: calc(2.1 - sibling-index() * 1.4) 0.5 0; rotate-y: -30deg; rotate-x: calc(sibling-index() * 150deg - 150deg); texture: url("/textures/grass-side.png"); image-rendering: pixelated; } .grass::top { texture: url("/textures/grass-top.png"); } .grass::bottom { texture: url("/textures/dirt.png"); } .grass::face(front) { texture: url("/textures/dirt.png"); }',
       },
     ],
   },
@@ -1017,11 +1017,11 @@ export const SELECTORS: SelectorDef[] = [
     examples: [
       {
         name: "selector-hover",
-        code: "@scene { cube#a; cube#b; } cube { translate: -0.8 0.5 0; color: #e6e6e6; } #b { translate: 0.8 0.5 0; } cube:hover { translate: -0.8 1 0; color: #ff5a36; rotate-y: 45deg; } #b:hover { translate: 0.8 1 0; }",
+        code: "@scene { cube#a; cube#b; } cube { translate: 0.8 0.5 0; color: #e6e6e6; } #b { translate: -0.8 0.5 0; } cube:hover { translate: 0.8 1 0; color: #ff5a36; rotate-y: -45deg; } #b:hover { translate: -0.8 1 0; }",
       },
       {
         name: "selector-hover",
-        code: "@scene { group#letters { cube#l1; cube#l2; cube#l3; } sphere; } #letters { translate: -1.6 0.5 0; } #letters cube { size: 0.4 1 0.4; color: #e6e6e6; } #l2 { translate: 0.7 0 0; } #l3 { translate: 1.4 0 0; } #letters:hover cube { color: #ff5a36; scale: 1.15; } sphere { translate: 1.4 0.5 0; radius: 0.5; }",
+        code: "@scene { group#letters { cube#l1; cube#l2; cube#l3; } sphere; } #letters { translate: 1.6 0.5 0; } #letters cube { size: 0.4 1 0.4; color: #e6e6e6; } #l2 { translate: -0.7 0 0; } #l3 { translate: -1.4 0 0; } #letters:hover cube { color: #ff5a36; scale: 1.15; } sphere { translate: -1.4 0.5 0; radius: 0.5; }",
       },
     ],
   },
@@ -1038,7 +1038,7 @@ export const SELECTORS: SelectorDef[] = [
       },
       {
         name: "press one, move another",
-        code: "@scene { group#lamp { cylinder#switch; sphere#bulb; } } #switch { radius: 0.3; height: 0.2; translate: -0.8 0.1 0; color: #888888; } #switch:active { scale: 0.9; } #bulb { radius: 0.45; translate: 0.6 0.6 0; color: #555555; transition: 0.4s ease-out; } #lamp:has(#switch:active) #bulb { color: #ffd27a; scale: 1.15; }",
+        code: "@scene { group#lamp { cylinder#switch; sphere#bulb; } } #switch { radius: 0.3; height: 0.2; translate: 0.8 0.1 0; color: #888888; } #switch:active { scale: 0.9; } #bulb { radius: 0.45; translate: -0.6 0.6 0; color: #555555; transition: 0.4s ease-out; } #lamp:has(#switch:active) #bulb { color: #ffd27a; scale: 1.15; }",
       },
     ],
   },
@@ -1052,11 +1052,11 @@ export const SELECTORS: SelectorDef[] = [
     examples: [
       {
         name: "selector-has",
-        code: "@scene { group#a { sphere#sa; cube#ca; } group#b { cube#cb; } } #a { translate: -1 0 0; } #b { translate: 1 0 0; } sphere { translate: 0 1.4 0; radius: 0.3; } cube { translate: 0 0.5 0; color: #e6e6e6; } group:has(sphere) cube { color: #3a7bff; }",
+        code: "@scene { group#a { sphere#sa; cube#ca; } group#b { cube#cb; } } #a { translate: 1 0 0; } #b { translate: -1 0 0; } sphere { translate: 0 1.4 0; radius: 0.3; } cube { translate: 0 0.5 0; color: #e6e6e6; } group:has(sphere) cube { color: #3a7bff; }",
       },
       {
         name: "selector-has",
-        code: "@scene { cube; sphere; } cube { translate: -0.8 0.5 0; transition: 0.3s ease-out; } sphere { translate: 0.8 0.5 0; radius: 0.4; } cube:has(+ sphere:hover) { color: #ff5a36; scale: 1.2; }",
+        code: "@scene { cube; sphere; } cube { translate: 0.8 0.5 0; transition: 0.3s ease-out; } sphere { translate: -0.8 0.5 0; radius: 0.4; } cube:has(+ sphere:hover) { color: #ff5a36; scale: 1.2; }",
       },
       {
         name: "selector-has",
@@ -1073,11 +1073,11 @@ export const SELECTORS: SelectorDef[] = [
     examples: [
       {
         name: "every cube but the red ones",
-        code: "@scene { cube.red; cube * 3; cube.red; } cube { size: 0.6; translate: calc((sibling-index() - 3) * 0.9) 0.3 0; } .red { color: #ff5a36; } cube:not(.red) { color: #e6e6e6; translate: calc((sibling-index() - 3) * 0.9) 0.8 0; }",
+        code: "@scene { cube.red; cube * 3; cube.red; } cube { size: 0.6; translate: calc((sibling-index() - 3) * -0.9) 0.3 0; } .red { color: #ff5a36; } cube:not(.red) { color: #e6e6e6; translate: calc((sibling-index() - 3) * -0.9) 0.8 0; }",
       },
       {
         name: "the ones in the middle",
-        code: "@scene { sphere * 6; } sphere { radius: 0.3; translate: calc((sibling-index() - 3.5) * 0.75) 0.4 0; color: #e6e6e6; } sphere:not(:first-child, :last-child) { color: #3a7bff; }",
+        code: "@scene { sphere * 6; } sphere { radius: 0.3; translate: calc((sibling-index() - 3.5) * -0.75) 0.4 0; color: #e6e6e6; } sphere:not(:first-child, :last-child) { color: #3a7bff; }",
       },
     ],
   },
@@ -1090,11 +1090,11 @@ export const SELECTORS: SelectorDef[] = [
     examples: [
       {
         name: "odd, and every third",
-        code: "@scene { cube * 7; } cube { size: 0.6; translate: calc((sibling-index() - 4) * 0.8) 0.3 0; color: #e6e6e6; } cube:nth-child(odd) { color: #ff5a36; } cube:nth-child(3n) { translate: calc((sibling-index() - 4) * 0.8) 1 0; }",
+        code: "@scene { cube * 7; } cube { size: 0.6; translate: calc((sibling-index() - 4) * -0.8) 0.3 0; color: #e6e6e6; } cube:nth-child(odd) { color: #ff5a36; } cube:nth-child(3n) { translate: calc((sibling-index() - 4) * -0.8) 1 0; }",
       },
       {
         name: "even of .lit, and the last child",
-        code: "@scene { sphere.lit * 3; sphere * 2; sphere.lit * 3; } sphere { radius: 0.3; translate: calc((sibling-index() - 4.5) * 0.75) 0.4 0; color: #555555; } .lit { color: #e6e6e6; } :nth-child(even of .lit) { color: #3a7bff; } :nth-last-child(1) { scale: 1.3; }",
+        code: "@scene { sphere.lit * 3; sphere * 2; sphere.lit * 3; } sphere { radius: 0.3; translate: calc((sibling-index() - 4.5) * -0.75) 0.4 0; color: #555555; } .lit { color: #e6e6e6; } :nth-child(even of .lit) { color: #3a7bff; } :nth-last-child(1) { scale: 1.3; }",
       },
     ],
   },
@@ -1107,7 +1107,7 @@ export const SELECTORS: SelectorDef[] = [
     examples: [
       {
         name: "even cubes, last sphere",
-        code: "@scene { cube * 2; sphere; cube * 2; sphere; } * { translate: calc((sibling-index() - 3.5) * 0.9) 0.4 0; color: #e6e6e6; } cube { size: 0.6; } sphere { radius: 0.35; } cube:nth-of-type(even) { color: #ff5a36; } sphere:nth-last-of-type(1) { color: #3a7bff; }",
+        code: "@scene { cube * 2; sphere; cube * 2; sphere; } * { translate: calc((sibling-index() - 3.5) * -0.9) 0.4 0; color: #e6e6e6; } cube { size: 0.6; } sphere { radius: 0.35; } cube:nth-of-type(even) { color: #ff5a36; } sphere:nth-last-of-type(1) { color: #3a7bff; }",
       },
     ],
   },
@@ -1120,11 +1120,11 @@ export const SELECTORS: SelectorDef[] = [
     examples: [
       {
         name: "first and last child",
-        code: "@scene { cube * 5; } cube { size: 0.6; translate: calc((sibling-index() - 3) * 0.9) 0.3 0; color: #e6e6e6; } cube:first-child { color: #ff5a36; } cube:last-child { color: #3a7bff; }",
+        code: "@scene { cube * 5; } cube { size: 0.6; translate: calc((sibling-index() - 3) * -0.9) 0.3 0; color: #e6e6e6; } cube:first-child { color: #ff5a36; } cube:last-child { color: #3a7bff; }",
       },
       {
         name: "first of type, only child",
-        code: "@scene { group#a { sphere; cube * 2; } group#b { cube; } } #a { translate: -1 0 0; } #b { translate: 1.4 0 0; } * { color: #e6e6e6; } sphere { translate: 0 1.2 0; radius: 0.3; } cube { size: 0.5; translate: calc(sibling-index() * 0.6 - 0.9) 0.25 0; } cube:first-of-type { color: #ff5a36; } cube:only-child { color: #3a7bff; }",
+        code: "@scene { group#a { sphere; cube * 2; } group#b { cube; } } #a { translate: 1 0 0; } #b { translate: -1.4 0 0; } * { color: #e6e6e6; } sphere { translate: 0 1.2 0; radius: 0.3; } cube { size: 0.5; translate: calc(0.9 - sibling-index() * 0.6) 0.25 0; } cube:first-of-type { color: #ff5a36; } cube:only-child { color: #3a7bff; }",
       },
     ],
   },
@@ -1137,7 +1137,7 @@ export const SELECTORS: SelectorDef[] = [
     examples: [
       {
         name: "selector-important",
-        code: "@scene { cube#a; sphere; } * { color: #ff5a36 !important; } #a { translate: -0.8 0.5 0; color: #3ad16b; } sphere { translate: 0.8 0.5 0; }",
+        code: "@scene { cube#a; sphere; } * { color: #ff5a36 !important; } #a { translate: 0.8 0.5 0; color: #3ad16b; } sphere { translate: -0.8 0.5 0; }",
       },
     ],
   },
@@ -1274,11 +1274,11 @@ export const SHAPE_DOCS: ShapeDef[] = [
     examples: [
       {
         name: "group",
-        code: "@scene { group#letters { cube#l; cube#u; cube#c; } } #letters { translate: -1 0.5 0; rotate-y: 20deg; } #letters cube { size: 0.3 1 0.3; color: #ff5a36; } #u { translate: 1 0 0; } #c { translate: 2 0 0; }",
+        code: "@scene { group#letters { cube#l; cube#u; cube#c; } } #letters { translate: 1 0.5 0; rotate-y: -20deg; } #letters cube { size: 0.3 1 0.3; color: #ff5a36; } #u { translate: -1 0 0; } #c { translate: -2 0 0; }",
       },
       {
         name: "group",
-        code: "@scene { group#spin { sphere#a; sphere#b; } } #spin { translate: 0 0.6 0; animation: turn 4s linear; } #a { translate: -0.8 0 0; radius: 0.4; } #b { translate: 0.8 0 0; radius: 0.4; } @keyframes turn { to { rotate-y: 1turn; } }",
+        code: "@scene { group#spin { sphere#a; sphere#b; } } #spin { translate: 0 0.6 0; animation: turn 4s linear; } #a { translate: 0.8 0 0; radius: 0.4; } #b { translate: -0.8 0 0; radius: 0.4; } @keyframes turn { to { rotate-y: -1turn; } }",
       },
     ],
   },
@@ -1323,11 +1323,11 @@ export const FUNCTIONS: FunctionDef[] = [
     examples: [
       {
         name: "steps()",
-        code: "@scene { cube; } cube { size: 1.2 0.15 0.15; translate: 0 0.6 0; color: #ff5a36; animation: tick 6s steps(12); } @keyframes tick { from { rotate-y: 0deg; } to { rotate-y: 360deg; } }",
+        code: "@scene { cube; } cube { size: 1.2 0.15 0.15; translate: 0 0.6 0; color: #ff5a36; animation: tick 6s steps(12); } @keyframes tick { from { rotate-y: 0deg; } to { rotate-y: -360deg; } }",
       },
       {
         name: "step-start and step-end",
-        code: "@scene { sphere#a; sphere#b; } sphere { radius: 0.4; } #a { translate: -0.8 0.5 0; color: #3a7bff; animation: blink 1s step-start; } #b { translate: 0.8 0.5 0; color: #3ad16b; animation: blink 1s step-end; } @keyframes blink { 50% { scale: 1.6; } }",
+        code: "@scene { sphere#a; sphere#b; } sphere { radius: 0.4; } #a { translate: 0.8 0.5 0; color: #3a7bff; animation: blink 1s step-start; } #b { translate: -0.8 0.5 0; color: #3ad16b; animation: blink 1s step-end; } @keyframes blink { 50% { scale: 1.6; } }",
       },
     ],
   },
@@ -1349,15 +1349,15 @@ export const FUNCTIONS: FunctionDef[] = [
       },
       {
         name: "linear-gradient() on objects",
-        code: "@scene { cylinder; sphere; cube; } cylinder { radius: 0.4; height: 2; translate: -1.4 1 0; color: linear-gradient(#ff5a36, #ffd27a); } sphere { radius: 0.7; translate: 0 0.7 0; material: metal(radial-gradient(circle at 35% 65%, #ffffff, #3a7bff 40%, #10183a), 0.15); } cube { size: 1; translate: 1.4 0.5 0; rotate-y: 30deg; color: repeating-linear-gradient(45deg, #3ad16b 0% 10%, #f4f1ea 10% 20%); }",
+        code: "@scene { cylinder; sphere; cube; } cylinder { radius: 0.4; height: 2; translate: 1.4 1 0; color: linear-gradient(#ff5a36, #ffd27a); } sphere { radius: 0.7; translate: 0 0.7 0; material: metal(radial-gradient(circle at 35% 65%, #ffffff, #3a7bff 40%, #10183a), 0.15); } cube { size: 1; translate: -1.4 0.5 0; rotate-y: -30deg; color: repeating-linear-gradient(45deg, #3ad16b 0% 10%, #f4f1ea 10% 20%); }",
       },
       {
         name: "conic-gradient()",
-        code: "@scene { cube#dial; sphere; } #dial { size: 2 2 0.1; corner-radius: 0.05; translate: -0.4 1.2 0; color: conic-gradient(#ff5a36, #ffd27a, #3ad16b, #3a7bff, #b15aff, #ff5a36); } sphere { radius: 0.5; translate: 1.4 0.5 0.6; material: metal(repeating-conic-gradient(from 45deg, #f4f1ea 0deg 30deg, #111111 30deg 60deg), 0.3); } scene { floor: none; background: conic-gradient(from 180deg at 50% 0%, #1c1c24, #2a2a3a, #1c1c24); }",
+        code: "@scene { cube#dial; sphere; } #dial { size: 2 2 0.1; corner-radius: 0.05; translate: 0.4 1.2 0; color: conic-gradient(#ff5a36, #ffd27a, #3ad16b, #3a7bff, #b15aff, #ff5a36); } sphere { radius: 0.5; translate: -1.4 0.5 0.6; material: metal(repeating-conic-gradient(from 45deg, #f4f1ea 0deg 30deg, #111111 30deg 60deg), 0.3); } scene { floor: none; background: conic-gradient(from 180deg at 50% 0%, #1c1c24, #2a2a3a, #1c1c24); }",
       },
       {
         name: "repeating-linear-gradient() and repeating-radial-gradient()",
-        code: "@scene { sphere#a; sphere#b; } sphere { radius: 0.6; translate: 0 1 0; material: chrome; } #a { translate: -0.8 1 0; } #b { translate: 0.8 1 0; } scene { floor: none; background: repeating-linear-gradient(45deg, #111 0% 5%, #2a2a3a 5% 10%); }",
+        code: "@scene { sphere#a; sphere#b; } sphere { radius: 0.6; translate: 0 1 0; material: chrome; } #a { translate: 0.8 1 0; } #b { translate: -0.8 1 0; } scene { floor: none; background: repeating-linear-gradient(45deg, #111 0% 5%, #2a2a3a 5% 10%); }",
       },
     ],
   },
@@ -1375,7 +1375,7 @@ export const FUNCTIONS: FunctionDef[] = [
       },
       {
         name: "rgb()",
-        code: "@scene { cube.step * 5; } .step { size: 0.4; translate: calc(sibling-index() * 0.6 - 1.8) 0.3 0; color: rgb(calc(sibling-index() * 50) 90 200); }",
+        code: "@scene { cube.step * 5; } .step { size: 0.4; translate: calc(1.8 - sibling-index() * 0.6) 0.3 0; color: rgb(calc(sibling-index() * 50) 90 200); }",
       },
     ],
   },
@@ -1393,7 +1393,7 @@ export const FUNCTIONS: FunctionDef[] = [
       },
       {
         name: "hsl()",
-        code: "@scene { sphere.dot * 8; } .dot { radius: 0.25; translate: calc(sibling-index() * 0.6 - 2.7) 0.5 0; color: hsl(calc(sibling-index() * 45) 90% 60%); }",
+        code: "@scene { sphere.dot * 8; } .dot { radius: 0.25; translate: calc(2.7 - sibling-index() * 0.6) 0.5 0; color: hsl(calc(sibling-index() * 45) 90% 60%); }",
       },
     ],
   },
@@ -1407,7 +1407,7 @@ export const FUNCTIONS: FunctionDef[] = [
     examples: [
       {
         name: "hwb()",
-        code: "@scene { cube.tint * 5; } .tint { size: 0.6; translate: calc(sibling-index() * 0.8 - 2.4) 0.3 0; color: hwb(200 calc(sibling-index() * 15%) 10%); }",
+        code: "@scene { cube.tint * 5; } .tint { size: 0.6; translate: calc(2.4 - sibling-index() * 0.8) 0.3 0; color: hwb(200 calc(sibling-index() * 15%) 10%); }",
       },
     ],
   },
@@ -1425,11 +1425,11 @@ export const FUNCTIONS: FunctionDef[] = [
       },
       {
         name: "lch()",
-        code: "@scene { sphere.dot * 6; } .dot { radius: 0.3; translate: calc(sibling-index() * 0.75 - 2.6) 0.5 0; color: lch(65 60 calc(sibling-index() * 60)); }",
+        code: "@scene { sphere.dot * 6; } .dot { radius: 0.3; translate: calc(2.6 - sibling-index() * 0.75) 0.5 0; color: lch(65 60 calc(sibling-index() * 60)); }",
       },
       {
         name: "lab() and lch() together",
-        code: "@scene { cube#a; cube#b; } #a { translate: -0.7 0.5 0; color: lab(55 -40 30); } #b { translate: 0.7 0.5 0; color: lch(55 50 140); }",
+        code: "@scene { cube#a; cube#b; } #a { translate: 0.7 0.5 0; color: lab(55 -40 30); } #b { translate: -0.7 0.5 0; color: lch(55 50 140); }",
       },
     ],
   },
@@ -1447,11 +1447,11 @@ export const FUNCTIONS: FunctionDef[] = [
       },
       {
         name: "oklch()",
-        code: "@scene { sphere.dot * 8; } .dot { radius: 0.25; translate: calc(sibling-index() * 0.6 - 2.7) 0.5 0; color: oklch(72% 0.15 calc(sibling-index() * 45)); }",
+        code: "@scene { sphere.dot * 8; } .dot { radius: 0.25; translate: calc(2.7 - sibling-index() * 0.6) 0.5 0; color: oklch(72% 0.15 calc(sibling-index() * 45)); }",
       },
       {
         name: "oklab() and oklch() together",
-        code: "@scene { cube#a; cube#b; } #a { translate: -0.7 0.5 0; color: oklab(60% -0.1 -0.1); } #b { translate: 0.7 0.5 0; color: oklch(60% 0.14 30deg); }",
+        code: "@scene { cube#a; cube#b; } #a { translate: 0.7 0.5 0; color: oklab(60% -0.1 -0.1); } #b { translate: -0.7 0.5 0; color: oklch(60% 0.14 30deg); }",
       },
     ],
   },
@@ -1465,7 +1465,7 @@ export const FUNCTIONS: FunctionDef[] = [
     examples: [
       {
         name: "color()",
-        code: "@scene { sphere#a; sphere#b; } #a { translate: -0.8 0.6 0; color: color(display-p3 0.95 0.35 0.2); } #b { translate: 0.8 0.6 0; color: color(srgb-linear 0.1 0.3 0.8); }",
+        code: "@scene { sphere#a; sphere#b; } #a { translate: 0.8 0.6 0; color: color(display-p3 0.95 0.35 0.2); } #b { translate: -0.8 0.6 0; color: color(srgb-linear 0.1 0.3 0.8); }",
       },
     ],
   },
@@ -1479,7 +1479,7 @@ export const FUNCTIONS: FunctionDef[] = [
     examples: [
       {
         name: "color-mix()",
-        code: "@scene { cube.step * 6; } .step { size: 0.6; translate: calc(sibling-index() * 0.75 - 2.6) 0.3 0; color: color-mix(in oklab, #ff5a36, #3a7bff calc(sibling-index() * 20% - 20%)); }",
+        code: "@scene { cube.step * 6; } .step { size: 0.6; translate: calc(2.6 - sibling-index() * 0.75) 0.3 0; color: color-mix(in oklab, #ff5a36, #3a7bff calc(sibling-index() * 20% - 20%)); }",
       },
     ],
   },
@@ -1521,11 +1521,11 @@ export const FUNCTIONS: FunctionDef[] = [
     examples: [
       {
         name: "a lighter shell for every color",
-        code: "@scene { sphere * 3; } sphere { radius: 0.4; translate: calc((sibling-index() - 2) * 1.1) 0.5 0; material: jelly(color-mix(in oklab, currentColor 55%, white), 0.4); } sphere:nth-child(1) { color: #ff5a36; } sphere:nth-child(2) { color: #3ad16b; } sphere:nth-child(3) { color: #3a7bff; }",
+        code: "@scene { sphere * 3; } sphere { radius: 0.4; translate: calc((sibling-index() - 2) * -1.1) 0.5 0; material: jelly(color-mix(in oklab, currentColor 55%, white), 0.4); } sphere:nth-child(1) { color: #ff5a36; } sphere:nth-child(2) { color: #3ad16b; } sphere:nth-child(3) { color: #3a7bff; }",
       },
       {
         name: "in a variable",
-        code: "@scene { cube#a; cube#b; } scene { --shade: linear-gradient(currentColor, color-mix(in srgb, currentColor, black 60%)); } cube { size: 0.8; material: metal(var(--shade), 0.3); } #a { translate: -0.7 0.4 0; color: #ff5a36; } #b { translate: 0.7 0.4 0; color: #3a7bff; }",
+        code: "@scene { cube#a; cube#b; } scene { --shade: linear-gradient(currentColor, color-mix(in srgb, currentColor, black 60%)); } cube { size: 0.8; material: metal(var(--shade), 0.3); } #a { translate: 0.7 0.4 0; color: #ff5a36; } #b { translate: -0.7 0.4 0; color: #3a7bff; }",
       },
     ],
   },
@@ -1539,7 +1539,7 @@ export const FUNCTIONS: FunctionDef[] = [
     examples: [
       {
         name: "var()",
-        code: "@scene { sphere#a; sphere#b; } scene { --accent: #ff5a36; --r: 0.4; } sphere { radius: var(--r); color: var(--accent); } #a { translate: -0.8 0.5 0; } #b { --r: 0.6; translate: 0.8 0.6 0; }",
+        code: "@scene { sphere#a; sphere#b; } scene { --accent: #ff5a36; --r: 0.4; } sphere { radius: var(--r); color: var(--accent); } #a { translate: 0.8 0.5 0; } #b { --r: 0.6; translate: -0.8 0.6 0; }",
       },
       {
         name: "var()",
@@ -1547,7 +1547,7 @@ export const FUNCTIONS: FunctionDef[] = [
       },
       {
         name: "var()",
-        code: "@scene { sphere * 3; } sphere { --lift: 0; radius: 0.3; translate: calc(sibling-index() * 0.9 - 1.8) calc(0.4 + var(--lift) * sibling-index()) 0; color: #ff5a36; animation: rise 2s ease-in-out alternate; } @keyframes rise { to { --lift: 0.4; } }",
+        code: "@scene { sphere * 3; } sphere { --lift: 0; radius: 0.3; translate: calc(1.8 - sibling-index() * 0.9) calc(0.4 + var(--lift) * sibling-index()) 0; color: #ff5a36; animation: rise 2s ease-in-out alternate; } @keyframes rise { to { --lift: 0.4; } }",
       },
     ],
   },
@@ -1565,7 +1565,7 @@ export const FUNCTIONS: FunctionDef[] = [
       },
       {
         name: "random() with a step and --name",
-        code: "@scene { cube.block * 16; } .block { --s: random(--size, 0.2, 0.5); size: var(--s); translate: calc(mod(sibling-index() - 1, 4) * 0.8 - 1.2) calc(var(--s) / 2) calc(round(down, calc((sibling-index() - 1) / 4)) * 0.8 - 1.2); rotate-y: random(0deg, 90deg, 15deg); color: oklch(70% 0.15 random(0, 360, 60)); }",
+        code: "@scene { cube.block * 16; } .block { --s: random(--size, 0.2, 0.5); size: var(--s); translate: calc(1.2 - mod(sibling-index() - 1, 4) * 0.8) calc(var(--s) / 2) calc(round(down, calc((sibling-index() - 1) / 4)) * 0.8 - 1.2); rotate-y: random(0deg, 90deg, 15deg); color: oklch(70% 0.15 random(0, 360, 60)); }",
       },
     ],
   },
@@ -1579,7 +1579,7 @@ export const FUNCTIONS: FunctionDef[] = [
     examples: [
       {
         name: "if() with style()",
-        code: "@scene { group#warm { sphere * 3 } group#cool { sphere * 3 } } #warm { --theme: warm; translate: -1 0 0; } #cool { --theme: cool; translate: 1 0 0; } sphere { radius: 0.3; translate: 0 calc(sibling-index() * 0.7) 0; color: if(style(--theme: warm): #ff5a36; else: #3a7bff); }",
+        code: "@scene { group#warm { sphere * 3 } group#cool { sphere * 3 } } #warm { --theme: warm; translate: 1 0 0; } #cool { --theme: cool; translate: -1 0 0; } sphere { radius: 0.3; translate: 0 calc(sibling-index() * 0.7) 0; color: if(style(--theme: warm): #ff5a36; else: #3a7bff); }",
       },
       {
         name: "if() with media()",
@@ -1597,7 +1597,7 @@ export const FUNCTIONS: FunctionDef[] = [
     examples: [
       {
         name: "calc()",
-        code: "@scene { cube.step * 5; } .step { size: 0.4; translate: calc(sibling-index() * 0.6 - 1.8) calc(sibling-index() * 0.25) 0; color: #ff5a36; }",
+        code: "@scene { cube.step * 5; } .step { size: 0.4; translate: calc(1.8 - sibling-index() * 0.6) calc(sibling-index() * 0.25) 0; color: #ff5a36; }",
       },
     ],
   },
@@ -1611,7 +1611,7 @@ export const FUNCTIONS: FunctionDef[] = [
     examples: [
       {
         name: "sibling-index()",
-        code: "@scene { cube.petal * 12; } .petal { size: 0.25 0.6 0.25; translate: calc(cos(sibling-index() * 30deg) * 1.6) 0.5 calc(sin(sibling-index() * 30deg) * 1.6); rotate-y: calc(sibling-index() * -30deg); color: #ff5a36; }",
+        code: "@scene { cube.petal * 12; } .petal { size: 0.25 0.6 0.25; translate: calc(cos(sibling-index() * 30deg) * -1.6) 0.5 calc(sin(sibling-index() * 30deg) * 1.6); rotate-y: calc(sibling-index() * 30deg); color: #ff5a36; }",
       },
     ],
   },
@@ -1625,7 +1625,7 @@ export const FUNCTIONS: FunctionDef[] = [
     examples: [
       {
         name: "sibling-count()",
-        code: "@scene { sphere.bead * 8; } .bead { radius: 0.2; translate: calc(cos(sibling-index() * 1turn / sibling-count()) * 1.4) 0.5 calc(sin(sibling-index() * 1turn / sibling-count()) * 1.4); material: jelly(0.6); color: #ff5a36; }",
+        code: "@scene { sphere.bead * 8; } .bead { radius: 0.2; translate: calc(cos(sibling-index() * 1turn / sibling-count()) * -1.4) 0.5 calc(sin(sibling-index() * 1turn / sibling-count()) * 1.4); material: jelly(0.6); color: #ff5a36; }",
       },
     ],
   },
@@ -1639,19 +1639,19 @@ export const FUNCTIONS: FunctionDef[] = [
     examples: [
       {
         name: "sin()",
-        code: "@scene { sphere.wave * 9; } .wave { radius: 0.18; translate: calc(sibling-index() * 0.4 - 2) calc(0.8 + sin(sibling-index() * 40deg) * 0.5) 0; color: #7cb4ff; }",
+        code: "@scene { sphere.wave * 9; } .wave { radius: 0.18; translate: calc(2 - sibling-index() * 0.4) calc(0.8 + sin(sibling-index() * 40deg) * 0.5) 0; color: #7cb4ff; }",
       },
       {
         name: "cos()",
-        code: "@scene { cube.col * 9; } .col { --h: calc(0.9 + cos(sibling-index() * 40deg) * 0.6); size: 0.25 var(--h) 0.25; translate: calc(sibling-index() * 0.4 - 2) calc(var(--h) / 2) 0; color: #ff5a36; }",
+        code: "@scene { cube.col * 9; } .col { --h: calc(0.9 + cos(sibling-index() * 40deg) * 0.6); size: 0.25 var(--h) 0.25; translate: calc(2 - sibling-index() * 0.4) calc(var(--h) / 2) 0; color: #ff5a36; }",
       },
       {
         name: "tan()",
-        code: "@scene { cube.step * 7; } .step { --h: calc(tan(sibling-index() * 10deg) * 1.2); size: 0.35 var(--h) 0.35; translate: calc(sibling-index() * 0.5 - 2) calc(var(--h) / 2) 0; color: #3ad16b; }",
+        code: "@scene { cube.step * 7; } .step { --h: calc(tan(sibling-index() * 10deg) * 1.2); size: 0.35 var(--h) 0.35; translate: calc(2 - sibling-index() * 0.5) calc(var(--h) / 2) 0; color: #3ad16b; }",
       },
       {
         name: "sin(), cos() and tan() together",
-        code: "@scene { sphere.bead * 12; } .bead { radius: calc(0.1 + tan(sibling-index() * 5deg) * 0.2); translate: calc(cos(sibling-index() * 30deg) * 1.5) calc(0.6 + sin(sibling-index() * 60deg) * 0.3) calc(sin(sibling-index() * 30deg) * 1.5); color: hsl(calc(sibling-index() * 30) 85% 60%); }",
+        code: "@scene { sphere.bead * 12; } .bead { radius: calc(0.1 + tan(sibling-index() * 5deg) * 0.2); translate: calc(cos(sibling-index() * 30deg) * -1.5) calc(0.6 + sin(sibling-index() * 60deg) * 0.3) calc(sin(sibling-index() * 30deg) * 1.5); color: hsl(calc(sibling-index() * 30) 85% 60%); }",
       },
     ],
   },
@@ -1665,19 +1665,19 @@ export const FUNCTIONS: FunctionDef[] = [
     examples: [
       {
         name: "min()",
-        code: "@scene { cube.bar * 6; } .bar { --h: min(sibling-index() * 0.35, 1.2); size: 0.3 var(--h) 0.3; translate: calc(sibling-index() * 0.5 - 1.75) calc(var(--h) / 2) 0; color: #ff5a36; }",
+        code: "@scene { cube.bar * 6; } .bar { --h: min(sibling-index() * 0.35, 1.2); size: 0.3 var(--h) 0.3; translate: calc(1.75 - sibling-index() * 0.5) calc(var(--h) / 2) 0; color: #ff5a36; }",
       },
       {
         name: "max()",
-        code: "@scene { cube.bar * 6; } .bar { --h: max(0.6, sibling-index() * 0.3); size: 0.3 var(--h) 0.3; translate: calc(sibling-index() * 0.5 - 1.75) calc(var(--h) / 2) 0; color: #3a7bff; }",
+        code: "@scene { cube.bar * 6; } .bar { --h: max(0.6, sibling-index() * 0.3); size: 0.3 var(--h) 0.3; translate: calc(1.75 - sibling-index() * 0.5) calc(var(--h) / 2) 0; color: #3a7bff; }",
       },
       {
         name: "clamp()",
-        code: "@scene { cube.bar * 6; } .bar { --h: clamp(0.5, sibling-index() * 0.35, 1.4); size: 0.3 var(--h) 0.3; translate: calc(sibling-index() * 0.5 - 1.75) calc(var(--h) / 2) 0; color: #3ad16b; }",
+        code: "@scene { cube.bar * 6; } .bar { --h: clamp(0.5, sibling-index() * 0.35, 1.4); size: 0.3 var(--h) 0.3; translate: calc(1.75 - sibling-index() * 0.5) calc(var(--h) / 2) 0; color: #3ad16b; }",
       },
       {
         name: "min(), max() and clamp() together",
-        code: "@scene { cube.bar * 8; } .bar { --h: max(0.3, min(sibling-index() * 0.3, 1.5)); --w: clamp(0.15, sibling-index() * 0.05, 0.35); size: var(--w) var(--h) var(--w); translate: calc(sibling-index() * 0.5 - 2.25) calc(var(--h) / 2) 0; color: hsl(calc(sibling-index() * 40) 80% 60%); }",
+        code: "@scene { cube.bar * 8; } .bar { --h: max(0.3, min(sibling-index() * 0.3, 1.5)); --w: clamp(0.15, sibling-index() * 0.05, 0.35); size: var(--w) var(--h) var(--w); translate: calc(2.25 - sibling-index() * 0.5) calc(var(--h) / 2) 0; color: hsl(calc(sibling-index() * 40) 80% 60%); }",
       },
     ],
   },
@@ -1691,19 +1691,19 @@ export const FUNCTIONS: FunctionDef[] = [
     examples: [
       {
         name: "abs()",
-        code: "@scene { cube.v * 9; } .v { --h: calc(0.3 + abs(sibling-index() - 5) * 0.25); size: 0.3 var(--h) 0.3; translate: calc(sibling-index() * 0.45 - 2.25) calc(var(--h) / 2) 0; color: #7cb4ff; }",
+        code: "@scene { cube.v * 9; } .v { --h: calc(0.3 + abs(sibling-index() - 5) * 0.25); size: 0.3 var(--h) 0.3; translate: calc(2.25 - sibling-index() * 0.45) calc(var(--h) / 2) 0; color: #7cb4ff; }",
       },
       {
         name: "sqrt()",
-        code: "@scene { sphere.dot * 6; } .dot { --r: calc(sqrt(sibling-index()) * 0.15); radius: var(--r); translate: calc(sibling-index() * 0.7 - 2.45) var(--r) 0; color: #3ad16b; }",
+        code: "@scene { sphere.dot * 6; } .dot { --r: calc(sqrt(sibling-index()) * 0.15); radius: var(--r); translate: calc(2.45 - sibling-index() * 0.7) var(--r) 0; color: #3ad16b; }",
       },
       {
         name: "pow()",
-        code: "@scene { sphere.dot * 5; } .dot { radius: calc(pow(1.4, sibling-index()) * 0.08); translate: calc(sibling-index() * 0.8 - 2.4) 0.6 0; color: #ff5a36; }",
+        code: "@scene { sphere.dot * 5; } .dot { radius: calc(pow(1.4, sibling-index()) * 0.08); translate: calc(2.4 - sibling-index() * 0.8) 0.6 0; color: #ff5a36; }",
       },
       {
         name: "abs(), sqrt() and pow() together",
-        code: "@scene { sphere.seed * 24; } .seed { --d: calc(sqrt(sibling-index()) * 0.4); radius: calc(0.06 + pow(sibling-index() / 24, 2) * 0.14); translate: calc(cos(sibling-index() * 137.5deg) * var(--d)) calc(0.25 + abs(sibling-index() - 12) * 0.03) calc(sin(sibling-index() * 137.5deg) * var(--d)); color: hsl(calc(sibling-index() * 15) 80% 60%); }",
+        code: "@scene { sphere.seed * 24; } .seed { --d: calc(sqrt(sibling-index()) * 0.4); radius: calc(0.06 + pow(sibling-index() / 24, 2) * 0.14); translate: calc(-1 * cos(sibling-index() * 137.5deg) * var(--d)) calc(0.25 + abs(sibling-index() - 12) * 0.03) calc(sin(sibling-index() * 137.5deg) * var(--d)); color: hsl(calc(sibling-index() * 15) 80% 60%); }",
       },
     ],
   },
@@ -1717,23 +1717,23 @@ export const FUNCTIONS: FunctionDef[] = [
     examples: [
       {
         name: "asin()",
-        code: "@scene { cube.tilt * 5; } .tilt { size: 0.2 0.9 0.2; translate: calc(sibling-index() * 0.6 - 1.8) 0.45 0; rotate-z: asin(calc(sibling-index() * 0.2 - 0.6)); color: #ff5a36; }",
+        code: "@scene { cube.tilt * 5; } .tilt { size: 0.2 0.9 0.2; translate: calc(1.8 - sibling-index() * 0.6) 0.45 0; rotate-z: asin(calc(0.6 - sibling-index() * 0.2)); color: #ff5a36; }",
       },
       {
         name: "acos()",
-        code: "@scene { cube.fan * 5; } .fan { size: 0.9 0.1 0.2; translate: 0 calc(sibling-index() * 0.3) 0; rotate-y: acos(calc(sibling-index() * 0.4 - 1.2)); color: #7cb4ff; }",
+        code: "@scene { cube.fan * 5; } .fan { size: 0.9 0.1 0.2; translate: 0 calc(sibling-index() * 0.3) 0; rotate-y: acos(calc(1.2 - sibling-index() * 0.4)); color: #7cb4ff; }",
       },
       {
         name: "atan()",
-        code: "@scene { cube.ramp * 5; } .ramp { size: 0.8 0.08 0.3; translate: calc(sibling-index() * 0.9 - 2.7) 0.5 0; rotate-z: atan(calc(sibling-index() * 0.4)); color: #3ad16b; }",
+        code: "@scene { cube.ramp * 5; } .ramp { size: 0.8 0.08 0.3; translate: calc(2.7 - sibling-index() * 0.9) 0.5 0; rotate-z: atan(calc(sibling-index() * -0.4)); color: #3ad16b; }",
       },
       {
         name: "atan2()",
-        code: "@scene { cube.needle * 8; } .needle { --a: calc(sibling-index() * 45deg); size: 0.5 0.08 0.08; translate: calc(cos(var(--a)) * 1.4) 0.5 calc(sin(var(--a)) * 1.4); rotate-y: calc(0deg - atan2(sin(var(--a)), cos(var(--a)))); color: #ff5a36; }",
+        code: "@scene { cube.needle * 8; } .needle { --a: calc(sibling-index() * 45deg); size: 0.5 0.08 0.08; translate: calc(cos(var(--a)) * -1.4) 0.5 calc(sin(var(--a)) * 1.4); rotate-y: atan2(sin(var(--a)), cos(var(--a))); color: #ff5a36; }",
       },
       {
         name: "asin(), acos(), atan() and atan2() together",
-        code: "@scene { sphere.dot * 10; } .dot { --x: calc(sibling-index() * 0.2 - 1.1); radius: 0.12; translate: calc(var(--x) * 2) calc(1 + sin(asin(var(--x)) + acos(var(--x))) * 0.4) calc(atan(var(--x)) / 90deg); rotate-y: atan2(var(--x), 1); color: hsl(calc(sibling-index() * 36) 80% 60%); }",
+        code: "@scene { sphere.dot * 10; } .dot { --x: calc(sibling-index() * 0.2 - 1.1); radius: 0.12; translate: calc(var(--x) * -2) calc(1 + sin(asin(var(--x)) + acos(var(--x))) * 0.4) calc(atan(var(--x)) / 90deg); rotate-y: atan2(var(--x), 1); color: hsl(calc(sibling-index() * 36) 80% 60%); }",
       },
     ],
   },
@@ -1747,23 +1747,23 @@ export const FUNCTIONS: FunctionDef[] = [
     examples: [
       {
         name: "sign()",
-        code: "@scene { cube.side * 9; } .side { size: 0.3; translate: calc(sibling-index() * 0.45 - 2.25) calc(0.6 + sign(sibling-index() - 5) * 0.4) 0; color: #7cb4ff; }",
+        code: "@scene { cube.side * 9; } .side { size: 0.3; translate: calc(2.25 - sibling-index() * 0.45) calc(0.6 + sign(sibling-index() - 5) * 0.4) 0; color: #7cb4ff; }",
       },
       {
         name: "round()",
-        code: "@scene { cube.stair * 9; } .stair { --h: round(down, calc(sibling-index() * 0.3), 0.5); size: 0.4 calc(var(--h) + 0.1) 0.4; translate: calc(sibling-index() * 0.45 - 2.25) calc(var(--h) / 2 + 0.05) 0; color: #ff5a36; }",
+        code: "@scene { cube.stair * 9; } .stair { --h: round(down, calc(sibling-index() * 0.3), 0.5); size: 0.4 calc(var(--h) + 0.1) 0.4; translate: calc(2.25 - sibling-index() * 0.45) calc(var(--h) / 2 + 0.05) 0; color: #ff5a36; }",
       },
       {
         name: "mod()",
-        code: "@scene { cube.row * 12; } .row { size: 0.3; translate: calc(mod(sibling-index() - 1, 4) * 0.5 - 0.75) 0.15 calc(round(down, calc((sibling-index() - 1) / 4)) * 0.5 - 0.5); color: #3ad16b; }",
+        code: "@scene { cube.row * 12; } .row { size: 0.3; translate: calc(0.75 - mod(sibling-index() - 1, 4) * 0.5) 0.15 calc(round(down, calc((sibling-index() - 1) / 4)) * 0.5 - 0.5); color: #3ad16b; }",
       },
       {
         name: "rem()",
-        code: "@scene { sphere.ball * 9; } .ball { radius: 0.18; translate: calc(sibling-index() * 0.45 - 2.25) calc(0.3 + rem(sibling-index(), 3) * 0.4) 0; color: #ff5a36; }",
+        code: "@scene { sphere.ball * 9; } .ball { radius: 0.18; translate: calc(2.25 - sibling-index() * 0.45) calc(0.3 + rem(sibling-index(), 3) * 0.4) 0; color: #ff5a36; }",
       },
       {
         name: "sign(), round(), mod() and rem() together",
-        code: "@scene { cube.tile * 16; } .tile { --col: mod(sibling-index() - 1, 4); --row: round(down, calc((sibling-index() - 1) / 4)); size: 0.4 calc(0.2 + rem(sibling-index(), 3) * 0.2) 0.4; translate: calc(var(--col) * 0.5 - 0.75) 0.2 calc(var(--row) * 0.5 - 0.75); rotate-y: calc(sign(var(--col) - 1.5) * 15deg); color: hsl(calc(sibling-index() * 22) 80% 60%); }",
+        code: "@scene { cube.tile * 16; } .tile { --col: mod(sibling-index() - 1, 4); --row: round(down, calc((sibling-index() - 1) / 4)); size: 0.4 calc(0.2 + rem(sibling-index(), 3) * 0.2) 0.4; translate: calc(0.75 - var(--col) * 0.5) 0.2 calc(var(--row) * 0.5 - 0.75); rotate-y: calc(sign(var(--col) - 1.5) * -15deg); color: hsl(calc(sibling-index() * 22) 80% 60%); }",
       },
     ],
   },
@@ -1777,19 +1777,19 @@ export const FUNCTIONS: FunctionDef[] = [
     examples: [
       {
         name: "hypot()",
-        code: "@scene { sphere.dot * 9; } .dot { --x: calc(mod(sibling-index() - 1, 3) - 1); --z: calc(round(down, calc((sibling-index() - 1) / 3)) - 1); radius: calc(0.12 + hypot(var(--x), var(--z)) * 0.1); translate: calc(var(--x) * 0.9) 0.4 calc(var(--z) * 0.9); color: #7cb4ff; }",
+        code: "@scene { sphere.dot * 9; } .dot { --x: calc(mod(sibling-index() - 1, 3) - 1); --z: calc(round(down, calc((sibling-index() - 1) / 3)) - 1); radius: calc(0.12 + hypot(var(--x), var(--z)) * 0.1); translate: calc(var(--x) * -0.9) 0.4 calc(var(--z) * 0.9); color: #7cb4ff; }",
       },
       {
         name: "log()",
-        code: "@scene { cube.bar * 8; } .bar { --h: calc(0.2 + log(sibling-index(), 2) * 0.4); size: 0.3 var(--h) 0.3; translate: calc(sibling-index() * 0.45 - 2) calc(var(--h) / 2) 0; color: #3ad16b; }",
+        code: "@scene { cube.bar * 8; } .bar { --h: calc(0.2 + log(sibling-index(), 2) * 0.4); size: 0.3 var(--h) 0.3; translate: calc(2 - sibling-index() * 0.45) calc(var(--h) / 2) 0; color: #3ad16b; }",
       },
       {
         name: "exp()",
-        code: "@scene { sphere.dot * 6; } .dot { radius: calc(exp(sibling-index() / 3) * 0.06); translate: calc(sibling-index() * 0.7 - 2.45) 0.6 0; color: #ff5a36; }",
+        code: "@scene { sphere.dot * 6; } .dot { radius: calc(exp(sibling-index() / 3) * 0.06); translate: calc(2.45 - sibling-index() * 0.7) 0.6 0; color: #ff5a36; }",
       },
       {
         name: "hypot(), log() and exp() together",
-        code: "@scene { sphere.seed * 12; } .seed { --a: calc(sibling-index() * 30deg); --d: calc(log(sibling-index() + 1) * 0.8); radius: calc(exp(0 - sibling-index() / 8) * 0.25); translate: calc(cos(var(--a)) * var(--d)) calc(0.3 + hypot(cos(var(--a)), 1) * 0.2) calc(sin(var(--a)) * var(--d)); color: hsl(calc(sibling-index() * 30) 80% 60%); }",
+        code: "@scene { sphere.seed * 12; } .seed { --a: calc(sibling-index() * 30deg); --d: calc(log(sibling-index() + 1) * 0.8); radius: calc(exp(0 - sibling-index() / 8) * 0.25); translate: calc(-1 * cos(var(--a)) * var(--d)) calc(0.3 + hypot(cos(var(--a)), 1) * 0.2) calc(sin(var(--a)) * var(--d)); color: hsl(calc(sibling-index() * 30) 80% 60%); }",
       },
     ],
   },
@@ -1803,7 +1803,7 @@ export const FUNCTIONS: FunctionDef[] = [
     examples: [
       {
         name: "progress()",
-        code: "@scene { cube.fade * 8; } .fade { --p: progress(sibling-index(), 1, sibling-count()); size: 0.35 calc(0.2 + var(--p)) 0.35; translate: calc(sibling-index() * 0.5 - 2.25) calc(0.1 + var(--p) / 2) 0; color: hsl(calc(200 + var(--p) * 160) 80% 60%); }",
+        code: "@scene { cube.fade * 8; } .fade { --p: progress(sibling-index(), 1, sibling-count()); size: 0.35 calc(0.2 + var(--p)) 0.35; translate: calc(2.25 - sibling-index() * 0.5) calc(0.1 + var(--p) / 2) 0; color: hsl(calc(200 + var(--p) * 160) 80% 60%); }",
       },
     ],
   },

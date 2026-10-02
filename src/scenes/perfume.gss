@@ -54,14 +54,14 @@ scene {
   background: #e8e2da;
   floor: #d8d0c6;
 
-  light: 135deg 42deg;
+  light: -135deg 42deg;
   ambient: 0.48;
 
   dpr: auto;
 
   camera-target: 0 1.65 0;
   camera-distance: 6.8;
-  camera-angle: -18deg 9deg;
+  camera-angle: 18deg 9deg;
 }
 
 
@@ -197,7 +197,7 @@ scene {
 #nozzle {
   radius: 0.075;
 
-  translate: 0.14 3.84 0;
+  translate: -0.14 3.84 0;
 
   color: #c9a76b;
 
@@ -272,7 +272,7 @@ scene {
   radius: 0.16;
 
   translate:
-    calc(var(--i) * 0.58 - 1.45)
+    calc(1.45 - var(--i) * 0.58)
     0.18
     1.6;
 
@@ -309,7 +309,7 @@ scene {
   scale: 1.42;
 
   translate:
-    calc(var(--i) * 0.58 - 1.45)
+    calc(1.45 - var(--i) * 0.58)
     0.26
     1.6;
 }
@@ -452,11 +452,11 @@ scene {
 
 @keyframes product-turn {
   from {
-    rotate-y: -8deg;
+    rotate-y: 8deg;
   }
 
   to {
-    rotate-y: 8deg;
+    rotate-y: -8deg;
   }
 }
 
@@ -475,14 +475,14 @@ scene {
     radius: 0.18;
 
     translate:
-      calc(var(--i) * 0.65 - 1.62)
+      calc(1.62 - var(--i) * 0.65)
       0.18
       1.65;
   }
 
   .tone:hover {
     translate:
-      calc(var(--i) * 0.65 - 1.62)
+      calc(1.62 - var(--i) * 0.65)
       0.28
       1.65;
   }

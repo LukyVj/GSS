@@ -53,14 +53,14 @@ scene {
 
   floor: none;
 
-  light: 135deg 34deg;
+  light: -135deg 34deg;
   ambient: 0.32;
 
   dpr: auto;
 
   camera-target: 0 1.5 0;
   camera-distance: 8;
-  camera-angle: 20deg 16deg;
+  camera-angle: -20deg 16deg;
 }
 
 
@@ -97,7 +97,7 @@ scene {
   corner-radius: 0.07;
 
   translate:
-    calc(cos(var(--angle)) * var(--orbit-radius))
+    calc(-1 * cos(var(--angle)) * var(--orbit-radius))
     calc(
       1.5
       + sin(sibling-index() * 67deg) * 0.18
@@ -107,7 +107,7 @@ scene {
   rotate-y:
     calc(
       sibling-index()
-      * -1turn
+      * 1turn
       / sibling-count()
     );
 
@@ -169,7 +169,7 @@ scene {
   color: #ffffff;
 
   translate:
-    calc(cos(var(--angle)) * 2.82)
+    calc(cos(var(--angle)) * -2.82)
     calc(
       1.65
       + sin(sibling-index() * 67deg) * 0.18
@@ -204,7 +204,7 @@ scene {
   --orbit-radius: 1.45;
 
   translate:
-    calc(cos(var(--angle)) * var(--orbit-radius))
+    calc(-1 * cos(var(--angle)) * var(--orbit-radius))
     calc(
       1.5
       + sin(sibling-index() * 91deg) * 0.12
@@ -362,7 +362,7 @@ scene {
 
 #machine:has(#outer > .key:hover) #inner > .dot {
   translate:
-    calc(cos(var(--angle)) * 1.08)
+    calc(cos(var(--angle)) * -1.08)
     calc(
       1.5
       + sin(sibling-index() * 91deg) * 0.08
@@ -388,7 +388,7 @@ scene {
 
 #machine:has(#inner > .dot:hover) #outer > .key {
   translate:
-    calc(cos(var(--angle)) * 2.92)
+    calc(cos(var(--angle)) * -2.92)
     calc(
       1.5
       + sin(sibling-index() * 67deg) * 0.22
@@ -459,7 +459,7 @@ scene {
   }
 
   to {
-    rotate-y: 1turn;
+    rotate-y: -1turn;
   }
 }
 
@@ -470,7 +470,7 @@ scene {
   }
 
   to {
-    rotate-y: 1turn;
+    rotate-y: -1turn;
   }
 }
 
@@ -481,7 +481,7 @@ scene {
   }
 
   to {
-    rotate-z: 1turn;
+    rotate-z: -1turn;
   }
 }
 

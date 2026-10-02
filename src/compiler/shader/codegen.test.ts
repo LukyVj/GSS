@@ -142,7 +142,7 @@ describe("lighting", () => {
 
   it("keeps the default light direction", () => {
     expect(compileGSS("@scene { cube; }")).toContain(
-      "const vec3 LIGHT_DIR = vec3(0.408, 0.816, 0.408);",
+      "const vec3 LIGHT_DIR = vec3(-0.408, 0.816, 0.408);",
     );
   });
 
@@ -511,7 +511,7 @@ describe("shader structure", () => {
     const shader = compileGSS("@scene { cube; }");
     expect(shader).toContain("const vec3 BACKGROUND = vec3(0.03);");
     expect(shader).toContain(
-      "const vec3 LIGHT_DIR = vec3(0.408, 0.816, 0.408);",
+      "const vec3 LIGHT_DIR = vec3(-0.408, 0.816, 0.408);",
     );
   });
 

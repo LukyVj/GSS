@@ -87,7 +87,7 @@ scene {
 
   ambient: 0.38;
 
-  light: 138deg 44deg;
+  light: -138deg 44deg;
 
   dpr: auto;
 
@@ -95,7 +95,7 @@ scene {
 
   camera-distance: 6.7;
 
-  camera-angle: -25deg 42deg;
+  camera-angle: 25deg 42deg;
 }
 
 /* ==================================================
@@ -137,19 +137,19 @@ scene {
 }
 
 #lug-nw {
-  translate: -1.08 0.37 -1.5;
-}
-
-#lug-ne {
   translate: 1.08 0.37 -1.5;
 }
 
+#lug-ne {
+  translate: -1.08 0.37 -1.5;
+}
+
 #lug-sw {
-  translate: -1.08 0.37 1.5;
+  translate: 1.08 0.37 1.5;
 }
 
 #lug-se {
-  translate: 1.08 0.37 1.5;
+  translate: -1.08 0.37 1.5;
 }
 
 /* ==================================================
@@ -236,9 +236,9 @@ scene {
 
   size: 0.075 0.075 0.29;
 
-  translate: calc(cos(var(--angle)) * 1.11) 0.84 calc(sin(var(--angle)) * 1.11);
+  translate: calc(cos(var(--angle)) * -1.11) 0.84 calc(sin(var(--angle)) * 1.11);
 
-  rotate-y: calc( 90deg - sibling-index() * 1turn / sibling-count() );
+  rotate-y: calc( sibling-index() * 1turn / sibling-count() - 90deg );
 
   color: var(--ink);
 
@@ -381,9 +381,9 @@ scene {
   radius: 0.2;
   height: 0.48;
 
-  rotate-z: 90deg;
+  rotate-z: -90deg;
 
-  translate: 1.84 0.53 0;
+  translate: -1.84 0.53 0;
 
   color: var(--steel);
 
@@ -397,9 +397,9 @@ scene {
   radius: 0.18;
   thickness: 0.027;
 
-  rotate-z: 90deg;
+  rotate-z: -90deg;
 
-  translate: 2.06 0.53 0;
+  translate: -2.06 0.53 0;
 
   color: var(--steel-dark);
 
@@ -414,7 +414,7 @@ scene {
 
 #crown:hover {
 
-  translate: 1.96 0.53 0;
+  translate: -1.96 0.53 0;
 
   color: var(--accent);
 }
@@ -429,7 +429,7 @@ scene {
 
 #watch:has(#crown:hover) #crown-ring {
 
-  translate: 2.18 0.53 0;
+  translate: -2.18 0.53 0;
 
   color: var(--accent);
 }
@@ -541,7 +541,7 @@ scene {
   }
 
   to {
-    rotate-y: 1turn;
+    rotate-y: -1turn;
   }
 }
 
@@ -552,7 +552,7 @@ scene {
   }
 
   to {
-    rotate-y: 1turn;
+    rotate-y: -1turn;
   }
 }
 
@@ -563,7 +563,7 @@ scene {
   }
 
   to {
-    rotate-y: 1turn;
+    rotate-y: -1turn;
   }
 }
 
@@ -579,7 +579,7 @@ scene {
 
     camera-target: 0 0.5 0;
 
-    camera-angle: -20deg 46deg;
+    camera-angle: 20deg 46deg;
 
     dpr: 1;
   }

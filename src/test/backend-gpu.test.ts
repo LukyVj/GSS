@@ -78,6 +78,42 @@ describe("WebGPU and WebGL2 render the same scenes", () => {
   }, 60000);
 });
 
+// The screen is seen like a CSS page: x to the right, y up, z toward the viewer
+describe("the default camera does not mirror the scene", () => {
+  const front = "scene { floor: none; background: #000000; camera-target: 0 0 0; camera-angle: 0deg 0deg; camera-distance: 5; light: 0deg 0deg; ambient: 1; }";
+  // The mean column and row of the pixels where `channel` wins, per backend
+  const where = (pixels: number[], channel: 0 | 2) => {
+    let x = 0, y = 0, n = 0;
+    for (let i = 0; i < pixels.length; i += 4) {
+      if (pixels[i + channel] > 80 && pixels[i + channel] > 2 * pixels[i + 2 - channel]) {
+        x += (i / 4) % 96; y += Math.floor(i / 4 / 96); n++;
+      }
+    }
+    return { x: x / n, y: y / n, n };
+  };
+
+  it("puts +x on the right", async () => {
+    const { gl, gpu } = await render(`@scene { cube; } ${front} cube { translate: 1 0 0; size: 0.6; color: #ff0000; }`);
+    for (const pixels of [gl, gpu]) expect(where(pixels, 0).x).toBeGreaterThan(55);
+  }, 60000);
+
+  it("paints linear-gradient(to right) from left to right", async () => {
+    const { gl, gpu } = await render(`@scene { cube; } ${front} cube { size: 2 1 0.1; color: linear-gradient(to right, #ff0000, #0000ff); }`);
+    for (const pixels of [gl, gpu]) expect(where(pixels, 0).x).toBeLessThan(where(pixels, 2).x);
+  }, 60000);
+
+  it("turns rotate-z clockwise, like CSS rotate", async () => {
+    const { gl, gpu } = await render(`@scene { group#arm { cube#bar; cube#tip; } } ${front} cube { color: #0000ff; } #arm { rotate-z: 30deg; } #bar { size: 2 0.15 0.1; } #tip { size: 0.3; translate: 0.9 0 0.1; color: #ff0000; }`);
+    // the red end of the bar: on the right, and down
+    for (const pixels of [gl, gpu]) {
+      const tip = where(pixels, 0);
+      expect(tip.n).toBeGreaterThan(0);
+      expect(tip.x).toBeGreaterThan(48);
+      expect(tip.y).toBeGreaterThan(36);
+    }
+  }, 60000);
+});
+
 it("invalid updates preserve the displayed scene; resizing and destruction remain usable", async () => {
   const result = await page.evaluate(async compiled => {
     const canvas = document.createElement("canvas"); canvas.style.cssText = "width:96px;height:72px"; document.body.append(canvas);
@@ -165,3 +201,4 @@ it("the playground renders with WebGPU and displays WGSL", async () => {
   expect(await page.locator("#stats").innerText()).toContain("glsl");
   expect(await page.locator(".perf-panel h2").textContent()).toContain("WebGL2");
 }, 60000);
+

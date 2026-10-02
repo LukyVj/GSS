@@ -41,10 +41,10 @@ scene {
   background: #101b22;
   floor: #18252b;
   ambient: 0.3;
-  light: 135deg 55deg;
+  light: -135deg 55deg;
   camera-target: 0 0.85 0;
   camera-distance: 7.8;
-  camera-angle: 28deg 42deg;
+  camera-angle: -28deg 42deg;
 }
 
 #plinth {
@@ -73,7 +73,7 @@ scene {
 
 /* Isolated siblings: changing * 24 preserves the circular layout. */
 .tick {
-  --angle: calc((sibling-index() - 1) * 1turn / sibling-count());
+  --angle: calc((sibling-index() - 1) * -1turn / sibling-count());
   size: 0.035 0.024 0.13;
   corner-radius: 0.008;
   translate: calc(sin(var(--angle)) * 2.04) 0.293 calc(cos(var(--angle)) * 2.04);
@@ -100,7 +100,7 @@ scene {
 
 /* An opening flower, computed independently for each radial petal. */
 .petal {
-  --angle: calc((sibling-index() - 1) * 1turn / sibling-count());
+  --angle: calc((sibling-index() - 1) * -1turn / sibling-count());
   --open: 0;
   --reach: calc(0.83 + var(--open) * 0.42);
   size: 0.34 0.14 1.04;
@@ -170,6 +170,6 @@ scene {
     rotate-y: 0deg;
   }
   to {
-    rotate-y: 360deg;
+    rotate-y: -360deg;
   }
 }

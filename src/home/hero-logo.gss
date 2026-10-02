@@ -16,7 +16,7 @@ scene {
   background: #0a0a0c;
   floor: none;
   ambient: 0.22;
-  light: 35deg 48deg;
+  light: -35deg 48deg;
   camera-target: 0 0 0;
   camera-distance: 5.6;
   camera-angle: 0deg 12deg;
@@ -24,18 +24,17 @@ scene {
   dpr: 1.5;
 }
 
-/* Flip to match the SVG's horizontal axis, then breathe in yaw. */
+/* Breathe in yaw. */
 #artwork {
-  rotate-y: 180deg;
   animation: turn 7s ease-in-out alternate;
 }
 
 @keyframes turn {
   from {
-    rotate-y: 155deg;
+    rotate-y: 25deg;
   }
   to {
-    rotate-y: 205deg;
+    rotate-y: -25deg;
   }
 }
 
@@ -75,8 +74,8 @@ path {
   --t: calc((var(--i) - 1) / 8);
   thickness: calc(0.032 - var(--t) * 0.018);
   radius: calc(0.48 + (var(--i) - 1) * 0.27);
-  rotate-x: calc(68deg + var(--i) * 1.5deg);
-  translate: 0 0 calc((5 - var(--i)) * 0.11);
+  rotate-x: calc(-68deg - var(--i) * 1.5deg);
+  translate: 0 0 calc((var(--i) - 5) * 0.11);
   material: metal(0.25);
   color: hsl(calc(20 + var(--i)) 12% calc(78% - var(--i) * 6%));
 }

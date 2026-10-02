@@ -6,6 +6,10 @@ The 0.0.1 history was reconstructed from GitHub.
 
 ## Unreleased
 
+### Changed
+
+- The screen is no longer mirrored: +x is on the right, like CSS, and `rotate-y` and `rotate-z` now turn like CSS `rotateY()` and `rotate()` (clockwise). Gradients, conic gradients, textures, `path` and `prism` shapes and motion paths now appear as written, no longer flipped left to right. The default `light` becomes `-45deg 54.7deg`, so a scene without `light` is lit as before, from the upper left. Every scene, example and showcase of the site was mirrored to keep its look. **A scene written for an earlier version** shows mirrored: negate the x of `translate` and `camera-target`, the angles of `rotate-y` and `rotate-z`, and the first angle of `light` and `camera-angle`.
+
 ### Added
 
 - `conic-gradient()` and `repeating-conic-gradient()`, like CSS: `from <angle>`, `at <position>`, stops placed with angles or percentages; in backgrounds, on objects and in materials.

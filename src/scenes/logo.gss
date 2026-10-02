@@ -9,7 +9,7 @@
 scene {
   background: #0a0a0c;
   floor: none;
-  light: 30deg 40deg;
+  light: -30deg 40deg;
   ambient: 0.35;
   camera-target: 0 0 0;
   camera-distance: 5;
@@ -31,7 +31,7 @@ path {
 }
 
 #brace-right {
-  rotate-y: 180deg;
+  rotate-y: -180deg;
 }
 
 #dot {

@@ -48,11 +48,11 @@ scene {
   --orbit: 1.7;
   background: hsl(240 30% 5%);
   floor: rgb(20 20 26);
-  light: 120deg 35deg;
+  light: -120deg 35deg;
   ambient: 0.28;
   camera-target: 0 1.6 0;
   camera-distance: 10;
-  camera-angle: 35deg 20deg;
+  camera-angle: -35deg 20deg;
   camera-spin: 90s;
 }
 
@@ -68,7 +68,7 @@ scene {
 
 #plinth .block {
   size: 0.9;
-  translate: calc(sibling-index() * 0.9 - 1.8) 0.45 0;
+  translate: calc(1.8 - sibling-index() * 0.9) 0.45 0;
   texture: url("/textures/grass-side.png");
   image-rendering: pixelated;
 }
@@ -84,7 +84,7 @@ scene {
 #sign {
   size: 0.5;
   translate: 0 0.25 1.9;
-  rotate-y: calc(pi * 1rad / 12);
+  rotate-y: calc(pi * -1rad / 12);
   texture: url("/textures/dirt.png");
   image-rendering: crisp-edges;
 }
@@ -124,7 +124,7 @@ scene {
 
 #orbit .planet {
   --a: calc(sibling-index() * 1turn / sibling-count());
-  translate: calc(cos(var(--a)) * var(--orbit)) calc(sin(sibling-index() * 70deg) * 0.25) calc(sin(var(--a)) * var(--orbit));
+  translate: calc(-1 * cos(var(--a)) * var(--orbit)) calc(sin(sibling-index() * 70deg) * 0.25) calc(sin(var(--a)) * var(--orbit));
   radius: calc(sqrt(sibling-index()) * 0.08);
   color: hsl(calc(sibling-index() * 72) 80% 62%);
   material: metal(0.35);
@@ -136,7 +136,7 @@ scene {
 }
 
 #moon {
-  translate: calc(var(--orbit, 1.6) + 0.6) 0.3 0;
+  translate: calc(-0.6 - var(--orbit, 1.6)) 0.3 0;
   radius: 0.16;
   texture: url("/textures/dirt.png");
   texture-size: 0.2;
@@ -157,7 +157,7 @@ scene {
 }
 
 #brace-2 {
-  rotate-y: 180deg;
+  rotate-y: -180deg;
 }
 
 #dot {
@@ -177,7 +177,7 @@ scene {
 
 /* ----- The lamps: groups placed in a loop, a list, pow(), color animation ----- */
 .lamp {
-  translate: calc(cos(sibling-index() * 120deg + 30deg) * 3) 0 calc(sin(sibling-index() * 120deg + 30deg) * 3);
+  translate: calc(cos(sibling-index() * 120deg + 30deg) * -3) 0 calc(sin(sibling-index() * 120deg + 30deg) * 3);
 }
 
 .post,
@@ -212,8 +212,8 @@ scene {
 .petal {
   size: 0.16 calc(clamp(0.3, abs(sin(sibling-index() * 45deg)) * 1.2, 0.9)) 0.16;
   corner-radius: 0.05;
-  translate: calc(cos(sibling-index() * 45deg) * 4.2) calc(min(0.45, max(0.15, tan(sibling-index() * 10deg) * 0.3))) calc(sin(sibling-index() * 45deg) * 4.2);
-  rotate-y: calc(sibling-index() * -45deg);
+  translate: calc(cos(sibling-index() * 45deg) * -4.2) calc(min(0.45, max(0.15, tan(sibling-index() * 10deg) * 0.3))) calc(sin(sibling-index() * 45deg) * 4.2);
+  rotate-y: calc(sibling-index() * 45deg);
   color: hsl(calc(sibling-index() * 45) 85% 60%);
   animation: sway 2s ease-in-out alternate;
 }
@@ -228,7 +228,7 @@ scene {
 }
 
 #star {
-  translate: -3.6 1.4 -1.4;
+  translate: 3.6 1.4 -1.4;
   d: polygon(0 -1, -0.25 -0.34, -0.95 -0.31, -0.4 0.13, -0.59 0.81, 0 0.42, 0.59 0.81, 0.4 0.13, 0.95 -0.31, 0.25 -0.34);
   depth: 0.2;
   scale: 0.5;
@@ -238,7 +238,7 @@ scene {
 
 /* ----- Operations: a smooth union, a subtraction ----- */
 .drop {
-  translate: calc(3.2 + sibling-index() * 0.35) 0.5 -2.2;
+  translate: calc(-3.2 - sibling-index() * 0.35) 0.5 -2.2;
   radius: 0.35;
   color: hsl(190 90% 55%);
   material: glass(1.45, frosted 0.2);
@@ -246,14 +246,14 @@ scene {
 }
 
 #totem {
-  translate: 3.6 0.6 1.6;
+  translate: -3.6 0.6 1.6;
   radius: 0.35;
   height: 1.2;
   color: rgb(255 200 80);
 }
 
 #bite {
-  translate: 3.85 0.9 1.6;
+  translate: -3.85 0.9 1.6;
   radius: 0.28;
   operation: subtract;
   blend: 0.08;
@@ -271,13 +271,13 @@ scene {
 
 @keyframes tilt {
   to {
-    rotate-y: 1turn;
+    rotate-y: -1turn;
   }
 }
 
 @keyframes turn {
   to {
-    rotate-y: -1turn;
+    rotate-y: 1turn;
   }
 }
 
@@ -298,9 +298,9 @@ scene {
 
 @keyframes sway {
   from {
-    rotate-z: -6deg;
+    rotate-z: 6deg;
   }
   to {
-    rotate-z: 6deg;
+    rotate-z: -6deg;
   }
 }

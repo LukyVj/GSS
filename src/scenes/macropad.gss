@@ -72,18 +72,18 @@ scene {
 
   background: #0a0a0c;
   floor: #111114;
-  light: 140deg 40deg;
+  light: -140deg 40deg;
   ambient: 0.22;
-  camera-target: 0.45 0.15 -0.3;
+  camera-target: -0.45 0.15 -0.3;
   camera-distance: 8.4;
-  camera-angle: 162deg 42deg;
+  camera-angle: -162deg 42deg;
 }
 
 /* ----- The body ----- */
 #case {
   size: 6.6 0.5 3.9;
   corner-radius: 0.22;
-  translate: 0.45 0.25 0;
+  translate: -0.45 0.25 0;
   color: var(--case);
   material: metal(0.45);
 }
@@ -99,8 +99,8 @@ scene {
 #led {
   radius: 0.06;
   height: 5.6;
-  rotate-z: 90deg;
-  translate: 0.45 0.12 -1.98;
+  rotate-z: -90deg;
+  translate: -0.45 0.12 -1.98;
   material: jelly(0.3);
   animation: underglow 6s linear;
 }
@@ -119,7 +119,7 @@ scene {
 }
 
 .key {
-  translate: calc(sibling-index() * 1 - 2.5) 0 0;
+  translate: calc(2.5 - sibling-index() * 1) 0 0;
 }
 
 .cap {
@@ -212,20 +212,20 @@ scene {
 }
 
 #left .legend {
-  rotate-z: -90deg;
+  rotate-z: 90deg;
 }
 
 #down .legend {
-  rotate-z: 180deg;
+  rotate-z: -180deg;
 }
 
 #right .legend {
-  rotate-z: 90deg;
+  rotate-z: -90deg;
 }
 
 /* ----- The knob, turned by an invisible hand ----- */
 #dial {
-  translate: 2.8 0.5 0.55;
+  translate: -2.8 0.5 0.55;
   animation: turn 3.5s ease-in-out alternate;
 }
 
@@ -254,14 +254,14 @@ scene {
    In their own group, so sibling-index() counts the ticks only, like in CSS:
    .tick.on * 7 then .tick * 4 are numbered 1 to 11, one arc. */
 #meter {
-  translate: 2.8 0.5 0.55;
+  translate: -2.8 0.5 0.55;
 }
 
 .tick {
   --a: calc(sibling-index() * 24deg + 150deg);
   size: 0.07 0.05 0.2;
-  translate: calc(cos(var(--a)) * 0.78) 0.03 calc(sin(var(--a)) * 0.78);
-  rotate-y: calc(-1 * var(--a) + 90deg);
+  translate: calc(cos(var(--a)) * -0.78) 0.03 calc(sin(var(--a)) * 0.78);
+  rotate-y: calc(var(--a) - 90deg);
   color: #3a3a42;
 }
 
@@ -271,10 +271,10 @@ scene {
 
 @keyframes turn {
   from {
-    rotate-y: 50deg;
+    rotate-y: -50deg;
   }
   to {
-    rotate-y: -130deg;
+    rotate-y: 130deg;
   }
 }
 

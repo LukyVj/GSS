@@ -697,6 +697,20 @@ The public development hooks carry WebGPU types, so `@webgpu/types` is a type-on
 
 **Why**: a color wheel, a pie chart, a dial, the sweep of a clock hand, the stripes of a beach ball: shapes that turn, which linear and radial gradients cannot draw.
 
+## 99. The screen is not mirrored
+
+**Decision** (Lucas, Oct. 2): the camera no longer mirrors the scene. Its right vector was `cross(up, forward)`, which pointed to −x: a scene was drawn as in a mirror, `translate: 2 0 0` on the left, `rotate-z` counterclockwise, and everything drawn in an object's own space (gradients, textures, `path` and `prism`, the motion path) flipped left to right. It is now `cross(forward, up)`, and `up` is `cross(right, forward)`.
+
+- The axes are those of a CSS page: x to the right, y up, z toward the viewer. `rotate-x`, `rotate-y` and `rotate-z` turn like CSS `rotateX()`, `rotateY()` and `rotate()` (a positive `rotate-z` is clockwise). `ray()`, `conic-gradient()` and `linear-gradient(to right)` now show on screen what decisions 82, 97 and 98 described.
+- `light` and `camera-angle` keep their meaning in the scene's space (azimuth 0deg on +z, 90deg on +x), so 90deg is now on the right.
+- To keep the look of every existing scene, the scenes of the repo were mirrored in x (the x of `translate` and `camera-target`, the angles of `rotate-y` and `rotate-z`, the azimuth of `light` and `camera-angle`), and the runtime turns the camera the other way (`camera-spin`, the mouse drag, the Shadertoy export), so a spinning or dragged scene moves on screen as before. The default light becomes `-45deg 54.7deg` (from the upper left, in front), the light every scene had on screen.
+- What an object draws in its own space was not mirrored: it now appears as written. The perfume label reads "S", the macro pad's labels and the pixel textures read the right way, the conic dial turns clockwise. The home logo drops the `rotate-y: 180deg` that compensated for the mirror.
+- Checked by rendering the 222 scenes and examples before and after (WebGL2, SwiftShader, at 0 s and 1.3 s): 197 identical to the pixel; the others differ only by the content above, the `random()` examples, and the grain of frosted glass (a noise in world space).
+
+**Accepted limits**: scenes written for 0.0.2 or earlier, and links shared before, show mirrored; the changelog says what to negate. The `random()` examples draw their mirror image.
+
+**Why**: GSS takes the behavior of CSS where a CSS notion exists, and the mirror broke it everywhere x appears: `translate`, `rotate-y`, `rotate-z`, gradients, images, SVG paths. A logo pasted from Figma came out backwards.
+
 ## Open questions
 
 - **Targeting multiplied ids**: should `#hero` target `hero-1`, `hero-2` and `hero-3`?

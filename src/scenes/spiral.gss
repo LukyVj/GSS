@@ -18,7 +18,7 @@ scene {
   --i: sibling-index();
   --r: calc(0.4 + var(--i) * 0.045);
   radius: calc(0.08 + var(--i) * 0.005);
-  translate: calc(cos(var(--i) * 30deg) * var(--r)) calc(var(--i) * 0.09) calc(sin(var(--i) * 30deg) * var(--r));
+  translate: calc(-1 * cos(var(--i) * 30deg) * var(--r)) calc(var(--i) * 0.09) calc(sin(var(--i) * 30deg) * var(--r));
   color: hsl(calc(var(--i) * 10) 85% 60%);
   material: metal(0.25);
 }

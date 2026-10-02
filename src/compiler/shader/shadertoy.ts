@@ -59,7 +59,7 @@ export function toShadertoy({ shader, camera }: CompiledScene): string {
   // constants, and the camera turns on its own like in the playground (camera-spin)
   return `// Made with GSS — GPU Style Sheets
 // The camera of the scene, fixed at export time
-#define uCamera vec2(${float(camera.yaw)} + iTime * ${float(camera.spin)}, ${float(camera.pitch)})
+#define uCamera vec2(${float(camera.yaw)} - iTime * ${float(camera.spin)}, ${float(camera.pitch)})
 #define uDist ${float(camera.distance)}
 ${channels}
 ${body}`;

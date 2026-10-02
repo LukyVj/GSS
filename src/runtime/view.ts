@@ -214,7 +214,7 @@ export function createView(
   canvas.addEventListener("pointermove", (e) => {
     pointer = { x: e.clientX, y: e.clientY }; // before the return: hover works without a drag
     if (!camera.dragging) return;
-    camera.yaw -= e.movementX * 0.01;
+    camera.yaw += e.movementX * 0.01;
     camera.pitch += e.movementY * 0.01;
     camera.pitch = Math.min(Math.max(camera.pitch, 0.05), 1.4); // we block between the floor and the zenith
   });
@@ -276,7 +276,7 @@ export function createView(
     const dt = clock.tick(now); // seconds since the previous image (0 when frozen)
 
     // Automatic rotation, except during the drag
-    if (settings && !camera.dragging) camera.yaw += dt * settings.spin;
+    if (settings && !camera.dragging) camera.yaw -= dt * settings.spin;
 
     resize();
     gl!.viewport(0, 0, canvas.width, canvas.height);

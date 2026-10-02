@@ -117,8 +117,8 @@ void main() {/*@PICK_PIXEL*/
   float pitch = uCamera.y;
   vec3 ro = target + uDist * vec3(cos(pitch) * sin(yaw), sin(pitch), cos(pitch) * cos(yaw));
   vec3 forward = normalize(target - ro);
-  vec3 right = normalize(cross(vec3(0.0, 1.0, 0.0), forward));
-  vec3 up = cross(forward, right);
+  vec3 right = normalize(cross(forward, vec3(0.0, 1.0, 0.0)));
+  vec3 up = cross(right, forward);
   vec3 rd = normalize(uv.x * right + uv.y * up + 1.5 * forward);
 
   vec2 hit = march(ro, rd);

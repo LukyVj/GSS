@@ -32,7 +32,7 @@ scene {
 @keyframes tumble {
   to {
     rotate-x: 1turn;
-    rotate-z: 0.5turn;
+    rotate-z: -0.5turn;
   }
 }
 

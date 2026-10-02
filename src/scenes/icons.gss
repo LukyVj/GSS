@@ -19,7 +19,7 @@ scene {
 }
 
 .icon {
-  translate: calc(sibling-index() * 1.4 - 4.2) 0.7 0;
+  translate: calc(4.2 - sibling-index() * 1.4) 0.7 0;
   color: var(--accent);
   material: var(--finish);
   animation: turn 8s linear;
@@ -56,6 +56,6 @@ cone {
 
 @keyframes turn {
   to {
-    rotate-y: 1turn;
+    rotate-y: -1turn;
   }
 }

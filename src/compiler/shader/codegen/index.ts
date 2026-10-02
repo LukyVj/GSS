@@ -334,10 +334,10 @@ uniform vec2 uPick;`
       )
       // The background gradient needs the camera, and the reflections the gradients of objects
       .replace(
-        "  vec3 up = cross(forward, right);\n",
+        "  vec3 up = cross(right, forward);\n",
         isGradient(sceneStyles["background"])
-          ? "  vec3 up = cross(forward, right);\n  camForward = forward;\n  camRight = right;\n  camUp = up;\n"
-          : "  vec3 up = cross(forward, right);\n",
+          ? "  vec3 up = cross(right, forward);\n  camForward = forward;\n  camRight = right;\n  camUp = up;\n"
+          : "  vec3 up = cross(right, forward);\n",
       )
       .replace(
         "return diffuse(n, getMaterial(hit.y).color);",

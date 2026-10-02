@@ -48,7 +48,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 
 | Family       | Properties                                                                                         | Dec.   |
 | ------------ | -------------------------------------------------------------------------------------------------- | ------ |
-| Transforms   | `translate`, `rotate-x`, `rotate-y`, `rotate-z`, `scale` (uniform)                                 | 13     |
+| Transforms   | `translate`, `rotate-x`, `rotate-y`, `rotate-z`, `scale` (uniform); x to the right, like CSS        | 13, 99 |
 | Motion path  | `offset-path: path()` / `ray()`, `offset-distance` (animatable), `offset-rotate`                    | 97     |
 | Look         | `color`, `material`                                                                                | 26     |
 | Textures     | `texture: url("…")`, `image-rendering: pixelated`, `texture-size`                                  | 59     |
@@ -129,7 +129,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 
 ## Priorities
 
-**Next, in Lucas's order** (Oct. 1, evening; the Essentials below go first, Oct. 2): ~~`filter`~~ ✅ (decisions 83, 84), then ~~**motion path**~~ ✅ (decision 97), ~~**`conic-gradient()`**~~ ✅ (decision 98), **`setProperty()` from JS** (see Rendering passes / runtime API). After them: nesting with `&`, `transform-origin`, fog.
+**Next, in Lucas's order** (Oct. 1, evening; the Essentials below go first, Oct. 2): ~~`filter`~~ ✅ (decisions 83, 84), then ~~**motion path**~~ ✅ (decision 97), ~~**`conic-gradient()`**~~ ✅ (decision 98), then the mirrored screen fixed (decision 99, Lucas, Oct. 2), **`setProperty()` from JS** (see Rendering passes / runtime API). After them: nesting with `&`, `transform-origin`, fog.
 
 **Essentials** (added by Lucas, Oct. 2), **before the motion path**, in the order suggested by Claude: structure first (compile time, no runtime cost), then interaction, then scroll.
 

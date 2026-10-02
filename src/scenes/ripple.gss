@@ -21,12 +21,12 @@ scene {
   --case: #3a3a42;
   background: #0a0a0c;
   floor: #111114;
-  light: 140deg 32deg;
+  light: -140deg 32deg;
   ambient: 0.32;
   dpr: auto;
   camera-target: 0 0.85 0;
   camera-distance: 9;
-  camera-angle: 28deg 26deg;
+  camera-angle: -28deg 26deg;
   camera-spin: 120s;
 }
 
@@ -39,7 +39,7 @@ scene {
   --i: sibling-index();
   size: 0.58;
   corner-radius: 0.08;
-  translate: calc(var(--i) * 0.72 - 1.44) 0.29 0;
+  translate: calc(1.44 - var(--i) * 0.72) 0.29 0;
   color: var(--ink);
   material: metal(0.45);
   transition: 0.35s ease-out;
@@ -48,7 +48,7 @@ scene {
 }
 
 .cell:hover {
-  translate: calc(var(--i) * 0.72 - 1.44) 0.78 0;
+  translate: calc(1.44 - var(--i) * 0.72) 0.78 0;
   color: var(--accent);
   scale: 1.12;
   transition: 0.22s cubic-bezier(0.3, -0.4, 0.7, 1.4);
@@ -103,7 +103,7 @@ scene {
   --a: calc(sibling-index() * 90deg + 45deg);
   radius: 0.08;
   height: 0.45;
-  translate: calc(cos(var(--a)) * 3.1) 0.35 calc(sin(var(--a)) * 3.1);
+  translate: calc(cos(var(--a)) * -3.1) 0.35 calc(sin(var(--a)) * 3.1);
   color: rgb(255 210 120);
   material: metal(0.3);
   animation: glow 2s ease-in-out;

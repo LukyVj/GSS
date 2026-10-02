@@ -62,10 +62,10 @@
 scene {
   floor: #fefefe;
   background: #42429f;
-  light: 200deg 10deg;
+  light: -200deg 10deg;
   ambient: 0.4;
   camera-distance: 14;
-  camera-angle: 180deg 45deg;
+  camera-angle: -180deg 45deg;
   camera-spin: 100s;
 }
 
@@ -77,12 +77,12 @@ scene {
 }
 
 #left {
-  translate: -2.5 0.5 0;
+  translate: 2.5 0.5 0;
 }
 
 #right {
-  translate: 2.5 0.5 0;
-  rotate-y: 45deg;
+  translate: -2.5 0.5 0;
+  rotate-y: -45deg;
   color: #ff5a36;
 }
 
@@ -113,11 +113,11 @@ scene {
 
 /* Two drops that merge */
 #drop-a {
-  translate: -3.4 1 -6;
+  translate: 3.4 1 -6;
 }
 
 #drop-b {
-  translate: -2.6 1.2 -6;
+  translate: 2.6 1.2 -6;
   blend: 0.05;
 }
 
@@ -137,13 +137,13 @@ scene {
 
 /* A hole with sharp edges */
 #box-sharp {
-  translate: 3 1 -6;
+  translate: -3 1 -6;
   size: 1.5;
   color: #e8e4dc;
 }
 
 #hole-sharp {
-  translate: 3 1 -6;
+  translate: -3 1 -6;
   radius: 0.95;
   operation: subtract;
   color: #14bc55;
@@ -153,7 +153,7 @@ scene {
 
 /* Rotation, scale and color with from / to */
 #spinner {
-  translate: -1.5 1 6;
+  translate: 1.5 1 6;
   color: #ff5a36;
   animation: show 3s ease-in-out alternate;
 }
@@ -164,7 +164,7 @@ scene {
     scale: 1;
   }
   to {
-    rotate-y: 180deg;
+    rotate-y: -180deg;
     scale: 1.4;
     color: #3a7bff;
   }
@@ -172,58 +172,58 @@ scene {
 
 /* Translate with percentages */
 #ball {
-  translate: 1.5 0.5 6;
+  translate: -1.5 0.5 6;
   color: #ff5a36;
   animation: float 2s ease-in-out infinite;
 }
 
 @keyframes float {
   0% {
-    translate: 1.5 0.5 6;
+    translate: -1.5 0.5 6;
   }
   50% {
-    translate: 1.5 2 6;
+    translate: -1.5 2 6;
   }
   100% {
-    translate: 1.5 0.5 6;
+    translate: -1.5 0.5 6;
   }
 }
 
 /* ===== Zone 4: materials (left, x = -7) ===== */
 
 #m-matte {
-  translate: -7 0.5 -3;
+  translate: 7 0.5 -3;
   radius: 0.5;
   color: #ff5a36;
 }
 
 #m-gold {
-  translate: -7 0.5 -1.8;
+  translate: 7 0.5 -1.8;
   radius: 0.5;
   material: gold;
 }
 
 #m-chrome {
-  translate: -7 0.5 -0.6;
+  translate: 7 0.5 -0.6;
   radius: 0.5;
   material: chrome;
 }
 
 #m-jelly {
-  translate: -7 0.5 0.6;
+  translate: 7 0.5 0.6;
   radius: 0.5;
   color: #ff5a36;
   material: jelly;
 }
 
 #m-glass {
-  translate: -7 0.6 1.8;
+  translate: 7 0.6 1.8;
   radius: 0.5;
   material: glass(1.5, hammered 0.3);
 }
 
 #m-ice {
-  translate: -7 0.6 3;
+  translate: 7 0.6 3;
   size: 0.9;
   material: ice;
 }
@@ -231,27 +231,27 @@ scene {
 /* ===== Zone 5: shapes (right, x = 7) ===== */
 
 #s-cylinder {
-  translate: 7 0.5 -3;
+  translate: -7 0.5 -3;
   radius: 0.4;
   height: 1.6;
 }
 
 #s-cone {
-  translate: 7 0.5 -1.5;
+  translate: -7 0.5 -1.5;
   radius: 0.5;
   height: 1.2;
   color: #3ad16b;
 }
 
 #s-shade {
-  translate: 7 0.5 0;
+  translate: -7 0.5 0;
   radius: 0.6 0.3;
   height: 0.8;
   material: gold;
 }
 
 #s-pill {
-  translate: 7 0.5 1.5;
+  translate: -7 0.5 1.5;
   radius: 0.25;
   height: 1.4;
   color: #ff5a36;
@@ -259,7 +259,7 @@ scene {
 }
 
 #s-bean {
-  translate: 7 0.5 3;
+  translate: -7 0.5 3;
   radius: 0.35;
   height: 1.2;
   rotate-x: 90deg;
@@ -270,7 +270,7 @@ scene {
 /* The GSS logo, drawn with two paths */
 
 .logo {
-  translate: 7 1.3 -6;
+  translate: -7 1.3 -6;
 }
 
 path.logo {
@@ -298,7 +298,7 @@ path.logo {
 
 /* A floor of small tiles: texture-size repeats the image */
 #t-tiles {
-  translate: -7 0.05 6;
+  translate: 7 0.05 6;
   size: 3 0.1 3;
   texture: url("/textures/dirt.png");
   texture-size: 0.5;
@@ -320,13 +320,13 @@ path.logo {
 }
 
 #t-grass {
-  translate: -7.7 0.6 5.4;
+  translate: 7.7 0.6 5.4;
 }
 
 /* The same dirt, pixelated on a cube and smooth on a sphere (cut like the cube around it) */
 #t-dirt {
-  translate: -6.3 0.6 5.4;
-  rotate-y: 20deg;
+  translate: 6.3 0.6 5.4;
+  rotate-y: -20deg;
   texture: url("/textures/dirt.png");
   image-rendering: pixelated;
 }
@@ -337,7 +337,7 @@ path.logo {
 }
 
 #t-smooth {
-  translate: -7 0.6 6.8;
+  translate: 7 0.6 6.8;
   radius: 0.5;
   texture: url("/textures/dirt.png");
 }

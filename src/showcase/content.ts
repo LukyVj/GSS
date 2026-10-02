@@ -80,7 +80,7 @@ export const USE_CASES: UseCase[] = [
     scene: spiral,
     snippet: {
       lang: "gss",
-      code: `.bead {\n  --i: sibling-index();\n  translate: calc(cos(var(--i) * 30deg) * var(--r))\n             calc(var(--i) * 0.09)\n             calc(sin(var(--i) * 30deg) * var(--r));\n  color: hsl(calc(var(--i) * 10) 85% 60%);\n}`,
+      code: `.bead {\n  --i: sibling-index();\n  translate: calc(-1 * cos(var(--i) * 30deg) * var(--r))\n             calc(var(--i) * 0.09)\n             calc(sin(var(--i) * 30deg) * var(--r));\n  color: hsl(calc(var(--i) * 10) 85% 60%);\n}`,
     },
     features: [
       ["sibling-index()", "fn-sibling-index"],
@@ -98,7 +98,7 @@ export const USE_CASES: UseCase[] = [
     scene: shadertoy,
     snippet: {
       lang: "gss",
-      code: `#ring {\n  material: gold;\n  animation: tumble 7s linear;\n}\n\n@keyframes tumble {\n  to { rotate-x: 1turn; rotate-z: 0.5turn; }\n}`,
+      code: `#ring {\n  material: gold;\n  animation: tumble 7s linear;\n}\n\n@keyframes tumble {\n  to { rotate-x: 1turn; rotate-z: -0.5turn; }\n}`,
     },
     features: [
       ["material", "material"],

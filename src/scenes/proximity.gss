@@ -13,7 +13,7 @@ scene {
   --soft: #ffc4a8;
   background: #0a0a0c;
   floor: #111114;
-  light: 160deg 28deg;
+  light: -160deg 28deg;
   ambient: 0.34;
   dpr: auto;
   camera-target: 0 0.7 0;
@@ -25,7 +25,7 @@ scene {
   --i: sibling-index();
   size: 0.55;
   corner-radius: 0.1;
-  translate: calc(var(--i) * 0.68 - 4.76) 0.35 0;
+  translate: calc(4.76 - var(--i) * 0.68) 0.35 0;
   color: var(--ink);
   material: metal(0.4);
   transition: 0.28s ease-out;
@@ -50,14 +50,14 @@ scene {
 .cell:has(+ .cell:hover) {
   scale: 1.3;
   color: var(--hot);
-  translate: calc(var(--i) * 0.68 - 4.76) 0.55 0;
+  translate: calc(4.76 - var(--i) * 0.68) 0.55 0;
   transition: 0.25s ease-out;
 }
 
 .cell:hover {
   scale: 1.45;
   color: tomato;
-  translate: calc(var(--i) * 0.68 - 4.76) 0.75 0;
+  translate: calc(4.76 - var(--i) * 0.68) 0.75 0;
   transition: 0.2s cubic-bezier(0.3, -0.4, 0.7, 1.4);
 }
 

@@ -103,7 +103,7 @@ export function readColor(value: Token[] | undefined, fallback = "vec3(0.9)"): s
 
 // Reads "azimuth elevation" and returns the direction toward the sun
 export function readLight(value: Token[] | undefined): number[] {
-  if (!value) return [0.408, 0.816, 0.408];
+  if (!value) return [-0.408, 0.816, 0.408];
   if (value.length !== 2) {
     throw errorAt(value, "light expects two angles, like: light: 45deg 60deg;");
   }
