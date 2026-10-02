@@ -42,7 +42,7 @@ function link(href: string, text: string, className?: string): HTMLAnchorElement
 }
 
 // Gives the parts of an entry an anchor, and returns them for "On this page"
-function partsOf(article: HTMLElement): { id: string; label: string }[] {
+export function partsOf(article: HTMLElement): { id: string; label: string }[] {
   const parts: { id: string; label: string }[] = [];
   const table = article.querySelector<HTMLElement>(":scope > dl");
   if (table) {
@@ -53,7 +53,9 @@ function partsOf(article: HTMLElement): { id: string; label: string }[] {
   const examples = [...article.querySelectorAll<HTMLElement>(":scope > .example")];
   examples.forEach((example, i) => {
     example.id = `${article.id}--example-${i + 1}`;
-    parts.push({ id: example.id, label: examples.length > 1 ? `example ${i + 1}` : "example" });
+    const caption = example.nextElementSibling;
+    const name = caption?.matches(".example-name") ? caption.textContent?.trim() : "";
+    parts.push({ id: example.id, label: name || (examples.length > 1 ? `example ${i + 1}` : "example") });
   });
   return parts;
 }

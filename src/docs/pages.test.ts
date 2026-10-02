@@ -1,5 +1,32 @@
+// @vitest-environment happy-dom
 import { describe, it, expect } from "vitest";
-import { resolvePage, neighbors, type PageIndex } from "./pages";
+import { resolvePage, neighbors, partsOf, type PageIndex } from "./pages";
+import { renderDocs } from "./render";
+import { PROPERTIES, AT_RULES, SELECTORS, SHAPE_DOCS, FUNCTIONS } from "../compiler/registry/registry";
+
+describe("On this page example names", () => {
+  it("uses the documented names and preserves existing example links", () => {
+    const root = document.createElement("div");
+    root.innerHTML = renderDocs(PROPERTIES, AT_RULES, SELECTORS, SHAPE_DOCS, FUNCTIONS);
+    const article = root.querySelector<HTMLElement>("#fn-abs-sqrt-pow")!;
+    expect(partsOf(article).slice(1)).toEqual([
+      { id: "fn-abs-sqrt-pow--example-1", label: "abs()" },
+      { id: "fn-abs-sqrt-pow--example-2", label: "sqrt()" },
+      { id: "fn-abs-sqrt-pow--example-3", label: "pow()" },
+      { id: "fn-abs-sqrt-pow--example-4", label: "abs(), sqrt() and pow() together" },
+    ]);
+    expect(article.querySelectorAll(".example")[1].id).toBe("fn-abs-sqrt-pow--example-2");
+  });
+
+  it("falls back for unnamed examples without borrowing another example's name", () => {
+    const article = document.createElement("article");
+    article.id = "sample";
+    article.innerHTML = '<div class="example"></div><div class="example"></div><p class="example-name"> A &amp; B </p>';
+    expect(partsOf(article).map((part) => part.label)).toEqual(["example 1", "A & B"]);
+    article.innerHTML = '<div class="example"></div><p class="example-name"> </p>';
+    expect(partsOf(article)).toEqual([{ id: "sample--example-1", label: "example" }]);
+  });
+});
 
 const index: PageIndex = {
   sections: [
