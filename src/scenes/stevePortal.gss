@@ -1,0 +1,811 @@
+@scene {
+  group#world {
+
+    /* CSG FIRST: intersect must precede the scenery. */
+
+    group#crystal-display {
+      group#crystal {
+        cube#crystal-block;
+        sphere#crystal-trim;
+      }
+    }
+
+    /* The opening subtracts from the existing geometry.
+       The crystal is safely outside its bounds. */
+
+    group#portal {
+      cube#obsidian;
+      cube#opening;
+      cube#veil;
+      path#sigil;
+
+      path#frame-trace;
+
+      group#runners {
+        cube.rune * 4;
+      }
+    }
+
+    /* Everything below is added after the CSG cuts. */
+
+    cube#island-base;
+
+    group#terrain {
+      group.row * 3 {
+        cube.grass * 7;
+      }
+    }
+
+    group#trees {
+      group.tree * 2 {
+        cube.trunk;
+        cube.leaves.lower;
+        cube.leaves.upper;
+      }
+    }
+
+    group#lanterns {
+      group.lantern * 2 {
+        cube.post;
+        cube.lamp;
+        cube.cap;
+      }
+    }
+
+    group#redstone {
+      path#circuit;
+    }
+
+    cube#switch;
+
+    group#embers {
+      cube.spark * 6;
+    }
+
+    group#slime {
+      cube#slime-body;
+      sphere#slime-crown;
+      cube.slime-eye * 2;
+    }
+
+    group#steve {
+      group#step {
+        cube.shirt;
+
+        group#head {
+          cube.skin;
+          cube.hair;
+          cube.eye-white.left;
+          cube.eye-white.right;
+          cube.pupil.left;
+          cube.pupil.right;
+          cube.nose;
+          cube.beard;
+        }
+
+        group.arm.left {
+          cube.sleeve;
+          cube.forearm;
+        }
+
+        group.arm.right {
+          cube.sleeve;
+          cube.forearm;
+        }
+
+        group.leg.left {
+          cube.trousers;
+          cube.boot;
+        }
+
+        group.leg.right {
+          cube.trousers;
+          cube.boot;
+        }
+      }
+    }
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   ART DIRECTION
+   Twilight, warm earth, violet portal.
+   No glass, metal or post-processing.
+   ═══════════════════════════════════════════════ */
+
+scene {
+  --violet: #bd8aeb;
+  --mint: #91dab5;
+  --redstone: #a54643;
+  --skin: #bc8968;
+
+  background: linear-gradient(
+    #34354b,
+    #777080 65%,
+    #bba092
+  );
+
+  floor: #77735f;
+
+  camera-distance: 12;
+  camera-angle: 16deg 23deg;
+  camera-target: 0 1.8 0;
+
+  light: 310deg 42deg;
+  ambient: 0.52;
+  dpr: 1;
+}
+
+cube,
+sphere,
+prism,
+path {
+  material: matte();
+}
+
+cube {
+  corner-radius: 0;
+}
+
+/* ═══════════════════════════════════════════════
+   01 — CRYSTAL / INTERSECTION + SCROLL
+   A sphere clips the corners of a rotated cube.
+   ═══════════════════════════════════════════════ */
+
+#crystal-display {
+  translate: -2.3 1.35 0.65;
+  animation: inspect-crystal 1s linear;
+  animation-timeline: scroll();
+}
+
+#crystal {
+  animation: crystal-float 2.8s ease-in-out alternate;
+}
+
+#crystal-block {
+  size: 0.42;
+  rotate-y: 35deg;
+  rotate-z: 45deg;
+  color: var(--mint);
+}
+
+#crystal-trim {
+  radius: 0.26;
+  operation: intersect;
+  blend: 0.012;
+  color: #70bc99;
+}
+
+@keyframes crystal-float {
+  from {
+    translate: 0 0 0;
+  }
+  to {
+    translate: 0 0.12 0;
+  }
+}
+
+@keyframes inspect-crystal {
+  from {
+    rotate-y: 0deg;
+    scale: 1;
+  }
+  to {
+    rotate-y: 1turn;
+    scale: 1.35;
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   02 — PORTAL / SUBTRACTION
+   One solid block, one cutter, one inner surface.
+   ═══════════════════════════════════════════════ */
+
+#portal {
+  --track: path(
+    "M-1.14 -1.3 H1.14 V1.3 H-1.14 Z"
+  );
+
+  translate: 0 2.3 -0.7;
+}
+
+#obsidian {
+  size: 2.55 2.9 0.5;
+  color: #373044;
+}
+
+#opening {
+  size: 2.05 2.4 0.9;
+  operation: subtract;
+  blend: 0.018;
+  color: #4c3d5e;
+}
+
+#veil {
+  size: 2.025 2.375 0.035;
+  translate: 0 0 0.02;
+
+  color: repeating-radial-gradient(
+    circle at 50% 50%,
+    #352044 0% 12%,
+    #6d438b 12% 23%,
+    #a471bb 23% 26%
+  );
+
+  animation: portal-breathe 3s ease-in-out alternate;
+}
+
+@keyframes portal-breathe {
+  from {
+    scale: 0.97;
+  }
+  to {
+    scale: 1;
+  }
+}
+
+/* An angular SVG sigil rotates inside the opening. */
+
+#sigil {
+  d: path(
+    "M-0.6 -0.75 H0.45 V-0.45 H-0.3 V-0.15 H0.15 V0.15 H-0.15 V0.45 H0.6 V0.75 H-0.45"
+  );
+
+  stroke-width: 0.045;
+  translate: 0 0 0.075;
+  color: #dbb5ed;
+
+  animation: sigil-turn 18s linear;
+  transition: 0.35s ease-out;
+}
+
+@keyframes sigil-turn {
+  to {
+    rotate-z: 1turn;
+  }
+}
+
+/* A visible track and four blocks share one SVG path. */
+
+#frame-trace {
+  d: var(--track);
+  stroke-width: 0.025;
+  translate: 0 0 0.275;
+  color: #846099;
+}
+
+.rune {
+  size: 0.16 0.07 0.07;
+  translate: 0 0 0.29;
+
+  offset-path: var(--track);
+  offset-rotate: auto;
+
+  color: var(--violet);
+
+  animation: rune-lap 8s linear;
+  animation-delay: calc(
+    (sibling-index() - 1) * -8s / sibling-count()
+  );
+
+  transition: 0.25s ease-out;
+}
+
+.rune:nth-child(even) {
+  color: #e1b9de;
+}
+
+@keyframes rune-lap {
+  from {
+    offset-distance: 0%;
+  }
+  to {
+    offset-distance: 100%;
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   03 — ISLAND / NESTED MULTIPLICATION
+   ═══════════════════════════════════════════════ */
+
+#island-base {
+  size: 6.6 0.25 2.7;
+  translate: 0 0.125 0;
+  color: #676659;
+}
+
+.row {
+  translate: 0 0 calc(sibling-index() - 2);
+}
+
+.grass {
+  size: 1 0.65 1;
+  translate: calc(sibling-index() - 4) 0.575 0;
+
+  texture: url("/textures/grass-side.png");
+  image-rendering: pixelated;
+}
+
+.grass::top {
+  texture: url("/textures/grass-top.png");
+}
+
+.grass::bottom {
+  texture: url("/textures/dirt.png");
+}
+
+/* ═══════════════════════════════════════════════
+   04 — TREES / INHERITED VARIABLES + CONDITIONS
+   ═══════════════════════════════════════════════ */
+
+.tree {
+  --season: green;
+  translate: -2.55 0.9 -0.95;
+}
+
+.tree + .tree {
+  --season: autumn;
+  translate: 2.55 0.9 -0.95;
+  scale: 0.85;
+}
+
+.trunk {
+  size: 0.3 1.1 0.3;
+  translate: 0 0.55 0;
+  color: #765339;
+}
+
+.leaves {
+  color: if(
+    style(--season: autumn): #b58b53;
+    else: #677e50
+  );
+}
+
+.leaves.lower {
+  size: 1.15 0.6 1;
+  translate: 0 1.13 0;
+}
+
+.leaves.upper {
+  size: 0.8 0.5 0.75;
+  translate: -0.1 1.65 0;
+
+  color: if(
+    style(--season: autumn): #d1aa65;
+    else: #8b9b60
+  );
+}
+
+/* ═══════════════════════════════════════════════
+   05 — LANTERNS
+   Two palettes from inherited custom properties.
+   ═══════════════════════════════════════════════ */
+
+.lantern {
+  --tone: #d7aa75;
+
+  translate:
+    calc((sibling-index() - 1.5) * 3.35)
+    0.9
+    -0.05;
+}
+
+.lantern:last-child {
+  --tone: #c29dde;
+}
+
+.post {
+  size: 0.1 0.48 0.1;
+  translate: 0 0.24 0;
+  color: #68513c;
+}
+
+.lamp {
+  size: 0.22 0.23 0.22;
+  translate: 0 0.58 0;
+
+  color: color-mix(
+    in oklab,
+    var(--tone) 70%,
+    #554854
+  );
+
+  transition: 0.35s ease-out;
+}
+
+.cap {
+  size: 0.29 0.05 0.29;
+  translate: 0 0.72 0;
+  color: #675643;
+}
+
+/* ═══════════════════════════════════════════════
+   06 — REDSTONE / SVG ON THE GROUND
+   The shared view-box preserves the route's position.
+   ═══════════════════════════════════════════════ */
+
+#redstone {
+  translate: 0 0.927 0;
+  rotate-x: 90deg;
+}
+
+#circuit {
+  d: path("M-1.7 -1.08 H-0.8 V0.6 H0");
+  view-box: -2 -1.5 4 3;
+  stroke-width: 0.045;
+  color: var(--redstone);
+  transition: 0.25s ease-out;
+}
+
+#switch {
+  size: 0.28 0.12 0.28;
+  translate: -1.7 0.975 1.08;
+  color: #a68e76;
+  transition: 0.2s ease-out;
+}
+
+#switch:hover {
+  translate: -1.7 1.005 1.08;
+  color: #ddc5a4;
+}
+
+#switch:active {
+  translate: -1.7 0.945 1.08;
+  color: #f1b0a0;
+  transition: 0.08s ease-out;
+}
+
+/* One interaction coordinates several objects.
+   Only animatable properties change here. */
+
+#world:has(#switch:hover) #circuit {
+  color: #d96d65;
+}
+
+#world:has(#switch:active) #circuit {
+  color: #ffc1a8;
+}
+
+#world:has(#switch:active) .lamp {
+  color: #fff0c5;
+  scale: 1.12;
+}
+
+#world:has(#switch:active) #sigil {
+  color: #fff0f2;
+  scale: 1.12;
+}
+
+#world:has(#switch:active) .rune {
+  color: #fff0f2;
+  scale: 1.5;
+}
+
+#world:has(#switch:active) .spark {
+  scale: 1.8;
+}
+
+/* ═══════════════════════════════════════════════
+   07 — PORTAL FRAGMENTS
+   Random values are computed once, not every frame.
+   Six cubes, staggered along the same animation.
+   ═══════════════════════════════════════════════ */
+
+.spark {
+  --x: random(-0.85, 0.85);
+  --z: random(-0.35, 0.15);
+  --rise: 1.05;
+
+  size: random(0.035, 0.065);
+
+  translate: var(--x) var(--rise) var(--z);
+  rotate-z: random(0deg, 90deg, 15deg);
+
+  color: hsl(random(265, 310) 45% 77%);
+
+  animation: fragment-rise 4.8s linear;
+  animation-delay: calc(
+    (sibling-index() - 1) * -4.8s / sibling-count()
+  );
+
+  transition: 0.25s ease-out;
+}
+
+.spark:nth-child(3n) {
+  color: #e4c5df;
+}
+
+@keyframes fragment-rise {
+  from {
+    --rise: 1.05;
+    rotate-y: 0deg;
+  }
+  to {
+    --rise: 3.8;
+    rotate-y: 180deg;
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   08 — SLIME / SMOOTH UNION
+   A cube and sphere blend into one soft silhouette.
+   Eyes are added afterwards to keep them crisp.
+   ═══════════════════════════════════════════════ */
+
+#slime {
+  translate: 2.15 1.18 0.7;
+  animation: slime-hop 2.4s ease-in-out;
+}
+
+#slime-body {
+  size: 0.52 0.4 0.45;
+  corner-radius: 0.035;
+  color: #91b965;
+}
+
+#slime-crown {
+  radius: 0.25;
+  translate: 0 0.12 0;
+
+  operation: union;
+  blend: 0.12;
+
+  color: #a5c777;
+}
+
+.slime-eye {
+  size: 0.075 0.09 0.025;
+  translate:
+    calc((sibling-index() - 3.5) * 0.21)
+    0.055
+    0.235;
+
+  color: #405637;
+}
+
+@keyframes slime-hop {
+  0%, 100% {
+    translate: 2.15 1.18 0.7;
+    rotate-z: 0deg;
+  }
+  40% {
+    translate: 2.15 1.57 0.7;
+    rotate-z: -5deg;
+  }
+  70% {
+    translate: 2.15 1.18 0.7;
+    rotate-z: 3deg;
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   09 — STEVE / PORTAL CHOREOGRAPHY
+   Walk left, turn, enter, disappear, respawn.
+   ═══════════════════════════════════════════════ */
+
+#steve {
+  scale: 0.58;
+  translate: 1.55 0.925 1;
+  rotate-y: 270deg;
+  animation: journey 12s linear;
+}
+
+@keyframes journey {
+  0% {
+    translate: 1.55 0.925 1;
+    rotate-y: 270deg;
+    scale: 0.58;
+  }
+
+  30% {
+    translate: 0 0.925 1;
+    rotate-y: 270deg;
+    scale: 0.58;
+  }
+
+  37% {
+    translate: 0 0.925 1;
+    rotate-y: 180deg;
+    scale: 0.58;
+  }
+
+  62% {
+    translate: 0 0.925 -0.96;
+    rotate-y: 180deg;
+    scale: 0.58;
+  }
+
+  66% {
+    translate: 0 0.925 -0.96;
+    rotate-y: 180deg;
+    scale: 0.001;
+  }
+
+  78% {
+    translate: 1.55 0.925 1;
+    rotate-y: 270deg;
+    scale: 0.001;
+  }
+
+  86%, 100% {
+    translate: 1.55 0.925 1;
+    rotate-y: 270deg;
+    scale: 0.58;
+  }
+}
+
+#step {
+  --lift: 0;
+
+  translate: 0 var(--lift) 0;
+  animation: footfall 0.4s ease-in-out;
+}
+
+@keyframes footfall {
+  0%, 100% {
+    --lift: 0;
+  }
+  50% {
+    --lift: 0.045;
+  }
+}
+
+.shirt {
+  size: 0.7 0.78 0.36;
+  translate: 0 1.2 0;
+  color: #2ba5a5;
+}
+
+/* ── FACE ───────────────────────────────────── */
+
+#head {
+  translate: 0 1.9 0;
+}
+
+.skin {
+  size: 0.62;
+  color: var(--skin);
+}
+
+.hair {
+  size: 0.64 0.14 0.64;
+  translate: 0 0.27 0;
+  color: #3b2b22;
+}
+
+.eye-white {
+  size: 0.14 0.075 0.025;
+  color: #e9e2d7;
+}
+
+.eye-white.left {
+  translate: -0.16 0.065 0.32;
+}
+
+.eye-white.right {
+  translate: 0.16 0.065 0.32;
+}
+
+.pupil {
+  size: 0.065 0.075 0.018;
+  color: #555080;
+}
+
+.pupil.left {
+  translate: -0.125 0.065 0.34;
+}
+
+.pupil.right {
+  translate: 0.125 0.065 0.34;
+}
+
+.nose {
+  size: 0.12 0.095 0.06;
+  translate: 0 -0.045 0.33;
+  color: #a57252;
+}
+
+.beard {
+  size: 0.24 0.12 0.03;
+  translate: 0 -0.19 0.325;
+  color: #593d2d;
+}
+
+/* ── SHOULDERS ──────────────────────────────── */
+
+.arm.left {
+  translate: -0.49 1.57 0;
+}
+
+.arm.right {
+  translate: 0.49 1.57 0;
+}
+
+.sleeve {
+  size: 0.27 0.26 0.35;
+  translate: 0 -0.12 0;
+  color: #26969a;
+}
+
+.forearm {
+  size: 0.26 0.48 0.33;
+  translate: 0 -0.49 0;
+  color: var(--skin);
+}
+
+/* ── HIPS ───────────────────────────────────── */
+
+.leg.left {
+  translate: -0.18 0.81 0;
+}
+
+.leg.right {
+  translate: 0.18 0.81 0;
+}
+
+.trousers {
+  size: 0.32 0.64 0.34;
+  translate: 0 -0.32 0;
+  color: #514d8b;
+}
+
+.boot {
+  size: 0.33 0.13 0.4;
+  translate: 0 -0.705 0.025;
+  color: #484851;
+}
+
+.arm,
+.leg {
+  animation: stride 0.4s ease-in-out alternate;
+}
+
+.arm.left,
+.leg.right {
+  animation-direction: alternate-reverse;
+}
+
+@keyframes stride {
+  from {
+    rotate-x: -24deg;
+  }
+  to {
+    rotate-x: 24deg;
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   10 — RESPONSIVE / REDUCED MOTION
+   ═══════════════════════════════════════════════ */
+
+@media (max-width: 600px) {
+  scene {
+    camera-distance: 15;
+    camera-angle: 26deg 29deg;
+    dpr: 0.65;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  #steve {
+    translate: 0.75 0.925 1;
+    rotate-y: 15deg;
+    scale: 0.58;
+  }
+
+  .rune {
+    offset-distance: calc(
+      (sibling-index() - 1) * 100% / sibling-count()
+    );
+  }
+
+  .spark {
+    --rise: calc(1.2 + sibling-index() * 0.35);
+  }
+}

@@ -1,0 +1,635 @@
+@scene {
+  group#village {
+    cube#foundation;
+
+    group#terrain {
+      group.row * 3 {
+        cube.grass * 7;
+      }
+    }
+
+    group#house {
+      cube.wall;
+      prism.roof;
+      cube.chimney;
+      cube.door;
+      cube.window * 2;
+    }
+
+    group.tree * 2 {
+      cube.trunk;
+      cube.leaves.lower;
+      cube.leaves.upper;
+    }
+
+    cube#pond;
+
+    group#reeds {
+      cube.reed * 3;
+    }
+
+    group#garden {
+      cube.crop * 5;
+    }
+
+    group#chest {
+      cube.box;
+      cube.lid;
+      cube.lock;
+      prism.emerald;
+    }
+
+    group#flight-plane {
+      group#bee {
+        cube.bee-body;
+        cube.wing.left;
+        cube.wing.right;
+      }
+    }
+
+    group#steve {
+      group#step {
+        cube.shirt;
+
+        group#head {
+          cube.skin;
+          cube.hair;
+          cube.eye-white.left;
+          cube.eye-white.right;
+          cube.pupil.left;
+          cube.pupil.right;
+          cube.nose;
+          cube.beard;
+        }
+
+        group.arm.left {
+          cube.sleeve;
+          cube.forearm;
+        }
+
+        group.arm.right {
+          cube.sleeve;
+          cube.forearm;
+        }
+
+        group.leg.left {
+          cube.trousers;
+          cube.boot;
+        }
+
+        group.leg.right {
+          cube.trousers;
+          cube.boot;
+        }
+      }
+    }
+  }
+}
+
+/* ── GOLDEN-HOUR DIORAMA ─────────────────────── */
+
+scene {
+  --skin: #bd8b68;
+  --shirt: #28aaaa;
+  --wood: #88603c;
+  --leaf: #638244;
+
+  background: linear-gradient(#e8cbb2, #f7ead0);
+  floor: #d7c6a5;
+
+  camera-distance: 12;
+  camera-angle: 18deg 29deg;
+  camera-target: 0 1.45 0;
+
+  light: 305deg 38deg;
+  ambient: 0.48;
+  dpr: 1;
+}
+
+cube,
+prism {
+  material: matte();
+}
+
+cube {
+  corner-radius: 0;
+}
+
+/* ── TERRAIN / 7 × 3 BLOCKS ──────────────────── */
+
+#foundation {
+  size: 6.6 0.2 2.6;
+  translate: 0 0.1 0;
+  color: #817967;
+}
+
+.row {
+  translate: 0 0 calc(sibling-index() - 2);
+}
+
+.grass {
+  size: 1 0.6 1;
+  translate: calc(sibling-index() - 4) 0.5 0;
+
+  texture: url("/textures/grass-side.png");
+  image-rendering: pixelated;
+}
+
+.grass::top {
+  texture: url("/textures/grass-top.png");
+}
+
+.grass::bottom {
+  texture: url("/textures/dirt.png");
+}
+
+/* ── HOUSE / EXTRUDED ROOF ───────────────────── */
+
+#house {
+  translate: -0.35 0.8 -0.72;
+}
+
+.wall {
+  size: 1.6 1.2 1.25;
+  translate: 0 0.6 0;
+  color: #dbbd86;
+}
+
+.roof {
+  d: polygon(-1 0.4, 0 -0.4, 1 0.4);
+  depth: 1.6;
+  translate: 0 1.58 0;
+  color: #995841;
+}
+
+.chimney {
+  size: 0.26 0.65 0.3;
+  translate: 0.48 1.72 -0.22;
+  color: #796c5d;
+}
+
+.door {
+  size: 0.36 0.76 0.055;
+  translate: 0 0.38 0.65;
+  color: #795034;
+}
+
+.window {
+  size: 0.31 0.34 0.045;
+  translate: -0.5 0.76 0.65;
+  color: #64878b;
+  transition: 0.45s ease-out;
+  material: glass();
+}
+
+.window:last-child {
+  translate: 0.5 0.76 0.65;
+}
+
+/* The chest controls another part of the scene. */
+
+#village:has(.lock:active) .window {
+  color: #ffe5a0;
+}
+
+/* ── TWO TREES / THREE CUBES EACH ────────────── */
+
+.tree {
+  translate: -2.55 0.8 -0.85;
+}
+
+.tree:last-of-type {
+  translate: 2.75 0.8 -0.95;
+  scale: 0.78;
+}
+
+/* Explicit sibling selector: the second tree. */
+
+.tree + .tree {
+  translate: 2.75 0.8 -0.95;
+  scale: 0.78;
+}
+
+.trunk {
+  size: 0.3 1.2 0.3;
+  translate: 0 0.6 0;
+  color: var(--wood);
+}
+
+.leaves.lower {
+  size: 1.15 0.65 1;
+  translate: 0 1.24 0;
+  color: var(--leaf);
+}
+
+.leaves.upper {
+  size: 0.8 0.5 0.75;
+  translate: -0.12 1.78 0;
+  color: #84964c;
+}
+
+/* ── POND / QUIET, OPAQUE WATER ──────────────── */
+
+#pond {
+  size: 1.15 0.035 0.72;
+  translate: 1.85 0.822 0.12;
+  color: #65aeb5;
+  transition: 0.5s ease-out;
+  material: glass(1.5, wavy 0.6);
+}
+
+#pond:hover {
+  color: #8dccca;
+}
+
+/* Reeds use compile-time math and staggered motion. */
+
+#reeds {
+  translate: 2.48 0.8 0.05;
+}
+
+.reed {
+  --h: calc(0.25 + sibling-index() * 0.065);
+
+  size: 0.055 var(--h) 0.055;
+  translate:
+    0
+    calc(var(--h) / 2)
+    calc((sibling-index() - 2) * 0.15);
+
+  color: #718344;
+  animation: reed-sway 2.4s ease-in-out alternate;
+  animation-delay: calc(sibling-index() * -0.4s);
+}
+
+@keyframes reed-sway {
+  from {
+    rotate-z: -3deg;
+  }
+  to {
+    rotate-z: 5deg;
+  }
+}
+
+/* ── WHEAT PATCH ────────────────────────────── */
+
+#garden {
+  translate: 1.45 0.8 -0.94;
+}
+
+.crop {
+  --h: calc(
+    0.22 + mod(sibling-index(), 3) * 0.07
+  );
+
+  size: 0.12 var(--h) 0.18;
+  translate:
+    calc((sibling-index() - 3) * 0.2)
+    calc(var(--h) / 2)
+    0;
+
+  color: #c5a65a;
+  animation: wheat-sway 2.8s ease-in-out alternate;
+  animation-delay: calc(sibling-index() * -0.25s);
+}
+
+.crop:nth-child(even) {
+  color: #dfbf69;
+}
+
+@keyframes wheat-sway {
+  from {
+    rotate-z: -4deg;
+  }
+  to {
+    rotate-z: 4deg;
+  }
+}
+
+/* ── INTERACTIVE CHEST ───────────────────────── */
+
+#chest {
+  translate: -1.85 0.8 0;
+  rotate-y: 12deg;
+}
+
+.box {
+  size: 0.62 0.4 0.48;
+  translate: 0 0.2 0;
+  color: #956337;
+}
+
+.lid {
+  size: 0.66 0.12 0.52;
+  translate: 0 0.46 0;
+  color: #b48246;
+  transition: 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.lock {
+  size: 0.1 0.16 0.04;
+  translate: 0 0.33 0.26;
+  color: #e0c788;
+  transition: 0.2s ease-out;
+}
+
+/* Translation compensates for the lid's center pivot. */
+
+#chest:hover .lid {
+  rotate-x: -65deg;
+  translate: 0 0.696 -0.15;
+}
+
+.lock:hover {
+  color: #fff0bf;
+  scale: 1.15;
+}
+
+.lock:active {
+  scale: 0.88;
+}
+
+.emerald {
+  d: polygon(
+    0 -0.3,
+    0.19 -0.1,
+    0.16 0.18,
+    0 0.3,
+    -0.16 0.18,
+    -0.19 -0.1
+  );
+  depth: 0.18;
+  translate: 0 0.24 0;
+  scale: 0.12;
+  rotate-y: 25deg;
+  color: #55c894;
+  transition: 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+#chest:has(.lock:active) .emerald {
+  translate: 0 0.97 0;
+  scale: 1;
+  rotate-y: 205deg;
+}
+
+/* ── BEE / CLOSED SVG MOTION PATH ────────────── */
+
+/* Turning the group places its xy path horizontally. */
+
+#flight-plane {
+  translate: 0.2 2.5 -0.15;
+  rotate-x: 90deg;
+}
+
+#bee {
+  offset-path: path(
+    "M-2.3 0 A2.3 0.85 0 1 1 2.3 0 A2.3 0.85 0 1 1 -2.3 0 Z"
+  );
+  offset-rotate: auto;
+  animation: bee-lap 14s linear;
+}
+
+.bee-body {
+  size: 0.26 0.16 0.15;
+  color: #e4b74f;
+}
+
+.wing {
+  size: 0.15 0.16 0.025;
+  color: #f5ecd5;
+  animation: flutter 0.12s ease-in-out alternate;
+}
+
+.wing.left {
+  translate: 0 -0.115 -0.1;
+}
+
+.wing.right {
+  translate: 0 0.115 -0.1;
+  animation-direction: alternate-reverse;
+}
+
+@keyframes bee-lap {
+  from {
+    offset-distance: 0%;
+  }
+  to {
+    offset-distance: 100%;
+  }
+}
+
+@keyframes flutter {
+  from {
+    rotate-x: -22deg;
+  }
+  to {
+    rotate-x: 22deg;
+  }
+}
+
+/* ── STEVE / FOREGROUND PATROL ───────────────── */
+
+#steve {
+  scale: 0.57;
+  translate: -2.3 0.825 1;
+  rotate-y: 90deg;
+  animation: patrol 16s linear;
+}
+
+@keyframes patrol {
+  0% {
+    translate: -2.3 0.825 1;
+    rotate-y: 90deg;
+  }
+  45% {
+    translate: 2.3 0.825 1;
+    rotate-y: 90deg;
+  }
+  50% {
+    translate: 2.3 0.825 1;
+    rotate-y: 270deg;
+  }
+  95% {
+    translate: -2.3 0.825 1;
+    rotate-y: 270deg;
+  }
+  100% {
+    translate: -2.3 0.825 1;
+    rotate-y: 450deg;
+  }
+}
+
+#step {
+  --lift: 0;
+  translate: 0 var(--lift) 0;
+  animation: footfall 0.4s ease-in-out;
+}
+
+/* Animated custom property, resolved into translation. */
+
+@keyframes footfall {
+  0%, 100% {
+    --lift: 0;
+  }
+  50% {
+    --lift: 0.045;
+  }
+}
+
+.shirt {
+  size: 0.7 0.78 0.36;
+  translate: 0 1.2 0;
+  color: var(--shirt);
+}
+
+/* ── FACE ───────────────────────────────────── */
+
+#head {
+  translate: 0 1.9 0;
+  animation: glance 8s ease-in-out;
+}
+
+.skin {
+  size: 0.62;
+  color: var(--skin);
+}
+
+.hair {
+  size: 0.64 0.14 0.64;
+  translate: 0 0.27 0;
+  color: #3d2b20;
+}
+
+.eye-white {
+  size: 0.14 0.075 0.025;
+  color: #eee5d6;
+}
+
+.eye-white.left {
+  translate: -0.16 0.065 0.32;
+}
+
+.eye-white.right {
+  translate: 0.16 0.065 0.32;
+}
+
+.pupil {
+  size: 0.065 0.075 0.018;
+  color: #555080;
+}
+
+.pupil.left {
+  translate: -0.125 0.065 0.34;
+}
+
+.pupil.right {
+  translate: 0.125 0.065 0.34;
+}
+
+.nose {
+  size: 0.12 0.095 0.06;
+  translate: 0 -0.045 0.33;
+  color: #a57050;
+}
+
+.beard {
+  size: 0.24 0.12 0.03;
+  translate: 0 -0.19 0.325;
+  color: #593b29;
+}
+
+@keyframes glance {
+  0%, 30%, 100% {
+    rotate-y: 0deg;
+  }
+  50%, 70% {
+    rotate-y: -18deg;
+  }
+}
+
+/* ── LIMBS / LOCAL JOINTS ────────────────────── */
+
+.arm.left {
+  translate: -0.49 1.57 0;
+}
+
+.arm.right {
+  translate: 0.49 1.57 0;
+}
+
+.sleeve {
+  size: 0.27 0.26 0.35;
+  translate: 0 -0.12 0;
+  color: #249a9d;
+}
+
+.forearm {
+  size: 0.26 0.48 0.33;
+  translate: 0 -0.49 0;
+  color: var(--skin);
+}
+
+.leg.left {
+  translate: -0.18 0.81 0;
+}
+
+.leg.right {
+  translate: 0.18 0.81 0;
+}
+
+.trousers {
+  size: 0.32 0.64 0.34;
+  translate: 0 -0.32 0;
+  color: #514c91;
+}
+
+.boot {
+  size: 0.33 0.13 0.4;
+  translate: 0 -0.705 0.025;
+  color: #494950;
+}
+
+.arm,
+.leg {
+  animation: stride 0.4s ease-in-out alternate;
+}
+
+.arm.left,
+.leg.right {
+  animation-direction: alternate-reverse;
+}
+
+@keyframes stride {
+  from {
+    rotate-x: -24deg;
+  }
+  to {
+    rotate-x: 24deg;
+  }
+}
+
+/* ── SMALL SCREENS / REDUCED MOTION ───────────── */
+
+@media (max-width: 600px) {
+  scene {
+    camera-distance: 15;
+    camera-angle: 30deg 34deg;
+    dpr: 0.65;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  #steve {
+    translate: 0 0.825 1;
+    rotate-y: 15deg;
+  }
+
+  #bee {
+    offset-distance: 35%;
+  }
+}

@@ -1,0 +1,471 @@
+@scene {
+  cube#foundation;
+
+  group#front-row {
+    cube.grass * 7;
+  }
+
+  group#back-row {
+    cube.grass * 5;
+  }
+
+  group#oak {
+    cube.trunk;
+    cube.foliage.lower;
+    cube.foliage.upper;
+    cube.foliage.side;
+  }
+
+  group#bush {
+    cube.bush-block * 2;
+  }
+
+  group#flower {
+    cube.stem;
+    cube.leaf;
+    cube.blossom;
+  }
+
+  cube#stone;
+
+  group#steve {
+    group#step {
+      cube.shirt;
+      cube.hem;
+
+      group#head {
+        cube.skin;
+        cube.hair.top;
+        cube.hair.back;
+        cube.fringe.left;
+        cube.fringe.right;
+
+        cube.eye-white.left;
+        cube.eye-white.right;
+        cube.pupil.left;
+        cube.pupil.right;
+
+        cube.nose;
+        cube.beard;
+        cube.mouth;
+      }
+
+      group.arm.left {
+        cube.sleeve;
+        cube.forearm;
+      }
+
+      group.arm.right {
+        cube.sleeve;
+        cube.forearm;
+      }
+
+      group.leg.left {
+        cube.trousers;
+        cube.boot;
+      }
+
+      group.leg.right {
+        cube.trousers;
+        cube.boot;
+      }
+    }
+  }
+}
+
+/* ── ART DIRECTION ───────────────────────────── */
+
+scene {
+  --skin: #b98562;
+  --shirt: #29aaaa;
+  --sleeve: #239b9e;
+  --denim: #514d94;
+  --hair: #39291f;
+
+  background: linear-gradient(
+    #ead4b9,
+    #f5e8ce
+  );
+  floor: #d8c7a7;
+
+  camera-distance: 11.5;
+  camera-angle: 18deg 24deg;
+  camera-target: 0 1.65 0;
+
+  light: 305deg 38deg;
+  ambient: 0.48;
+  dpr: 1;
+}
+
+cube {
+  material: matte();
+  corner-radius: 0;
+}
+
+/* ── STEPPED ISLAND ──────────────────────────── */
+
+/* A stone underside gives the terrain thickness. */
+
+#foundation {
+  size: 5.8 0.44 1.8;
+  translate: 0 0.24 0;
+  color: #79766a;
+}
+
+.grass {
+  size: 1 0.7 1;
+  texture: url("/textures/grass-side.png");
+  image-rendering: pixelated;
+}
+
+.grass::top {
+  texture: url("/textures/grass-top.png");
+}
+
+.grass::bottom {
+  texture: url("/textures/dirt.png");
+}
+
+#front-row .grass {
+  translate:
+    calc(sibling-index() - 4)
+    0.8
+    0.5;
+}
+
+#back-row .grass {
+  translate:
+    calc(sibling-index() - 3)
+    0.8
+    -0.5;
+}
+
+/* ── OAK / ASYMMETRICAL SILHOUETTE ───────────── */
+
+#oak {
+  translate: -2 1.15 -0.55;
+}
+
+.trunk {
+  size: 0.36 1.25 0.36;
+  translate: 0 0.625 0;
+  color: #755033;
+}
+
+.foliage.lower {
+  size: 1.55 0.55 1.2;
+  translate: 0 1.3 0;
+  color: #527642;
+}
+
+.foliage.upper {
+  size: 1.05 0.55 0.95;
+  translate: -0.12 1.82 0;
+  color: #77934b;
+}
+
+.foliage.side {
+  size: 0.65 0.55 0.75;
+  translate: 0.68 1.53 0.05;
+  color: #658642;
+}
+
+/* Small background details balance the tree. */
+
+#bush {
+  translate: 2.15 1.15 -0.55;
+}
+
+.bush-block {
+  size: 0.48 0.42 0.5;
+  translate:
+    calc((sibling-index() - 1) * 0.35)
+    0.21
+    0;
+  color: #6b8746;
+}
+
+.bush-block:last-child {
+  scale: 0.72;
+  translate: 0.35 0.15 0.08;
+  color: #8b9d54;
+}
+
+#flower {
+  translate: 1.15 1.15 -0.65;
+}
+
+.stem {
+  size: 0.055 0.36 0.055;
+  translate: 0 0.18 0;
+  color: #567444;
+}
+
+.leaf {
+  size: 0.16 0.055 0.08;
+  translate: 0.065 0.16 0;
+  rotate-z: 25deg;
+  color: #76934c;
+}
+
+.blossom {
+  size: 0.2 0.13 0.2;
+  translate: 0 0.39 0;
+  color: #edb94e;
+}
+
+#stone {
+  size: 0.32 0.18 0.26;
+  translate: -0.65 1.24 -0.62;
+  rotate-y: 15deg;
+  color: #a2a18c;
+}
+
+/* ── STEVE / MOVEMENT ────────────────────────── */
+
+#steve {
+  scale: 0.8;
+  translate: -2.15 1.19 0.5;
+  rotate-y: 90deg;
+  animation: patrol 12s linear;
+}
+
+/* Turns happen at the ends; the loop is seamless. */
+
+@keyframes patrol {
+  0% {
+    translate: -2.15 1.19 0.5;
+    rotate-y: 90deg;
+  }
+
+  44% {
+    translate: 2.15 1.19 0.5;
+    rotate-y: 90deg;
+  }
+
+  50% {
+    translate: 2.15 1.19 0.5;
+    rotate-y: 270deg;
+  }
+
+  94% {
+    translate: -2.15 1.19 0.5;
+    rotate-y: 270deg;
+  }
+
+  100% {
+    translate: -2.15 1.19 0.5;
+    rotate-y: 450deg;
+  }
+}
+
+#step {
+  animation: footfall 0.4s ease-in-out;
+}
+
+@keyframes footfall {
+  0%, 100% {
+    translate: 0 0 0;
+  }
+
+  50% {
+    translate: 0 0.045 0;
+  }
+}
+
+/* ── CLOTHING ───────────────────────────────── */
+
+.shirt {
+  size: 0.7 0.75 0.36;
+  translate: 0 1.205 0;
+  color: var(--shirt);
+}
+
+/* The uneven shirt hem breaks the flat silhouette. */
+
+.hem {
+  size: 0.29 0.1 0.375;
+  translate: -0.19 0.84 0;
+  color: #208f96;
+}
+
+/* ── HEAD / PIXEL FACE ───────────────────────── */
+
+#head {
+  translate: 0 1.91 0;
+  animation: look-around 6s ease-in-out;
+}
+
+.skin {
+  size: 0.62;
+  color: var(--skin);
+}
+
+.hair.top {
+  size: 0.64 0.13 0.64;
+  translate: 0 0.265 0;
+  color: var(--hair);
+}
+
+.hair.back {
+  size: 0.64 0.42 0.09;
+  translate: 0 0.04 -0.285;
+  color: var(--hair);
+}
+
+.fringe {
+  color: #493124;
+}
+
+.fringe.left {
+  size: 0.19 0.105 0.035;
+  translate: -0.215 0.17 0.316;
+}
+
+.fringe.right {
+  size: 0.12 0.065 0.035;
+  translate: 0.25 0.19 0.316;
+}
+
+.eye-white {
+  size: 0.14 0.075 0.025;
+  color: #eee6d7;
+}
+
+.eye-white.left {
+  translate: -0.16 0.065 0.319;
+}
+
+.eye-white.right {
+  translate: 0.16 0.065 0.319;
+}
+
+.pupil {
+  size: 0.065 0.075 0.018;
+  color: #575187;
+}
+
+.pupil.left {
+  translate: -0.125 0.065 0.338;
+}
+
+.pupil.right {
+  translate: 0.125 0.065 0.338;
+}
+
+.nose {
+  size: 0.12 0.095 0.065;
+  translate: 0 -0.045 0.33;
+  color: #a36b4d;
+}
+
+.beard {
+  size: 0.25 0.14 0.03;
+  translate: 0 -0.185 0.322;
+  color: #573827;
+}
+
+.mouth {
+  size: 0.115 0.045 0.018;
+  translate: 0 -0.16 0.344;
+  color: #bd8968;
+}
+
+/* A restrained glance keeps him from feeling robotic. */
+
+@keyframes look-around {
+  0%, 35%, 100% {
+    rotate-y: 0deg;
+  }
+
+  55%, 75% {
+    rotate-y: -16deg;
+  }
+}
+
+/* ── SHOULDER PIVOTS ─────────────────────────── */
+
+.arm.left {
+  translate: -0.49 1.57 0;
+}
+
+.arm.right {
+  translate: 0.49 1.57 0;
+}
+
+.sleeve {
+  size: 0.27 0.27 0.35;
+  translate: 0 -0.125 0;
+  color: var(--sleeve);
+}
+
+.forearm {
+  size: 0.26 0.47 0.33;
+  translate: 0 -0.49 0;
+  color: var(--skin);
+}
+
+/* ── HIP PIVOTS ──────────────────────────────── */
+
+.leg.left {
+  translate: -0.18 0.81 0;
+}
+
+.leg.right {
+  translate: 0.18 0.81 0;
+}
+
+.trousers {
+  size: 0.32 0.64 0.34;
+  translate: 0 -0.32 0;
+  color: var(--denim);
+}
+
+.boot {
+  size: 0.33 0.13 0.4;
+  translate: 0 -0.705 0.025;
+  color: #494950;
+}
+
+/* One shared animation, opposite phases. */
+
+.arm,
+.leg {
+  animation: stride 0.4s ease-in-out alternate;
+}
+
+.arm.left,
+.leg.right {
+  animation-direction: alternate-reverse;
+}
+
+@keyframes stride {
+  from {
+    rotate-x: -24deg;
+  }
+
+  to {
+    rotate-x: 24deg;
+  }
+}
+
+/* ── RESPONSIVE / ACCESSIBILITY ──────────────── */
+
+@media (max-width: 600px) {
+  scene {
+    camera-distance: 15;
+    camera-angle: 28deg 30deg;
+    dpr: 0.75;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+  }
+
+  #steve {
+    translate: 0 1.19 0.5;
+    rotate-y: 15deg;
+  }
+}

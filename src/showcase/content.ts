@@ -15,6 +15,10 @@ import watch from "../scenes/watch.gss?raw";
 import orbit from "../scenes/orbit.gss?raw";
 import perfume from "../scenes/perfume.gss?raw";
 import starorbit from "../scenes/starorbit.gss?raw";
+import steve1 from "../scenes/steve1.gss?raw";
+import steve2 from "../scenes/steve2.gss?raw";
+import steveHouse from "../scenes/steveHouse.gss?raw";
+import stevePortal from "../scenes/stevePortal.gss?raw";
 
 import { FIRST_SCENE } from "../docs/guide";
 import { formatGss } from "../docs/format";
@@ -221,5 +225,25 @@ export const INSPIRATION: Inspiration[] = [
     slug: "starorbit",
     title: "A star orbiting a planet, with a glass ball and a crown",
     code: starorbit,
+  },
+  {
+    slug: "steve1",
+    title: "Minecraft Steve animation",
+    code: steve1,
+  },
+  {
+    slug: "steve2",
+    title: "Minecraft Steve animation with responsive design",
+    code: steve2,
+  },
+  {
+    slug: "steveHouse",
+    title: "Minecraft Steve house animation",
+    code: steveHouse,
+  },
+  {
+    slug: "stevePortal",
+    title: "Minecraft Steve portal animation",
+    code: stevePortal,
   },
 ];

@@ -1,0 +1,265 @@
+@scene {
+  group#terrain {
+    cube.grass * 5;
+  }
+
+  group#steve {
+    group#body-bounce {
+      cube.torso;
+      cube.head;
+      cube.hair;
+      cube.eye.left;
+      cube.eye.right;
+      cube.nose;
+      cube.beard;
+
+      group.arm.left {
+        cube.sleeve;
+        cube.forearm;
+      }
+
+      group.arm.right {
+        cube.sleeve;
+        cube.forearm;
+      }
+
+      group.leg.left {
+        cube.pants;
+        cube.shoe;
+      }
+
+      group.leg.right {
+        cube.pants;
+        cube.shoe;
+      }
+    }
+  }
+}
+
+scene {
+  background: linear-gradient(#77b7ed, #d9efff);
+  floor: #b3cb91;
+
+  camera-distance: 8;
+  camera-angle: 25deg 20deg;
+  camera-target: 0 1.3 0;
+
+  light: 315deg 55deg;
+  ambient: 0.65;
+  dpr: 2;
+}
+
+/* Sharp edges, flat materials. */
+
+cube {
+  corner-radius: 0;
+  material: matte();
+}
+
+/* Five blocks. Only three shared texture images. */
+
+.grass {
+  size: 1 0.65 1;
+  translate: calc(sibling-index() - 3) 0.325 0;
+
+  texture: url(
+    "/textures/grass-side.png"
+  );
+  image-rendering: pixelated;
+}
+
+.grass::top {
+  texture: url(
+    "/textures/grass-top.png"
+  );
+}
+
+.grass::bottom {
+  texture: url(
+    "/textures/dirt.png"
+  );
+}
+
+/* The outer group handles walking and turning. */
+
+#steve {
+  translate: -1.65 0.69 0;
+  rotate-y: 90deg;
+  animation: patrol 8s linear;
+}
+
+@keyframes patrol {
+  0% {
+    translate: -1.65 0.69 0;
+    rotate-y: 90deg;
+  }
+
+  42% {
+    translate: 1.65 0.69 0;
+    rotate-y: 90deg;
+  }
+
+  50% {
+    translate: 1.65 0.69 0;
+    rotate-y: 270deg;
+  }
+
+  92% {
+    translate: -1.65 0.69 0;
+    rotate-y: 270deg;
+  }
+
+  100% {
+    translate: -1.65 0.69 0;
+    rotate-y: 450deg;
+  }
+}
+
+/* A small vertical bounce gives each step weight. */
+
+#body-bounce {
+  animation: bounce 0.32s ease-in-out;
+}
+
+@keyframes bounce {
+  0%, 100% {
+    translate: 0 0 0;
+  }
+
+  50% {
+    translate: 0 0.045 0;
+  }
+}
+
+/* Turquoise shirt and square head. */
+
+.torso {
+  size: 0.7 0.78 0.36;
+  translate: 0 1.2 0;
+  color: #20b5b5;
+}
+
+.head {
+  size: 0.62;
+  translate: 0 1.9 0;
+  color: #bc8967;
+}
+
+.hair {
+  size: 0.64 0.14 0.64;
+  translate: 0 2.17 0;
+  color: #38291f;
+}
+
+/* The face points towards local +z. */
+
+.eye {
+  size: 0.095 0.075 0.025;
+  color: #49447b;
+}
+
+.eye.left {
+  translate: -0.15 1.97 0.32;
+}
+
+.eye.right {
+  translate: 0.15 1.97 0.32;
+}
+
+.nose {
+  size: 0.115 0.09 0.06;
+  translate: 0 1.87 0.33;
+  color: #a96f50;
+}
+
+.beard {
+  size: 0.24 0.115 0.025;
+  translate: 0 1.755 0.32;
+  color: #543529;
+}
+
+/* Shoulder pivots: the cubes hang below their group. */
+
+.arm.left {
+  translate: -0.49 1.57 0;
+}
+
+.arm.right {
+  translate: 0.49 1.57 0;
+}
+
+.sleeve {
+  size: 0.27 0.26 0.35;
+  translate: 0 -0.12 0;
+  color: #20b5b5;
+}
+
+.forearm {
+  size: 0.26 0.48 0.33;
+  translate: 0 -0.49 0;
+  color: #bc8967;
+}
+
+/* Hip pivots, purple trousers and dark shoes. */
+
+.leg.left {
+  translate: -0.18 0.81 0;
+}
+
+.leg.right {
+  translate: 0.18 0.81 0;
+}
+
+.pants {
+  size: 0.32 0.64 0.34;
+  translate: 0 -0.32 0;
+  color: #4945a3;
+}
+
+.shoe {
+  size: 0.33 0.13 0.4;
+  translate: 0 -0.705 0.025;
+  color: #454452;
+}
+
+/* Opposite arm and leg move together. */
+
+.arm,
+.leg {
+  animation: stride 0.32s ease-in-out alternate;
+}
+
+.arm.left,
+.leg.right {
+  animation-direction: alternate-reverse;
+}
+
+@keyframes stride {
+  from {
+    rotate-x: -24deg;
+  }
+
+  to {
+    rotate-x: 24deg;
+  }
+}
+
+/* Keep the whole scene visible on narrow screens. */
+
+@media (max-width: 600px) {
+  scene {
+    camera-distance: 11;
+    dpr: 0.75;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+  }
+
+  #steve {
+    translate: 0 0.69 0;
+    rotate-y: 15deg;
+  }
+}

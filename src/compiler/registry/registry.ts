@@ -109,35 +109,35 @@ export const PROPERTIES: PropertyDef[] = [
       "Sets how the surface of the object reacts to light. matte() only scatters light, like chalk. metal() reflects the scene: roughness goes from 0, a mirror, to 1, a brushed metal (0.2 by default). Without a color, the material uses the color property, like currentColor in CSS, so color stays animatable. jelly() lets light through its thin parts, like a gummy candy: density goes from 0, clear, to 1, deep (0.5 by default). gold, chrome and jelly are shortcuts for metal(#d4af37, 0.2), metal(#ffffff, 0.05) and jelly(). glass() lets you see through the object, bent by its refraction index (1 to 3, 1.5 by default: 1.33 is water, 2.4 is diamond). The frost, from 0 to 1, comes with an optional style: frosted (white patches, the default), wavy (big waves), hammered (small bumps) or blurred (soft blur). glass is glass(), ice is glass(#cfeaff, 1.31, frosted 0.25). The color of a material can also be a gradient: metal(linear-gradient(#ffd27a, #ff5a36), 0.2).",
     examples: [
       {
-        name: "material",
+        name: "matte()",
         code: "@scene { sphere; } sphere { color: #ff5a36; material: matte(); }",
       },
       {
-        name: "material",
+        name: "metal()",
         code: "@scene { sphere#a; sphere#b; sphere#c; } #a { translate: 1.3 0.6 0; radius: 0.6; material: gold; } #b { translate: 0 0.6 0; radius: 0.6; material: chrome; } #c { translate: -1.3 0.6 0; radius: 0.6; color: #d4af37; material: metal(0.7); }",
       },
       {
-        name: "material",
+        name: "jelly()",
         code: "@scene { sphere; cube; } sphere { translate: 0.8 0.6 0; radius: 0.6; color: #ff5a36; material: jelly; } cube { translate: -0.8 0.5 0; rotate-y: -30deg; color: #3ad16b; material: jelly(0.3); }",
       },
       {
-        name: "material",
+        name: "glass()",
         code: "@scene { sphere; } sphere { translate: 0 1 0; radius: 0.6; material: glass; }",
       },
       {
-        name: "material",
+        name: "glass() with color and refraction index",
         code: "@scene { sphere; } sphere { translate: 0 1 0; radius: 0.6; material: glass(#ffffff, 1.5, 0.3); }",
       },
       {
-        name: "material",
+        name: "ice()",
         code: "@scene { sphere; } sphere { translate: 0 1 0; radius: 0.6; material: ice; }",
       },
       {
-        name: "material",
+        name: "glass() with frost",
         code: "@scene { sphere; cube; } sphere { translate: 0 0.7 0; radius: 0.6; material: glass; } cube { translate: -0.3 0.5 -1.5; color: #ff5a36; }",
       },
       {
-        name: "material",
+        name: "glass() with frost and style",
         code: "@scene { sphere#a; sphere#b; cube; } #a { translate: 0.7 0.7 0; radius: 0.6; material: glass(1.5, wavy 0.6); } #b { translate: -0.7 0.7 0; radius: 0.6; material: glass(1.5, blurred 0.6); } cube { translate: 0 0.5 -1.8; color: #ff5a36; }",
       },
     ],
@@ -412,7 +412,8 @@ export const PROPERTIES: PropertyDef[] = [
   {
     name: "animation-timeline",
     appliesTo: "object",
-    syntax: "auto | scroll([root | nearest] || [block | inline | x | y]) | view([block | inline | x | y])",
+    syntax:
+      "auto | scroll([root | nearest] || [block | inline | x | y]) | view([block | inline | x | y])",
     initial: "auto",
     description:
       "Drives the animation with the scroll of the page instead of the time, like CSS scroll-driven animations. auto, the default, plays it in time. scroll() follows a scroll container from its start (0%) to its end (100%): nearest, the default, is the closest one around the scene, root is the page; the axis is block (vertical, the default), inline (horizontal), y or x. view() follows the scene itself crossing its scroll container: 0% when it enters at the bottom, 100% when it leaves at the top. The whole timeline is the whole animation, so the duration and the delay do not count: write any duration, like animation: spin 1s linear; animation-timeline: scroll();. The number of iterations and the direction still do, and an animation without an iteration count plays once along the scroll. Scrolling back plays it backwards, and the easing applies as usual. Write it after animation, which needs a name and a duration. A scene takes up to 4 different timelines. In the playground, which does not scroll, a slider stands in for the scroll; the Shadertoy export shows the start.",
@@ -487,15 +488,15 @@ export const PROPERTIES: PropertyDef[] = [
       "Sets the size of the cube along the x, y and z axes: one value makes a cube, three values make a box. On a plane, sets its width and depth: one value makes a square.",
     examples: [
       {
-        name: "size",
+        name: "size of a cube",
         code: "@scene { cube; } cube { translate: 0 0.5 0; size: 2 1 1; }",
       },
       {
-        name: "size",
+        name: "size of a plane",
         code: "@scene { plane; } plane { translate: 0 1 0; rotate-x: 90deg; size: 2 1.5; color: #ff5a36; }",
       },
       {
-        name: "size",
+        name: "size of a plane with a different rotation",
         code: "@scene { plane; } plane { translate: 0 1 0; rotate-x: 90deg; size: 2 1.5; color: #ff5a36; }",
       },
     ],
@@ -523,15 +524,15 @@ export const PROPERTIES: PropertyDef[] = [
       "Sets the radius of the sphere, the cylinder or the capsule, or the radius of the torus ring, measured to the center of its tube. A cone takes a bottom and a top radius, like border-radius takes several values: the top one is 0 by default, which makes a point, and a positive top radius makes a truncated cone.",
     examples: [
       {
-        name: "radius",
+        name: "radius of a sphere",
         code: "@scene { sphere; } sphere { translate: 0 1 0; radius: 1; }",
       },
       {
-        name: "radius",
+        name: "radius of a cone",
         code: "@scene { cone; } cone { translate: 0 0.75 0; radius: 0.5 0.2; height: 1.5; }",
       },
       {
-        name: "radius",
+        name: "radius of a cone with a different rotation",
         code: "@scene { cone; } cone { translate: 0 0.75 0; radius: 0.5 0.2; height: 1.5; }",
       },
     ],
@@ -558,19 +559,19 @@ export const PROPERTIES: PropertyDef[] = [
       "Sets the full height of the cylinder, the cone or the capsule, along the y axis. The height of a capsule counts its round ends, so it must be at least twice its radius. The shape is centered on its origin: to stand it on the floor, set its y to half its height.",
     examples: [
       {
-        name: "height",
+        name: "height of a cylinder",
         code: "@scene { cylinder; } cylinder { translate: 0 1 0; radius: 0.4; height: 2; }",
       },
       {
-        name: "height",
+        name: "height of a cone",
         code: "@scene { cone; } cone { translate: 0 0.75 0; radius: 0.5 0.2; height: 1.5; }",
       },
       {
-        name: "height",
+        name: "height of a cone with a different rotation",
         code: "@scene { cone; } cone { translate: 0 0.75 0; radius: 0.5 0.2; height: 1.5; }",
       },
       {
-        name: "height",
+        name: "height of a capsule",
         code: "@scene { capsule; } capsule { translate: 0 0.75 0; radius: 0.25; height: 1.5; }",
       },
     ],
@@ -584,19 +585,19 @@ export const PROPERTIES: PropertyDef[] = [
       "The line a path object follows, written like the d of an SVG path, or CSS path(): M moves, L H V draw lines, C S Q T draw curves, A draws an arc of ellipse (rx ry rotation large-arc sweep x y, like SVG), Z closes, in capitals (absolute) or lowercase (relative). A path copied from an SVG keeps its way up: y goes up in the scene, down in SVG, and GSS flips it. One path unit is one scene unit, so an icon drawn in a 24 or 32 box usually needs a scale. On a prism, d takes a polygon(), written like the one of CSS clip-path: one point per comma, x and y separated by a space, y going down like in SVG, and the polygon closes itself; or a path(), like above, whose every subpath is a closed contour, filled with the even-odd rule: a subpath inside another one is a hole, like the inside of an o. A logo exported as an SVG path becomes a solid shape this way.",
     examples: [
       {
-        name: "d",
+        name: "d of a path",
         code: '@scene { path; } path { translate: 0 1 0; d: path("M-1 0.5 C-1 -1 1 -1 1 0.5"); stroke-width: 0.25; color: #ff5a36; }',
       },
       {
-        name: "d",
+        name: "d of a path with a different scale",
         code: '@scene { path; } path { translate: 0 1.2 0; d: path("M0 0 L1 1.5 L2 0 L3 1.5 L4 0"); stroke-width: 0.3; scale: 0.5; material: gold; }',
       },
       {
-        name: "d",
+        name: "d of a path with a different rotation",
         code: '@scene { path; } path { translate: 0 1 0; d: path("M-1 0 A1 1 0 1 1 1 0 A1 1 0 1 1 -1 0 M-0.4 -0.3 A0.5 0.5 0 0 0 0.4 -0.3"); stroke-width: 0.15; color: #ff5a36; }',
       },
       {
-        name: "d",
+        name: "d of a path with a different stroke-width",
         code: '@scene { path; } path { translate: 0 1 0; d: path("M-1 0 L1 0"); stroke-width: 0.6; color: #3a7bff; }',
       },
     ],
@@ -739,7 +740,7 @@ export const PROPERTIES: PropertyDef[] = [
         code: "@scene { cube; } cube { translate: 0 0.5 0; } scene { floor: #1a1a1f; }",
       },
       {
-        name: "floor",
+        name: "floor with a different background",
         code: "@scene { sphere; } sphere { color: #ff5a36; material: jelly(0.6); } scene { floor: none; background: #0a0a0c; }",
       },
     ],
@@ -752,19 +753,58 @@ export const PROPERTIES: PropertyDef[] = [
     description:
       "Post-processing, like CSS filter: a list of functions applied in order, on the whole image (scene { filter }), on an object, or on a group and everything in it. On an object or a group, the filters change only its own pixels, and reflections see them too: a blur() spreads it over what is around it, a bloom() makes only its bright parts glow. Like CSS, an object's filter comes before its group's, and the scene's comes last; on an object, the filters that read only their own pixel come before blur() and bloom(), and an object and its group cannot both have a blur() or a bloom(). brightness(), contrast(), saturate(), grayscale(), sepia(), invert() take a number or a percentage (1 or 100% changes nothing; grayscale(), sepia() and invert() go up to 1), hue-rotate() an angle; they cost almost nothing. grain() adds a film-like noise that moves at every frame (0.1 by default). blur() blurs by a length in px, like CSS; bloom() makes the bright parts glow: an amount (0.6 by default) and a radius in px (16px by default). blur() and bloom() read the pixels around each pixel: the scene is first drawn into an image, then blurred, which costs more as the radius grows. opacity() and drop-shadow() need transparency, which GSS does not have. The Shadertoy export keeps the filters that read only their own pixel, not blur() and bloom().",
     examples: [
-      { name: "brightness()", code: "@scene { sphere; } sphere { translate: 0 1 0; color: #ff5a36; } scene { filter: brightness(1.4); }" },
-      { name: "contrast()", code: "@scene { sphere; cube; } sphere { translate: 0.8 0.6 0; color: #ff5a36; } cube { translate: -0.8 0.5 0; color: #3a7bff; } scene { filter: contrast(1.6); }" },
-      { name: "saturate()", code: "@scene { sphere; cube; } sphere { translate: 0.8 0.6 0; color: #ff5a36; } cube { translate: -0.8 0.5 0; color: #3a7bff; } scene { filter: saturate(2); }" },
-      { name: "grayscale()", code: "@scene { sphere; cube; } sphere { translate: 0.8 0.6 0; color: #ff5a36; } cube { translate: -0.8 0.5 0; color: #3a7bff; } scene { filter: grayscale(1); }" },
-      { name: "sepia()", code: "@scene { sphere; cube; } sphere { translate: 0.8 0.6 0; color: #ff5a36; } cube { translate: -0.8 0.5 0; color: #3a7bff; } scene { filter: sepia(0.8); }" },
-      { name: "hue-rotate()", code: "@scene { sphere; cube; } sphere { translate: 0.8 0.6 0; color: #ff5a36; } cube { translate: -0.8 0.5 0; color: #3a7bff; } scene { filter: hue-rotate(120deg); }" },
-      { name: "invert()", code: "@scene { sphere; } sphere { translate: 0 1 0; color: #ff5a36; } scene { filter: invert(1); }" },
-      { name: "grain()", code: "@scene { sphere; } sphere { translate: 0 1 0; color: #ff5a36; } scene { background: #1a1a22; filter: grain(0.15); }" },
-      { name: "blur()", code: "@scene { sphere; cube; } sphere { translate: 0.8 0.6 0; color: #ff5a36; } cube { translate: -0.8 0.5 0; color: #3a7bff; } scene { filter: blur(3px); }" },
-      { name: "bloom()", code: "@scene { sphere.light * 5; } .light { radius: 0.25; translate: calc(2.4 - sibling-index() * 0.8) 0.8 0; color: hsl(calc(sibling-index() * 40) 100% 70%); } scene { floor: none; background: #07070a; ambient: 1; filter: bloom(0.9, 20px); }" },
-      { name: "filter on objects", code: "@scene { sphere#a; sphere#b; sphere#c; } sphere { radius: 0.5; color: #ff5a36; } #a { translate: 1.3 0.6 0; filter: grayscale(1); } #b { translate: 0 0.6 0; filter: blur(4px); } #c { translate: -1.3 0.6 0; filter: hue-rotate(180deg) brightness(1.3); }" },
-      { name: "filter on a group", code: "@scene { group#lights { sphere * 4 } cube; } #lights { filter: bloom(0.9, 18px); } #lights sphere { radius: 0.2; translate: calc(1.75 - sibling-index() * 0.7) 1.4 0; color: #ffd27a; } cube { translate: 0 0.5 0; color: #3a7bff; } scene { floor: none; background: #07070a; }" },
-      { name: "filters together", code: "@scene { torus; sphere; } torus { translate: 0 1 0; rotate-x: 70deg; color: #ffd27a; material: gold; } sphere { radius: 0.3; translate: 0 1 0; color: #ff5a36; } scene { floor: none; background: radial-gradient(#2a2a3a, #07070a); filter: contrast(1.1) saturate(1.3) bloom(0.7, 18px) grain(0.06); }" },
+      {
+        name: "brightness()",
+        code: "@scene { sphere; } sphere { translate: 0 1 0; color: #ff5a36; } scene { filter: brightness(1.4); }",
+      },
+      {
+        name: "contrast()",
+        code: "@scene { sphere; cube; } sphere { translate: 0.8 0.6 0; color: #ff5a36; } cube { translate: -0.8 0.5 0; color: #3a7bff; } scene { filter: contrast(1.6); }",
+      },
+      {
+        name: "saturate()",
+        code: "@scene { sphere; cube; } sphere { translate: 0.8 0.6 0; color: #ff5a36; } cube { translate: -0.8 0.5 0; color: #3a7bff; } scene { filter: saturate(2); }",
+      },
+      {
+        name: "grayscale()",
+        code: "@scene { sphere; cube; } sphere { translate: 0.8 0.6 0; color: #ff5a36; } cube { translate: -0.8 0.5 0; color: #3a7bff; } scene { filter: grayscale(1); }",
+      },
+      {
+        name: "sepia()",
+        code: "@scene { sphere; cube; } sphere { translate: 0.8 0.6 0; color: #ff5a36; } cube { translate: -0.8 0.5 0; color: #3a7bff; } scene { filter: sepia(0.8); }",
+      },
+      {
+        name: "hue-rotate()",
+        code: "@scene { sphere; cube; } sphere { translate: 0.8 0.6 0; color: #ff5a36; } cube { translate: -0.8 0.5 0; color: #3a7bff; } scene { filter: hue-rotate(120deg); }",
+      },
+      {
+        name: "invert()",
+        code: "@scene { sphere; } sphere { translate: 0 1 0; color: #ff5a36; } scene { filter: invert(1); }",
+      },
+      {
+        name: "grain()",
+        code: "@scene { sphere; } sphere { translate: 0 1 0; color: #ff5a36; } scene { background: #1a1a22; filter: grain(0.15); }",
+      },
+      {
+        name: "blur()",
+        code: "@scene { sphere; cube; } sphere { translate: 0.8 0.6 0; color: #ff5a36; } cube { translate: -0.8 0.5 0; color: #3a7bff; } scene { filter: blur(3px); }",
+      },
+      {
+        name: "bloom()",
+        code: "@scene { sphere.light * 5; } .light { radius: 0.25; translate: calc(2.4 - sibling-index() * 0.8) 0.8 0; color: hsl(calc(sibling-index() * 40) 100% 70%); } scene { floor: none; background: #07070a; ambient: 1; filter: bloom(0.9, 20px); }",
+      },
+      {
+        name: "filter on objects",
+        code: "@scene { sphere#a; sphere#b; sphere#c; } sphere { radius: 0.5; color: #ff5a36; } #a { translate: 1.3 0.6 0; filter: grayscale(1); } #b { translate: 0 0.6 0; filter: blur(4px); } #c { translate: -1.3 0.6 0; filter: hue-rotate(180deg) brightness(1.3); }",
+      },
+      {
+        name: "filter on a group",
+        code: "@scene { group#lights { sphere * 4 } cube; } #lights { filter: bloom(0.9, 18px); } #lights sphere { radius: 0.2; translate: calc(1.75 - sibling-index() * 0.7) 1.4 0; color: #ffd27a; } cube { translate: 0 0.5 0; color: #3a7bff; } scene { floor: none; background: #07070a; }",
+      },
+      {
+        name: "filters together",
+        code: "@scene { torus; sphere; } torus { translate: 0 1 0; rotate-x: 70deg; color: #ffd27a; material: gold; } sphere { radius: 0.3; translate: 0 1 0; color: #ff5a36; } scene { floor: none; background: radial-gradient(#2a2a3a, #07070a); filter: contrast(1.1) saturate(1.3) bloom(0.7, 18px) grain(0.06); }",
+      },
     ],
   },
   {
@@ -1317,7 +1357,8 @@ export const FUNCTIONS: FunctionDef[] = [
     name: "steps()",
     anchor: "fn-steps",
     covers: ["steps"],
-    syntax: "steps(<integer>, [jump-start | jump-end | jump-none | jump-both | start | end]?) | step-start | step-end",
+    syntax:
+      "steps(<integer>, [jump-start | jump-end | jump-none | jump-both | start | end]?) | step-start | step-end",
     description:
       "An easing that moves by equal jumps instead of gliding, like CSS: steps(4) holds still, then jumps, four times. The position says where the jumps are: jump-end (the default, also written end) jumps at the end of each step, so the last value is only reached at the very end; jump-start (start) jumps at the start of each step; jump-both adds a jump at both ends; jump-none keeps the first and the last values for a whole step each. step-start and step-end are steps(1, jump-start) and steps(1, jump-end). Good for ticking hands, sprite-like motion and anything mechanical.",
     examples: [
@@ -1334,8 +1375,16 @@ export const FUNCTIONS: FunctionDef[] = [
   {
     name: "linear-gradient(), radial-gradient(), conic-gradient()",
     anchor: "fn-gradients",
-    covers: ["linear-gradient", "radial-gradient", "repeating-linear-gradient", "repeating-radial-gradient", "conic-gradient", "repeating-conic-gradient"],
-    syntax: "linear-gradient([<angle> | to <side> <side>?]?, <color> <percentage>{0,2}, …) | radial-gradient([circle | ellipse]? [closest-side | farthest-side | closest-corner | farthest-corner]? [at <position>]?, <color> <percentage>{0,2}, …) | conic-gradient([from <angle>]? [at <position>]?, <color> [<angle> | <percentage>]{0,2}, …)",
+    covers: [
+      "linear-gradient",
+      "radial-gradient",
+      "repeating-linear-gradient",
+      "repeating-radial-gradient",
+      "conic-gradient",
+      "repeating-conic-gradient",
+    ],
+    syntax:
+      "linear-gradient([<angle> | to <side> <side>?]?, <color> <percentage>{0,2}, …) | radial-gradient([circle | ellipse]? [closest-side | farthest-side | closest-corner | farthest-corner]? [at <position>]?, <color> <percentage>{0,2}, …) | conic-gradient([from <angle>]? [at <position>]?, <color> [<angle> | <percentage>]{0,2}, …)",
     description:
       "Gradients, like CSS, for the background of the scene, the color of an object and the color of a material. In the background, the gradient covers the canvas and follows its size; reflections and glass see it in the direction they look. On an object, it covers the object seen from the front, from left to right and from bottom to top (a plane is seen from above): to top goes from its bottom to its top, whatever its size, and it turns and moves with it. linear-gradient() goes to bottom by default; it takes an angle (0deg up, 90deg right) or to a side or a corner. radial-gradient() is an ellipse reaching the farthest corner from the center by default; it takes circle or ellipse, a size keyword and a position (at 30% 40%, at top). conic-gradient() turns around a center, clockwise from the top: from 90deg starts it a quarter turn later, at 30% 40% moves the center, and its colors can be placed with angles as well as percentages (a full turn is 100%), for a color wheel, a pie chart or the sweep of a watch hand. Each color can have one or two positions; the missing ones are spread like CSS, and two colors at the same place make a hard edge. repeating-linear-gradient(), repeating-radial-gradient() and repeating-conic-gradient() repeat the stops. Colors are mixed in sRGB, like CSS with hex colors.",
     examples: [
@@ -1473,7 +1522,8 @@ export const FUNCTIONS: FunctionDef[] = [
     name: "color-mix()",
     anchor: "fn-color-mix",
     covers: ["color-mix"],
-    syntax: "color-mix(in <space> [shorter | longer hue]?, <color> <percentage>?, <color> <percentage>?)",
+    syntax:
+      "color-mix(in <space> [shorter | longer hue]?, <color> <percentage>?, <color> <percentage>?)",
     description:
       "Mixes two colors in a color space, like CSS: srgb, srgb-linear, lab, lch, oklab, oklch, hsl or hwb. Without percentages, half of each; with one, the other color takes the rest; with both, they are scaled to add up to 100%. They cannot add up to less, since GSS has no transparency. In a space with a hue, the hue goes the shorter way round the wheel, or the longer one with longer hue; a gray takes the hue of the other color. oklab gives the most even mixes; mixing in srgb goes through duller middle colors.",
     examples: [
@@ -1555,7 +1605,8 @@ export const FUNCTIONS: FunctionDef[] = [
     name: "random()",
     anchor: "fn-random",
     covers: ["random"],
-    syntax: "random([--<name> || element-shared | fixed <number>,]? <min>, <max>, <step>?)",
+    syntax:
+      "random([--<name> || element-shared | fixed <number>,]? <min>, <max>, <step>?)",
     description:
       "A random value between a minimum and a maximum, like CSS: random(0.2, 1.4), random(0deg, 360deg). With a step, one of min, min + step, … up to max: random(0deg, 180deg, 45deg). The value is chosen once, when the scene compiles, and stays the same at every reload: each object, property and call gets its own, so a multiplied object scatters its copies with one rule. A --name shares one value between the calls of an object that use it (the same random number for x and z); element-shared gives every object the same value; fixed 0.25 sets the random number yourself, from 0 to just below 1. The values must share a unit.",
     examples: [
@@ -1711,7 +1762,8 @@ export const FUNCTIONS: FunctionDef[] = [
     name: "asin(), acos(), atan(), atan2()",
     anchor: "fn-inverse-trig",
     covers: ["asin", "acos", "atan", "atan2"],
-    syntax: "asin(<number>) | acos(<number>) | atan(<number>) | atan2(<y>, <x>)",
+    syntax:
+      "asin(<number>) | acos(<number>) | atan(<number>) | atan2(<y>, <x>)",
     description:
       "The inverse trigonometric functions of CSS: they take a number and return an angle, in deg. atan2(y, x) gives the angle of the point (x, y), whatever its quarter: the way to turn an object toward a point. Its two values must share a unit.",
     examples: [
@@ -1741,7 +1793,8 @@ export const FUNCTIONS: FunctionDef[] = [
     name: "sign(), round(), mod(), rem()",
     anchor: "fn-stepped",
     covers: ["sign", "round", "mod", "rem"],
-    syntax: "sign(<value>) | round([nearest | up | down | to-zero,]? <value>, <step>?) | mod(<value>, <value>) | rem(<value>, <value>)",
+    syntax:
+      "sign(<value>) | round([nearest | up | down | to-zero,]? <value>, <step>?) | mod(<value>, <value>) | rem(<value>, <value>)",
     description:
       "The stepped functions of CSS. sign() gives -1, 0 or 1. round() snaps a value to a multiple of its step (1 by default): nearest (halfway goes up), up, down or to-zero. mod() and rem() give the rest of a division: mod() takes the sign of the divisor, rem() the sign of the value, so mod(-7, 3) is 2 and rem(-7, 3) is -1. Their values must share a unit: round(37deg, 15deg) is 30deg.",
     examples: [
