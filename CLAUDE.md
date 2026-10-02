@@ -7,7 +7,7 @@ gss-lang.dev; npm package: `gss-lang`.
 ## Read first
 
 - `ROADMAP.md`: what GSS already does, and what comes next. The **Essentials** section (Oct. 2) is done;
-  the next item is `setProperty()` from JS.
+  Lucas's order for what comes next is at the top of **Priorities** (first: animated gradients).
 - `DECISIONS.md`: every design decision, numbered. The next one is **101**. Add a decision for every
   new feature or behavior change.
 - `CONTRIBUTING.md`: where things live. `CHANGELOG.md`: user-facing changes, under "Unreleased".
@@ -37,8 +37,3 @@ gss-lang.dev; npm package: `gss-lang`.
   or internal vocabulary.
 - When a CSS or SVG notion exists, GSS takes its syntax and its behavior; any difference from CSS
   is written in the decision.
-
-## Settled for the next feature
-
-`:nth-child()`: the copies of a `* n` are siblings, like `sibling-index()`. In
-`@scene { cube * 4; sphere; }`, `cube:nth-child(odd)` matches cubes 1 and 3, and the sphere is child 5.

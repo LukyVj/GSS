@@ -130,7 +130,18 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 
 ## Priorities
 
-**Next, in Lucas's order** (Oct. 1, evening; the Essentials below go first, Oct. 2): ~~`filter`~~ ✅ (decisions 83, 84), then ~~**motion path**~~ ✅ (decision 97), ~~**`conic-gradient()`**~~ ✅ (decision 98), then the mirrored screen fixed (decision 99, Lucas, Oct. 2), **`setProperty()` from JS** (see Rendering passes / runtime API). After them: nesting with `&`, `transform-origin`, fog.
+**Next, in Lucas's order** (Oct. 2, after 0.0.3; replaces the list of Oct. 1):
+
+1. **Animated gradients**: lift the limit of decision 82 (a gradient is not animated, `:hover` cannot change it)
+2. **`setProperty()` from JS** (see Rendering passes / runtime API)
+3. **Nesting** with `&`
+4. **`transform-origin`**
+5. **Fog**
+6. ~~`:nth-child()`~~ ✅ already done (decision 92)
+7. **A noise image function**, usable wherever a gradient is (`background`, `color`, materials), modelled on SVG `feTurbulence`. The first step toward 2D compositions: several `background` layers with `background-blend-mode`, then `mask-image` and a displacement like `feDisplacementMap`, rather than a separate 2D mode
+8. **Several lights, and colored lights**
+
+Done from the list of Oct. 1: ~~`filter`~~ ✅ (decisions 83, 84), ~~motion path~~ ✅ (decision 97), ~~`conic-gradient()`~~ ✅ (decision 98), the mirrored screen fixed (decision 99).
 
 **Essentials** (added by Lucas, Oct. 2), **before the motion path**, in the order suggested by Claude: structure first (compile time, no runtime cost), then interaction, then scroll.
 
