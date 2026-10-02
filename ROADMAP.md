@@ -122,9 +122,9 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 
 ## Priorities
 
-**Next, in Lucas's order** (Oct. 1, evening): ~~`filter`~~ ✅ (decisions 83, 84), then **motion path** (`offset-path: path()` / `ray()`, #12 below), **`conic-gradient()`**, **`setProperty()` from JS** (see Rendering passes / runtime API). After them: nesting with `&`, `transform-origin`, fog.
+**Next, in Lucas's order** (Oct. 1, evening; the Essentials below go first, Oct. 2): ~~`filter`~~ ✅ (decisions 83, 84), then **motion path** (`offset-path: path()` / `ray()`, #12 below), **`conic-gradient()`**, **`setProperty()` from JS** (see Rendering passes / runtime API). After them: nesting with `&`, `transform-origin`, fog.
 
-**Essentials** (added by Lucas, Oct. 2), in the order suggested by Claude: structure first (compile time, no runtime cost), then interaction, then scroll.
+**Essentials** (added by Lucas, Oct. 2), **before the motion path**, in the order suggested by Claude: structure first (compile time, no runtime cost), then interaction, then scroll.
 
 - [ ] **`:nth-child(an+b [of S])`**, `:nth-last-child()`, `:nth-of-type()`, `:nth-last-of-type()`, with `odd` / `even`: resolved at compile time on the tree of `@scene`; the copies of a `* n` are siblings, so `:nth-child(odd)` and `sibling-index()` count the same way (decision 52)
 - [ ] **`:first-child`**, `:last-child`, `:only-child`, `:first-of-type`, `:last-of-type`, `:only-of-type` (shortcuts of the above; "type" = the shape: `cube`, `sphere`, `group`…)
