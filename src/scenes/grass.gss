@@ -1,0 +1,169 @@
+@scene {
+  group#field {
+    group.tuft * 64 {
+      prism.blade;
+    }
+  }
+}
+
+/* ── ATMOSPHÈRE ──────────────────────────────── */
+
+scene {
+  background: linear-gradient(
+    #a8beb8,
+    #e0dfbe
+  );
+
+  floor: #64734a;
+
+  camera-distance: 6;
+  camera-angle: 25deg 22deg;
+  camera-target: 0 0.45 0;
+
+  light: 310deg 38deg;
+  ambient: 0.55;
+  dpr: 1.5;
+}
+
+/* ── DISTRIBUTION ────────────────────────────── */
+
+/*
+  Grille de 8 × 8, légèrement désordonnée.
+  Les valeurs aléatoires restent stables.
+  Chaque groupe est placé au niveau du sol.
+*/
+
+.tuft {
+  --col: mod(sibling-index() - 1, 8);
+
+  --row: round(
+    down,
+    calc((sibling-index() - 1) / 8)
+  );
+
+  --x: calc(
+    (var(--col) - 3.5) * 0.37
+    + random(-0.1, 0.1)
+  );
+
+  --z: calc(
+    (var(--row) - 3.5) * 0.37
+    + random(-0.1, 0.1)
+  );
+
+  translate: var(--x) 0 var(--z);
+
+  rotate-y: random(-35deg, 35deg);
+
+  animation: wind 4.8s ease-in-out;
+
+  /* Le déphasage fait traverser le vent au champ. */
+
+  animation-delay: calc(
+    var(--col) * -0.24s
+    + var(--row) * -0.16s
+  );
+}
+
+/* ── BRINS ──────────────────────────────────── */
+
+/*
+  Une lame effilée, légèrement courbée visuellement.
+  Sa hauteur est compensée par translate :
+  sa base reste à la hauteur de son groupe.
+*/
+
+.blade {
+  --height: random(0.55, 1.05);
+
+  d: polygon(
+    -0.055 0.5,
+    0.055 0.5,
+    0.12 -0.5
+  );
+
+  depth: 0.014;
+  scale: var(--height);
+  translate: 0 calc(var(--height) / 2) 0;
+
+  material: matte();
+
+  color: linear-gradient(
+    to top,
+    #344b2c,
+    #729347 55%,
+    #b4bd6e
+  );
+}
+
+/* Quelques variations, sans ajouter de géométrie. */
+
+.tuft:nth-child(3n) .blade {
+  color: linear-gradient(
+    to top,
+    #3d522d,
+    #8b9c4d 60%,
+    #c9c984
+  );
+}
+
+.tuft:nth-child(5n) .blade {
+  color: linear-gradient(
+    to top,
+    #304b35,
+    #5d8952 60%,
+    #a5bd79
+  );
+}
+
+/* ── VENT ───────────────────────────────────── */
+
+/*
+  Une petite oscillation, puis une rafale plus forte.
+  On anime le groupe : le pivot reste à la racine.
+*/
+
+@keyframes wind {
+  0%, 100% {
+    rotate-z: -5deg;
+    rotate-x: 3deg;
+  }
+
+  22% {
+    rotate-z: 8deg;
+    rotate-x: -4deg;
+  }
+
+  48% {
+    rotate-z: -17deg;
+    rotate-x: 9deg;
+  }
+
+  68% {
+    rotate-z: -11deg;
+    rotate-x: 5deg;
+  }
+
+  84% {
+    rotate-z: 4deg;
+    rotate-x: -2deg;
+  }
+}
+
+/* ── PETITS ÉCRANS ───────────────────────────── */
+
+@media (max-width: 600px) {
+  scene {
+    camera-distance: 8;
+    camera-angle: 30deg 30deg;
+    dpr: 0.75;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tuft {
+    animation: none !important;
+    rotate-z: -5deg;
+    rotate-x: 3deg;
+  }
+}

@@ -19,6 +19,7 @@ import steve1 from "../scenes/steve1.gss?raw";
 import steve2 from "../scenes/steve2.gss?raw";
 import steveHouse from "../scenes/steveHouse.gss?raw";
 import stevePortal from "../scenes/stevePortal.gss?raw";
+import grass from "../scenes/grass.gss?raw";
 
 import { FIRST_SCENE } from "../docs/guide";
 import { formatGss } from "../docs/format";
@@ -245,5 +246,10 @@ export const INSPIRATION: Inspiration[] = [
     slug: "steve-portal",
     title: "Minecraft Steve portal animation",
     code: stevePortal,
+  },
+  {
+    slug: "grass",
+    title: "Some grass blades, blowing in the wind",
+    code: grass,
   },
 ];
