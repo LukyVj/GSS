@@ -38,6 +38,8 @@ import { enclosing, groupBounds, objectSphere, sceneMiss, type Sphere } from "./
 import { GRAIN } from "../../features/filter";
 import { filterCode } from "./filters";
 import { COLOR_LIBRARY } from "./color-library";
+import { isLive, liveCode, liveNumber } from "./live";
+import { liveLight, liveRead } from "./properties";
 
 export { activeSlots, hoverSlots } from "./animation";
 export { shapeNames, shapeRadius } from "./shapes";
@@ -82,7 +84,7 @@ export function generateShader(
   // objects already combined count (res.x).
   const plainUnion = (instance: StyledInstance) =>
     readOperation(instance.styles["operation"]) === "opU" &&
-    readNumber(instance.styles["blend"], "blend", 0, true) === 0;
+    liveNumber(instance.styles["blend"], "blend", 0, true) === 0;
   const floorStyle = sceneStyles["floor"];
   const hasFloor = !(
     floorStyle?.length === 1 &&
@@ -125,13 +127,16 @@ export function generateShader(
     );
 
     const operation = readOperation(instance.styles["operation"]);
-    const blend = readNumber(instance.styles["blend"], "blend", 0, true);
+    // A blend set from JS (decision 105) is always smooth, and never 0: it divides
+    const blend = liveNumber(instance.styles["blend"], "blend", 0, true);
     const shapeValue = `vec2(${shapeCode} * ${scales.join(" * ")}, ${glslFloat(instance.index)})`;
 
     const combine =
-      blend > 0
-        ? `${SMOOTH[operation]}(res, ${shapeValue}, ${glslFloat(blend)})`
-        : `${operation}(res, ${shapeValue})`;
+      isLive(blend)
+        ? `${SMOOTH[operation]}(res, ${shapeValue}, max(${liveCode(instance.styles["blend"])}, 0.00001))`
+        : blend > 0
+          ? `${SMOOTH[operation]}(res, ${shapeValue}, ${glslFloat(blend)})`
+          : `${operation}(res, ${shapeValue})`;
 
     const groupLines = instance.groupStyles.flatMap((styles) =>
       transformLines(styles, keyframes, undefined, hoisted),
@@ -194,8 +199,11 @@ export function generateShader(
     floor[0].type === "IDENT" &&
     floor[0].value === "none";
 
-  // ambient: the share of light received in the shadow; the sun gives the rest
-  const ambient = readNumber(sceneStyles["ambient"], "ambient", 0.1, true);
+  // ambient: the share of light received in the shadow; the sun gives the rest.
+  // Set from JS (decision 105): kept between 0 and 1 on the GPU.
+  const liveAmbient = liveCode(sceneStyles["ambient"], "ambient");
+  const ambientCode = liveAmbient === null ? null : `clamp(${liveAmbient}, 0.0, 1.0)`;
+  const ambient = ambientCode ? 0 : readNumber(sceneStyles["ambient"], "ambient", 0.1, true);
   if (ambient > 1) {
     throw errorAt(
       sceneStyles["ambient"],
@@ -211,8 +219,10 @@ export function generateShader(
 
   const map = groupBounds(instances, mapLines, spheres, plainUnion, nearest);
   // A blend adds a fillet up to its distance around the objects it joins
-  const maxBlend = Math.max(0, ...instances.map((i) => readNumber(i.styles["blend"], "blend", 0, true)));
-  const known = spheres.every((s): s is Sphere => s !== null) && spheres.length > 0;
+  const blends = instances.map((i) => liveNumber(i.styles["blend"], "blend", 0, true));
+  const maxBlend = Math.max(0, ...blends.filter((b): b is number => !isLive(b)));
+  // A blend set from JS: how far it reaches is not known, nor the sphere of the scene
+  const known = spheres.every((s): s is Sphere => s !== null) && spheres.length > 0 && !blends.some(isLive);
   const scene = known ? enclosing(spheres as Sphere[]) : null;
   const sceneSphereCode = scene
     ? sceneMiss(scene.center, scene.radius + maxBlend + 0.01, hasFloor)
@@ -334,16 +344,21 @@ uniform vec2 uPick;`
       .replace("/*@SHADE_CALLS*/", moreLines(shadeCalls))
       .replace(
         "/*@FLOOR*/",
-        noFloor ? "vec3(0.0)" : readColor(floor, "vec3(0.91, 0.89, 0.86)"),
+        noFloor ? "vec3(0.0)" : liveRead("floor", (value) => readColor(value, "vec3(0.91, 0.89, 0.86)"))(floor),
       )
       .replace("/*@FLOOR_DISTANCE*/", noFloor ? "1e10" : "p.y")
-      .replace("/*@LIGHT*/", vec3(readLight(sceneStyles["light"])))
-      .replace("/*@AMBIENT*/", glslFloat(ambient))
-      .replace("/*@DIRECT*/", glslFloat(direct))
+      // A sun set from JS (decision 105): a function, since a constant cannot read a uniform
+      .replace(
+        "const vec3 LIGHT_DIR = /*@LIGHT*/;",
+        liveLight(sceneStyles["light"]) ??
+          `const vec3 LIGHT_DIR = ${vec3(readLight(sceneStyles["light"]))};`,
+      )
+      .replace("/*@AMBIENT*/", ambientCode ?? glslFloat(ambient))
+      .replace("/*@DIRECT*/", ambientCode ? `(1.0 - ${ambientCode})` : glslFloat(direct))
       .replace(
         "/*@CAMERA_TARGET*/",
         sceneStyles["camera-target"]
-          ? readTranslate(sceneStyles["camera-target"])
+          ? liveRead("translate", readTranslate)(sceneStyles["camera-target"]) // a target set from JS (decision 105)
           : "vec3(0.0, 0.5, 0.0)",
       )
       .replace(

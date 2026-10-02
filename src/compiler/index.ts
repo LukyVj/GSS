@@ -20,12 +20,14 @@ import {
   DARK_QUERY,
   resolveColors,
   resolveNamedColors,
+  MATERIAL_FUNCTIONS,
 } from "./values/colors";
 import { sceneTextures } from "./features/textures";
 import { readDpr, type Dpr } from "./features/dpr";
 import { readTransition, type Transition } from "./features/transition";
-import { buildPasses, objectFilters, readSteps, type Pass } from "./features/filter";
+import { buildPasses, FILTER_FUNCTIONS, objectFilters, readSteps, type Pass } from "./features/filter";
 import { generateWGSL } from "./shader/wgsl";
+import { GRADIENT_FUNCTIONS } from "./shader/gradient";
 import {
   propertyFloats,
   propertyToken,
@@ -302,7 +304,13 @@ function compileStylesheet(
   );
   errors.throwIfAny();
   return {
-    ...(passes!.length > 0 ? { passes } : {}),
+    ...(passes!.length > 0
+      ? {
+          passes: passes!.map((pass) =>
+            withProperties(pass, registered.length, hoverSlots(styled).length + active.length, timelines!.length > 0),
+          ),
+        }
+      : {}),
     ...(registered.length > 0 ? { properties: registered } : {}),
     shader: shader!,
     camera: camera!,
@@ -337,6 +345,19 @@ function checkedShader(
   return undefined;
 }
 
+// A pass of filter that reads a variable set from JS declares the uniforms of the scene
+// before it, in the same order: its WGSL then reads them where the scene writes them, in
+// the buffer they share (decision 105). The other passes stay as they were.
+function withProperties(pass: Pass, properties: number, slots: number, timeline: boolean): Pass {
+  if (!pass.shader.includes("uProperties")) return pass;
+  const uniforms = [
+    ...(slots > 0 ? [`uniform float uHover[${slots}];`] : []),
+    ...(timeline ? ["uniform vec4 uTimeline;"] : []),
+    `uniform vec4 uProperties[${properties}]; // @property: the variables set from JS`,
+  ];
+  return { ...pass, shader: pass.shader.replace("uniform sampler2D uInput0;", `${uniforms.join("\n")}\nuniform sampler2D uInput0;`) };
+}
+
 // The variables registered with @property (decision 105), with the 4 floats each starts
 // from: the value the scene gives it, or its initial-value. A frame cannot set one.
 function registeredProperties(stylesheet: Stylesheet, sceneStyles: Styles): RegisteredProperty[] {
@@ -361,20 +382,57 @@ function oneValue(name: string, at: object): Error {
 
 // The properties a registered variable can go in, for now (decision 105): those the
 // shader already computes at every frame
-const LIVE_PROPERTIES = ["translate", "rotate-x", "rotate-y", "rotate-z", "scale", "color", "offset-distance", "background"];
+const LIVE_PROPERTIES = [
+  "translate",
+  "filter",
+  "material",
+  "blend",
+  "floor",
+  "ambient",
+  "light",
+  "rotate-x",
+  "rotate-y",
+  "rotate-z",
+  "scale",
+  "color",
+  "offset-distance",
+  "offset-rotate",
+  "camera-target",
+  "size",
+  "radius",
+  "thickness",
+  "height",
+  "corner-radius",
+  "stroke-width",
+  "depth",
+  "texture-size",
+  "background",
+];
 
 function refuseLive(property: string, value: Token[]): void {
   const token = value.find((t) => t.type === "EXPR");
   if (!token) return;
   if (!LIVE_PROPERTIES.includes(property))
-    throw errorAt(value, `${token.value} is set from JS: it can go in ${LIVE_PROPERTIES.slice(0, -1).join(", ")} and background, for now`);
+    throw errorAt(
+      value,
+      `${token.value} is set from JS, and ${property} is read when the scene compiles. A variable set from JS can go in ${LIVE_PROPERTIES.slice(0, -1).join(", ")} and ${LIVE_PROPERTIES.at(-1)}`,
+    );
 }
 
 // Once the math and the colors are computed: the math around a registered variable is
 // written in GLSL (calc.ts); any other function around it does not read it yet
+// The functions that read a registered variable themselves: gradients, materials
+const LIVE_FUNCTIONS = [...GRADIENT_FUNCTIONS, ...MATERIAL_FUNCTIONS, ...FILTER_FUNCTIONS];
+
 function refuseLiveCalls(value: Token[]): Token[] {
   const token = value.find((t) => t.type === "EXPR");
-  const call = value.findIndex((t, i) => t.type === "IDENT" && value[i + 1]?.type === "PUNCT" && value[i + 1].value === "(");
+  const call = value.findIndex(
+    (t, i) =>
+      t.type === "IDENT" &&
+      !LIVE_FUNCTIONS.includes(t.value) &&
+      value[i + 1]?.type === "PUNCT" &&
+      value[i + 1].value === "(",
+  );
   if (token && call >= 0)
     throw errorAt(value, `${token.value} is set from JS: it cannot go inside ${(value[call] as { value: string }).value}() yet`);
   return value;

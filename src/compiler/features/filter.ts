@@ -8,6 +8,7 @@ import type { Token } from "../syntax/tokenizer";
 import { errorAt } from "../syntax/errors";
 import { readFunction } from "../values/values";
 import { clampComputed } from "../values/calc";
+import { isLive, sub, type Num } from "../shader/codegen/live";
 
 // One pass after the scene: its fragment shader, and the images it reads
 // (0 = the scene, n = what pass n - 1 drew). Each pass draws the next image; the last one,
@@ -28,14 +29,17 @@ export const FILTER_FUNCTIONS = [
 ];
 
 const EXAMPLE = "filter: contrast(1.1) saturate(1.2) bloom(0.6);";
-const f = (n: number) => (Number.isInteger(n) ? `${n}.0` : `${+n.toFixed(6)}`);
+// A number in GLSL; a value set from JS (decision 105) is already GLSL
+const f = (n: Num) => (isLive(n) ? n : Number.isInteger(n) ? `${n}.0` : `${+n.toFixed(6)}`);
 const clamp01 = (expr: string) => `clamp(${expr}, 0.0, 1.0)`;
 
 // A color matrix of CSS Filter Effects, written as three dot products (rows)
-const matrix = (m: number[]) =>
+const matrix = (m: Num[]) =>
   clamp01(
     `vec3(${[0, 3, 6].map((r) => `dot(vec3(${m.slice(r, r + 3).map(f).join(", ")}), c)`).join(", ")})`,
   );
+// a + b × x: a number when x is a number, GLSL when x is set from JS
+const line = (a: number, b: number, x: Num): Num => (isLive(x) ? `(${f(a)} + ${f(b)} * ${x})` : a + b * x);
 
 // The GLSL of the grain: a different noise at each pixel and each frame
 export const GRAIN = `// grain(): a film-like noise, new at every frame
@@ -46,8 +50,8 @@ float grain(vec2 pixel, float time) {
 
 export type Step =
   | { kind: "pixel"; line: string }
-  | { kind: "blur"; sigma: number }
-  | { kind: "bloom"; amount: number; sigma: number };
+  | { kind: "blur"; sigma: Num }
+  | { kind: "bloom"; amount: Num; sigma: Num };
 
 // filter: a list of functions, or none
 export function readSteps(value: Token[]): Step[] {
@@ -82,22 +86,28 @@ function readStep(name: string, call: Token[]): Step | null {
   const [first, second] = args.map((a) => a[0]);
 
   // An amount: a number or a percentage (50% is 0.5), never negative, like CSS
-  const amount = (token: Token | undefined, initial: number, max = Infinity) => {
+  const amount = (token: Token | undefined, initial: number, max = Infinity): Num => {
     if (!token) return initial;
+    // Set from JS (decision 105): never negative, kept below max, on the GPU
+    if (token.type === "EXPR" && (token.syntax === "number" || token.syntax === "percentage")) {
+      const n = token.syntax === "percentage" ? `${token.code} / 100.0` : token.code;
+      return max === Infinity ? `max(${n}, 0.0)` : `clamp(${n}, 0.0, ${f(max)})`;
+    }
     const n =
       token.type === "NUMBER" ? clampComputed(token, 0) : token.type === "PERCENTAGE" ? clampComputed(token, 0) / 100 : NaN;
     if (!(n >= 0)) throw errorAt(call, `${name}() expects a positive number or a percentage, like: ${name}(0.5)`);
-    return Math.min(n, max);
+    return Math.min(n, max) as Num;
   };
   // A length in px, like CSS
-  const length = (token: Token | undefined, initial: number) => {
+  const length = (token: Token | undefined, initial: number): Num => {
     if (!token) return initial;
+    if (token.type === "EXPR" && token.syntax === "length") return `max(${token.code}, 0.0)`; // set from JS (decision 105)
     if (token.type === "NUMBER" && token.value === 0) return 0;
     if (token.type !== "DIMENSION" || token.unit !== "px" || token.value < 0)
       throw errorAt(call, `${name}() expects a length in px, like: ${name === "bloom" ? "bloom(0.6, 16px)" : "blur(4px)"}`);
     return token.value;
   };
-  const one = (n: number) => {
+  const one = (n: Num) => {
     if (second) throw errorAt(call, `${name}() takes one value`);
     return n;
   };
@@ -105,7 +115,7 @@ function readStep(name: string, call: Token[]): Step | null {
   switch (name) {
     case "blur": {
       const sigma = one(length(first, 0));
-      return sigma > 0 ? { kind: "blur", sigma } : null; // blur(0): nothing to do
+      return isLive(sigma) || sigma > 0 ? { kind: "blur", sigma } : null; // blur(0): nothing to do
     }
     case "bloom":
       return { kind: "bloom", amount: amount(first, 0.6), sigma: length(second, 16) };
@@ -122,37 +132,51 @@ function readStep(name: string, call: Token[]): Step | null {
       return {
         kind: "pixel",
         line: `c = ${matrix([
-          0.213 + 0.787 * s, 0.715 - 0.715 * s, 0.072 - 0.072 * s,
-          0.213 - 0.213 * s, 0.715 + 0.285 * s, 0.072 - 0.072 * s,
-          0.213 - 0.213 * s, 0.715 - 0.715 * s, 0.072 + 0.928 * s,
+          line(0.213, 0.787, s), line(0.715, -0.715, s), line(0.072, -0.072, s),
+          line(0.213, -0.213, s), line(0.715, 0.285, s), line(0.072, -0.072, s),
+          line(0.213, -0.213, s), line(0.715, -0.715, s), line(0.072, 0.928, s),
         ])};`,
       };
     }
     case "grayscale": {
-      const a = 1 - one(amount(first, 1, 1));
+      const a = sub(1, one(amount(first, 1, 1)));
       return {
         kind: "pixel",
         line: `c = ${matrix([
-          0.2126 + 0.7874 * a, 0.7152 - 0.7152 * a, 0.0722 - 0.0722 * a,
-          0.2126 - 0.2126 * a, 0.7152 + 0.2848 * a, 0.0722 - 0.0722 * a,
-          0.2126 - 0.2126 * a, 0.7152 - 0.7152 * a, 0.0722 + 0.9278 * a,
+          line(0.2126, 0.7874, a), line(0.7152, -0.7152, a), line(0.0722, -0.0722, a),
+          line(0.2126, -0.2126, a), line(0.7152, 0.2848, a), line(0.0722, -0.0722, a),
+          line(0.2126, -0.2126, a), line(0.7152, -0.7152, a), line(0.0722, 0.9278, a),
         ])};`,
       };
     }
     case "sepia": {
-      const a = 1 - one(amount(first, 1, 1));
+      const a = sub(1, one(amount(first, 1, 1)));
       return {
         kind: "pixel",
         line: `c = ${matrix([
-          0.393 + 0.607 * a, 0.769 - 0.769 * a, 0.189 - 0.189 * a,
-          0.349 - 0.349 * a, 0.686 + 0.314 * a, 0.168 - 0.168 * a,
-          0.272 - 0.272 * a, 0.534 - 0.534 * a, 0.131 + 0.869 * a,
+          line(0.393, 0.607, a), line(0.769, -0.769, a), line(0.189, -0.189, a),
+          line(0.349, -0.349, a), line(0.686, 0.314, a), line(0.168, -0.168, a),
+          line(0.272, -0.272, a), line(0.534, -0.534, a), line(0.131, 0.869, a),
         ])};`,
       };
     }
     case "hue-rotate": {
       const turn: Record<string, number> = { deg: Math.PI / 180, rad: 1, turn: 2 * Math.PI };
       let angle = 0;
+      if (first?.type === "EXPR" && first.syntax === "angle") {
+        // Set from JS (decision 105): the same matrix, its cosine and sine computed on the GPU
+        one(0);
+        const [cos, sin] = [`cos(${first.code})`, `sin(${first.code})`];
+        const entry = (a: number, b: number, c: number) => `(${f(a)} + ${cos} * ${f(b)} + ${sin} * ${f(c)})`;
+        return {
+          kind: "pixel",
+          line: `c = ${matrix([
+            entry(0.213, 0.787, -0.213), entry(0.715, -0.715, -0.715), entry(0.072, -0.072, 0.928),
+            entry(0.213, -0.213, 0.143), entry(0.715, 0.285, 0.14), entry(0.072, -0.072, -0.283),
+            entry(0.213, -0.213, -0.787), entry(0.715, -0.715, 0.715), entry(0.072, 0.928, 0.072),
+          ])};`,
+        };
+      }
       if (first) {
         if (first.type === "NUMBER" && first.value === 0) angle = 0;
         else if (first.type === "DIMENSION" && first.unit in turn) angle = first.value * turn[first.unit];
@@ -196,7 +220,7 @@ out vec4 outColor;`;
 // 65 samples, spread wider when the blur is large. `sample` reads s (a vec4) into what is
 // summed; `layer`, when given, keeps only the pixels of that layer (decision 84), or with
 // `outside`, only the pixels around it.
-function blurCode(sigma: number, direction: string, sample: string, layer?: number, outside = false): string[] {
+function blurCode(sigma: Num, direction: string, sample: string, layer?: number, outside = false): string[] {
   const inside =
     layer === undefined
       ? "1.0"

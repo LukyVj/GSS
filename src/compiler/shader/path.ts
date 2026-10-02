@@ -34,7 +34,7 @@ function boxOf(points: Point[]): ViewBox {
 export function pathFunction(
   name: string,
   lines: Point[][],
-  strokeWidth: number,
+  strokeWidth: number | string, // GLSL: a width set from JS (decision 105)
   viewBox: ViewBox | null,
 ): string {
   const box = viewBox ?? boxOf(lines.flat());
@@ -84,7 +84,7 @@ export function pathFunction(
     .join("\n");
 
   const all = boxCode(segments.flat());
-  const radius = float(strokeWidth / 2);
+  const radius = typeof strokeWidth === "number" ? float(strokeWidth / 2) : `(${strokeWidth} / 2.0)`;
 
   return `float NAME(vec3 p) {
   // Far from the whole path, the distance to its box is enough
@@ -104,7 +104,7 @@ ${body}
 export function polygonFunction(
   name: string,
   contours: Point[][],
-  depth: number,
+  depth: number | string, // GLSL: a depth set from JS (decision 105)
   viewBox: ViewBox | null,
 ): string {
   const box = viewBox ?? boxOf(contours.flat());
@@ -147,7 +147,7 @@ export function polygonFunction(
   const all = boxOf(sides.flat());
   const allCenter = vec2({ x: all.x + all.width / 2, y: all.y + all.height / 2 });
   const allHalf = vec2({ x: all.width / 2, y: all.height / 2 });
-  const h = float(depth / 2);
+  const h = typeof depth === "number" ? float(depth / 2) : `(${depth} / 2.0)`;
 
   return `float NAME(vec3 p) {
   // Far from the whole shape, the distance to its box is enough

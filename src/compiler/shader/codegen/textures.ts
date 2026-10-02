@@ -2,10 +2,9 @@
 import type { Token } from "../../syntax/tokenizer";
 import type { Keyframes } from "../../syntax/ast";
 import { FACES, type Face, type StyledInstance } from "../../cascade/resolve";
-import { readNumber } from "../../values/values";
 import { readRendering, readTexture, sceneTextures } from "../../features/textures";
-import { glslFloat, label, vec3, type Hover } from "./glsl";
-import { readSize } from "./read";
+import { glslFloat, label, type Hover } from "./glsl";
+import { g, liveNumber, liveSize3, mul, type Num } from "./live";
 import { spaceFunction } from "./transforms";
 
 // The image seen from the axis the surface faces most: y is the top and the bottom,
@@ -46,17 +45,18 @@ const FACE_NUMBERS: Record<Face, number> = {
 };
 
 // The size one image covers: texture-size, or else the full size of the object (one image per face)
-function textureBox(instance: StyledInstance): number[] {
+function textureBox(instance: StyledInstance): Num[] {
   // texture-size: the size of one image on the surface; the pattern repeats (like background-size)
   const imageSize = instance.styles["texture-size"];
   if (imageSize) {
-    const size = readNumber(imageSize, "texture-size", 1); // its error: "texture-size expects one positive number"
+    const size = liveNumber(imageSize, "texture-size", 1); // its error: "texture-size expects one positive number"
     return [size, size, size];
   }
 
-  if (instance.tag === "cube") return readSize(instance.styles["size"]);
+  // A size set from JS (decision 105): the images follow it
+  if (instance.tag === "cube") return liveSize3(instance.styles["size"]);
   if (instance.tag === "sphere") {
-    const diameter = 2 * readNumber(instance.styles["radius"], "radius", 0.5); // same default as SHAPES.sphere
+    const diameter = mul(2, liveNumber(instance.styles["radius"], "radius", 0.5)); // same default as SHAPES.sphere
     return [diameter, diameter, diameter];
   }
   return [1, 1, 1];
@@ -88,7 +88,7 @@ export function textureCode(
   const branches = textured.map((instance) => {
     const id = glslFloat(instance.index);
     const space = `space${instance.index}`;
-    const box = vec3(textureBox(instance));
+    const box = `vec3(${textureBox(instance).map(g).join(", ")})`;
     const pixelated = readRendering(instance.styles["image-rendering"]); // one rendering for every face
     // The number of the image a texture value names, or null when there is none
     const imageOf = (value: Token[] | undefined): number | null =>

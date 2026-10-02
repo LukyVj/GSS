@@ -10,6 +10,7 @@ import type { Token } from "../syntax/tokenizer";
 import { errorAt } from "../syntax/errors";
 import { readFunction } from "../values/values";
 import { NAMED_COLORS } from "../values/named-colors";
+import { add, div, isLive, largest, mul, sub, type Num } from "./codegen/live";
 
 export const GRADIENT_FUNCTIONS = [
   "linear-gradient",
@@ -20,7 +21,8 @@ export const GRADIENT_FUNCTIONS = [
   "repeating-conic-gradient",
 ];
 
-type Stop = { color: string; at: number | null };
+// A number of a gradient can be GLSL: a variable set from JS (decision 105)
+type Stop = { color: string; at: Num | null };
 
 const f = (n: number) => (Number.isInteger(n) ? `${n}.0` : `${+n.toFixed(6)}`);
 const isWord = (t: Token | undefined, ...words: string[]) =>
@@ -61,7 +63,8 @@ export function backgroundFunction(gradient: Gradient, moving: Map<string, strin
 export function gradientMean(value: Token[]): string {
   const { stops } = readGradient(value);
   const rgb = [0, 1, 2].map((i) => {
-    const values = stops.map((s) => Number(s.color.slice(5, -1).split(", ")[i]));
+    // a color set from JS counts as a gray: its mean is not known (decision 105)
+    const values = stops.map((s) => (s.color.startsWith("vec3(") ? Number(s.color.slice(5, -1).split(", ")[i]) : 0.5));
     return Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 255);
   });
   return rgb.map((c) => c.toString(16).padStart(2, "0")).join("");
@@ -71,10 +74,11 @@ export function gradientMean(value: Token[]): string {
 export type Gradient = {
   name: string; // linear-gradient, repeating-radial-gradient…
   shape: string; // radial: circle or ellipse, and its size; an animation cannot change it
-  direction: number | { x: number; y: number }; // linear: an angle in radians, or a side or corner
-  center: [number, number]; // radial, conic: from the top left corner, fractions of the box
-  from: number; // conic: the start angle, in turns
-  stops: { color: string; at: number }[];
+  // linear: an angle in radians, or a side or corner; GLSL in radians when set from JS (decision 105)
+  direction: number | { x: number; y: number } | string;
+  center: [Num, Num]; // radial, conic: from the top left corner, fractions of the box
+  from: Num; // conic: the start angle, in turns
+  stops: { color: string; at: Num }[];
 };
 
 export function readGradient(value: Token[]): Gradient {
@@ -104,21 +108,35 @@ export function channels(gradient: Gradient): string[] {
   ];
 }
 
+// A number of a gradient that a variable set from JS gives (decision 105): written in
+// GLSL like a number an animation moves
+function fromJs(gradient: Gradient, name: string): boolean {
+  if (name === "angle") return typeof gradient.direction === "string";
+  if (name === "cx" || name === "cy") return isLive(gradient.center[name === "cx" ? 0 : 1]);
+  if (name === "from") return isLive(gradient.from);
+  if (name.startsWith("at")) return isLive(gradient.stops[Number(name.slice(2))].at);
+  return false;
+}
+
+// A number of a gradient in GLSL: f() for a number, its code for GLSL
+const code = (n: Num, short = false) => (isLive(n) ? n : f(short ? +n.toFixed(6) : n));
+
 // One number of a gradient, in GLSL
 export function channel(gradient: Gradient, name: string): string {
   if (name === "angle") {
     const d = gradient.direction;
+    if (typeof d === "string") return d;
     if (typeof d === "number") return f(+d.toFixed(6));
     // A corner depends on the size of the box: the angle of its direction
     if (d.x && d.y) return `atan(${f(d.x)} * size.y, ${f(d.y)} * size.x)`;
     // A side, like CSS: to top 0deg, to right 90deg, to bottom 180deg, to left 270deg
     return f(+(d.x ? (d.x > 0 ? Math.PI / 2 : (3 * Math.PI) / 2) : d.y > 0 ? 0 : Math.PI).toFixed(6));
   }
-  if (name === "cx") return f(gradient.center[0]);
-  if (name === "cy") return f(1 - gradient.center[1]); // y goes up in the shader
-  if (name === "from") return f(+gradient.from.toFixed(6));
+  if (name === "cx") return code(gradient.center[0]);
+  if (name === "cy") return code(sub(1, gradient.center[1])); // y goes up in the shader
+  if (name === "from") return code(gradient.from, true);
   const stop = gradient.stops[Number(name.replace(/\D+/, ""))];
-  return name.startsWith("at") ? f(stop.at) : stop.color;
+  return name.startsWith("at") ? code(stop.at) : stop.color;
 }
 
 // The lines that compute `vec3 col` from `vec2 at` and `vec2 size`
@@ -134,20 +152,22 @@ export function linesOf(gradient: Gradient, moving: Map<string, string> = new Ma
   const conic = name.includes("conic");
   const repeating = name.startsWith("repeating");
   const get = (key: string) => moving.get(key) ?? channel(gradient, key);
+  // Moved by an animation or :hover, or set from JS: written in GLSL, never as a constant
+  const moves = (key: string) => moving.has(key) || fromJs(gradient, key);
 
-  const lines = conic ? conicT(gradient, moving, get) : radial ? radialT(gradient, get) : linearT(gradient, moving);
+  const lines = conic ? conicT(gradient, moves, get) : radial ? radialT(gradient, get) : linearT(gradient, moves, get);
   const last = stops.length - 1;
-  const t0 = stops[0].at;
-  const tn = stops[last].at;
-  if (repeating && (moving.has("at0") || moving.has(`at${last}`)))
+  const t0 = stops[0].at as number;
+  const tn = stops[last].at as number;
+  if (repeating && (moves("at0") || moves(`at${last}`)))
     lines.push(`  t = ${get("at0")} + mod(t - ${get("at0")}, max(${get(`at${last}`)} - ${get("at0")}, 0.00001));`);
   else if (repeating && tn > t0) lines.push(`  t = ${f(t0)} + mod(t - ${f(t0)}, ${f(tn - t0)});`);
   lines.push(`  vec3 col = ${get("color0")};`);
   for (let i = 1; i < stops.length; i++) {
-    const a = stops[i - 1].at;
-    const b = stops[i].at;
+    const a = stops[i - 1].at as number;
+    const b = stops[i].at as number;
     const weight =
-      moving.has(`at${i - 1}`) || moving.has(`at${i}`)
+      moves(`at${i - 1}`) || moves(`at${i}`)
         ? `clamp((t - ${get(`at${i - 1}`)}) / max(${get(`at${i}`)} - ${get(`at${i - 1}`)}, 0.00001), 0.0, 1.0)`
         : b > a
           ? `clamp((t - ${f(a)}) / ${f(b - a)}, 0.0, 1.0)`
@@ -159,10 +179,12 @@ export function linesOf(gradient: Gradient, moving: Map<string, string> = new Ma
 
 function isColor(token: Token | undefined): boolean {
   if (token?.type === "HASH") return true;
+  if (token?.type === "EXPR") return token.syntax === "color"; // set from JS (decision 105)
   return token?.type === "IDENT" && Object.hasOwn(NAMED_COLORS, token.value.toLowerCase());
 }
 
 function colorOf(token: Token, value: Token[]): string {
+  if (token.type === "EXPR") return token.code;
   const hex =
     token.type === "HASH" ? token.value : NAMED_COLORS[(token as { value: string }).value.toLowerCase()];
   const full = hex.length === 3 ? [...hex].map((c) => c + c).join("") : hex;
@@ -181,27 +203,37 @@ function readStops(args: Token[][], value: Token[], name: string): Stop[] {
       throw errorAt(value, `${name}() expects colors, each with up to two percentages, like: ${example}`);
     // conic-gradient() also places its stops with angles: a full turn is 100%
     const conic = name.includes("conic");
-    if (conic && positions.some((p) => p.type !== "PERCENTAGE" && !(p.type === "DIMENSION" && p.unit in TURN)))
+    // A position set from JS (decision 105): a percentage, or an angle on a conic gradient
+    const percent = (p: Token) => p.type === "PERCENTAGE" || (p.type === "EXPR" && p.syntax === "percentage");
+    const angle = (p: Token) => (p.type === "DIMENSION" && p.unit in TURN) || (p.type === "EXPR" && p.syntax === "angle");
+    if (conic && positions.some((p) => !percent(p) && !angle(p)))
       throw errorAt(value, `The positions of ${name}() are angles or percentages, like: #fff 90deg`);
-    if (!conic && positions.some((p) => p.type !== "PERCENTAGE"))
+    if (!conic && positions.some((p) => !percent(p)))
       throw errorAt(value, `The positions of ${name}() are percentages, like: #fff 20%`);
     const vec = colorOf(color, value);
     if (positions.length === 0) stops.push({ color: vec, at: null });
     for (const p of positions)
       stops.push({
         color: vec,
-        at: p.type === "DIMENSION" ? (p.value * TURN[p.unit]) / (2 * Math.PI) : (p as { value: number }).value / 100,
+        at:
+          p.type === "EXPR"
+            ? p.syntax === "angle"
+              ? `(${p.code} / 6.2831853)`
+              : `(${p.code} / 100.0)`
+            : p.type === "DIMENSION"
+              ? (p.value * TURN[p.unit]) / (2 * Math.PI)
+              : (p as { value: number }).value / 100,
       });
   }
   if (stops.length < 2) throw errorAt(value, `${name}() needs at least two colors, like: ${example}`);
   // The first stop is at 0%, the last at 100%; a position never goes back; the others spread
   stops[0].at ??= 0;
   stops[stops.length - 1].at ??= 1;
-  let largest = -Infinity;
+  let before: Num = -Infinity;
   for (const stop of stops) {
     if (stop.at === null) continue;
-    stop.at = Math.max(stop.at, largest);
-    largest = stop.at;
+    stop.at = before === -Infinity ? stop.at : largest(stop.at, before);
+    before = stop.at;
   }
   for (let i = 1; i < stops.length; i++) {
     if (stops[i].at !== null) continue;
@@ -209,7 +241,7 @@ function readStops(args: Token[][], value: Token[], name: string): Stop[] {
     while (stops[end].at === null) end++;
     const from = stops[i - 1].at!;
     const to = stops[end].at!;
-    for (let k = i; k < end; k++) stops[k].at = from + ((to - from) * (k - i + 1)) / (end - i + 1);
+    for (let k = i; k < end; k++) stops[k].at = add(from, div(mul(sub(to, from), k - i + 1), end - i + 1));
     i = end;
   }
   return stops;
@@ -225,20 +257,24 @@ function readConic(setup: Token[], value: Token[]): Pick<Gradient, "from" | "cen
   const at = setup.findIndex((t) => isWord(t, "at"));
   const head = at >= 0 ? setup.slice(0, at) : setup;
   const where = at >= 0 ? setup.slice(at + 1) : [];
-  let from = 0; // in turns
+  let from: Num = 0; // in turns
   if (head.length > 0) {
     const angle = head[1];
-    if (!isWord(head[0], "from") || head.length !== 2 || angle.type !== "DIMENSION" || !(angle.unit in TURN))
+    const fromJs = angle?.type === "EXPR" && angle.syntax === "angle"; // set from JS (decision 105)
+    if (!isWord(head[0], "from") || head.length !== 2 || (!fromJs && (angle.type !== "DIMENSION" || !(angle.unit in TURN))))
       throw error("it starts with from <angle>, at <position>, or both");
-    from = (angle.value * TURN[angle.unit]) / (2 * Math.PI);
+    from =
+      angle.type === "EXPR"
+        ? `(${angle.code} / 6.2831853)`
+        : ((angle as { value: number }).value * TURN[(angle as { unit: string }).unit]) / (2 * Math.PI);
   }
   return { from, center: readPosition(where, at >= 0, error) };
 }
 
 // t around the center: 0 at the start angle, 1 a full turn later, clockwise from the top
 // like CSS (CSS Images 4)
-function conicT(gradient: Gradient, moving: Map<string, string>, get: (key: string) => string): string[] {
-  const from = moving.has("from") || gradient.from ? ` - ${get("from")}` : "";
+function conicT(gradient: Gradient, moves: (key: string) => boolean, get: (key: string) => string): string[] {
+  const from = moves("from") || gradient.from ? ` - ${get("from")}` : "";
   return [
     `  vec2 c = vec2(${get("cx")}, ${get("cy")}) * size;`, // y goes up in the shader
     "  vec2 p = at - c;",
@@ -251,6 +287,8 @@ function conicT(gradient: Gradient, moving: Map<string, string>, get: (key: stri
 function readLinear(setup: Token[], value: Token[]): Gradient["direction"] {
   const error = () =>
     errorAt(value, "linear-gradient() starts with an angle or a side, like: linear-gradient(to top right, …) or linear-gradient(45deg, …)");
+  // An angle set from JS (decision 105): its GLSL, in radians
+  if (setup.length === 1 && setup[0].type === "EXPR" && setup[0].syntax === "angle") return setup[0].code;
   if (setup.length === 1 && setup[0].type === "DIMENSION") {
     const turn: Record<string, number> = { deg: Math.PI / 180, rad: 1, turn: 2 * Math.PI };
     const t = setup[0];
@@ -272,17 +310,18 @@ function readLinear(setup: Token[], value: Token[]): Gradient["direction"] {
 }
 
 // t along the gradient line: 0 at its start, 1 at its end (CSS Images 3)
-function linearT(gradient: Gradient, moving: Map<string, string>): string[] {
+function linearT(gradient: Gradient, moves: (key: string) => boolean, get: (key: string) => string): string[] {
   const d = gradient.direction;
-  const a = typeof d === "number" ? d : 0;
-  const dir = moving.has("angle")
-    ? `vec2(sin(${moving.get("angle")}), cos(${moving.get("angle")}))` // the angle turns (decision 102)
-    : typeof d === "number"
-      ? `vec2(${f(+Math.sin(a).toFixed(6))}, ${f(+Math.cos(a).toFixed(6))})`
-      : // A corner: the line is perpendicular to the diagonal between the two other corners
-        d.x && d.y
-        ? `normalize(vec2(${f(d.x)} * size.y, ${f(d.y)} * size.x))`
-        : `vec2(${f(d.x)}, ${f(d.y)})`;
+  const side = typeof d === "object" ? d : { x: 0, y: 0 };
+  const dir =
+    moves("angle") || typeof d === "string"
+      ? `vec2(sin(${get("angle")}), cos(${get("angle")}))` // the angle turns (decision 102), or is set from JS (105)
+      : typeof d === "number"
+        ? `vec2(${f(+Math.sin(d).toFixed(6))}, ${f(+Math.cos(d).toFixed(6))})`
+        : // A corner: the line is perpendicular to the diagonal between the two other corners
+          side.x && side.y
+          ? `normalize(vec2(${f(side.x)} * size.y, ${f(side.y)} * size.x))`
+          : `vec2(${f(side.x)}, ${f(side.y)})`;
   return [
     `  vec2 dir = ${dir};`,
     "  vec2 p = at - 0.5 * size;",
@@ -343,12 +382,13 @@ function readPosition(
   where: Token[],
   written: boolean,
   error: (what: string) => Error,
-): [number, number] {
+): [Num, Num] {
   // The center, from the top left corner, as fractions of the canvas
-  let cx = 0.5;
-  let cy = 0.5;
-  const fraction = (t: Token, axis: "x" | "y"): number => {
+  let cx: Num = 0.5;
+  let cy: Num = 0.5;
+  const fraction = (t: Token, axis: "x" | "y"): Num => {
     if (t.type === "PERCENTAGE") return t.value / 100;
+    if (t.type === "EXPR" && t.syntax === "percentage") return `(${t.code} / 100.0)`; // set from JS (decision 105)
     if (isWord(t, "center")) return 0.5;
     if (axis === "x" && isWord(t, "left")) return 0;
     if (axis === "x" && isWord(t, "right")) return 1;

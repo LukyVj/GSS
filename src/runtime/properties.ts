@@ -13,6 +13,7 @@ const EXAMPLES: Record<Syntax, string> = {
   angle: 'an <angle>, like "90deg"',
   percentage: 'a <percentage>, like "50%"',
   color: 'a <color>, like "#ff5a36"',
+  length: 'a <length>, like "4px"',
 };
 
 // A value written by the page → the 4 floats of its uniform, like the compiler writes them
@@ -34,6 +35,7 @@ export function parsePropertyValue(name: string, syntax: Syntax, value: string |
   const unit = text.slice(match[0].length);
   if (syntax === "number" && unit === "") return [n, 0, 0, 0];
   if (syntax === "percentage" && unit === "%") return [n, 0, 0, 0];
+  if (syntax === "length" && (unit === "px" || (unit === "" && n === 0))) return [n, 0, 0, 0];
   if (syntax === "angle" && unit.toLowerCase() in RADIANS) return [n * RADIANS[unit.toLowerCase()], 0, 0, 0];
   throw wrong();
 }
@@ -43,6 +45,7 @@ function formatValue(syntax: Syntax, floats: number[]): string {
   const short = (n: number) => String(+n.toFixed(6));
   if (syntax === "number") return short(floats[0]);
   if (syntax === "percentage") return `${short(floats[0])}%`;
+  if (syntax === "length") return `${short(floats[0])}px`;
   if (syntax === "angle") return `${short((floats[0] * 180) / Math.PI)}deg`;
   return `#${floats
     .slice(0, 3)

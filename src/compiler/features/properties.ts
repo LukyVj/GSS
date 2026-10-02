@@ -13,7 +13,7 @@ import { hexToRgb } from "../shader/codegen/read";
 export type RegisteredProperty = {
   name: string; // --speed
   syntax: PropertySyntax;
-  initial: number[]; // the 4 floats of its uniform: a number, an angle in radians, a percentage as written, a color 0–1
+  initial: number[]; // the 4 floats of its uniform: a number, an angle in radians, a percentage as written, a color 0–1, a length in px
 };
 
 const SYNTAXES: Record<string, PropertySyntax> = {
@@ -21,6 +21,7 @@ const SYNTAXES: Record<string, PropertySyntax> = {
   "<angle>": "angle",
   "<percentage>": "percentage",
   "<color>": "color",
+  "<length>": "length", // in px: the radius of blur() and bloom()
 };
 
 // What a value of each syntax looks like, for the errors
@@ -29,6 +30,7 @@ const EXAMPLES: Record<PropertySyntax, string> = {
   angle: "an angle, like: 90deg",
   percentage: "a percentage, like: 50%",
   color: "a color, like: #ff5a36",
+  length: "a length in px, like: 4px",
 };
 
 // An angle unit, in radians
@@ -48,7 +50,7 @@ export function readPropertyRules(rules: PropertyRule[]): { name: string; syntax
     if (text === null || !(text in SYNTAXES))
       throw errorAt(
         syntax.value,
-        `GSS reads the syntaxes "<number>", "<angle>", "<percentage>" and "<color>", written in quotes, like: syntax: "<number>";`,
+        `GSS reads the syntaxes "<number>", "<angle>", "<percentage>", "<color>" and "<length>", written in quotes, like: syntax: "<number>";`,
       );
     const inherits = descriptor("inherits");
     const flag = inherits?.value[0];
@@ -76,6 +78,8 @@ export function propertyFloats(syntax: PropertySyntax, value: Token[], what: str
     return [+(token.value * RADIANS[token.unit]).toFixed(6), 0, 0, 0];
   if (syntax === "angle" && token.type === "NUMBER" && token.value === 0) return [0, 0, 0, 0];
   if (syntax === "color" && token.type === "HASH") return [...hexToRgb(token.value), 0];
+  if (syntax === "length" && token.type === "DIMENSION" && token.unit === "px") return [token.value, 0, 0, 0];
+  if (syntax === "length" && token.type === "NUMBER" && token.value === 0) return [0, 0, 0, 0];
   throw wrong();
 }
 

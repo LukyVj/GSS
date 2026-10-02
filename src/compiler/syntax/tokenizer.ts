@@ -14,7 +14,7 @@ export type Token =
   | { type: "EXPR"; value: string; code: string; syntax: PropertySyntax };
 
 // The syntaxes of @property that GSS reads (decision 105)
-export type PropertySyntax = "number" | "angle" | "percentage" | "color";
+export type PropertySyntax = "number" | "angle" | "percentage" | "color" | "length";
 
 import { ErrorSink, GssError, rememberSpan } from "./errors";
 

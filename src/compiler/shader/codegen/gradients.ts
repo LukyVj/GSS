@@ -3,7 +3,6 @@ import type { Keyframes } from "../../syntax/ast";
 import type { StyledInstance, Styles } from "../../cascade/resolve";
 import { errorAt } from "../../syntax/errors";
 import { closingParen } from "../../values/calc";
-import { readNumber } from "../../values/values";
 import { readAnimation } from "../../features/animation";
 import {
   backgroundFunction,
@@ -17,7 +16,8 @@ import {
 } from "../gradient";
 import { animatedValue, hoverValue } from "./animation";
 import { glslFloat, label, type Hover } from "./glsl";
-import { readColor, readFlatSize, readRadii, readSize } from "./read";
+import { readColor } from "./read";
+import { add, g, largest, liveFlatSize, liveNumber, liveRadii, liveSize3, mul, type Num } from "./live";
 import { shapeRadius } from "./shapes";
 import { spaceFunction } from "./transforms";
 
@@ -159,34 +159,35 @@ export function objectGradient(
 }
 
 // The rectangle a gradient covers: the object seen from the front, x right and y up
-// (seen from above for a plane, the top of the picture away from the camera)
-function gradientBox(instance: StyledInstance): { size: number[]; at: string } {
+// (seen from above for a plane, the top of the picture away from the camera).
+// A size set from JS (decision 105) makes the rectangle follow it.
+function gradientBox(instance: StyledInstance): { size: Num[]; at: string } {
   const styles = instance.styles;
-  const front = (w: number, h: number) => ({ size: [w, h], at: "q.xy" });
+  const front = (w: Num, h: Num) => ({ size: [w, h], at: "q.xy" });
   switch (instance.tag) {
     case "cube": {
-      const [x, y] = readSize(styles["size"]);
+      const [x, y] = liveSize3(styles["size"]);
       return front(x, y);
     }
     case "sphere": {
-      const d = 2 * readNumber(styles["radius"], "radius", 0.5);
+      const d = mul(2, liveNumber(styles["radius"], "radius", 0.5));
       return front(d, d);
     }
     case "torus": {
-      const r = readNumber(styles["radius"], "radius", 1);
-      const t = readNumber(styles["thickness"], "thickness", 0.28);
-      return front(2 * (r + t), 2 * t);
+      const r = liveNumber(styles["radius"], "radius", 1);
+      const t = liveNumber(styles["thickness"], "thickness", 0.28);
+      return front(mul(2, add(r, t)), mul(2, t));
     }
     case "cylinder":
     case "capsule":
       return front(
-        2 * readNumber(styles["radius"], "radius", instance.tag === "capsule" ? 0.25 : 0.5),
-        readNumber(styles["height"], "height", 1),
+        mul(2, liveNumber(styles["radius"], "radius", instance.tag === "capsule" ? 0.25 : 0.5)),
+        liveNumber(styles["height"], "height", 1),
       );
     case "cone":
-      return front(2 * Math.max(...readRadii(styles["radius"])), readNumber(styles["height"], "height", 1));
+      return front(mul(2, largest(...liveRadii(styles["radius"]))), liveNumber(styles["height"], "height", 1));
     case "plane": {
-      const [w, d] = readFlatSize(styles["size"]);
+      const [w, d] = liveFlatSize(styles["size"]);
       return { size: [w, d], at: "vec2(q.x, -q.z)" };
     }
   }
@@ -210,7 +211,7 @@ export function gradientCode(
     return [
       `  if (id == ${glslFloat(instance.index)}) {  // ${label(instance)}`,
       `    vec3 q = space${instance.index}(p);`,
-      `    vec2 size = vec2(${size.map(glslFloat).join(", ")});`,
+      `    vec2 size = vec2(${size.map(g).join(", ")});`,
       `    vec2 at = ${at} + 0.5 * size;`,
       ...linesOf(gradient, moving).map((line) => `  ${line}`),
       "    return col;",

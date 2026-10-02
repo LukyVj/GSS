@@ -133,7 +133,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 **Next, in Lucas's order** (Oct. 2, after 0.0.3; replaces the list of Oct. 1):
 
 1. ~~**Animated gradients**~~ ✅ decisions 102, 103: a gradient changes into another of the same kind in `@keyframes` and on `:hover`, through a variable too; the scene plays an animation, so its `background` moves (a flat, moving image)
-2. **`setProperty()` from JS**: first step ✅ decision 105 (`@property`, `setProperty()` / `getPropertyValue()` / `removeProperty()`, in `translate`, `rotate-*`, `scale`, `color`, `offset-distance`, `background`). Second step ✅: inside `calc()` and the math functions, and the color functions (`hsl(var(--hue) …)`, `color-mix()`…), computed on the GPU. Next steps, Lucas's choice "everywhere": the sizes of shapes (without their bounding spheres), the numbers of a gradient, materials, `light`, `ambient`, `floor`, filters
+2. **`setProperty()` from JS**: first step ✅ decision 105 (`@property`, `setProperty()` / `getPropertyValue()` / `removeProperty()`, in `translate`, `rotate-*`, `scale`, `color`, `offset-distance`, `background`). Second step ✅: inside `calc()` and the math functions, and the color functions (`hsl(var(--hue) …)`, `color-mix()`…), computed on the GPU. Third step ✅, Lucas's choice "everywhere": the sizes of shapes (without their bounding spheres), the numbers of a gradient, materials, `light`, `ambient`, `floor`, `camera-target`, `blend`, `offset-rotate`, `texture-size`, filters (with a `"<length>"` syntax in px, the passes included). Not read at run time: the copies of `* n`, `d`, `view-box`, the timings, the camera the mouse moves, `dpr`. Still possible: a playground panel of sliders for the registered variables
 3. ~~**Nesting** with `&`~~ ✅ decision 106: rules inside rules, `&`, a descendant without `&`, `@media` inside a rule; unfolded by the parser
 4. **`transform-origin`**
 5. **Fog**
@@ -233,7 +233,7 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 ### Rendering passes / runtime API
 
 - [x] **Post-processing as a `filter` list on the scene** ✅ decision 83: the pixel filters at the end of the scene's shader, `blur()` and `bloom()` as passes (`runtime/post.ts`). Still to do: `drop-shadow()` and `opacity()` (transparency), `backdrop-filter`, a fog drawn from the depth, the passes in the Shadertoy export (Buffers A, B…)
-- [~] **Custom properties set from JS without recompiling** (first step ✅ decision 105): `scene.setProperty('--speed', 8)` on what `mount()` / `<gss-scene>` return, like `element.style.setProperty`. A variable declared as drivable (close to `@property`) becomes a uniform; the others stay resolved at compile time. Lets a page drive a scene from the scroll, a slider or data
+- [x] **Custom properties set from JS without recompiling** ✅ decision 105: `scene.setProperty('--speed', 8)` on what `mount()` / `<gss-scene>` return, like `element.style.setProperty`. A variable declared as drivable (close to `@property`) becomes a uniform; the others stay resolved at compile time. Lets a page drive a scene from the scroll, a slider or data
 
 ### Backend
 

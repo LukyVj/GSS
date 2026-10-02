@@ -106,9 +106,9 @@ export function pointAt(path: OffsetPath, s: number): { x: number; y: number; dx
 export function readOffsetRotate(value: Token[] | undefined): {
   auto: boolean;
   reverse: boolean;
-  angle: number; // degrees
+  angle: number | string; // degrees, or GLSL in radians when set from JS (decision 105)
 } {
-  const rotate = { auto: true, reverse: false, angle: 0 };
+  const rotate: { auto: boolean; reverse: boolean; angle: number | string } = { auto: true, reverse: false, angle: 0 };
   if (!value) return rotate;
   let keyword = false;
   let angle = false;
@@ -116,6 +116,9 @@ export function readOffsetRotate(value: Token[] | undefined): {
     if (token.type === "IDENT" && (token.value === "auto" || token.value === "reverse") && !keyword) {
       keyword = true;
       rotate.reverse = token.value === "reverse";
+    } else if (token.type === "EXPR" && token.syntax === "angle" && !angle) {
+      angle = true;
+      rotate.angle = token.code;
     } else if ((token.type === "DIMENSION" || (token.type === "NUMBER" && token.value === 0)) && !angle) {
       angle = true;
       rotate.angle = round((readAngle([token]) * 180) / Math.PI);
@@ -228,7 +231,8 @@ export function offsetLines(
     if (rotate.auto)
       lines.push(`  q.xy = ${sign}vec2(dot(q.xy, ${o}.zw), dot(q.xy, vec2(-${o}.w, ${o}.z)));`);
   }
-  if (rotate.angle !== 0) lines.push(`  q.xy *= rot(${glslFloat(round((rotate.angle * Math.PI) / 180))});`);
+  if (typeof rotate.angle === "string") lines.push(`  q.xy *= rot(${rotate.angle});`);
+  else if (rotate.angle !== 0) lines.push(`  q.xy *= rot(${glslFloat(round((rotate.angle * Math.PI) / 180))});`);
   return lines;
 }
 

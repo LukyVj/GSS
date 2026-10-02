@@ -119,6 +119,75 @@ describe("the color functions give the same color on the GPU as at compile time"
   }, 60000);
 });
 
+// A size set from JS draws the shape the compiler would draw with the same value
+describe("the sizes set from JS draw the same shapes", () => {
+  const VAR = '@property --s { syntax: "<number>"; inherits: false; initial-value: 0.8; }';
+  const front = "scene { floor: none; background: #000000; camera-target: 0 0 0; camera-angle: 20deg 20deg; camera-distance: 5; }";
+  const shapes: [string, string, string][] = [
+    ["sphere", "sphere { radius: var(--s); color: red; }", "sphere { radius: 0.8; color: red; }"],
+    ["cube", "cube { size: var(--s) 1 0.5; color: red; }", "cube { size: 0.8 1 0.5; color: red; }"],
+    ["torus", "torus { radius: var(--s); thickness: calc(var(--s) / 4); color: red; }", "torus { radius: 0.8; thickness: 0.2; color: red; }"],
+    ["capsule", "capsule { height: calc(var(--s) * 2); color: red; }", "capsule { height: 1.6; color: red; }"],
+    ["cone", "cone { radius: var(--s) 0.2; color: red; }", "cone { radius: 0.8 0.2; color: red; }"],
+    ["path", 'path { d: path("M-1 0 L1 0"); stroke-width: var(--s); color: red; }', 'path { d: path("M-1 0 L1 0"); stroke-width: 0.8; color: red; }'],
+    ["prism", "prism { d: polygon(0 1, 1 -1, -1 -1); depth: var(--s); color: red; }", "prism { d: polygon(0 1, 1 -1, -1 -1); depth: 0.8; color: red; }"],
+  ];
+  for (const [shape, live, still] of shapes) it(shape, async () => {
+    const a = await render(`${VAR} @scene { ${shape}; } ${front} ${live}`);
+    const b = await render(`@scene { ${shape}; } ${front} ${still}`);
+    for (const [pixels, reference] of [[a.gl, b.gl], [a.gpu, b.gpu]]) {
+      const differences = pixels.map((v, i) => Math.abs(v - reference[i]));
+      expect(differences.reduce((sum, n) => sum + n, 0) / differences.length).toBeLessThan(1);
+      expect(pixels.some((v, i) => i % 4 === 0 && v > 60)).toBe(true);
+    }
+  }, 60000);
+});
+
+// Gradients, materials, the light, the floor and blends set from JS: the same image as
+// the same values written as is
+describe("gradients, materials and lights set from JS render like the same values written", () => {
+  const VARS = '@property --a { syntax: "<angle>"; inherits: false; initial-value: 30deg; } @property --p { syntax: "<percentage>"; inherits: false; initial-value: 40%; } @property --n { syntax: "<number>"; inherits: false; initial-value: 0.3; } @property --c { syntax: "<color>"; inherits: false; initial-value: #ff5a36; }';
+  const view = "camera-target: 0 0.5 0; camera-angle: 20deg 25deg; camera-distance: 5;";
+  const cases: [string, string, string][] = [
+    ["a linear gradient", "@scene { cube; } cube { translate: 0 0.5 0; color: linear-gradient(var(--a), var(--c), #3a7bff var(--p)); }", "@scene { cube; } cube { translate: 0 0.5 0; color: linear-gradient(30deg, #ff5a36, #3a7bff 40%); }"],
+    ["a conic gradient", "@scene { cube; } cube { translate: 0 0.5 0; color: conic-gradient(from var(--a) at var(--p) 50%, red, blue); }", "@scene { cube; } cube { translate: 0 0.5 0; color: conic-gradient(from 30deg at 40% 50%, red, blue); }"],
+    ["a background gradient", `@scene { sphere; } scene { floor: none; background: radial-gradient(circle at var(--p) 30%, var(--c), #000000); }`, `@scene { sphere; } scene { floor: none; background: radial-gradient(circle at 40% 30%, #ff5a36, #000000); }`],
+    ["a metal", "@scene { sphere; } sphere { translate: 0 1 0; material: metal(var(--c), var(--n)); }", "@scene { sphere; } sphere { translate: 0 1 0; material: metal(#ff5a36, 0.3); }"],
+    ["a glass", "@scene { sphere; } sphere { translate: 0 1 0; material: glass(#cfeaff, calc(1.2 + var(--n)), hammered var(--n)); }", "@scene { sphere; } sphere { translate: 0 1 0; material: glass(#cfeaff, 1.5, hammered 0.3); }"],
+    ["the floor, the ambient light and the sun", `@scene { cube; } scene { floor: var(--c); ambient: var(--n); light: var(--a) 40deg; } cube { translate: 0 0.5 0; }`, `@scene { cube; } scene { floor: #ff5a36; ambient: 0.3; light: 30deg 40deg; } cube { translate: 0 0.5 0; }`],
+    ["a blend", "@scene { cube; sphere; } cube { translate: 0 0.5 0; } sphere { translate: 0.6 1 0; blend: var(--n); }", "@scene { cube; sphere; } cube { translate: 0 0.5 0; } sphere { translate: 0.6 1 0; blend: 0.3; }"],
+  ];
+  for (const [name, live, still] of cases) it(name, async () => {
+    const a = await render(`${VARS} ${live.replace("} ", `} scene { ${view} } `)}`);
+    const b = await render(still.replace("} ", `} scene { ${view} } `));
+    for (const [pixels, reference] of [[a.gl, b.gl], [a.gpu, b.gpu]]) {
+      const differences = pixels.map((v, i) => Math.abs(v - reference[i]));
+      expect(differences.reduce((sum, n) => sum + n, 0) / differences.length).toBeLessThan(1);
+    }
+  }, 60000);
+});
+
+// Filters set from JS, in the scene's shader and in the passes: the same image as the
+// same values written as is, on both backends
+describe("filters set from JS render like the same values written", () => {
+  const VARS = '@property --n { syntax: "<number>"; inherits: false; initial-value: 1.4; } @property --p { syntax: "<percentage>"; inherits: false; initial-value: 60%; } @property --a { syntax: "<angle>"; inherits: false; initial-value: 120deg; } @property --r { syntax: "<length>"; inherits: false; initial-value: 2px; }';
+  const scene = "@scene { sphere#a; cube#b; } sphere { translate: -0.6 1 0; color: #ff5a36; } cube { translate: 0.6 0.5 0; color: #3a7bff; }";
+  const cases: [string, string, string][] = [
+    ["pixel filters of the scene", "scene { filter: contrast(var(--n)) saturate(var(--p)) hue-rotate(var(--a)); }", "scene { filter: contrast(1.4) saturate(60%) hue-rotate(120deg); }"],
+    ["pixel filters of an object", "#a { filter: grayscale(var(--p)) sepia(var(--p)) invert(var(--p)) brightness(var(--n)); }", "#a { filter: grayscale(60%) sepia(60%) invert(60%) brightness(1.4); }"],
+    ["a blur and the filter after it", "scene { filter: blur(var(--r)) brightness(var(--n)); }", "scene { filter: blur(2px) brightness(1.4); }"],
+    ["a bloom on an object", "#a { filter: bloom(var(--p), var(--r)); }", "#a { filter: bloom(60%, 2px); }"],
+  ];
+  for (const [name, live, still] of cases) it(name, async () => {
+    const a = await render(`${VARS} ${scene} ${live}`);
+    const b = await render(`${scene} ${still}`);
+    for (const [pixels, reference] of [[a.gl, b.gl], [a.gpu, b.gpu]]) {
+      const differences = pixels.map((v, i) => Math.abs(v - reference[i]));
+      expect(differences.reduce((sum, n) => sum + n, 0) / differences.length).toBeLessThan(1);
+    }
+  }, 60000);
+});
+
 // The screen is seen like a CSS page: x to the right, y up, z toward the viewer
 describe("the default camera does not mirror the scene", () => {
   const front = "scene { floor: none; background: #000000; camera-target: 0 0 0; camera-angle: 0deg 0deg; camera-distance: 5; light: 0deg 0deg; ambient: 1; }";

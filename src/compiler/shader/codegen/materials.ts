@@ -38,7 +38,7 @@ function readFrost(arg: Token[] | undefined): string {
 
   // 2. Read the tokens, in any order: at most one style and one amount
   let style = "frosted";
-  let amount: number | null = null; // null = not written yet
+  let amount: number | string | null = null; // null = not written yet; GLSL when set from JS
   for (const token of arg) {
     if (token.type === "IDENT") {
       if (!FROST_STYLES.includes(token.value)) {
@@ -48,6 +48,8 @@ function readFrost(arg: Token[] | undefined): string {
         );
       }
       style = token.value;
+    } else if (token.type === "EXPR" && token.syntax === "number") {
+      amount = `clamp(${token.code}, 0.0, 1.0)`; // set from JS (decision 105)
     } else if (token.type === "NUMBER" && clampComputed(token, 0, 1) >= 0 && clampComputed(token, 0, 1) <= 1) {
       amount = clampComputed(token, 0, 1); // calc(2) is 1, like CSS
     } else {
@@ -61,7 +63,7 @@ function readFrost(arg: Token[] | undefined): string {
   // 3. A style without an amount → 0.5
   if (amount === null) amount = 0.5;
 
-  return `${glslFloat(amount)}, ${style.toUpperCase()}`; // "frosted" → "FROSTED"
+  return `${typeof amount === "string" ? amount : glslFloat(amount)}, ${style.toUpperCase()}`; // "frosted" → "FROSTED"
 }
 
 type Setting = { name: string; min: number; max: number; fallback: number };
@@ -72,7 +74,7 @@ function readSettings(
   args: Token[][],
   material: string,
   settings: Setting[],
-): number[] {
+): (number | string)[] {
   // 1. The example for the error messages, computed once
   const fallbacks = settings.map((setting) => setting.fallback).join(", ");
   const example = `material: ${material}(#ff5a36, ${fallbacks});`;
@@ -91,6 +93,9 @@ function readSettings(
     if (!args[i]) return setting.fallback;
 
     const token = args[i][0];
+    // Set from JS (decision 105): kept in the range on the GPU
+    if (args[i].length === 1 && token.type === "EXPR" && token.syntax === "number")
+      return `clamp(${token.code}, ${glslFloat(setting.min)}, ${glslFloat(setting.max)})`;
     if (
       token.type !== "NUMBER" ||
       token.value < setting.min ||
@@ -104,6 +109,9 @@ function readSettings(
     return token.value;
   });
 }
+// A setting in GLSL: a number, or the GLSL of a variable set from JS
+const setting = (n: number | string) => (typeof n === "string" ? n : glslFloat(n));
+
 // Turns the material value into GLSL.
 // "color" is the object's GLSL color: a material without its own color uses it,
 // like currentColor in CSS.
@@ -150,6 +158,8 @@ export function readMaterial(value: Token[] | undefined, color: string): string 
   let ownColor = color;
   if (args.length > 0 && args[0][0].type === "HASH") {
     ownColor = readColor(args.shift());
+  } else if (args.length > 0 && args[0].length === 1 && args[0][0].type === "EXPR" && args[0][0].syntax === "color") {
+    ownColor = (args.shift()![0] as { code: string }).code; // set from JS (decision 105)
   }
 
   // 5. matte: nothing may be left
@@ -168,7 +178,7 @@ export function readMaterial(value: Token[] | undefined, color: string): string 
     const roughness = readSettings(args, "metal", [
       { name: "roughness", min: 0, max: 1, fallback: 0.2 },
     ]);
-    return `metal(${ownColor}, ${glslFloat(roughness[0])})`;
+    return `metal(${ownColor}, ${setting(roughness[0])})`;
   }
 
   if (call.name === "jelly") {
@@ -176,7 +186,7 @@ export function readMaterial(value: Token[] | undefined, color: string): string 
     const density = readSettings(args, "jelly", [
       { name: "density", min: 0, max: 1, fallback: 0.5 },
     ]);
-    return `jelly(${ownColor}, ${glslFloat(density[0])})`;
+    return `jelly(${ownColor}, ${setting(density[0])})`;
   }
 
   if (call.name === "glass") {
@@ -190,7 +200,7 @@ export function readMaterial(value: Token[] | undefined, color: string): string 
       { name: "refraction index", min: 1, max: 3, fallback: 1.5 },
     ]);
     const frost = readFrost(args[1]);
-    return `glass(${ownColor}, ${glslFloat(ior)}, ${frost})`;
+    return `glass(${ownColor}, ${setting(ior)}, ${frost})`;
   }
 
   return `matte(${ownColor})`;

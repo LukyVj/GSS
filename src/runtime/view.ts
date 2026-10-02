@@ -336,6 +336,7 @@ export function createView(
           canvas.height,
           clock.seconds,
           ratio,
+          values,
         );
       } else {
         gl!.drawArrays(gl!.TRIANGLES, 0, 3);

@@ -40,12 +40,14 @@ class Lowering {
   private uniforms = new Map<string, string>();
   private hover = 0;
   private properties = 0;
-  private gradient = false;
   private serial = 0;
 
   constructor(source: string) {
-    // GSS emits only this object-like macro, for the background gradient.
-    this.gradient = /^#define BACKGROUND background\(rd\)$/m.test(source);
+    // GSS emits object-like macros only: BACKGROUND background(rd) for a background that is
+    // computed (decision 81), LIGHT_DIR lightDirection() for a sun set from JS (decision 105).
+    // Each one is replaced by its value, word by word, before the source is read.
+    for (const [, name, value] of source.matchAll(/^#define (\w+) (.+)$/gm))
+      source = source.replace(new RegExp(`(?<!#define )\\b${name}\\b`, "g"), value);
     const clean = source.replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*|^#[^\n]*/gm, " ");
     const pattern = /\s+|(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?|[A-Za-z_]\w*|\+\+|--|\+=|-=|\*=|\/=|==|!=|<=|>=|&&|\|\||[{}()[\],;.?:+\-*/%!=<>]/gy;
     this.tokens = [];
@@ -261,8 +263,7 @@ class Lowering {
       if (!this.accept(")")) { do { args.push(this.expression()); } while (this.accept(",")); this.expect(")"); }
       expr = this.call(token, args);
     } else {
-      if (token === "BACKGROUND" && this.gradient) expr = { code: "g_background(g_rd)", type: "vec3<f32>" };
-      else {
+      {
         const type = this.symbols.get(token);
         if (!type) throw new Error(`WGSL lowering: unknown identifier ${token}`);
         const uniform: Record<string, string> = {

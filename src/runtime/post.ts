@@ -10,6 +10,7 @@ type GpuPass = {
   uTime: WebGLUniformLocation | null;
   uRatio: WebGLUniformLocation | null;
   uInputs: (WebGLUniformLocation | null)[];
+  uProperties: WebGLUniformLocation | null; // @property (decision 105)
 };
 
 type Image = { texture: WebGLTexture; framebuffer: WebGLFramebuffer };
@@ -18,7 +19,8 @@ export type Post = {
   // The passes of a new scene; none: the scene is drawn straight on the screen
   set(passes: Pass[] | undefined): void;
   // Draws the scene through the passes; draw() draws the scene where it is told
-  render(draw: () => void, width: number, height: number, time: number, ratio: number): void;
+  // properties: uProperties[], for the passes that read a variable set from JS
+  render(draw: () => void, width: number, height: number, time: number, ratio: number, properties?: Float32Array | null): void;
   active(): boolean;
   destroy(): void;
 };
@@ -70,6 +72,7 @@ export function createPost(
       uTime: gl.getUniformLocation(program, "iTime"),
       uRatio: gl.getUniformLocation(program, "uRatio"),
       uInputs: pass.inputs.map((_, i) => gl.getUniformLocation(program, `uInput${i}`)),
+      uProperties: gl.getUniformLocation(program, "uProperties"),
     };
   }
 
@@ -88,7 +91,7 @@ export function createPost(
       freeImages();
     },
     active: () => passes.length > 0,
-    render(draw, width, height, time, ratio) {
+    render(draw, width, height, time, ratio, properties) {
       ensureImages(width, height);
       // 1. The scene, into image 0
       gl.bindFramebuffer(gl.FRAMEBUFFER, images[0].framebuffer);
@@ -106,6 +109,7 @@ export function createPost(
         gl.uniform3f(pass.uResolution, width, height, 1);
         gl.uniform1f(pass.uTime, time);
         gl.uniform1f(pass.uRatio, ratio);
+        if (properties && pass.uProperties) gl.uniform4fv(pass.uProperties, properties);
         gl.drawArrays(gl.TRIANGLES, 0, 3);
       });
     },

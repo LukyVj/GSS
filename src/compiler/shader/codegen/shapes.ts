@@ -2,7 +2,7 @@
 import type { Token } from "../../syntax/tokenizer";
 import type { Styles } from "../../cascade/resolve";
 import { errorAt, locate } from "../../syntax/errors";
-import { readFunction, readNumber, readPolygon } from "../../values/values";
+import { readFunction, readPolygon } from "../../values/values";
 import { readSvgPath, type Point } from "../../values/svgpath";
 import {
   pathFunction,
@@ -11,8 +11,8 @@ import {
   polygonRadius,
   type ViewBox,
 } from "../path";
-import { glslFloat, vec3 } from "./glsl";
-import { readFlatSize, readRadii, readSize } from "./read";
+import { glslFloat } from "./glsl";
+import { add, div, g, hypot, isLive, largest, liveFlatSize, liveNumber, liveRadii, liveSize3, smallest, sub, type Num } from "./live";
 
 // Shapes that need their own GLSL function (like path) add it here.
 // The same code is only written once, whatever the number of objects using it.
@@ -111,96 +111,99 @@ export const SHAPES: Record<
   string,
   (styles: Styles, context: ShapeContext) => Shape
 > = {
+  // A size set from JS (decision 105) is not known at compile time: no bounding sphere
   cube: (styles) => {
-    const half = readSize(styles["size"]).map((n) => n / 2);
-    const corner = Math.min(
-      readNumber(styles["corner-radius"], "corner-radius", 0.08, true),
-      ...half,
-    );
+    const half = liveSize3(styles["size"]).map((n) => div(n, 2));
+    const corner = smallest(liveNumber(styles["corner-radius"], "corner-radius", 0.08, true), ...half);
     return {
-      code: `sdRoundBox(q, ${vec3(half)}, ${glslFloat(corner)})`,
-      radius: Math.hypot(...half), // the corner of the box
+      code: `sdRoundBox(q, vec3(${half.map(g).join(", ")}), ${g(corner)})`,
+      radius: known(hypot(...half)), // the corner of the box
     };
   },
   sphere: (styles) => {
-    const radius = readNumber(styles["radius"], "radius", 0.5);
-    return { code: `sdSphere(q, ${glslFloat(radius)})`, radius };
+    const radius = liveNumber(styles["radius"], "radius", 0.5);
+    return { code: `sdSphere(q, ${g(radius)})`, radius: known(radius) };
   },
   torus: (styles) => {
-    const radius = readNumber(styles["radius"], "radius", 1);
-    const thickness = readNumber(styles["thickness"], "thickness", 0.28);
+    const radius = liveNumber(styles["radius"], "radius", 1);
+    const thickness = liveNumber(styles["thickness"], "thickness", 0.28);
     return {
-      code: `sdTorus(q, vec2(${glslFloat(radius)}, ${glslFloat(thickness)}))`,
-      radius: radius + thickness,
+      code: `sdTorus(q, vec2(${g(radius)}, ${g(thickness)}))`,
+      radius: known(add(radius, thickness)),
     };
   },
   cylinder: (styles) => {
-    const radius = readNumber(styles["radius"], "radius", 0.5);
-    const height = readNumber(styles["height"], "height", 1);
+    const radius = liveNumber(styles["radius"], "radius", 0.5);
+    const height = liveNumber(styles["height"], "height", 1);
     return {
-      code: `sdCylinder(q, ${glslFloat(height / 2)}, ${glslFloat(radius)})`,
-      radius: Math.hypot(radius, height / 2), // the rim of a cap
+      code: `sdCylinder(q, ${g(div(height, 2))}, ${g(radius)})`,
+      radius: known(hypot(radius, div(height, 2))), // the rim of a cap
     };
   },
   cone: (styles) => {
-    const [bottom, top] = readRadii(styles["radius"]);
-    const height = readNumber(styles["height"], "height", 1);
+    const [bottom, top] = liveRadii(styles["radius"]);
+    const height = liveNumber(styles["height"], "height", 1);
     return {
-      code: `sdCappedCone(q, ${glslFloat(height / 2)}, ${glslFloat(bottom)}, ${glslFloat(top)})`,
-      radius: Math.hypot(Math.max(bottom, top), height / 2), // the rim of the wider cap
+      code: `sdCappedCone(q, ${g(div(height, 2))}, ${g(bottom)}, ${g(top)})`,
+      radius: known(hypot(largest(bottom, top), div(height, 2))), // the rim of the wider cap
     };
   },
   capsule: (styles) => {
-    const radius = readNumber(styles["radius"], "radius", 0.25);
-    const height = readNumber(styles["height"], "height", 1);
-    const half = height / 2 - radius; // half of the straight part
-    if (half < 0) {
+    const radius = liveNumber(styles["radius"], "radius", 0.25);
+    const height = liveNumber(styles["height"], "height", 1);
+    let half = sub(div(height, 2), radius); // half of the straight part
+    if (typeof half === "number" && half < 0) {
       throw errorAt(
         styles["height"],
-        `capsule height must be at least twice its radius (${glslFloat(radius * 2)}), like: height: ${radius * 2};`,
+        `capsule height must be at least twice its radius (${glslFloat((radius as number) * 2)}), like: height: ${(radius as number) * 2};`,
       );
     }
+    if (isLive(half)) half = `max(${half}, 0.0)`; // set from JS: a sphere at worst
     return {
-      code: `sdCapsule(q, ${glslFloat(half)}, ${glslFloat(radius)})`,
-      radius: height / 2, // the tip of a cap
+      code: `sdCapsule(q, ${g(half)}, ${g(radius)})`,
+      radius: known(div(height, 2)), // the tip of a cap
     };
   },
   // A tube along an SVG path (decision 35)
   path: (styles, context) => {
     const d = readD(styles["d"]);
-    const width = readNumber(styles["stroke-width"], "stroke-width", 1);
+    const width = liveNumber(styles["stroke-width"], "stroke-width", 1);
     // Curves become segments that stay within a hundredth of the tube's width: smooth enough for the light
-    const lines = locate(d, () => readSvgPath(d.value, width / 100)); // errors point at the path
+    // (a width set from JS: a hundredth of the default width)
+    const lines = locate(d, () => readSvgPath(d.value, (isLive(width) ? 1 : width) / 100)); // errors point at the path
     const viewBox = readViewBox(styles["view-box"]);
     const code = locate(styles["d"], () =>
       pathFunction("NAME", lines, width, viewBox),
     );
     const name = useFunction(context, code);
-    return { code: `${name}(q)`, radius: pathRadius(lines, width, viewBox) };
+    return { code: `${name}(q)`, radius: isLive(width) ? null : pathRadius(lines, width, viewBox) };
   },
   // A polygon, filled, then given a depth
   prism: (styles, context) => {
     const contours = readPrismD(styles["d"]);
-    const depth = readNumber(styles["depth"], "depth", 0.2);
+    const depth = liveNumber(styles["depth"], "depth", 0.2);
     const viewBox = readViewBox(styles["view-box"]);
     const code = locate(styles["d"], () =>
       polygonFunction("NAME", contours, depth, viewBox),
     );
     return {
       code: `${useFunction(context, code)}(q)`,
-      radius: polygonRadius(contours, depth, viewBox),
+      radius: isLive(depth) ? null : polygonRadius(contours, depth, viewBox),
     };
   },
   // A thin box: the ray could jump over a surface with no thickness
   plane: (styles) => {
-    const [width, depth] = readFlatSize(styles["size"]);
-    const half = [width / 2, 0.01, depth / 2];
+    const [width, depth] = liveFlatSize(styles["size"]);
+    const half = [div(width, 2), 0.01, div(depth, 2)];
     return {
-      code: `sdRoundBox(q, ${vec3(half)}, 0.0)`,
-      radius: Math.hypot(...half),
+      code: `sdRoundBox(q, vec3(${half.map(g).join(", ")}), 0.0)`,
+      radius: known(hypot(...half)),
     };
   },
 };
+
+// The radius of a bounding sphere, when it is known at compile time
+const known = (n: Num): number | null => (isLive(n) ? null : n);
 
 // The shapes worth a bounding test: their distance walks dozens of segments.
 // Measured (npm run bench, dpr 2, M4 Pro): bounding every object made the scenes of

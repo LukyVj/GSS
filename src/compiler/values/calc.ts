@@ -329,8 +329,8 @@ class Reader {
     }
     // A variable set from JS (decision 105): its uniform, an angle in degrees like the others
     if (token.type === "EXPR") {
-      if (token.syntax === "color")
-        throw this.error(`${token.value} is a color: math works on numbers, angles and percentages`);
+      if (token.syntax === "color" || token.syntax === "length")
+        throw this.error(`${token.value} is a ${token.syntax}: math works on numbers, angles and percentages`);
       const unit = token.syntax === "angle" ? "deg" : token.syntax === "percentage" ? "%" : "";
       const code = token.syntax === "angle" ? `degrees(${token.code})` : token.code;
       return this.take({ value: NaN, unit, code, name: token.value });
