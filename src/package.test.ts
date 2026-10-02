@@ -33,8 +33,8 @@ describe("the npm package", () => {
     expect(pkg.homepage).toBe("https://www.gss-lang.dev"); // the canonical address (www)
   });
 
-  it("installs nothing else: everything it needs is already in lib/", () => {
-    expect(Object.keys(pkg.dependencies ?? {})).toEqual([]);
+  it("ships its runtime in lib and depends only on WebGPU type declarations", () => {
+    expect(Object.keys(pkg.dependencies ?? {})).toEqual(["@webgpu/types"]);
   });
 
   it("asks for vite only from those who use the plugin", () => {

@@ -1,11 +1,13 @@
 {
   "name": "gss-lang",
   "version": "0.0.2",
-  "description": "Write 3D scenes in CSS: selectors, the cascade, @keyframes, and more compiled into a GLSL shader.",
+  "description": "Write 3D scenes in CSS: selectors, the cascade, @keyframes, and more compiled into GLSL and WGSL shaders for WebGL2 and WebGPU.",
   "keywords": [
     "css",
     "webgl",
     "glsl",
+    "webgpu",
+    "wgsl",
     "3d",
     "shader",
     "raymarching"
@@ -40,6 +42,7 @@
     "build": "tsc && vite build && vite build -c vite.embed.config.ts",
     "preview": "vite preview",
     "test": "vitest",
+    "test:gpu": "vitest run src/test/*gpu.test.ts",
     "format": "node scripts/format-gss.mjs",
     "format:check": "node scripts/format-gss.mjs --check",
     "generate-vscode-extension": "cd editors/vscode && npm install && npm run package",
@@ -47,7 +50,7 @@
     "captures": "node scripts/capture-showcase.mjs",
     "bench": "node scripts/bench.mjs run",
     "bench:compare": "node scripts/bench.mjs compare",
-    "prepublishOnly": "npm run build:lib && npx vitest run --exclude '**/gpu.test.ts'"
+    "prepublishOnly": "npm run build:lib && npx vitest run --exclude '**/*gpu.test.ts'"
   },
   "peerDependencies": {
     "vite": ">=5"
@@ -77,5 +80,8 @@
     "typescript": "~6.0.2",
     "vite": "^8.3.0",
     "vitest": "^5.0.2"
+  },
+  "dependencies": {
+    "@webgpu/types": "^0.1.74"
   }
 }

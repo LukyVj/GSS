@@ -11,7 +11,7 @@ import { readFunction } from "../values/values";
 // One pass after the scene: its fragment shader, and the images it reads
 // (0 = the scene, n = what pass n - 1 drew). Each pass draws the next image; the last one,
 // the screen.
-export type Pass = { shader: string; inputs: number[] };
+export type Pass = { shader: string; wgsl?: string; inputs: number[] };
 
 export const FILTER_FUNCTIONS = [
   "blur",

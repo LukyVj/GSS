@@ -23,10 +23,15 @@ import { sceneTextures } from "./features/textures";
 import { readDpr, type Dpr } from "./features/dpr";
 import { readTransition, type Transition } from "./features/transition";
 import { buildPasses, objectFilters, readSteps, type Pass } from "./features/filter";
+import { generateWGSL } from "./shader/wgsl";
+
+export type CompileOptions = { target?: "glsl" | "dual" };
 
 // Everything the runtime needs to display a scene
 export type CompiledScene = {
   shader: string;
+  // The WebGPU target; shader stays GLSL for existing integrations and Shadertoy.
+  wgsl?: string;
   camera: CameraSettings;
   dpr: Dpr;
   objects: number; // instances drawn, for the status bar (decision 42)
@@ -48,7 +53,21 @@ const MAX_QUERIES = 4;
 // GSS text → shader + camera settings, and a version per combination of @media
 // A compile reports every error it finds, not only the first one (decision 86): every
 // error of the text first; once the text reads, every error of the values.
-export function compileScene(source: string): CompiledScene {
+export function compileScene(source: string, options: CompileOptions = {}): CompiledScene {
+  const compiled = compileSource(source);
+  if (options.target === "glsl") return compiled;
+  const lower = (scene: CompiledScene): CompiledScene => ({
+    ...scene,
+    wgsl: generateWGSL(scene.shader),
+    ...(scene.passes && { passes: scene.passes.map(pass => ({ ...pass, wgsl: generateWGSL(pass.shader) })) }),
+  });
+  return {
+    ...lower(compiled),
+    ...(compiled.media && { media: { queries: compiled.media.queries, variants: compiled.media.variants.map(lower) } }),
+  };
+}
+
+function compileSource(source: string): CompiledScene {
   const errors = new ErrorSink();
   const tokens = tokenize(source, errors);
   const stylesheet = parse(tokens, errors);
@@ -414,6 +433,7 @@ function computeColors(styles: Styles): Styles {
 }
 
 // GSS text → shader only
-export function compileGSS(source: string): string {
-  return compileScene(source).shader;
+export function compileGSS(source: string, target: "glsl" | "wgsl" = "glsl"): string {
+  const scene = compileScene(source, { target: target === "glsl" ? "glsl" : "dual" });
+  return target === "wgsl" ? scene.wgsl! : scene.shader;
 }
