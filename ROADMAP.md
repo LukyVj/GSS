@@ -124,6 +124,15 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 
 **Next, in Lucas's order** (Oct. 1, evening): ~~`filter`~~ ✅ (decisions 83, 84), then **motion path** (`offset-path: path()` / `ray()`, #12 below), **`conic-gradient()`**, **`setProperty()` from JS** (see Rendering passes / runtime API). After them: nesting with `&`, `transform-origin`, fog.
 
+**Essentials** (added by Lucas, Oct. 2), in the order suggested by Claude: structure first (compile time, no runtime cost), then interaction, then scroll.
+
+- [ ] **`:nth-child(an+b [of S])`**, `:nth-last-child()`, `:nth-of-type()`, `:nth-last-of-type()`, with `odd` / `even`: resolved at compile time on the tree of `@scene`; the copies of a `* n` are siblings, so `:nth-child(odd)` and `sibling-index()` count the same way (decision 52)
+- [ ] **`:first-child`**, `:last-child`, `:only-child`, `:first-of-type`, `:last-of-type`, `:only-of-type` (shortcuts of the above; "type" = the shape: `cube`, `sphere`, `group`…)
+- [ ] **`:not(<selector list>)`**: compile time, specificity of its most specific argument like CSS; first version without `:hover` / `:active` inside (an inverted hover trigger), a clear error until then
+- [ ] **`currentColor`** (also `currentcolor`): the object's own `color` wherever a color is expected, resolved after the cascade like `var()`: `color-mix(in oklab, currentColor 60%, white)`, the stops of a gradient, a material's color, `light-dark()`; on `:hover`, the hovered color. `color: currentColor` would refer to itself (GSS does not inherit `color` from a group): an error, like a `var()` that loops
+- [ ] **`:active`**: the object under the pressed mouse button or finger, the same picking pass as `:hover` (decision 62) with its own slots (`uActive[]`), `transition` included; on a group like `:hover` (`#g:active cube`), inside `:has()`; a press that leaves the object releases it, like CSS
+- [ ] **`scroll()`**: animations driven by the scroll of the page instead of the time, written like CSS scroll-driven animations: `animation: spin 1s linear; animation-timeline: scroll();` (the progress of the page's scroll, `scroll(root block)`), and `view()` (the progress of the scene's canvas through the viewport) for scenes embedded in a page. The runtime sends the progress as a uniform, the shader reads it where it reads `iTime` today; `@keyframes` and easings do not change. Shares its runtime part with `setProperty()` (a value from the page, sent as a uniform). In the playground, which does not scroll, a slider stands in for the scroll
+
 1. [x] Loops: **option B chosen** (decision 52): `* n` + `calc(sibling-index())`, as in CSS. `@for` / `@each` later, only to change the shape at each step or to walk through a list
 2. [x] `var()` ✅ decision 55, inherited and animatable (+ `calc()` ✅ decision 52, with `min()`, `max()`, `clamp()`, `abs()`, `sqrt()`, `pow()`, `sin()`, `cos()`, `tan()`; every other CSS math function ✅ decision 78)
 3. [x] Functional colors: `rgb()`, `hsl()` and the named colors ✅ decision 58; `hwb()`, `lab()`, `lch()`, `oklab()`, `oklch()`, `color()`, `color-mix()`, `light-dark()`, `contrast-color()` ✅ decision 79
@@ -298,7 +307,7 @@ A score for how well a CSS notion carries over to GSS (a style language → an S
 | `animation-fill-mode`                 |   1.0 | Already in GSS (decision 70)    |
 | `animation-play-state`                |   0.7 | Runtime pause possible          |
 | `animation-composition`               |   0.5 | Blending tracks, later          |
-| `animation-timeline`                  |   0.5 | If reframed (scene time/scroll) |
+| `animation-timeline`                  |   1.0 | Roadmap: `scroll()` / `view()` (Essentials) |
 | `animation-range` / `-start` / `-end` |   0.5 | Same, timelines                 |
 | `transition` (shorthand)              |   1.0 | Already in GSS (decision 68)    |
 | `transition-property`                 |   1.0 | Same                            |
@@ -531,10 +540,10 @@ A score for how well a CSS notion carries over to GSS (a style language → an S
 | `&` nesting | 0.9 | Nesting, strong |
 | Attribute selectors | 0.4 | Few attributes in GSS |
 | `:hover` | 1.0 | Already in GSS (dec. 62) |
-| `:active` / `:focus` / `:focus-visible` / `:focus-within` | 0.5 | Interaction host |
-| `:nth-child()` / `:nth-of-type()` / `:nth-last-*` | 0.85 | Compile-time index |
-| `:first-child` / `:last-child` / `:only-child` / `:first-of-type` / `:last-of-type` / `:only-of-type` / `:empty` | 0.8 | Scene structure |
-| `:is()` / `:where()` / `:not()` | 0.6 | Selector utilities |
+| `:active` / `:focus` / `:focus-visible` / `:focus-within` | 1.0 / 0.5 | `:active`: roadmap (Essentials); focus: interaction host |
+| `:nth-child()` / `:nth-of-type()` / `:nth-last-*` | 1.0 | Roadmap (Essentials): compile-time index |
+| `:first-child` / `:last-child` / `:only-child` / `:first-of-type` / `:last-of-type` / `:only-of-type` / `:empty` | 1.0 / 0.8 | Roadmap (Essentials), `:empty` later: scene structure |
+| `:is()` / `:where()` / `:not()` | 1.0 / 0.6 | `:not()`: roadmap (Essentials); `:is()` / `:where()` later |
 | `:has()` | 1.0 | Already in GSS (decision 69) |
 | `:root` / `:scope` | 0.6 | Root / scope |
 | `:lang()` / `:dir()` | 0.2 | I18n DOM |
@@ -579,7 +588,7 @@ A score for how well a CSS notion carries over to GSS (a style language → an S
 | `layer()`                                                                                                                                         |   0.5 | With `@layer`                                                                              |
 | `type()` / `param()`                                                                                                                              |   0.5 | `@function` / `@property`                                                                  |
 | `anchor()` / `anchor-size()`                                                                                                                      |   0.2 | Anchor pos DOM                                                                             |
-| `scroll()` / `view()`                                                                                                                             |   0.5 | Timelines                                                                                  |
+| `scroll()` / `view()`                                                                                                                             |   1.0 | Roadmap (Essentials): `animation-timeline`                                                 |
 | `counter()` / `counters()` / `symbols()`                                                                                                          |  0.05 | Counters                                                                                   |
 | Gradients (`linear-` / `radial-` / `conic-` + repeating-\*)                                                                                       |   0.9 | `linear-`, `radial-`, `repeating-` in `background`, `color` and materials (dec. 81, 82); `conic-` to do |
 | `image()` / `image-set()` / `cross-fade()` / `element()` / `paint()`                                                                              |   0.2 | CSS images                                                                                 |
@@ -611,7 +620,7 @@ A score for how well a CSS notion carries over to GSS (a style language → an S
 | Filter effects (concept)                                             |  0.85 | Shader post-process                               |
 | Masking / clipping (concept)                                         |  0.55 | CSG-adjacent                                      |
 | Compositing & blending                                               |   0.5 | Close to GSS `operation`/`blend`                  |
-| Scroll-driven animations                                             |   0.5 | Can be reframed                                   |
+| Scroll-driven animations                                             |   1.0 | Roadmap (Essentials)                              |
 | Generated content                                                    |   0.3 | Limited pseudos                                   |
 | Lists & counters                                                     |  0.05 | Out of scope                                      |
 | Fonts & text layout                                                  |  0.05 | Out of scope                                      |
