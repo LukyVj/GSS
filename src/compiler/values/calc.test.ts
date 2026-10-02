@@ -238,3 +238,21 @@ describe("resolveMath: random() (decision 81)", () => {
     expect(() => n("random(fixed 2, 0, 1)")).toThrow("random(fixed …)");
   });
 });
+
+describe("a misspelled function inside math", () => {
+  it("suggests the function it was meant to be", () => {
+    expect(() =>
+      compileGSS("@scene { cube * 3; } cube { translate: 0 1 calc(slibling-index() * 0.1); }"),
+    ).toThrow("Unknown function slibling-index(): did you mean sibling-index()?");
+    expect(() => compileGSS("@scene { cube; } cube { scale: calc(sqr(4)); }")).toThrow(
+      "did you mean sqrt()?",
+    );
+  });
+
+  it("keeps the old message when nothing is close", () => {
+    expect(() => compileGSS("@scene { cube; } cube { scale: calc(foobar(4)); }")).toThrow(
+      "foobar() cannot be used inside math",
+    );
+  });
+});
+

@@ -50,6 +50,29 @@ export const MATH_FUNCTIONS = [
 const isMathFunction = (name: string) =>
   (MATH_FUNCTIONS as readonly string[]).includes(name);
 
+// The math function a misspelled name was meant to be: slibling-index → sibling-index.
+// At most 2 letters added, removed or changed (Levenshtein distance), else null.
+export function closestMathFunction(name: string): string | null {
+  let best: string | null = null;
+  let bestDistance = 3;
+  for (const candidate of MATH_FUNCTIONS) {
+    const distance = editDistance(name, candidate);
+    if (distance < bestDistance) [best, bestDistance] = [candidate, distance];
+  }
+  return best;
+}
+
+function editDistance(a: string, b: string): number {
+  let row = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) {
+    const next = [i];
+    for (let j = 1; j <= b.length; j++)
+      next[j] = Math.min(row[j] + 1, next[j - 1] + 1, row[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    row = next;
+  }
+  return row[b.length];
+}
+
 // Every unit is brought back to one per kind, so that 90deg + 0.25turn can be added
 const ANGLES: Record<string, number> = {
   deg: 1,
@@ -281,8 +304,14 @@ class Reader {
 
   // name( argument, argument… )
   private call(name: string): Quantity {
-    if (!isMathFunction(name))
-      throw this.error(`${name}() cannot be used inside math`);
+    if (!isMathFunction(name)) {
+      const meant = closestMathFunction(name);
+      throw this.error(
+        meant
+          ? `Unknown function ${name}(): did you mean ${meant}()?`
+          : `${name}() cannot be used inside math`,
+      );
+    }
     this.i += 2; // the name and "("
     const args: Quantity[] = [];
     if (name === "random") return this.random();
