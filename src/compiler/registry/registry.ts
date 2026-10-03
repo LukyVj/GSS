@@ -90,7 +90,7 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "<color> | <gradient>",
     initial: "#e6e6e6",
     description:
-      "Sets the base color of the object's surface: a hex color (#ff5a36), rgb(), hsl() or one of the 148 CSS named colors (tomato), turned into a hex color by the compiler. It can also be a gradient (linear-gradient(), radial-gradient(), conic-gradient()), painted on the object as seen from the front, and taken by every material, or a noise() cut in the object's own space. A gradient can be animated and changed by :hover: it changes into another gradient of the same kind with as many colors, and each of its numbers moves on its own, the angle, the center, the positions and the colors. Through a variable, like a registered @property in CSS, one number is enough: linear-gradient(var(--angle), …) turns when a @keyframes changes --angle. A color cannot change into a gradient. On a light of @scene, color is the color of its light: a plain color, not a gradient.",
+      "Sets the base color of the object's surface: a hex color (#ff5a36), rgb(), hsl() or one of the 148 CSS named colors (tomato), turned into a hex color by the compiler. It can also be a gradient (linear-gradient(), radial-gradient(), conic-gradient()), painted on the object as seen from the front, and taken by every material, a noise() cut in the object's own space, or one of them moved by a map with displace(). A gradient can be animated and changed by :hover: it changes into another gradient of the same kind with as many colors, and each of its numbers moves on its own, the angle, the center, the positions and the colors. Through a variable, like a registered @property in CSS, one number is enough: linear-gradient(var(--angle), …) turns when a @keyframes changes --angle. A color cannot change into a gradient. On a light of @scene, color is the color of its light: a plain color, not a gradient.",
     examples: [
       {
         name: "color",
@@ -207,7 +207,7 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "none | <gradient>",
     initial: "none",
     description:
-      "Cuts holes in the object, like a CSS mask: where the image covers the surface, the object is there; where the image is transparent, the surface is not drawn, and the eye sees the inside of the object, then what is behind it. The image is a gradient or a noise(), read like a gradient in color: seen from the front in the object's own space, and noise() in 3D, so the holes move and turn with the object. Its colors can be transparent: transparent, #00000000, rgb(0 0 0 / 0%), a color-mix() under 100%. By default the alpha of the image counts (see mask-mode). A part covered less than half is a hole, so the edge of a hole is sharp: unlike CSS, a mask does not fade the object. It can be animated and changed by :hover like a gradient in color: moving the stops of a noise() dissolves the object. The holes are seen everywhere, in the reflections too, and the mouse goes through them: :hover reaches the object behind a hole.",
+      "Cuts holes in the object, like a CSS mask: where the image covers the surface, the object is there; where the image is transparent, the surface is not drawn, and the eye sees the inside of the object, then what is behind it. The image is a gradient or a noise(), or one of them moved by displace(), read like a gradient in color: seen from the front in the object's own space, and noise() in 3D, so the holes move and turn with the object. Its colors can be transparent: transparent, #00000000, rgb(0 0 0 / 0%), a color-mix() under 100%. By default the alpha of the image counts (see mask-mode). A part covered less than half is a hole, so the edge of a hole is sharp: unlike CSS, a mask does not fade the object. It can be animated and changed by :hover like a gradient in color: moving the stops of a noise() dissolves the object. The holes are seen everywhere, in the reflections too, and the mouse goes through them: :hover reaches the object behind a hole.",
     examples: [
       {
         name: "holes from a noise",
@@ -918,7 +918,7 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "[ <gradient> , ]* [ <gradient> | <color> ]",
     initial: "#080808",
     description:
-      "Sets the background, visible wherever there is no object and no floor: a color, or a gradient drawn over the canvas like a CSS background (linear-gradient(), radial-gradient(), conic-gradient() and their repeating forms). The scene can animate it, with animation on the scene: a color into another color, a gradient into another gradient of the same kind with as many colors, or through the variables of the scene. A scene without objects and without a floor is then a flat, moving image. Like CSS, a background can have several layers, separated by commas, the first on top: background: noise(3, #ffffff00 40%, #ffffff), linear-gradient(#2f6bd8, #9fc4ff); only the last can be a color. The colors of these layers can be transparent (transparent, #ffffff80, rgb(… / 50%), a color-mix() under 100%), so a layer shows the ones below it, and background-blend-mode blends them; apart from mask-image, GSS has no transparency anywhere else.",
+      "Sets the background, visible wherever there is no object and no floor: a color, or a gradient drawn over the canvas like a CSS background (linear-gradient(), radial-gradient(), conic-gradient() and their repeating forms), a noise() or a displace(). The scene can animate it, with animation on the scene: a color into another color, a gradient into another gradient of the same kind with as many colors, or through the variables of the scene. A scene without objects and without a floor is then a flat, moving image. Like CSS, a background can have several layers, separated by commas, the first on top: background: noise(3, #ffffff00 40%, #ffffff), linear-gradient(#2f6bd8, #9fc4ff); only the last can be a color. The colors of these layers can be transparent (transparent, #ffffff80, rgb(… / 50%), a color-mix() under 100%), so a layer shows the ones below it, and background-blend-mode blends them; apart from mask-image, GSS has no transparency anywhere else.",
     examples: [
       {
         name: "background",
@@ -1673,6 +1673,29 @@ export const FUNCTIONS: FunctionDef[] = [
       {
         name: "noise() in a material",
         code: "@scene { torus; } torus { translate: 0 0.6 0; rotate-x: 70deg; material: metal(noise(turbulence 6 3, #6b4a2b, #d4af37), 0.25); }",
+      },
+    ],
+  },
+  {
+    name: "displace()",
+    anchor: "fn-displace",
+    covers: ["displace"],
+    computed: "on the GPU, at each pixel",
+    syntax: "displace(<gradient> | <noise()>, <gradient> | <noise()>, <number> | <percentage>)",
+    description:
+      "Moves an image by another one, like SVG feDisplacementMap, wherever a gradient goes: the color of an object or of a material, the background and its layers, mask-image. The image is a gradient or a noise(). The map, usually a noise(), is read at each point, and its colors move the point where the image is read: on a gradient, red moves it to the right and green down, like SVG with the red and green channels; on a noise(), red, green and blue move it in 3D. A channel at 50% moves nothing, 0% and 100% move it the most, half the amount each way. The amount is a share of the size of the image: 0.3 or 30% moves it by up to 15% of its size. A noise() map gives each of its channels a noise of its own, like feTurbulence, so even a gray noise moves the image in every direction; a gradient map is read once, by its colors. Stripes moved by a turbulence make marble, rings make wood, a mask gets ragged edges. Like a gradient, it can be animated and changed by :hover, into another displace() whose image and map are of the same kinds: its amount and the numbers of its image and of its map move, and animating the at of a noise() map makes the image flow. They can be set from JavaScript too. The colors of the map are opaque.",
+    examples: [
+      {
+        name: "marble",
+        code: "@scene { cube; } cube { translate: 0 0.6 0; size: 1.2; corner-radius: 0.06; color: displace(repeating-linear-gradient(45deg, #f4f1ea 0% 9%, #9a9385 10%, #f4f1ea 11%), noise(turbulence 1 4, black, white), 0.35); }",
+      },
+      {
+        name: "a ragged hole, in mask-image",
+        code: "@scene { sphere; } sphere { translate: 0 1 0; radius: 0.8; color: #ff5a36; mask-image: displace(radial-gradient(circle, transparent 30%, black 31%), noise(4 3, black, white), 0.15); }",
+      },
+      {
+        name: "water that flows",
+        code: "@scene { sphere; } sphere { translate: 0 1 0; material: chrome; } scene { floor: none; background: displace(repeating-linear-gradient(#123a6b 0% 3%, #3a7bff 5% 8%), noise(2 3, black, white), 0.1); animation: flow 10s linear infinite; } @keyframes flow { to { background: displace(repeating-linear-gradient(#123a6b 0% 3%, #3a7bff 5% 8%), noise(2 3 at 0 1 0, black, white), 0.1); } }",
       },
     ],
   },

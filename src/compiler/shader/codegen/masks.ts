@@ -37,7 +37,7 @@ export function objectMask(instance: StyledInstance, keyframes: Keyframes[], hov
   if (!isGradient(value))
     throw errorAt(
       value,
-      "mask-image expects none or an image: linear-gradient(), radial-gradient(), conic-gradient() or noise(), like: mask-image: noise(3, black 50%, transparent 52%);",
+      "mask-image expects none or an image: linear-gradient(), radial-gradient(), conic-gradient(), noise() or displace(), like: mask-image: noise(3, black 50%, transparent 52%);",
     );
   const name = readGradient(value, true).name;
   const other = values.find((other) => !isGradient(other));

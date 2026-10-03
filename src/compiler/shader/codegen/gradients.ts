@@ -202,6 +202,19 @@ function sameKind(gradient: Gradient, value: Token[], alpha = false): Gradient {
         ? `a noise() keeps its kind, its octaves and its seed when it changes: ${gradient.shape} here, ${other.shape} there`
         : `a radial-gradient() keeps the same shape and size when it changes: ${gradient.shape} here, ${other.shape} there`,
     );
+  // displace() (decision 114): its map changes like a gradient, into one of the same kind
+  if (!!other.displace !== !!gradient.displace)
+    throw errorAt(
+      value,
+      gradient.displace
+        ? "a displace() can only change into another displace(): write a displace() here too"
+        : `a ${gradient.name}() can only change into another ${gradient.name}(), not a displace()`,
+    );
+  if (gradient.displace && other.displace) {
+    const [map, next] = [gradient.displace.map, other.displace.map];
+    if (next.name !== map.name || next.shape !== map.shape || next.stops.length !== map.stops.length)
+      throw errorAt(value, `the map of a displace() can only change into another ${map.name}() of the same kind, with as many colors`);
+  }
   if (other.stops.length !== gradient.stops.length)
     throw errorAt(
       value,

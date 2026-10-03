@@ -23,6 +23,7 @@ export const GRADIENT_FUNCTIONS = [
   "conic-gradient",
   "repeating-conic-gradient",
   "noise",
+  "displace", // decision 114: an image moved by a map, like feDisplacementMap
 ];
 
 // A number of a gradient can be GLSL: a variable set from JS (decision 105)
@@ -111,11 +112,15 @@ export type Gradient = {
   // A layer of background or a mask-image (decisions 112, 113): its colors can be transparent,
   // and it gives a premultiplied vec4, like CSS mixes the stops of a gradient
   alpha?: boolean;
+  // displace() (decision 114): the map that moves the point where the image is read, and how
+  // far, a share of the size of the image
+  displace?: { map: Gradient; amount: Num };
 };
 
 // alpha: a layer of background or a mask-image, whose colors can be transparent (decisions 112, 113)
 export function readGradient(value: Token[], alpha = false): Gradient {
   const call = readFunction(value)!;
+  if (call.name === "displace") return readDisplace(call.args, value, alpha);
   const radial = call.name.includes("radial");
   const conic = call.name.includes("conic");
   const noise = call.name === "noise";
@@ -137,20 +142,58 @@ export function readGradient(value: Token[], alpha = false): Gradient {
   return gradient;
 }
 
-// The numbers of a gradient that can change, each with a name: angle, cx, cy, from, at0…, color0…
+// displace(<image>, <map>, <amount>) (decision 114), like SVG feDisplacementMap: the colors
+// of the map move the point where the image is read, the amount being a share of its size
+const DISPLACE_EXAMPLE =
+  "displace(repeating-linear-gradient(#f4f1ea 0% 4%, #8a8478 5% 6%), noise(turbulence 2 4, black, white), 0.3)";
+function readDisplace(args: Token[][], value: Token[], alpha: boolean): Gradient {
+  if (args.length !== 3) throw errorAt(value, `displace() takes an image, a map and an amount, like: ${DISPLACE_EXAMPLE}`);
+  const [image, map, amount] = args;
+  const displaced = (part: Token[]) => readFunction(part)?.name === "displace";
+  if (displaced(image)) throw errorAt(image, "displace(): the image is a gradient or a noise(), not another displace()");
+  if (!isGradient(image)) throw errorAt(image, `displace(): the image is a gradient or a noise(), like: ${DISPLACE_EXAMPLE}`);
+  if (displaced(map) || !isGradient(map))
+    throw errorAt(map, "displace(): the map is a gradient or a noise(), like: noise(2 4, black, white)");
+  const gradient = readGradient(image, alpha);
+  // Read like a layer, so that a transparent color says what it is; its colors are a vec3
+  const read = readGradient(map, true);
+  if (read.stops.some((stop) => stop.color.startsWith("vec4(")))
+    throw errorAt(map, "displace(): the map takes opaque colors: its red, green and blue move the image");
+  delete read.alpha;
+  gradient.displace = { map: read, amount: readAmount(amount) };
+  return gradient;
+}
+
+// The amount of displace(): a number, a percentage, or a variable set from JS (decision 105)
+function readAmount(amount: Token[]): Num {
+  const [token] = amount;
+  if (amount.length === 1 && token.type === "NUMBER") return token.value;
+  if (amount.length === 1 && token.type === "PERCENTAGE") return token.value / 100;
+  if (amount.length === 1 && token.type === "EXPR" && token.syntax === "number") return token.code;
+  if (amount.length === 1 && token.type === "EXPR" && token.syntax === "percentage") return `(${token.code} / 100.0)`;
+  throw errorAt(amount, "displace(): the amount is a number or a percentage of the size of the image, like: 0.3 or 30%");
+}
+
+// The numbers of a gradient that can change, each with a name: angle, cx, cy, from, at0…, color0…;
+// with displace(), its amount and the numbers of its map (map.at0…)
 export function channels(gradient: Gradient): string[] {
-  if (gradient.noise) return ["scale", "ox", "oy", "oz", ...gradient.stops.flatMap((_, i) => [`at${i}`, `color${i}`])];
   const kind = gradient.name.includes("conic") ? "conic" : gradient.name.includes("radial") ? "radial" : "linear";
-  return [
-    ...(kind === "linear" ? ["angle"] : ["cx", "cy"]),
-    ...(kind === "conic" ? ["from"] : []),
-    ...gradient.stops.flatMap((_, i) => [`at${i}`, `color${i}`]),
-  ];
+  const own = gradient.noise
+    ? ["scale", "ox", "oy", "oz", ...gradient.stops.flatMap((_, i) => [`at${i}`, `color${i}`])]
+    : [
+        ...(kind === "linear" ? ["angle"] : ["cx", "cy"]),
+        ...(kind === "conic" ? ["from"] : []),
+        ...gradient.stops.flatMap((_, i) => [`at${i}`, `color${i}`]),
+      ];
+  if (!gradient.displace) return own;
+  return [...own, "amount", ...channels(gradient.displace.map).map((key) => `map.${key}`)];
 }
 
 // A number of a gradient that a variable set from JS gives (decision 105): written in
 // GLSL like a number an animation moves
 function fromJs(gradient: Gradient, name: string): boolean {
+  if (name === "amount") return isLive(gradient.displace!.amount);
+  if (name.startsWith("map.")) return fromJs(gradient.displace!.map, name.slice(4));
   if (name === "scale") return isLive(gradient.noise!.scale);
   if (name === "ox" || name === "oy" || name === "oz") return isLive(gradient.noise!.offset["xyz".indexOf(name[1])]);
   if (name === "angle") return typeof gradient.direction === "string";
@@ -165,6 +208,8 @@ const code = (n: Num, short = false) => (isLive(n) ? n : f(short ? +n.toFixed(6)
 
 // One number of a gradient, in GLSL
 export function channel(gradient: Gradient, name: string): string {
+  if (name === "amount") return code(gradient.displace!.amount);
+  if (name.startsWith("map.")) return channel(gradient.displace!.map, name.slice(4));
   if (name === "angle") {
     const d = gradient.direction;
     if (typeof d === "string") return d;
@@ -208,13 +253,16 @@ export function linesOf(gradient: Gradient, moving: Map<string, string> = new Ma
   // Moved by an animation or :hover, or set from JS: written in GLSL, never as a constant
   const moves = (key: string) => moving.has(key) || fromJs(gradient, key);
 
-  const lines = gradient.noise
-    ? noiseT(gradient, moves, get, point)
-    : conic
-      ? conicT(gradient, moves, get)
-      : radial
-        ? radialT(gradient, get)
-        : linearT(gradient, moves, get);
+  const lines = [
+    ...(gradient.displace ? displaceLines(gradient, moving, point) : []),
+    ...(gradient.noise
+      ? noiseT(gradient, moves, get, point)
+      : conic
+        ? conicT(gradient, moves, get)
+        : radial
+          ? radialT(gradient, get)
+          : linearT(gradient, moves, get)),
+  ];
   const last = stops.length - 1;
   const t0 = stops[0].at as number;
   const tn = stops[last].at as number;
@@ -234,6 +282,36 @@ export function linesOf(gradient: Gradient, moving: Map<string, string> = new Ma
     lines.push(`  col = mix(col, ${get(`color${i}`)}, ${weight});`);
   }
   return lines;
+}
+
+// displace() (decision 114): the colors of the map move the point where the image is read,
+// like feDisplacementMap. A gradient moves by red and green (y down, like SVG), a noise() in
+// 3D by red, green and blue. A noise() map gives each channel a noise of its own, another
+// seed, like feTurbulence: a gray map moves in every direction. Each read is a block of its
+// own, so its t and col are not the image's. The amount is a share of the size of the image;
+// in the background, a noise() follows the view, where the height of the canvas is 1 / 1.5.
+function displaceLines(gradient: Gradient, moving: Map<string, string>, point: string): string[] {
+  const map = gradient.displace!.map;
+  const mapMoving = new Map([...moving].filter(([key]) => key.startsWith("map.")).map(([key, glsl]) => [key.slice(4), glsl]));
+  const amount = moving.get("amount") ?? channel(gradient, "amount");
+  const constant = /^-?[\d.]+$/.test(amount);
+  const times = constant ? amount : `(${amount})`;
+  const used = gradient.noise ? ["r", "g", "b"] : ["r", "g"];
+  const reads: [string, Gradient][] = map.noise
+    ? used.map((c, k) => [`move.${c} = col.${c};`, { ...map, noise: { ...map.noise!, seed: map.noise!.seed + k } }])
+    : [["move = col;", map]];
+  const move = !gradient.noise
+    ? `at += ${times} * size * vec2(move.r - 0.5, 0.5 - move.g);`
+    : point === "rd"
+      ? `rd += ${constant ? f(+(Number(amount) / 1.5).toFixed(6)) : `${times} / 1.5`} * (move - 0.5);`
+      : `${point} += ${times} * max(size.x, size.y) * (move - 0.5);`;
+  return [
+    "  {  // displace(): the map moves the point where the image is read",
+    "    vec3 move = vec3(0.5);",
+    ...reads.flatMap(([take, read]) => ["    {", ...linesOf(read, mapMoving, point).map((line) => `    ${line}`), `      ${take}`, "    }"]),
+    `    ${move}`,
+    "  }",
+  ];
 }
 
 function isColor(token: Token | undefined): boolean {

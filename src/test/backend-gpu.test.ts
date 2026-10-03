@@ -502,6 +502,32 @@ describe("mask-image cuts holes, on both backends", () => {
   }, 60000);
 });
 
+// displace(): the colors of the map move the point where the image is read, like feDisplacementMap
+describe("displace() moves an image by a map, on both backends", () => {
+  const flat = (background: string) => `@scene { } scene { floor: none; background: ${background}; }`;
+  const center = (pixels: number[]) => pixels.slice((36 * 96 + 48) * 4, (36 * 96 + 48) * 4 + 3);
+  const near = (pixel: number[], value: number) => pixel.every((c) => Math.abs(c - value) <= 4);
+
+  it("moves it to the right by red and down by green, like SVG", async () => {
+    // Red at 100%: read 20% of the width further right, on a gradient from black to white
+    const right = await render(flat("displace(linear-gradient(to right, #000000, #ffffff), linear-gradient(#ff8080, #ff8080), 0.4)"));
+    // Green at 100%: read 20% of the height lower, on a gradient from black at the top to white
+    const down = await render(flat("displace(linear-gradient(#000000, #ffffff), linear-gradient(#80ff80, #80ff80), 0.4)"));
+    for (const pixels of [right.gl, right.gpu, down.gl, down.gpu]) expect(near(center(pixels), 179), `${center(pixels)}`).toBe(true);
+  }, 60000);
+
+  it("moves stripes in every direction with a gray noise, each channel being a noise of its own", async () => {
+    // A gray map read once would move along a diagonal only, along these stripes: nothing would change
+    const stripes = "repeating-linear-gradient(45deg, #000000 0% 5%, #ffffff 5% 10%)";
+    const moved = await render(flat(`displace(${stripes}, noise(3 3, black, white), 0.3)`));
+    const still = await render(flat(stripes));
+    const apart = (p: number[], q: number[]) => p.filter((v, i) => Math.abs(v - q[i]) > 60).length / p.length;
+    expect(apart(moved.gl, still.gl)).toBeGreaterThan(0.2);
+    expect(apart(moved.gpu, still.gpu)).toBeGreaterThan(0.2);
+    expect(apart(moved.gl, moved.gpu)).toBeLessThan(0.01);
+  }, 60000);
+});
+
 describe("the default camera does not mirror the scene", () => {
   const front = "scene { floor: none; background: #000000; camera-target: 0 0 0; camera-angle: 0deg 0deg; camera-distance: 5; light: 0deg 0deg; ambient: 1; }";
   // The mean column and row of the pixels where `channel` wins, per backend
