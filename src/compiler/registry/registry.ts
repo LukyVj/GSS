@@ -86,7 +86,7 @@ export type FunctionDef = Parts & {
 // element() today: behind a flag, or an origin trial on a site
 const ELEMENT_NOTE: Note = {
   title: "Behind a flag for now.",
-  text: "element() needs HTML-in-Canvas, which Chromium ships behind a flag: turn on chrome://flags/#canvas-draw-element to see it, and the examples of this page. On your own site, visitors see it once you register the site for the HTML-in-Canvas origin trial and add its token to the page, until the trial ends on October 20, 2026. Without it, the object keeps its color.",
+  text: "`element()` needs HTML-in-Canvas, which Chromium ships behind a flag: turn on `chrome://flags/#canvas-draw-element` to see it, and the examples of this page. On your own site, visitors see it once you register the site for the HTML-in-Canvas origin trial and add its token to the page, until the trial ends on October 20, 2026. Without it, the object keeps its color.",
 };
 
 export const PROPERTIES: PropertyDef[] = [
@@ -112,30 +112,42 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "<color> | <gradient>",
     initial: "#e6e6e6",
     description:
-      "Sets the base color of the object's surface: a hex color (#ff5a36), rgb(), hsl() or one of the 148 CSS named colors (tomato), turned into a hex color by the compiler. It can also be a gradient (linear-gradient(), radial-gradient(), conic-gradient()), painted on the object as seen from the front, and taken by every material, a noise() cut in the object's own space, or one of them moved by a map with displace(). A transparent color (#ff000080, rgb(255 0 0 / 50%), transparent) or the transparent stops of a gradient make the object transparent, like opacity: what is behind it shows through. A gradient can be animated and changed by :hover: it changes into another gradient of the same kind with as many colors, and each of its numbers moves on its own, the angle, the center, the positions and the colors. Through a variable, like a registered @property in CSS, one number is enough: linear-gradient(var(--angle), …) turns when a @keyframes changes --angle. A color cannot change into a gradient. On a light of @scene, color is the color of its light: a plain color, not a gradient.",
+      "Sets the base color of the surface of the object: a hex color (`#ff5a36`), `rgb()`, `hsl()` or one of the 148 named colors of CSS (`tomato`). It can also be a gradient, a `noise()`, or one of them moved by `displace()`.",
+    values: [
+      ["<color>", "Any CSS color: the compiler turns it into a hex color."],
+      ["<gradient>", "`linear-gradient()`, `radial-gradient()` or `conic-gradient()`, painted on the object as seen from the front, and taken by every material."],
+      ["noise()", "A noise cut in the object's own space, like a block of stone."],
+      ["transparent", "A transparent color (`#ff000080`, `rgb(255 0 0 / 50%)`), or the transparent stops of a gradient, make the object transparent, like `opacity`."],
+    ],
+    details: "A gradient can be animated and changed by `:hover`, into another gradient of the same kind with as many colors: each of its numbers moves on its own. Through a variable, one number is enough: `linear-gradient(var(--angle), …)` turns when `@keyframes` changes `--angle`. A color cannot change into a gradient. On a point `light`, `color` is the color of its light: a plain color only.",
     examples: [
       {
-        name: "color",
+        name: "a hex color",
         code: "@scene { sphere; } sphere { color: #ff5a36; }",
       },
       {
-        name: "color",
+        name: "a named color and hsl()",
+        text: "`tomato`, and `hsl(210 80% 60%)`.",
         code: "@scene { sphere#a; sphere#b; } #a { translate: 0.8 0.5 0; color: tomato; } #b { translate: -0.8 0.5 0; color: hsl(210 80% 60%); }",
       },
       {
         name: "animated gradient",
+        text: "`@keyframes` turns the angle of the gradient through `--angle`.",
         code: "@scene { plane; } plane { size: 4 3; translate: 0 0.05 0; --angle: 0deg; color: linear-gradient(var(--angle), #ff6540, #722cff); animation: spin 6s; } scene { camera-angle: 0deg 60deg; } @keyframes spin { to { --angle: 1turn; } }",
       },
       {
         name: "gradient on :hover",
+        text: "Under the mouse, the center of the gradient moves and its colors change.",
         code: "@scene { cube; } cube { translate: 0 0.5 0; color: radial-gradient(circle at 30% 70%, #ffd27a, #ff5a36); transition: 0.4s; } cube:hover { color: radial-gradient(circle at 70% 30%, #7ad2ff, #3a3aff); }",
       },
       {
         name: "a transparent color",
+        text: "A sphere at 40% alpha: the cube behind it shows through.",
         code: "@scene { sphere; cube; } sphere { translate: 0 1 0; radius: 0.7; color: rgb(58 123 255 / 40%); } cube { translate: 0 0.4 -1.2; size: 0.8; color: #ff5a36; }",
       },
       {
         name: "a gradient that fades out",
+        text: "The cube fades out toward its bottom.",
         code: "@scene { cube; } cube { translate: 0 0.7 0; size: 1.2; color: linear-gradient(#ff5a36, transparent); }",
       },
     ],
@@ -147,38 +159,55 @@ export const PROPERTIES: PropertyDef[] = [
       "matte([<color>]) | metal([<color>,] [<roughness>]) | jelly([<color>,] [<density>]) | gold | chrome | jelly | glass([<color>,] [<refraction-index>] [, [frosted | wavy | hammered | blurred] <frost>]) | glass | ice",
     initial: "matte()",
     description:
-      "Sets how the surface of the object reacts to light. matte() only scatters light, like chalk. metal() reflects the scene: roughness goes from 0, a mirror, to 1, a brushed metal (0.2 by default). Without a color, the material uses the color property, like currentColor in CSS, so color stays animatable. jelly() lets light through its thin parts, like a gummy candy: density goes from 0, clear, to 1, deep (0.5 by default). gold, chrome and jelly are shortcuts for metal(#d4af37, 0.2), metal(#ffffff, 0.05) and jelly(). glass() lets you see through the object, bent by its refraction index (1 to 3, 1.5 by default: 1.33 is water, 2.4 is diamond). The frost, from 0 to 1, comes with an optional style: frosted (white patches, the default), wavy (big waves), hammered (small bumps) or blurred (soft blur). glass is glass(), ice is glass(#cfeaff, 1.31, frosted 0.25). The color of a material can also be a gradient: metal(linear-gradient(#ffd27a, #ff5a36), 0.2).",
+      "Sets how the surface of the object reacts to light. Without a color, a material uses the `color` property, like `currentColor` in CSS, so the color stays animatable. The color can also be a gradient: `metal(linear-gradient(#ffd27a, #ff5a36), 0.2)`.",
+    values: [
+      ["matte()", "Scatters the light only, like chalk: the default."],
+      ["metal()", "Reflects the scene. Its roughness goes from 0, a mirror, to 1, brushed metal (0.2 by default)."],
+      ["jelly()", "Lets the light through its thin parts, like a gummy candy. Its density goes from 0, clear, to 1, deep (0.5 by default)."],
+      ["glass()", "See-through, bent by its refraction index, from 1 to 3 (1.5 by default: water is 1.33, diamond 2.4), then a frost from 0 to 1."],
+      ["frosted, wavy, hammered, blurred", "The style of the frost: white patches (the default), big waves, small bumps, a soft blur."],
+      ["gold, chrome", "`metal(#d4af37, 0.2)` and `metal(#ffffff, 0.05)`."],
+      ["jelly, glass, ice", "`jelly()`, `glass()`, and `glass(#cfeaff, 1.31, frosted 0.25)`."],
+    ],
     examples: [
       {
         name: "matte()",
+        text: "The default: a soft, even surface.",
         code: "@scene { sphere; } sphere { color: #ff5a36; material: matte(); }",
       },
       {
         name: "metal()",
+        text: "`gold`, `chrome`, and a rougher `metal(0.7)` that takes the `color`.",
         code: "@scene { sphere#a; sphere#b; sphere#c; } #a { translate: 1.3 0.6 0; radius: 0.6; material: gold; } #b { translate: 0 0.6 0; radius: 0.6; material: chrome; } #c { translate: -1.3 0.6 0; radius: 0.6; color: #d4af37; material: metal(0.7); }",
       },
       {
         name: "jelly()",
+        text: "`jelly`, and a clearer `jelly(0.3)`.",
         code: "@scene { sphere; cube; } sphere { translate: 0.8 0.6 0; radius: 0.6; color: #ff5a36; material: jelly; } cube { translate: -0.8 0.5 0; rotate-y: -30deg; color: #3ad16b; material: jelly(0.3); }",
       },
       {
         name: "glass()",
+        text: "Clear glass.",
         code: "@scene { sphere; } sphere { translate: 0 1 0; radius: 0.6; material: glass; }",
       },
       {
-        name: "glass() with color and refraction index",
+        name: "glass(), with its arguments",
+        text: "A white glass, of index 1.5 and frost 0.3.",
         code: "@scene { sphere; } sphere { translate: 0 1 0; radius: 0.6; material: glass(#ffffff, 1.5, 0.3); }",
       },
       {
-        name: "ice()",
+        name: "ice",
+        text: "`glass(#cfeaff, 1.31, frosted 0.25)`.",
         code: "@scene { sphere; } sphere { translate: 0 1 0; radius: 0.6; material: ice; }",
       },
       {
-        name: "glass() with frost",
+        name: "glass, with a cube behind",
+        text: "The sphere bends the view of the cube behind it.",
         code: "@scene { sphere; cube; } sphere { translate: 0 0.7 0; radius: 0.6; material: glass; } cube { translate: -0.3 0.5 -1.5; color: #ff5a36; }",
       },
       {
         name: "glass() with frost and style",
+        text: "A `wavy` and a `blurred` frost, side by side.",
         code: "@scene { sphere#a; sphere#b; cube; } #a { translate: 0.7 0.7 0; radius: 0.6; material: glass(1.5, wavy 0.6); } #b { translate: -0.7 0.7 0; radius: 0.6; material: glass(1.5, blurred 0.6); } cube { translate: 0 0.5 -1.8; color: #ff5a36; }",
       },
     ],
@@ -189,15 +218,21 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: 'url("<file>") | element(<id>)',
     initial: "none",
     description:
-      "Projects an image onto the surface of the object: one image per face, the top, the bottom and the sides, whatever the size of the object. The image replaces the base color of the material, and moves, turns and scales with the object. element(#card) shows a live image of an HTML element instead, like CSS element(): the browser draws it with the page's own CSS and fonts, and the object shows it again each time it changes. The element goes inside the scene: inside <gss-scene>, next to its script, or inside the canvas given to mount(). It stays in the page, so it stays accessible, but it is only seen on the object. This needs a browser that draws HTML in a canvas (Chromium, for now); elsewhere, the object keeps its color. A scene with an element is drawn with WebGL2.",
+      "Projects an image onto the surface of the object: one image per face, the top, the bottom and the sides, whatever the size of the object. The image replaces the base color, and moves, turns and scales with the object.",
+    values: [
+      ["url(\"<file>\")", "An image file, read next to the `.gss` file, like `url()` in a stylesheet."],
+      ["element(<id>)", "A live image of an HTML element of the page: see `element()`."],
+      ["none", "No image: the default."],
+    ],
     note: ELEMENT_NOTE,
     examples: [
       {
-        name: "texture",
+        name: "a block of dirt",
         code: '@scene { cube; } cube { translate: 0 0.5 0; texture: url("/textures/dirt.png"); }',
       },
       {
         name: "an HTML element, with element()",
+        text: "A card of HTML on the front face of a thin cube.",
         code: "@scene { cube; } scene { floor: none; camera-angle: -20deg 10deg; camera-target: 0 0.8 0; camera-distance: 3.2; ambient: 0.55; } cube { translate: 0 0.8 0; size: 1.6 1 0.06; corner-radius: 0.03; } cube::face(front) { texture: element(#card); }",
         html: "<article id=\"card\" style=\"\n  width: 320px; height: 200px; padding: 28px;\n  box-sizing: border-box; border-radius: 18px;\n  background: #f4f1ea; color: #1a1d2b;\n  font: 600 30px/1.2 system-ui, sans-serif;\">\n  Hello from <em style=\"color: #ff5a36;\">HTML</em>, on a 3D card\n</article>",
       },
@@ -209,10 +244,15 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "auto | smooth | pixelated | crisp-edges",
     initial: "auto",
     description:
-      "How the image of texture is drawn. pixelated reads the nearest pixel of the image: every pixel stays a sharp square, the look of pixel art (a 16×16 Minecraft-style block). auto and smooth blend the pixels, for photos and painted textures. crisp-edges is the same as pixelated.",
+      "How the image of `texture` is drawn, like CSS.",
+    values: [
+      ["auto, smooth", "Blends the pixels, for photos and painted textures. `auto` is the default."],
+      ["pixelated", "Reads the nearest pixel: each pixel stays a sharp square, the look of pixel art."],
+      ["crisp-edges", "The same as `pixelated`."],
+    ],
     examples: [
       {
-        name: "image-rendering",
+        name: "a pixel-art block",
         code: '@scene { cube; } cube { translate: 0 0.5 0; texture: url("/textures/dirt.png"); image-rendering: pixelated; }',
       },
     ],
@@ -223,10 +263,11 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "<number>",
     initial: "auto",
     description:
-      "The size of one image on the surface, in the object's units, like background-size: the image repeats to cover the face. texture-size: 0.5 on a cube of size 3 shows 6 × 6 images per face. auto, the default, fits one image to each face, whatever the size of the object.",
+      "The size of one image on the surface, in the units of the object, like `background-size`: the image repeats to cover each face. `auto`, the default, fits one image to each face.",
     examples: [
       {
-        name: "texture-size",
+        name: "a tiled slab",
+        text: "Images of 0.5 on a slab of 3: 6 × 6 per face.",
         code: "@scene { cube; } cube { size: 3 0.2 3; translate: 0 0.1 0; texture: url('/textures/dirt.png'); texture-size: 0.5; image-rendering: pixelated; }",
       },
     ],
@@ -238,18 +279,22 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "<number> | <percentage>",
     initial: "1",
     description:
-      "How much the object covers what is behind it, like CSS: from 0, invisible, to 1, opaque (the default), as a number or a percentage; a value outside is kept between them. The alpha of its color and opacity() in filter multiply with it. Behind a transparent object, the eye sees its back face from the inside, then what is behind it, and what is inside it: a sphere at 50% looks like a bubble. On a group, the opacity multiplies into each of its objects; unlike CSS, which fades a group as one picture, its objects show through each other. It can be animated, changed by :hover and set from JavaScript, like color. With shadows, the light goes through a transparent object like through stained glass: what the object covers takes its color, so a red glass at 50% casts a pink light; close to opaque, it lets less and less light through. The mouse still points at a transparent object, like CSS. The reflections show the objects opaque.",
+      "How much the object covers what is behind it, like CSS: from 0, invisible, to 1, opaque (the default), as a number or a percentage; a value outside is kept between them. The alpha of its `color` and `opacity()` in `filter` multiply with it.",
+    details: "Through a transparent object, the eye sees its back face from the inside, then what is behind it: a sphere at 50% looks like a bubble. On a group, the opacity goes into each of its objects: unlike CSS, which fades a group as one picture, its objects show through each other. With `shadows`, the light goes through a transparent object like stained glass: a red glass at 50% casts a pink light. The mouse still points at a transparent object, like CSS, and the reflections show it opaque.",
     examples: [
       {
         name: "a bubble",
+        text: "A sphere at 35%, with another one inside.",
         code: "@scene { sphere#bubble; sphere#core; } #bubble { translate: 0 1 0; radius: 0.8; color: #9fd8ff; opacity: 0.35; } #core { translate: 0 1 0; radius: 0.3; color: #ff5a36; }",
       },
       {
         name: "fading on :hover",
+        text: "The cube fades to 25% under the mouse.",
         code: "@scene { cube; } cube { translate: 0 0.6 0; size: 1.2; color: #3a7bff; transition: 0.4s; } cube:hover { opacity: 0.25; }",
       },
       {
         name: "a colored shadow",
+        text: "A red pane at 50% casts a pink light.",
         code: "@scene { cube; sphere; } scene { shadows: soft; light: 30deg 55deg; } cube { translate: 0 0.9 0; size: 1.2 1.2 0.05; color: #ff2a2a; opacity: 0.5; } sphere { translate: 0.9 0.4 -1; radius: 0.4; }",
       },
     ],
@@ -261,18 +306,22 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "none | <gradient>",
     initial: "none",
     description:
-      "Cuts holes in the object, like a CSS mask: where the image covers the surface, the object is there; where the image is transparent, the surface is not drawn, and the eye sees the inside of the object, then what is behind it. The image is a gradient or a noise(), or one of them moved by displace(), read like a gradient in color: seen from the front in the object's own space, and noise() in 3D, so the holes move and turn with the object. Its colors can be transparent: transparent, #00000000, rgb(0 0 0 / 0%), a color-mix() under 100%. By default the alpha of the image counts (see mask-mode). A part covered less than half is a hole, so the edge of a hole is sharp: unlike CSS, a mask does not fade the object. It can be animated and changed by :hover like a gradient in color: moving the stops of a noise() dissolves the object. The holes are seen everywhere, in the reflections too, and the mouse goes through them: :hover reaches the object behind a hole.",
+      "Cuts holes in the object, like a CSS mask: where the image covers the surface, the object is there; where it is transparent, the surface is not drawn, and the eye sees inside the object, then what is behind it. The image is a gradient, a `noise()`, or one of them moved by `displace()`.",
+    details: "It is read like a gradient in `color`: seen from the front in the object's own space, and in 3D for a `noise()`, so the holes move and turn with the object. A part covered less than half is a hole, so the edge of a hole is sharp: unlike CSS, a mask does not fade the object. `mask-mode` says what counts, the alpha by default. The holes show in the reflections too, and the mouse goes through them: `:hover` reaches the object behind a hole.",
     examples: [
       {
         name: "holes from a noise",
+        text: "A `noise()` whose black covers and whose `transparent` cuts.",
         code: "@scene { sphere; } sphere { translate: 0 1 0; radius: 0.8; color: #ff5a36; mask-image: noise(4 3, black 48%, transparent 52%); }",
       },
       {
         name: "a sphere seen through a cube",
+        text: "A round hole in each face shows the sphere inside the cube.",
         code: "@scene { cube; sphere; } scene { camera-angle: 20deg 15deg; } cube { translate: 0 0.7 0; size: 1.4; color: #3a7bff; mask-image: radial-gradient(circle, transparent 35%, black 36%); } sphere { translate: 0 0.7 0; radius: 0.35; color: #ff5a36; }",
       },
       {
         name: "a dissolve",
+        text: "Moving the stops of the `noise()` dissolves the sphere.",
         code: "@scene { sphere; } sphere { translate: 0 1 0; radius: 0.8; color: #ff5a36; mask-image: noise(4 3, black 20%, transparent 20%); animation: dissolve 3s ease-in-out alternate; } @keyframes dissolve { to { mask-image: noise(4 3, black 80%, transparent 80%); } }",
       },
     ],
@@ -283,10 +332,16 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "alpha | luminance | match-source",
     initial: "match-source",
     description:
-      "Which part of mask-image counts, like CSS. alpha: the transparency of its colors, so black and white are both there. luminance: their brightness, times their alpha, like an SVG mask: white is there, black is a hole. match-source, the default, reads a gradient by its alpha, like CSS.",
+      "Which part of `mask-image` counts, like CSS.",
+    values: [
+      ["match-source", "The default: a gradient counts by its alpha, like CSS."],
+      ["alpha", "The transparency of its colors: black and white are both there."],
+      ["luminance", "Their brightness, times their alpha, like an SVG mask: white is there, black is a hole."],
+    ],
     examples: [
       {
         name: "a cage, with luminance",
+        text: "White stripes stay, black ones are holes: the sphere shows between the bars.",
         code: "@scene { cube; sphere; } cube { translate: 0 0.7 0; size: 1.4; mask-image: repeating-linear-gradient(90deg, white 0% 10%, black 10% 20%); mask-mode: luminance; } sphere { translate: 0 0.7 0; radius: 0.45; color: #ff5a36; }",
       },
     ],
@@ -906,14 +961,15 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "<color> | none",
     initial: "#e8e3db",
     description:
-      "Sets the color of the floor, an infinite plane at y = 0 that is lit like the objects. none removes it: the objects float over the background, like the GSS logo.",
+      "Sets the color of the floor, an infinite plane at y = 0, lit like the objects. `none` removes it: the objects float over the `background`, like the GSS logo.",
     examples: [
       {
-        name: "floor",
+        name: "a dark floor",
         code: "@scene { cube; } cube { translate: 0 0.5 0; } scene { floor: #1a1a1f; }",
       },
       {
-        name: "floor with a different background",
+        name: "no floor",
+        text: "`floor: none`, over a dark background.",
         code: "@scene { sphere; } sphere { color: #ff5a36; material: jelly(0.6); } scene { floor: none; background: #0a0a0c; }",
       },
     ],
@@ -924,62 +980,87 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "none | <filter-function>+",
     initial: "none",
     description:
-      "Post-processing, like CSS filter: a list of functions applied in order, on the whole image (scene { filter }), on an object, or on a group and everything in it. On an object or a group, the filters change only its own pixels, and reflections see them too: a blur() spreads it over what is around it, a bloom() makes only its bright parts glow. Like CSS, an object's filter comes before its group's, and the scene's comes last; on an object, the filters that read only their own pixel come before blur() and bloom(), and an object and its group cannot both have a blur() or a bloom(). brightness(), contrast(), saturate(), grayscale(), sepia(), invert() take a number or a percentage (1 or 100% changes nothing; grayscale(), sepia() and invert() go up to 1), hue-rotate() an angle; they cost almost nothing. grain() adds a film-like noise that moves at every frame (0.1 by default). blur() blurs by a length in px, like CSS; bloom() makes the bright parts glow: an amount (0.6 by default) and a radius in px (16px by default). blur() and bloom() read the pixels around each pixel: the scene is first drawn into an image, then blurred, which costs more as the radius grows. opacity() makes an object or a group transparent, like the opacity property, with which it multiplies; on the scene it is an error, since the scene stays opaque. drop-shadow() is not there yet. The Shadertoy export keeps the filters that read only their own pixel, not blur() and bloom().",
+      "Post-processing, like CSS `filter`: a list of functions applied in order, on the whole image (`scene { filter }`), on an object, or on a group and everything in it.",
+    valuesTitle: "Functions",
+    values: [
+      ["brightness(), contrast(), saturate()", "A number or a percentage: 1 or 100% changes nothing."],
+      ["grayscale(), sepia(), invert()", "From 0 to 1: how far it goes."],
+      ["hue-rotate()", "An angle around the color wheel."],
+      ["grain()", "A film grain that moves at every frame (0.1 by default)."],
+      ["blur()", "A blur, by a length in px, like CSS."],
+      ["bloom()", "Makes the bright parts glow: an amount (0.6 by default) and a radius in px (16px by default)."],
+      ["opacity()", "Makes an object or a group transparent, multiplied with `opacity`. On the scene, it is an error: the scene stays opaque."],
+    ],
+    details: "On an object or a group, the filters change only its own pixels, and the reflections see them too: a `blur()` spreads it over what is around it. Like CSS, an object's filter comes before its group's, and the scene's comes last; on an object, the filters that read one pixel come before `blur()` and `bloom()`, and an object and its group cannot both have one of them. `blur()` and `bloom()` read the pixels around each pixel, so they cost more as the radius grows; the other filters cost almost nothing.",
     examples: [
       {
         name: "brightness()",
+        text: "The whole image, 1.4 times brighter.",
         code: "@scene { sphere; } sphere { translate: 0 1 0; color: #ff5a36; } scene { filter: brightness(1.4); }",
       },
       {
         name: "contrast()",
+        text: "Darker darks, lighter lights.",
         code: "@scene { sphere; cube; } sphere { translate: 0.8 0.6 0; color: #ff5a36; } cube { translate: -0.8 0.5 0; color: #3a7bff; } scene { filter: contrast(1.6); }",
       },
       {
         name: "saturate()",
+        text: "Twice the saturation.",
         code: "@scene { sphere; cube; } sphere { translate: 0.8 0.6 0; color: #ff5a36; } cube { translate: -0.8 0.5 0; color: #3a7bff; } scene { filter: saturate(2); }",
       },
       {
         name: "grayscale()",
+        text: "No color left.",
         code: "@scene { sphere; cube; } sphere { translate: 0.8 0.6 0; color: #ff5a36; } cube { translate: -0.8 0.5 0; color: #3a7bff; } scene { filter: grayscale(1); }",
       },
       {
         name: "sepia()",
+        text: "The tones of an old photograph.",
         code: "@scene { sphere; cube; } sphere { translate: 0.8 0.6 0; color: #ff5a36; } cube { translate: -0.8 0.5 0; color: #3a7bff; } scene { filter: sepia(0.8); }",
       },
       {
         name: "hue-rotate()",
+        text: "Every hue turned by 120°.",
         code: "@scene { sphere; cube; } sphere { translate: 0.8 0.6 0; color: #ff5a36; } cube { translate: -0.8 0.5 0; color: #3a7bff; } scene { filter: hue-rotate(120deg); }",
       },
       {
         name: "invert()",
+        text: "The negative of the image.",
         code: "@scene { sphere; } sphere { translate: 0 1 0; color: #ff5a36; } scene { filter: invert(1); }",
       },
       {
         name: "grain()",
+        text: "A film grain over the image.",
         code: "@scene { sphere; } sphere { translate: 0 1 0; color: #ff5a36; } scene { background: #1a1a22; filter: grain(0.15); }",
       },
       {
         name: "blur()",
+        text: "The whole image, blurred by 3px.",
         code: "@scene { sphere; cube; } sphere { translate: 0.8 0.6 0; color: #ff5a36; } cube { translate: -0.8 0.5 0; color: #3a7bff; } scene { filter: blur(3px); }",
       },
       {
         name: "bloom()",
+        text: "Bright spheres that glow in the dark.",
         code: "@scene { sphere.light * 5; } .light { radius: 0.25; translate: calc(2.4 - sibling-index() * 0.8) 0.8 0; color: hsl(calc(sibling-index() * 40) 100% 70%); } scene { floor: none; background: #07070a; ambient: 1; filter: bloom(0.9, 20px); }",
       },
       {
         name: "filter on objects",
+        text: "Each sphere has a filter of its own.",
         code: "@scene { sphere#a; sphere#b; sphere#c; } sphere { radius: 0.5; color: #ff5a36; } #a { translate: 1.3 0.6 0; filter: grayscale(1); } #b { translate: 0 0.6 0; filter: blur(4px); } #c { translate: -1.3 0.6 0; filter: hue-rotate(180deg) brightness(1.3); }",
       },
       {
         name: "filter on a group",
+        text: "Only the spheres of the group glow.",
         code: "@scene { group#lights { sphere * 4 } cube; } #lights { filter: bloom(0.9, 18px); } #lights sphere { radius: 0.2; translate: calc(1.75 - sibling-index() * 0.7) 1.4 0; color: #ffd27a; } cube { translate: 0 0.5 0; color: #3a7bff; } scene { floor: none; background: #07070a; }",
       },
       {
         name: "opacity() on a group",
+        text: "The group fades: its objects show through each other.",
         code: "@scene { group#g { cube; sphere; } } #g { filter: opacity(0.5); } cube { translate: -0.6 0.5 0; color: #3a7bff; } sphere { translate: 0.6 0.5 0; radius: 0.5; color: #ff5a36; }",
       },
       {
         name: "filters together",
+        text: "Four filters, applied in the order written.",
         code: "@scene { torus; sphere; } torus { translate: 0 1 0; rotate-x: 70deg; color: #ffd27a; material: gold; } sphere { radius: 0.3; translate: 0 1 0; color: #ff5a36; } scene { floor: none; background: radial-gradient(#2a2a3a, #07070a); filter: contrast(1.1) saturate(1.3) bloom(0.7, 18px) grain(0.06); }",
       },
     ],
@@ -991,22 +1072,26 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "[ <gradient> , ]* [ <gradient> | <color> ]",
     initial: "#080808",
     description:
-      "Sets the background, visible wherever there is no object and no floor: a color, or a gradient drawn over the canvas like a CSS background (linear-gradient(), radial-gradient(), conic-gradient() and their repeating forms), a noise() or a displace(). The scene can animate it, with animation on the scene: a color into another color, a gradient into another gradient of the same kind with as many colors, or through the variables of the scene. A scene without objects and without a floor is then a flat, moving image. Like CSS, a background can have several layers, separated by commas, the first on top: background: noise(3, #ffffff00 40%, #ffffff), linear-gradient(#2f6bd8, #9fc4ff); only the last can be a color. The colors of these layers can be transparent (transparent, #ffffff80, rgb(… / 50%), a color-mix() under 100%), so a layer shows the ones below it, and background-blend-mode blends them.",
+      "Sets the background of the scene, seen wherever there is no object and no floor: a color, a gradient drawn over the canvas like a CSS background, a `noise()` or a `displace()`.",
+    details: "Like CSS, a background can have several layers, separated by commas, the first on top: `noise(3, #ffffff00 40%, #ffffff), linear-gradient(#2f6bd8, #9fc4ff)`. Only the last layer can be a plain color; transparent colors let the layers below show through, and `background-blend-mode` blends them. With `animation` on the scene, a color changes into a color and a gradient into a gradient of the same kind, also through variables: without objects and floor, the scene is a moving image.",
     examples: [
       {
-        name: "background",
+        name: "a color",
         code: "@scene { cube; } cube { translate: 0 0.5 0; } scene { background: #42429f; }",
       },
       {
-        name: "background with a gradient",
+        name: "a gradient",
+        text: "A radial gradient, and no floor: the sphere floats in it.",
         code: "@scene { sphere; } sphere { translate: 0 1 0; color: #ff5a36; } scene { floor: none; background: radial-gradient(circle at 50% 40%, #2a2a3a, #07070a); }",
       },
       {
         name: "layers: clouds over a sky",
+        text: "A transparent `noise()` over a blue gradient.",
         code: "@scene { sphere; } sphere { translate: 0 1 0; material: chrome; } scene { floor: none; background: noise(2 4, #ffffff00 45%, #ffffff 80%), linear-gradient(#2f6bd8, #9fc4ff); }",
       },
       {
         name: "animated background",
+        text: "`@keyframes` moves the center of the gradient through `--x`.",
         code: "@scene { } scene { floor: none; --x: 20%; background: radial-gradient(circle at var(--x) 40%, #ffb36b, #ff6540 30%, #722cff 70%, #171322); animation: drift 8s ease-in-out alternate; filter: grain(0.06); } @keyframes drift { to { --x: 80%; } }",
       },
     ],
@@ -1017,14 +1102,27 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "<blend-mode>#",
     initial: "normal",
     description:
-      "How each layer of background blends with what is below it, like CSS: normal, multiply, screen, overlay, darken, lighten, color-dodge, color-burn, hard-light, soft-light, difference, exclusion, hue, saturation, color or luminosity. One mode per layer, the first for the top layer; a shorter list repeats over the layers. The transparency of a layer still applies: a transparent part blends nothing.",
+      "How each layer of `background` blends with what is below it, like CSS: one mode per layer, the first for the top layer. A shorter list repeats over the layers.",
+    valuesTitle: "Modes",
+    values: [
+      ["normal", "Covers what is below: the default."],
+      ["multiply, screen", "Darkens, where white changes nothing; lightens, where black changes nothing."],
+      ["overlay, soft-light, hard-light", "More contrast: multiplies the darks, screens the lights."],
+      ["darken, lighten", "The darker or the lighter of the two colors."],
+      ["color-dodge, color-burn", "Brightens or darkens what is below, by the color of the layer."],
+      ["difference, exclusion", "The difference of the two colors; softer with `exclusion`."],
+      ["hue, saturation, color, luminosity", "One part of the color of the layer, over the rest of the color below."],
+    ],
+    details: "The transparency of a layer still applies: a transparent part blends nothing.",
     examples: [
       {
         name: "a grain over a gradient",
+        text: "A gray noise multiplied over a gradient, like a grain.",
         code: "@scene { } scene { floor: none; background: noise(40 2, #808080, #ffffff), linear-gradient(135deg, #ff5a36, #3a7bff); background-blend-mode: multiply; }",
       },
       {
         name: "two noises, screened",
+        text: "Two noises over black, lightened together by `screen`.",
         code: "@scene { sphere; } sphere { translate: 0 1 0; material: chrome; } scene { floor: none; background: noise(3 3, #000000 45%, #ff5a36), noise(2 4 seed 3, #000000 40%, #3a7bff), #000000; background-blend-mode: screen; }",
       },
     ],
@@ -1865,7 +1963,7 @@ export const FUNCTIONS: FunctionDef[] = [
     ],
   },
   {
-    name: "linear-gradient(), radial-gradient(), conic-gradient()",
+    name: "<gradient>",
     anchor: "fn-gradients",
     computed: "on the GPU, at each pixel",
     covers: [
@@ -1879,26 +1977,39 @@ export const FUNCTIONS: FunctionDef[] = [
     syntax:
       "linear-gradient([<angle> | to <side> <side>?]?, <color> <percentage>{0,2}, …) | radial-gradient([circle | ellipse]? [closest-side | farthest-side | closest-corner | farthest-corner]? [at <position>]?, <color> <percentage>{0,2}, …) | conic-gradient([from <angle>]? [at <position>]?, <color> [<angle> | <percentage>]{0,2}, …)",
     description:
-      "Gradients, like CSS, for the background of the scene, the color of an object and the color of a material. In the background, the gradient covers the canvas and follows its size; reflections and glass see it in the direction they look. On an object, it covers the object seen from the front, from left to right and from bottom to top (a plane is seen from above): to top goes from its bottom to its top, whatever its size, and it turns and moves with it. linear-gradient() goes to bottom by default; it takes an angle (0deg up, 90deg right) or to a side or a corner. radial-gradient() is an ellipse reaching the farthest corner from the center by default; it takes circle or ellipse, a size keyword and a position (at 30% 40%, at top). conic-gradient() turns around a center, clockwise from the top: from 90deg starts it a quarter turn later, at 30% 40% moves the center, and its colors can be placed with angles as well as percentages (a full turn is 100%), for a color wheel, a pie chart or the sweep of a watch hand. Each color can have one or two positions; the missing ones are spread like CSS, and two colors at the same place make a hard edge. repeating-linear-gradient(), repeating-radial-gradient() and repeating-conic-gradient() repeat the stops. Colors are mixed in sRGB, like CSS with hex colors.",
+      "The gradients of CSS, for the `background` of the scene, the `color` of an object and the color of a material. Each color can have one or two positions; the missing ones are spread like CSS, and two colors at the same place make a hard edge.",
+    valuesTitle: "Functions",
+    values: [
+      ["linear-gradient()", "Along a line, `to bottom` by default. It takes an angle (`0deg` up, `90deg` right), or `to` a side or a corner."],
+      ["radial-gradient()", "An ellipse that reaches the farthest corner by default. It takes `circle` or `ellipse`, a size keyword and a position: `at 30% 40%`, `at top`."],
+      ["conic-gradient()", "Around a center, clockwise from the top: `from 90deg` starts a quarter turn later, and `at 30% 40%` moves the center. Its colors take angles or percentages: a color wheel, a pie chart, the sweep of a hand."],
+      ["repeating-linear-gradient()", "Repeats the stops; also `repeating-radial-gradient()` and `repeating-conic-gradient()`."],
+    ],
+    details: "In the background, the gradient covers the canvas and follows its size; reflections and glass see it in the direction they look. On an object, it covers the object as seen from the front, from left to right and from bottom to top (a plane is seen from above): `to top` goes from its bottom to its top, whatever its size, and it moves and turns with the object. Colors are mixed in sRGB, like CSS with hex colors.",
     examples: [
       {
         name: "linear-gradient()",
+        text: "A diagonal background, `to top right`.",
         code: "@scene { cube; } cube { translate: 0 0.5 0; color: #f4f1ea; } scene { floor: none; background: linear-gradient(to top right, #ff5a36, #3a7bff); }",
       },
       {
         name: "radial-gradient()",
+        text: "A `circle closest-side` behind a glass sphere.",
         code: "@scene { sphere; } sphere { translate: 0 1 0; material: glass; } scene { floor: none; background: radial-gradient(circle closest-side, #ffd27a, #ff5a36 60%, #1a0f2e); }",
       },
       {
         name: "linear-gradient() on objects",
+        text: "A gradient on a cylinder and on a cube, and one in the material of a sphere.",
         code: "@scene { cylinder; sphere; cube; } cylinder { radius: 0.4; height: 2; translate: 1.4 1 0; color: linear-gradient(#ff5a36, #ffd27a); } sphere { radius: 0.7; translate: 0 0.7 0; material: metal(radial-gradient(circle at 35% 65%, #ffffff, #3a7bff 40%, #10183a), 0.15); } cube { size: 1; translate: -1.4 0.5 0; rotate-y: -30deg; color: repeating-linear-gradient(45deg, #3ad16b 0% 10%, #f4f1ea 10% 20%); }",
       },
       {
         name: "conic-gradient()",
+        text: "A color wheel on a dial, stripes in a metal, and a conic background.",
         code: "@scene { cube#dial; sphere; } #dial { size: 2 2 0.1; corner-radius: 0.05; translate: 0.4 1.2 0; color: conic-gradient(#ff5a36, #ffd27a, #3ad16b, #3a7bff, #b15aff, #ff5a36); } sphere { radius: 0.5; translate: -1.4 0.5 0.6; material: metal(repeating-conic-gradient(from 45deg, #f4f1ea 0deg 30deg, #111111 30deg 60deg), 0.3); } scene { floor: none; background: conic-gradient(from 180deg at 50% 0%, #1c1c24, #2a2a3a, #1c1c24); }",
       },
       {
         name: "repeating-linear-gradient() and repeating-radial-gradient()",
+        text: "Stripes behind two chrome spheres.",
         code: "@scene { sphere#a; sphere#b; } sphere { radius: 0.6; translate: 0 1 0; material: chrome; } #a { translate: 0.8 1 0; } #b { translate: -0.8 1 0; } scene { floor: none; background: repeating-linear-gradient(45deg, #111 0% 5%, #2a2a3a 5% 10%); }",
       },
     ],
@@ -1911,22 +2022,35 @@ export const FUNCTIONS: FunctionDef[] = [
     syntax:
       "noise([turbulence]? <number> <integer>? [seed <integer>]? [at <number> <number> <number>]?, <color> <percentage>{0,2}, …)",
     description:
-      "A noise image, wherever a gradient goes: the background of the scene, the color of an object, the color of a material. Its colors are placed like the stops of a gradient, at the value of a smooth 3D noise, like SVG feTurbulence: noise(4 3, #1a1d2b, #3a7bff 60%, #ffffff). The first number is the scale: how many patterns fit in one unit. The second, if any, is the number of octaves, from 1 to 8: each one adds detail twice as fine, like numOctaves. turbulence makes sharp creases instead of soft clouds (marble, fire, lightning); seed draws another pattern; at <x> <y> <z> moves it. On an object, the noise is cut in the object's own space, like a block of stone: no seam, and it turns and moves with the object. In the background, it follows the direction of the view. Like a gradient, it can be animated and changed by :hover, into another noise() of the same kind, with as many colors: animating at makes it drift, like clouds or smoke. Its numbers can be set from JavaScript.",
+      "A noise image, wherever a gradient goes: the `background`, the `color` of an object, the color of a material. Its colors are placed like the stops of a gradient, along the value of a smooth 3D noise, like SVG `feTurbulence`.",
+    valuesTitle: "Arguments",
+    values: [
+      ["<number>", "The scale: how many patterns fit in one unit."],
+      ["<integer>", "The octaves, from 1 to 8, if any: each one adds detail twice as fine, like `numOctaves`."],
+      ["turbulence", "Sharp creases instead of soft clouds: marble, fire, lightning."],
+      ["seed <integer>", "Another pattern."],
+      ["at <x> <y> <z>", "Moves the pattern."],
+    ],
+    details: "On an object, the noise is cut in the object's own space, like a block of stone: no seam, and it moves and turns with the object. In the background, it follows the direction of the view. Like a gradient, it can be animated and changed by `:hover`, into another `noise()` of the same kind with as many colors: animating `at` makes it drift, like clouds or smoke. Its numbers can be set from JavaScript.",
     examples: [
       {
         name: "noise() on an object",
+        text: "Blue clouds on a sphere.",
         code: "@scene { sphere; } sphere { translate: 0 1 0; radius: 0.8; color: noise(3 4, #1a1d2b, #3a7bff 55%, #ffffff); }",
       },
       {
         name: "turbulence: marble",
+        text: "Sharp creases, like the veins of marble.",
         code: "@scene { cube; } cube { translate: 0 0.6 0; size: 1.2; corner-radius: 0.06; color: noise(turbulence 1.2 5, #4a4f5a, #f4f1ea 30%); }",
       },
       {
         name: "a sky that drifts",
+        text: "A background noise that drifts as `@keyframes` moves its `at`.",
         code: "@scene { sphere; } sphere { translate: 0 1 0; material: chrome; } scene { floor: none; background: noise(2 4, #2f6bd8 40%, #ffffff 75%); animation: wind 20s linear infinite; } @keyframes wind { to { background: noise(2 4 at 1 0 0, #2f6bd8 40%, #ffffff 75%); } }",
       },
       {
         name: "noise() in a material",
+        text: "A turbulence in the color of a metal.",
         code: "@scene { torus; } torus { translate: 0 0.6 0; rotate-x: 70deg; material: metal(noise(turbulence 6 3, #6b4a2b, #d4af37), 0.25); }",
       },
     ],
@@ -1938,18 +2062,28 @@ export const FUNCTIONS: FunctionDef[] = [
     computed: "on the GPU, at each pixel",
     syntax: "displace(<gradient> | <noise()>, <gradient> | <noise()>, <number> | <percentage>)",
     description:
-      "Moves an image by another one, like SVG feDisplacementMap, wherever a gradient goes: the color of an object or of a material, the background and its layers, mask-image. The image is a gradient or a noise(). The map, usually a noise(), is read at each point, and its colors move the point where the image is read: on a gradient, red moves it to the right and green down, like SVG with the red and green channels; on a noise(), red, green and blue move it in 3D. A channel at 50% moves nothing, 0% and 100% move it the most, half the amount each way. The amount is a share of the size of the image: 0.3 or 30% moves it by up to 15% of its size. A noise() map gives each of its channels a noise of its own, like feTurbulence, so even a gray noise moves the image in every direction; a gradient map is read once, by its colors. Stripes moved by a turbulence make marble, rings make wood, a mask gets ragged edges. Like a gradient, it can be animated and changed by :hover, into another displace() whose image and map are of the same kinds: its amount and the numbers of its image and of its map move, and animating the at of a noise() map makes the image flow. They can be set from JavaScript too. The colors of the map are opaque.",
+      "Moves an image by another one, like SVG `feDisplacementMap`, wherever a gradient goes: `color`, a material, `background` and its layers, `mask-image`. Stripes moved by a turbulence make marble, rings make wood, a mask gets ragged edges.",
+    valuesTitle: "Arguments",
+    values: [
+      ["<image>", "The gradient or the `noise()` to move."],
+      ["<map>", "Usually a `noise()`: its colors move each point where the image is read. On a gradient, red moves it right and green down, like SVG; on a `noise()`, red, green and blue move it in 3D. A channel at 50% moves nothing, 0% and 100% the most."],
+      ["<amount>", "A share of the size of the image: `0.3` or `30%` moves it by up to 15% of its size."],
+    ],
+    details: "A `noise()` map gives each channel a noise of its own, like `feTurbulence`, so even a gray noise moves the image in every direction; a gradient map is read once, by its colors, which are opaque. Like a gradient, `displace()` can be animated and changed by `:hover`, into another `displace()` whose image and map are of the same kinds: animating the `at` of a noise map makes the image flow. Its numbers can be set from JavaScript.",
     examples: [
       {
         name: "marble",
+        text: "Stripes moved by a turbulence.",
         code: "@scene { cube; } cube { translate: 0 0.6 0; size: 1.2; corner-radius: 0.06; color: displace(repeating-linear-gradient(45deg, #f4f1ea 0% 9%, #9a9385 10%, #f4f1ea 11%), noise(turbulence 1 4, black, white), 0.35); }",
       },
       {
         name: "a ragged hole, in mask-image",
+        text: "A round hole with ragged edges.",
         code: "@scene { sphere; } sphere { translate: 0 1 0; radius: 0.8; color: #ff5a36; mask-image: displace(radial-gradient(circle, transparent 30%, black 31%), noise(4 3, black, white), 0.15); }",
       },
       {
         name: "water that flows",
+        text: "Stripes that flow as `@keyframes` moves the `at` of their map.",
         code: "@scene { sphere; } sphere { translate: 0 1 0; material: chrome; } scene { floor: none; background: displace(repeating-linear-gradient(#123a6b 0% 3%, #3a7bff 5% 8%), noise(2 3, black, white), 0.1); animation: flow 10s linear infinite; } @keyframes flow { to { background: displace(repeating-linear-gradient(#123a6b 0% 3%, #3a7bff 5% 8%), noise(2 3 at 0 1 0, black, white), 0.1); } }",
       },
     ],
@@ -1961,11 +2095,13 @@ export const FUNCTIONS: FunctionDef[] = [
     syntax: "element(<id>)",
     computed: "by the browser, each time the element changes",
     description:
-      "A live image of an HTML element of the page, like CSS element(), for texture. The browser draws the element itself, with the page's CSS and fonts, and the object shows it again each time the element changes: a card, a form, a chart, any web interface on a 3D surface. Put the element inside the scene: inside <gss-scene>, next to its script, or inside the canvas given to mount(). It stays in the page, so screen readers still read it, but it is only seen on the object. One image covers each face of the object, like any texture: give the element the proportions of the face, and use ::face(front) for one face only. This needs a browser that draws HTML in a canvas, Chromium for now; elsewhere, the object keeps its color. A scene with an element is drawn with WebGL2.",
+      "A live image of an HTML element of the page, for `texture`, like CSS `element()`: a card, a form, a chart, any interface on a 3D surface. The browser draws the element with the CSS and the fonts of the page, and the object shows it again each time it changes.",
+    details: "Put the element inside the scene: inside `<gss-scene>`, next to its script, or inside the canvas given to `mount()`. It stays in the page, so screen readers still read it, but it is seen only on the object. One image covers each face, like any texture: give the element the proportions of the face, and use `::face(front)` for one face only. A scene with an element is drawn with WebGL2.",
     note: ELEMENT_NOTE,
     examples: [
       {
         name: "an HTML card",
+        text: "A card of HTML that sways on the front of a thin cube.",
         code: "@scene { cube; } scene { floor: none; camera-angle: -20deg 10deg; camera-target: 0 0.8 0; camera-distance: 3.2; ambient: 0.55; } cube { translate: 0 0.8 0; size: 1.6 1 0.06; corner-radius: 0.03; animation: sway 6s ease-in-out infinite alternate; } cube::face(front) { texture: element(#card); } @keyframes sway { to { rotate-y: 25deg; } }",
         html: "<article id=\"card\" style=\"\n  width: 320px; height: 200px; padding: 28px;\n  box-sizing: border-box; border-radius: 18px;\n  background: #f4f1ea; color: #1a1d2b;\n  font: 600 30px/1.2 system-ui, sans-serif;\">\n  Hello from <em style=\"color: #ff5a36;\">HTML</em>, on a 3D card\n</article>",
       },
@@ -1977,14 +2113,16 @@ export const FUNCTIONS: FunctionDef[] = [
     covers: ["rgb", "rgba"],
     syntax: "rgb(<red> <green> <blue>) | rgb(<red>, <green>, <blue>)",
     description:
-      "A color from its red, green and blue channels, like CSS: numbers from 0 to 255, or percentages (100% is 255). Both syntaxes work, with spaces or with commas, and rgba() is the same function. Values outside the range are clamped. An alpha (rgb(255 0 0 / 50%)) makes the color transparent, which only color, background and mask-image take: anywhere else, it is an error. The math works inside, so one rule can give every copy its own color. It is turned into a hex color by the compiler, wherever a color is expected: color, floor, background, and the first argument of a material.",
+      "A color from its red, green and blue channels, like CSS: numbers from 0 to 255, or percentages (100% is 255). Spaces or commas both work, and `rgba()` is the same function.",
+    details: "Values outside the range are clamped. An alpha (`rgb(255 0 0 / 50%)`) makes the color transparent, which only `color`, `background` and `mask-image` take: anywhere else, it is an error. The math works inside, so one rule can give each copy its own color.",
     examples: [
       {
-        name: "rgb()",
+        name: "red, green and blue",
         code: "@scene { sphere; } sphere { color: rgb(255 90 54); }",
       },
       {
-        name: "rgb()",
+        name: "more red for each copy",
+        text: "`calc()` and `sibling-index()` raise the red of each cube.",
         code: "@scene { cube.step * 5; } .step { size: 0.4; translate: calc(1.8 - sibling-index() * 0.6) 0.3 0; color: rgb(calc(sibling-index() * 50) 90 200); }",
       },
     ],
@@ -1995,14 +2133,16 @@ export const FUNCTIONS: FunctionDef[] = [
     covers: ["hsl", "hsla"],
     syntax: "hsl(<hue> <saturation> <lightness>)",
     description:
-      "A color from its hue, saturation and lightness, like CSS. The hue is an angle on the color wheel (0 red, 120 green, 240 blue), as a number of degrees or in deg, rad or turn, and it goes round: -120 is 240. Saturation and lightness are percentages (or numbers, 100 meaning 100%); 50% lightness gives the pure color. With sibling-index(), the hue spreads a rainbow over the copies of an object. Commas, hsla() and the alpha work as in rgb().",
+      "A color from its hue, saturation and lightness, like CSS. The hue is an angle on the color wheel (0 red, 120 green, 240 blue), in degrees or in `deg`, `rad` or `turn`, and it goes round: -120 is 240.",
+    details: "Saturation and lightness are percentages, or numbers where 100 is 100%; a lightness of 50% gives the pure color. Commas, `hsla()` and the alpha work as in `rgb()`. With `sibling-index()` on the hue, the copies of an object spread a rainbow.",
     examples: [
       {
-        name: "hsl()",
+        name: "an orange",
         code: "@scene { sphere; } sphere { color: hsl(20 100% 60%); }",
       },
       {
-        name: "hsl()",
+        name: "a rainbow",
+        text: "Each dot turns the hue 45° further.",
         code: "@scene { sphere.dot * 8; } .dot { radius: 0.25; translate: calc(2.7 - sibling-index() * 0.6) 0.5 0; color: hsl(calc(sibling-index() * 45) 90% 60%); }",
       },
     ],
@@ -2013,10 +2153,11 @@ export const FUNCTIONS: FunctionDef[] = [
     covers: ["hwb"],
     syntax: "hwb(<hue> <whiteness> <blackness>)",
     description:
-      "A color from a hue, and how much white and black are mixed into it, like CSS: hwb(0 0% 0%) is the pure red, more whiteness makes it paler, more blackness darker. When whiteness and blackness add up to 100% or more, the color is a gray. The hue works as in hsl().",
+      "A color from a hue, and how much white and black are mixed into it, like CSS: `hwb(0 0% 0%)` is pure red; more whiteness makes it paler, more blackness darker. When whiteness and blackness add up to 100% or more, the color is a gray. The hue works as in `hsl()`.",
     examples: [
       {
-        name: "hwb()",
+        name: "paler and paler",
+        text: "Each cube adds 15% of white.",
         code: "@scene { cube.tint * 5; } .tint { size: 0.6; translate: calc(2.4 - sibling-index() * 0.8) 0.3 0; color: hwb(200 calc(sibling-index() * 15%) 10%); }",
       },
     ],
@@ -2027,18 +2168,22 @@ export const FUNCTIONS: FunctionDef[] = [
     covers: ["lab", "lch"],
     syntax: "lab(<lightness> <a> <b>) | lch(<lightness> <chroma> <hue>)",
     description:
-      "The CIE Lab color space of CSS, built on how the eye sees: the lightness goes from 0 (black) to 100 (white), a from green to red, b from blue to yellow. lch() is the same space written with a chroma (how colorful) and a hue. Percentages work as in CSS: 100% is 100 for the lightness, 125 for a and b, 150 for the chroma. A color outside what the screen shows is clipped to it.",
+      "The CIE Lab color space of CSS, built on how the eye sees: the lightness goes from 0 (black) to 100 (white), `a` from green to red, `b` from blue to yellow. `lch()` is the same space, written with a chroma (how colorful) and a hue.",
+    details: "Percentages work as in CSS: 100% is 100 for the lightness, 125 for `a` and `b`, 150 for the chroma. A color the screen cannot show is clipped to it.",
     examples: [
       {
         name: "lab()",
+        text: "An orange, in Lab.",
         code: "@scene { sphere; } sphere { color: lab(62 52 48); }",
       },
       {
         name: "lch()",
+        text: "Six hues of the same lightness and chroma.",
         code: "@scene { sphere.dot * 6; } .dot { radius: 0.3; translate: calc(2.6 - sibling-index() * 0.75) 0.5 0; color: lch(65 60 calc(sibling-index() * 60)); }",
       },
       {
         name: "lab() and lch() together",
+        text: "A green in `lab()`, and one in `lch()`.",
         code: "@scene { cube#a; cube#b; } #a { translate: 0.7 0.5 0; color: lab(55 -40 30); } #b { translate: -0.7 0.5 0; color: lch(55 50 140); }",
       },
     ],
@@ -2049,18 +2194,22 @@ export const FUNCTIONS: FunctionDef[] = [
     covers: ["oklab", "oklch"],
     syntax: "oklab(<lightness> <a> <b>) | oklch(<lightness> <chroma> <hue>)",
     description:
-      "The OKLab color space of CSS: its lightness matches what the eye sees much better than hsl(), so colors of the same lightness look equally light, whatever their hue. The lightness goes from 0 to 1 (or 0% to 100%); oklch() adds a chroma, around 0 to 0.4 (100% is 0.4), and a hue. With sibling-index() on the hue, oklch() gives a rainbow whose colors all look as light as each other. A color outside what the screen shows is clipped to it.",
+      "The OKLab color space of CSS: its lightness matches the eye much better than `hsl()`, so colors of the same lightness look equally light, whatever their hue. With `sibling-index()` on its hue, `oklch()` gives a rainbow whose colors all look as light.",
+    details: "The lightness goes from 0 to 1, or 0% to 100%. `oklch()` adds a chroma, from about 0 to 0.4 (100% is 0.4), and a hue. A color the screen cannot show is clipped to it.",
     examples: [
       {
         name: "oklab()",
+        text: "A warm color, in OKLab.",
         code: "@scene { sphere; } sphere { color: oklab(0.72 0.12 0.1); }",
       },
       {
         name: "oklch()",
+        text: "A rainbow whose colors look equally light.",
         code: "@scene { sphere.dot * 8; } .dot { radius: 0.25; translate: calc(2.7 - sibling-index() * 0.6) 0.5 0; color: oklch(72% 0.15 calc(sibling-index() * 45)); }",
       },
       {
         name: "oklab() and oklch() together",
+        text: "A blue in `oklab()`, and a red in `oklch()`.",
         code: "@scene { cube#a; cube#b; } #a { translate: 0.7 0.5 0; color: oklab(60% -0.1 -0.1); } #b { translate: -0.7 0.5 0; color: oklch(60% 0.14 30deg); }",
       },
     ],
@@ -2071,10 +2220,17 @@ export const FUNCTIONS: FunctionDef[] = [
     covers: ["color"],
     syntax: "color(<space> <r> <g> <b>)",
     description:
-      "A color in a named color space, like CSS: srgb, srgb-linear, display-p3, xyz (or xyz-d65) and xyz-d50, with three channels from 0 to 1, or percentages. A display-p3 color that the sRGB render cannot show is clipped to it.",
+      "A color in a named color space, like CSS, with three channels from 0 to 1, or percentages.",
+    valuesTitle: "Color spaces",
+    values: [
+      ["srgb", "The space of hex colors."],
+      ["srgb-linear", "The same colors, without the gamma curve: the channels are amounts of light."],
+      ["display-p3", "A wider gamut. What the sRGB render cannot show is clipped."],
+      ["xyz, xyz-d65, xyz-d50", "The CIE XYZ space, with a D65 white (`xyz` is `xyz-d65`) or a D50 white."],
+    ],
     examples: [
       {
-        name: "color()",
+        name: "display-p3 and srgb-linear",
         code: "@scene { sphere#a; sphere#b; } #a { translate: 0.8 0.6 0; color: color(display-p3 0.95 0.35 0.2); } #b { translate: -0.8 0.6 0; color: color(srgb-linear 0.1 0.3 0.8); }",
       },
     ],
@@ -2086,10 +2242,20 @@ export const FUNCTIONS: FunctionDef[] = [
     syntax:
       "color-mix(in <space> [shorter | longer hue]?, <color> <percentage>?, <color> <percentage>?)",
     description:
-      "Mixes two colors in a color space, like CSS: srgb, srgb-linear, lab, lch, oklab, oklch, hsl or hwb. Without percentages, half of each; with one, the other color takes the rest; with both, they are scaled to add up to 100%. Like CSS, when they add up to less than 100%, the color becomes transparent, which only color, background and mask-image take: anywhere else, it is an error; a percentage set from JavaScript (a variable registered with @property) is only known when the scene runs, so there it is kept between 0% and 100%, and percentages that add up to less are scaled up to 100% instead of being an error. In a space with a hue, the hue goes the shorter way round the wheel, or the longer one with longer hue; a gray takes the hue of the other color. oklab gives the most even mixes; mixing in srgb goes through duller middle colors.",
+      "Mixes two colors in a color space, like CSS. Without percentages, half of each; with one, the other color takes the rest; with both, they are scaled to add up to 100%.",
+    valuesTitle: "Color spaces",
+    values: [
+      ["oklab", "The most even mixes."],
+      ["srgb", "The mix of hex colors: duller middle colors."],
+      ["srgb-linear", "A mix of the light itself: brighter middle colors."],
+      ["lab", "Like `oklab`, in CIE Lab."],
+      ["oklch, lch, hsl, hwb", "Spaces with a hue: it goes the shorter way round the wheel, or the longer one with `longer hue`. A gray takes the hue of the other color."],
+    ],
+    details: "Like CSS, when the percentages add up to less than 100%, the color becomes transparent, which only `color`, `background` and `mask-image` take: anywhere else, it is an error. A percentage set from JavaScript is kept between 0% and 100%, and percentages that add up to less are scaled up to 100%.",
     examples: [
       {
-        name: "color-mix()",
+        name: "from orange to blue",
+        text: "Each cube takes 20% more blue, mixed in `oklab`.",
         code: "@scene { cube.step * 6; } .step { size: 0.6; translate: calc(2.6 - sibling-index() * 0.75) 0.3 0; color: color-mix(in oklab, #ff5a36, #3a7bff calc(sibling-index() * 20% - 20%)); }",
       },
     ],
@@ -2100,10 +2266,10 @@ export const FUNCTIONS: FunctionDef[] = [
     covers: ["light-dark"],
     syntax: "light-dark(<light color>, <dark color>)",
     description:
-      "The first color when the page is in light mode, the second in dark mode, like CSS. The scene follows the setting of the system as it changes: it works like @media (prefers-color-scheme: dark), and counts as one of the @media queries of the scene.",
+      "The first color in light mode, the second in dark mode, like CSS. The scene follows the system as it changes: it works like `@media (prefers-color-scheme: dark)`, and counts as one of the queries of the scene.",
     examples: [
       {
-        name: "light-dark()",
+        name: "light and dark mode",
         code: "@scene { sphere; } scene { background: light-dark(#f4f1ea, #0b0b10); floor: light-dark(#e8e3db, #16161d); } sphere { color: light-dark(#ff5a36, #7cb4ff); }",
       },
     ],
@@ -2117,7 +2283,8 @@ export const FUNCTIONS: FunctionDef[] = [
       "White or black, whichever contrasts most with the color, like CSS: the way to keep an object readable against a background held in a variable.",
     examples: [
       {
-        name: "contrast-color()",
+        name: "readable on any background",
+        text: "The sphere is white or black, whatever `--bg` holds.",
         code: "@scene { cube; sphere; } scene { --bg: #3a7bff; background: var(--bg); } cube { translate: 0 0.5 0; color: var(--bg); } sphere { radius: 0.3; translate: 0 1.3 0; color: contrast-color(var(--bg)); }",
       },
     ],
@@ -2128,14 +2295,17 @@ export const FUNCTIONS: FunctionDef[] = [
     covers: [],
     syntax: "currentColor",
     description:
-      "A keyword, like CSS: the object's own color, wherever a color is expected. color-mix(in oklab, currentColor 60%, white) is a lighter version of whatever color the object has, so one rule can tint many objects of different colors. As a material's color, metal(currentColor, 0.2) is the same as metal(0.2): the material follows the color, animated, changed on :hover, or a gradient. It also works in the stops of a gradient, in light-dark() and in a variable, where it is read with the color of the object that uses the variable. An object without color uses the initial #e6e6e6. Like CSS, it is written currentColor or currentcolor. color: currentColor is an error, since GSS does not inherit color from a group, and the scene has no color for currentColor to read.",
+      "A keyword, like CSS: the object's own `color`, wherever a color is expected. `color-mix(in oklab, currentColor 60%, white)` is a lighter version of whatever color the object has, so one rule can tint many objects.",
+    details: "As the color of a material, `metal(currentColor, 0.2)` is `metal(0.2)`: the material follows the color, animated, on `:hover`, or a gradient. It also works in the stops of a gradient, in `light-dark()` and in a variable, read with the color of the object that uses the variable. An object without color uses the initial `#e6e6e6`. It can be written `currentcolor` too. `color: currentColor` is an error: a group passes no color down, and the scene has none.",
     examples: [
       {
         name: "a lighter shell for every color",
+        text: "Three spheres, each in a jelly lighter than its own color.",
         code: "@scene { sphere * 3; } sphere { radius: 0.4; translate: calc((sibling-index() - 2) * -1.1) 0.5 0; material: jelly(color-mix(in oklab, currentColor 55%, white), 0.4); } sphere:nth-child(1) { color: #ff5a36; } sphere:nth-child(2) { color: #3ad16b; } sphere:nth-child(3) { color: #3a7bff; }",
       },
       {
         name: "in a variable",
+        text: "One gradient in a variable, read with the color of each cube.",
         code: "@scene { cube#a; cube#b; } scene { --shade: linear-gradient(currentColor, color-mix(in srgb, currentColor, black 60%)); } cube { size: 0.8; material: metal(var(--shade), 0.3); } #a { translate: 0.7 0.4 0; color: #ff5a36; } #b { translate: -0.7 0.4 0; color: #3a7bff; }",
       },
     ],
