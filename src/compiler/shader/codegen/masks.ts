@@ -50,11 +50,13 @@ export function objectMask(instance: StyledInstance, keyframes: Keyframes[], hov
 
 // maskAlpha(): how much of each masked object's surface is there at a point, from 0 to 1.
 // spaced: the objects whose space function the textures or the gradients already write.
+// holes: write hasHoles(); a scene with transparent objects writes isSkin() instead.
 export function maskCode(
   masked: Masked[],
   spaced: Set<StyledInstance>,
   keyframes: Keyframes[],
   hoverOf: (instance: StyledInstance) => Hover | undefined,
+  holes = true,
 ): string {
   if (masked.length === 0) return "";
   const spaces = masked
@@ -73,12 +75,17 @@ export function maskCode(
       "  }",
     ].join("\n");
   });
-  const ids = masked.map(({ instance }) => `id == ${glslFloat(instance.index)}`).join(" || ");
   return [
     ...spaces,
     ["float maskAlpha(float id, vec3 p) {", ...branches, "  return 1.0;", "}"].join("\n"),
-    `bool hasHoles(float id) {\n  return ${ids};\n}`,
+    ...(holes ? [skinFunction("hasHoles", masked.map(({ instance }) => instance))] : []),
   ].join("\n\n");
+}
+
+// Whether an object is a skin while the ray marches: hasHoles() for the objects with holes,
+// isSkin() for those and the transparent ones (opacity, decision 116)
+export function skinFunction(name: string, skins: StyledInstance[]): string {
+  return `bool ${name}(float id) {\n  return ${skins.map((instance) => `id == ${glslFloat(instance.index)}`).join(" || ")};\n}`;
 }
 
 // Before map(): an object with holes is a skin while march() looks for a surface
@@ -89,17 +96,20 @@ float shell(float d) {
   return throughHoles ? abs(d) : d;
 }`;
 
-// After calcNormal(): the normal of the surface a ray hits, in a scene with holes
-export const HOLE_NORMAL = `// The normal at a point that was hit, in a scene with holes. An object with holes takes the
+// After calcNormal(): the normal of the surface a ray hits, in a scene with holes.
+// skin: the test of the objects that are skins, hasHoles() or isSkin() (decision 116).
+export function holeNormal(skin = "hasHoles"): string {
+  return `// The normal at a point that was hit, in a scene with holes. An object with holes takes the
 // normal of its own distance; an object inside one takes it where the objects with holes
 // are skins, so it gets its own too. Seen through a hole, the inside of an object faces the
 // viewer: its normal is turned toward the ray.
 vec3 holeNormal(vec3 p, vec3 rd, float id) {
-  throughHoles = !hasHoles(id);
+  throughHoles = !${skin}(id);
   vec3 n = calcNormal(p);
   throughHoles = false;
   return dot(n, rd) > 0.0 ? -n : n;
 }`;
+}
 
 // The loop of march() in a scene with holes. The distance, taken either way (map() is
 // negative inside a solid object), is how far the ray can go. At a surface, the ray stops
@@ -114,6 +124,20 @@ export const MASKED_MARCH_LOOP = `  throughHoles = true;
       if (maskAlpha(id, p) >= 0.5) break;  // the surface is there
       d = 0.002;                            // a hole: through it
     }
+    t += d;
+    if (t > MAX_DIST) break;
+  }
+  throughHoles = false;
+`;
+
+// The loop of march() with transparent objects and no holes (decision 116): through the
+// skins, a surface always stops the ray
+export const SKIN_MARCH_LOOP = `  throughHoles = true;
+  for (int i = 0; i < 200; i++) {
+    vec2 res = map(ro + rd * t);
+    id = res.y;
+    float d = abs(res.x);
+    if (d < 0.001) break;  // a surface
     t += d;
     if (t > MAX_DIST) break;
   }

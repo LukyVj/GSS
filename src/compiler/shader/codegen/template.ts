@@ -19,6 +19,17 @@ export const MARCH_LOOP = `  for (int i = 0; i < 100; i++) {
   }
 `;
 
+// The surface the ray meets, lit, with its fog: main() draws it; with opacity, a function
+// does, for each surface along the ray (transparency.ts)
+export const SURFACE = `  vec3 col = BACKGROUND;
+  if (t < MAX_DIST) {
+    vec3 p = ro + rd * t;
+    vec3 n = calcNormal(p);
+    Material m = getMaterial(id);/*@TEXTURE_CALL*/
+    col = diffuse(n, m.color);/*@SHADE_CALLS*/
+  }/*@FOG*/
+`;
+
 // The shader skeleton. Only the /*@...*/ parts change from one scene to the next.
 export const TEMPLATE = `#version 300 es
 precision highp float;
@@ -128,14 +139,7 @@ void main() {/*@PICK_PIXEL*/
   float t = hit.x;
   float id = hit.y;/*@PICK_OUTPUT*/
 
-  vec3 col = BACKGROUND;
-  if (t < MAX_DIST) {
-    vec3 p = ro + rd * t;
-    vec3 n = calcNormal(p);
-    Material m = getMaterial(id);/*@TEXTURE_CALL*/
-    col = diffuse(n, m.color);/*@SHADE_CALLS*/
-  }/*@FOG*/
-
+${SURFACE}
   outColor = vec4(col, 1.0);
 }
 `;

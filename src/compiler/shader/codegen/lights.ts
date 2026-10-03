@@ -156,8 +156,9 @@ export function lightingCode(
   hoverOf: (instance: StyledInstance) => Hover | undefined,
   hoisted: Hoisted,
   ambient: { level: string; color: string | null }, // the share of ambient light, in GLSL
-  // shadows (decision 115): none, hard or soft, and whether the scene has holes to let light through
-  shadows: { mode: Shadows; holes: boolean } = { mode: null, holes: false },
+  // shadows (decision 115): none, hard or soft, and whether the scene has holes to let light
+  // through, or transparent objects to let it through tinted (decision 116)
+  shadows: { mode: Shadows; holes: boolean; transparent?: boolean } = { mode: null, holes: false },
 ): Lighting | null {
   if (lamps.length > MAX_LIGHTS)
     throw errorAt(undefined, `A scene has ${MAX_LIGHTS} lights at most: this one has ${lamps.length}`);
@@ -233,10 +234,10 @@ export function lightingCode(
     ...(shaded
       ? [
           "// shadows: how much of each light reaches the point main() shades, from 0 to 1",
-          ...(sun ? ["float sunLit = 1.0;"] : []),
-          ...lamps.map((_, i) => `float lit${i} = 1.0;`),
+          ...(sun ? [shadows.transparent ? "vec3 sunLit = vec3(1.0);" : "float sunLit = 1.0;"] : []),
+          ...lamps.map((_, i) => (shadows.transparent ? `vec3 lit${i} = vec3(1.0);` : `float lit${i} = 1.0;`)),
           "",
-          shadowFunction(shadows.mode!, shadows.holes),
+          shadowFunction(shadows.mode!, shadows.holes, shadows.transparent),
           "",
           "// Each light seen from p, through the objects on the way: main() calls it once",
           "void castShadows(vec3 p, vec3 n) {",

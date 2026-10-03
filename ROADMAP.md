@@ -53,6 +53,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 | Motion path  | `offset-path: path()` / `ray()`, `offset-distance` (animatable), `offset-rotate`                    | 97     |
 | Look         | `color`, `material`                                                                                | 26     |
 | Textures     | `texture: url("…")` or `element(#id)` (a live HTML element, dec. 101), `image-rendering: pixelated`, `texture-size`                                  | 59     |
+| Opacity      | `opacity: <number> \| <percentage>`, the surfaces behind showing through, on groups multiplied into each object | 116 |
 | Masks        | `mask-image: <gradient> \| noise()` cuts sharp holes where the image is transparent, `mask-mode: alpha \| luminance` | 113 |
 | Combinations | `operation: union \| subtract \| intersect`, `blend` (smooth union)                                | 18, 19 |
 | Animation    | `animation`; animatable: `translate`, `rotate-*`, `scale`, `transform-origin`, `color` (a gradient too), `mask-image`, `offset-distance`, the `intensity` of a light (also what `:hover` can change); on the scene, `background`, `fog` and `light` | 24, 62, 102, 103, 107, 108, 110 |
@@ -138,7 +139,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 
 **Next, in Lucas's order** (Oct. 2, after 0.0.3; replaces the list of Oct. 1):
 
-**Next up** (Lucas, Oct. 3: "the order that makes the most sense"): the rest of item 7, in this order: ~~layers of `background` with `background-blend-mode`~~ ✅ decision 112; ~~`mask-image`~~ ✅ decision 113; ~~a displacement like `feDisplacementMap`~~ ✅ decision 114 (`displace()`). Lucas's list of Oct. 2 is done; then, his choice (Oct. 3): ~~soft shadows~~ ✅ decision 115. Ask him for the next one. (Decision 101 to come back to after the origin trial ends on Oct. 20 if needed.)
+**Next up** (Lucas, Oct. 3: "the order that makes the most sense"): the rest of item 7, in this order: ~~layers of `background` with `background-blend-mode`~~ ✅ decision 112; ~~`mask-image`~~ ✅ decision 113; ~~a displacement like `feDisplacementMap`~~ ✅ decision 114 (`displace()`). Lucas's list of Oct. 2 is done; then, his choice (Oct. 3): ~~soft shadows~~ ✅ decision 115; the transparency of the objects: ~~`opacity`~~ ✅ decision 116, then the transparent colors and `opacity()` on objects (decision 117). (Decision 101 to come back to after the origin trial ends on Oct. 20 if needed.)
 
 1. ~~**Animated gradients**~~ ✅ decisions 102, 103: a gradient changes into another of the same kind in `@keyframes` and on `:hover`, through a variable too; the scene plays an animation, so its `background` moves (a flat, moving image)
 2. **`setProperty()` from JS**: first step ✅ decision 105 (`@property`, `setProperty()` / `getPropertyValue()` / `removeProperty()`, in `translate`, `rotate-*`, `scale`, `color`, `offset-distance`, `background`). Second step ✅: inside `calc()` and the math functions, and the color functions (`hsl(var(--hue) …)`, `color-mix()`…), computed on the GPU. Third step ✅, Lucas's choice "everywhere": the sizes of shapes (without their bounding spheres), the numbers of a gradient, materials, `light`, `ambient`, `floor`, `camera-target`, `blend`, `offset-rotate`, `texture-size`, filters (with a `"<length>"` syntax in px, the passes included). Not read at run time: the copies of `* n`, `d`, `view-box`, the timings, the camera the mouse moves, `dpr`. The playground panel of sliders: later (Playground, below)
@@ -274,6 +275,7 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 
 ## Done recently
 
+- `opacity` on objects and groups, like CSS: the surfaces along the ray drawn from the front, each over what is behind it, a transparent object being a skin; light through it like stained glass with shadows (decision 116)
 - Shadows: `scene { shadows: none | hard | soft }`, from the sun and every light of `@scene`, a soft penumbra or sharp, through the holes of `mask-image`, the reflections without them (decision 115)
 - `displace(<image>, <map>, <amount>)`, an image moved by a map like SVG `feDisplacementMap`, wherever a gradient goes; a `noise()` map draws each channel with its own noise, like `feTurbulence` (decision 114)
 - `mask-image` cuts holes in an object, read like a gradient in `color` with transparent colors, `mask-mode: luminance` too; the ray, the reflections and the mouse go through the holes, and an object inside shows through them (decision 113)
@@ -391,7 +393,7 @@ A score for how well a CSS notion carries over to GSS (a style language → an S
 | Feature                                      | Score | Short note                          |
 | -------------------------------------------- | ----: | ----------------------------------- |
 | `color`                                      |   1.0 | Already in GSS                      |
-| `opacity`                                    |  0.85 | Object / volume, with care          |
+| `opacity`                                    |   1.0 | Already in GSS (dec. 116)           |
 | `color-scheme`                               |   0.4 | UI chrome                           |
 | `print-color-adjust` / `forced-color-adjust` |   0.1 | Print / a11y UA                     |
 | `dynamic-range-limit`                        |   0.2 | HDR display                         |

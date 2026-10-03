@@ -588,6 +588,48 @@ describe("shadows, on both backends", () => {
   }, 60000);
 });
 
+// opacity: the surfaces along the ray, each over what is behind it, from the front
+describe("opacity, on both backends", () => {
+  const front = (more = "") =>
+    `scene { floor: none; background: #000000; camera-target: 0 0 0; camera-angle: 0deg 0deg; camera-distance: 5; light: 0deg 0deg; ambient: 1; ${more} }`;
+  const center = (pixels: number[]) => pixels.slice((36 * 96 + 48) * 4, (36 * 96 + 48) * 4 + 3);
+  const near = (pixel: number[], expected: number[]) => pixel.every((c, k) => Math.abs(c - expected[k]) <= 4);
+
+  it("puts a transparent object over what is behind it, its back face included", async () => {
+    // Front face, back face, then blue: 0.5 red + 0.5 × (0.5 red + 0.5 blue)
+    const { gl, gpu } = await render(`@scene { cube; } ${front("background: #0000ff;")} cube { size: 2; color: #ff0000; opacity: 0.5; }`);
+    for (const pixels of [gl, gpu]) expect(near(center(pixels), [191, 0, 64]), `${center(pixels)}`).toBe(true);
+  }, 60000);
+
+  it("shows what is inside a transparent object", async () => {
+    // The front face over the red sphere inside: 0.5 white + 0.5 red
+    const { gl, gpu } = await render(`@scene { cube; sphere; } ${front()} cube { size: 2; color: #ffffff; opacity: 0.5; } sphere { radius: 0.4; color: #ff0000; }`);
+    for (const pixels of [gl, gpu]) expect(near(center(pixels), [255, 128, 128]), `${center(pixels)}`).toBe(true);
+  }, 60000);
+
+  it("hides an object of opacity 0", async () => {
+    const { gl, gpu } = await render(`@scene { cube; } ${front("background: #0000ff;")} cube { size: 2; color: #ff0000; opacity: 0; }`);
+    for (const pixels of [gl, gpu]) expect(near(center(pixels), [0, 0, 255]), `${center(pixels)}`).toBe(true);
+  }, 60000);
+
+  it("lets the light through, tinted by the color of the object, in its shadow", async () => {
+    const view = (shadows: string) =>
+      `scene { shadows: ${shadows}; light: 90deg 45deg; ambient: 0.3; background: #000000; camera-target: -0.8 0 0; camera-angle: 0deg 80deg; camera-distance: 4; }`;
+    const plate = (color: string) => `cube { translate: 0 1 0; size: 1.2 0.05 1.2; color: ${color}; opacity: 0.5; }`;
+    const red = await render(`@scene { cube; } ${view("hard")} ${plate("#ff0000")}`);
+    const plain = await render(`@scene { cube; } ${view("none")} ${plate("#ff0000")}`);
+    for (const [s, p] of [[red.gl, plain.gl], [red.gpu, plain.gpu]]) {
+      // The pixels of the floor in the shadow: green and blue go down, red much less
+      const shade = (k: number) => s.map((v, i) => (i % 4 === k ? p[i] - v : 0)).filter((_, i) => i % 4 === k);
+      const [dr, dg] = [shade(0), shade(1)];
+      const shadowed = dg.map((d) => d > 25);
+      const mean = (ds: number[]) => ds.filter((_, i) => shadowed[i]).reduce((a, b) => a + b, 0) / shadowed.filter(Boolean).length;
+      expect(shadowed.filter(Boolean).length).toBeGreaterThan(100);
+      expect(mean(dr)).toBeLessThan(0.6 * mean(dg));
+    }
+  }, 60000);
+});
+
 describe("the default camera does not mirror the scene", () => {
   const front = "scene { floor: none; background: #000000; camera-target: 0 0 0; camera-angle: 0deg 0deg; camera-distance: 5; light: 0deg 0deg; ambient: 1; }";
   // The mean column and row of the pixels where `channel` wins, per backend

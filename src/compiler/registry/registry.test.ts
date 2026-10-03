@@ -45,6 +45,7 @@ describe("registry", () => {
       expect(animatable.map((property) => property.name)).toEqual([
         "translate",
         "color",
+        "opacity",
         "mask-image",
         "rotate-x",
         "rotate-y",
@@ -65,7 +66,7 @@ describe("registry", () => {
       "mask-image": "mask-image: linear-gradient(black, transparent);",
     };
     // A mask changes into another mask, not into none, its initial value
-    const FRAME: Record<string, string> = { "mask-image": "linear-gradient(black 20%, transparent)" };
+    const FRAME: Record<string, string> = { "mask-image": "linear-gradient(black 20%, transparent)", opacity: "0.5" };
 
     // If a property is marked animatable, the compiler must really animate it
     for (const property of animatable) {

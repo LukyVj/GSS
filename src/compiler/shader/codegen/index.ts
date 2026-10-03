@@ -22,8 +22,9 @@ import { sceneTextures } from "../../features/textures";
 import { glslFloat, moreLines, round, section, used, label, vec3, type Hover } from "./glsl";
 import { EASINGS, MAP_HELPERS, MATERIALS, PATH_HELPERS, SHADE_CALLS, SHAPE_FUNCTIONS } from "./library";
 import { SHADING } from "./shading";
-import { MARCH_LOOP, PICK_OUTPUT, PICK_PIXEL, TEMPLATE } from "./template";
-import { HOLE_NORMAL, MASKED_MARCH_LOOP, SHELL, holeNormals, maskCode, objectMask, type Masked } from "./masks";
+import { MARCH_LOOP, PICK_OUTPUT, PICK_PIXEL, SURFACE, TEMPLATE } from "./template";
+import { MASKED_MARCH_LOOP, SHELL, SKIN_MARCH_LOOP, holeNormal, holeNormals, maskCode, objectMask, skinFunction, type Masked } from "./masks";
+import { LAYERS, PAST_SURFACE, alphaFunction, colorFunction, objectAlpha, surfaceFunction, type Transparent } from "./transparency";
 import { readColor, readLight, readScale, readTranslate } from "./read";
 import { readOperation, SMOOTH } from "./operations";
 import { BOUNDED, SHAPES, type ShapeContext } from "./shapes";
@@ -108,7 +109,14 @@ export function generateShader(
   const masked = instances
     .map((instance) => objectMask(instance, keyframes, hoverOf(instance)))
     .filter((mask): mask is Masked => mask !== null);
-  const skins = new Set(masked.map(({ instance }) => instance));
+  // opacity (decision 116): the objects that cover what is behind them only in part, skins too
+  const transparent = instances
+    .map((instance) => ({ instance, alpha: objectAlpha(instance, keyframes, hoverOf(instance)) }))
+    .filter((item): item is Transparent => item.alpha !== null);
+  const skins = new Set([...masked.map(({ instance }) => instance), ...transparent.map(({ instance }) => instance)]);
+  // Which objects are skins: those with holes, or those and the transparent ones
+  const skinTest = transparent.length > 0 ? "isSkin" : "hasHoles";
+  const shadows = readShadows(sceneStyles["shadows"]);
 
   const mapLines = instances.map((instance) => {
     const shape = SHAPES[instance.tag];
@@ -269,7 +277,7 @@ export function generateShader(
     hoverOf,
     hoisted,
     { level: ambientCode ?? glslFloat(ambient), color: ambientParts.color },
-    { mode: readShadows(sceneStyles["shadows"]), holes: masked.length > 0 },
+    { mode: shadows, holes: masked.length > 0, transparent: transparent.length > 0 },
   );
   const animate = animateCode(hoisted, lights?.positions ?? "");
   const textures = textureCode(instances, keyframes, hoverOf);
@@ -283,7 +291,18 @@ export function generateShader(
   );
   const gradients = gradientCode(painted, textured, keyframes, hoverOf);
   // mask-image (decision 113): how much of the surface of each object with holes is there
-  const masks = maskCode(masked, new Set([...textured, ...painted.map(({ instance }) => instance)]), keyframes, hoverOf);
+  const masks = maskCode(masked, new Set([...textured, ...painted.map(({ instance }) => instance)]), keyframes, hoverOf, transparent.length === 0);
+  // opacity (decision 116): how much each surface covers, the color the light takes through it
+  // (shadows), the skins, and the way past a surface
+  const transparency =
+    transparent.length > 0
+      ? [
+          alphaFunction(transparent),
+          ...(shadows ? [colorFunction(painted.length > 0)] : []),
+          skinFunction("isSkin", [...skins]),
+          PAST_SURFACE,
+        ].join("\n\n")
+      : "";
   // A color is a constant; a gradient a function of the pixel (decision 81); either one
   // can follow an animation of the scene (decision 103)
   const background = backgroundCode(sceneStyles, keyframes);
@@ -295,9 +314,17 @@ export function generateShader(
     .map(([, line]) => line)
     .join("\n");
 
-  const template = lights
+  const lit = lights
     ? TEMPLATE.replace(DIFFUSE, lights.diffuse).replace("const vec3 LIGHT_DIR = /*@LIGHT*/;", lights.definitions)
     : TEMPLATE;
+  // opacity (decision 116): the surface goes into a function, and main() draws each surface
+  // along the ray with it; the filters of an object go on its own color
+  const template =
+    transparent.length > 0
+      ? lit.replace(SURFACE, LAYERS).replace("void main() {", `${surfaceFunction(SURFACE)}void main() {`)
+      : lit;
+  const objectLine = "  if (t < MAX_DIST) col = objectFilter(id, col);\n";
+  const finalLines = transparent.length > 0 ? filterLines.replace(objectLine, "") : filterLines;
   const shader = (
     template.replace(
       "/*@EASINGS*/",
@@ -317,7 +344,7 @@ export function generateShader(
           "// Rotations and the other operations: only those map() calls",
           used(MAP_HELPERS, map + animate),
         ) +
-          (masked.length > 0 ? `\n\n${SHELL}` : "") +
+          (skins.size > 0 ? `\n\n${SHELL}` : "") +
           (animate ? `\n\n${animate}` : ""),
       )
       .replace(
@@ -359,7 +386,8 @@ uniform vec2 uPick;`
           (gradients.functions
             ? `\n\n// Gradients on objects: the color at the point that was hit\n${gradients.functions}`
             : "") +
-          (masks ? `\n\n// mask-image: how much of each object's surface is there, from 0 to 1\n${masks}` : ""),
+          (masks ? `\n\n// mask-image: how much of each object's surface is there, from 0 to 1\n${masks}` : "") +
+          (transparency ? `\n\n${transparency}` : ""),
       )
       .replace(
         "/*@TEXTURE_CALL*/",
@@ -390,7 +418,7 @@ uniform vec2 uPick;`
       .replace(
         "/*@SHADING*/",
         [
-          ...(masked.length > 0 ? [HOLE_NORMAL] : []),
+          ...(skins.size > 0 ? [holeNormal(skinTest)] : []),
           ...((filterLines + filterFunctions).includes("grain(") ? [GRAIN] : []),
           ...(filterFunctions ? [filterFunctions] : []),
           section(
@@ -444,8 +472,9 @@ uniform vec2 uPick;`
         `vec2 march(vec3 ro, vec3 rd) {\n${sceneSphereCode}`,
       )
       // Through the holes of mask-image (decision 113)
-      .replace(MARCH_LOOP, masked.length > 0 ? MASKED_MARCH_LOOP : MARCH_LOOP)
-      .replace("  outColor = vec4(col, 1.0);\n}", `${filterLines}  outColor = vec4(col, ${alpha});\n}`)
+      .replace(MARCH_LOOP, masked.length > 0 ? MASKED_MARCH_LOOP : transparent.length > 0 ? SKIN_MARCH_LOOP : MARCH_LOOP)
+      .replace("/*@SURFACE_FILTER*/", transparent.length > 0 && filterLines.includes(objectLine) ? objectLine : "")
+      .replace("  outColor = vec4(col, 1.0);\n}", `${finalLines}  outColor = vec4(col, ${alpha});\n}`)
       // Reflections see the filters of the objects they meet
       .replace(
         /return (diffuse\(n, .*\));  \/\/ its color, lit/,
@@ -460,7 +489,7 @@ uniform vec2 uPick;`
       .replace(/\n[ \t]*\n(?:[ \t]*\n)+/g, "\n\n")
   );
   // The normals of a scene with holes (decision 113)
-  const turned = masked.length > 0 ? holeNormals(shader) : shader;
+  const turned = skins.size > 0 ? holeNormals(shader) : shader;
   // Every light in the highlights of the materials too
   return lights ? lights.rewrite(turned) : turned;
 }

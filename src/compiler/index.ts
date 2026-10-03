@@ -413,6 +413,7 @@ export const LIVE_PROPERTIES = [
   "fog",
   "intensity",
   "mask-image",
+  "opacity",
 ];
 
 function refuseLive(property: string, value: Token[]): void {

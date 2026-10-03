@@ -7,9 +7,9 @@ gss-lang.dev; npm package: `gss-lang`.
 ## Read first
 
 - `ROADMAP.md`: what GSS already does, and what comes next. The **Essentials** section (Oct. 2) is done;
-  Lucas's order for what comes next is at the top of **Priorities** (his list of Oct. 2 is
-  done, then soft shadows: ask him for the next one).
-- `DECISIONS.md`: every design decision, numbered. The next one is **116**. Add a decision for every
+  Lucas's order for what comes next is at the top of **Priorities** (next up: the transparent
+  colors and `opacity()` on objects, the second part of the transparency).
+- `DECISIONS.md`: every design decision, numbered. The next one is **117**. Add a decision for every
   new feature or behavior change.
 - `CONTRIBUTING.md`: where things live. `CHANGELOG.md`: user-facing changes, under "Unreleased".
 

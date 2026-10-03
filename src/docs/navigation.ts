@@ -43,7 +43,7 @@ export const DOC_GROUPS: NavGroup[] = [
   { id: "materials", title: "Materials", category: "Appearance", order: 31, anchors: ["material"] },
   { id: "textures", title: "Textures", category: "Appearance", order: 32, anchors: ["texture", "fn-element", "texture-size", "image-rendering"] },
   { id: "filters", title: "Filters", category: "Appearance", order: 33, anchors: ["filter"] },
-  { id: "masks", title: "Masks", category: "Appearance", order: 34, anchors: ["mask-image", "mask-mode"] },
+  { id: "masks", title: "Opacity and masks", category: "Appearance", order: 34, anchors: ["opacity", "mask-image", "mask-mode"] },
   { id: "transforms", title: "Transforms", category: "Motion", order: 40, anchors: ["translate", "rotate-x", "rotate-y", "rotate-z", "scale", "transform-origin", "offset-path", "offset-distance", "offset-rotate"] },
   { id: "animations", title: "Animation and transitions", category: "Motion", order: 41, anchors: ["animation", "animation-duration", "animation-delay", "animation-iteration-count", "animation-direction", "animation-fill-mode", "animation-timing-function", "animation-timeline", "transition"] },
   { id: "easings", title: "Easings", category: "Motion", order: 42, anchors: ["fn-cubic-bezier", "fn-linear", "fn-steps"] },
