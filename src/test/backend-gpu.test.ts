@@ -528,6 +528,66 @@ describe("displace() moves an image by a map, on both backends", () => {
   }, 60000);
 });
 
+// shadows: each point looks toward each light, and an object on the way keeps it from it
+describe("shadows, on both backends", () => {
+  const view = (shadows: string, light = "light: 90deg 45deg;") =>
+    `scene { shadows: ${shadows}; ${light} background: #000000; camera-target: 0 0 0; camera-angle: 0deg 50deg; camera-distance: 5; }`;
+  const sphere = "sphere { translate: 0 0.8 0; radius: 0.5; }";
+  const red = (pixels: number[]) => pixels.filter((_, i) => i % 4 === 0);
+  // The pixels the shadows darken by more than 30, and those they light up by more than 6
+  const darker = (shaded: number[], plain: number[]) => {
+    const [a, b] = [red(shaded), red(plain)];
+    return a.map((v, i) => b[i] - v > 30);
+  };
+  const brighter = (shaded: number[], plain: number[]) => red(shaded).filter((v, i) => v - red(plain)[i] > 6).length;
+  const share = (flags: boolean[]) => flags.filter(Boolean).length / flags.length;
+
+  it("darkens the floor where an object keeps the sun from it, and nothing else", async () => {
+    const shaded = await render(`@scene { sphere; } ${view("soft")} ${sphere}`);
+    const plain = await render(`@scene { sphere; } ${view("none")} ${sphere}`);
+    for (const [s, p] of [[shaded.gl, plain.gl], [shaded.gpu, plain.gpu]]) {
+      expect(share(darker(s, p))).toBeGreaterThan(0.02);
+      expect(brighter(s, p)).toBe(0);
+    }
+    expect(red(shaded.gl).filter((v, i) => Math.abs(v - red(shaded.gpu)[i]) > 8).length / red(shaded.gl).length).toBeLessThan(0.01);
+  }, 60000);
+
+  it("draws a penumbra with soft, not with hard", async () => {
+    const plain = await render(`@scene { sphere; } ${view("none")} ${sphere}`);
+    const soft = await render(`@scene { sphere; } ${view("soft")} ${sphere}`);
+    const hard = await render(`@scene { sphere; } ${view("hard")} ${sphere}`);
+    // The half-dark pixels of the edge of the shadow
+    const half = (shaded: number[], unshaded: number[]) =>
+      red(shaded).filter((v, i) => red(unshaded)[i] - v > 12 && red(unshaded)[i] - v < 60).length;
+    for (const [s, h, p] of [[soft.gl, hard.gl, plain.gl], [soft.gpu, hard.gpu, plain.gpu]]) {
+      expect(half(s, p)).toBeGreaterThan(20);
+      expect(half(h, p)).toBeLessThan(5);
+    }
+  }, 60000);
+
+  it("lets a light of @scene cast a shadow too", async () => {
+    const lamp = "light: none; ambient: 0.2;";
+    const scene = (shadows: string) => `@scene { light; sphere; } ${view(shadows, lamp)} light { translate: 1.6 2.2 0; intensity: 5; } ${sphere}`;
+    const shaded = await render(scene("hard"));
+    const plain = await render(scene("none"));
+    expect(share(darker(shaded.gl, plain.gl))).toBeGreaterThan(0.02);
+    expect(share(darker(shaded.gpu, plain.gpu))).toBeGreaterThan(0.02);
+  }, 60000);
+
+  it("lets the light through the holes of mask-image", async () => {
+    const holes = "sphere { translate: 0 0.8 0; radius: 0.5; mask-image: noise(5 2, black 48%, transparent 52%); }";
+    const solidShaded = await render(`@scene { sphere; } ${view("hard")} ${sphere}`);
+    const solidPlain = await render(`@scene { sphere; } ${view("none")} ${sphere}`);
+    const holed = await render(`@scene { sphere; } ${view("hard")} ${holes}`);
+    for (const [s, p, h] of [[solidShaded.gl, solidPlain.gl, holed.gl], [solidShaded.gpu, solidPlain.gpu, holed.gpu]]) {
+      // Where the solid sphere casts its shadow, light comes through the holes
+      const shadow = darker(s, p);
+      const lit = red(h).filter((v, i) => shadow[i] && Math.abs(v - red(p)[i]) < 20).length;
+      expect(lit / shadow.filter(Boolean).length).toBeGreaterThan(0.15);
+    }
+  }, 60000);
+});
+
 describe("the default camera does not mirror the scene", () => {
   const front = "scene { floor: none; background: #000000; camera-target: 0 0 0; camera-angle: 0deg 0deg; camera-distance: 5; light: 0deg 0deg; ambient: 1; }";
   // The mean column and row of the pixels where `channel` wins, per backend

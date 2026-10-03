@@ -75,6 +75,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 | `background`                                                      | background color                                                                     |
 | `light`, `ambient`                                                | the sun (`<azimuth> <elevation> [<color>] [<intensity>]`, or `none`), the ambient light (`<number> [<color>]`); lights of `@scene` add up (dec. 110) |
 | `fog`                                                             | `none`, or `[<color>] <start> <end>` from the camera (dec. 108)                       |
+| `shadows`                                                         | `none` (default), `hard` or `soft`: from the sun and every light (dec. 115)          |
 | `dpr`                                                             | pixel density of the render: `auto` (the screen, up to 2), `max`, a number (dec. 67) |
 | `camera-target`, `camera-distance`, `camera-angle`, `camera-spin` | camera (mouse orbit; automatic turn as a duration, `none` by default, dec. 54)       |
 
@@ -93,7 +94,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 | A sphere around the whole scene: a ray that passes by it only meets the floor                                                                            | 76       |
 | One bounding test per group of 3 objects or more                                                                                                         | 77       |
 | Fog: mixed into the color after the lighting, from the camera; the bounding spheres follow `transform-origin`                                            | 107, 108 |
-| Lights: the sun, the ambient light and up to 8 point lights of `@scene`, in `diffuse()` and the highlights of metal, jelly and glass; no shadows | 110      |
+| Lights: the sun, the ambient light and up to 8 point lights of `@scene`, in `diffuse()` and the highlights of metal, jelly and glass; shadows with `scene { shadows }` (dec. 115) | 110, 115 |
 
 ### Tools
 
@@ -137,7 +138,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 
 **Next, in Lucas's order** (Oct. 2, after 0.0.3; replaces the list of Oct. 1):
 
-**Next up** (Lucas, Oct. 3: "the order that makes the most sense"): the rest of item 7, in this order: ~~layers of `background` with `background-blend-mode`~~ ✅ decision 112; ~~`mask-image`~~ ✅ decision 113; ~~a displacement like `feDisplacementMap`~~ ✅ decision 114 (`displace()`). Lucas's list of Oct. 2 is done: ask him for the next one. (Decision 101 to come back to after the origin trial ends on Oct. 20 if needed.)
+**Next up** (Lucas, Oct. 3: "the order that makes the most sense"): the rest of item 7, in this order: ~~layers of `background` with `background-blend-mode`~~ ✅ decision 112; ~~`mask-image`~~ ✅ decision 113; ~~a displacement like `feDisplacementMap`~~ ✅ decision 114 (`displace()`). Lucas's list of Oct. 2 is done; then, his choice (Oct. 3): ~~soft shadows~~ ✅ decision 115. Ask him for the next one. (Decision 101 to come back to after the origin trial ends on Oct. 20 if needed.)
 
 1. ~~**Animated gradients**~~ ✅ decisions 102, 103: a gradient changes into another of the same kind in `@keyframes` and on `:hover`, through a variable too; the scene plays an animation, so its `background` moves (a flat, moving image)
 2. **`setProperty()` from JS**: first step ✅ decision 105 (`@property`, `setProperty()` / `getPropertyValue()` / `removeProperty()`, in `translate`, `rotate-*`, `scale`, `color`, `offset-distance`, `background`). Second step ✅: inside `calc()` and the math functions, and the color functions (`hsl(var(--hue) …)`, `color-mix()`…), computed on the GPU. Third step ✅, Lucas's choice "everywhere": the sizes of shapes (without their bounding spheres), the numbers of a gradient, materials, `light`, `ambient`, `floor`, `camera-target`, `blend`, `offset-rotate`, `texture-size`, filters (with a `"<length>"` syntax in px, the passes included). Not read at run time: the copies of `* n`, `d`, `view-box`, the timings, the camera the mouse moves, `dpr`. The playground panel of sliders: later (Playground, below)
@@ -224,7 +225,7 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 - [ ] `lathe` (mentioned as a future shape)
 - [ ] Lost ray: when `march` runs out of its 100 steps without hitting anything or passing `MAX_DIST`, `main()` treats it as a hit (fixed for rays that pass by the sphere of the scene, decision 76; still there in scenes without one)
 - [x] Fade the floor into the background: the floor stops sharply at `MAX_DIST` ✅ a fog that ends before it hides the edge (decision 108)
-- [ ] Soft shadows, that can be turned off (`scene { shadows: none; }`?)
+- [x] Soft shadows ✅ decision 115: `scene { shadows: none | hard | soft }`, off by default, from the sun and every light; still to come: a setting per light, a softness, shadows in reflections
 - [ ] Optional antialiasing (4× the cost)
 - [ ] Measure the compile time of large scenes; if needed, loop in `calcNormal` so `map()` is copied only once
 
@@ -267,12 +268,13 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 - Non-uniform scale: stay with exact SDFs, or accept an approximation?
 - When to rename the `csl` folder and repo → `gss` (the npm package already ships as `gss-lang`).
 - Gamma correction: more natural light, but it changes the look of every existing scene.
-- Shadows on by default or not (cost: one more ray march per pixel).
+- Shadows on by default or not (cost: one more ray march per light and per pixel): off by default since decision 115, opt-in with `scene { shadows: soft; }`.
 - Author-written shaders: `@shader hologram { … }` with a GLSL body and its own parameters, used as `shader: hologram; --intensity: 1.5;` (an escape hatch, like Houdini's `paint()`). Powerful, but how to report errors in the GLSL, keep the Shadertoy export, and stay a language an LLM writes without mistakes?
 - Composing surface effects (a "textual shader graph"): to be split before deciding: deforming the shape with noise (a `displace` property, it changes the SDF and can slow the ray march), a `toon` material next to the others, and lighting effects (rim light, fresnel).
 
 ## Done recently
 
+- Shadows: `scene { shadows: none | hard | soft }`, from the sun and every light of `@scene`, a soft penumbra or sharp, through the holes of `mask-image`, the reflections without them (decision 115)
 - `displace(<image>, <map>, <amount>)`, an image moved by a map like SVG `feDisplacementMap`, wherever a gradient goes; a `noise()` map draws each channel with its own noise, like `feTurbulence` (decision 114)
 - `mask-image` cuts holes in an object, read like a gradient in `color` with transparent colors, `mask-mode: luminance` too; the ray, the reflections and the mouse go through the holes, and an object inside shows through them (decision 113)
 - Layers of background, like CSS, with transparent colors in them (and only there) and the 16 modes of `background-blend-mode`, each layer animated like a gradient (decision 112)

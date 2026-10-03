@@ -45,6 +45,7 @@ import { NOISE_LIBRARY } from "./noise-library";
 import { isLive, liveCode, liveNumber } from "./live";
 import { liveLight, liveRead } from "./properties";
 import { DIFFUSE, isLight, lightingCode, splitAmbient } from "./lights";
+import { readShadows } from "./shadows";
 
 export { activeSlots, hoverSlots } from "./animation";
 export { shapeNames, shapeRadius } from "./shapes";
@@ -260,10 +261,16 @@ export function generateShader(
     ? sceneMiss(scene.center, scene.radius + maxBlend + 0.01, hasFloor)
     : "";
   // The sun, the ambient light and the lights of @scene; null for the white sun of always
-  const lights = lightingCode(lamps, sceneStyles, keyframes, hoverOf, hoisted, {
-    level: ambientCode ?? glslFloat(ambient),
-    color: ambientParts.color,
-  });
+  // shadows (decision 115): through the holes of mask-image too
+  const lights = lightingCode(
+    lamps,
+    sceneStyles,
+    keyframes,
+    hoverOf,
+    hoisted,
+    { level: ambientCode ?? glslFloat(ambient), color: ambientParts.color },
+    { mode: readShadows(sceneStyles["shadows"]), holes: masked.length > 0 },
+  );
   const animate = animateCode(hoisted, lights?.positions ?? "");
   const textures = textureCode(instances, keyframes, hoverOf);
   // filter on the scene (decision 83) and on objects (decision 84)

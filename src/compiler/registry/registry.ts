@@ -980,6 +980,28 @@ export const PROPERTIES: PropertyDef[] = [
     ],
   },
   {
+    name: "shadows",
+    appliesTo: "scene",
+    syntax: "none | hard | soft",
+    initial: "none",
+    description:
+      "Lets the objects cast shadows, on the floor and on each other: each point of the scene looks toward each light, and an object on the way keeps that light from it, so only the ambient light is left. soft gives the edge of a shadow a penumbra that grows with the distance to the object that casts it, like the shadow of the sun; hard cuts it sharp; none, the default, draws no shadow. The sun and every light of @scene cast shadows, and the holes of mask-image let the light through. Each light costs one more ray per pixel. The reflections and the refractions show the objects without shadows.",
+    examples: [
+      {
+        name: "soft shadows",
+        code: "@scene { sphere; cube; } scene { shadows: soft; light: -30deg 50deg; } sphere { translate: -0.6 0.9 0; radius: 0.5; color: #ff5a36; } cube { translate: 0.7 0.4 0.3; size: 0.8; color: #3a7bff; }",
+      },
+      {
+        name: "hard shadows from a lamp",
+        code: "@scene { light; sphere; } scene { shadows: hard; light: none; ambient: 0.15; } light { translate: 0.8 2.4 0.6; intensity: 4; color: #ffd27a; } sphere { translate: 0 0.7 0; radius: 0.6; }",
+      },
+      {
+        name: "light through holes",
+        code: "@scene { sphere; } scene { shadows: soft; light: 20deg 70deg; } sphere { translate: 0 1.2 0; radius: 0.9; mask-image: noise(4 3, black 48%, transparent 52%); }",
+      },
+    ],
+  },
+  {
     name: "dpr",
     appliesTo: "scene",
     syntax: "auto | max | <number>",

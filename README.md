@@ -171,8 +171,8 @@ and a readable path toward the shader underneath. It is not meant to replace GLS
 - **Gradients, noise and filters**: linear, radial and conic gradients on backgrounds and objects, animated with `@keyframes` and `:hover` (the scene animates its background); `noise()`, colors placed by a 3D noise (clouds, stone, marble); layers of background, with transparent colors and the blend modes of CSS (`background-blend-mode`); holes cut in objects by `mask-image`; images moved by a map with `displace()`, like SVG `feDisplacementMap`; color filters, blur, bloom and grain on scenes, objects and groups.
 - **Responsive scenes**: `@media`, `light-dark()` and conditional `if()` values.
 - **Generative values**: deterministic `random()`, inverse trigonometry, rounding, logarithms and `progress()`.
-- **The scene**: `floor`, `background`, a sun with its color (`light`), a colored `ambient` light, `fog` and an
-  orbit camera. Lights are elements of the scene too: `@scene { light#bulb; }`, placed, animated and hovered like
+- **The scene**: `floor`, `background`, a sun with its color (`light`), a colored `ambient` light, `fog`, soft or
+  hard `shadows` and an orbit camera. Lights are elements of the scene too: `@scene { light#bulb; }`, placed, animated and hovered like
   an object, with `color` and `intensity`.
 
 Every property, shape, selector and function has its page in the

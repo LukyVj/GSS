@@ -13,6 +13,7 @@ import { animatedValue, hoverValue } from "./animation";
 import { glslFloat, label, round, type Hover } from "./glsl";
 import { hexToRgb } from "./read";
 import { forwardLines, hoist, type Hoisted } from "./transforms";
+import { shadowFunction, type Shadows } from "./shadows";
 
 export const MAX_LIGHTS = 8;
 export const isLight = (instance: { tag: string }) => instance.tag === "light";
@@ -155,6 +156,8 @@ export function lightingCode(
   hoverOf: (instance: StyledInstance) => Hover | undefined,
   hoisted: Hoisted,
   ambient: { level: string; color: string | null }, // the share of ambient light, in GLSL
+  // shadows (decision 115): none, hard or soft, and whether the scene has holes to let light through
+  shadows: { mode: Shadows; holes: boolean } = { mode: null, holes: false },
 ): Lighting | null {
   if (lamps.length > MAX_LIGHTS)
     throw errorAt(undefined, `A scene has ${MAX_LIGHTS} lights at most: this one has ${lamps.length}`);
@@ -166,7 +169,8 @@ export function lightingCode(
   );
   const moves = direction !== still.direction || color !== still.color || intensity !== still.intensity;
   const plainSun = styles["light"]?.length !== 1 && still.color === WHITE && still.intensity === "1.0" && !moves;
-  if (lamps.length === 0 && ambient.color === null && plainSun && (styles["light"]?.length ?? 2) === 2) return null;
+  const shaded = shadows.mode !== null;
+  if (!shaded && lamps.length === 0 && ambient.color === null && plainSun && (styles["light"]?.length ?? 2) === 2) return null;
 
   const sun = intensity !== "0.0"; // none, and it never rises
   const definitions: string[] = ["// The lights: the sun, the ambient light and the lights of @scene"];
@@ -202,15 +206,16 @@ export function lightingCode(
   });
 
   // A function that adds up every light: the sun, then the lights of @scene.
-  // term(L): what one light gives through the direction L toward it.
-  const sum = (signature: string, term: (L: string) => string, sunScale = "") =>
+  // term(L): what one light gives through the direction L toward it. lit: through the
+  // shadows (decision 115), each light as much as reaches the point.
+  const sum = (signature: string, term: (L: string) => string, sunScale = "", lit = shaded) =>
     [
       `vec3 ${signature} {`,
       "  vec3 light = vec3(0.0);",
-      ...(sun ? [`  light += ${sunScale}SUN * ${term("LIGHT_DIR")};`] : []),
+      ...(sun ? [`  light += ${sunScale}SUN * ${lit ? "sunLit * " : ""}${term("LIGHT_DIR")};`] : []),
       ...lamps.flatMap((lamp, i) => [
         `  vec4 l${i} = lamp(light${i}, p);`,
-        `  light += ${powers[i]} * l${i}.w * ${term(`l${i}.xyz`)};  // ${label(lamp)}`,
+        `  light += ${powers[i]} * l${i}.w * ${lit ? `lit${i} * ` : ""}${term(`l${i}.xyz`)};  // ${label(lamp)}`,
       ]),
       "  return light;",
       "}",
@@ -222,7 +227,26 @@ export function lightingCode(
     "lightBump(": `// Light on the bumps of frosted glass\n${sum("lightBump(vec3 p, vec3 b)", (L) => `max(dot(b, ${L}), 0.0)`)}`,
   };
 
+  const sunScale = direct === "1.0" ? "" : `${direct} * `;
   const diffuse = [
+    // shadows (decision 115): how much of each light reaches the point main() shades
+    ...(shaded
+      ? [
+          "// shadows: how much of each light reaches the point main() shades, from 0 to 1",
+          ...(sun ? ["float sunLit = 1.0;"] : []),
+          ...lamps.map((_, i) => `float lit${i} = 1.0;`),
+          "",
+          shadowFunction(shadows.mode!, shadows.holes),
+          "",
+          "// Each light seen from p, through the objects on the way: main() calls it once",
+          "void castShadows(vec3 p, vec3 n) {",
+          "  vec3 from = p + n * 0.01;",
+          ...(sun ? ["  sunLit = shadow(from, LIGHT_DIR, MAX_DIST);"] : []),
+          ...lamps.map((_, i) => `  lit${i} = shadow(from, normalize(light${i} - from), length(light${i} - from));`),
+          "}",
+          "",
+        ]
+      : []),
     ...(lamps.length > 0
       ? [
           "// A light of @scene seen from p: the direction toward it, and the share of it that",
@@ -236,12 +260,23 @@ export function lightingCode(
         ]
       : []),
     "// The direct light on a surface at p facing n: the sun, then each light of @scene",
-    sum("lighting(vec3 p, vec3 n)", (L) => `max(dot(n, ${L}), 0.0)`, direct === "1.0" ? "" : `${direct} * `),
+    sum("lighting(vec3 p, vec3 n)", (L) => `max(dot(n, ${L}), 0.0)`, sunScale),
     "",
     "// The ambient light, the sun and the lights of @scene on a surface",
     "vec3 diffuse(vec3 p, vec3 n, vec3 color) {",
     "  return color * (AMBIENT_LIGHT + lighting(p, n));",
     "}",
+    // The reflections and the refractions show the objects without shadows
+    ...(shaded
+      ? [
+          "",
+          "// The same without shadows: what the reflections and the refractions see",
+          sum("lightingOpen(vec3 p, vec3 n)", (L) => `max(dot(n, ${L}), 0.0)`, sunScale, false),
+          "vec3 diffuseOpen(vec3 p, vec3 n, vec3 color) {",
+          "  return color * (AMBIENT_LIGHT + lightingOpen(p, n));",
+          "}",
+        ]
+      : []),
     "/*@LIGHT_HELPERS*/",
   ].join("\n");
 
@@ -257,6 +292,12 @@ export function lightingCode(
       .filter(([call]) => out.includes(`${call}p, `))
       .map(([, code]) => `\n${code}`);
     out = out.replace("/*@LIGHT_HELPERS*/", used.join("\n"));
+    if (shaded) {
+      // main() looks toward each light once, at the point it shades
+      out = out.replace(/^( {4}vec3 n = (?:calcNormal\(p\)|holeNormal\(p, rd, id\));)$/m, "$1\n    castShadows(p, n);");
+      // A reflection or a refraction: lit without shadows
+      out = out.replace(/vec3 trace\(vec3 ro, vec3 rd\) \{[\s\S]*?\n\}/, (body) => body.replace("diffuse(p, n, ", "diffuseOpen(p, n, "));
+    }
     // Every place that reads the sun's direction was rewritten: none is left without a sun
     if (!sun && out.includes("LIGHT_DIR")) throw new Error("GSS: a light term reads LIGHT_DIR without a sun");
     return out;
