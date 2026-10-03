@@ -13,6 +13,8 @@ The 0.0.1 history was reconstructed from GitHub.
 
 ### Changed
 
+- Docs: every page of the reference is shorter and cut into parts, like the reference of a popular language: a lead of three sentences at most, a table of its values, a paragraph, then its examples, each under a heading with a sentence that says what it shows. "On this page" lists them, and the code in the text shows as code. "Embedding a scene" and "Set variables from JavaScript" have chapters.
+- Docs navigation: "light (sun)" and "light (point)" instead of two "light"; Colors is split into Colors, Color functions, and Gradients and noise; Selectors into Selectors, Combinators, and Pseudo-classes. The examples of the reference have telling names, in the docs and in the Examples menu of the playground.
 - Showcase: the note under "On your site" no longer says GSS has no transparency: a transparent object shows the scene behind it, not the page, so the scene still takes the background of the page.
 - Docs: a callout under `element()` and `texture` says how to see `element()` today: behind `chrome://flags/#canvas-draw-element` in Chromium, or on a site with the HTML-in-Canvas origin trial and its token, until the trial ends on October 20, 2026.
 

@@ -327,3 +327,58 @@ describe("an example with HTML", () => {
     expect(fn.examples.every((example) => example.html?.includes('id="card"'))).toBe(true);
   });
 });
+
+// The parts of a page under its table, like the docs of a popular language (decision 121):
+// the code of the prose, a table of the values, a paragraph, then titled examples
+describe("the parts of a page", () => {
+  const material: PropertyDef = {
+    name: "material",
+    appliesTo: "object",
+    syntax: "matte() | metal()",
+    initial: "matte()",
+    description: "Sets how the surface reacts to light, like `currentColor` follows `color`.",
+    values: [
+      ["matte()", "Scatters the light only."],
+      ["metal()", "Reflects the scene: `metal(0.2)`."],
+    ],
+    details: "A material can take a gradient.",
+    examples: [
+      { name: "a mirror", text: "A `chrome` sphere.", code: "@scene { sphere; } sphere { material: chrome; }" },
+      { code: "@scene { sphere; }" },
+    ],
+  };
+  const html = renderProperty(material);
+
+  it("shows the code of the prose as code, a property name in its colour", () => {
+    expect(html).toContain("like <code>currentColor</code> follows <code><span class=\"gss-property\">color</span></code>.");
+    expect(html).not.toContain("`");
+  });
+
+  it("puts the values in a table under a heading, then the paragraph, before the examples", () => {
+    expect(html).toContain("<h4>Values</h4>");
+    expect(html).toContain('<dl class="values">');
+    expect(html).toMatch(/<dt><code class="gss syntax"><span class="gss-function">matte<\/span>/);
+    expect(html).toContain("<dd>Reflects the scene: <code>metal(0.2)</code>.</dd>");
+    const order = ["<dt>Syntax</dt>", "<h4>Values</h4>", "<p>A material can take a gradient.</p>", 'class="example-part"'];
+    expect(order.map((part) => html.indexOf(part))).toEqual(order.map((part) => html.indexOf(part)).sort((a, b) => a - b));
+  });
+
+  it("names the heading of the table when the entry does", () => {
+    expect(renderProperty({ ...material, valuesTitle: "Functions" })).toContain("<h4>Functions</h4>");
+    expect(renderProperty({ ...material, values: undefined, details: undefined })).not.toContain("<h4>");
+  });
+
+  it("titles each example and says what it shows, above its code", () => {
+    expect(html).toMatch(
+      /<h4 class="example-name">a mirror<\/h4>\s*<p class="example-text">A <code>chrome<\/code> sphere.<\/p>\s*<div class="example">/,
+    );
+    // an example without a name has no heading
+    expect(html.match(/class="example-name"/g)).toHaveLength(1);
+  });
+
+  it("titles the two light pages apart", () => {
+    const sun = renderProperty(PROPERTIES.find((p) => p.name === "light")!);
+    expect(sun).toContain("<h3><code>light</code> <small>(sun)</small></h3>");
+  });
+});
+

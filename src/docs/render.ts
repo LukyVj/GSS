@@ -1,31 +1,43 @@
-import type {
-  PropertyDef,
-  AtRuleDef,
-  SelectorDef,
-  ShapeDef,
-  FunctionDef,
-  Example,
-  Note,
+import {
+  PROPERTIES,
+  type PropertyDef,
+  type AtRuleDef,
+  type SelectorDef,
+  type ShapeDef,
+  type FunctionDef,
+  type Example,
+  type Note,
+  type Value,
 } from "../compiler/registry/registry";
 import { formatGss } from "./format";
 import { escapeHtml } from "./escape";
 import { highlightGss } from "./highlight";
+import { renderProse } from "./prose";
 import { highlightCode, highlightSyntax } from "./highlight-code";
-import { groupEntries } from "./navigation";
+import { groupEntries, qualified, QUALIFIERS } from "./navigation";
 import { GETTING_STARTED, INSTALLATION, type GuideEntry } from "./guide";
 
 export { escapeHtml }; // the tests and other pages import it from here
 
-// Each example in its own code block, indented, with a button to try it live.
+// The prose of the registry: its code between backticks, a property name in its colour
+const PROPERTY_NAMES = new Set(PROPERTIES.map((property) => property.name));
+const prose = (text: string) => renderProse(text, PROPERTY_NAMES);
+
+// Each example in its own code block, indented, with a button to try it live, under its
+// name and the sentence that says what it shows, like the examples of a popular language.
 // The button carries the code (and the HTML of element(#id)), so the page script needs nothing else.
 function renderExamples(examples: Example[]): string {
   return examples
     .map(
       (example) => `
-      <div class="example">
-        <pre><code class="gss">${highlightGss(formatGss(example.code))}</code></pre>${example.html ? `\n        <pre><code class="html">${highlightCode("html", example.html)}</code></pre>` : ""}
-        <button type="button" class="try" data-example="${escapeHtml(example.code)}"${example.html ? ` data-html="${escapeHtml(example.html)}"` : ""}>Try it</button>
-      </div> ${example.name ? `<p class="example-name">${escapeHtml(example.name)}</p>` : ""}`,
+      <div class="example-part">${example.name ? `
+        <h4 class="example-name">${escapeHtml(example.name)}</h4>` : ""}${example.text ? `
+        <p class="example-text">${prose(example.text)}</p>` : ""}
+        <div class="example">
+          <pre><code class="gss">${highlightGss(formatGss(example.code))}</code></pre>${example.html ? `\n          <pre><code class="html">${highlightCode("html", example.html)}</code></pre>` : ""}
+          <button type="button" class="try" data-example="${escapeHtml(example.code)}"${example.html ? ` data-html="${escapeHtml(example.html)}"` : ""}>Try it</button>
+        </div>
+      </div>`,
     )
     .join("\n");
 }
@@ -35,8 +47,36 @@ function renderNote(note: Note | undefined): string {
   if (!note) return "";
   return `
       <aside class="callout">
-        <p><span class="keyword">note</span> <strong>${escapeHtml(note.title)}</strong> ${escapeHtml(note.text)}</p>
+        <p><span class="keyword">note</span> <strong>${escapeHtml(note.title)}</strong> ${prose(note.text)}</p>
       </aside>`;
+}
+
+// The title of a page; "light (sun)" when another entry has the same name
+function renderTitle(anchor: string, name: string): string {
+  const qualifier = QUALIFIERS[anchor];
+  return `<h3><code>${escapeHtml(name)}</code>${qualifier ? ` <small>(${escapeHtml(qualifier)})</small>` : ""}</h3>`;
+}
+
+// Under the table of the entry: what each value does, then a paragraph, when the entry has them
+function renderValues({ values, valuesTitle = "Values", details }: {
+  values?: Value[];
+  valuesTitle?: string;
+  details?: string;
+}): string {
+  const table = values?.length
+    ? `
+      <h4>${escapeHtml(valuesTitle)}</h4>
+      <dl class="values">${values
+        .map(
+          ([value, text]) => `
+        <dt><code class="gss syntax">${highlightSyntax(value)}</code></dt>
+        <dd>${prose(text)}</dd>`,
+        )
+        .join("")}
+      </dl>`
+    : "";
+  return table + (details ? `
+      <p>${prose(details)}</p>` : "");
 }
 
 // ⬇️ YOUR MISSION: the HTML of one property
@@ -52,8 +92,8 @@ export function renderProperty(property: PropertyDef): string {
 
   return `
     <article class="property" id="${escapeHtml(property.name)}">
-      <h3><code>${escapeHtml(property.name)}</code></h3>
-      <p>${escapeHtml(property.description)}</p>${renderNote(property.note)}
+      ${renderTitle(property.name, property.name)}
+      <p>${prose(property.description)}</p>${renderNote(property.note)}
       <dl>
         <dt>Syntax</dt>
         <dd><code class="gss syntax">${highlightSyntax(property.syntax)}</code></dd>
@@ -63,7 +103,7 @@ export function renderProperty(property: PropertyDef): string {
         <dd>${appliesTo}</dd>
         <dt>Animatable</dt>
         <dd>${property.animatable ? "yes" : "no"}</dd>
-      </dl>
+      </dl>${renderValues(property)}
       ${renderExamples(property.examples)}
     </article>`;
 }
@@ -77,14 +117,14 @@ export function renderAtRule(atRule: AtRuleDef): string {
   return `
     <article class="property" id="at-${escapeHtml(atRule.name)}">
       <h3><code>@${escapeHtml(atRule.name)}</code></h3>
-      <p>${escapeHtml(atRule.description)}</p>
+      <p>${prose(atRule.description)}</p>
       <dl>
         <dt>Syntax</dt>
         <dd><code class="gss syntax">${highlightSyntax(atRule.syntax)}</code></dd>${
           see ? `
         <dt>See also</dt>
         <dd>${see}</dd>` : ""}
-      </dl>
+      </dl>${renderValues(atRule)}
       ${renderExamples(atRule.examples)}
     </article>`;
 }
@@ -94,11 +134,11 @@ export function renderSelector(selector: SelectorDef): string {
   return `
     <article class="property" id="${escapeHtml(selector.anchor)}">
       <h3><code>${escapeHtml(selector.name)}</code></h3>
-      <p>${escapeHtml(selector.description)}</p>
+      <p>${prose(selector.description)}</p>
       <dl>
         <dt>Specificity</dt>
-        <dd>${escapeHtml(selector.specificity)}</dd>
-      </dl>
+        <dd>${prose(selector.specificity)}</dd>
+      </dl>${renderValues(selector)}
       ${renderExamples(selector.examples)}
     </article>`;
 }
@@ -108,13 +148,13 @@ export function renderFunction(fn: FunctionDef): string {
   return `
     <article class="property" id="${escapeHtml(fn.anchor)}">
       <h3><code>${escapeHtml(fn.name)}</code></h3>
-      <p>${escapeHtml(fn.description)}</p>${renderNote(fn.note)}
+      <p>${prose(fn.description)}</p>${renderNote(fn.note)}
       <dl>
         <dt>Syntax</dt>
         <dd><code class="gss syntax">${highlightSyntax(fn.syntax)}</code></dd>
         <dt>Computed</dt>
-        <dd>${escapeHtml(fn.computed ?? "at compile time, once per object")}</dd>
-      </dl>
+        <dd>${prose(fn.computed ?? "at compile time, once per object")}</dd>
+      </dl>${renderValues(fn)}
       ${renderExamples(fn.examples)}
     </article>`;
 }
@@ -152,11 +192,11 @@ export function renderShape(
         <dd><a href="#object-properties">geometry properties</a></dd>`;
   return `
     <article class="property" id="shape-${escapeHtml(shape.name)}">
-      <h3><code>${escapeHtml(shape.name)}</code></h3>
-      <p>${escapeHtml(shape.description)}</p>
+      ${renderTitle(`shape-${shape.name}`, shape.name)}
+      <p>${prose(shape.description)}</p>
       <dl>
         ${propertyList}
-      </dl>
+      </dl>${renderValues(shape)}
       ${renderExamples(shape.examples)}
     </article>`;
 }
@@ -232,9 +272,10 @@ function renderTocTimelines(sections: Section[]): string {
 // One hand-written entry of "Getting started"
 function renderGuideEntry(entry: GuideEntry): string {
   const paragraphs = (list: string[] = []) =>
-    // a block of code (<pre>) or a live demo (<div>) is not a paragraph: it goes in as it is
+    // a block of code (<pre>), a live demo or a table (<div>), a chapter (<h4>) or a paragraph
+    // that has its own class (<p>) is not wrapped in a paragraph: it goes in as it is
     list
-      .map((text) => (/^<(pre|div)\b/.test(text) ? text : `<p>${text}</p>`))
+      .map((text) => (/^<(pre|div|h4|p)\b/.test(text) ? text : `<p>${text}</p>`))
       .join("\n      ");
   return `
     <article class="guide" id="${escapeHtml(entry.anchor)}">
@@ -326,7 +367,12 @@ export function renderDocs(
     },
   ];
 
-  const sections = groupEntries(original.flatMap((section) => section.entries));
+  const sections = groupEntries(
+    original.flatMap((section) => section.entries).map((entry) => ({
+      ...entry,
+      label: qualified(entry.anchor, entry.label),
+    })),
+  );
 
   return `
     <header>

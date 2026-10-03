@@ -105,7 +105,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 | Playground                 | `playground.html`: CodeMirror, code in the URL (sharing), examples, GLSL and WGSL tabs, backend selection (auto, WebGPU, WebGL2) | 34, 90 |
 | Status bar                 | `ok · 0 objects · glsl 104 lines · compiled in 4 ms · 60 fps`                                                                                                                | 42         |
 | Located errors             | every error of a compile at once (the text first, then the values), each underlined and written under its line (`15:3 …`); `3 errors` in the status bar; line and column in Vite's terminal | 43, 86     |
-| Generated docs             | `docs.html`, one page per entry, from the registry, live "Try it" everywhere; "Set variables from JavaScript", the JS API with a live slider | 12, 39, 44, 109 |
+| Generated docs             | `docs.html`, one page per entry, from the registry, live "Try it" everywhere; "Set variables from JavaScript", the JS API with a live slider; a lead, a table of the values, titled examples | 12, 39, 44, 109, 121 |
 | Site                       | [gss-lang.dev](https://gss-lang.dev) on Vercel, clean URLs (`/playground`, `/docs`, `/brand`), Open Graph and X cards                                                        | 56         |
 | Brand page                 | `/brand` (`brand.html`): marks, wordmark, lockup, icons, social cards                                                                                                        | 57         |
 | Shadertoy export           | `→ shadertoy` button in the playground, images in `iChannel0`…`3` (at most 4)                                                                                                | 60         |
@@ -281,6 +281,7 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 
 ## Done recently
 
+- The docs, page by page: a short lead, a table of the values, a paragraph, titled examples with a sentence each, code shown as code; "light (sun)" and "light (point)"; Colors and Selectors split into smaller groups (decision 121)
 - A dpr menu over the renders of the playground and the docs: `auto` follows the frame rate, a number fixes it (decision 120)
 - Seven studies open the showcase, one at a time in a viewer, a slider for those driven by `scroll()`; their own group in the playground (decision 119)
 - Notes in the docs: a callout under the description (`note` in the registry), first on `element()` and `texture`, for the flag and the origin trial (decision 118)

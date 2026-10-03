@@ -23,7 +23,7 @@ it("renders every group with a native summary and keeps article links inside", (
 it("reveals a deep-linked page without closing other groups or moving focus", () => {
   const reveal = enableTocGroups(document.body);
   const installation = document.querySelector<HTMLDetailsElement>('[data-group="installation"]')!;
-  const colors = document.querySelector<HTMLDetailsElement>('[data-group="colors"]')!;
+  const colors = document.querySelector<HTMLDetailsElement>('[data-group="color-functions"]')!;
   installation.open = true;
   installation.querySelector("summary")!.focus();
   reveal(document.querySelector('.toc a[href="#fn-oklab-oklch"]'));

@@ -41,22 +41,37 @@ function link(href: string, text: string, className?: string): HTMLAnchorElement
   return a;
 }
 
-// Gives the parts of an entry an anchor, and returns them for "On this page"
+// "From mount()" → "from-mount": the anchor of a chapter
+const slug = (text: string) =>
+  text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
+// "Three methods" → "three methods", like the other labels; "CDN" keeps its case
+const lowerFirst = (text: string) => (/^[A-Z][a-z]/.test(text) ? text[0].toLowerCase() + text.slice(1) : text);
+
+// Gives the parts of an entry an anchor, and returns them for "On this page", in the order
+// of the page: the table of the entry, its chapters (Values, the chapters of a guide), its examples
 export function partsOf(article: HTMLElement): { id: string; label: string }[] {
   const parts: { id: string; label: string }[] = [];
-  const table = article.querySelector<HTMLElement>(":scope > dl");
-  if (table) {
-    const first = table.querySelector("dt")?.textContent?.toLowerCase() ?? "details";
-    table.id = `${article.id}--${first.replaceAll(" ", "-")}`;
-    parts.push({ id: table.id, label: first });
+  const examples = [...article.querySelectorAll<HTMLElement>(":scope > .example-part")];
+  let table = false;
+  for (const child of article.children) {
+    if (!(child instanceof HTMLElement)) continue;
+    if (child.matches("dl:not(.values)") && !table) {
+      table = true;
+      const first = child.querySelector("dt")?.textContent?.toLowerCase() ?? "details";
+      child.id = `${article.id}--${first.replaceAll(" ", "-")}`;
+      parts.push({ id: child.id, label: first });
+    } else if (child.matches("h4")) {
+      const text = child.textContent?.trim() ?? "";
+      if (!child.id) child.id = `${article.id}--${slug(text)}`;
+      parts.push({ id: child.id, label: lowerFirst(text) });
+    } else if (child.matches(".example-part")) {
+      const i = examples.indexOf(child);
+      child.id = `${article.id}--example-${i + 1}`;
+      const name = child.querySelector(":scope > .example-name")?.textContent?.trim();
+      parts.push({ id: child.id, label: name || (examples.length > 1 ? `example ${i + 1}` : "example") });
+    }
   }
-  const examples = [...article.querySelectorAll<HTMLElement>(":scope > .example")];
-  examples.forEach((example, i) => {
-    example.id = `${article.id}--example-${i + 1}`;
-    const caption = example.nextElementSibling;
-    const name = caption?.matches(".example-name") ? caption.textContent?.trim() : "";
-    parts.push({ id: example.id, label: name || (examples.length > 1 ? `example ${i + 1}` : "example") });
-  });
   return parts;
 }
 

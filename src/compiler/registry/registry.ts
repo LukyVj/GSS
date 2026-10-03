@@ -1,6 +1,8 @@
 // The single source of truth for GSS features.
 // Every property must be registered here: the documentation is generated
 // from this list, and every example is compiled by the tests.
+// The texts are plain text, where code sits between backticks, like Markdown: the docs
+// show it as code (decision 121).
 
 export type Shape =
   | "cube"
@@ -14,15 +16,24 @@ export type Shape =
   | "prism";
 
 export type Example = {
-  name?: string;
+  name?: string; // its heading in the docs, and its name in the menu of the playground
+  text?: string; // one sentence under the heading: what the example shows
   code: string;
   html?: string; // the HTML elements the scene shows with element(#id) (decision 101)
+};
+
+// The parts of a page under its table, like the docs of a popular language (decision 121)
+export type Value = [value: string, text: string]; // the value as written, then what it does
+type Parts = {
+  values?: Value[]; // a table, one row per keyword, function or argument
+  valuesTitle?: string; // its heading, "Values" by default: "Descriptors", "Functions"…
+  details?: string; // one paragraph under it: the limits, the differences from CSS
 };
 
 // A callout under the description: what a reader must know before trying it
 export type Note = { title: string; text: string };
 
-export type PropertyDef = {
+export type PropertyDef = Parts & {
   name: string;
   appliesTo: "object" | "scene" | "everywhere" | (Shape | "light")[]; // [...]: only these shapes (or lights); everywhere: the scene too
   syntax: string;
@@ -34,7 +45,7 @@ export type PropertyDef = {
 };
 
 // A block of the language: @scene, @keyframes
-export type AtRuleDef = {
+export type AtRuleDef = Parts & {
   name: string; // without the @: "keyframes"
   syntax: string;
   description: string;
@@ -44,7 +55,7 @@ export type AtRuleDef = {
 
 // A shape that can be declared in @scene. Its own properties are not listed here:
 // the docs find them in PROPERTIES, through appliesTo.
-export type ShapeDef = {
+export type ShapeDef = Parts & {
   name: Shape | "group" | "light"; // the Shape type checks the spelling; group is drawn by its children, light draws nothing
   description: string;
   examples: Example[];
@@ -52,7 +63,7 @@ export type ShapeDef = {
 };
 
 // A way to target objects, or to win the cascade: cube, .class, #id, *, a, b, !important
-export type SelectorDef = {
+export type SelectorDef = Parts & {
   name: string; // what the reader writes: "*", ".class"
   anchor: string; // its id in the docs: "selector-universal" (a name like "*" cannot be an id)
   specificity: string; // shown as is: "0", "100", or a sentence
@@ -61,7 +72,7 @@ export type SelectorDef = {
 };
 
 // A function that computes a value at compile time: calc(), sibling-index(), sin()… (decision 52), var() (decision 55)
-export type FunctionDef = {
+export type FunctionDef = Parts & {
   name: string; // what the docs show: "calc()", or "sin(), cos(), tan()"
   anchor: string; // its id in the docs: "fn-calc"
   covers: string[]; // the functions of calc.ts it documents: ["sin", "cos", "tan"]

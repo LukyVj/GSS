@@ -67,6 +67,10 @@ function blockToMarkdown(el: HTMLElement): string {
     const title = (el.textContent ?? "").trim();
     return title ? `# ${title}` : "";
   }
+  if (tag === "h4") {
+    const title = inlineMarkdown(el).trim();
+    return title ? `## ${title}` : "";
+  }
   if (tag === "p") return inlineMarkdown(el).trim();
   if (tag === "dl") return definitionList(el);
   if (tag === "pre") return fencedCode(el);
@@ -74,9 +78,11 @@ function blockToMarkdown(el: HTMLElement): string {
     const pre = el.querySelector<HTMLElement>(":scope > pre");
     return pre ? fencedCode(pre) : "";
   }
-  // Guide entries can put a bare <pre> (or a bold lead) as a direct child
+  // Guide entries can put a bare <pre> (or a bold lead) as a direct child; an example
+  // sits in a block with its name and its sentence
   if (tag === "div" || tag === "section") {
     return [...el.children]
+      .filter((child) => ![...child.classList].some((name) => SKIP.has(name)))
       .map((child) => blockToMarkdown(child as HTMLElement))
       .filter(Boolean)
       .join("\n\n");

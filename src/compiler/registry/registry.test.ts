@@ -116,9 +116,10 @@ describe("at-rules", () => {
 
   // The list a reader looks for: where a variable set from JavaScript can go
   it("@property names every property a variable set from JS can go in", () => {
-    const { description } = AT_RULES.find((atRule) => atRule.name === "property")!;
+    // the page: its lead, and the paragraph under its table (decision 121)
+    const { description, details } = AT_RULES.find((atRule) => atRule.name === "property")!;
     for (const property of LIVE_PROPERTIES) {
-      expect(description, property).toMatch(new RegExp(`(?<![\\w-])${property}(?![\\w-])`));
+      expect(`${description} ${details}`, property).toMatch(new RegExp(`(?<![\\w-])${property}(?![\\w-])`));
     }
   });
 

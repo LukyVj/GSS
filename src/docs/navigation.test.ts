@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 import { describe, it, expect } from "vitest";
 import { DOC_GROUPS, groupEntries, sortEntries } from "./navigation";
 import { PROPERTIES, AT_RULES, SELECTORS, SHAPE_DOCS, FUNCTIONS } from "../compiler/registry/registry";
@@ -30,11 +31,31 @@ describe("documentation navigation", () => {
   it("keeps new unclassified entries reachable", () => {
     expect(groupEntries([{ anchor: "future", label: "Future", html: "" }])[0].entries[0].anchor).toBe("future");
   });
-  it("groups all color entries together and keeps math separate", () => {
-    const colors = DOC_GROUPS.find((g) => g.id === "colors")!;
-    expect(colors.anchors).toEqual(expect.arrayContaining(["color", "background", "floor", "fn-oklab-oklch", "fn-color-mix", "fn-gradients"]));
+  it("splits the colors: the properties, the color functions, then gradients and noise", () => {
+    const anchorsOf = (id: string) => DOC_GROUPS.find((g) => g.id === id)!.anchors;
+    expect(anchorsOf("colors")).toEqual(expect.arrayContaining(["color", "background", "floor"]));
+    expect(anchorsOf("color-functions")).toEqual(expect.arrayContaining(["fn-rgb", "fn-oklab-oklch", "fn-color-mix", "fn-currentcolor"]));
+    expect(anchorsOf("gradients")).toEqual(["fn-gradients", "fn-noise", "fn-displace"]);
     expect(DOC_GROUPS.find((g) => g.id === "values")!.anchors).toContain("fn-calc");
-    expect(colors.anchors).not.toContain("fn-calc");
+    expect(anchorsOf("color-functions")).not.toContain("fn-calc");
+  });
+  it("splits the selectors: the selectors, the combinators, the pseudo-classes", () => {
+    const anchorsOf = (id: string) => DOC_GROUPS.find((g) => g.id === id)!.anchors;
+    expect(anchorsOf("selectors")).toEqual(expect.arrayContaining(["selector-type", "selector-nesting", "selector-important"]));
+    expect(anchorsOf("combinators")).toEqual(["selector-descendant", "selector-child", "selector-adjacent", "selector-sibling"]);
+    expect(anchorsOf("pseudo-classes")).toEqual(expect.arrayContaining(["selector-hover", "selector-has", "selector-face"]));
+  });
+  it("never shows two entries under the same name, in the contents or as a page title", () => {
+    const root = document.createElement("div");
+    root.innerHTML = renderDocs(PROPERTIES, AT_RULES, SELECTORS, SHAPE_DOCS, FUNCTIONS);
+    const labels = [...root.querySelectorAll(".toc li a")].map((a) => a.textContent);
+    expect(labels.filter((label, i) => labels.indexOf(label) !== i)).toEqual([]);
+    const titles = [...root.querySelectorAll("article > h3")].map((h) => h.textContent);
+    expect(titles.filter((title, i) => titles.indexOf(title) !== i)).toEqual([]);
+    // The sun and a point light: the same name, in two pages that say which one they are
+    expect(root.querySelector('.toc a[href="#light"]')!.textContent).toBe("light (sun)");
+    expect(root.querySelector('.toc a[href="#shape-light"]')!.textContent).toBe("light (point)");
+    expect(root.querySelector("#shape-light > h3")!.textContent).toBe("light (point)");
   });
   it("puts embedding first under Installation and includes versioned setup instructions", () => {
     const html = renderDocs(PROPERTIES, AT_RULES, SELECTORS, SHAPE_DOCS, FUNCTIONS);

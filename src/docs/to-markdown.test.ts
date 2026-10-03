@@ -88,4 +88,37 @@ See the [showcase](./showcase.html).
     );
     expect(md).toContain("```gss\nsphere;\n```");
   });
+
+  it("turns the chapters and the titled examples into headings, without a live playground", () => {
+    const md = articleToMarkdown(
+      article(`
+        <h3><code>animation</code></h3>
+        <h4>Values</h4>
+        <dl class="values"><dt><code>alternate</code></dt><dd>forward, then backward</dd></dl>
+        <div class="example-part">
+          <h4 class="example-name">a bounce</h4>
+          <p class="example-text">It goes <code>up</code>.</p>
+          <div class="example">
+            <pre><code class="gss">cube;</code></pre>
+            <button type="button" class="try" data-example="cube;"></button>
+          </div>
+          <div class="playground"><p>live</p></div>
+        </div>
+      `),
+    );
+    expect(md).toBe(`# animation
+
+## Values
+
+- **alternate:** forward, then backward
+
+## a bounce
+
+It goes \`up\`.
+
+\`\`\`gss
+cube;
+\`\`\`
+`);
+  });
 });

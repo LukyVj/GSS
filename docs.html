@@ -437,6 +437,13 @@
         font-size: inherit;
         color: var(--gss-bone);
       }
+      /* "light (sun)": which of two entries of the same name this page is */
+      .property h3 small {
+        font-size: 0.42em;
+        font-weight: 400;
+        letter-spacing: 0;
+        color: var(--gss-dim);
+      }
       .property > p,
       .guide p {
         max-width: 65ch;
@@ -469,6 +476,44 @@
       .callout strong {
         color: var(--gss-bone);
         font-weight: 600;
+      }
+      /* The chapters of a page (Values, a chapter of a guide) and the name of each example:
+         Martian Mono speaks, like the titles; the sentence under it is prose */
+      .property h4,
+      .guide h4 {
+        margin: 44px 0 14px;
+        font: 600 18px/1.25 var(--gss-font-display);
+        letter-spacing: -0.03em;
+        color: var(--gss-bone);
+        scroll-margin-top: 72px;
+      }
+      .example-text {
+        max-width: 65ch;
+        margin: 0 0 16px;
+        font-size: 16px;
+        color: var(--gss-ash);
+      }
+      .example-text code,
+      .values dd code {
+        color: var(--gss-bone);
+      }
+      /* What each value does: the value in code, what it does in prose */
+      .values {
+        grid-template-columns: minmax(140px, 32%) minmax(0, 1fr);
+        column-gap: 24px;
+      }
+      .values dt {
+        text-transform: none;
+      }
+      .values dd {
+        font: 15px/1.5 var(--gss-font-body);
+        color: var(--gss-ash);
+      }
+      /* Under a chapter of a guide: what it needs, in mono, like a label */
+      .guide p.guide-meta {
+        margin: -6px 0 12px;
+        font: 12px var(--gss-font-code);
+        color: var(--gss-dim);
       }
       /* A table in a guide page: method and syntax names keep their case */
       .guide-table dt {
@@ -564,9 +609,11 @@
         font-size: 13px;
         line-height: 1.7;
       }
+      .example-part {
+        scroll-margin-top: 72px;
+      }
       .example {
         position: relative;
-        scroll-margin-top: 72px;
       }
       .example pre {
         padding-right: 7rem; /* room for the button */

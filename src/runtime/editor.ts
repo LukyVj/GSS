@@ -40,6 +40,7 @@ import { setDiagnostics, lintGutter, type Diagnostic } from "@codemirror/lint";
 import type { Renderer, AsyncRenderer } from "./renderer";
 import { classifyGss } from "../docs/highlight";
 import { formatGss } from "../docs/format";
+import { plainText } from "../docs/prose";
 import { scan } from "../compiler/syntax/tokenizer";
 import { GssError, GssErrors } from "../compiler/syntax/errors";
 import type { Stats } from "./status";
@@ -184,7 +185,7 @@ function gssCompletions(context: CompletionContext): CompletionResult | null {
         label: property.name,
         type: "property",
         detail: property.syntax,
-        info: property.description,
+        info: plainText(property.description), // the tooltip is plain text: no backticks
         // "color: ", ready for the value; just the name when a ":" already follows
         apply: (view, _completion, from, to) => {
           const colon = view.state.sliceDoc(to, to + 1) === ":";

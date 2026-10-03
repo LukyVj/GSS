@@ -25,6 +25,9 @@ npm run format     # format the .gss files (npm run format:check to only list th
 
 Every property, shape, selector and function is described once in the registry
 (`src/compiler/registry/registry.ts`): the reference and the tests of its examples are generated from it.
+A page of the reference reads: `description` (a lead of three sentences at most), the table
+of the entry, then `values` (one row per keyword or function), `details` (one paragraph), and the
+examples, each with a `name` and a one-sentence `text` (decision 121). Code goes between backticks.
 
 ## Decisions
 
