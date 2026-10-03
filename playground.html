@@ -166,6 +166,9 @@
       .stats.error {
         color: var(--gss-signal);
       }
+      .notice {
+        color: var(--gss-signal);
+      }
 
       /* On a phone: the scene on top, the editor below */
       @media (max-width: 720px) {
@@ -216,6 +219,9 @@
         <button type="button" role="tab" data-tab="gss" aria-selected="true">
           gss
         </button>
+        <button type="button" role="tab" data-tab="html" aria-selected="false">
+          html
+        </button>
         <button type="button" role="tab" data-tab="glsl" aria-selected="false">
           glsl
         </button>
@@ -240,12 +246,14 @@
     </header>
     <aside class="editor">
       <div id="code" class="code-host"></div>
+      <div id="html" class="code-host" hidden></div>
       <div id="glsl" class="code-host" hidden></div>
       <pre id="error" class="error" hidden></pre>
     </aside>
     <canvas id="scene"></canvas>
     <footer class="statusbar">
       <span id="stats" class="stats" aria-live="polite"></span>
+      <span id="notice" class="notice" hidden></span>
       <span class="spacer"></span>
       <a href="./docs.html#installation" aria-label="GSS version %GSS_VERSION%">v%GSS_VERSION%</a>
       <span id="fps"></span>

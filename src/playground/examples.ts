@@ -12,7 +12,7 @@ import {
 
 // The scenes of the "Examples" menu. The reference ones come from the registry,
 // so a new documented example shows up here with no change.
-export type Example = { group: string; name: string; code: string };
+export type Example = { group: string; name: string; code: string; html?: string };
 
 // "@media", "media" and "media()" name the same thing
 const bare = (name: string) => name.replace(/^@/, "").replace(/\(\)$/, "");
@@ -32,6 +32,7 @@ function fromReference(name: string, examples: ReferenceExample[]): Example[] {
         ? `${name} (${i + 1})`
         : name,
     code: formatGss(example.code),
+    ...(example.html ? { html: example.html } : {}), // the HTML of element(#id) (decision 101)
   }));
 }
 

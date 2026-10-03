@@ -5,7 +5,8 @@ import { createRendererAsync } from "./runtime/renderer";
 import type { Backend } from "./runtime/backend";
 import { connectEditor, theme } from "./runtime/editor";
 import { glslLanguage } from "./runtime/glsl";
-import { encodeCode, decodeCode } from "./runtime/share";
+import { htmlLanguage } from "./runtime/html-language";
+import { encodeCode, decodeCode, decodeHtml } from "./runtime/share";
 import { compileGSS, compileScene } from "./compiler";
 import { toShadertoy } from "./compiler/shader/shadertoy";
 import { EXAMPLES, renderExampleOptions } from "./playground/examples";
@@ -29,11 +30,20 @@ backendSelect.value = backend;
 backendSelect.addEventListener("change", async () => {
   const url = new URL(location.href);
   url.searchParams.set("backend", backendSelect.value);
-  if (currentSource) url.hash = await encodeCode(currentSource());
+  if (currentSource) url.hash = await encodeCode(currentSource(), html);
   location.assign(url.href);
 });
-const renderer = await createRendererAsync($<HTMLCanvasElement>("#scene"), {
-  backend,
+
+// A shared link opens its scene, and the HTML of its element(#id); otherwise the first example
+const start = (await decodeCode(location.hash)) ?? EXAMPLES[0].code;
+let html = await decodeHtml(location.hash);
+// The HTML lives inside the canvas: element(#id) draws it there (decision 101)
+const sceneCanvas = $<HTMLCanvasElement>("#scene");
+sceneCanvas.innerHTML = html;
+// element(#id) is drawn with WebGL2 for now: auto picks it for a scene that shows HTML
+const showsHtml = (code: string) => /\belement\(/.test(code);
+const renderer = await createRendererAsync(sceneCanvas, {
+  backend: backend === "auto" && (html || showsHtml(start)) ? "webgl" : backend,
   profile,
   profileWebGPU,
   scrollSlider: true, // the playground does not scroll: a slider stands in for scroll()
@@ -51,9 +61,6 @@ $<HTMLCanvasElement>("#scene").addEventListener("gss-error", (event) => {
     error instanceof Error ? error.message : String(error);
   $("#error").hidden = false;
 });
-
-// A shared link opens its scene; otherwise the first example
-const start = (await decodeCode(location.hash)) ?? EXAMPLES[0].code;
 
 const editor = connectEditor(
   { host: $("#code"), error: $("#error") },
@@ -84,20 +91,54 @@ setInterval(() => {
 
 // ----- The URL follows the code, so the address bar is always a share link -----
 
-editor.onCompile(async (code) => {
-  const hash = await encodeCode(code);
+async function followUrl(code: string): Promise<void> {
+  const hash = await encodeCode(code, html);
   if (editor.getCode() === code) history.replaceState(null, "", hash); // still the same code?
+}
+editor.onCompile(followUrl);
+
+// element(#id) on WebGPU: the object keeps its color, so say how to see the element
+const notice = $("#notice");
+editor.onCompile((code) => {
+  notice.hidden = !(renderer.backend === "webgpu" && showsHtml(code));
+  notice.textContent = "element() is drawn with WebGL2: choose WebGL2 in the backend menu";
 });
+
+// ----- The HTML tab: the elements that element(#id) shows (decision 101) -----
+
+const htmlEditor = new EditorView({
+  parent: $("#html"),
+  state: EditorState.create({
+    doc: html,
+    extensions: [
+      lineNumbers(),
+      htmlLanguage,
+      theme,
+      EditorView.updateListener.of((update) => {
+        if (!update.docChanged) return;
+        html = update.state.doc.toString();
+        sceneCanvas.innerHTML = html; // a paint follows, and the texture with it
+        void followUrl(editor.getCode());
+      }),
+    ],
+  }),
+});
+$("#html").classList.add("gss-dark");
+function setHtml(next: string): void {
+  htmlEditor.dispatch({ changes: { from: 0, to: htmlEditor.state.doc.length, insert: next } });
+}
 
 // A link pasted in the address bar of this tab
 window.addEventListener("hashchange", async () => {
   const code = await decodeCode(location.hash);
+  const nextHtml = await decodeHtml(location.hash);
+  if (nextHtml !== html) setHtml(nextHtml);
   if (code !== null && code !== editor.getCode()) editor.setCode(code);
 });
 
 const shareButton = $<HTMLButtonElement>("#share");
 shareButton.addEventListener("click", async () => {
-  history.replaceState(null, "", await encodeCode(editor.getCode()));
+  history.replaceState(null, "", await encodeCode(editor.getCode(), html));
   await navigator.clipboard.writeText(location.href);
   shareButton.textContent = "link copied";
   setTimeout(() => (shareButton.textContent = "share"), 2000);
@@ -108,7 +149,9 @@ shareButton.addEventListener("click", async () => {
 const examples = $<HTMLSelectElement>("#examples");
 examples.insertAdjacentHTML("beforeend", renderExampleOptions());
 examples.addEventListener("change", () => {
-  editor.setCode(EXAMPLES[Number(examples.value)].code); // Cmd/Ctrl+Z brings the previous code back
+  const example = EXAMPLES[Number(examples.value)];
+  setHtml(example.html ?? ""); // an example is a whole scene: its HTML, or none
+  editor.setCode(example.code); // Cmd/Ctrl+Z brings the previous code back
   examples.value = ""; // back to "Examples…", so the same example can be picked again
 });
 
@@ -163,9 +206,10 @@ function showGlsl(code: string): void {
   });
 }
 
-let tab: "gss" | "glsl" | "wgsl" = "gss";
+let tab: "gss" | "html" | "glsl" | "wgsl" = "gss";
+const shaderTab = () => tab === "glsl" || tab === "wgsl";
 editor.onCompile((code) => {
-  if (tab !== "gss") showGlsl(code);
+  if (shaderTab()) showGlsl(code);
 });
 
 for (const button of document.querySelectorAll<HTMLButtonElement>(
@@ -174,10 +218,11 @@ for (const button of document.querySelectorAll<HTMLButtonElement>(
   button.addEventListener("click", () => {
     tab = button.dataset.tab as typeof tab;
     $("#code").hidden = tab !== "gss";
-    $("#glsl").hidden = tab === "gss";
+    $("#html").hidden = tab !== "html";
+    $("#glsl").hidden = !shaderTab();
     for (const other of document.querySelectorAll("[data-tab]")) {
       other.setAttribute("aria-selected", String(other === button));
     }
-    if (tab !== "gss") showGlsl(editor.getCode());
+    if (shaderTab()) showGlsl(editor.getCode());
   });
 }

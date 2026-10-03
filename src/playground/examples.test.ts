@@ -14,6 +14,11 @@ describe("playground examples", () => {
     expect(new Set(names).size).toBe(names.length);
   });
 
+  it("carry the HTML of an example that shows an element (decision 101)", () => {
+    const card = EXAMPLES.find((example) => example.name.startsWith("element()"));
+    expect(card?.html).toContain('id="card"');
+  });
+
   it("start with the first scene", () => {
     expect(EXAMPLES[0].name).toBe("First scene");
     expect(renderExampleOptions()).toContain('<optgroup label="Start here"><option value="0">First scene</option>');

@@ -60,7 +60,7 @@ function openPlayground(example: HTMLElement, code: string, html = ""): void {
   // The link carries the code as it is now, edits included
   const link = panel.querySelector<HTMLAnchorElement>(".open-playground")!;
   editor.onCompile(async (current) => {
-    link.href = `./playground.html${await encodeCode(current)}`;
+    link.href = `./playground.html${await encodeCode(current, html)}`; // the HTML goes too
   });
 
   open = { example, panel, renderer, editor };
