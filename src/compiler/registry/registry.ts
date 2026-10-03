@@ -1089,18 +1089,30 @@ export const AT_RULES: AtRuleDef[] = [
     syntax:
       "@scene { <shape>[#<id>][.<class>]* [* <integer>][;] … group[#<id>][.<class>]* [* <integer>] { … } }",
     description:
-      "Declares the objects of the scene, one per line: a shape (see the Shapes section), an optional #id (only one), any number of .classes, and an optional * n to create n copies. Multiplied ids are numbered: torus#ring * 3 creates ring-1, ring-2 and ring-3. The ; after an object is optional: a new object or a } is enough. A group { … } holds objects and other groups, to move, turn or scale them together; a multiplied group copies everything inside it. Objects are combined in this order (see operation).",
+      "Declares the objects of the scene, one per line: a shape, then an optional `#id`, any number of `.classes`, and `* n` for n copies. Objects are combined in the order they are declared: see `operation`.",
+    valuesTitle: "Parts",
+    values: [
+      ["<shape>", "`cube`, `sphere`, `torus`… one of the shapes, or a point `light`."],
+      ["#<id>", "One per object. A multiplied id is numbered: `torus#ring * 3` makes `ring-1`, `ring-2` and `ring-3`."],
+      [".<class>", "Any number of them: `sphere.ball.big`."],
+      ["* <integer>", "Copies of the object, each a sibling of its own."],
+      ["group { … }", "Holds objects and other groups, to move, turn or scale them together. A multiplied group copies everything inside it."],
+    ],
+    details: "The `;` after an object is optional: a new object or a `}` is enough.",
     examples: [
       {
-        name: "scene",
+        name: "a single cube",
+        text: "The smallest scene: one object, with the default style.",
         code: "@scene { cube; }",
       },
       {
-        name: "scene",
+        name: "ids, classes and copies",
+        text: "A `#base` cube and three `.ball` spheres, styled by their id and their class.",
         code: "@scene { cube#base; sphere.ball * 3; } #base { translate: 0 0.5 0; } .ball { translate: 0 1.5 0; radius: 0.3; }",
       },
       {
-        name: "scene",
+        name: "a group",
+        text: "The two cubes of `#tower` move and turn with their group.",
         code: "@scene {\n  cube#base\n  group#tower {\n    cube#a\n    cube#b\n  }\n}\n#base { translate: 1 0.5 0; }\n#tower { translate: -1 0 0; rotate-y: -30deg; }\n#a { translate: 0 0.5 0; }\n#b { translate: 0 1.5 0; scale: 0.7; }",
       },
     ],
@@ -1109,14 +1121,23 @@ export const AT_RULES: AtRuleDef[] = [
     name: "keyframes",
     syntax: "@keyframes <name> { <offset>[, <offset>]* { <declaration>* } … }",
     description:
-      "Defines the steps of an animation, played by the animation property. An offset is from (0%), to (100%) or a percentage. A missing 0% or 100% uses the object's own value, and a frame only changes the properties it declares. Only animatable properties can be used in a frame.",
+      "Defines the steps of an animation, played by the `animation` property, like CSS.",
+    valuesTitle: "Offsets",
+    values: [
+      ["from", "The start: `0%`."],
+      ["to", "The end: `100%`."],
+      ["<percentage>", "A step in between. Several offsets can share a frame: `0%, 100% { … }`."],
+    ],
+    details: "A missing `0%` or `100%` uses the object's own value, and a frame changes only the properties it declares. A frame takes animatable properties only.",
     examples: [
       {
-        name: "keyframes",
+        name: "up and down",
+        text: "Two frames, played forward then backward by `alternate`.",
         code: "@scene { sphere; } sphere { animation: float 2s ease-in-out alternate; } @keyframes float { from { translate: 0 1 0; } to { translate: 0 2 0; } }",
       },
       {
-        name: "keyframes",
+        name: "a pulse",
+        text: "`0%` and `100%` share a frame; at `50%`, the cube grows and changes color.",
         code: "@scene { cube; } cube { translate: 0 0.5 0; animation: pulse 1s; } @keyframes pulse { 0%, 100% { scale: 1; } 50% { scale: 1.3; color: #ff5a36; } }",
       },
     ],
@@ -1125,18 +1146,28 @@ export const AT_RULES: AtRuleDef[] = [
     name: "property",
     syntax: '@property --<name> { syntax: "<number>" | "<angle>" | "<percentage>" | "<color>" | "<length>"; inherits: true | false; initial-value: <value>; }',
     description:
-      "Registers a variable that the page sets from JavaScript without compiling the scene again, like CSS @property. The syntax says what it holds: a number, an angle, a percentage, a color, or a length in px (the radius of blur() and bloom()); inherits is required, like CSS; initial-value is its value until the page sets another one. A registered variable has one value for the whole scene, like a variable on :root: scene { --speed: 8; } gives its start value, and declaring it on an object, a group, a :hover rule or a @keyframes frame is an error (a frame can read it). The page sets it with scene.setProperty(\"--lift\", \"2\"), on the scene that mount() returns or on the scene property of <gss-scene>: see Set variables from JavaScript. It goes wherever a value reaches the shader: the transforms (translate, rotate-x, rotate-y, rotate-z, scale, transform-origin), color, opacity, background and mask-image, the sizes of the shapes (radius, size, height, thickness, corner-radius, stroke-width, depth), the numbers of a gradient (its angle, center, stops and colors), material, floor, ambient, light (and the color and intensity of the lights of @scene), fog, camera-target, blend, offset-distance and offset-rotate, texture-size, and filter, alone (translate: 0 var(--lift) 0), inside the math functions (calc(var(--lift) * 2), sin(), clamp()…) and inside the color functions (hsl(var(--hue) 80% 60%), oklch(), color-mix()…, computed in the same color spaces as the others). The GPU computes them at every frame. It cannot go where the scene is built when it compiles: the copies of * n, d and view-box, the timing of animations and transitions, the camera the mouse moves (camera-distance, camera-angle, camera-spin) and dpr. A value known only when the scene runs cannot be refused like a value written as is: it is kept in its range (a size is never below 0, a roughness stays between 0 and 1), and in color-mix(), a percentage set from JavaScript is kept between 0% and 100%, and percentages that add up to less than 100% are scaled up to 100% instead of being an error. An object whose size or place a variable sets is always drawn: its bounding sphere is not known. random() cannot use it: a random value is chosen once. The Shadertoy export keeps the initial values.",
+      "Registers a variable that the page changes from JavaScript while the scene runs, without compiling it again, like CSS `@property`. Like a variable on `:root`, it has one value for the whole scene.",
+    valuesTitle: "Descriptors",
+    values: [
+      ["syntax", "What the variable holds: `\"<number>\"`, `\"<angle>\"`, `\"<percentage>\"`, `\"<color>\"`, or `\"<length>\"` in px, for the radius of `blur()` and `bloom()`."],
+      ["inherits", "Required, like CSS: `true` or `false`."],
+      ["initial-value", "Its value until the page sets another one. `scene { --lift: 2; }` gives another start value; declared anywhere else, on an object, a group, a `:hover` rule or a frame, the variable is an error. A frame can read it."],
+    ],
+    details: "It goes wherever the shader reads a value at each frame: the transforms (`translate`, `rotate-x`, `rotate-y`, `rotate-z`, `scale`, `transform-origin`), `color`, `opacity`, `background`, `mask-image`, the sizes of the shapes (`size`, `radius`, `height`, `thickness`, `corner-radius`, `stroke-width`, `depth`), the numbers of a gradient, `material`, `floor`, `ambient`, `light` and the `intensity` of the point lights, `fog`, `camera-target`, `blend`, `offset-distance`, `offset-rotate`, `texture-size` and `filter`, alone or inside the math and color functions. It cannot go where the scene is built when it compiles: the copies of `* n`, `d` and `view-box`, the timing of animations and transitions, the camera the mouse moves, `dpr` and `random()`. A value set from JavaScript is never refused: it is kept in its range, so a size never goes below 0.",
     examples: [
       {
-        name: "property",
+        name: "a number",
+        text: "The sphere rises with `--lift`, which the page sets with `scene.setProperty(\"--lift\", \"2\")`.",
         code: '@property --lift { syntax: "<number>"; inherits: false; initial-value: 1; } @scene { sphere; } sphere { translate: 0 var(--lift) 0; radius: 0.5; color: #ff5a36; }',
       },
       {
-        name: "property",
+        name: "a color and an angle",
+        text: "`scene { --tint: … }` gives a start value other than `initial-value`.",
         code: '@property --tint { syntax: "<color>"; inherits: false; initial-value: #3a7bff; } @property --turn { syntax: "<angle>"; inherits: false; initial-value: 30deg; } @scene { cube; } scene { --tint: #ff5a36; } cube { translate: 0 0.8 0; rotate-y: var(--turn); color: var(--tint); }',
       },
       {
-        name: "property",
+        name: "inside math and color functions",
+        text: "`--hue` goes through `calc()`, `sin()` and `oklch()`, computed by the GPU at each frame.",
         code: '@property --hue { syntax: "<number>"; inherits: false; initial-value: 20; } @scene { sphere * 5; } sphere { radius: 0.35; translate: calc(sibling-index() * 0.8 - 2.4) calc(0.6 + sin(var(--hue) * 1deg) * 0.3) 0; color: oklch(70% 0.16 calc(var(--hue) + sibling-index() * 30)); }',
       },
     ],
@@ -1146,18 +1177,30 @@ export const AT_RULES: AtRuleDef[] = [
     name: "media",
     syntax: "@media <media-query> { <rule> … }",
     description:
-      "Applies rules only when the screen matches a media query, like CSS: (max-width: 600px), (min-width: 40em), (orientation: portrait), (prefers-color-scheme: dark), (prefers-reduced-motion), joined with and, not or commas. The browser reads the query, so any media query CSS knows works. Inside, the rules join the cascade where the @media is written, with their usual specificity. When the screen changes (a window resized, the system switching between light and dark mode), the scene follows at once and the camera stays where it is. (prefers-color-scheme: dark) and (prefers-color-scheme: light) follow the light or dark mode of the system, like CSS. A common use: a lighter render on small screens with scene { dpr: 1; }, and no motion for people who ask for less with * { animation: none !important; }. A scene can use up to 4 different queries. @media holds rules only: @scene and @keyframes go outside it.",
+      "Applies rules only when the screen matches a media query, like CSS. When the screen changes, a window resized or the system switching to dark mode, the scene follows at once and the camera stays where it is.",
+    valuesTitle: "Queries",
+    values: [
+      ["(max-width: 600px)", "The width of the viewport; also `min-width`, in `px` or `em`."],
+      ["(orientation: portrait)", "Taller than wide; `landscape` otherwise."],
+      ["(prefers-color-scheme: dark)", "The dark mode of the system; `light` for the light mode."],
+      ["(prefers-reduced-motion)", "The visitor asks for less motion."],
+      ["and, not, ,", "Combine queries, like CSS."],
+    ],
+    details: "The browser reads the query, so any media query CSS knows works. Inside, the rules join the cascade where the `@media` is written, with their usual specificity. A scene can use up to 4 different queries, and `@media` holds rules only: `@scene` and `@keyframes` go outside it.",
     examples: [
       {
-        name: "media",
+        name: "a small screen",
+        text: "Under 600px wide, the render is lighter, with `dpr: 1`, and the sphere turns blue.",
         code: "@scene { sphere; } sphere { translate: 0 1 0; color: #ff5a36; } @media (max-width: 600px) { scene { dpr: 1; } sphere { color: #3a7bff; } }",
       },
       {
-        name: "media",
+        name: "less motion",
+        text: "`* { animation: none !important; }` stops every animation for the visitors who ask for less motion.",
         code: "@scene { sphere; } sphere { translate: 0 1 0; color: #ff5a36; animation: bob 2s ease-in-out alternate; } @keyframes bob { to { translate: 0 1.6 0; } } @media (prefers-reduced-motion) { * { animation: none !important; } }",
       },
       {
-        name: "media",
+        name: "dark mode",
+        text: "The background, the floor and the sphere follow the light or dark mode of the system.",
         code: "@scene { sphere; } scene { background: #f2efe9; floor: #e8e3db; } sphere { translate: 0 1 0; color: #ff5a36; } @media (prefers-color-scheme: dark) { scene { background: #080808; floor: #1a1a1f; } sphere { color: #3a7bff; } }",
       },
     ],
@@ -1170,10 +1213,10 @@ export const SELECTORS: SelectorDef[] = [
     anchor: "selector-type",
     specificity: "1",
     description:
-      "A shape name targets every object of that shape. Every shape is listed in the Shapes section. group targets every group.",
+      "A shape name targets every object of that shape: `cube` styles every cube, and `group` every group.",
     examples: [
       {
-        name: "selector-type",
+        name: "every cube, every sphere",
         code: "@scene { cube; sphere; } cube { translate: 0.8 0.5 0; color: #ff5a36; } sphere { translate: -0.8 0.5 0; }",
       },
     ],
@@ -1183,10 +1226,10 @@ export const SELECTORS: SelectorDef[] = [
     anchor: "selector-class",
     specificity: "100 per class",
     description:
-      "Targets every object that has this class in @scene. An object can have several classes, and a selector can ask for several: .a.b.",
+      "Targets every object that has this class in `@scene`. An object can have several classes, and a selector can ask for several at once: `.a.b`.",
     examples: [
       {
-        name: "selector-class",
+        name: "a class on one of two cubes",
         code: "@scene { cube#a.red; cube#b; } #a { translate: 0.8 0.5 0; } #b { translate: -0.8 0.5 0; } .red { color: #ff5a36; }",
       },
     ],
@@ -1196,10 +1239,10 @@ export const SELECTORS: SelectorDef[] = [
     anchor: "selector-id",
     specificity: "10000",
     description:
-      "Targets the object with this id. An id multiplied in @scene (torus#hero * 3) is numbered: hero-1, hero-2, hero-3.",
+      "Targets the object with this id. A multiplied id is numbered: `torus#hero * 3` makes `hero-1`, `hero-2` and `hero-3`.",
     examples: [
       {
-        name: "selector-id",
+        name: "one sphere, by its id",
         code: "@scene { sphere#hero; sphere; } sphere { translate: -0.8 0.5 0; } #hero { translate: 0.8 0.5 0; color: #ff5a36; }",
       },
     ],
@@ -1209,10 +1252,11 @@ export const SELECTORS: SelectorDef[] = [
     anchor: "selector-universal",
     specificity: "0",
     description:
-      "Targets every object, never the scene settings. Any other selector beats it, wherever it is written: use it for defaults.",
+      "Targets every object, never the settings of the scene. Any other selector beats it, wherever it is written: use it for defaults.",
     examples: [
       {
-        name: "selector-universal",
+        name: "a default for every object",
+        text: "Every object is red, except the sphere, whose own rule wins.",
         code: "@scene { cube; sphere; } * { color: #ff5a36; } cube { translate: 0.8 0.5 0; } sphere { translate: -0.8 0.5 0; color: #3ad16b; }",
       },
     ],
@@ -1222,10 +1266,10 @@ export const SELECTORS: SelectorDef[] = [
     anchor: "selector-list",
     specificity: "Each selector keeps its own",
     description:
-      "A selector list gives the same declarations to every selector it names, like writing the rule once for each.",
+      "A selector list gives the same declarations to each selector it names, as if the rule were written once for each.",
     examples: [
       {
-        name: "selector-list",
+        name: "two ids, one rule",
         code: "@scene { cube#a; cube#b; sphere; } #a, #b { color: #ff5a36; } #a { translate: 1.2 0.5 0; } #b { translate: 0 0.5 0; } sphere { translate: -1.2 0.5 0; }",
       },
     ],
@@ -1235,10 +1279,12 @@ export const SELECTORS: SelectorDef[] = [
     anchor: "selector-descendant",
     specificity: "The sum of its parts",
     description:
-      'A space means "inside": #letters cube targets the cubes that are in the group #letters, at any depth. It reads from right to left, like CSS: the last part is the object, each part before it is one of its groups, further out each time. #letters#S would ask for one object with two ids, which never happens: that is an error.',
+      "A space means \"inside\": `#letters cube` targets the cubes of the group `#letters`, at any depth.",
+    details: "Like CSS, it reads from right to left: the last part is the object, and each part before it is one of its groups, further out each time. `#letters#S` asks for one object with two ids, which never exists: it is an error.",
     examples: [
       {
-        name: "selector-descendant",
+        name: "the cubes of a group",
+        text: "The two cubes inside `#letters` turn red; the one outside does not.",
         code: "@scene { cube#a; group#letters { cube#b; cube#c; } } cube { translate: 1.2 0.5 0; } #letters cube { color: #ff5a36; } #b { translate: 0 0.5 0; } #c { translate: -1.2 0.5 0; }",
       },
     ],
@@ -1248,10 +1294,12 @@ export const SELECTORS: SelectorDef[] = [
     anchor: "selector-child",
     specificity: "The sum of its parts",
     description:
-      "Targets direct children: #g > cube selects the cubes immediately inside #g, excluding those inside a nested group. Combine it with spaces and sibling combinators: #g > group cube. Whitespace around > is optional. Combinators add no specificity.",
+      "Targets direct children: `#g > cube` is the cubes right inside `#g`, not those of a nested group.",
+    details: "It combines with spaces and sibling combinators: `#g > group cube`. The spaces around `>` are optional, and combinators add no specificity.",
     examples: [
       {
-        name: "selector-child",
+        name: "direct children only",
+        text: "Only `#direct` turns red: `#nested` is inside another group.",
         code: "@scene { group#g { cube#direct; group { cube#nested; } } } cube { translate: 0.8 0.5 0; } #nested { translate: -0.8 0.5 0; } #g > cube { color: #ff5a36; }",
       },
     ],
@@ -1261,10 +1309,12 @@ export const SELECTORS: SelectorDef[] = [
     anchor: "selector-adjacent",
     specificity: "The sum of its parts",
     description:
-      "Targets the immediately following sibling with the same parent: sphere + cube selects a cube directly after a sphere in @scene or a group. Order is the declaration order after multiplication, not the position in 3D. Groups count as siblings, including empty groups. sphere:hover + cube reacts only to the preceding sphere. Whitespace around + is optional.",
+      "Targets the next sibling, with the same parent: `sphere + cube` is a cube declared right after a sphere, in `@scene` or in a group.",
+    details: "The order is the order of declaration, copies of `* n` included, not the position in 3D. Groups count as siblings, empty ones too. `sphere:hover + cube` reacts only to the sphere right before. The spaces around `+` are optional.",
     examples: [
       {
-        name: "selector-adjacent",
+        name: "the cube right after the sphere",
+        text: "`#a` turns red, and grows while the sphere is hovered; `#b` does not.",
         code: "@scene { sphere; cube#a; cube#b; } sphere { translate: 1.4 0.5 0; radius: 0.4; } #a { translate: 0 0.5 0; } #b { translate: -1.4 0.5 0; } sphere + cube { color: #ff5a36; } sphere:hover + cube { scale: 1.2; }",
       },
     ],
@@ -1274,10 +1324,12 @@ export const SELECTORS: SelectorDef[] = [
     anchor: "selector-sibling",
     specificity: "The sum of its parts",
     description:
-      "Targets any following sibling with the same parent: sphere ~ cube selects every cube after a sphere, even with other elements between them. It never selects preceding siblings or children of a sibling. Each copy of * n counts separately; groups, including empty ones, also count. Chains can mix all combinators, and whitespace around ~ is optional.",
+      "Targets every later sibling, with the same parent: `sphere ~ cube` is every cube after a sphere, even with other objects between them.",
+    details: "It never targets an earlier sibling, nor the children of a sibling. Each copy of `* n` counts, and so do groups, empty ones too. Chains can mix every combinator, and the spaces around `~` are optional.",
     examples: [
       {
-        name: "selector-sibling",
+        name: "every cube after the sphere",
+        text: "Both cubes after the sphere turn red; the one before does not.",
         code: "@scene { cube#before; sphere; cube#after * 2; } * { translate: calc((sibling-index() - 2.5) * -1.3) 0.5 0; } sphere { radius: 0.4; } sphere ~ cube { color: #ff5a36; }",
       },
     ],
@@ -1287,14 +1339,25 @@ export const SELECTORS: SelectorDef[] = [
     anchor: "selector-nesting",
     specificity: "The sum of the rule around it and of the nested selector",
     description:
-      "Nesting, like CSS: a rule can hold other rules, and & stands for the selector of the rule around it. In #g { &:hover { … } }, the nested rule is #g:hover; in .a { #g & { … } }, it is #g .a. A nested selector without & gets the parent in front, followed by a space: #g { cube { … } } is #g cube, and #g { > sphere { … } } is #g > sphere. & also works inside :has() and :not(). Rules nest at any depth, and a @media can go inside a rule: its declarations then apply to that rule when the query matches. The declarations written after a nested rule come after it in the cascade, like CSS. With a list as the parent, a, b { & c { … } } gives a c and b c, and each one keeps its own specificity, where CSS gives both the specificity of the most specific selector of the list.",
+      "Nesting, like CSS: a rule can hold other rules, and `&` stands for the selector of the rule around it. In `#g { &:hover { … } }`, the nested rule is `#g:hover`.",
+    valuesTitle: "Forms",
+    values: [
+      ["&:hover", "Joined to the parent: `#g:hover`."],
+      ["#g &", "The parent, placed anywhere: `.a { #g & { … } }` is `#g .a`."],
+      ["cube", "Without `&`, the parent comes first, then a space: `#g { cube { … } }` is `#g cube`."],
+      ["> sphere", "A leading combinator: `#g { > sphere { … } }` is `#g > sphere`."],
+      ["@media", "A query inside a rule: its declarations apply to that rule when the query matches."],
+    ],
+    details: "Rules nest at any depth, and `&` also works inside `:has()` and `:not()`. The declarations written after a nested rule come after it in the cascade, like CSS. With a list as the parent, `a, b { & c { … } }` gives `a c` and `b c`, each with its own specificity, where CSS gives both the specificity of the most specific selector of the list.",
     examples: [
       {
         name: "a group and what it holds",
+        text: "One rule styles the group, its cubes, their `:hover`, and its direct sphere.",
         code: "@scene { group#row { cube.a * 3; sphere; } } #row { color: #e6e6e6; cube { size: 0.6; translate: calc((sibling-index() - 2.5) * -1) 0.3 0; &:hover { color: #ff5a36; } } > sphere { radius: 0.35; translate: -1.5 0.35 0; color: #3a7bff; } }",
       },
       {
         name: "a @media inside a rule",
+        text: "On a narrow screen, the torus changes color.",
         code: "@scene { torus; } torus { radius: 0.8; thickness: 0.25; rotate-x: 70deg; color: #3a7bff; @media (max-width: 600px) { color: #ff5a36; } }",
       },
     ],
@@ -1304,22 +1367,34 @@ export const SELECTORS: SelectorDef[] = [
     anchor: "selector-face",
     specificity: "1, like a tag, added to the rest",
     description:
-      "A pseudo-element, like ::part() in CSS: the rule styles one face of the object, not the object. ::face() takes top, bottom, front, back, left or right, in the object's own space, so the faces turn with it: top is up (+y), front faces +z, right faces +x. ::top and ::bottom are shortcuts for ::face(top) and ::face(bottom). A face without a rule of its own shows the object's texture. On a round shape, a face is the part that faces that way the most: a sphere is cut like the cube around it. A face only takes texture, and it goes at the end of the selector, like CSS: cube.grass::top, never #g::top cube.",
+      "A pseudo-element, like `::part()` in CSS: the rule styles one face of the object, not the object. A face takes `texture` only.",
+    valuesTitle: "Faces",
+    values: [
+      ["top, bottom", "Up (+y) and down, in the object's own space: the faces turn with it."],
+      ["front, back", "Toward +z and toward −z."],
+      ["right, left", "Toward +x and toward −x."],
+      ["::top, ::bottom", "Shortcuts for `::face(top)` and `::face(bottom)`."],
+    ],
+    details: "A face without a rule of its own shows the texture of the object. On a round shape, a face is the part that looks that way the most: a sphere is cut like the cube around it. Like CSS, the pseudo-element ends the selector: `cube.grass::top`, never `#g::top cube`.",
     examples: [
       {
         name: "::face()",
+        text: "One face gets its own texture; the other five keep the object's.",
         code: '@scene { cube.furnace; } .furnace { translate: 0 0.5 0; rotate-y: -30deg; texture: url("/textures/dirt.png"); image-rendering: pixelated; } .furnace::face(front) { texture: url("/textures/grass-top.png"); }',
       },
       {
         name: "::top",
+        text: "A grass block: the top has its own texture.",
         code: '@scene { cube.grass; } .grass { translate: 0 0.5 0; texture: url("/textures/grass-side.png"); image-rendering: pixelated; } .grass::top { texture: url("/textures/grass-top.png"); }',
       },
       {
         name: "::bottom",
+        text: "The block is turned over: its bottom face, now on top, shows dirt.",
         code: '@scene { cube.flip; } .flip { translate: 0 0.6 0; rotate-x: 150deg; texture: url("/textures/grass-side.png"); image-rendering: pixelated; } .flip::bottom { texture: url("/textures/dirt.png"); }',
       },
       {
         name: "::face(), ::top and ::bottom together",
+        text: "Two grass blocks, the second turned over: each face keeps its texture as the block turns.",
         code: '@scene { cube.grass * 2; } .grass { translate: calc(2.1 - sibling-index() * 1.4) 0.5 0; rotate-y: -30deg; rotate-x: calc(sibling-index() * 150deg - 150deg); texture: url("/textures/grass-side.png"); image-rendering: pixelated; } .grass::top { texture: url("/textures/grass-top.png"); } .grass::bottom { texture: url("/textures/dirt.png"); } .grass::face(front) { texture: url("/textures/dirt.png"); }',
       },
     ],
@@ -1329,14 +1404,24 @@ export const SELECTORS: SelectorDef[] = [
     anchor: "selector-hover",
     specificity: "100, like a class, added to the rest",
     description:
-      "A pseudo-class, like CSS: the rule applies while the mouse is over the object. It can go anywhere after the shape name (cube:hover.big) on a preceding sibling (sphere:hover + cube), or on a group: #letters:hover cube lifts every cube of #letters as soon as the mouse is over any object of the group, like hovering a child hovers its parent in CSS. The :hover rules join the cascade like any other: #a { color: blue; } beats cube:hover { color: red; }, and a normal !important beats them all. A :hover rule changes the animatable properties only (translate, rotate-x, rotate-y, rotate-z, scale, color, opacity, mask-image, offset-distance, and variables), never a face, and it styles objects, not groups: #g:hover { translate: 0 1 0; } is an error, write #g:hover cube. With transition, the change glides instead of jumping.",
+      "A pseudo-class, like CSS: the rule applies while the mouse is over the object. With `transition`, the change glides instead of jumping.",
+    valuesTitle: "Where it goes",
+    values: [
+      ["cube:hover.big", "Anywhere after the shape name."],
+      ["sphere:hover + cube", "On an earlier sibling: the cube reacts to the sphere."],
+      ["#letters:hover cube", "On a group: every cube of `#letters` reacts as soon as the mouse is over any object of the group, like hovering a child hovers its parent in CSS."],
+      ["#g:has(sphere:hover)", "Inside `:has()`: hovering one object changes another."],
+    ],
+    details: "The `:hover` rules join the cascade like any other: `#a { color: blue; }` beats `cube:hover { color: red; }`, and a normal `!important` beats them all. A `:hover` rule changes animatable properties only (the transforms, `color`, `opacity`, `mask-image`, `offset-distance` and variables), never a face, and it styles objects, not groups: write `#g:hover cube`, not `#g:hover { … }`.",
     examples: [
       {
-        name: "selector-hover",
+        name: "lift on hover",
+        text: "Each cube rises, rotates and turns red under the mouse.",
         code: "@scene { cube#a; cube#b; } cube { translate: 0.8 0.5 0; color: #e6e6e6; } #b { translate: -0.8 0.5 0; } cube:hover { translate: 0.8 1 0; color: #ff5a36; rotate-y: -45deg; } #b:hover { translate: -0.8 1 0; }",
       },
       {
-        name: "selector-hover",
+        name: "hover a group",
+        text: "The mouse over any letter lights up every letter of `#letters`.",
         code: "@scene { group#letters { cube#l1; cube#l2; cube#l3; } sphere; } #letters { translate: 1.6 0.5 0; } #letters cube { size: 0.4 1 0.4; color: #e6e6e6; } #l2 { translate: -0.7 0 0; } #l3 { translate: -1.4 0 0; } #letters:hover cube { color: #ff5a36; scale: 1.15; } sphere { translate: -1.4 0.5 0; radius: 0.5; }",
       },
     ],
@@ -1346,14 +1431,24 @@ export const SELECTORS: SelectorDef[] = [
     anchor: "selector-active",
     specificity: "100, like a class, added to the rest",
     description:
-      "A pseudo-class, like CSS: the rule applies while the object is pressed, with the mouse button or a finger. Like CSS, the object pressed stays pressed until the button goes up, even if the pointer leaves it. A pressed object is under the pointer, so the :hover rules still apply while it is pressed, and :active wins over them at equal specificity when written after them: cube:hover { scale: 1.1; } cube:active { scale: 0.95; } gives a button that grows under the mouse and sinks when clicked. It goes wherever :hover goes: on a preceding sibling (sphere:active + cube), on a group (#g:active cube presses every cube of #g when any of its objects is pressed), inside :has() (#lamp:has(#switch:active) #bulb). It changes the animatable properties only, and styles objects, not groups. With transition, pressing takes the transition of the :active rule, and releasing the one of the hovered state. On a touch screen, the finger presses the object it lands on.",
+      "A pseudo-class, like CSS: the rule applies while the object is pressed, with the mouse button or a finger. Like CSS, it stays pressed until the button goes up, even if the pointer leaves it.",
+    valuesTitle: "Where it goes",
+    values: [
+      ["#button:active", "On the object pressed."],
+      ["sphere:active + cube", "On an earlier sibling."],
+      ["#g:active cube", "On a group: every cube of `#g` is pressed when any of its objects is."],
+      ["#lamp:has(#switch:active) #bulb", "Inside `:has()`: press one object, change another."],
+    ],
+    details: "A pressed object is under the pointer, so its `:hover` rules still apply, and `:active` wins over them at equal specificity when written after them: `cube:hover { scale: 1.1; } cube:active { scale: 0.95; }` grows under the mouse and sinks when clicked. Like `:hover`, it changes animatable properties only, and styles objects, not groups. With `transition`, pressing takes the transition of the `:active` rule, and releasing the one of the hovered state.",
     examples: [
       {
         name: "a button that sinks when pressed",
+        text: "It rises under the mouse, and sinks quickly while pressed.",
         code: "@scene { cube#button; } #button { size: 1.2 0.3 1.2; corner-radius: 0.1; translate: 0 0.15 0; color: #e6e6e6; transition: 0.25s ease-out; } #button:hover { color: #ff5a36; translate: 0 0.25 0; } #button:active { translate: 0 0.05 0; color: #c2401f; transition: 0.06s; }",
       },
       {
         name: "press one, move another",
+        text: "Pressing the switch lights the bulb, through `:has()`.",
         code: "@scene { group#lamp { cylinder#switch; sphere#bulb; } } #switch { radius: 0.3; height: 0.2; translate: 0.8 0.1 0; color: #888888; } #switch:active { scale: 0.9; } #bulb { radius: 0.45; translate: -0.6 0.6 0; color: #555555; transition: 0.4s ease-out; } #lamp:has(#switch:active) #bulb { color: #ffd27a; scale: 1.15; }",
       },
     ],
@@ -1364,18 +1459,31 @@ export const SELECTORS: SelectorDef[] = [
     specificity:
       "the most specific selector inside, added to the rest, like CSS",
     description:
-      "A pseudo-class, like CSS: a group matches when something inside it, at any depth, matches the selector in the parentheses. #g:has(sphere) cube styles the cubes of the groups that hold a sphere, once, when the scene is compiled. With :hover inside, it reacts to the mouse: #g:has(sphere:hover) cube changes the cubes of #g while a sphere of #g is under the mouse, so hovering one object can move another. Inside the parentheses, any selector works: a descendant selector, read from the group down (#g:has(#inner sphere:hover)), or a list, where one match is enough (#g:has(sphere:hover, cube:hover)). A leading combinator is relative to the subject: group:has(> sphere) checks direct children, cube:has(+ sphere) checks the next sibling, and cube:has(~ sphere:hover) reacts to a later sphere. These can be chained, as in cube:has(+ group > sphere). Without a leading sibling combinator, :has() goes on a group: an object holds nothing, so cube:has(sphere) is an error. Empty groups can match. A :has() cannot hold another one. As before, a list mixing a static match with :hover still waits for a hover in GSS.",
+      "A pseudo-class, like CSS: a group matches when something inside it, at any depth, matches the selector in the parentheses. With `:hover` inside, hovering one object can change another.",
+    valuesTitle: "Forms",
+    values: [
+      ["#g:has(sphere)", "The groups that hold a sphere, read once, when the scene compiles."],
+      ["#g:has(sphere:hover)", "While a sphere of `#g` is under the mouse."],
+      ["#g:has(#inner sphere)", "A descendant selector, read from the group down."],
+      ["#g:has(sphere, cube)", "A list: one match is enough."],
+      ["group:has(> sphere)", "A leading combinator, relative to the subject: here, direct children."],
+      ["cube:has(+ sphere)", "The next sibling, or any later one with `~`. Chains work too: `cube:has(+ group > sphere)`."],
+    ],
+    details: "Without a leading sibling combinator, `:has()` goes on a group: an object holds nothing, so `cube:has(sphere)` is an error. Empty groups can match, and a `:has()` cannot hold another one. Unlike CSS, a list that mixes a static selector with `:hover` matches only during a hover.",
     examples: [
       {
-        name: "selector-has",
+        name: "the groups that hold a sphere",
+        text: "Only the cube of `#a`, the group with a sphere, turns blue.",
         code: "@scene { group#a { sphere#sa; cube#ca; } group#b { cube#cb; } } #a { translate: 1 0 0; } #b { translate: -1 0 0; } sphere { translate: 0 1.4 0; radius: 0.3; } cube { translate: 0 0.5 0; color: #e6e6e6; } group:has(sphere) cube { color: #3a7bff; }",
       },
       {
-        name: "selector-has",
+        name: "the next sibling, under the mouse",
+        text: "The cube reacts when the sphere right after it is hovered.",
         code: "@scene { cube; sphere; } cube { translate: 0.8 0.5 0; transition: 0.3s ease-out; } sphere { translate: -0.8 0.5 0; radius: 0.4; } cube:has(+ sphere:hover) { color: #ff5a36; scale: 1.2; }",
       },
       {
-        name: "selector-has",
+        name: "hover one object, change another",
+        text: "Hovering the bulb changes the stand of the same lamp.",
         code: "@scene { group#lamp { sphere#bulb; cylinder#stand; } } #bulb { translate: 0 1.6 0; radius: 0.35; color: #e6e6e6; } #stand { translate: 0 0.6 0; radius: 0.08; height: 1.2; color: #888888; transition: 0.3s ease-out; } #lamp:has(#bulb:hover) #stand { color: #ff5a36; scale: 1.2; }",
       },
     ],
@@ -1385,14 +1493,25 @@ export const SELECTORS: SelectorDef[] = [
     anchor: "selector-not",
     specificity: "its most specific selector, added to the rest, like CSS",
     description:
-      "A pseudo-class, like CSS: the object matches when none of the selectors in the parentheses does. cube:not(.red) is every cube without the class red; :not(.red, torus) leaves out both. Any selector works inside, read from the object outwards like the rest: cube:not(#g cube) is every cube outside the group #g, cube:not(:first-child, :last-child) the cubes in the middle, group:not(:has(sphere)) the groups without a sphere. Several :not() can follow each other: :not(.a):not(.b). It weighs like the most specific selector of its list, like CSS: cube:not(#hero) beats #hero alone. It is read once, when the scene is compiled: :hover cannot go inside it yet, nor a face.",
+      "A pseudo-class, like CSS: the object matches when none of the selectors in the parentheses does. `cube:not(.red)` is every cube without the class `red`.",
+    valuesTitle: "Forms",
+    values: [
+      [":not(.red, torus)", "A list: leaves out both."],
+      ["cube:not(#g cube)", "Any selector, read from the object outwards: every cube outside `#g`."],
+      ["cube:not(:first-child, :last-child)", "The cubes in the middle."],
+      ["group:not(:has(sphere))", "The groups without a sphere."],
+      [":not(.a):not(.b)", "Several in a row."],
+    ],
+    details: "It weighs like the most specific selector of its list, like CSS: `cube:not(#hero)` beats `#hero` alone. It is read once, when the scene compiles: it cannot hold `:hover` or a face.",
     examples: [
       {
         name: "every cube but the red ones",
+        text: "Every cube rises, except the two `.red` ones.",
         code: "@scene { cube.red; cube * 3; cube.red; } cube { size: 0.6; translate: calc((sibling-index() - 3) * -0.9) 0.3 0; } .red { color: #ff5a36; } cube:not(.red) { color: #e6e6e6; translate: calc((sibling-index() - 3) * -0.9) 0.8 0; }",
       },
       {
         name: "the ones in the middle",
+        text: "The spheres between the first and the last turn blue.",
         code: "@scene { sphere * 6; } sphere { radius: 0.3; translate: calc((sibling-index() - 3.5) * -0.75) 0.4 0; color: #e6e6e6; } sphere:not(:first-child, :last-child) { color: #3a7bff; }",
       },
     ],
@@ -1402,14 +1521,24 @@ export const SELECTORS: SelectorDef[] = [
     anchor: "selector-nth-child",
     specificity: "100, like a class, plus the most specific selector after of",
     description:
-      "A pseudo-class, like CSS: the object's position among its siblings, the elements of the same @scene block or group, counted from 1. It takes An+B: a number (:nth-child(3)), odd, even, or a formula where n runs from 0 up: 2n+1 is 1, 3, 5…, 3n is every third, -n+3 is the first three. Each copy of a * n is a sibling of its own, so in @scene { cube * 4; sphere; }, cube:nth-child(odd) is cubes 1 and 3, and the sphere is child 5; that is also what sibling-index() counts. Groups count as siblings, and the count starts again inside each group. :nth-last-child() counts from the end: :nth-last-child(-n+2) is the last two. With of, only the siblings that match the selector list count, and the object must match it: :nth-child(2 of .red) is the second .red. The position is read once, when the scene is compiled: of cannot hold :hover yet.",
+      "A pseudo-class, like CSS: the position of the object among its siblings, the objects of the same `@scene` block or group, counted from 1. `:nth-last-child()` counts from the end.",
+    valuesTitle: "Arguments",
+    values: [
+      ["3", "The third sibling."],
+      ["odd, even", "Every other one: 1, 3, 5… or 2, 4, 6…"],
+      ["An+B", "A formula where `n` runs from 0 up: `2n+1` is 1, 3, 5…, `3n` every third, `-n+3` the first three."],
+      ["An+B of <selector>", "Counts only the siblings that match the list, and the object must match it too: `:nth-child(2 of .red)` is the second `.red`."],
+    ],
+    details: "Each copy of `* n` is a sibling of its own: in `@scene { cube * 4; sphere; }`, `cube:nth-child(odd)` is cubes 1 and 3, and the sphere is child 5, as `sibling-index()` counts. Groups count as siblings, and the count starts again inside each group. The position is read once, when the scene compiles: `of` cannot hold `:hover`.",
     examples: [
       {
         name: "odd, and every third",
+        text: "The odd cubes turn red, and every third one rises.",
         code: "@scene { cube * 7; } cube { size: 0.6; translate: calc((sibling-index() - 4) * -0.8) 0.3 0; color: #e6e6e6; } cube:nth-child(odd) { color: #ff5a36; } cube:nth-child(3n) { translate: calc((sibling-index() - 4) * -0.8) 1 0; }",
       },
       {
         name: "even of .lit, and the last child",
+        text: "The even ones among the `.lit` spheres turn blue, and the last child grows.",
         code: "@scene { sphere.lit * 3; sphere * 2; sphere.lit * 3; } sphere { radius: 0.3; translate: calc((sibling-index() - 4.5) * -0.75) 0.4 0; color: #555555; } .lit { color: #e6e6e6; } :nth-child(even of .lit) { color: #3a7bff; } :nth-last-child(1) { scale: 1.3; }",
       },
     ],
@@ -1419,27 +1548,41 @@ export const SELECTORS: SelectorDef[] = [
     anchor: "selector-nth-of-type",
     specificity: "100, like a class",
     description:
-      "Like :nth-child(), counting only the siblings of the same shape: in @scene { cube * 2; sphere; cube; }, cube:nth-of-type(3) is the last cube, though it is the fourth child. The type is the shape name (cube, sphere, group…), like the tag of an HTML element. It takes the same An+B, but no of.",
+      "Like `:nth-child()`, counting only the siblings of the same shape: in `@scene { cube * 2; sphere; cube; }`, `cube:nth-of-type(3)` is the last cube, though it is the fourth child.",
+    details: "The type is the shape name (`cube`, `sphere`, `group`…), like the tag of an HTML element. It takes the same `An+B` as `:nth-child()`, without `of`.",
     examples: [
       {
         name: "even cubes, last sphere",
+        text: "Counted among their own shape, the even cubes turn red and the last sphere blue.",
         code: "@scene { cube * 2; sphere; cube * 2; sphere; } * { translate: calc((sibling-index() - 3.5) * -0.9) 0.4 0; color: #e6e6e6; } cube { size: 0.6; } sphere { radius: 0.35; } cube:nth-of-type(even) { color: #ff5a36; } sphere:nth-last-of-type(1) { color: #3a7bff; }",
       },
     ],
   },
   {
-    name: ":first-child, :last-child, :only-child, :first-of-type, :last-of-type, :only-of-type",
+    name: ":first-child, :last-child, :only-child",
     anchor: "selector-first-child",
     specificity: "100, like a class",
     description:
-      "Shortcuts, like CSS: :first-child is :nth-child(1), :last-child is :nth-last-child(1), and :only-child is an object without siblings. The -of-type versions count only the siblings of the same shape: cube:first-of-type is the first cube of its block, even after a sphere. They take no argument. They read the order of @scene, not the position in 3D.",
+      "Shortcuts, like CSS: `:first-child` is `:nth-child(1)` and `:last-child` is `:nth-last-child(1)`. Each has an `-of-type` form that counts only the siblings of the same shape. They take no argument.",
+    valuesTitle: "Forms",
+    values: [
+      [":first-child", "The first sibling."],
+      [":last-child", "The last sibling."],
+      [":only-child", "An object without siblings."],
+      [":first-of-type", "The first of its shape: `cube:first-of-type` is the first cube of its block, even after a sphere."],
+      [":last-of-type", "The last of its shape."],
+      [":only-of-type", "The only one of its shape among its siblings."],
+    ],
+    details: "They read the order of `@scene`, not the position in 3D.",
     examples: [
       {
         name: "first and last child",
+        text: "The first cube turns red, the last one blue.",
         code: "@scene { cube * 5; } cube { size: 0.6; translate: calc((sibling-index() - 3) * -0.9) 0.3 0; color: #e6e6e6; } cube:first-child { color: #ff5a36; } cube:last-child { color: #3a7bff; }",
       },
       {
         name: "first of type, only child",
+        text: "In `#a`, the first cube follows a sphere and is still `:first-of-type`; the lone cube of `#b` is an only child.",
         code: "@scene { group#a { sphere; cube * 2; } group#b { cube; } } #a { translate: 1 0 0; } #b { translate: -1.4 0 0; } * { color: #e6e6e6; } sphere { translate: 0 1.2 0; radius: 0.3; } cube { size: 0.5; translate: calc(0.9 - sibling-index() * 0.6) 0.25 0; } cube:first-of-type { color: #ff5a36; } cube:only-child { color: #3a7bff; }",
       },
     ],
@@ -1449,10 +1592,12 @@ export const SELECTORS: SelectorDef[] = [
     anchor: "selector-important",
     specificity: "Beats every declaration without it",
     description:
-      "Written after a value, it makes the declaration win against every normal one, whatever their selectors. Between two !important declarations, specificity decides again. The cascade picks one value and never combines them: * { scale: 0.5 !important; } gives every object a scale of 0.5, it does not halve their own.",
+      "Written after a value, it makes the declaration win against every normal one, whatever their selectors. Between two `!important` declarations, specificity decides again.",
+    details: "The cascade picks one value and never combines them: `* { scale: 0.5 !important; }` gives every object a scale of 0.5; it does not halve their own.",
     examples: [
       {
-        name: "selector-important",
+        name: "a default that wins",
+        text: "`#a` asks for green, but the `!important` red of `*` wins.",
         code: "@scene { cube#a; sphere; } * { color: #ff5a36 !important; } #a { translate: 0.8 0.5 0; color: #3ad16b; } sphere { translate: -0.8 0.5 0; }",
       },
     ],
@@ -1975,18 +2120,27 @@ export const FUNCTIONS: FunctionDef[] = [
     covers: ["var"],
     syntax: "var(--<name>) | var(--<name>, <fallback>)",
     description:
-      "Reads a custom property, like CSS. A property whose name starts with -- is a variable: it can be declared on the scene (like :root), on a group or on an object, and it is inherited from the scene, then from each group, down to the object: the closest one wins. var(--name, fallback) uses the fallback when the variable is not defined; without a fallback, a missing variable is an error, so a typo is never ignored. A variable can hold several values (translate: var(--pos)), use another variable (--big: calc(var(--size) * 2)), and be used inside calc(). A @keyframes frame can set a variable: every animatable property that uses it moves with it. Like everything in GSS, variables are replaced by the compiler: the shader only receives numbers.",
+      "Reads a custom property, like CSS. A property whose name starts with `--` is a variable: declared on the scene (like `:root`), on a group or on an object, it is inherited down to the object, and the closest one wins.",
+    valuesTitle: "Forms",
+    values: [
+      ["var(--name)", "The value of the variable. A missing variable is an error, so a typo is never ignored."],
+      ["var(--name, fallback)", "The fallback, when the variable is not defined."],
+    ],
+    details: "A variable can hold several values (`translate: var(--pos)`), use another one (`--big: calc(var(--size) * 2)`), and go inside `calc()`. A frame of `@keyframes` can set a variable: every animatable property that uses it moves with it. The compiler replaces the variables with their values, unless `@property` registers them: the shader receives only numbers.",
     examples: [
       {
-        name: "var()",
+        name: "a color and a radius",
+        text: "`#b` overrides the `--r` of the scene.",
         code: "@scene { sphere#a; sphere#b; } scene { --accent: #ff5a36; --r: 0.4; } sphere { radius: var(--r); color: var(--accent); } #a { translate: 0.8 0.5 0; } #b { --r: 0.6; translate: -0.8 0.6 0; }",
       },
       {
-        name: "var()",
+        name: "inherited from a group",
+        text: "The cones read `--green` from their group, and each computes its own `--size`.",
         code: "@scene { group#tree { cone.level * 5; } } #tree { --green: #3ad16b; } .level { --size: calc(sibling-index() * 0.12); radius: var(--size); height: var(--size); translate: 0 calc(1.3 - sibling-index() * 0.18) 0; color: var(--green); }",
       },
       {
-        name: "var()",
+        name: "set by @keyframes",
+        text: "The frame sets `--lift`, and the `translate` of each sphere moves with it.",
         code: "@scene { sphere * 3; } sphere { --lift: 0; radius: 0.3; translate: calc(1.8 - sibling-index() * 0.9) calc(0.4 + var(--lift) * sibling-index()) 0; color: #ff5a36; animation: rise 2s ease-in-out alternate; } @keyframes rise { to { --lift: 0.4; } }",
       },
     ],
@@ -1998,14 +2152,25 @@ export const FUNCTIONS: FunctionDef[] = [
     syntax:
       "random([--<name> || element-shared | fixed <number>,]? <min>, <max>, <step>?)",
     description:
-      "A random value between a minimum and a maximum, like CSS: random(0.2, 1.4), random(0deg, 360deg). With a step, one of min, min + step, … up to max: random(0deg, 180deg, 45deg). The value is chosen once, when the scene compiles, and stays the same at every reload: each object, property and call gets its own, so a multiplied object scatters its copies with one rule. A --name shares one value between the calls of an object that use it (the same random number for x and z); element-shared gives every object the same value; fixed 0.25 sets the random number yourself, from 0 to just below 1. The values must share a unit.",
+      "A random value between a minimum and a maximum, like CSS: `random(0.2, 1.4)`, `random(0deg, 360deg)`. The value is chosen once, when the scene compiles, and stays the same at every reload.",
+    valuesTitle: "Forms",
+    values: [
+      ["random(<min>, <max>)", "Any value between them. Each object, property and call gets its own, so one rule scatters every copy."],
+      ["random(<min>, <max>, <step>)", "One of `min`, `min + step`… up to `max`: `random(0deg, 180deg, 45deg)`."],
+      ["random(--<name>, …)", "One value shared by the calls of an object that use this name: the same number for x and z."],
+      ["random(element-shared, …)", "The same value for every object."],
+      ["random(fixed <number>, …)", "The random number set by hand, from 0 to just below 1."],
+    ],
+    details: "The values must share a unit.",
     examples: [
       {
-        name: "random()",
+        name: "a sky of stars",
+        text: "Thirty stars, each with its own size, place and hue.",
         code: "@scene { sphere.star * 30; } .star { radius: random(0.05, 0.2); translate: random(-2.5, 2.5) random(0.3, 2.2) random(-2, 1); color: hsl(random(180, 260) 80% 70%); }",
       },
       {
         name: "random() with a step and --name",
+        text: "`--size` gives each block one size for its width and its height, and its turn goes by steps of 15°.",
         code: "@scene { cube.block * 16; } .block { --s: random(--size, 0.2, 0.5); size: var(--s); translate: calc(1.2 - mod(sibling-index() - 1, 4) * 0.8) calc(var(--s) / 2) calc(round(down, calc((sibling-index() - 1) / 4)) * 0.8 - 1.2); rotate-y: random(0deg, 90deg, 15deg); color: oklch(70% 0.15 random(0, 360, 60)); }",
       },
     ],
@@ -2016,14 +2181,25 @@ export const FUNCTIONS: FunctionDef[] = [
     covers: ["if"],
     syntax: "if(<condition>: <value>; …; else: <value>)",
     description:
-      "Picks a value by condition, like CSS: the first branch whose condition is true gives its value. A condition is media(<query>), true when the screen matches the query, like @media; style(--x), true when the custom property is set on the object (or inherited), and style(--x: <value>), when it has that value; or else, always true. not, and, or combine them (and and or cannot be mixed without parentheses). If no branch is true the value is an error, so end with else. A media() query makes a version of the scene for it, like @media, and counts as one of its queries.",
+      "Picks a value by condition, like CSS: the first branch whose condition is true gives its value. End with `else`: when no branch is true, it is an error.",
+    valuesTitle: "Conditions",
+    values: [
+      ["media(<query>)", "True when the screen matches the query, like `@media`."],
+      ["style(--x)", "True when the custom property is set on the object, or inherited."],
+      ["style(--x: <value>)", "True when it has that value."],
+      ["else", "Always true."],
+      ["not, and, or", "Combine conditions; `and` and `or` cannot be mixed without parentheses."],
+    ],
+    details: "A `media()` condition makes a version of the scene for its query, like `@media`, and counts as one of its queries.",
     examples: [
       {
         name: "if() with style()",
+        text: "Each group sets `--theme`, and its spheres pick their color from it.",
         code: "@scene { group#warm { sphere * 3 } group#cool { sphere * 3 } } #warm { --theme: warm; translate: 1 0 0; } #cool { --theme: cool; translate: -1 0 0; } sphere { radius: 0.3; translate: 0 calc(sibling-index() * 0.7) 0; color: if(style(--theme: warm): #ff5a36; else: #3a7bff); }",
       },
       {
         name: "if() with media()",
+        text: "A smaller sphere on a narrow screen, and a blue one in dark mode.",
         code: "@scene { sphere; } sphere { radius: if(media(width < 600px): 0.4; else: 0.8); translate: 0 1 0; color: if(media(prefers-color-scheme: dark): #7cb4ff; else: #ff5a36); }",
       },
     ],
@@ -2034,10 +2210,12 @@ export const FUNCTIONS: FunctionDef[] = [
     covers: ["calc"],
     syntax: "calc(<expression>)",
     description:
-      "Computes a value, like CSS calc(): + - * / and parentheses, with numbers, angles (deg, rad, turn) and durations (s, ms). Like in CSS, + and - need a space on each side. Everything is computed by the compiler, once per object: the shader only receives the result, so math costs nothing on the GPU. calc() and the other math functions work in any value, even inside another function: metal(#fff, calc(0.1 * 2)).",
+      "Computes a value, like CSS `calc()`: `+ - * /` and parentheses, with numbers, angles (`deg`, `rad`, `turn`) and durations (`s`, `ms`). Like CSS, `+` and `-` need a space on each side.",
+    details: "The compiler computes it once per object: the shader receives only the result, so the math costs nothing on the GPU. `calc()` and the other math functions work in any value, even inside another function: `metal(#fff, calc(0.1 * 2))`.",
     examples: [
       {
-        name: "calc()",
+        name: "a staircase",
+        text: "Each copy climbs a step higher, with `sibling-index()`.",
         code: "@scene { cube.step * 5; } .step { size: 0.4; translate: calc(1.8 - sibling-index() * 0.6) calc(sibling-index() * 0.25) 0; color: #ff5a36; }",
       },
     ],
@@ -2048,10 +2226,12 @@ export const FUNCTIONS: FunctionDef[] = [
     covers: ["sibling-index"],
     syntax: "sibling-index()",
     description:
-      "The position of the object among its siblings, from 1, like the CSS function of the same name: cube * 12 gives 12 siblings numbered 1 to 12. Siblings are the objects of the same @scene block or of the same group; a group is a sibling too, and inside a group the count starts again. With calc(), one rule gives every copy of a multiplied object its own place, angle or size: no loop needed. It has no meaning in scene { } or in @keyframes, shared by every object.",
+      "The position of the object among its siblings, from 1, like the CSS function: `cube * 12` makes 12 siblings numbered 1 to 12. With `calc()`, one rule gives each copy its own place, angle or size: no loop needed.",
+    details: "Siblings are the objects of the same `@scene` block or group. A group is a sibling too, and the count starts again inside each group. It means nothing in `scene { }` or in `@keyframes`, shared by every object.",
     examples: [
       {
-        name: "sibling-index()",
+        name: "a ring of petals",
+        text: "Twelve copies, each placed and turned 30° further than the one before.",
         code: "@scene { cube.petal * 12; } .petal { size: 0.25 0.6 0.25; translate: calc(cos(sibling-index() * 30deg) * -1.6) 0.5 calc(sin(sibling-index() * 30deg) * 1.6); rotate-y: calc(sibling-index() * 30deg); color: #ff5a36; }",
       },
     ],
@@ -2062,10 +2242,10 @@ export const FUNCTIONS: FunctionDef[] = [
     covers: ["sibling-count"],
     syntax: "sibling-count()",
     description:
-      "How many siblings the object has, itself included, like the CSS function of the same name. Divided into a full turn, it spreads objects evenly whatever their number: change * 8 into * 20, the ring follows.",
+      "How many siblings the object has, itself included, like the CSS function. Divided into a full turn, it spreads objects evenly, whatever their number: change `* 8` into `* 20`, and the ring follows.",
     examples: [
       {
-        name: "sibling-count()",
+        name: "beads in a ring",
         code: "@scene { sphere.bead * 8; } .bead { radius: 0.2; translate: calc(cos(sibling-index() * 1turn / sibling-count()) * -1.4) 0.5 calc(sin(sibling-index() * 1turn / sibling-count()) * 1.4); material: jelly(0.6); color: #ff5a36; }",
       },
     ],
@@ -2076,22 +2256,26 @@ export const FUNCTIONS: FunctionDef[] = [
     covers: ["sin", "cos", "tan"],
     syntax: "sin(<angle> | <number>)",
     description:
-      "The trigonometric functions of CSS: they take an angle (deg, rad, turn), or a number of radians, and return a number. cos() and sin() of the same angle give a point on a circle: the way to place objects in a ring, a spiral or a wave. pi is also known: cos(pi) is -1.",
+      "The trigonometric functions of CSS: they take an angle (`deg`, `rad`, `turn`) or a number of radians, and return a number. `cos()` and `sin()` of the same angle give a point on a circle: the way to place objects in a ring, a spiral or a wave. `pi` is known too: `cos(pi)` is -1.",
     examples: [
       {
         name: "sin()",
+        text: "A wave: the height of each sphere follows `sin()`.",
         code: "@scene { sphere.wave * 9; } .wave { radius: 0.18; translate: calc(2 - sibling-index() * 0.4) calc(0.8 + sin(sibling-index() * 40deg) * 0.5) 0; color: #7cb4ff; }",
       },
       {
         name: "cos()",
+        text: "Columns whose heights follow `cos()`.",
         code: "@scene { cube.col * 9; } .col { --h: calc(0.9 + cos(sibling-index() * 40deg) * 0.6); size: 0.25 var(--h) 0.25; translate: calc(2 - sibling-index() * 0.4) calc(var(--h) / 2) 0; color: #ff5a36; }",
       },
       {
         name: "tan()",
+        text: "Steps that climb faster and faster with `tan()`.",
         code: "@scene { cube.step * 7; } .step { --h: calc(tan(sibling-index() * 10deg) * 1.2); size: 0.35 var(--h) 0.35; translate: calc(2 - sibling-index() * 0.5) calc(var(--h) / 2) 0; color: #3ad16b; }",
       },
       {
         name: "sin(), cos() and tan() together",
+        text: "A ring of beads that rises and falls.",
         code: "@scene { sphere.bead * 12; } .bead { radius: calc(0.1 + tan(sibling-index() * 5deg) * 0.2); translate: calc(cos(sibling-index() * 30deg) * -1.5) calc(0.6 + sin(sibling-index() * 60deg) * 0.3) calc(sin(sibling-index() * 30deg) * 1.5); color: hsl(calc(sibling-index() * 30) 85% 60%); }",
       },
     ],
@@ -2102,22 +2286,32 @@ export const FUNCTIONS: FunctionDef[] = [
     covers: ["min", "max", "clamp"],
     syntax: "min(<value>, …) | max(<value>, …) | clamp(<min>, <value>, <max>)",
     description:
-      "The smallest or the largest of their values, or a value kept between two bounds, like in CSS. The values must share a unit: max(10deg, 20deg), not max(10deg, 2).",
+      "The smallest or the largest of their values, or a value kept between two bounds, like CSS. The values must share a unit: `max(10deg, 20deg)`, not `max(10deg, 2)`.",
+    valuesTitle: "Functions",
+    values: [
+      ["min(<value>, …)", "The smallest."],
+      ["max(<value>, …)", "The largest."],
+      ["clamp(<min>, <value>, <max>)", "The value, kept between `min` and `max`."],
+    ],
     examples: [
       {
         name: "min()",
+        text: "Bars that grow, up to 1.2.",
         code: "@scene { cube.bar * 6; } .bar { --h: min(sibling-index() * 0.35, 1.2); size: 0.3 var(--h) 0.3; translate: calc(1.75 - sibling-index() * 0.5) calc(var(--h) / 2) 0; color: #ff5a36; }",
       },
       {
         name: "max()",
+        text: "Bars never shorter than 0.6.",
         code: "@scene { cube.bar * 6; } .bar { --h: max(0.6, sibling-index() * 0.3); size: 0.3 var(--h) 0.3; translate: calc(1.75 - sibling-index() * 0.5) calc(var(--h) / 2) 0; color: #3a7bff; }",
       },
       {
         name: "clamp()",
+        text: "Bars kept between 0.5 and 1.4.",
         code: "@scene { cube.bar * 6; } .bar { --h: clamp(0.5, sibling-index() * 0.35, 1.4); size: 0.3 var(--h) 0.3; translate: calc(1.75 - sibling-index() * 0.5) calc(var(--h) / 2) 0; color: #3ad16b; }",
       },
       {
         name: "min(), max() and clamp() together",
+        text: "Heights and widths, each one bounded.",
         code: "@scene { cube.bar * 8; } .bar { --h: max(0.3, min(sibling-index() * 0.3, 1.5)); --w: clamp(0.15, sibling-index() * 0.05, 0.35); size: var(--w) var(--h) var(--w); translate: calc(2.25 - sibling-index() * 0.5) calc(var(--h) / 2) 0; color: hsl(calc(sibling-index() * 40) 80% 60%); }",
       },
     ],
@@ -2128,22 +2322,26 @@ export const FUNCTIONS: FunctionDef[] = [
     covers: ["abs", "sqrt", "pow"],
     syntax: "abs(<value>) | sqrt(<number>) | pow(<number>, <number>)",
     description:
-      "abs() drops the sign, sqrt() is the square root, pow(a, b) is a to the power b, like in CSS. pow() grows fast: good for sizes that double.",
+      "Like CSS: `abs()` drops the sign, `sqrt()` is the square root, and `pow(a, b)` is `a` to the power `b`. `pow()` grows fast: good for sizes that double.",
     examples: [
       {
         name: "abs()",
+        text: "A V: the bars grow away from the middle.",
         code: "@scene { cube.v * 9; } .v { --h: calc(0.3 + abs(sibling-index() - 5) * 0.25); size: 0.3 var(--h) 0.3; translate: calc(2.25 - sibling-index() * 0.45) calc(var(--h) / 2) 0; color: #7cb4ff; }",
       },
       {
         name: "sqrt()",
+        text: "Sizes that grow slower and slower.",
         code: "@scene { sphere.dot * 6; } .dot { --r: calc(sqrt(sibling-index()) * 0.15); radius: var(--r); translate: calc(2.45 - sibling-index() * 0.7) var(--r) 0; color: #3ad16b; }",
       },
       {
         name: "pow()",
+        text: "Each sphere 1.4 times bigger than the one before.",
         code: "@scene { sphere.dot * 5; } .dot { radius: calc(pow(1.4, sibling-index()) * 0.08); translate: calc(2.4 - sibling-index() * 0.8) 0.6 0; color: #ff5a36; }",
       },
       {
         name: "abs(), sqrt() and pow() together",
+        text: "A sunflower head of 24 seeds.",
         code: "@scene { sphere.seed * 24; } .seed { --d: calc(sqrt(sibling-index()) * 0.4); radius: calc(0.06 + pow(sibling-index() / 24, 2) * 0.14); translate: calc(-1 * cos(sibling-index() * 137.5deg) * var(--d)) calc(0.25 + abs(sibling-index() - 12) * 0.03) calc(sin(sibling-index() * 137.5deg) * var(--d)); color: hsl(calc(sibling-index() * 15) 80% 60%); }",
       },
     ],
@@ -2155,26 +2353,31 @@ export const FUNCTIONS: FunctionDef[] = [
     syntax:
       "asin(<number>) | acos(<number>) | atan(<number>) | atan2(<y>, <x>)",
     description:
-      "The inverse trigonometric functions of CSS: they take a number and return an angle, in deg. atan2(y, x) gives the angle of the point (x, y), whatever its quarter: the way to turn an object toward a point. Its two values must share a unit.",
+      "The inverse trigonometric functions of CSS: they take a number and return an angle, in `deg`. `atan2(y, x)` gives the angle of the point (x, y), whatever its quarter: the way to turn an object toward a point. Its two values must share a unit.",
     examples: [
       {
         name: "asin()",
+        text: "Bars tilted by `asin()`.",
         code: "@scene { cube.tilt * 5; } .tilt { size: 0.2 0.9 0.2; translate: calc(1.8 - sibling-index() * 0.6) 0.45 0; rotate-z: asin(calc(0.6 - sibling-index() * 0.2)); color: #ff5a36; }",
       },
       {
         name: "acos()",
+        text: "A fan opened by `acos()`.",
         code: "@scene { cube.fan * 5; } .fan { size: 0.9 0.1 0.2; translate: 0 calc(sibling-index() * 0.3) 0; rotate-y: acos(calc(1.2 - sibling-index() * 0.4)); color: #7cb4ff; }",
       },
       {
         name: "atan()",
+        text: "Ramps that tilt more and more, toward 90°.",
         code: "@scene { cube.ramp * 5; } .ramp { size: 0.8 0.08 0.3; translate: calc(2.7 - sibling-index() * 0.9) 0.5 0; rotate-z: atan(calc(sibling-index() * -0.4)); color: #3ad16b; }",
       },
       {
         name: "atan2()",
+        text: "Needles turned along the ring by `atan2()`.",
         code: "@scene { cube.needle * 8; } .needle { --a: calc(sibling-index() * 45deg); size: 0.5 0.08 0.08; translate: calc(cos(var(--a)) * -1.4) 0.5 calc(sin(var(--a)) * 1.4); rotate-y: atan2(sin(var(--a)), cos(var(--a))); color: #ff5a36; }",
       },
       {
         name: "asin(), acos(), atan() and atan2() together",
+        text: "A curve drawn with all four.",
         code: "@scene { sphere.dot * 10; } .dot { --x: calc(sibling-index() * 0.2 - 1.1); radius: 0.12; translate: calc(var(--x) * -2) calc(1 + sin(asin(var(--x)) + acos(var(--x))) * 0.4) calc(atan(var(--x)) / 90deg); rotate-y: atan2(var(--x), 1); color: hsl(calc(sibling-index() * 36) 80% 60%); }",
       },
     ],
@@ -2186,26 +2389,38 @@ export const FUNCTIONS: FunctionDef[] = [
     syntax:
       "sign(<value>) | round([nearest | up | down | to-zero,]? <value>, <step>?) | mod(<value>, <value>) | rem(<value>, <value>)",
     description:
-      "The stepped functions of CSS. sign() gives -1, 0 or 1. round() snaps a value to a multiple of its step (1 by default): nearest (halfway goes up), up, down or to-zero. mod() and rem() give the rest of a division: mod() takes the sign of the divisor, rem() the sign of the value, so mod(-7, 3) is 2 and rem(-7, 3) is -1. Their values must share a unit: round(37deg, 15deg) is 30deg.",
+      "The stepped functions of CSS. Their values must share a unit: `round(37deg, 15deg)` is `30deg`.",
+    valuesTitle: "Functions",
+    values: [
+      ["sign(<value>)", "-1, 0 or 1."],
+      ["round(<value>, <step>)", "The value snapped to a multiple of its step (1 by default): `nearest` (halfway goes up), `up`, `down` or `to-zero`, written first."],
+      ["mod(<value>, <value>)", "The rest of a division, with the sign of the divisor: `mod(-7, 3)` is 2."],
+      ["rem(<value>, <value>)", "The rest, with the sign of the value: `rem(-7, 3)` is -1."],
+    ],
     examples: [
       {
         name: "sign()",
+        text: "Above or below, by the sign of each position.",
         code: "@scene { cube.side * 9; } .side { size: 0.3; translate: calc(2.25 - sibling-index() * 0.45) calc(0.6 + sign(sibling-index() - 5) * 0.4) 0; color: #7cb4ff; }",
       },
       {
         name: "round()",
+        text: "Stairs that climb by steps of 0.5.",
         code: "@scene { cube.stair * 9; } .stair { --h: round(down, calc(sibling-index() * 0.3), 0.5); size: 0.4 calc(var(--h) + 0.1) 0.4; translate: calc(2.25 - sibling-index() * 0.45) calc(var(--h) / 2 + 0.05) 0; color: #ff5a36; }",
       },
       {
         name: "mod()",
+        text: "A grid: `mod()` gives the column of each copy.",
         code: "@scene { cube.row * 12; } .row { size: 0.3; translate: calc(0.75 - mod(sibling-index() - 1, 4) * 0.5) 0.15 calc(round(down, calc((sibling-index() - 1) / 4)) * 0.5 - 0.5); color: #3ad16b; }",
       },
       {
         name: "rem()",
+        text: "A pattern that repeats every 3.",
         code: "@scene { sphere.ball * 9; } .ball { radius: 0.18; translate: calc(2.25 - sibling-index() * 0.45) calc(0.3 + rem(sibling-index(), 3) * 0.4) 0; color: #ff5a36; }",
       },
       {
         name: "sign(), round(), mod() and rem() together",
+        text: "A grid of tiles, of three heights.",
         code: "@scene { cube.tile * 16; } .tile { --col: mod(sibling-index() - 1, 4); --row: round(down, calc((sibling-index() - 1) / 4)); size: 0.4 calc(0.2 + rem(sibling-index(), 3) * 0.2) 0.4; translate: calc(0.75 - var(--col) * 0.5) 0.2 calc(var(--row) * 0.5 - 0.75); rotate-y: calc(sign(var(--col) - 1.5) * -15deg); color: hsl(calc(sibling-index() * 22) 80% 60%); }",
       },
     ],
@@ -2216,22 +2431,32 @@ export const FUNCTIONS: FunctionDef[] = [
     covers: ["hypot", "log", "exp"],
     syntax: "hypot(<value>, …) | log(<number>, <base>?) | exp(<number>)",
     description:
-      "The exponential functions of CSS. hypot() is the length of a vector: hypot(3, 4) is 5, the distance from the center to the point (3, 4). log() is the natural logarithm, or the logarithm in a base: log(8, 2) is 3. exp() is e to a power. e is also known as a constant.",
+      "The exponential functions of CSS, for sizes and distances that grow fast or slowly.",
+    valuesTitle: "Functions",
+    values: [
+      ["hypot(<value>, …)", "The length of a vector: `hypot(3, 4)` is 5, the distance from the center to the point (3, 4)."],
+      ["log(<number>, <base>)", "The natural logarithm, or the logarithm in a base: `log(8, 2)` is 3."],
+      ["exp(<number>)", "`e` to a power. `e` is also a constant."],
+    ],
     examples: [
       {
         name: "hypot()",
+        text: "Bigger and bigger away from the center.",
         code: "@scene { sphere.dot * 9; } .dot { --x: calc(mod(sibling-index() - 1, 3) - 1); --z: calc(round(down, calc((sibling-index() - 1) / 3)) - 1); radius: calc(0.12 + hypot(var(--x), var(--z)) * 0.1); translate: calc(var(--x) * -0.9) 0.4 calc(var(--z) * 0.9); color: #7cb4ff; }",
       },
       {
         name: "log()",
+        text: "Bars that grow slower and slower.",
         code: "@scene { cube.bar * 8; } .bar { --h: calc(0.2 + log(sibling-index(), 2) * 0.4); size: 0.3 var(--h) 0.3; translate: calc(2 - sibling-index() * 0.45) calc(var(--h) / 2) 0; color: #3ad16b; }",
       },
       {
         name: "exp()",
+        text: "Spheres that grow faster and faster.",
         code: "@scene { sphere.dot * 6; } .dot { radius: calc(exp(sibling-index() / 3) * 0.06); translate: calc(2.45 - sibling-index() * 0.7) 0.6 0; color: #ff5a36; }",
       },
       {
         name: "hypot(), log() and exp() together",
+        text: "A spiral of seeds that shrink outward.",
         code: "@scene { sphere.seed * 12; } .seed { --a: calc(sibling-index() * 30deg); --d: calc(log(sibling-index() + 1) * 0.8); radius: calc(exp(0 - sibling-index() / 8) * 0.25); translate: calc(-1 * cos(var(--a)) * var(--d)) calc(0.3 + hypot(cos(var(--a)), 1) * 0.2) calc(sin(var(--a)) * var(--d)); color: hsl(calc(sibling-index() * 30) 80% 60%); }",
       },
     ],
@@ -2242,10 +2467,11 @@ export const FUNCTIONS: FunctionDef[] = [
     covers: ["progress"],
     syntax: "progress(<value>, <start>, <end>)",
     description:
-      "Where a value sits between a start and an end, as a number from 0 to 1, like the CSS function of the same name: progress(sibling-index(), 1, sibling-count()) goes from 0 for the first copy to 1 for the last. The result is clamped to 0 and 1, and the three values must share a unit.",
+      "Where a value sits between a start and an end, from 0 to 1, like the CSS function: `progress(sibling-index(), 1, sibling-count())` goes from 0 for the first copy to 1 for the last. The result is kept between 0 and 1, and the three values must share a unit.",
     examples: [
       {
-        name: "progress()",
+        name: "a ramp of heights and hues",
+        text: "Each bar grows and changes hue with its progress.",
         code: "@scene { cube.fade * 8; } .fade { --p: progress(sibling-index(), 1, sibling-count()); size: 0.35 calc(0.2 + var(--p)) 0.35; translate: calc(2.25 - sibling-index() * 0.5) calc(0.1 + var(--p) / 2) 0; color: hsl(calc(200 + var(--p) * 160) 80% 60%); }",
       },
     ],
