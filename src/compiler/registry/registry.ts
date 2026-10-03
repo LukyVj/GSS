@@ -97,10 +97,11 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "<number>{3}",
     initial: "0 0 0",
     description:
-      "Moves the object along the x, y and z axes. Like CSS, x points to the right and z toward the viewer; y points up, and the floor is at y = 0. On a group, it moves everything inside it, and the positions of its children become relative to the group.",
+      "Moves the object along the x, y and z axes. Like CSS, x points right and z toward the viewer; y points up, and the floor is at y = 0. On a group, it moves everything inside it, and the positions of its children become relative to the group.",
     examples: [
       {
-        name: "translate",
+        name: "on the floor",
+        text: "A cube of 1, half a unit up: it sits on the floor.",
         code: "@scene { cube; } cube { translate: 0 0.5 0; }",
       },
     ],
@@ -353,10 +354,10 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "<angle>",
     initial: "0deg",
     description:
-      "Rotates the object around the x axis. Like CSS rotateX(), a positive angle turns its top away from the viewer. On a group, it turns everything inside it around the group's origin.",
+      "Rotates the object around the x axis. Like CSS `rotateX()`, a positive angle turns its top away from the viewer. On a group, it turns everything inside it around the origin of the group.",
     examples: [
       {
-        name: "rotate-x",
+        name: "45 degrees",
         code: "@scene { cube; } cube { rotate-x: 45deg; }",
       },
     ],
@@ -368,10 +369,10 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "<angle>",
     initial: "0deg",
     description:
-      "Rotates the object around the y axis. Like CSS rotateY(), a positive angle turns its right side away from the viewer. On a group, it turns everything inside it around the group's origin.",
+      "Rotates the object around the y axis. Like CSS `rotateY()`, a positive angle turns its right side away from the viewer. On a group, it turns everything inside it around the origin of the group.",
     examples: [
       {
-        name: "rotate-y",
+        name: "-45 degrees",
         code: "@scene { cube; } cube { rotate-y: -45deg; }",
       },
     ],
@@ -383,10 +384,10 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "<angle>",
     initial: "0deg",
     description:
-      "Rotates the object around the z axis. Like CSS rotate(), a positive angle turns it clockwise. On a group, it turns everything inside it around the group's origin.",
+      "Rotates the object around the z axis. Like CSS `rotate()`, a positive angle turns it clockwise. On a group, it turns everything inside it around the origin of the group.",
     examples: [
       {
-        name: "rotate-z",
+        name: "-45 degrees",
         code: "@scene { cube; } cube { rotate-z: -45deg; }",
       },
     ],
@@ -398,10 +399,10 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "<number>",
     initial: "1.0",
     description:
-      "Scales the object along the x, y and z axes. On a group, it scales everything inside it, the positions of its children included.",
+      "Scales the object by one number, on its three axes. On a group, it scales everything inside it, the positions of its children included.",
     examples: [
       {
-        name: "scale",
+        name: "twice as big",
         code: "@scene { cube; } cube { scale: 2.0; }",
       },
     ],
@@ -413,14 +414,22 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "[ left | center | right | top | bottom | <percentage> | <number> ]{1,2} <number>?",
     initial: "center",
     description:
-      "The point the object turns and scales around, like CSS: rotate-x, rotate-y, rotate-z and scale keep it in place, and a motion path carries it along the path. The keywords and the percentages are read on the box of the object, like CSS: left and 0% are its left side, right and 100% its right side, top and 0% its top, bottom and 100% its bottom; two keywords can come in any order (top left). A number is a point of the object's own space, from its center, with y up, like translate: transform-origin: 0 0.5 0 is 0.5 above the center. The third value, z, is a number. On a group, which has no box, it takes numbers and center. Unlike CSS, where a length is measured from the top left corner, a number is measured from the center, as everything is in GSS.",
+      "The point the object turns and scales around, like CSS: `rotate-x`, `rotate-y`, `rotate-z` and `scale` keep it in place, and a motion path carries it along the path.",
+    values: [
+      ["left, right, top, bottom, center", "The sides of the box of the object, like CSS. Two keywords go in any order: `top left`."],
+      ["<percentage>", "Also on the box: `0%` is the left or the top side, `100%` the right or the bottom one."],
+      ["<number>", "A point of the object's own space, from its center, y up, like `translate`: `0 0.5 0` is 0.5 above the center. The third value, z, is always a number."],
+    ],
+    details: "Unlike CSS, where a length is measured from the top left corner, a number is measured from the center, like everything in GSS. A group has no box: it takes numbers and `center`.",
     examples: [
       {
         name: "a door on its hinge",
+        text: "A door that turns on its left side.",
         code: "@scene { cube#door; cube#frame; } #frame { size: 0.1 1.6 0.1; translate: -0.6 0.8 0; color: #3a7bff; } #door { size: 1.1 1.5 0.08; translate: 0 0.8 0; transform-origin: left; animation: open 3s ease-in-out infinite alternate; color: #ff5a36; } @keyframes open { to { rotate-y: -80deg; } }",
       },
       {
         name: "grow from the floor",
+        text: "Columns that grow from their base.",
         code: "@scene { cylinder * 5; } cylinder { radius: 0.18; height: 1.2; translate: calc((sibling-index() - 3) * -0.5) 0 0; transform-origin: bottom; animation: grow 1.5s calc(sibling-index() * 0.15s) ease-out infinite alternate; color: #ff5a36; } @keyframes grow { from { scale: 0.2; } }",
       },
     ],
@@ -464,18 +473,21 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "none | [all] <time> [<easing>] [<time>]",
     initial: "none",
     description:
-      "Glides the object to its :hover state and back, instead of jumping, like CSS. The first time is the duration, the second one a delay, and the easing is ease by default; it can be any keyword, cubic-bezier(), linear() or steps(). One transition covers every property :hover changes on the object. Like CSS, the object enters :hover with the transition written in its :hover rule, if there is one, and leaves it with the transition written at rest. Leaving halfway goes back from where it is, in the time already spent.",
+      "Glides the object to its `:hover` state and back, instead of jumping, like CSS. One transition covers every property that `:hover` changes on the object.",
+    values: [
+      ["<time>", "The first time is the duration, the second one the delay."],
+      ["<easing>", "`ease` by default, or any easing: a keyword, `cubic-bezier()`, `linear()` or `steps()`."],
+    ],
+    details: "Like CSS, the object enters `:hover` with the transition of its `:hover` rule, if it has one, and leaves it with the transition written at rest. Leaving halfway goes back from where it is, in the time already spent.",
     examples: [
       {
-        name: "transition",
+        name: "a hover that glides",
+        text: "Scale, turn and color glide in 0.4 s.",
         code: "@scene { cube; } cube { translate: 0 0.5 0; color: #ff5a36; transition: 0.4s ease-out; } cube:hover { scale: 1.3; rotate-y: -45deg; color: #3a7bff; }",
       },
       {
-        name: "transition",
-        code: "@scene { sphere * 5; } sphere { radius: 0.35; translate: calc(2.7 - sibling-index() * 0.9) 0.4 0; color: #3ad16b; transition: 0.8s cubic-bezier(0.3, -0.4, 0.7, 1.4); } sphere:hover { translate: calc(2.7 - sibling-index() * 0.9) 1.4 0; transition: 0.4s ease-out; }",
-      },
-      {
-        name: "transition",
+        name: "one way in, another out",
+        text: "The spheres rise quickly with `ease-out`, and fall back with an overshoot.",
         code: "@scene { sphere * 5; } sphere { radius: 0.35; translate: calc(2.7 - sibling-index() * 0.9) 0.4 0; color: #3ad16b; transition: 0.8s cubic-bezier(0.3, -0.4, 0.7, 1.4); } sphere:hover { translate: calc(2.7 - sibling-index() * 0.9) 1.4 0; transition: 0.4s ease-out; }",
       },
     ],
@@ -487,30 +499,44 @@ export const PROPERTIES: PropertyDef[] = [
       "<keyframes-name> <time> [<easing>] [<time>] [<number> | infinite] [normal | reverse | alternate | alternate-reverse] [none | forwards | backwards | both]",
     initial: "none",
     description:
-      "Plays a @keyframes animation on the object, like CSS. After the name: the duration (s or ms), then if needed an easing, a delay, a number of iterations, a direction and a fill mode, in any order. Unlike CSS, an animation loops forever unless you give it a number of iterations. The second time is the delay: the animation starts after it, or partway with a negative delay. A number plays that many times (1.5 stops halfway through the second), infinite loops. alternate plays it forward then backward, reverse backward, alternate-reverse backward first. The fill mode says what the object shows outside the animation: none, its own value, like CSS; backwards, the first frame during the delay; forwards, the last frame once it is over; both, the two. The easing shapes each step: linear, the default, keeps a constant speed; ease, ease-in, ease-out and ease-in-out speed up and slow down; cubic-bezier() and linear() draw your own curve; steps() moves by jumps. In an animation, ease-in-out is computed as a smoothstep, a very close curve. Each part also has its own property: animation-duration, animation-delay, animation-iteration-count, animation-direction, animation-fill-mode and animation-timing-function, which win over what animation says. Animatable properties: translate, rotate-x, rotate-y, rotate-z, scale, color (a gradient too), opacity, mask-image and offset-distance, and background on the scene. On a group, it animates translate, the rotations and scale of the whole group. On the scene, it animates the background and the variables of the scene that the background uses; the objects do not follow the variables a scene animates, they play their own animation.",
+      "Plays a `@keyframes` animation on the object, like CSS. After its name come the duration, then if needed an easing, a delay, a number of iterations, a direction and a fill mode, in any order.",
+    values: [
+      ["<time>", "The first time is the duration of one iteration, in `s` or `ms`; the second one, the delay: the animation starts after it, or partway with a negative delay."],
+      ["<easing>", "`linear` (the default), `ease`, `ease-in`, `ease-out`, `ease-in-out`, `cubic-bezier()`, `linear()` or `steps()`."],
+      ["<number> | infinite", "How many times it plays: `1.5` stops halfway through the second time. `infinite` is the default."],
+      ["normal, reverse, alternate, alternate-reverse", "The direction: forward, backward, forward then backward, or backward first."],
+      ["none, forwards, backwards, both", "The fill mode: what the object shows outside the animation."],
+    ],
+    details: "Unlike CSS, an animation loops forever unless it has a number of iterations. Each part also has a property of its own, like `animation-duration`, which wins over what `animation` says. On an object, it animates `translate`, the rotations, `scale`, `color` (a gradient too), `opacity`, `mask-image` and `offset-distance`; on a group, its transforms. On the scene, it animates the properties of the scene, like `background`, `light` or `fog`, and the variables they use: the objects do not follow the variables a scene animates.",
     examples: [
       {
-        name: "animation",
+        name: "up and down",
+        text: "`alternate` plays the frames forward, then backward.",
         code: "@scene { sphere; } sphere { animation: float 2s ease-in-out alternate; } @keyframes float { from { translate: 0 1 0; } to { translate: 0 2 0; } }",
       },
       {
-        name: "animation",
+        name: "a bounce",
+        text: "Up at `50%`, and back down, in a loop of 1 s.",
         code: "@scene { cube; } cube { translate: 0 0.5 0; animation: bounce 1s; } @keyframes bounce { 0%, 100% { translate: 0 0.5 0; } 50% { translate: 0 1.5 0; scale: 1.2; } }",
       },
       {
-        name: "animation",
+        name: "a full turn",
+        text: "`linear` keeps a constant speed while the cube turns and changes color.",
         code: "@scene { cube; } cube { translate: 0 0.5 0; color: #ff5a36; animation: turn 4s linear; } @keyframes turn { to { rotate-y: -1turn; color: #3a7bff; } }",
       },
       {
-        name: "animation",
+        name: "an overshoot",
+        text: "A `cubic-bezier()` that goes past the top before it settles.",
         code: "@scene { sphere; } sphere { translate: 0 0.5 0; radius: 0.5; color: #ff5a36; animation: jump 1.2s cubic-bezier(0.3, -0.4, 0.7, 1.4) alternate; } @keyframes jump { to { translate: 0 2 0; } }",
       },
       {
-        name: "animation",
+        name: "a drop, once",
+        text: "After 0.5 s, one iteration; `both` shows the first frame before it and the last one after.",
         code: "@scene { cube; } cube { translate: 0 3 0; color: #ff5a36; animation: drop 1s ease-in 0.5s 1 both; } @keyframes drop { to { translate: 0 0.5 0; rotate-y: -90deg; } }",
       },
       {
         name: "animation on the scene",
+        text: "The background of the scene darkens to dusk.",
         code: "@scene { sphere; } sphere { translate: 0 1 0; color: #ff5a36; } scene { floor: none; background: #101018; animation: dusk 4s ease-in-out alternate; } @keyframes dusk { to { background: #3a1f4a; } }",
       },
     ],
@@ -521,10 +547,10 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "<time>",
     initial: "0s",
     description:
-      "The duration of one iteration of the animation, in s or ms. It wins over the duration written in animation.",
+      "The duration of one iteration of the animation, in `s` or `ms`. It wins over the duration written in `animation`.",
     examples: [
       {
-        name: "animation-duration",
+        name: "3 s instead of 1.5 s",
         code: "@scene { sphere; } sphere { radius: 0.5; color: #3a7bff; animation: rise 1.5s ease-in-out; animation-duration: 3s; } @keyframes rise { from { translate: 0 0.5 0; } to { translate: 0 2 0; } }",
       },
     ],
@@ -535,10 +561,10 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "<time>",
     initial: "0s",
     description:
-      "How long the animation waits before it starts, in s or ms. A negative delay starts it partway, as if it had begun earlier. It wins over the delay written in animation.",
+      "How long the animation waits before it starts, in `s` or `ms`; a negative delay starts it partway, as if it had begun earlier. It wins over the delay written in `animation`.",
     examples: [
       {
-        name: "animation-delay",
+        name: "a second of wait",
         code: "@scene { sphere; } sphere { radius: 0.5; color: #3a7bff; animation: rise 1.5s ease-in-out; animation-delay: 1s; } @keyframes rise { from { translate: 0 0.5 0; } to { translate: 0 2 0; } }",
       },
     ],
@@ -549,10 +575,10 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "<number> | infinite",
     initial: "infinite",
     description:
-      "How many times the animation plays: a number (1.5 stops halfway through the second time) or infinite. Unlike CSS, where it plays once, a GSS animation loops forever by default. It wins over the count written in animation.",
+      "How many times the animation plays: a number, where `1.5` stops halfway through the second time, or `infinite`. Unlike CSS, where an animation plays once, a GSS animation loops forever by default. It wins over the count written in `animation`.",
     examples: [
       {
-        name: "animation-iteration-count",
+        name: "twice",
         code: "@scene { sphere; } sphere { radius: 0.5; color: #3a7bff; animation: rise 1.5s ease-in-out; animation-iteration-count: 2; } @keyframes rise { from { translate: 0 0.5 0; } to { translate: 0 2 0; } }",
       },
     ],
@@ -563,10 +589,16 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "normal | reverse | alternate | alternate-reverse",
     initial: "normal",
     description:
-      "The way the animation plays: forward (normal), backward (reverse), forward then backward (alternate), or backward then forward (alternate-reverse). It wins over the direction written in animation.",
+      "The way the animation plays, like CSS. It wins over the direction written in `animation`.",
+    values: [
+      ["normal", "Forward: the default."],
+      ["reverse", "Backward."],
+      ["alternate", "Forward, then backward."],
+      ["alternate-reverse", "Backward, then forward."],
+    ],
     examples: [
       {
-        name: "animation-direction",
+        name: "back and forth",
         code: "@scene { sphere; } sphere { radius: 0.5; color: #3a7bff; animation: rise 1.5s ease-in-out; animation-direction: alternate; } @keyframes rise { from { translate: 0 0.5 0; } to { translate: 0 2 0; } }",
       },
     ],
@@ -577,10 +609,17 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "none | forwards | backwards | both",
     initial: "none",
     description:
-      "What the object shows outside the animation, like CSS: none, its own value; backwards, the first frame during the delay; forwards, the last frame once the animation is over; both, the two. It only matters with a delay or a number of iterations.",
+      "What the object shows outside the animation, like CSS. It matters only with a delay or a number of iterations.",
+    values: [
+      ["none", "Its own value: the default."],
+      ["backwards", "The first frame, during the delay."],
+      ["forwards", "The last frame, once the animation is over."],
+      ["both", "The two."],
+    ],
     examples: [
       {
-        name: "animation-fill-mode",
+        name: "staying at the top",
+        text: "One iteration, and `forwards` keeps the last frame.",
         code: "@scene { sphere; } sphere { radius: 0.5; color: #3a7bff; animation: rise 1.5s ease-in-out; animation-iteration-count: 1; animation-fill-mode: forwards; } @keyframes rise { from { translate: 0 0.5 0; } to { translate: 0 2 0; } }",
       },
     ],
@@ -591,10 +630,18 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "<easing>",
     initial: "linear",
     description:
-      "The easing of each step of the animation: a keyword (linear, ease, ease-in, ease-out, ease-in-out, step-start, step-end), cubic-bezier(), linear() or steps(). It wins over the easing written in animation.",
+      "The easing of each step of the animation, like CSS. It wins over the easing written in `animation`.",
+    values: [
+      ["linear", "A constant speed: the default."],
+      ["ease", "Speeds up quickly, then slows down."],
+      ["ease-in, ease-out, ease-in-out", "Starts slowly, ends slowly, or both."],
+      ["step-start, step-end", "One jump, at the start or at the end."],
+      ["cubic-bezier(), linear()", "A curve of your own."],
+      ["steps()", "Moves by equal jumps."],
+    ],
     examples: [
       {
-        name: "animation-timing-function",
+        name: "slowing down at the end",
         code: "@scene { sphere; } sphere { radius: 0.5; color: #3a7bff; animation: rise 1.5s ease-in-out; animation-timing-function: ease-out; } @keyframes rise { from { translate: 0 0.5 0; } to { translate: 0 2 0; } }",
       },
     ],
@@ -606,14 +653,22 @@ export const PROPERTIES: PropertyDef[] = [
       "auto | scroll([root | nearest] || [block | inline | x | y]) | view([block | inline | x | y])",
     initial: "auto",
     description:
-      "Drives the animation with the scroll of the page instead of the time, like CSS scroll-driven animations. auto, the default, plays it in time. scroll() follows a scroll container from its start (0%) to its end (100%): nearest, the default, is the closest one around the scene, root is the page; the axis is block (vertical, the default), inline (horizontal), y or x. view() follows the scene itself crossing its scroll container: 0% when it enters at the bottom, 100% when it leaves at the top. The whole timeline is the whole animation, so the duration and the delay do not count: write any duration, like animation: spin 1s linear; animation-timeline: scroll();. The number of iterations and the direction still do, and an animation without an iteration count plays once along the scroll. Scrolling back plays it backwards, and the easing applies as usual. Write it after animation, which needs a name and a duration. A scene takes up to 4 different timelines. In the playground, which does not scroll, a slider stands in for the scroll; the Shadertoy export shows the start.",
+      "Drives the animation with the scroll of the page instead of time, like CSS scroll-driven animations. The whole timeline is the whole animation, so the duration and the delay do not count.",
+    values: [
+      ["auto", "The default: the animation plays in time."],
+      ["scroll()", "A scroll container, from its start (0%) to its end (100%): `nearest` (the default) is the closest one around the scene, `root` the page. The axis is `block` (the default), `inline`, `y` or `x`."],
+      ["view()", "The scene crossing its scroll container: 0% when it enters at the bottom, 100% when it leaves at the top."],
+    ],
+    details: "Write it after `animation`, which still needs a name and a duration: `animation: spin 1s linear; animation-timeline: scroll();`. The number of iterations and the direction still count, an animation without a count plays once along the scroll, and scrolling back plays it backward. A scene takes up to 4 different timelines. In the playground, which does not scroll, a slider stands in for the scroll.",
     examples: [
       {
         name: "turn with the page",
+        text: "The cube turns and rises as the page scrolls.",
         code: "@scene { cube; } cube { translate: 0 0.6 0; corner-radius: 0.1; color: #ff5a36; animation: turn 1s linear; animation-timeline: scroll(); } @keyframes turn { from { rotate-y: 0deg; } to { rotate-y: -360deg; translate: 0 1.6 0; } }",
       },
       {
         name: "rise into view",
+        text: "The spheres rise as the scene comes into view; the second one goes up and back.",
         code: "@scene { sphere * 3; } sphere { --x: calc(2 - sibling-index()); radius: 0.35; translate: var(--x) 0.35 0; color: #3a7bff; animation: rise 1s ease-out; animation-timeline: view(); } sphere:nth-child(2) { animation-iteration-count: 2; animation-direction: alternate; } @keyframes rise { to { translate: var(--x) 1.6 0; color: #3ad16b; } }",
       },
     ],
@@ -624,14 +679,22 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "none | path(<string>) | ray(<angle>)",
     initial: "none",
     description:
-      "A motion path, like CSS: the way the object travels along, placed by offset-distance and turned by offset-rotate. path() takes the d of an SVG path, in the object's own xy plane, facing the camera like the path shape: centered on itself, y up, one path unit for one scene unit, so a path shape with the same d draws the track the object follows. For a path on the floor, turn a group with rotate-x: 90deg. A path that ends with Z is closed: the object goes round it. ray() is a straight line from the object's place, at an angle: 0deg up, 90deg right, like CSS. Like CSS, the motion path comes after translate, the rotations and scale: translate moves the whole path, scale scales it. It works on groups too.",
+      "A motion path, like CSS: the line the object travels along, placed by `offset-distance` and turned by `offset-rotate`. It works on groups too.",
+    values: [
+      ["path(<string>)", "The `d` of an SVG path, in the object's own xy plane, facing the camera like the `path` shape: centered on itself, y up, one path unit per scene unit. A path shape with the same `d` draws the track; a path that ends with `Z` is closed, and the object goes round it."],
+      ["ray(<angle>)", "A straight line from the place of the object, at an angle: `0deg` up, `90deg` right, like CSS."],
+      ["none", "No motion path: the default."],
+    ],
+    details: "Like CSS, the motion path comes after `translate`, the rotations and `scale`: `translate` moves the whole path, `scale` scales it. For a path on the floor, turn a group with `rotate-x: 90deg`.",
     examples: [
       {
         name: "along a track",
+        text: "A ball that follows the curve of a `path` drawn under it.",
         code: '@scene { path#track; sphere#ball; } #track { translate: 0 1.2 0; d: path("M-2 0 C-1 2 1 -2 2 0"); stroke-width: 0.04; color: #555555; } #ball { translate: 0 1.2 0; radius: 0.2; color: #ff5a36; offset-path: path("M-2 0 C-1 2 1 -2 2 0"); animation: go 3s ease-in-out alternate; } @keyframes go { to { offset-distance: 100%; } }',
       },
       {
         name: "round a closed path, turned along it",
+        text: "A cube that laps a closed ellipse, turned along it.",
         code: '@scene { cube; } cube { translate: 0 1.2 0; size: 0.6 0.25 0.25; color: #3a7bff; offset-path: path("M-1.5 0 A1.5 1 0 1 1 1.5 0 A1.5 1 0 1 1 -1.5 0 Z"); animation: lap 4s linear; } @keyframes lap { to { offset-distance: 100%; } }',
       },
     ],
@@ -643,14 +706,17 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "<number> | <percentage>",
     initial: "0",
     description:
-      "How far along its offset-path the object is: a number, in the units of the path, or a percentage of its length, like CSS. Animate it with @keyframes, a transition on :hover or the scroll. On an open path, the object stops at its ends; on a closed path (with Z), it goes round, so 150% is halfway round the second lap. A ray has no length: give it a number.",
+      "How far along its `offset-path` the object is, like CSS: a number, in the units of the path, or a percentage of its length. Animate it with `@keyframes`, a `transition` on `:hover`, or the scroll.",
+    details: "On an open path, the object stops at its ends; on a closed one (with `Z`), it goes round, so 150% is halfway through the second lap. A `ray()` has no length: give it a number.",
     examples: [
       {
         name: "three places on one path",
+        text: "Three spheres at 0%, 50% and 100% of one path.",
         code: '@scene { sphere * 3; } sphere { translate: 0 1 0; radius: 0.25; color: #e6e6e6; offset-path: path("M-2 0 Q0 2 2 0"); offset-distance: calc((sibling-index() - 1) * 50%); } sphere:nth-child(2) { color: #ff5a36; }',
       },
       {
         name: "on :hover, along a ray",
+        text: "Under the mouse, the cube slides 1.5 along a ray.",
         code: "@scene { cube; } cube { translate: 1 0.4 0; size: 0.5; color: #ff5a36; offset-path: ray(45deg); offset-rotate: 0deg; transition: 0.5s ease-out; } cube:hover { offset-distance: 1.5; }",
       },
     ],
@@ -661,10 +727,17 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "[auto | reverse] || <angle>",
     initial: "auto",
     description:
-      "How the object turns on its offset-path, like CSS. auto, the default, turns its x axis along the path, like a car on a road; reverse turns it the other way. An angle alone keeps a fixed turn, like rotate-z; with auto or reverse, it is added to the turn along the path: auto 90deg. Write offset-rotate: 0deg to keep the object upright.",
+      "How the object turns along its `offset-path`, like CSS.",
+    values: [
+      ["auto", "The default: its x axis follows the path, like a car on a road."],
+      ["reverse", "The same, turned the other way."],
+      ["<angle>", "A fixed turn, like `rotate-z`: `0deg` keeps the object upright."],
+      ["auto 90deg", "With `auto` or `reverse`, the angle is added to the turn along the path."],
+    ],
     examples: [
       {
         name: "along the path, or upright",
+        text: "The upper cube turns along the path; the lower one stays upright.",
         code: '@scene { cube#along; cube#upright; } cube { size: 0.5 0.2 0.2; color: #ff5a36; offset-path: path("M-2 0 C-1 2 1 -2 2 0"); animation: go 3s ease-in-out alternate; } #along { translate: 0 1.6 0; } #upright { translate: 0 0.6 0; color: #3a7bff; offset-rotate: 0deg; } @keyframes go { to { offset-distance: 100%; } }',
       },
     ],
@@ -1921,10 +1994,18 @@ export const FUNCTIONS: FunctionDef[] = [
     covers: ["cubic-bezier"],
     syntax: "cubic-bezier(<x1>, <y1>, <x2>, <y2>)",
     description:
-      "An easing curve, like CSS, for animation and transition. The curve goes from (0, 0) to (1, 1), pulled by two handles: x is the time and stays from 0 to 1, y is the progress and can go below 0 or above 1, to overshoot and come back. The keywords are shortcuts for it: ease is cubic-bezier(0.25, 0.1, 0.25, 1), ease-in is cubic-bezier(0.42, 0, 1, 1), ease-out is cubic-bezier(0, 0, 0.58, 1) and ease-in-out is cubic-bezier(0.42, 0, 0.58, 1).",
+      "An easing curve, like CSS, for `animation` and `transition`. The curve goes from (0, 0) to (1, 1), pulled by two handles: x is the time, from 0 to 1, and y the progress, which can go below 0 or above 1 to overshoot.",
+    valuesTitle: "Keywords",
+    values: [
+      ["ease", "`cubic-bezier(0.25, 0.1, 0.25, 1)`"],
+      ["ease-in", "`cubic-bezier(0.42, 0, 1, 1)`"],
+      ["ease-out", "`cubic-bezier(0, 0, 0.58, 1)`"],
+      ["ease-in-out", "`cubic-bezier(0.42, 0, 0.58, 1)`"],
+    ],
     examples: [
       {
-        name: "cubic-bezier()",
+        name: "an overshoot",
+        text: "y goes below 0, then above 1: the sphere crouches, then jumps past the top.",
         code: "@scene { sphere; } sphere { translate: 0 0.5 0; radius: 0.5; color: #ff5a36; animation: jump 1.2s cubic-bezier(0.3, -0.4, 0.7, 1.4) alternate; } @keyframes jump { to { translate: 0 2 0; } }",
       },
     ],
@@ -1935,10 +2016,12 @@ export const FUNCTIONS: FunctionDef[] = [
     covers: ["linear"],
     syntax: "linear(<number> [<percentage>{0,2}], …)",
     description:
-      "An easing drawn as straight segments, like CSS: each number is the progress at one moment, and the moment is a percentage of the duration. A missing moment is spread evenly between its neighbours; the first point starts at 0% and the last one ends at 100%. Two percentages on one number hold it still between them; two points at the same moment jump. With enough points, it draws bounces and springs. The linear keyword is linear(0, 1): a constant speed.",
+      "An easing drawn as straight segments, like CSS: each number is the progress at one moment, a percentage of the duration. With enough points, it draws bounces and springs.",
+    details: "A missing moment is spread evenly between its neighbours; the first point is at 0% and the last one at 100%. Two percentages on one number hold it still between them, and two points at the same moment jump. The keyword `linear` is `linear(0, 1)`: a constant speed.",
     examples: [
       {
-        name: "linear()",
+        name: "a bounce",
+        text: "The sphere falls and bounces twice before it rests.",
         code: "@scene { sphere; } sphere { radius: 0.4; color: #3a7bff; animation: drop 2s linear(0, 1 40%, 0.75 55%, 1 70%, 0.95 80%, 1); } @keyframes drop { from { translate: 0 3 0; } to { translate: 0 0.4 0; } }",
       },
     ],
@@ -1950,14 +2033,24 @@ export const FUNCTIONS: FunctionDef[] = [
     syntax:
       "steps(<integer>, [jump-start | jump-end | jump-none | jump-both | start | end]?) | step-start | step-end",
     description:
-      "An easing that moves by equal jumps instead of gliding, like CSS: steps(4) holds still, then jumps, four times. The position says where the jumps are: jump-end (the default, also written end) jumps at the end of each step, so the last value is only reached at the very end; jump-start (start) jumps at the start of each step; jump-both adds a jump at both ends; jump-none keeps the first and the last values for a whole step each. step-start and step-end are steps(1, jump-start) and steps(1, jump-end). Good for ticking hands, sprite-like motion and anything mechanical.",
+      "An easing that moves by equal jumps instead of gliding, like CSS: `steps(4)` holds still, then jumps, four times. Good for ticking hands, sprites and anything mechanical.",
+    valuesTitle: "Positions",
+    values: [
+      ["jump-end, end", "The default: a jump at the end of each step, so the last value comes only at the very end."],
+      ["jump-start, start", "A jump at the start of each step."],
+      ["jump-both", "A jump at both ends."],
+      ["jump-none", "The first and the last values each hold for a whole step."],
+      ["step-start, step-end", "`steps(1, jump-start)` and `steps(1, jump-end)`."],
+    ],
     examples: [
       {
-        name: "steps()",
+        name: "a ticking hand",
+        text: "Twelve jumps per turn, like the hand of a clock.",
         code: "@scene { cube; } cube { size: 1.2 0.15 0.15; translate: 0 0.6 0; color: #ff5a36; animation: tick 6s steps(12); } @keyframes tick { from { rotate-y: 0deg; } to { rotate-y: -360deg; } }",
       },
       {
         name: "step-start and step-end",
+        text: "The same blink, jumping at the start or at the end.",
         code: "@scene { sphere#a; sphere#b; } sphere { radius: 0.4; } #a { translate: 0.8 0.5 0; color: #3a7bff; animation: blink 1s step-start; } #b { translate: -0.8 0.5 0; color: #3ad16b; animation: blink 1s step-end; } @keyframes blink { 50% { scale: 1.6; } }",
       },
     ],
