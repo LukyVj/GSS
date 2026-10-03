@@ -281,6 +281,7 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 
 ## Done recently
 
+- Notes in the docs: a callout under the description (`note` in the registry), first on `element()` and `texture`, for the flag and the origin trial (decision 118)
 - Transparent colors on objects (plain, gradients with transparent stops) and `filter: opacity()` on objects and groups, multiplied with `opacity` (decision 117)
 - `opacity` on objects and groups, like CSS: the surfaces along the ray drawn from the front, each over what is behind it, a transparent object being a skin; light through it like stained glass with shadows (decision 116)
 - Shadows: `scene { shadows: none | hard | soft }`, from the sun and every light of `@scene`, a soft penumbra or sharp, through the holes of `mask-image`, the reflections without them (decision 115)

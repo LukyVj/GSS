@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   escapeHtml,
+  renderFunction,
   renderProperty,
   renderAtRule,
   renderDocs,
@@ -267,6 +268,30 @@ describe("a syntax line", () => {
     expect(html).toContain(
       '<dd><code class="gss syntax"><span class="gss-id">&lt;number&gt;</span>',
     );
+  });
+});
+
+// A note: a callout under the description, what a reader must know before trying
+describe("a note", () => {
+  it("is a callout under the description", () => {
+    const html = renderProperty({ ...rotateX, note: { title: "Behind a flag for now.", text: "Turn it on to see it." } });
+    expect(html).toContain('<aside class="callout">');
+    expect(html.indexOf("Rotates the object")).toBeLessThan(html.indexOf('class="callout"'));
+    expect(html).toContain("<strong>Behind a flag for now.</strong> Turn it on to see it.");
+  });
+
+  it("is left out without one", () => {
+    expect(renderProperty(rotateX)).not.toContain("callout");
+  });
+
+  it("tells how to see element() today, on its page and on texture", () => {
+    const fn = FUNCTIONS.find((f) => f.name === "element()")!;
+    const texture = PROPERTIES.find((p) => p.name === "texture")!;
+    for (const note of [fn.note, texture.note]) {
+      expect(note?.text).toContain("chrome://flags/#canvas-draw-element");
+      expect(note?.text).toContain("origin trial");
+    }
+    expect(renderFunction(fn)).toContain('<aside class="callout">');
   });
 });
 

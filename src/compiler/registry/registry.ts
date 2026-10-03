@@ -19,6 +19,9 @@ export type Example = {
   html?: string; // the HTML elements the scene shows with element(#id) (decision 101)
 };
 
+// A callout under the description: what a reader must know before trying it
+export type Note = { title: string; text: string };
+
 export type PropertyDef = {
   name: string;
   appliesTo: "object" | "scene" | "everywhere" | (Shape | "light")[]; // [...]: only these shapes (or lights); everywhere: the scene too
@@ -27,6 +30,7 @@ export type PropertyDef = {
   description: string;
   examples: Example[];
   animatable?: boolean; // can be changed by @keyframes (decision 24)
+  note?: Note;
 };
 
 // A block of the language: @scene, @keyframes
@@ -65,6 +69,13 @@ export type FunctionDef = {
   computed?: string; // when it is computed, if not at compile time (a gradient, element())
   description: string;
   examples: Example[];
+  note?: Note;
+};
+
+// element() today: behind a flag, or an origin trial on a site
+const ELEMENT_NOTE: Note = {
+  title: "Behind a flag for now.",
+  text: "element() needs HTML-in-Canvas, which Chromium ships behind a flag: turn on chrome://flags/#canvas-draw-element to see it, and the examples of this page. On your own site, visitors see it once you register the site for the HTML-in-Canvas origin trial and add its token to the page, until the trial ends on October 20, 2026. Without it, the object keeps its color.",
 };
 
 export const PROPERTIES: PropertyDef[] = [
@@ -168,6 +179,7 @@ export const PROPERTIES: PropertyDef[] = [
     initial: "none",
     description:
       "Projects an image onto the surface of the object: one image per face, the top, the bottom and the sides, whatever the size of the object. The image replaces the base color of the material, and moves, turns and scales with the object. element(#card) shows a live image of an HTML element instead, like CSS element(): the browser draws it with the page's own CSS and fonts, and the object shows it again each time it changes. The element goes inside the scene: inside <gss-scene>, next to its script, or inside the canvas given to mount(). It stays in the page, so it stays accessible, but it is only seen on the object. This needs a browser that draws HTML in a canvas (Chromium, for now); elsewhere, the object keeps its color. A scene with an element is drawn with WebGL2.",
+    note: ELEMENT_NOTE,
     examples: [
       {
         name: "texture",
@@ -1764,6 +1776,7 @@ export const FUNCTIONS: FunctionDef[] = [
     computed: "by the browser, each time the element changes",
     description:
       "A live image of an HTML element of the page, like CSS element(), for texture. The browser draws the element itself, with the page's CSS and fonts, and the object shows it again each time the element changes: a card, a form, a chart, any web interface on a 3D surface. Put the element inside the scene: inside <gss-scene>, next to its script, or inside the canvas given to mount(). It stays in the page, so screen readers still read it, but it is only seen on the object. One image covers each face of the object, like any texture: give the element the proportions of the face, and use ::face(front) for one face only. This needs a browser that draws HTML in a canvas, Chromium for now; elsewhere, the object keeps its color. A scene with an element is drawn with WebGL2.",
+    note: ELEMENT_NOTE,
     examples: [
       {
         name: "an HTML card",

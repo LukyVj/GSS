@@ -439,6 +439,23 @@
       .property > p code {
         color: var(--gss-bone);
       }
+      /* A callout under the description: what to know before trying it */
+      .callout {
+        max-width: 65ch;
+        margin: 0 0 24px;
+        padding: 14px 16px;
+        border-left: 2px solid var(--gss-signal);
+        background: var(--gss-surface);
+      }
+      .callout p {
+        margin: 0;
+        font-size: 15px;
+        color: var(--gss-ash);
+      }
+      .callout strong {
+        color: var(--gss-bone);
+        font-weight: 600;
+      }
       /* A table in a guide page: method and syntax names keep their case */
       .guide-table dt {
         text-transform: none;

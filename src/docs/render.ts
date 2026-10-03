@@ -5,6 +5,7 @@ import type {
   ShapeDef,
   FunctionDef,
   Example,
+  Note,
 } from "../compiler/registry/registry";
 import { formatGss } from "./format";
 import { escapeHtml } from "./escape";
@@ -29,6 +30,15 @@ function renderExamples(examples: Example[]): string {
     .join("\n");
 }
 
+// A callout under the description, when the entry has one
+function renderNote(note: Note | undefined): string {
+  if (!note) return "";
+  return `
+      <aside class="callout">
+        <p><strong>${escapeHtml(note.title)}</strong> ${escapeHtml(note.text)}</p>
+      </aside>`;
+}
+
 // ⬇️ YOUR MISSION: the HTML of one property
 export function renderProperty(property: PropertyDef): string {
   const appliesTo =
@@ -43,7 +53,7 @@ export function renderProperty(property: PropertyDef): string {
   return `
     <article class="property" id="${escapeHtml(property.name)}">
       <h3><code>${escapeHtml(property.name)}</code></h3>
-      <p>${escapeHtml(property.description)}</p>
+      <p>${escapeHtml(property.description)}</p>${renderNote(property.note)}
       <dl>
         <dt>Syntax</dt>
         <dd><code class="gss syntax">${highlightSyntax(property.syntax)}</code></dd>
@@ -98,7 +108,7 @@ export function renderFunction(fn: FunctionDef): string {
   return `
     <article class="property" id="${escapeHtml(fn.anchor)}">
       <h3><code>${escapeHtml(fn.name)}</code></h3>
-      <p>${escapeHtml(fn.description)}</p>
+      <p>${escapeHtml(fn.description)}</p>${renderNote(fn.note)}
       <dl>
         <dt>Syntax</dt>
         <dd><code class="gss syntax">${highlightSyntax(fn.syntax)}</code></dd>

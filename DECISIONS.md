@@ -922,6 +922,12 @@ A range whose bound is excluded keeps its error, computed or not: no number is t
 **Different from CSS**: a transparent color makes the whole object transparent, its lighting included (CSS: only what the color paints). `opacity()` on a group multiplies into each object, like `opacity` (decision 116). The colors of a material stay opaque (CSS has no materials).
 **Accepted limits**: no `drop-shadow()`; a color set from JS has no alpha; the transparent stops of a gradient written in a material are an error.
 
+## 118. Notes in the docs: a callout under the description
+
+**Decision** (Lucas: put what it takes to see `element()` today in a callout of the docs): an entry of the registry can carry a `note`, `{ title, text }`, which the docs show as a callout (`<aside class="callout">`) right under the description of a property or a function, before the syntax. The first one is on `element()` and on `texture`: `element()` needs HTML-in-Canvas, behind `chrome://flags/#canvas-draw-element` in Chromium for now; on a site, the HTML-in-Canvas origin trial and its token show it to the visitors, until the trial ends on October 20, 2026.
+**Why**: gss-lang.dev has no origin trial token, so the live examples of `element()` only work for a reader who turned the flag on; that must be read before the examples, not in the middle of the description.
+**Accepted limits**: a note is plain text; it goes on properties and functions, not yet on at-rules, selectors or shapes.
+
 ## Open questions
 
 - **Targeting multiplied ids**: should `#hero` target `hero-1`, `hero-2` and `hero-3`?

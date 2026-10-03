@@ -6,6 +6,10 @@ The 0.0.1 history was reconstructed from GitHub.
 
 ## Unreleased
 
+### Changed
+
+- Docs: a callout under `element()` and `texture` says how to see `element()` today: behind `chrome://flags/#canvas-draw-element` in Chromium, or on a site with the HTML-in-Canvas origin trial and its token, until the trial ends on October 20, 2026.
+
 ## [0.0.4] — 2026-10-03
 
 ### Added
