@@ -168,7 +168,7 @@ and a readable path toward the shader underneath. It is not meant to replace GLS
 - **Colors**: hex, `rgb()`, `hsl()`, `oklch()`, `color-mix()` and the other CSS color functions, the
   CSS named colors (`tomato`) and `currentColor`, with math and `var()` inside:
   `hsl(calc(sibling-index() * 45) 90% 60%)`.
-- **Gradients and filters**: linear, radial and conic gradients on backgrounds and objects, animated with `@keyframes` and `:hover` (the scene animates its background); color filters, blur, bloom and grain on scenes, objects and groups.
+- **Gradients, noise and filters**: linear, radial and conic gradients on backgrounds and objects, animated with `@keyframes` and `:hover` (the scene animates its background); `noise()`, colors placed by a 3D noise (clouds, stone, marble); color filters, blur, bloom and grain on scenes, objects and groups.
 - **Responsive scenes**: `@media`, `light-dark()` and conditional `if()` values.
 - **Generative values**: deterministic `random()`, inverse trigonometry, rounding, logarithms and `progress()`.
 - **The scene**: `floor`, `background`, a sun with its color (`light`), a colored `ambient` light, `fog` and an

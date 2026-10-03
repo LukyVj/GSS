@@ -40,6 +40,7 @@ import { enclosing, groupBounds, objectSphere, sceneMiss, type Sphere } from "./
 import { GRAIN } from "../../features/filter";
 import { filterCode } from "./filters";
 import { COLOR_LIBRARY } from "./color-library";
+import { NOISE_LIBRARY } from "./noise-library";
 import { isLive, liveCode, liveNumber } from "./live";
 import { liveLight, liveRead } from "./properties";
 import { DIFFUSE, isLight, lightingCode, splitAmbient } from "./lights";
@@ -354,6 +355,8 @@ uniform vec2 uPick;`
             "// The metal, jelly and glass materials: only those getMaterial() uses",
             used(MATERIALS, materials),
           ),
+          // noise() (decision 111): in the background and on the objects it paints
+          section("// The noise of noise(): only what the scene uses", used(NOISE_LIBRARY, [background, gradients.functions].join("\n"))),
         ]
           .filter(Boolean)
           .join("\n\n"),

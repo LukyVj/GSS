@@ -16,6 +16,7 @@ The 0.0.1 history was reconstructed from GitHub.
 - `fog` on the scene: `fog: 6 18` fades each object into the background behind it, from 6 to 18 units away from the camera; with a color, `fog: #dfe7ef 4 16`, the background becomes the fog too. Animatable with the scene's animation and its variables, and readable from `@property` variables. Off by default.
 - Docs: "Set variables from JavaScript", a page on `setProperty()`, `getPropertyValue()` and `removeProperty()` with `mount()`, `mountAsync()` and `<gss-scene>` (whose `scene` exists once it fires `load`), the values each syntax takes, and a live demo where a slider moves a sphere. `@property` links to it, and lists every property a variable can go in, `fog` and `transform-origin` included.
 - Several lights, and colored lights: `@scene { light#bulb; }` adds a point of light, placed like an object (`translate`, its groups, animations, a motion path) and set with `color` and the new `intensity`; it changes on `:hover` through its group. The sun takes a color and an intensity (`light: -45deg 54.7deg #ffd27a 0.8`), `light: none` turns it off, and the scene can animate it. `ambient` takes a color: `ambient: 0.2 #9db4ff`.
+- `noise()`, wherever a gradient goes: colors placed by a smooth 3D noise, like SVG `feTurbulence`: `color: noise(4 3, #1a1d2b, #3a7bff 60%, #ffffff)`. A scale, octaves, `turbulence` for sharp creases, `seed`, and `at` to move it. On an object, the noise is cut in its own space; in the background, it follows the view. It animates like a gradient: animate `at` and it drifts.
 
 ### Fixed
 

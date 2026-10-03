@@ -6,6 +6,9 @@
 // - an object: the rectangle is the object seen from the front (from above for a plane),
 //   and `at` the point that was hit, in the object's space.
 // Colors are mixed in sRGB, like CSS with hex colors.
+// noise() places its colors the same way, at the value of a 3D noise instead of a position
+// in the rectangle (decision 111): the point of the object's space, or the direction of a
+// ray in the background.
 import type { Token } from "../syntax/tokenizer";
 import { errorAt } from "../syntax/errors";
 import { readFunction } from "../values/values";
@@ -19,6 +22,7 @@ export const GRADIENT_FUNCTIONS = [
   "repeating-radial-gradient",
   "conic-gradient",
   "repeating-conic-gradient",
+  "noise",
 ];
 
 // A number of a gradient can be GLSL: a variable set from JS (decision 105)
@@ -52,7 +56,7 @@ export function backgroundFunction(gradient: Gradient, moving: Map<string, strin
     "  // Through the camera onto the canvas; a ray going sideways or back reaches its edge",
     "  vec2 at = z > 0.001 ? 1.5 * d / z * size.y + 0.5 * size : 0.5 * size + normalize(d + 1e-6) * 1e4;",
     "  at = clamp(at, vec2(0.0), size); // like CSS, nothing exists outside the box: its edge",
-    ...linesOf(gradient, moving),
+    ...linesOf(gradient, moving, "rd"),
     "  return col;",
     "}",
     "#define BACKGROUND background(rd)",
@@ -79,19 +83,26 @@ export type Gradient = {
   center: [Num, Num]; // radial, conic: from the top left corner, fractions of the box
   from: Num; // conic: the start angle, in turns
   stops: { color: string; at: Num }[];
+  // noise() (decision 111): kind, octaves and seed cannot change; scale and offset can
+  noise?: { turbulence: boolean; scale: Num; octaves: number; seed: number; offset: [Num, Num, Num] };
 };
 
 export function readGradient(value: Token[]): Gradient {
   const call = readFunction(value)!;
   const radial = call.name.includes("radial");
   const conic = call.name.includes("conic");
+  const noise = call.name === "noise";
   const [first, ...rest] = call.args;
   // The first argument is the direction (or shape) unless it starts with a color
   const hasSetup = first && !isColor(first[0]);
   const setup = hasSetup ? first : [];
   const gradient: Gradient = { name: call.name, shape: "", direction: Math.PI, center: [0.5, 0.5], from: 0, stops: [] };
   // The setup first: its errors say more than those of the stops it leaves behind
-  if (conic) Object.assign(gradient, readConic(setup, value));
+  if (noise) {
+    gradient.noise = readNoise(setup, value);
+    const { turbulence, octaves, seed } = gradient.noise;
+    gradient.shape = `${turbulence ? "turbulence" : "fractal"}, ${octaves} octaves, seed ${seed}`;
+  } else if (conic) Object.assign(gradient, readConic(setup, value));
   else if (radial) Object.assign(gradient, readRadial(setup, value));
   else gradient.direction = readLinear(setup, value);
   gradient.stops = readStops(hasSetup ? rest : call.args, value, call.name) as Gradient["stops"];
@@ -100,6 +111,7 @@ export function readGradient(value: Token[]): Gradient {
 
 // The numbers of a gradient that can change, each with a name: angle, cx, cy, from, at0…, color0…
 export function channels(gradient: Gradient): string[] {
+  if (gradient.noise) return ["scale", "ox", "oy", "oz", ...gradient.stops.flatMap((_, i) => [`at${i}`, `color${i}`])];
   const kind = gradient.name.includes("conic") ? "conic" : gradient.name.includes("radial") ? "radial" : "linear";
   return [
     ...(kind === "linear" ? ["angle"] : ["cx", "cy"]),
@@ -111,6 +123,8 @@ export function channels(gradient: Gradient): string[] {
 // A number of a gradient that a variable set from JS gives (decision 105): written in
 // GLSL like a number an animation moves
 function fromJs(gradient: Gradient, name: string): boolean {
+  if (name === "scale") return isLive(gradient.noise!.scale);
+  if (name === "ox" || name === "oy" || name === "oz") return isLive(gradient.noise!.offset["xyz".indexOf(name[1])]);
   if (name === "angle") return typeof gradient.direction === "string";
   if (name === "cx" || name === "cy") return isLive(gradient.center[name === "cx" ? 0 : 1]);
   if (name === "from") return isLive(gradient.from);
@@ -132,6 +146,8 @@ export function channel(gradient: Gradient, name: string): string {
     // A side, like CSS: to top 0deg, to right 90deg, to bottom 180deg, to left 270deg
     return f(+(d.x ? (d.x > 0 ? Math.PI / 2 : (3 * Math.PI) / 2) : d.y > 0 ? 0 : Math.PI).toFixed(6));
   }
+  if (name === "scale") return code(gradient.noise!.scale);
+  if (name === "ox" || name === "oy" || name === "oz") return code(gradient.noise!.offset["xyz".indexOf(name[1])]);
   if (name === "cx") return code(gradient.center[0]);
   if (name === "cy") return code(sub(1, gradient.center[1])); // y goes up in the shader
   if (name === "from") return code(gradient.from, true);
@@ -146,7 +162,8 @@ export function gradientLines(value: Token[]): string[] {
 
 // The lines of a gradient. moving: the GLSL of the numbers an animation or :hover changes
 // (decision 102); the others are written as constants, like a still gradient.
-export function linesOf(gradient: Gradient, moving: Map<string, string> = new Map()): string[] {
+// point: where a noise() is read, the point of the object's space or the direction of the ray.
+export function linesOf(gradient: Gradient, moving: Map<string, string> = new Map(), point = "q"): string[] {
   const { name, stops } = gradient;
   const radial = name.includes("radial");
   const conic = name.includes("conic");
@@ -155,7 +172,13 @@ export function linesOf(gradient: Gradient, moving: Map<string, string> = new Ma
   // Moved by an animation or :hover, or set from JS: written in GLSL, never as a constant
   const moves = (key: string) => moving.has(key) || fromJs(gradient, key);
 
-  const lines = conic ? conicT(gradient, moves, get) : radial ? radialT(gradient, get) : linearT(gradient, moves, get);
+  const lines = gradient.noise
+    ? noiseT(gradient, moves, get, point)
+    : conic
+      ? conicT(gradient, moves, get)
+      : radial
+        ? radialT(gradient, get)
+        : linearT(gradient, moves, get);
   const last = stops.length - 1;
   const t0 = stops[0].at as number;
   const tn = stops[last].at as number;
@@ -195,7 +218,7 @@ function colorOf(token: Token, value: Token[]): string {
 
 // red, #fff 20%, blue 40% 60%: a color, then 0, 1 or 2 positions, completed like CSS
 function readStops(args: Token[][], value: Token[], name: string): Stop[] {
-  const example = `${name}(#1c1c24, #07070a)`;
+  const example = name === "noise" ? "noise(4, #1c1c24, #07070a)" : `${name}(#1c1c24, #07070a)`;
   const stops: Stop[] = [];
   for (const arg of args) {
     const [color, ...positions] = arg;
@@ -245,6 +268,53 @@ function readStops(args: Token[][], value: Token[], name: string): Stop[] {
     i = end;
   }
   return stops;
+}
+
+// noise() (decision 111): [turbulence] <scale> [<octaves>] [seed <n>] [at <x> <y> <z>].
+// The scale is how many patterns fit in a unit; the octaves add finer and finer detail,
+// like numOctaves in SVG feTurbulence; turbulence makes sharp creases (type="turbulence");
+// seed draws another pattern; at moves it, so an animation of at makes it drift.
+const NOISE_ERROR =
+  "noise() starts with a scale, then if needed the octaves, turbulence, seed <number> and at <x> <y> <z>, like: noise(4 3, #1a1d2b, #3a7bff)";
+function readNoise(setup: Token[], value: Token[]): NonNullable<Gradient["noise"]> {
+  const noise: NonNullable<Gradient["noise"]> = { turbulence: false, scale: 1, octaves: 1, seed: 0, offset: [0, 0, 0] };
+  let i = 0;
+  if (isWord(setup[i], "turbulence")) (noise.turbulence = true), i++;
+  // A number, or a variable set from JS (decision 105)
+  const number = (t: Token | undefined): Num | null =>
+    t?.type === "NUMBER" ? t.value : t?.type === "EXPR" && t.syntax === "number" ? t.code : null;
+  const scale = number(setup[i++]);
+  if (scale === null || (typeof scale === "number" && scale <= 0)) throw errorAt(value, NOISE_ERROR);
+  noise.scale = typeof scale === "number" ? scale : `max(${scale}, 0.0001)`;
+  if (setup[i]?.type === "NUMBER") {
+    const octaves = (setup[i++] as { value: number }).value;
+    if (!Number.isInteger(octaves) || octaves < 1 || octaves > 8)
+      throw errorAt(value, "noise() takes octaves from 1 to 8, like: noise(4 3, #1a1d2b, #3a7bff)");
+    noise.octaves = octaves;
+  }
+  while (i < setup.length) {
+    if (isWord(setup[i], "turbulence")) (noise.turbulence = true), i++;
+    else if (isWord(setup[i], "seed") && setup[i + 1]?.type === "NUMBER" && Number.isInteger((setup[i + 1] as { value: number }).value))
+      (noise.seed = (setup[i + 1] as { value: number }).value), (i += 2);
+    else if (isWord(setup[i], "at")) {
+      const xyz = setup.slice(i + 1, i + 4).map(number);
+      if (xyz.length !== 3 || xyz.some((n) => n === null))
+        throw errorAt(value, "noise(): at needs three numbers, like: noise(4 at 0 1 0, #1a1d2b, #3a7bff)");
+      noise.offset = xyz as [Num, Num, Num];
+      i += 4;
+    } else throw errorAt(value, NOISE_ERROR);
+  }
+  return noise;
+}
+
+// t from the noise at the point: 0 to 1, the colors placed on it like a gradient's
+function noiseT(gradient: Gradient, moves: (key: string) => boolean, get: (key: string) => string, point: string): string[] {
+  const { turbulence, octaves, seed, offset } = gradient.noise!;
+  const still = !["ox", "oy", "oz"].some(moves) && offset.every((n) => n === 0);
+  const at = still ? "vec3(0.0)" : `vec3(${get("ox")}, ${get("oy")}, ${get("oz")})`;
+  // Another seed reads the noise far away, where it draws another pattern
+  const shift = seed ? ` + vec3(${[37.1, 17.3, 51.9].map((k) => f(+(k * seed).toFixed(3))).join(", ")})` : "";
+  return [`  float t = ${turbulence ? "turbulence" : "fractal"}Noise((${point} + ${at}) * ${get("scale")}${shift}, ${octaves});`];
 }
 
 // An angle unit, in radians

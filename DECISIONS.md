@@ -836,6 +836,17 @@ A range whose bound is excluded keeps its error, computed or not: no number is t
 **Different from CSS**: CSS has no lights. SVG has `fePointLight` with `lighting-color` on the filter that lights; GSS takes the element and gives it the `color` an element already has. `light: azimuth elevation` stays close to `feDistantLight`.
 **Accepted limits**: point lights only (spots later), no shadows (the light goes through objects), 8 lights at most, the fog is not tinted by the lights, a light is never drawn (a shape stands for the bulb).
 
+## 111. `noise()`: a gradient whose colors are placed by a 3D noise
+
+**Decision** (Lucas's choices for each point): `noise([turbulence]? <scale> <octaves>? [seed <n>]? [at <x> <y> <z>]?, <color stops>)` goes wherever a gradient goes (`background`, `color`, the first argument of a material), modelled on SVG `feTurbulence`: the scale is how many patterns fit in a unit (`baseFrequency`), the octaves (1 to 8, 1 by default) add detail twice as fine each (`numOctaves`), `turbulence` folds each octave at 0 for sharp creases (`type="turbulence"`; soft fractal noise otherwise), `seed` draws another pattern, `at` moves it. Its colors are the stops of a gradient, completed like CSS (`readStops()`): a noise is a gradient whose position `t` comes from the noise instead of a place in the rectangle.
+- **One more gradient**: `noise` is in `GRADIENT_FUNCTIONS`, so everything that takes a gradient takes it, with no new path: `readGradient()` reads its setup (`readNoise()`, `shader/gradient.ts`) into `Gradient.noise`; its kind, octaves and seed are its `shape`, which an animation cannot change; `noiseT()` writes `t = fractalNoise((point + at) * scale + seed, octaves)` (or `turbulenceNoise`), and the stops follow as for any gradient.
+- **Where it is read** (`linesOf(…, point)`): on an object, `q`, the point in the object's own space, in 3D: a block of matter cut in the object, with no seam, that turns and moves with it; in the background, `rd`, the direction of the ray (reflections see it where they point).
+- **The noise** (`codegen/noise-library.ts`, written only when used): gradient noise (a random slope at each point of a grid, quintic blend, like Perlin's, which `feTurbulence` uses), summed over the octaves; the sum is divided by its spread (the square root of the summed squared strengths), so more octaves add detail without washing out the colors, then stretched to 0–1 (measured: the 2nd to 98th percentiles fall between about 0.02 and 0.98).
+- **Moving**: like the other gradients (decision 102), `scale`, `at`, the stops and the colors move with `@keyframes`, `:hover` and `:active`, and read `@property` variables; animating `at` makes the noise drift.
+**Why**: Lucas's seventh item: clouds, stone, marble, smoke without images, and the first step toward 2D compositions (layers of `background`, masks, displacement) rather than a separate 2D mode.
+**Different from CSS**: CSS has no noise image. SVG `feTurbulence` gives four channels of noise to filter further; GSS places colors on one channel, like a gradient, which is what a designer reaches for first.
+**Accepted limits**: no `stitchTiles`; one channel; the noise of a material does not move (material is not animatable); a 3D noise on a flat face shows a slice of it.
+
 ## Open questions
 
 - **Targeting multiplied ids**: should `#hero` target `hero-1`, `hero-2` and `hero-3`?

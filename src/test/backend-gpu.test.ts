@@ -318,6 +318,37 @@ describe("the lights of the scene, on both backends", () => {
   }, 60000);
 });
 
+// noise(): a gradient whose position comes from a 3D noise, cut in the object's own space
+describe("noise() paints the scene, on both backends", () => {
+  const apart = (pixels: number[], reference: number[]) =>
+    pixels.filter((v, i) => Math.abs(v - reference[i]) > 40).length / pixels.length;
+  const view = (target: string) =>
+    `scene { floor: none; background: #000000; camera-target: ${target}; camera-angle: 20deg 15deg; camera-distance: 4; }`;
+
+  it("with one color twice, is that color", async () => {
+    const a = await render(`@scene { sphere; } sphere { translate: 0 1 0; color: noise(4 3, #ff5a36, #ff5a36); } scene { background: noise(2, #3a7bff, #3a7bff); }`);
+    const b = await render(`@scene { sphere; } sphere { translate: 0 1 0; color: #ff5a36; } scene { background: #3a7bff; }`);
+    expect(apart(a.gl, b.gl)).toBe(0);
+    expect(apart(a.gpu, b.gpu)).toBe(0);
+  }, 60000);
+
+  it("varies from one color to the other, the same on WebGL2 and WebGPU", async () => {
+    const { gl, gpu } = await render(`@scene { sphere; } sphere { translate: 0 1 0; radius: 1; color: noise(3 4, #000000, #ffffff); } ${view("0 1 0")}`);
+    const reds = gl.filter((_, i) => i % 4 === 0);
+    expect(Math.min(...reds)).toBeLessThan(40);
+    expect(Math.max(...reds)).toBeGreaterThan(150);
+    expect(apart(gl, gpu)).toBeLessThan(0.01);
+  }, 60000);
+
+  it("is cut in the object's own space: moved with the camera, the object keeps its pattern", async () => {
+    const paint = "color: noise(3 4, #000000, #ffffff); radius: 1;";
+    const here = await render(`@scene { sphere; } sphere { translate: 0 1 0; ${paint} } ${view("0 1 0")}`);
+    const there = await render(`@scene { sphere; } sphere { translate: 2.3 1.7 -1.1; ${paint} } ${view("2.3 1.7 -1.1")}`);
+    expect(apart(here.gl, there.gl)).toBeLessThan(0.002);
+    expect(apart(here.gpu, there.gpu)).toBeLessThan(0.002);
+  }, 60000);
+});
+
 describe("the default camera does not mirror the scene", () => {
   const front = "scene { floor: none; background: #000000; camera-target: 0 0 0; camera-angle: 0deg 0deg; camera-distance: 5; light: 0deg 0deg; ambient: 1; }";
   // The mean column and row of the pixels where `channel` wins, per backend

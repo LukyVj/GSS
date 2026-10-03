@@ -88,7 +88,7 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "<color> | <gradient>",
     initial: "#e6e6e6",
     description:
-      "Sets the base color of the object's surface: a hex color (#ff5a36), rgb(), hsl() or one of the 148 CSS named colors (tomato), turned into a hex color by the compiler. It can also be a gradient (linear-gradient(), radial-gradient(), conic-gradient()), painted on the object as seen from the front, and taken by every material. A gradient can be animated and changed by :hover: it changes into another gradient of the same kind with as many colors, and each of its numbers moves on its own, the angle, the center, the positions and the colors. Through a variable, like a registered @property in CSS, one number is enough: linear-gradient(var(--angle), …) turns when a @keyframes changes --angle. A color cannot change into a gradient. On a light of @scene, color is the color of its light: a plain color, not a gradient.",
+      "Sets the base color of the object's surface: a hex color (#ff5a36), rgb(), hsl() or one of the 148 CSS named colors (tomato), turned into a hex color by the compiler. It can also be a gradient (linear-gradient(), radial-gradient(), conic-gradient()), painted on the object as seen from the front, and taken by every material, or a noise() cut in the object's own space. A gradient can be animated and changed by :hover: it changes into another gradient of the same kind with as many colors, and each of its numbers moves on its own, the angle, the center, the positions and the colors. Through a variable, like a registered @property in CSS, one number is enough: linear-gradient(var(--angle), …) turns when a @keyframes changes --angle. A color cannot change into a gradient. On a light of @scene, color is the color of its light: a plain color, not a gradient.",
     examples: [
       {
         name: "color",
@@ -1578,6 +1578,33 @@ export const FUNCTIONS: FunctionDef[] = [
       {
         name: "repeating-linear-gradient() and repeating-radial-gradient()",
         code: "@scene { sphere#a; sphere#b; } sphere { radius: 0.6; translate: 0 1 0; material: chrome; } #a { translate: 0.8 1 0; } #b { translate: -0.8 1 0; } scene { floor: none; background: repeating-linear-gradient(45deg, #111 0% 5%, #2a2a3a 5% 10%); }",
+      },
+    ],
+  },
+  {
+    name: "noise()",
+    anchor: "fn-noise",
+    covers: ["noise"],
+    syntax:
+      "noise([turbulence]? <number> <integer>? [seed <integer>]? [at <number> <number> <number>]?, <color> <percentage>{0,2}, …)",
+    description:
+      "A noise image, wherever a gradient goes: the background of the scene, the color of an object, the color of a material. Its colors are placed like the stops of a gradient, at the value of a smooth 3D noise, like SVG feTurbulence: noise(4 3, #1a1d2b, #3a7bff 60%, #ffffff). The first number is the scale: how many patterns fit in one unit. The second, if any, is the number of octaves, from 1 to 8: each one adds detail twice as fine, like numOctaves. turbulence makes sharp creases instead of soft clouds (marble, fire, lightning); seed draws another pattern; at <x> <y> <z> moves it. On an object, the noise is cut in the object's own space, like a block of stone: no seam, and it turns and moves with the object. In the background, it follows the direction of the view. Like a gradient, it can be animated and changed by :hover, into another noise() of the same kind, with as many colors: animating at makes it drift, like clouds or smoke. Its numbers can be set from JavaScript.",
+    examples: [
+      {
+        name: "noise() on an object",
+        code: "@scene { sphere; } sphere { translate: 0 1 0; radius: 0.8; color: noise(3 4, #1a1d2b, #3a7bff 55%, #ffffff); }",
+      },
+      {
+        name: "turbulence: marble",
+        code: "@scene { cube; } cube { translate: 0 0.6 0; size: 1.2; corner-radius: 0.06; color: noise(turbulence 1.2 5, #4a4f5a, #f4f1ea 30%); }",
+      },
+      {
+        name: "a sky that drifts",
+        code: "@scene { sphere; } sphere { translate: 0 1 0; material: chrome; } scene { floor: none; background: noise(2 4, #2f6bd8 40%, #ffffff 75%); animation: wind 20s linear infinite; } @keyframes wind { to { background: noise(2 4 at 1 0 0, #2f6bd8 40%, #ffffff 75%); } }",
+      },
+      {
+        name: "noise() in a material",
+        code: "@scene { torus; } torus { translate: 0 0.6 0; rotate-x: 70deg; material: metal(noise(turbulence 6 3, #6b4a2b, #d4af37), 0.25); }",
       },
     ],
   },

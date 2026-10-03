@@ -70,7 +70,12 @@ function sameKind(gradient: Gradient, value: Token[]): Gradient {
   if (other.name !== gradient.name)
     throw errorAt(value, `a ${gradient.name}() can only change into another ${gradient.name}(), not a ${other.name}()`);
   if (other.shape !== gradient.shape)
-    throw errorAt(value, `a radial-gradient() keeps the same shape and size when it changes: ${gradient.shape} here, ${other.shape} there`);
+    throw errorAt(
+      value,
+      gradient.noise
+        ? `a noise() keeps its kind, its octaves and its seed when it changes: ${gradient.shape} here, ${other.shape} there`
+        : `a radial-gradient() keeps the same shape and size when it changes: ${gradient.shape} here, ${other.shape} there`,
+    );
   if (other.stops.length !== gradient.stops.length)
     throw errorAt(
       value,
