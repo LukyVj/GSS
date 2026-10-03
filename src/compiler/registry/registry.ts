@@ -924,22 +924,33 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "none | <angle> <angle> [ <color> || <number> ]?",
     initial: "-45deg 54.7deg",
     description:
-      "Sets the sun: first its direction, its azimuth around the vertical axis (0deg points to +z, 90deg to +x), then its elevation above the horizon (90deg is straight overhead); then, if needed, its color (white by default) and its intensity (1 by default), in any order. The default lights the scene from the upper left, in front. none turns the sun off, for a scene lit only by its own lights (the light elements of @scene) and its ambient light. The scene can animate it, with animation on the scene: a sun that turns, changes color, or rises from none.",
+      "Sets the sun of the scene: its direction, then if needed its color and its intensity, in any order. The default lights the scene from the upper left, in front.",
+    values: [
+      ["<angle> <angle>", "The direction: the azimuth around the vertical axis (`0deg` points to +z, `90deg` to +x), then the elevation above the horizon (`90deg` is straight overhead)."],
+      ["<color>", "The color of the sun, white by default."],
+      ["<number>", "Its intensity, 1 by default."],
+      ["none", "No sun: the scene is lit by its point lights and its `ambient` light."],
+    ],
+    details: "With `animation` on the scene, the sun can turn, change color, or rise from `none`.",
     examples: [
       {
-        name: "light",
+        name: "a low sun from behind",
+        text: "`-120deg 30deg`: from behind, on the left, low over the horizon.",
         code: "@scene { cube; } cube { translate: 0 0.5 0; } scene { light: -120deg 30deg; }",
       },
       {
         name: "a warm sun",
+        text: "An orange sun, low, with bluish shadows from `ambient`.",
         code: "@scene { sphere; } sphere { translate: 0 0.6 0; radius: 0.6; } scene { light: -60deg 25deg #ffb36b 1.2; ambient: 0.2 #6b8cff; }",
       },
       {
         name: "no sun",
+        text: "`none`, and a point light instead.",
         code: "@scene { sphere; light#lamp; } sphere { translate: 0 0.6 0; radius: 0.6; } #lamp { translate: 1 1.5 1; intensity: 2.5; } scene { light: none; ambient: 0.05; }",
       },
       {
         name: "a day",
+        text: "`@keyframes` on the scene move the sun from dawn to noon.",
         code: "@scene { cube; } cube { translate: 0 0.5 0; } scene { animation: day 6s ease-in-out infinite alternate; } @keyframes day { from { light: -80deg 5deg #ff8a5c 0.6; } to { light: 60deg 70deg #ffffff 1; } }",
       },
     ],
@@ -951,10 +962,11 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "<number>",
     initial: "1",
     description:
-      "How much light a light of @scene gives: what a surface facing it receives at 1 unit, then less with the square of the distance (a quarter at 2 units, a ninth at 3). 0 turns it off. It can be animated, changed by :hover and set from JavaScript.",
+      "How much light a point `light` gives: what a surface facing it receives at 1 unit, then less with the square of the distance, a quarter at 2 units and a ninth at 3. 0 turns it off.",
     examples: [
       {
-        name: "intensity",
+        name: "a strong lamp",
+        text: "An intensity of 4, two units above the sphere.",
         code: "@scene { light; sphere; } scene { light: none; ambient: 0.05; } light { translate: 0 2 1; intensity: 4; } sphere { translate: 0 0.6 0; radius: 0.6; }",
       },
     ],
@@ -965,10 +977,10 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "<number> <color>?",
     initial: "0.1",
     description:
-      "Sets the minimum light received by surfaces facing away from the sun, from 0 (black shadows) to 1 (no shadows). The sun gives the rest. A color can follow, for the light of the sky in the shadows: ambient: 0.2 #9db4ff gives bluish shadows under a warm sun.",
+      "Sets the light received by the surfaces the sun does not reach, from 0 (black shadows) to 1 (no shadows). A color can follow, for the light of the sky in the shadows: `ambient: 0.2 #9db4ff` gives bluish shadows under a warm sun.",
     examples: [
       {
-        name: "ambient",
+        name: "lighter shadows",
         code: "@scene { cube; } cube { translate: 0 0.5 0; } scene { ambient: 0.4; }",
       },
     ],
@@ -978,10 +990,11 @@ export const PROPERTIES: PropertyDef[] = [
     appliesTo: "scene",
     syntax: "<number>{3}",
     initial: "0 0.5 0",
-    description: "Sets the point the camera looks at and orbits around.",
+    description: "Sets the point the camera looks at and turns around.",
     examples: [
       {
-        name: "camera-target",
+        name: "looking higher",
+        text: "The cube is 2 units up, and so is the target.",
         code: "@scene { cube; } cube { translate: 0 2 0; } scene { camera-target: 0 2 0; }",
       },
     ],
@@ -992,10 +1005,10 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "<number>",
     initial: "8",
     description:
-      "Sets the starting distance between the camera and its target, from 3 to 15. The mouse wheel changes it.",
+      "Sets the distance between the camera and its target at the start, from 3 to 15. The mouse wheel changes it.",
     examples: [
       {
-        name: "camera-distance",
+        name: "closer",
         code: "@scene { cube; } cube { translate: 0 0.5 0; } scene { camera-distance: 5; }",
       },
     ],
@@ -1006,10 +1019,10 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "<angle> <angle>",
     initial: "0deg 22.9deg",
     description:
-      "Sets the starting position of the camera around its target: first the angle around the vertical axis (0deg in front, on +z; 90deg on the right, on +x), then the height above the horizon, from 0deg to 80deg. Dragging with the mouse changes it.",
+      "Sets where the camera starts around its target: first the angle around the vertical axis (`0deg` in front, on +z; `90deg` on the right, on +x), then the height above the horizon, from `0deg` to `80deg`. Dragging with the mouse changes it.",
     examples: [
       {
-        name: "camera-angle",
+        name: "from the front left, high above",
         code: "@scene { cube; } cube { translate: 0 0.5 0; } scene { camera-angle: -45deg 60deg; }",
       },
     ],
@@ -1020,10 +1033,10 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "<time> | none",
     initial: "none",
     description:
-      "Sets how long the camera takes to turn once around its target, in s or ms. none stops the automatic rotation.",
+      "Sets how long the camera takes to turn once around its target, in `s` or `ms`. `none`, the default, keeps it still.",
     examples: [
       {
-        name: "camera-spin",
+        name: "one turn in 40 s",
         code: "@scene { cube; } cube { translate: 0 0.5 0; } scene { camera-spin: 40s; }",
       },
     ],
@@ -1207,18 +1220,27 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "none | [ <color> ]? <number> <number> [ <color> ]?",
     initial: "none",
     description:
-      "Fills the scene with fog, measured from the camera: no fog before the first number, only fog after the second, and more and more of it between. Without a color, each object fades into the background seen behind it, gradients included: the far objects melt into the sky. With a color, the fog takes that color, and so does the background, since past the end of the fog only the fog is seen. The scene draws nothing more than 20 units away from the camera: a fog that ends before that hides the far edge of the floor. The scene can animate it, with animation on the scene or through its variables, and it can move from none into a fog. The reflections and the refractions show the objects without fog.",
+      "Fills the scene with fog, measured from the camera: none before the first distance, only fog after the second one, and more and more of it between. Without a color, each object fades into the background behind it.",
+    values: [
+      ["<number> <number>", "Where the fog starts, and where it hides everything."],
+      ["<color>", "Its color, before or after the distances. The background takes it too: past the fog, only the fog is seen."],
+      ["none", "No fog: the default."],
+    ],
+    details: "The scene draws nothing farther than 20 units from the camera: a fog that ends before that hides the far edge of the floor. The scene can animate its fog, from `none` too. The reflections and the refractions show the objects without fog.",
     examples: [
       {
         name: "into the background",
+        text: "The cubes melt into the background as they go away.",
         code: "@scene { cube * 7; } cube { size: 0.6; translate: calc((sibling-index() - 4) * -1.1) 0.3 calc(sibling-index() * -1.6); color: #ff5a36; } scene { background: #c9d6e3; fog: 3 13; }",
       },
       {
         name: "a colored fog",
+        text: "A warm fog, whose color the background takes.",
         code: "@scene { sphere * 5; } sphere { radius: 0.4; translate: 0 0.4 calc(sibling-index() * -2); color: #3a7bff; } scene { fog: #e8e0d4 2 11; camera-angle: 20deg 12deg; }",
       },
       {
         name: "the fog rolls in",
+        text: "The fog rolls in, from `none`.",
         code: "@scene { cylinder * 9; } cylinder { radius: 0.15; height: 1.6; translate: calc((sibling-index() - 5) * -0.9) 0.8 calc(sibling-index() * -1.2); color: #e6e6e6; } scene { background: #1a1d2b; floor: #2a2e40; fog: none; animation: roll 6s ease-in-out infinite alternate; } @keyframes roll { to { fog: 1 7; } }",
       },
     ],
@@ -1229,18 +1251,27 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "none | hard | soft",
     initial: "none",
     description:
-      "Lets the objects cast shadows, on the floor and on each other: each point of the scene looks toward each light, and an object on the way keeps that light from it, so only the ambient light is left. soft gives the edge of a shadow a penumbra that grows with the distance to the object that casts it, like the shadow of the sun; hard cuts it sharp; none, the default, draws no shadow. The sun and every light of @scene cast shadows, and the holes of mask-image let the light through. Each light costs one more ray per pixel. The reflections and the refractions show the objects without shadows.",
+      "Lets the objects cast shadows, on the floor and on each other: a point in the shadow of an object keeps only the `ambient` light.",
+    values: [
+      ["none", "No shadow: the default."],
+      ["soft", "A penumbra that grows with the distance to the object that casts it, like the shadow of the sun."],
+      ["hard", "A sharp edge."],
+    ],
+    details: "The sun and every point `light` cast shadows, and the holes of `mask-image` let the light through. Each light costs one more ray per pixel. The reflections and the refractions show the objects without shadows.",
     examples: [
       {
         name: "soft shadows",
+        text: "The shadows of the sun blur as they get farther from the objects.",
         code: "@scene { sphere; cube; } scene { shadows: soft; light: -30deg 50deg; } sphere { translate: -0.6 0.9 0; radius: 0.5; color: #ff5a36; } cube { translate: 0.7 0.4 0.3; size: 0.8; color: #3a7bff; }",
       },
       {
         name: "hard shadows from a lamp",
+        text: "A lamp and no sun: sharp shadows.",
         code: "@scene { light; sphere; } scene { shadows: hard; light: none; ambient: 0.15; } light { translate: 0.8 2.4 0.6; intensity: 4; color: #ffd27a; } sphere { translate: 0 0.7 0; radius: 0.6; }",
       },
       {
         name: "light through holes",
+        text: "The holes of a mask let the sun through.",
         code: "@scene { sphere; } scene { shadows: soft; light: 20deg 70deg; } sphere { translate: 0 1.2 0; radius: 0.9; mask-image: noise(4 3, black 48%, transparent 52%); }",
       },
     ],
@@ -1251,18 +1282,24 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "auto | max | <number>",
     initial: "auto",
     description:
-      "Sets the pixel density of the render, like the device pixel ratio of the screen. auto follows the screen up to 2. max follows the screen, however dense: the sharpest image, and the slowest. A number from 0.25 to 4 sets the density, never above the screen's: below 1, the render is coarser and faster.",
+      "Sets the pixel density of the render, like the device pixel ratio of the screen.",
+    values: [
+      ["auto", "The density of the screen, up to 2: the default."],
+      ["max", "The density of the screen, however high: the sharpest render, and the slowest."],
+      ["<number>", "From 0.25 to 4, never above the screen's. Below 1, the render is coarser and faster."],
+    ],
     note: {
       title: "A menu picks it here.",
-      text: "In the playground and in the examples of these docs, the dpr menu at the top right of the render picks the density for you. auto starts at the scene's dpr and lowers it while the frames are slow; a number replaces the scene's dpr, never above the screen's. Your choice is kept in this browser. On your own site, the scene's dpr applies.",
+      text: "In the playground and in the examples of these docs, the dpr menu at the top right of the render picks the density for you. `auto` starts at the `dpr` of the scene and lowers it while the frames are slow; a number replaces it, never above the screen's. Your choice is kept in this browser. On your own site, the `dpr` of the scene applies.",
     },
     examples: [
       {
-        name: "dpr",
+        name: "as sharp as the screen",
         code: "@scene { cube; } cube { translate: 0 0.5 0; } scene { dpr: max; }",
       },
       {
-        name: "dpr",
+        name: "half the density",
+        text: "Coarser, and faster to draw.",
         code: "@scene { cube; } cube { translate: 0 0.5 0; } scene { dpr: 0.5; }",
       },
     ],

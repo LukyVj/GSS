@@ -382,3 +382,24 @@ describe("the parts of a page", () => {
   });
 });
 
+// Every page of the reference keeps its examples apart by their names, and its prose short:
+// the rest goes in the table of its values and in one paragraph
+describe("the texts of the reference", () => {
+  const entries = [...PROPERTIES, ...AT_RULES, ...SELECTORS, ...SHAPE_DOCS, ...FUNCTIONS];
+
+  it("name every example, once per page, and never like the page", () => {
+    for (const entry of entries) {
+      const names = entry.examples.map((example) => example.name);
+      expect(names.every(Boolean), entry.name).toBe(true);
+      expect(new Set(names).size, entry.name).toBe(names.length);
+      if (names.length > 1) expect(names, entry.name).not.toContain(entry.name);
+    }
+  });
+
+  it("keep the description to a lead of three sentences at most", () => {
+    for (const entry of entries) {
+      const sentences = entry.description.replace(/`[^`]*`/g, "code").split(/[.!?](?:\s|$)/).filter((s) => s.trim());
+      expect(sentences.length, `${entry.name}: ${entry.description}`).toBeLessThanOrEqual(3);
+    }
+  });
+});
