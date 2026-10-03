@@ -20,6 +20,13 @@ import steve2 from "../scenes/steve2.gss?raw";
 import steveHouse from "../scenes/steveHouse.gss?raw";
 import stevePortal from "../scenes/stevePortal.gss?raw";
 import grass from "../scenes/grass.gss?raw";
+import circuit from "../scenes/glass-circuit.gss?raw";
+import relic from "../scenes/soft-relic.gss?raw";
+import garden from "../scenes/candy-garden.gss?raw";
+import bloom from "../scenes/chromatic-bloom.gss?raw";
+import burger from "../scenes/zdog-burger.gss?raw";
+import character from "../scenes/zdog-character.gss?raw";
+import camera from "../scenes/camera-cutaway.gss?raw";
 
 import { FIRST_SCENE } from "../docs/guide";
 import { formatGss } from "../docs/format";
@@ -251,5 +258,99 @@ export const INSPIRATION: Inspiration[] = [
     slug: "grass",
     title: "Some grass blades, blowing in the wind",
     code: grass,
+  },
+];
+
+// The studies (decision 119): longer pieces, shown one at a time in the viewer that
+// opens the page (studies.ts). Their words, their list and the first one are prerendered.
+export type Study = {
+  key: string; // its link: showcase#bloom
+  name: string; // in the list of studies
+  eyebrow: string;
+  title: string; // on two lines
+  description: string;
+  features: string[]; // what it uses, one chip each
+  hint: string; // in the status bar
+  scene: string;
+  reference?: { href: string; label: string }; // the model it rebuilds
+  webgl?: boolean; // mounts on WebGL, for a predictable start
+};
+
+export const STUDIES: Study[] = [
+  {
+    key: "circuit",
+    name: "glass circuit",
+    eyebrow: "STUDY 01 / MOTION PATHS",
+    title: "Glass\nCircuit.",
+    description: "A miniature railway in motion.\nA locomotive, two coaches, a tiny station.",
+    features: ["offset-path", "offset-rotate", "glass", "animation-delay"],
+    hint: "follow the train · drag to orbit",
+    scene: circuit,
+  },
+  {
+    key: "relic",
+    name: "soft relic",
+    eyebrow: "STUDY 02 / SOLID GEOMETRY",
+    title: "Soft\nRelic.",
+    description: "Seven carved bronze fins.\nA golden star suspended in the aperture.",
+    features: ["SVG prisms", "carved aperture", "bronze", "nested motion"],
+    hint: "explore the layered silhouette · drag to orbit",
+    scene: relic,
+  },
+  {
+    key: "garden",
+    name: "candy garden",
+    eyebrow: "STUDY 03 / COLOUR & PLAY",
+    title: "Candy\nGarden.",
+    description: "Striped lollipops, wrapped sweets.\nA miniature confectioner’s garden.",
+    features: ["SVG sweets", "conic gradients", "jelly", ":has()"],
+    hint: "hover, press, explore · drag to orbit",
+    scene: garden,
+  },
+  {
+    key: "bloom",
+    name: "chromatic bloom",
+    eyebrow: "STUDY 04 / SCROLL",
+    title: "Chromatic\nBloom.",
+    description: "Twelve metallic petals.\nThe slider unfolds the sculpture.",
+    features: ["scroll()", "oklch()", ":hover", ":active"],
+    hint: "drag the slider to unfold · hover a petal",
+    scene: bloom,
+  },
+  {
+    key: "character",
+    name: "high strut · zdog",
+    eyebrow: "STUDY 05 / ZDOG RECONSTRUCTION",
+    title: "High\nStrut.",
+    description: "The original Zdog character.\nSame palette, proportions and articulated pose.",
+    features: ["nested groups", "SVG facial contours", "rounded solids"],
+    hint: "drag to orbit · hover the face",
+    scene: character,
+    reference: { href: "https://zzz.dog/modeling#modeling-tutorial", label: "original model: Zdog, by Dave DeSandro ↗" },
+    webgl: true,
+  },
+  {
+    key: "burger",
+    name: "tasty burger · zdog",
+    eyebrow: "STUDY 06 / ZDOG RECONSTRUCTION",
+    title: "Tasty\nBurger.",
+    description: "Four layers. Five sesame seeds.\nThe slider takes the original construction apart.",
+    features: ["hemisphere cut", "rounded volumes", "scroll()"],
+    hint: "drag the slider to separate the layers",
+    scene: burger,
+    reference: { href: "https://zzz.dog/modeling#concepts-stroke-volume", label: "original model: Zdog, by Dave DeSandro ↗" },
+    webgl: true,
+  },
+  {
+    key: "camera",
+    name: "nikon f · cutaway",
+    eyebrow: "STUDY 07 / PRODUCT & CSG",
+    title: "Nikon\nStudy.",
+    description: "The 1959 Nikon F exterior.\nThe slider opens an illustrative exploded lens.",
+    features: ["CSG cavities", "iris blades", "glass", "scroll()"],
+    hint: "drag the slider to reveal the optical assembly",
+    scene: camera,
+    reference: { href: "https://imaging.nikon.com/imaging/information/chronicle/rhnc05f-e/", label: "exterior reference: Nikon ↗" },
+    webgl: true,
   },
 ];

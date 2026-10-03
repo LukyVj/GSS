@@ -1,0 +1,45 @@
+/* Dave DeSandro's final modeling tutorial pose, translated into real solids.
+   https://zzz.dog/modeling#modeling-tutorial — source dimensions scaled by 0.12.
+   Facial marks sit on the sphere surface, since GSS has real depth occlusion. */
+@scene {
+  group#figure {
+    path#hips;
+    group#kick { capsule.leg; cube.shoe; }
+    group#stand { capsule.leg; cube.shoe; }
+    group#spine {
+      group#chest {
+        path#shirt;
+        group#head { sphere#face; path.eye * 2; prism#smile; }
+        group#arm-left { capsule.arm; group.forearm { capsule.sleeve; sphere.hand; } }
+        group#arm-right { capsule.arm; group.forearm { capsule.sleeve; sphere.hand; } }
+      }
+    }
+  }
+}
+path, prism { view-box: -2 -2 4 4; }
+scene { background: #fae0be; floor: none; ambient: 1; camera-angle: -45deg 8deg; camera-distance: 8.8; camera-target: 0 2 0.3; }
+#figure { translate: 0 1.6 0; }
+#hips { d: path("M-0.36 0 L0.36 0"); stroke-width: 0.48; color: #636; }
+#kick { translate: -0.36 0 0; rotate-x: 90deg; }
+#stand { translate: 0.36 0 0; rotate-x: -45deg; }
+.leg { radius: 0.24; height: 1.92; translate: 0 -0.72 0; color: #636; }
+.shoe { size: 0.72 0.96 0.48; corner-radius: 0.24; translate: 0 -1.68 0.24; color: #c25; }
+#kick .shoe { rotate-x: 90deg; }
+#stand .shoe { rotate-x: -45deg; }
+#spine { rotate-x: 45deg; }
+#chest { translate: 0 0.78 0; }
+#shirt { d: path("M-0.18 0 L0.18 0"); stroke-width: 1.08; color: #c25; }
+#head { translate: 0 1.14 0; }
+#face { radius: 0.72; color: #ea0; }
+.eye { d: path("M-0.12 0 A0.12 0.12 0 0 1 0.12 0"); stroke-width: 0.06; color: #636; translate: calc((sibling-index() - 2.5) * 0.48) -0.12 0.684; }
+#smile { d: path("M-0.18 0 H0.18 A0.18 0.18 0 0 1 -0.18 0 Z"); depth: 0.04; color: #fed; translate: 0 -0.3 0.659; }
+#arm-left { translate: -0.6 0.24 0; rotate-x: -90deg; }
+#arm-right { translate: 0.6 0.24 0; rotate-x: 90deg; }
+.arm, .sleeve { radius: 0.24; height: 1.2; translate: 0 -0.36 0; }
+.arm { color: #636; }
+.forearm { translate: 0 -0.72 0; rotate-x: 45deg; }
+.sleeve { color: #ea0; blend: 0.04; }
+.hand { translate: 0 -0.72 0.12; radius: 0.36; color: #ea0; blend: 0.04; }
+#face { transition: 0.2s ease-out; }
+#face:hover { color: #ffba19; }
+@media (prefers-reduced-motion: reduce) { #face { transition: none; } }

@@ -7,7 +7,7 @@
     <title>GSS — Showcase</title>
     <meta
       name="description"
-      content="What designers, creative coders and developers make with GSS: live scenes, the code behind them, and three ways to put a scene on your own site."
+      content="Studies, and what designers, creative coders and developers make with GSS: live scenes, the code behind them, and three ways to put a scene on your own site."
     />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="GSS" />
@@ -15,7 +15,7 @@
     <meta property="og:title" content="GSS — Showcase" />
     <meta
       property="og:description"
-      content="What designers, creative coders and developers make with GSS: live scenes, the code behind them, and three ways to put a scene on your own site."
+      content="Studies, and what designers, creative coders and developers make with GSS: live scenes, the code behind them, and three ways to put a scene on your own site."
     />
     <meta
       property="og:image"
@@ -27,8 +27,8 @@
     <link rel="canonical" href="https://www.gss-lang.dev/showcase" />
     <link rel="stylesheet" href="/src/styles/site.css" />
     <style>
-      /* The showcase (decision 63): use cases by audience, the three ways to embed,
-         the inspiration grid. Built on <gss-scene>: the site uses its own embed.
+      /* The showcase (decisions 63, 119): the studies, use cases by audience, the three
+         ways to embed, the inspiration grid. Built on <gss-scene>: the site uses its own embed.
          The look comes from DESIGN.md; the values from src/styles/tokens.css. */
       main {
         box-sizing: border-box;
@@ -113,6 +113,167 @@
         gap: 1px;
         background: var(--gss-line);
         border: 1px solid var(--gss-line);
+      }
+
+      /* ----- Studies: one at a time, its words on the left and its render on the
+         right, like the home page. A study driven by scroll() gets a slider. ----- */
+      .lab {
+        display: grid;
+        grid-template-columns: minmax(300px, 380px) minmax(0, 1fr);
+        min-height: clamp(560px, calc(100svh - 120px), 760px);
+        border: 1px solid var(--gss-line);
+        background: var(--gss-void);
+      }
+
+      /* The study: what it is, what it uses, and the list of studies */
+      .study {
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        min-width: 0;
+        padding: 32px;
+        border-right: 1px solid var(--gss-line);
+      }
+      .study .eyebrow {
+        margin: 0;
+      }
+      .study h3 {
+        margin: 0;
+        font-family: var(--gss-font-display);
+        font-size: clamp(32px, 3.6vw, 44px);
+        font-weight: 800;
+        line-height: 1.05;
+        letter-spacing: -0.05em;
+        white-space: pre-line;
+      }
+      .study .lead {
+        margin: 0;
+        font-size: 16px;
+        line-height: 1.5;
+        white-space: pre-line;
+      }
+      /* The GSS each study shows: chips, like those on a viewport */
+      .features {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+      .features li {
+        padding: 3px 8px;
+        border: 1px solid var(--gss-line);
+        color: var(--gss-ash);
+        font: 11px var(--gss-font-code);
+      }
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px 20px;
+      }
+      .actions .button {
+        display: inline-flex;
+        align-items: center;
+        font: 500 13px var(--gss-font-code);
+      }
+      .actions .button[aria-disabled="true"] {
+        opacity: 0.45;
+        pointer-events: none;
+      }
+      .reference {
+        font: 12px var(--gss-font-code);
+      }
+      .reference[hidden] {
+        display: none;
+      }
+
+      /* The list of studies, like the navigation of the docs: the current one is bone
+         on raised, with a signal rule */
+      .studies {
+        margin-top: auto;
+        padding-top: 20px;
+        border-top: 1px solid var(--gss-line);
+      }
+      .studies .eyebrow {
+        margin: 0 0 12px;
+      }
+      .studies ol {
+        display: grid;
+        gap: 2px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+      .studies button {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+        min-height: 34px;
+        padding: 0 12px;
+        border: 0;
+        border-left: 2px solid transparent;
+        background: transparent;
+        color: var(--gss-ash);
+        font: 13px var(--gss-font-code);
+        text-align: left;
+        cursor: pointer;
+        transition:
+          color var(--gss-transition),
+          background-color var(--gss-transition);
+      }
+      .studies button:hover {
+        color: var(--gss-bone);
+      }
+      .studies button[aria-pressed="true"] {
+        border-left-color: var(--gss-signal);
+        background: var(--gss-raised);
+        color: var(--gss-bone);
+      }
+      .studies .n {
+        color: var(--gss-dim);
+      }
+
+      /* The render, and its status bar */
+      .viewport {
+        position: relative;
+        min-height: 420px;
+        background: var(--gss-void);
+      }
+      .viewport canvas {
+        position: absolute;
+        inset: 0 0 32px;
+        display: block;
+        width: 100%;
+        height: calc(100% - 32px);
+        touch-action: none;
+      }
+      .statusbar {
+        position: absolute;
+        inset: auto 0 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        height: 32px;
+        padding: 0 16px;
+        border-top: 1px solid var(--gss-line);
+        color: var(--gss-dim);
+        font: 11px var(--gss-font-code);
+      }
+      .statusbar .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--gss-dim);
+      }
+      .statusbar.ready .dot {
+        background: var(--gss-signal);
+      }
+      .statusbar .spacer {
+        flex: 1;
       }
 
       /* ----- A use case: the live scene, then what it is and the code to copy ----- */
@@ -310,6 +471,23 @@
           grid-template-columns: 1fr;
           gap: 8px;
         }
+        /* The render on top, the study below */
+        .lab {
+          grid-template-columns: 1fr;
+          min-height: 0;
+        }
+        .viewport {
+          order: -1;
+          min-height: 0;
+          aspect-ratio: 4 / 3;
+          border-bottom: 1px solid var(--gss-line);
+        }
+        .study {
+          border-right: 0;
+        }
+        .studies button {
+          min-height: 44px;
+        }
         .case {
           grid-template-columns: 1fr;
         }
@@ -334,7 +512,8 @@
         .topbar {
           padding: 0 16px;
         }
-        .case .text {
+        .case .text,
+        .study {
           padding: 24px 16px;
         }
         .gallery {
@@ -371,35 +550,51 @@
         <p class="eyebrow">Showcase</p>
         <h1>What you can make with GSS.</h1>
         <p class="lead">
-          Real uses, for designers, creative coders and developers. Every scene
-          on this page is live: drag it, hover it, open it in the playground.
-          And every one is embedded with <code>&lt;gss-scene&gt;</code>, the
-          same tag you can put on your own site.
+          Studies, and real uses for designers, creative coders and developers.
+          Every scene on this page is live: drag it, hover it, open it in the
+          playground. And every use case is embedded with
+          <code>&lt;gss-scene&gt;</code>, the same tag you can put on your own
+          site.
         </p>
         <ul class="jump">
           <li>
-            <a href="#designers"><span class="n">01</span>designers</a>
+            <a href="#studies"><span class="n">01</span>studies</a>
+          </li>
+          <li>
+            <a href="#designers"><span class="n">02</span>designers</a>
           </li>
           <li>
             <a href="#creative-coders"
-              ><span class="n">02</span>creative coders</a
+              ><span class="n">03</span>creative coders</a
             >
           </li>
           <li>
-            <a href="#developers"><span class="n">03</span>developers</a>
+            <a href="#developers"><span class="n">04</span>developers</a>
           </li>
           <li>
-            <a href="#embed"><span class="n">04</span>on your site</a>
+            <a href="#embed"><span class="n">05</span>on your site</a>
           </li>
           <li>
-            <a href="#inspiration"><span class="n">05</span>inspiration</a>
+            <a href="#inspiration"><span class="n">06</span>inspiration</a>
           </li>
         </ul>
       </div>
 
+      <section id="studies" aria-labelledby="studies-title">
+        <div class="head">
+          <h2 id="studies-title"><span class="n">01</span>Studies</h2>
+          <p>
+            Seven longer scenes, one at a time: motion paths, carved geometry,
+            gradients, two Zdog models rebuilt, a camera cut open. Each one
+            opens in the playground.
+          </p>
+        </div>
+        <div class="lab" id="lab"></div>
+      </section>
+
       <section id="designers" aria-labelledby="designers-title">
         <div class="head">
-          <h2 id="designers-title"><span class="n">01</span>For designers</h2>
+          <h2 id="designers-title"><span class="n">02</span>For designers</h2>
           <p>
             Your logo, your icons, your tokens: the things you already draw in
             2D, in 3D, written like a stylesheet.
@@ -411,7 +606,7 @@
       <section id="creative-coders" aria-labelledby="creative-coders-title">
         <div class="head">
           <h2 id="creative-coders-title">
-            <span class="n">02</span>For creative coders
+            <span class="n">03</span>For creative coders
           </h2>
           <p>
             Rules instead of loops, and a readable way into the shader: every
@@ -423,7 +618,7 @@
 
       <section id="developers" aria-labelledby="developers-title">
         <div class="head">
-          <h2 id="developers-title"><span class="n">03</span>For developers</h2>
+          <h2 id="developers-title"><span class="n">04</span>For developers</h2>
           <p>
             A 3D scene is a stylesheet: small enough to ship, simple enough for
             an LLM to write.
@@ -434,7 +629,7 @@
 
       <section id="embed" aria-labelledby="embed-title">
         <div class="head">
-          <h2 id="embed-title"><span class="n">04</span>On your site</h2>
+          <h2 id="embed-title"><span class="n">05</span>On your site</h2>
           <p>
             Three ways to put a scene on a page, from a tag you paste to a build
             step that keeps the compiler out of the page.
@@ -442,7 +637,8 @@
         </div>
         <div class="grid ways" id="ways"></div>
         <p class="note">
-          <b>note</b>GSS has no transparency yet: give the scene the
+          <b>note</b>A scene paints its whole canvas, and a transparent object
+          shows the scene behind it, not the page: give the scene the
           <code>background</code> of your page. A browser keeps about 16 WebGL
           contexts; a scene only starts when it comes into view, and sleeps when
           it leaves it.
@@ -451,7 +647,7 @@
 
       <section id="inspiration" aria-labelledby="inspiration-title">
         <div class="head">
-          <h2 id="inspiration-title"><span class="n">05</span>Inspiration</h2>
+          <h2 id="inspiration-title"><span class="n">06</span>Inspiration</h2>
           <p>
             Scenes to start from. Each one opens in the playground, where you
             can change it and share it with a link.

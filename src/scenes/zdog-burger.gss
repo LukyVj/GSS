@@ -1,0 +1,39 @@
+/* Based on Dave DeSandro's tastyBurger demo: https://zzz.dog/modeling#concepts-stroke-volume
+   Original dimensions converted at 0.02 scene units per source unit.
+   Zdog's stroke volumes become actual rounded solids; no added ingredients. */
+@scene {
+  group#top {
+    sphere#dome;
+    cube#cut;
+    cylinder#bun-face;
+    torus#bun-edge;
+    group#seeds { capsule.seed * 5; }
+  }
+  group#cheese { cube#slice; }
+  group#patty { cylinder#meat; torus#meat-edge; }
+  group#bottom { cylinder#heel; torus.heel-edge * 2; }
+}
+scene { background: #fae0be; floor: none; ambient: 1; camera-distance: 12; camera-angle: 0deg 20deg; camera-target: 0 2.7 0; }
+#top { translate: 0 2 0; animation: open-top 1s ease-in-out; animation-timeline: scroll(root); }
+#dome { radius: 1.2; color: #e62; }
+#cut { size: 3 2 3; translate: 0 -1 0; operation: subtract; }
+#bun-face { radius: 0.96; height: 0.24; color: #e62; }
+#bun-edge { radius: 0.96; thickness: 0.24; color: #e62; }
+.seed { radius: 0.08; height: 0.28; color: #ea0; }
+.seed:nth-child(1) { translate: 0 1.22 0; rotate-x: 90deg; }
+.seed:nth-child(2) { translate: 0 1.007 0.689; rotate-x: 55.62deg; }
+.seed:nth-child(3) { translate: 0 1.007 -0.689; rotate-x: 124.38deg; }
+.seed:nth-child(4) { translate: -0.585 1.071 0; rotate-x: 90deg; }
+.seed:nth-child(5) { translate: 0.585 1.071 0; rotate-x: 90deg; }
+#cheese { translate: 0 1.6 0; animation: open-cheese 1s ease-in-out; animation-timeline: scroll(root); }
+#slice { size: 2.16 0.32 2.16; corner-radius: 0.16; color: #ed0; }
+#patty { translate: 0 1.12 0; animation: open-patty 1s ease-in-out; animation-timeline: scroll(root); }
+#meat { radius: 0.96; height: 0.64; color: #c25; }
+#meat-edge { radius: 0.96; thickness: 0.32; color: #c25; }
+#bottom { translate: 0 0.4 0; }
+#heel { radius: 0.96; height: 0.8; color: #e62; }
+.heel-edge { radius: 0.96; thickness: 0.24; color: #e62; translate: 0 calc((sibling-index() - 2.5) * 0.32) 0; }
+@keyframes open-top { to { translate: 0 4.8 0; } }
+@keyframes open-cheese { to { translate: 0 3 0; rotate-y: 15deg; } }
+@keyframes open-patty { to { translate: 0 1.6 0; } }
+@media (prefers-reduced-motion: reduce) { #top, #cheese, #patty { animation: none; } }

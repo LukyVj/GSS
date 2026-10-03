@@ -5,6 +5,7 @@ import {
   USE_CASES,
   EMBED_SNIPPETS,
   INSPIRATION,
+  STUDIES,
   type UseCase,
   type Inspiration,
 } from "./content";
@@ -17,6 +18,39 @@ const snippet = (lang: "gss" | "html" | "js", text: string) =>
 // <script> text must not contain a literal </script>
 function scriptText(text: string): string {
   return text.replace(/<\/(script)/gi, "<\\/$1");
+}
+
+// The studies viewer: the first study and the list, ready before studies.ts mounts it
+export function renderLabHtml(playgroundHref: string): string {
+  const [first] = STUDIES;
+  const list = STUDIES.map(
+    (study, i) =>
+      `<li><button type="button" data-study="${escapeHtml(study.key)}" aria-pressed="${i === 0}"><span class="n">${String(i + 1).padStart(2, "0")}</span>${escapeHtml(study.name)}</button></li>`,
+  ).join("");
+  const features = first.features.map((feature) => `<li>${escapeHtml(feature)}</li>`).join("");
+  return `<article class="study" aria-labelledby="study-title">
+    <p class="eyebrow" id="study-eyebrow">${escapeHtml(first.eyebrow)}</p>
+    <h3 id="study-title">${escapeHtml(first.title)}</h3>
+    <p class="lead" id="study-description">${escapeHtml(first.description)}</p>
+    <ul class="features" id="study-features" aria-label="What it uses">${features}</ul>
+    <div class="actions">
+      <a class="button primary" id="study-edit" href="${escapeHtml(playgroundHref)}">open in the playground →</a>
+      <a class="reference" id="study-reference" target="_blank" rel="noopener noreferrer" hidden></a>
+    </div>
+    <nav class="studies" aria-label="Choose a study">
+      <p class="eyebrow">Studies</p>
+      <ol>${list}</ol>
+    </nav>
+  </article>
+  <div class="viewport">
+    <canvas aria-label="The study, rendered live with GSS"></canvas>
+    <div class="statusbar" id="study-statusbar">
+      <span class="dot" aria-hidden="true"></span>
+      <span id="study-status" role="status">preparing the study…</span>
+      <span class="spacer"></span>
+      <span id="study-hint">${escapeHtml(first.hint)}</span>
+    </div>
+  </div>`;
 }
 
 export function renderCaseHtml(useCase: UseCase, playgroundHref: string): string {
@@ -62,6 +96,15 @@ export async function prerenderShowcaseHtml(html: string): Promise<string> {
   const playgroundOf = async (source: string) => `./playground.html${await encodeCode(source)}`;
 
   let out = html;
+  const lab = '<div class="lab" id="lab"></div>';
+  if (!out.includes(lab)) {
+    throw new Error("prerender showcase: missing #lab");
+  }
+  out = out.replace(
+    lab,
+    `<div class="lab" id="lab">${renderLabHtml(await playgroundOf(STUDIES[0].scene))}</div>`,
+  );
+
   for (const audience of ["designers", "creative coders", "developers"] as const) {
     const cases = (
       await Promise.all(

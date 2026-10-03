@@ -1,0 +1,68 @@
+/* Chromatic Bloom: scroll to unfold a sculptural ring of twelve petals. */
+@scene {
+  group#bloom {
+    cube.petal * 12;
+  }
+  sphere#core;
+  torus#halo;
+}
+
+scene {
+  background: #101118;
+  floor: #171922;
+  camera-distance: 10.5;
+  camera-angle: 20deg 25deg;
+  camera-target: 0 1.8 0;
+  ambient: 0.45;
+}
+
+#bloom {
+  animation: revolve 1s linear;
+  animation-timeline: scroll(root);
+}
+
+.petal {
+  --angle: calc(sibling-index() * 30deg);
+  size: 0.36 1.5 0.5;
+  corner-radius: 0.16;
+  translate: calc(cos(var(--angle)) * 0.9) 1.9 calc(sin(var(--angle)) * 0.9);
+  rotate-y: calc(-1 * var(--angle));
+  color: oklch(72% 0.18 calc(sibling-index() * 30));
+  material: metal(0.3);
+  animation: unfold 1s ease-in-out;
+  animation-timeline: scroll(root);
+  transition: 0.2s ease-out;
+}
+
+.petal:nth-child(even) { size: 0.36 1.25 0.5; }
+.petal:hover { color: #ffffff; }
+.petal:active { color: #ffbb75; }
+
+#core {
+  translate: 0 1.8 0;
+  radius: 0.5;
+  color: #f4e6ce;
+  material: metal(0.15);
+}
+
+#halo {
+  translate: 0 0.12 0;
+  radius: 2.55;
+  thickness: 0.025;
+  color: #a6a9c3;
+  material: metal(0.25);
+}
+
+@keyframes unfold {
+  to {
+    translate: calc(cos(var(--angle)) * 2.2) calc(1.8 + sin(var(--angle) * 2) * 0.4) calc(sin(var(--angle)) * 2.2);
+    rotate-z: 65deg;
+  }
+}
+
+@keyframes revolve { to { rotate-y: 180deg; } }
+
+@media (prefers-reduced-motion: reduce) {
+  #bloom, .petal { animation: none; }
+  .petal { transition: none; }
+}

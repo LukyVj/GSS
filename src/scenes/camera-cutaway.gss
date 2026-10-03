@@ -1,0 +1,93 @@
+/* Exterior reference: Nikon F (1959), Nikon Camera Chronicle.
+   https://imaging.nikon.com/imaging/information/chronicle/rhnc05f-e/
+   Cutaway/explosion is illustrative, not a documented mechanical reconstruction. */
+@scene {
+  group#body {
+    cube#shell;
+    cube#chamber;
+    cube#top-plate;
+    cube#base-plate;
+    cube#left-leather;
+    cube#right-leather;
+    cube#back-leather;
+    cube#film-gate;
+    cube#mirror;
+    cylinder.spool * 2;
+    group#finder { prism#prism-housing; prism#finder-front; cube#eyepiece; cube#finder-window; cube#wordmark; }
+    group#rewind { cylinder#rewind-dial; cube#rewind-crank; cylinder#rewind-pin; }
+    group#shutter { cylinder#speed-dial; cylinder#release; torus#release-rim; path#wind-lever; cylinder#wind-hub; }
+    cylinder#timer-base;
+    path#timer-lever;
+    sphere#timer-knob;
+    torus.lug * 2;
+    cylinder.screw * 4;
+  }
+  group#mount { cylinder#mount-ring; cylinder#mount-hole; torus#bayonet; cube.mount-tab * 3; }
+  group#barrel { cylinder#barrel-metal; cylinder#barrel-hole; torus#rear-band; torus#front-band; cube.grip * 24; }
+  group#aperture { torus#iris-rim; prism.blade * 6; }
+  group#front { cylinder#front-ring; cylinder#front-hole; torus#front-bezel; cylinder#lens; cube#lens-label; path#engraved-ticks; }
+}
+path, prism { view-box: -2 -2 4 4; }
+scene { background: #101118; floor: #171922; ambient: 0.5; light: -45deg 55deg; camera-distance: 10; camera-angle: 24deg 18deg; camera-target: 0 1.8 0.8; }
+#body { translate: 0 1.8 0; }
+#shell { size: 3.5 1.85 1.05; corner-radius: 0.12; material: metal(#bcc0c6, 0.28); }
+#chamber { size: 2.9 1.35 0.8; corner-radius: 0.05; operation: subtract; }
+#top-plate { size: 3.5 0.24 1.12; corner-radius: 0.08; translate: 0 0.87 0; material: metal(#c8cbd0, 0.2); }
+#base-plate { size: 3.5 0.16 1.12; corner-radius: 0.06; translate: 0 -0.87 0; material: metal(#c8cbd0, 0.2); }
+#left-leather { size: 1.08 1.37 0.055; corner-radius: 0.06; translate: -1.12 -0.02 0.55; material: matte(#24252a); filter: grain(0.045); }
+#right-leather { size: 1.12 1.37 0.055; corner-radius: 0.06; translate: 1.1 -0.02 0.55; material: matte(#24252a); filter: grain(0.045); }
+#back-leather { size: 3.18 1.36 0.06; corner-radius: 0.05; translate: 0 -0.02 -0.55; material: matte(#24252a); filter: grain(0.045); animation: back-open 1s ease-in-out; animation-timeline: scroll(root); }
+#film-gate { size: 0.85 0.6 0.06; translate: 0 0 -0.36; color: #111219; }
+#mirror { size: 0.8 0.65 0.035; rotate-x: -45deg; material: chrome; }
+.spool { radius: 0.24; height: 1.16; translate: calc((sibling-index() - 10.5) * 2.3) -0.03 -0.13; material: metal(#292a30, 0.3); }
+#finder { translate: 0 1.01 0; }
+#prism-housing { d: polygon(-0.52 0, -0.52 -0.36, 0 -0.72, 0.52 -0.36, 0.52 0); depth: 0.92; material: metal(#cdd0d3, 0.2); }
+#finder-front { d: polygon(-0.5 0, -0.5 -0.29, 0.5 -0.29, 0.5 0); depth: 0.02; translate: 0 0.05 0.48; material: metal(#e0e1e2, 0.3); }
+#eyepiece { size: 0.58 0.38 0.14; corner-radius: 0.03; translate: 0 0.12 -0.53; color: #22232a; }
+#finder-window { size: 0.4 0.24 0.02; translate: 0 0.12 -0.61; material: glass(#aacdcc, 1.5); }
+#wordmark { size: 0.79 0.1975 0.015; translate: 0 0.19 0.503; material: metal(#e0e1e2, 0.3); }
+#wordmark::face(front) { texture: url("/studies/nikon-wordmark.svg"); }
+#rewind { translate: -1.22 1.06 0; }
+#rewind-dial { radius: 0.32; height: 0.18; material: chrome; }
+#rewind-crank { size: 0.46 0.045 0.1; translate: 0.05 0.12 0; material: metal(#adb1b8, 0.25); }
+#rewind-pin { radius: 0.055; height: 0.09; translate: 0.26 0.14 0; color: #30323a; }
+#shutter { translate: 1.02 1.05 0; }
+#speed-dial { radius: 0.31; height: 0.18; material: metal(#babec5, 0.25); }
+#release { radius: 0.1; height: 0.16; translate: 0.43 0.04 0.16; material: chrome; }
+#release-rim { radius: 0.11; thickness: 0.035; translate: 0.43 0.12 0.16; material: chrome; }
+#wind-lever { d: path("M0 0 L0.2 -0.1 L0.6 -0.13"); stroke-width: 0.11; rotate-x: 90deg; translate: 0 0.13 -0.12; color: #31343c; }
+#wind-hub { radius: 0.13; height: 0.06; translate: 0 0.14 -0.12; material: chrome; }
+#timer-base { radius: 0.12; height: 0.055; rotate-x: 90deg; translate: -1.05 -0.3 0.61; material: chrome; }
+#timer-lever { d: path("M0 0 L0 -0.27"); stroke-width: 0.07; translate: -1.05 -0.3 0.65; material: chrome; }
+#timer-knob { radius: 0.085; translate: -1.05 -0.03 0.65; material: chrome; }
+.lug { radius: 0.085; thickness: 0.025; rotate-z: 90deg; translate: calc((sibling-index() - 18.5) * 3.62) 0.54 0.1; material: chrome; }
+.screw { radius: 0.035; height: 0.02; rotate-x: 90deg; translate: calc((mod(sibling-index(), 2) * 2 - 1) * 1.57) calc((round(down, (sibling-index() - 20) / 2) * 2 - 1) * 0.75) 0.58; material: chrome; }
+#mount, #barrel, #aperture, #front { translate: 0 1.75 0; }
+#mount-ring { radius: 0.75; height: 0.17; rotate-x: 90deg; translate: 0 0 0.59; material: chrome; }
+#mount-hole { radius: 0.57; height: 0.2; rotate-x: 90deg; translate: 0 0 0.59; operation: subtract; }
+#bayonet { radius: 0.64; thickness: 0.045; rotate-x: 90deg; translate: 0 0 0.7; material: chrome; }
+.mount-tab { --a: calc(sibling-index() * 120deg); size: 0.16 0.09 0.09; translate: calc(cos(var(--a)) * 0.62) calc(sin(var(--a)) * 0.62) 0.74; rotate-z: var(--a); material: chrome; }
+#barrel { animation: barrel-open 1s ease-in-out; animation-timeline: scroll(root); }
+#barrel-metal { radius: 0.69; height: 0.78; rotate-x: 90deg; translate: 0 0 1.14; color: #25272d; }
+#barrel-hole { radius: 0.53; height: 0.8; rotate-x: 90deg; translate: 0 0 1.14; operation: subtract; }
+#rear-band, #front-band { radius: 0.65; thickness: 0.035; rotate-x: 90deg; material: chrome; }
+#rear-band { translate: 0 0 0.81; }
+#front-band { translate: 0 0 1.49; }
+.grip { --a: calc(sibling-index() * 15deg); size: 0.035 0.055 0.42; corner-radius: 0.015; translate: calc(cos(var(--a)) * 0.696) calc(sin(var(--a)) * 0.696) 1.17; rotate-z: var(--a); color: #41434a; }
+#aperture { animation: iris-open 1s ease-in-out; animation-timeline: scroll(root); }
+#iris-rim { radius: 0.48; thickness: 0.07; rotate-x: 90deg; translate: 0 0 1.35; material: metal(#777a82, 0.4); }
+.blade { d: polygon(0.15 0.02, 0.4 -0.2, 0.45 0.2, 0.21 0.4); depth: 0.013; rotate-z: calc(sibling-index() * 60deg); translate: 0 0 calc(1.35 + sibling-index() * 0.014); material: metal(#555960, 0.35); }
+#front { animation: front-open 1s ease-in-out; animation-timeline: scroll(root); }
+#front-ring { radius: 0.67; height: 0.17; rotate-x: 90deg; translate: 0 0 1.61; color: #181a20; }
+#front-hole { radius: 0.46; height: 0.2; rotate-x: 90deg; translate: 0 0 1.61; operation: subtract; }
+#front-bezel { radius: 0.53; thickness: 0.025; rotate-x: 90deg; translate: 0 0 1.7; material: chrome; }
+#lens { radius: 0.455; height: 0.07; rotate-x: 90deg; translate: 0 0 1.65; material: glass(#769ca1, 1.52); }
+#lens-label { size: 0.42 0.105 0.008; translate: 0 0.585 1.707; color: #181a20; }
+#lens-label::face(front) { texture: url("/studies/nikkor-ring.svg"); }
+@keyframes barrel-open { to { translate: 0 1.75 0.85; } }
+@keyframes iris-open { to { translate: 0 1.75 1.65; } }
+@keyframes front-open { to { translate: 0 1.75 2.5; } }
+@keyframes back-open { to { translate: 0 -0.02 -1.6; } }
+@media (prefers-reduced-motion: reduce) { #barrel, #aperture, #front, #back-leather { animation: none; } }
+
+#engraved-ticks { d: path("M0.5820 0.0000 L0.6040 0.0000 M0.5622 0.1506 L0.5834 0.1563 M0.5040 0.2910 L0.5231 0.3020 M0.4115 0.4115 L0.4271 0.4271 M0.2910 0.5040 L0.3020 0.5231 M0.1506 0.5622 L0.1563 0.5834 M0.0000 0.5820 L0.0000 0.6040 M-0.1506 0.5622 L-0.1563 0.5834 M-0.2910 0.5040 L-0.3020 0.5231 M-0.4115 0.4115 L-0.4271 0.4271 M-0.5040 0.2910 L-0.5231 0.3020 M-0.5622 0.1506 L-0.5834 0.1563 M-0.5820 0.0000 L-0.6040 0.0000 M-0.5622 -0.1506 L-0.5834 -0.1563 M-0.5040 -0.2910 L-0.5231 -0.3020 M-0.4115 -0.4115 L-0.4271 -0.4271 M-0.2910 -0.5040 L-0.3020 -0.5231 M-0.1506 -0.5622 L-0.1563 -0.5834 M-0.0000 -0.5820 L-0.0000 -0.6040 M0.1506 -0.5622 L0.1563 -0.5834 M0.2910 -0.5040 L0.3020 -0.5231 M0.4115 -0.4115 L0.4271 -0.4271 M0.5040 -0.2910 L0.5231 -0.3020 M0.5622 -0.1506 L0.5834 -0.1563"); stroke-width: 0.007; translate: 0 0 1.709; color: #cbcbd0; }

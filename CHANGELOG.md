@@ -6,8 +6,13 @@ The 0.0.1 history was reconstructed from GitHub.
 
 ## Unreleased
 
+### Added
+
+- Seven studies open the showcase, one at a time in a viewer: Glass Circuit, Soft Relic, Candy Garden, Chromatic Bloom, the Zdog character and burger reconstructions, and a Nikon F exterior with an illustrative exploded lens. A study driven by `scroll()` has a slider. Each one opens in the playground, where they have their own group, "Studies".
+
 ### Changed
 
+- Showcase: the note under "On your site" no longer says GSS has no transparency: a transparent object shows the scene behind it, not the page, so the scene still takes the background of the page.
 - Docs: a callout under `element()` and `texture` says how to see `element()` today: behind `chrome://flags/#canvas-draw-element` in Chromium, or on a site with the HTML-in-Canvas origin trial and its token, until the trial ends on October 20, 2026.
 
 ## [0.0.4] — 2026-10-03

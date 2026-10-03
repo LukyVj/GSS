@@ -281,6 +281,7 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 
 ## Done recently
 
+- Seven studies open the showcase, one at a time in a viewer, a slider for those driven by `scroll()`; their own group in the playground (decision 119)
 - Notes in the docs: a callout under the description (`note` in the registry), first on `element()` and `texture`, for the flag and the origin trial (decision 118)
 - Transparent colors on objects (plain, gradients with transparent stops) and `filter: opacity()` on objects and groups, multiplied with `opacity` (decision 117)
 - `opacity` on objects and groups, like CSS: the surfaces along the ray drawn from the front, each over what is behind it, a transparent object being a skin; light through it like stained glass with shadows (decision 116)

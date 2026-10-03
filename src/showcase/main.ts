@@ -1,7 +1,8 @@
 import "../styles/gss-code.css";
 import "../embed/element"; // <gss-scene>: the site uses its own embed (decision 63)
+import "./studies"; // the studies viewer, at the top of the page (decision 119)
 
-// Use cases, embed ways and the inspiration grid are prerendered
+// The studies, use cases, embed ways and the inspiration grid are prerendered
 // (src/showcase/prerender.ts). This script only registers <gss-scene> and
 // swaps a missing capture for the code preview.
 

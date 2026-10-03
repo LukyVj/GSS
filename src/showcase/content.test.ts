@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { USE_CASES, INSPIRATION, EMBED_SNIPPETS } from "./content";
+import { USE_CASES, INSPIRATION, EMBED_SNIPPETS, STUDIES } from "./content";
 import { compileScene } from "../compiler";
 import {
   PROPERTIES,
@@ -46,6 +46,34 @@ describe("the showcase", () => {
       .filter((anchor) => !DOCS_ANCHORS.has(anchor));
     expect(missing).toEqual([]);
   });
+
+  it("shows seven studies", () => {
+    expect(STUDIES).toHaveLength(7);
+  });
+
+  it("links each study on its own, apart from the other ids of the page", () => {
+    const keys = STUDIES.map((study) => study.key);
+    const taken = new Set([
+      ...["studies", "designers", "creative-coders", "developers", "embed", "inspiration"],
+      ...["ways", "gallery", "lab"],
+      ...USE_CASES.map((useCase) => useCase.slug),
+    ]);
+    expect(new Set(keys).size).toBe(keys.length);
+    expect(keys.filter((key) => taken.has(key))).toEqual([]);
+  });
+
+  // In a long page, scroll(root) would spread a study over the whole page: the slider
+  // of the playground stands in for the scroll, and the words say so
+  it.each(STUDIES.map((study) => [study.key, study] as const))(
+    "%s compiles, and says slider if the scroll drives it",
+    (key, study) => {
+      const driven = (compileScene(study.scene).timelines?.length ?? 0) > 0;
+      expect(driven).toBe(["bloom", "burger", "camera"].includes(key));
+      if (!driven) return;
+      expect(`${study.description} ${study.hint}`).not.toMatch(/scroll/i);
+      expect(study.hint).toMatch(/slider/);
+    },
+  );
 
   it("shows the three ways to embed", () => {
     expect(EMBED_SNIPPETS.map((s) => s.code).join("\n")).toMatch(

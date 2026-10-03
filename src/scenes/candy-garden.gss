@@ -1,0 +1,98 @@
+/* A confectioner's miniature garden: spiral lollipops, wrapped sweets and gumdrops. */
+@scene {
+  cylinder#dish;
+  torus#rim;
+  group.lollipop * 3 {
+    cylinder.stick;
+    prism.swirl;
+    torus.edge;
+    cube.ribbon;
+  }
+  group.wrapped * 3 {
+    capsule.sweet;
+    prism.wrapper * 2;
+    torus.collar * 2;
+  }
+  group.berlingot * 4 {
+    prism.drop;
+    prism.sugar;
+  }
+  group#flower {
+    sphere.petal * 5;
+    sphere.center;
+    cylinder.stem;
+  }
+}
+scene {
+  background: #101118;
+  floor: #171922;
+  camera-distance: 11.5;
+  camera-angle: 10deg 25deg;
+  camera-target: 0 1.2 0;
+  ambient: 0.65;
+}
+#dish { radius: 3.2; height: 0.2; translate: 0 0.1 0; color: #ebd5b6; material: matte(); }
+#rim { radius: 3.13; thickness: 0.045; translate: 0 0.21 0; material: gold; }
+.lollipop {
+  --i: calc(sibling-index() - 2);
+  --tint: #f775a6;
+  translate: calc((var(--i) - 2) * 1.35) 0.2 -0.7;
+  rotate-z: calc((var(--i) - 2) * -12deg);
+  rotate-y: calc((var(--i) - 2) * -10deg);
+}
+.lollipop:nth-child(4) { --tint: #70cddd; translate: 0 0.4 -0.7; }
+.lollipop:nth-child(5) { --tint: #ffd16d; }
+.stick { radius: 0.055; height: 1.6; translate: 0 0.8 0; color: #fff0d5; }
+.swirl {
+  d: path("M0 -0.58 A0.58 0.58 0 1 1 0 0.58 A0.58 0.58 0 1 1 0 -0.58 Z");
+  depth: 0.2;
+  translate: 0 1.85 0;
+  --spin: 0deg;
+  color: repeating-conic-gradient(from var(--spin), var(--tint) 0deg 30deg, #fff1d8 30deg 60deg);
+  material: jelly(0.65);
+  animation: sugar-spin 10s linear;
+  transition: 0.3s;
+}
+.edge { radius: 0.57; thickness: 0.035; rotate-x: 90deg; translate: 0 1.85 0; color: var(--tint); material: jelly(0.7); }
+.ribbon { size: 0.45 0.16 0.1; corner-radius: 0.05; translate: 0 1.15 0.07; rotate-z: 15deg; color: var(--tint); }
+.lollipop:hover .swirl { scale: 1.15; }
+.lollipop:active .swirl { scale: 0.9; }
+.wrapped {
+  --i: calc(sibling-index() - 5);
+  --tint: #ad8deb;
+  translate: calc((var(--i) - 2) * 1.5) 0.55 0.75;
+  rotate-y: calc((var(--i) - 2) * 30deg);
+  scale: 0.85;
+}
+.wrapped:nth-child(7) { --tint: #edac58; }
+.wrapped:nth-child(8) { --tint: #72caaa; }
+.sweet { radius: 0.27; height: 0.85; rotate-z: 90deg; color: linear-gradient(135deg, var(--tint), #ffefd1); material: jelly(0.6); transition: 0.25s; }
+.wrapper {
+  d: polygon(-0.23 -0.3, 0.23 -0.22, 0.08 0, 0.23 0.25, -0.23 0.3, -0.1 0);
+  depth: 0.08;
+  translate: calc((sibling-index() - 2.5) * 1.05) 0 0;
+  rotate-x: calc(sibling-index() * 20deg);
+  color: var(--tint);
+  material: metal(0.45);
+}
+.collar { radius: 0.13; thickness: 0.025; rotate-z: 90deg; translate: calc((sibling-index() - 4.5) * 0.9) 0 0; material: gold; }
+.wrapped:hover .sweet { scale: 1.2; rotate-z: 100deg; }
+.wrapped:hover + .wrapped .sweet, .wrapped:has(+ .wrapped:hover) .sweet { scale: 1.1; }
+.berlingot {
+  --i: calc(sibling-index() - 8);
+  --tint: #ff9870;
+  translate: calc((var(--i) - 2.5) * 1.15) 0.52 1.75;
+  rotate-y: calc(var(--i) * 25deg);
+}
+.berlingot:nth-child(10) { --tint: #74d7c1; }
+.berlingot:nth-child(11) { --tint: #efd16b; }
+.berlingot:nth-child(12) { --tint: #bd93e2; }
+.drop { d: polygon(-0.4 0.32, 0 -0.45, 0.4 0.32); depth: 0.55; color: repeating-linear-gradient(35deg, var(--tint) 0% 15%, #fff0d3 15% 25%); material: jelly(0.6); transition: 0.25s; }
+.sugar { d: polygon(-0.28 0.28, 0 -0.3, 0.28 0.28); depth: 0.02; translate: 0 0 0.29; color: #ffe7bd; material: matte(); scale: 0.4; }
+.berlingot:hover .drop { rotate-y: 35deg; translate: 0 0.25 0; }
+#flower { translate: 2 0.2 -0.2; rotate-y: -10deg; scale: 0.65; }
+.petal { radius: 0.25; translate: calc(cos(sibling-index() * 72deg) * 0.35) calc(1.3 + sin(sibling-index() * 72deg) * 0.35) 0; color: #ff93b7; material: jelly(0.6); }
+.center { radius: 0.22; translate: 0 1.3 0.15; color: #ffe18a; material: jelly(0.6); }
+.stem { radius: 0.04; height: 1.3; translate: 0 0.65 0; color: #b6d185; }
+@keyframes sugar-spin { to { --spin: 360deg; } }
+@media (prefers-reduced-motion: reduce) { .swirl { animation: none; } .swirl, .sweet, .drop { transition: none; } }

@@ -1,0 +1,109 @@
+/* A miniature railway: locomotive and two coaches follow the same SVG rails. */
+@scene {
+  cylinder#platform;
+  group#railway {
+    path.rail * 2;
+    cube.sleeper * 28;
+    group#engine {
+      group.model {
+        cube.chassis;
+        cylinder.boiler;
+        cube.cab;
+        cube.roof;
+        cube.window * 2;
+        cone.chimney;
+        sphere.lamp;
+        cylinder.wheel * 4;
+        cube.bumper;
+        sphere.steam * 3;
+      }
+    }
+    group.coach * 2 {
+      group.model {
+        cube.chassis;
+        cube.carriage;
+        cube.roof;
+        cube.pane * 6;
+        cylinder.wheel * 4;
+      }
+    }
+  }
+  group#station {
+    cube.foundation;
+    cube.building;
+    prism.gable;
+    cube.door;
+    cube.station-window * 2;
+    cube.canopy;
+    cylinder.post * 2;
+  }
+}
+scene {
+  background: #101118;
+  floor: #171922;
+  camera-distance: 11;
+  camera-angle: 15deg 36deg;
+  camera-target: 0 0.8 0;
+  ambient: 0.55;
+}
+#platform { radius: 3.5; height: 0.25; translate: 0 0.125 0; color: #292e3c; material: metal(0.65); }
+#railway { translate: 0 0.3 0; rotate-x: 90deg; }
+.rail {
+  d: path("M-2.8 0 A2.8 1.75 0 1 1 2.8 0 A2.8 1.75 0 1 1 -2.8 0 Z");
+  scale: calc(0.955 + sibling-index() * 0.03);
+  stroke-width: 0.075;
+  material: glass(#a9e7ff, 1.45, frosted 0.12);
+}
+.sleeper {
+  --a: calc((sibling-index() - 2) * 360deg / 28);
+  translate: calc(cos(var(--a)) * 2.8) calc(sin(var(--a)) * 1.75) -0.02;
+  rotate-z: var(--a);
+  size: 0.32 0.08 0.045;
+  corner-radius: 0.015;
+  color: #626375;
+  material: metal(0.65);
+}
+#engine, .coach {
+  offset-path: path("M-2.8 0 A2.8 1.75 0 1 1 2.8 0 A2.8 1.75 0 1 1 -2.8 0 Z");
+  offset-rotate: auto;
+  animation: lap 18s linear;
+}
+#engine { animation-delay: -2.7s; }
+.coach:nth-of-type(2) { animation-delay: -1.35s; }
+.coach:nth-of-type(3) { animation-delay: 0s; }
+.model { rotate-x: -90deg; scale: 0.8; }
+.model * { material: metal(0.4); }
+.chassis { size: 1.12 0.12 0.48; translate: 0 0.18 0; color: #253344; }
+.boiler { radius: 0.21; height: 0.7; rotate-z: 90deg; translate: 0.18 0.45 0; color: #e06442; }
+.cab { size: 0.4 0.58 0.5; translate: -0.35 0.48 0; corner-radius: 0.025; color: #bd4735; }
+.roof { size: 0.5 0.08 0.62; translate: -0.35 0.82 0; corner-radius: 0.035; color: #e7bd77; }
+.window { size: 0.23 0.23 0.018; translate: -0.35 0.6 calc((sibling-index() - 5.5) * 0.52); color: #a9e7ff; material: glass(1.4); }
+.chimney { radius: 0.09 0.12; height: 0.32; translate: 0.38 0.78 0; color: #e7bd77; }
+.lamp { radius: 0.105; translate: 0.56 0.45 0; color: #fff0b0; material: matte(); }
+.wheel {
+  --i: sibling-index();
+  radius: 0.17;
+  height: 0.08;
+  rotate-x: 90deg;
+  translate: calc(mod(var(--i), 2) * 0.72 - 0.36) 0.17 0.28;
+  color: #cf9f5e;
+}
+#engine .wheel { translate: calc(mod(sibling-index(), 2) * 0.72 - 0.36) 0.17 calc((mod(round(down, sibling-index() / 2), 2) * 2 - 1) * 0.28); }
+.coach .wheel { translate: calc(mod(sibling-index(), 2) * 0.72 - 0.36) 0.17 calc((mod(round(down, sibling-index() / 2), 2) * 2 - 1) * 0.28); }
+.bumper { size: 0.08 0.1 0.58; translate: 0.62 0.22 0; color: #dcb676; }
+.carriage { size: 0.98 0.48 0.46; translate: 0 0.47 0; corner-radius: 0.05; color: #3d879d; }
+.coach .roof { size: 1.12 0.09 0.6; translate: 0 0.75 0; color: #e8d9ba; }
+.pane { size: 0.2 0.22 0.014; translate: calc(mod(sibling-index() - 4, 3) * 0.3 - 0.3) 0.5 calc((round(down, (sibling-index() - 4) / 3) * 2 - 1) * 0.24); color: #bddff0; material: glass(1.4); }
+.model:hover .lamp, .coach:hover .pane { color: #fff9cf; }
+#station { translate: 0 0.25 0; rotate-y: -15deg; }
+.foundation { size: 1.8 0.12 1.1; translate: 0 0.06 0; color: #d2b593; }
+.building { size: 1.3 0.8 0.7; translate: 0 0.5 0; color: #ddd0b4; }
+.gable { d: polygon(-0.78 0.2, 0 -0.25, 0.78 0.2); depth: 0.9; translate: 0 1.12 0; color: #b45845; }
+.door { size: 0.22 0.5 0.025; translate: 0 0.37 0.36; color: #526778; }
+.station-window { size: 0.24 0.25 0.025; translate: calc((sibling-index() - 5.5) * 0.85) 0.61 0.36; color: #92c6de; }
+.canopy { size: 1.7 0.08 0.45; translate: 0 0.84 0.58; color: #b45845; }
+.post { radius: 0.035; height: 0.72; translate: calc((sibling-index() - 8.5) * 1.4) 0.42 0.74; color: #d2b593; }
+.steam { --s: calc(sibling-index() - 13); radius: calc(0.06 + var(--s) * 0.035); translate: calc(0.38 - var(--s) * 0.06) calc(0.95 + var(--s) * 0.22) 0; color: #d4dce4; material: matte(); animation: puff 2s ease-in-out alternate; animation-delay: calc(var(--s) * -0.4s); }
+@keyframes puff { to { scale: 1.25; translate: calc(0.38 - var(--s) * 0.1) calc(1.05 + var(--s) * 0.25) 0; } }
+@keyframes lap { to { offset-distance: 100%; } }
+@media (prefers-reduced-motion: reduce) { #engine, .coach, .steam { animation: none; } }

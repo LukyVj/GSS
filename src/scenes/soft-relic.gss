@@ -1,0 +1,56 @@
+/* A seven-layer carved bronze monument, with a suspended star and orbiting rings. */
+@scene {
+  group#monument {
+    prism.shell * 7;
+    cylinder#aperture;
+  }
+  group#pendulum {
+    prism#star;
+    torus.orbit * 2;
+    sphere#jewel;
+  }
+  cylinder#foot;
+  cylinder#pedestal;
+  torus#trim;
+}
+scene {
+  background: #101118;
+  floor: #171922;
+  camera-distance: 11.5;
+  camera-angle: 22deg 20deg;
+  camera-target: 0 2.1 0;
+  ambient: 0.5;
+  light: -55deg 45deg;
+}
+#monument { translate: 0 2.5 0; animation: reveal 12s ease-in-out alternate; }
+.shell {
+  d: path("M-1.55 1.8 C-2.25 0.8 -1.5 -0.2 -1.3 -1.1 C-1.05 -1.9 -0.4 -2.25 0 -2.6 C0.4 -2.25 1.05 -1.9 1.3 -1.1 C1.5 -0.2 2.25 0.8 1.55 1.8 L0.65 1.95 L0.4 2.2 L-0.4 2.2 L-0.65 1.95 Z");
+  depth: 0.11;
+  translate: 0 0 calc((sibling-index() - 4) * 0.23);
+  scale: calc(1 - abs(sibling-index() - 4) * 0.06);
+  color: color-mix(in oklab, #d3a06c, #6c5346 calc(abs(sibling-index() - 4) * 18%));
+  material: metal(0.45);
+}
+#aperture {
+  radius: 1.13;
+  height: 3;
+  rotate-x: 90deg;
+  translate: 0 0.1 0;
+  operation: subtract;
+  color: #d3a06c;
+  material: metal(0.4);
+}
+#pendulum { translate: 0 2.4 0; animation: turn 16s linear; }
+#star {
+  d: polygon(0 -0.72, 0.16 -0.22, 0.68 -0.22, 0.26 0.09, 0.42 0.6, 0 0.28, -0.42 0.6, -0.26 0.09, -0.68 -0.22, -0.16 -0.22);
+  depth: 0.17;
+  material: gold;
+}
+.orbit { radius: calc(0.73 + sibling-index() * 0.055); thickness: 0.025; rotate-x: 68deg; rotate-z: calc(sibling-index() * 60deg); color: #ebca91; material: metal(0.2); }
+#jewel { radius: 0.15; translate: 0 0 0.15; material: glass(#77dace, 1.6); }
+#pedestal { radius: 1.65; height: 0.35; translate: 0 0.175 0; color: #383c45; material: metal(0.5); }
+#foot { radius: 0.65; height: 0.45; translate: 0 0.57 0; color: #a87749; material: metal(0.45); }
+#trim { radius: 1.6; thickness: 0.025; translate: 0 0.35 0; material: gold; }
+@keyframes reveal { from { rotate-y: -22deg; } to { rotate-y: 22deg; } }
+@keyframes turn { to { rotate-y: 360deg; rotate-z: 360deg; } }
+@media (prefers-reduced-motion: reduce) { #monument, #pendulum { animation: none; } }

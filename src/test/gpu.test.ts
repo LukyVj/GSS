@@ -11,7 +11,7 @@ import {
 import sceneSource from "../scene.gss?raw";
 import { FIRST_SCENE } from "../docs/guide";
 import logoSource from "../scenes/logo.gss?raw";
-import { USE_CASES } from "../showcase/content";
+import { USE_CASES, STUDIES } from "../showcase/content";
 
 afterAll(closeGpu); // close Chromium when every test of this file is done
 
@@ -73,6 +73,12 @@ describe("every showcase scene compiles on the GPU", () => {
     it(useCase.slug, async () => {
       expect(await compileOnGpu(compileGSS(useCase.scene))).toBe("");
     });
+  }
+  // Decision 119: the studies, heavier scenes
+  for (const study of STUDIES) {
+    it(`study ${study.key}`, async () => {
+      expect(await compileOnGpu(compileGSS(study.scene))).toBe("");
+    }, 60000);
   }
 });
 

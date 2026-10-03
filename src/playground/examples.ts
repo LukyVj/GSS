@@ -1,3 +1,10 @@
+import burgerSource from "../scenes/zdog-burger.gss?raw";
+import characterSource from "../scenes/zdog-character.gss?raw";
+import cameraSource from "../scenes/camera-cutaway.gss?raw";
+import bloomSource from "../scenes/chromatic-bloom.gss?raw";
+import circuitSource from "../scenes/glass-circuit.gss?raw";
+import relicSource from "../scenes/soft-relic.gss?raw";
+import gardenSource from "../scenes/candy-garden.gss?raw";
 import sceneSource from "../scene.gss?raw";
 import logoSource from "../scenes/logo.gss?raw";
 import orrerySource from "../scenes/orrery.gss?raw";
@@ -41,6 +48,14 @@ export const EXAMPLES: Example[] = [
   { group: "Start here", name: "GSS logo", code: logoSource },
   { group: "Start here", name: "Test scene (every feature)", code: sceneSource },
   { group: "Start here", name: "L'Orrery (everything at once)", code: orrerySource },
+  // The studies of the showcase, in its order
+  { group: "Studies", name: "Glass Circuit (motion paths)", code: circuitSource },
+  { group: "Studies", name: "Soft Relic (smooth geometry)", code: relicSource },
+  { group: "Studies", name: "Candy Garden (gradients and neighbours)", code: gardenSource },
+  { group: "Studies", name: "Chromatic Bloom (scroll to unfold)", code: bloomSource },
+  { group: "Studies", name: "High Strut (Zdog reconstruction)", code: characterSource },
+  { group: "Studies", name: "Tasty Burger (Zdog reconstruction)", code: burgerSource },
+  { group: "Studies", name: "Nikon F (illustrative cutaway)", code: cameraSource },
   ...AT_RULES.flatMap((atRule) => fromReference(`@${atRule.name}`, atRule.examples)),
   ...FUNCTIONS.flatMap((fn) => fromReference(fn.name, fn.examples)),
   ...PROPERTIES.flatMap((property) => fromReference(property.name, property.examples)),
