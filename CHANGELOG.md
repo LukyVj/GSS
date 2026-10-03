@@ -14,6 +14,7 @@ The 0.0.1 history was reconstructed from GitHub.
 - Nesting, like CSS: a rule holds rules, and `&` stands for the selector around it: `#g { cube { &:hover { color: white; } } > sphere { … } }`. A nested selector without `&` is a descendant (`cube` is `#g cube`), `&` works inside `:has()` and `:not()`, and a `@media` can go inside a rule. Autocompletion and the VS Code grammar know nested rules.
 - `transform-origin`, like CSS: the point an object turns and scales around. Keywords and percentages on the box of the object (`left`, `top right`, `0% 100%`), or a point from its center like `translate` (`transform-origin: 0 0.5 0`), then z. Animatable, and on groups with numbers.
 - `fog` on the scene: `fog: 6 18` fades each object into the background behind it, from 6 to 18 units away from the camera; with a color, `fog: #dfe7ef 4 16`, the background becomes the fog too. Animatable with the scene's animation and its variables, and readable from `@property` variables. Off by default.
+- Docs: "Set variables from JavaScript", a page on `setProperty()`, `getPropertyValue()` and `removeProperty()` with `mount()`, `mountAsync()` and `<gss-scene>` (whose `scene` exists once it fires `load`), the values each syntax takes, and a live demo where a slider moves a sphere. `@property` links to it, and lists every property a variable can go in, `fog` and `transform-origin` included.
 
 ### Fixed
 

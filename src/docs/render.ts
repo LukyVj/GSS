@@ -61,13 +61,19 @@ export function renderProperty(property: PropertyDef): string {
 // The HTML of one at-rule. The anchor starts with "at-" so that @scene
 // can never clash with a property called "scene".
 export function renderAtRule(atRule: AtRuleDef): string {
+  const see = (atRule.see ?? [])
+    .map((page) => `<a href="#${escapeHtml(page.anchor)}">${escapeHtml(page.label)}</a>`)
+    .join(", ");
   return `
     <article class="property" id="at-${escapeHtml(atRule.name)}">
       <h3><code>@${escapeHtml(atRule.name)}</code></h3>
       <p>${escapeHtml(atRule.description)}</p>
       <dl>
         <dt>Syntax</dt>
-        <dd><code class="gss syntax">${highlightSyntax(atRule.syntax)}</code></dd>
+        <dd><code class="gss syntax">${highlightSyntax(atRule.syntax)}</code></dd>${
+          see ? `
+        <dt>See also</dt>
+        <dd>${see}</dd>` : ""}
       </dl>
       ${renderExamples(atRule.examples)}
     </article>`;
@@ -216,9 +222,9 @@ function renderTocTimelines(sections: Section[]): string {
 // One hand-written entry of "Getting started"
 function renderGuideEntry(entry: GuideEntry): string {
   const paragraphs = (list: string[] = []) =>
-    // a block of code (<pre>) is not a paragraph: it goes in as it is
+    // a block of code (<pre>) or a live demo (<div>) is not a paragraph: it goes in as it is
     list
-      .map((text) => (text.startsWith("<pre") ? text : `<p>${text}</p>`))
+      .map((text) => (/^<(pre|div)\b/.test(text) ? text : `<p>${text}</p>`))
       .join("\n      ");
   return `
     <article class="guide" id="${escapeHtml(entry.anchor)}">

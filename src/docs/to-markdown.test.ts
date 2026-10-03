@@ -10,6 +10,18 @@ function article(html: string): HTMLElement {
 }
 
 describe("articleToMarkdown", () => {
+  it("leaves out a live demo: the page shows its code too", () => {
+    const md = articleToMarkdown(
+      article(`
+        <h3>Set variables from JavaScript</h3>
+        <div class="variables-demo"><gss-scene><script type="text/gss">@scene { sphere; }</script></gss-scene>
+          <label><code>--lift</code><input type="range"><output>1</output></label></div>
+        <p>The demo is this code.</p>
+      `),
+    );
+    expect(md).toBe("# Set variables from JavaScript\n\nThe demo is this code.\n");
+  });
+
   it("turns a property page into Markdown", () => {
     const md = articleToMarkdown(
       article(`

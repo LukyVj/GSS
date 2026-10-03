@@ -816,6 +816,14 @@ A range whose bound is excluded keeps its error, computed or not: no number is t
 **Different from CSS**: CSS has no fog; its syntax follows the shorthands of CSS (a color first or last, then numbers), and the docs say the scene ends 20 units from the camera.
 **Accepted limits**: the fog is applied once, to what the camera sees: the reflections and refractions show the objects without fog, and the background they reflect is the scene's own, not the fog color. The fog is linear (no exponential density) and the same at every height (no ground fog). The colored lights of the next step may tint it later.
 
+## 109. The JavaScript API of a scene has its own page in the docs, with a live demo
+
+**Decision**: "Set variables from JavaScript" is a page of the docs, last under Installation (`set-variables`, written by hand in `src/docs/guide.ts`, like the installation pages). It covers `setProperty()`, `getPropertyValue()` and `removeProperty()` on what `mount()`, `mountAsync()` and `gss-lang/runtime` return and on the `scene` of `<gss-scene>`, the values each syntax takes, the error where CSS would ignore a value, the value kept by `update()`, and the trap of `<gss-scene>`: `scene` is `null` until `load`, and `load` comes again with each new scene, which starts from its start values.
+- **A live demo**: a `<gss-scene>` and a slider that sets `--lift` (`.variables-demo`, wired by `src/docs/variables-demo.ts`). The page shows the code the demo runs, built from the same constant; the tests compile its scene and check that each slider sets a variable the scene registers, with values its syntax accepts. The docs page now loads `<gss-scene>` (its renderer and compiler were already in the page for "Try it"). The scene starts only when its page is shown, and sleeps when it is hidden. The Markdown copy of the page leaves the demo out: the code above it says the same.
+- **Linked from the reference**: an at-rule of the registry can name other pages of the docs (`see`), shown as a "See also" row under its syntax; `@property` links to this page. Its description keeps one sentence on `setProperty()` and lists every property a variable can go in, checked against the compiler's own list (`LIVE_PROPERTIES`, now exported), so the list cannot fall behind again (`fog` and `transform-origin` were missing). "Embedding a scene", "Package (npm)" and "CDN" link to the page.
+**Why**: the registry describes the language, not its JavaScript API, so `setProperty()` only had a sentence at the end of the longest entry of the reference and one on the npm page: nothing to find in the contents or the search.
+**Accepted limits**: one demo, with one number. The panel of sliders for every registered variable stays in the roadmap, for the playground.
+
 ## Open questions
 
 - **Targeting multiplied ids**: should `#hero` target `hero-1`, `hero-2` and `hero-3`?

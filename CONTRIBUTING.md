@@ -44,7 +44,9 @@ come first. Entries sort alphabetically unless `ENTRY_ORDER[anchor]` (or an entr
 sets a numeric priority. Do not reorder compiler registries to change the sidebar.
 Navigation, page order and previous/next links share the same grouped entries. Tests check
 that no registered entry is missing or assigned twice. Installation guides live in
-`src/docs/guide.ts` and share versioned snippets with the showcase.
+`src/docs/guide.ts` and share versioned snippets with the showcase. So does "Set variables from
+JavaScript", the page of the JavaScript API: its live demo is wired by `src/docs/variables-demo.ts`.
+A registry entry links to such a page with `see` (a "See also" row; at-rules only for now).
 
 ## Publishing
 

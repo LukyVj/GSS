@@ -163,7 +163,8 @@ and a readable path toward the shader underneath. It is not meant to replace GLS
   `sibling-count()` for CSS-style loops.
 - **Variables**: `--size: 2` and `var(--size, 1)`, inherited from the scene to groups to objects,
   and animatable in `@keyframes`. A variable registered with `@property` is set from the page at any
-  moment, without compiling again: `scene.setProperty("--lift", "2")`.
+  moment, without compiling again: `scene.setProperty("--lift", "2")`
+  ([set variables from JavaScript](https://www.gss-lang.dev/docs#set-variables)).
 - **Colors**: hex, `rgb()`, `hsl()`, `oklch()`, `color-mix()` and the other CSS color functions, the
   CSS named colors (`tomato`) and `currentColor`, with math and `var()` inside:
   `hsl(calc(sibling-index() * 45) 90% 60%)`.

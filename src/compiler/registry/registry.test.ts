@@ -5,7 +5,7 @@ import { MATH_FUNCTIONS } from "../values/calc";
 import { GRADIENT_FUNCTIONS } from "../shader/gradient";
 import { COLOR_FUNCTIONS } from "../values/colors";
 import { shapeNames } from "../shader/codegen/shapes";
-import { compileGSS } from "../index";
+import { compileGSS, LIVE_PROPERTIES } from "../index";
 
 describe("registry", () => {
   it("has no duplicate property names", () => {
@@ -100,6 +100,14 @@ describe("at-rules", () => {
       for (const { code: example } of atRule.examples) {
         expect(example, atRule.name).toContain(`@${atRule.name}`);
       }
+    }
+  });
+
+  // The list a reader looks for: where a variable set from JavaScript can go
+  it("@property names every property a variable set from JS can go in", () => {
+    const { description } = AT_RULES.find((atRule) => atRule.name === "property")!;
+    for (const property of LIVE_PROPERTIES) {
+      expect(description, property).toMatch(new RegExp(`(?<![\\w-])${property}(?![\\w-])`));
     }
   });
 

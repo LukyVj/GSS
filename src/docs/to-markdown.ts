@@ -1,7 +1,8 @@
 // Turns a docs article (the visible page) into Markdown, for LLMs and for reading
-// the source. Chrome we inject (.crumbs, .pager, .copy-page, live playground) is skipped.
+// the source. Chrome we inject (.crumbs, .pager, .copy-page, live playground) is skipped,
+// and so is a live demo: the page shows its code too.
 
-const SKIP = new Set(["page-bar", "crumbs", "pager", "copy-page", "playground"]);
+const SKIP = new Set(["page-bar", "crumbs", "pager", "copy-page", "playground", "variables-demo"]);
 
 function isElement(node: Node): node is HTMLElement {
   return node.nodeType === Node.ELEMENT_NODE;

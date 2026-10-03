@@ -45,6 +45,8 @@ describe("documentation navigation", () => {
     expect(installation).toContain(CDN_URL);
     expect(installation).toContain("gss-lang/runtime");
     expect(installation).toContain("gss-lang/vite");
+    // Set variables from JavaScript: last, after the three ways to install
+    expect(installation.indexOf('id="set-variables"')).toBeGreaterThan(installation.indexOf('id="install-cdn"'));
     expect(html).not.toContain('id="other-reference"');
   });
 });

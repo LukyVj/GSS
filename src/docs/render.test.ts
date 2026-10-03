@@ -192,6 +192,29 @@ describe("renderDocs", () => {
   });
 });
 
+// The JavaScript API is not in the registry: the reference links to its guide page
+describe("an at-rule's See also row", () => {
+  const html = renderDocs(PROPERTIES, AT_RULES, SELECTORS, SHAPE_DOCS);
+
+  it("links @property to the page on setting variables from JavaScript", () => {
+    const property = renderAtRule(AT_RULES.find((atRule) => atRule.name === "property")!);
+    expect(property).toContain("<dt>See also</dt>");
+    expect(property).toContain('<a href="#set-variables">Set variables from JavaScript</a>');
+  });
+
+  it("only links to pages that exist", () => {
+    for (const atRule of AT_RULES) {
+      for (const { anchor } of atRule.see ?? []) {
+        expect(html, anchor).toContain(`id="${anchor}"`);
+      }
+    }
+  });
+
+  it("is left out when there is nothing to see", () => {
+    expect(renderAtRule(keyframes)).not.toContain("See also");
+  });
+});
+
 describe("renderShape", () => {
   const cone = SHAPE_DOCS.find((shape) => shape.name === "cone")!;
   const html = renderShape(cone, PROPERTIES);

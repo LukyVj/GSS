@@ -100,7 +100,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 | Playground                 | `playground.html`: CodeMirror, code in the URL (sharing), examples, GLSL and WGSL tabs, backend selection (auto, WebGPU, WebGL2) | 34, 90 |
 | Status bar                 | `ok · 0 objects · glsl 104 lines · compiled in 4 ms · 60 fps`                                                                                                                | 42         |
 | Located errors             | every error of a compile at once (the text first, then the values), each underlined and written under its line (`15:3 …`); `3 errors` in the status bar; line and column in Vite's terminal | 43, 86     |
-| Generated docs             | `docs.html`, one page per entry, from the registry, live "Try it" everywhere                                                                                                 | 12, 39, 44 |
+| Generated docs             | `docs.html`, one page per entry, from the registry, live "Try it" everywhere; "Set variables from JavaScript", the JS API with a live slider | 12, 39, 44, 109 |
 | Site                       | [gss-lang.dev](https://gss-lang.dev) on Vercel, clean URLs (`/playground`, `/docs`, `/brand`), Open Graph and X cards                                                        | 56         |
 | Brand page                 | `/brand` (`brand.html`): marks, wordmark, lockup, icons, social cards                                                                                                        | 57         |
 | Shadertoy export           | `→ shadertoy` button in the playground, images in `iChannel0`…`3` (at most 4)                                                                                                | 60         |
@@ -270,6 +270,7 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 
 ## Done recently
 
+- The docs page "Set variables from JavaScript": the three methods on `mount()`, `mountAsync()` and `<gss-scene>` (after `load`), the values by syntax, a live slider; `@property` links to it and lists every property a variable can go in, checked against the compiler (decision 109)
 - `fog` on the scene: `fog: [<color>] <start> <end>` from the camera, into the background behind each object, or a color that covers the background too; animatable, readable from `@property`; hides the sharp end of the floor (decision 108)
 - `transform-origin`: keywords and percentages on the box of the object, numbers from its center like `translate`, numbers only on a group; animatable, readable from `@property`; the bounding spheres follow it (decision 107)
 - Nesting with `&`, unfolded by the parser: rules inside rules, a descendant without `&`, `&` inside `:has()` / `:not()`, `@media` inside a rule; autocompletion and the VS Code grammar follow (decision 106)

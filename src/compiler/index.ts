@@ -382,7 +382,7 @@ function oneValue(name: string, at: object): Error {
 
 // The properties a registered variable can go in, for now (decision 105): those the
 // shader already computes at every frame
-const LIVE_PROPERTIES = [
+export const LIVE_PROPERTIES = [
   "translate",
   "filter",
   "material",
