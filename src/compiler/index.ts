@@ -273,11 +273,13 @@ function compileStylesheet(
     stylesheet.keyframes.filter((k) => !usesVariablesIn(k)),
     errors,
   );
+  // What is drawn: the lights of @scene light the objects, but are never drawn (decision 110)
+  const drawn = styled.filter((instance) => instance.tag !== "light");
   // filter: the layers of the objects first, then the scene (decisions 83, 84)
   const passes = errors.run(
     () =>
       buildPasses(
-        objectFilters(styled).layers,
+        objectFilters(drawn).layers,
         computedScene["filter"] ? readSteps(computedScene["filter"]) : [],
       ).passes,
   );
@@ -285,7 +287,7 @@ function compileStylesheet(
   const camera = errors.run(() => readCamera(computedScene));
   const dpr = errors.run(() => readDpr(computedScene));
   // After the cascade and var(): the texture an object really ends up with
-  const textures = errors.run(() => sceneTextures(styled));
+  const textures = errors.run(() => sceneTextures(drawn));
   // Like CSS: the transition of the state the object goes to
   // Pressing takes the transition of :active, releasing the one of the hovered state
   const transitions = errors.run(() => [
@@ -315,7 +317,7 @@ function compileStylesheet(
     shader: shader!,
     camera: camera!,
     dpr: dpr!,
-    objects: instances.length,
+    objects: instances.filter((instance) => instance.tag !== "light").length,
     textures: textures!,
     hover: hoverSlots(styled).map((instance) => instance.hoverTriggers),
     ...(active.length > 0 ? { active } : {}),
@@ -409,6 +411,7 @@ export const LIVE_PROPERTIES = [
   "texture-size",
   "background",
   "fog",
+  "intensity",
 ];
 
 function refuseLive(property: string, value: Token[]): void {
@@ -449,18 +452,18 @@ function usesVariablesIn(animation: Keyframes): boolean {
   );
 }
 
-// On the scene, an animation changes the background, the fog and variables, nothing else:
-// the other properties of a frame belong to objects (decisions 103, 108)
+// On the scene, an animation changes the background, the fog, the sun and variables,
+// nothing else: the other properties of a frame belong to objects (decisions 103, 108, 110)
 function checkSceneAnimation(styles: Styles, keyframes: Keyframes[]): void {
   const name = styles["animation"]?.[0];
   if (name?.type !== "IDENT") return;
   const found = keyframes.findLast((k) => k.name === name.value);
   for (const frame of found?.frames ?? [])
     for (const declaration of frame.declarations)
-      if (!["background", "fog"].includes(declaration.property) && !declaration.property.startsWith("--"))
+      if (!["background", "fog", "light"].includes(declaration.property) && !declaration.property.startsWith("--"))
         throw errorAt(
           declaration,
-          `On the scene, an animation only changes background, fog and variables: ${declaration.property} is a property of objects (in @keyframes ${found!.name})`,
+          `On the scene, an animation only changes background, fog, light and variables: ${declaration.property} is a property of objects (in @keyframes ${found!.name})`,
         );
 }
 

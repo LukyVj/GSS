@@ -1,5 +1,5 @@
 import type { Declaration, Keyframe, Rule, Keyframes } from "../syntax/ast";
-import { PROPERTIES } from "../registry/registry";
+import { PROPERTIES, SHAPE_DOCS } from "../registry/registry";
 import { parseSelector, isSceneSelector, needsHover, needsPointer } from "./resolve";
 import { ErrorSink, errorAt } from "../syntax/errors";
 
@@ -57,6 +57,15 @@ function checkDeclaration(rule: Rule, declaration: Declaration): true {
 
   if (!isScene && property.appliesTo === "scene") {
     throw errorAt(declaration, `"${declaration.property}" only applies to the scene.`);
+  }
+
+  // A light of @scene takes only a few properties (decision 110)
+  const light = SHAPE_DOCS.find((shape) => shape.name === "light")!;
+  if (selector.tag === "light" && !light.takes!.includes(property.name) && !Array.isArray(property.appliesTo)) {
+    throw errorAt(
+      declaration,
+      `"${property.name}" does not apply to a light. A light takes: ${light.takes!.join(", ")}.`,
+    );
   }
 
   // Shape-specific property on an explicit, incompatible tag

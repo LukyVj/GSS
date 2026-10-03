@@ -129,13 +129,14 @@ function triggersOf(
   return [...found];
 }
 
-// Hovering (or pressing) a group means hovering one of its drawable objects.
+// Hovering (or pressing) a group means hovering one of its drawable objects (a light
+// inside it is never drawn, decision 110).
 function hoveredBy(
   node: SceneInstance,
   scene: SceneInstance[],
 ): SceneInstance[] {
   return node.tag === "group"
-    ? scene.filter((object) => object.groups.includes(node))
+    ? scene.filter((object) => object.groups.includes(node) && object.tag !== "light")
     : [node];
 }
 
@@ -724,7 +725,7 @@ export function resolveStyles(
               !needsActive(selector) && // cube:hover:active waits for the press
               matches(selector, instance, instances),
           )
-          .flatMap(({ selector }) => triggersOf(selector, instance, instances))
+          .flatMap(({ rule, selector }) => drawn(rule, triggersOf(selector, instance, instances)))
           .map((other) => other.index),
       ),
     ].sort((a, b) => a - b),
@@ -736,14 +737,25 @@ export function resolveStyles(
             ({ selector }) =>
               needsActive(selector) && matches(selector, instance, instances),
           )
-          .flatMap(({ selector }) =>
-            triggersOf(selector, instance, instances, undefined, "active"),
+          .flatMap(({ rule, selector }) =>
+            drawn(rule, triggersOf(selector, instance, instances, undefined, "active")),
           )
           .map((other) => other.index),
       ),
     ].sort((a, b) => a - b),
     activeStyles: cascade(instance, undefined, "active"),
   }));
+}
+
+// The objects a rule waits for: a light is never drawn, so it can be neither hovered nor
+// pressed (decision 110)
+function drawn(rule: Rule, triggers: SceneInstance[]): SceneInstance[] {
+  if (triggers.some((other) => other.tag === "light"))
+    throw errorAt(
+      rule.selector,
+      "A light is never drawn: it cannot be hovered or pressed. Hover an object instead, like #lamp:hover light",
+    );
+  return triggers;
 }
 
 export function isSceneSelector(selector: SimpleSelector): boolean {

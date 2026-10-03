@@ -263,6 +263,61 @@ describe("the fog covers the scene, on both backends", () => {
   }, 60000);
 });
 
+// Several lights: the white sun written in full gives the image of always, and a light of
+// @scene lights from where its groups, its motion path and :hover put it
+describe("the lights of the scene, on both backends", () => {
+  const apart = (pixels: number[], reference: number[]) =>
+    pixels.filter((v, i) => Math.abs(v - reference[i]) > 40).length / pixels.length;
+  const same = (a: { gl: number[]; gpu: number[] }, b: { gl: number[]; gpu: number[] }) => {
+    expect(apart(a.gl, b.gl)).toBeLessThan(0.002);
+    expect(apart(a.gpu, b.gpu)).toBeLessThan(0.002);
+  };
+  const lit = (pixels: number[]) => expect(pixels.some((v, i) => i % 4 === 0 && v > 60)).toBe(true);
+  const view = "scene { floor: #888888; background: #000000; camera-target: 0 0.6 0; camera-angle: 20deg 20deg; camera-distance: 5; }";
+  const night = "scene { light: none; ambient: 0.02; }";
+
+  it("a white sun written in full gives the image of always, with every material", async () => {
+    const materials =
+      "@scene { sphere#a; sphere#b; sphere#c; cube#d; } #a { translate: -1.2 0.5 0; radius: 0.45; material: chrome; } #b { translate: 0 0.5 0; radius: 0.45; material: jelly; color: #ff5a36; } #c { translate: 1.2 0.5 0; radius: 0.45; material: glass(#ffffff, 1.5, blurred 0.4); } #d { translate: 0 0.3 -1.2; size: 0.6; color: #3a7bff; }";
+    // ambient 0.5: the sun gives the other half, so a sun that forgot it would show
+    const always = await render(`${materials} ${view} scene { ambient: 0.5; }`);
+    const full = await render(`${materials} ${view} scene { light: -45deg 54.7deg #ffffff 1; ambient: 0.5 #ffffff; }`);
+    same(full, always);
+    lit(always.gl);
+  }, 60000);
+
+  it("a light in a turned and scaled group is where the group puts it", async () => {
+    const lamp = "intensity: 3; color: #ffd27a;";
+    const grouped = await render(
+      `@scene { group#arm { light#tip; } sphere; } sphere { translate: 0 0.6 0; } #arm { translate: 1 0 0; rotate-y: 90deg; scale: 2; } #tip { translate: 0 0.8 0.5; ${lamp} } ${view} ${night}`,
+    );
+    const placed = await render(`@scene { light#tip; sphere; } sphere { translate: 0 0.6 0; } #tip { translate: 2 1.6 0; ${lamp} } ${view} ${night}`);
+    same(grouped, placed);
+    lit(placed.gl);
+  }, 60000);
+
+  it("a light on a motion path is at its point", async () => {
+    const lamp = "intensity: 2.5; color: #b6ff6b;";
+    const along = await render(
+      `@scene { light#l; sphere; } sphere { translate: 0 0.6 0; } #l { translate: 0 1.2 1; offset-path: path("M0 0 L2 0"); offset-distance: 1.5; ${lamp} } ${view} ${night}`,
+    );
+    const placed = await render(`@scene { light#l; sphere; } sphere { translate: 0 0.6 0; } #l { translate: 0.5 1.2 1; ${lamp} } ${view} ${night}`);
+    same(along, placed);
+    lit(placed.gl);
+  }, 60000);
+
+  it("a light changes on :hover through its group", async () => {
+    const pick = "scene { camera-angle: 0deg 0deg; camera-distance: 5; camera-target: 0 0 0; floor: none; light: none; ambient: 0.02; }";
+    const hovered = await render(
+      `@scene { group#g { sphere; } light#l; } sphere { radius: 1; } #l { translate: 1 1.5 1.5; intensity: 0.1; } #g:hover ~ #l { intensity: 3; } ${pick}`,
+      true,
+    );
+    const bright = await render(`@scene { group#g { sphere; } light#l; } sphere { radius: 1; } #l { translate: 1 1.5 1.5; intensity: 3; } ${pick}`);
+    same(hovered, bright);
+    lit(bright.gl);
+  }, 60000);
+});
+
 describe("the default camera does not mirror the scene", () => {
   const front = "scene { floor: none; background: #000000; camera-target: 0 0 0; camera-angle: 0deg 0deg; camera-distance: 5; light: 0deg 0deg; ambient: 1; }";
   // The mean column and row of the pixels where `channel` wins, per backend

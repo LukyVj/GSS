@@ -88,9 +88,9 @@ function forSelector(tokens: Token[]): PropertyDef[] {
   if (selector.face !== undefined) return PROPERTIES.filter((p) => p.name === "texture");
   if (needsPointer(selector))
     return PROPERTIES.filter((p) => p.animatable || p.name === "transition");
-  const group = SHAPE_DOCS.find((shape) => shape.name === "group");
-  if (selector.tag === "group" && group?.takes)
-    return PROPERTIES.filter((p) => group.takes!.includes(p.name));
+  // A group and a light take only a few properties
+  const node = SHAPE_DOCS.find((shape) => shape.name === selector.tag && shape.takes);
+  if (node) return PROPERTIES.filter((p) => node.takes!.includes(p.name));
   const shape = SHAPE_DOCS.some((s) => s.name === selector.tag && s.name !== "group")
     ? selector.tag
     : null; // no tag (a class, an id, *): any shape

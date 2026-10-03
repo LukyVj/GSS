@@ -166,11 +166,12 @@ describe("an animation on the scene (decision 103)", () => {
     expect(() =>
       compileScene("@scene { sphere } scene { animation: a 2s; } @keyframes a { to { translate: 0 1 0; } }"),
     ).toThrow("On the scene, an animation only changes background");
-    expect(() =>
+    // The sun moves too since decision 110, through a variable of the scene as well
+    expect(
       compileScene(
         "@scene { sphere } scene { --l: 0deg 45deg; light: var(--l); animation: a 2s; } @keyframes a { to { --l: 90deg 45deg; } }",
-      ),
-    ).toThrow("light cannot be animated");
+      ).shader,
+    ).toContain("normalize(mix(");
   });
 
   it("leaves a scene without animation as it was", () => {

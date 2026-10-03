@@ -41,6 +41,7 @@ What the language and the tools can do today. Each feature is detailed in the re
 | `path`                | a tube along an SVG path: `d: path("M… C… A…")`, `stroke-width`, `view-box`                           | 35, 49 |
 | `prism`               | a filled contour given a depth: `d: polygon(…)` or `d: path(…)` (even-odd holes), `depth`, `view-box` | 41, 50 |
 | `group`               | draws nothing, holds the others                                                                       | 45     |
+| `light`               | a point of light, never drawn: `color`, `intensity`, placed like an object (translate, groups, animations, motion path); 8 at most | 110    |
 
 All centered on their origin, dimensions as full sizes (dec. 36).
 
@@ -53,7 +54,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 | Look         | `color`, `material`                                                                                | 26     |
 | Textures     | `texture: url("…")`, `image-rendering: pixelated`, `texture-size`                                  | 59     |
 | Combinations | `operation: union \| subtract \| intersect`, `blend` (smooth union)                                | 18, 19 |
-| Animation    | `animation`; animatable: `translate`, `rotate-*`, `scale`, `transform-origin`, `color` (a gradient too), `offset-distance` (also what `:hover` can change); on the scene, `background` and `fog` | 24, 62, 102, 103, 107, 108 |
+| Animation    | `animation`; animatable: `translate`, `rotate-*`, `scale`, `transform-origin`, `color` (a gradient too), `offset-distance`, the `intensity` of a light (also what `:hover` can change); on the scene, `background`, `fog` and `light` | 24, 62, 102, 103, 107, 108, 110 |
 | Transition   | `transition: 0.3s ease-out`, one per object; easings: keywords, `cubic-bezier()`, `linear()`       | 68     |
 
 ### Materials
@@ -71,7 +72,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
 | `floor`                                                           | floor color, or `none`                                                               |
 | `background`                                                      | background color                                                                     |
-| `light`, `ambient`                                                | direction of the sun, ambient light                                                  |
+| `light`, `ambient`                                                | the sun (`<azimuth> <elevation> [<color>] [<intensity>]`, or `none`), the ambient light (`<number> [<color>]`); lights of `@scene` add up (dec. 110) |
 | `fog`                                                             | `none`, or `[<color>] <start> <end>` from the camera (dec. 108)                       |
 | `dpr`                                                             | pixel density of the render: `auto` (the screen, up to 2), `max`, a number (dec. 67) |
 | `camera-target`, `camera-distance`, `camera-angle`, `camera-spin` | camera (mouse orbit; automatic turn as a duration, `none` by default, dec. 54)       |
@@ -91,6 +92,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 | A sphere around the whole scene: a ray that passes by it only meets the floor                                                                            | 76       |
 | One bounding test per group of 3 objects or more                                                                                                         | 77       |
 | Fog: mixed into the color after the lighting, from the camera; the bounding spheres follow `transform-origin`                                            | 107, 108 |
+| Lights: the sun, the ambient light and up to 8 point lights of `@scene`, in `diffuse()` and the highlights of metal, jelly and glass; no shadows | 110      |
 
 ### Tools
 
@@ -134,7 +136,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 
 **Next, in Lucas's order** (Oct. 2, after 0.0.3; replaces the list of Oct. 1):
 
-**Next up** (Lucas, Oct. 2 evening: `transform-origin`, then fog, then the lights): **8. Several lights, and colored lights**, before the noise function (7).
+**Next up**: **7. A noise image function** (the lights of item 8 are done, decision 110).
 
 1. ~~**Animated gradients**~~ ✅ decisions 102, 103: a gradient changes into another of the same kind in `@keyframes` and on `:hover`, through a variable too; the scene plays an animation, so its `background` moves (a flat, moving image)
 2. **`setProperty()` from JS**: first step ✅ decision 105 (`@property`, `setProperty()` / `getPropertyValue()` / `removeProperty()`, in `translate`, `rotate-*`, `scale`, `color`, `offset-distance`, `background`). Second step ✅: inside `calc()` and the math functions, and the color functions (`hsl(var(--hue) …)`, `color-mix()`…), computed on the GPU. Third step ✅, Lucas's choice "everywhere": the sizes of shapes (without their bounding spheres), the numbers of a gradient, materials, `light`, `ambient`, `floor`, `camera-target`, `blend`, `offset-rotate`, `texture-size`, filters (with a `"<length>"` syntax in px, the passes included). Not read at run time: the copies of `* n`, `d`, `view-box`, the timings, the camera the mouse moves, `dpr`. The playground panel of sliders: later (Playground, below)
@@ -143,7 +145,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 5. ~~**Fog**~~ ✅ decision 108: `fog: [<color>] <start> <end>` on the scene, into the background behind each object or a color that covers the background too; animatable, readable from `@property`
 6. ~~`:nth-child()`~~ ✅ already done (decision 92)
 7. **A noise image function**, usable wherever a gradient is (`background`, `color`, materials), modelled on SVG `feTurbulence`. The first step toward 2D compositions: several `background` layers with `background-blend-mode`, then `mask-image` and a displacement like `feDisplacementMap`, rather than a separate 2D mode
-8. **Several lights, and colored lights**
+8. ~~**Several lights, and colored lights**~~ ✅ decision 110: `light` elements in `@scene` (point lights, `color`, `intensity`, placed like objects, animated, `:hover` through their group), the sun with a color, an intensity and `none`, a colored `ambient`
 9. **`texture: element(#id)`** (decision 101): a live image of an HTML element on an object, like CSS `element()`, rendered by HTML-in-Canvas (`layoutsubtree`, `texElementImage2D` / `copyElementImageToTexture`, the `paint` event); the element is a child of `<gss-scene>` or of the `<canvas>`; without the API, the object shows its `color`. Comes with an **HTML tab in the playground** (share links carry it, registry examples can carry HTML). Waits until the future of the API after its origin trial is clearer
 
 Done from the list of Oct. 1: ~~`filter`~~ ✅ (decisions 83, 84), ~~motion path~~ ✅ (decision 97), ~~`conic-gradient()`~~ ✅ (decision 98), the mirrored screen fixed (decision 99).
@@ -270,6 +272,7 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 
 ## Done recently
 
+- Several lights, and colored lights: `light` elements in `@scene`, point lights placed like objects (groups, animations, motion path, `:hover` through their group), with `color` and `intensity`; the sun with a color, an intensity and `none`, animated by the scene; a colored `ambient` (decision 110)
 - The docs page "Set variables from JavaScript": the three methods on `mount()`, `mountAsync()` and `<gss-scene>` (after `load`), the values by syntax, a live slider; `@property` links to it and lists every property a variable can go in, checked against the compiler (decision 109)
 - `fog` on the scene: `fog: [<color>] <start> <end>` from the camera, into the background behind each object, or a color that covers the background too; animatable, readable from `@property`; hides the sharp end of the floor (decision 108)
 - `transform-origin`: keywords and percentages on the box of the object, numbers from its center like `translate`, numbers only on a group; animatable, readable from `@property`; the bounding spheres follow it (decision 107)

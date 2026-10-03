@@ -42,12 +42,13 @@ import { filterCode } from "./filters";
 import { COLOR_LIBRARY } from "./color-library";
 import { isLive, liveCode, liveNumber } from "./live";
 import { liveLight, liveRead } from "./properties";
+import { DIFFUSE, isLight, lightingCode, splitAmbient } from "./lights";
 
 export { activeSlots, hoverSlots } from "./animation";
 export { shapeNames, shapeRadius } from "./shapes";
 
 export function generateShader(
-  instances: StyledInstance[],
+  everything: StyledInstance[], // the objects, and the lights of @scene (decision 110)
   sceneStyles: Styles = {},
   keyframes: Keyframes[] = [],
   properties = 0, // the variables registered with @property: uProperties[] (decision 105)
@@ -55,13 +56,17 @@ export function generateShader(
   // scroll() and view(): one component of uTimeline each (decision 96)
   const timelines = sceneTimelines([
     sceneStyles,
-    ...instances.flatMap((instance) => [...instance.groupStyles, instance.styles]),
+    ...everything.flatMap((instance) => [...instance.groupStyles, instance.styles]),
   ]);
   useTimelines(timelines);
   // The motion paths a scene animates along: one GLSL function each (decision 97)
   const offsetFunctions = useOffsetFunctions();
-  const hovers = hoverSlots(instances);
-  const actives = activeSlots(instances);
+  // A light of @scene can change on :hover through its group: it has its slots too
+  const hovers = hoverSlots(everything);
+  const actives = activeSlots(everything);
+  // The lights light the objects; they are never drawn
+  const lamps = everything.filter(isLight);
+  const instances = everything.filter((instance) => !isLight(instance));
   // uHover[]: the hover slots, then the :active ones (decision 95)
   const slots = [...hovers, ...actives];
   // The hover and pressed states of one object, or undefined when it has neither
@@ -215,9 +220,11 @@ export function generateShader(
 
   // ambient: the share of light received in the shadow; the sun gives the rest.
   // Set from JS (decision 105): kept between 0 and 1 on the GPU.
-  const liveAmbient = liveCode(sceneStyles["ambient"], "ambient");
+  // A color can follow the number (decision 110)
+  const ambientParts = splitAmbient(sceneStyles["ambient"]);
+  const liveAmbient = liveCode(ambientParts.number, "ambient");
   const ambientCode = liveAmbient === null ? null : `clamp(${liveAmbient}, 0.0, 1.0)`;
-  const ambient = ambientCode ? 0 : readNumber(sceneStyles["ambient"], "ambient", 0.1, true);
+  const ambient = ambientCode ? 0 : readNumber(ambientParts.number, "ambient", 0.1, true);
   if (ambient > 1) {
     throw errorAt(
       sceneStyles["ambient"],
@@ -241,7 +248,12 @@ export function generateShader(
   const sceneSphereCode = scene
     ? sceneMiss(scene.center, scene.radius + maxBlend + 0.01, hasFloor)
     : "";
-  const animate = animateCode(hoisted);
+  // The sun, the ambient light and the lights of @scene; null for the white sun of always
+  const lights = lightingCode(lamps, sceneStyles, keyframes, hoverOf, hoisted, {
+    level: ambientCode ?? glslFloat(ambient),
+    color: ambientParts.color,
+  });
+  const animate = animateCode(hoisted, lights?.positions ?? "");
   const textures = textureCode(instances, keyframes, hoverOf);
   // filter on the scene (decision 83) and on objects (decision 84)
   const { objectFilter, filterLines, alpha, filterFunctions } = filterCode(instances, sceneStyles);
@@ -263,8 +275,11 @@ export function generateShader(
     .map(([, line]) => line)
     .join("\n");
 
-  return (
-    TEMPLATE.replace(
+  const template = lights
+    ? TEMPLATE.replace(DIFFUSE, lights.diffuse).replace("const vec3 LIGHT_DIR = /*@LIGHT*/;", lights.definitions)
+    : TEMPLATE;
+  const shader = (
+    template.replace(
       "/*@EASINGS*/",
       section(
         "// The easings of the animations: only those the scene uses",
@@ -367,8 +382,9 @@ uniform vec2 uPick;`
       // A sun set from JS (decision 105): a function, since a constant cannot read a uniform
       .replace(
         "const vec3 LIGHT_DIR = /*@LIGHT*/;",
-        liveLight(sceneStyles["light"]) ??
-          `const vec3 LIGHT_DIR = ${vec3(readLight(sceneStyles["light"]))};`,
+        lights
+          ? ""
+          : (liveLight(sceneStyles["light"]) ?? `const vec3 LIGHT_DIR = ${vec3(readLight(sceneStyles["light"]))};`),
       )
       .replace("/*@AMBIENT*/", ambientCode ?? glslFloat(ambient))
       .replace("/*@DIRECT*/", ambientCode ? `(1.0 - ${ambientCode})` : glslFloat(direct))
@@ -413,4 +429,6 @@ uniform vec2 uPick;`
       // The parts left out leave blank lines behind: never more than one in a row
       .replace(/\n[ \t]*\n(?:[ \t]*\n)+/g, "\n\n")
   );
+  // Every light in the highlights of the materials too
+  return lights ? lights.rewrite(shader) : shader;
 }

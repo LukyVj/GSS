@@ -20,7 +20,7 @@ export type Example = {
 
 export type PropertyDef = {
   name: string;
-  appliesTo: "object" | "scene" | "everywhere" | Shape[]; // Shape[]: only these shapes; everywhere: the scene too
+  appliesTo: "object" | "scene" | "everywhere" | (Shape | "light")[]; // [...]: only these shapes (or lights); everywhere: the scene too
   syntax: string;
   initial: string;
   description: string;
@@ -40,7 +40,7 @@ export type AtRuleDef = {
 // A shape that can be declared in @scene. Its own properties are not listed here:
 // the docs find them in PROPERTIES, through appliesTo.
 export type ShapeDef = {
-  name: Shape | "group"; // the Shape type checks the spelling; group is drawn by its children
+  name: Shape | "group" | "light"; // the Shape type checks the spelling; group is drawn by its children, light draws nothing
   description: string;
   examples: Example[];
   takes?: string[]; // only these properties have an effect (a group); otherwise every object property
@@ -88,7 +88,7 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "<color> | <gradient>",
     initial: "#e6e6e6",
     description:
-      "Sets the base color of the object's surface: a hex color (#ff5a36), rgb(), hsl() or one of the 148 CSS named colors (tomato), turned into a hex color by the compiler. It can also be a gradient (linear-gradient(), radial-gradient(), conic-gradient()), painted on the object as seen from the front, and taken by every material. A gradient can be animated and changed by :hover: it changes into another gradient of the same kind with as many colors, and each of its numbers moves on its own, the angle, the center, the positions and the colors. Through a variable, like a registered @property in CSS, one number is enough: linear-gradient(var(--angle), …) turns when a @keyframes changes --angle. A color cannot change into a gradient.",
+      "Sets the base color of the object's surface: a hex color (#ff5a36), rgb(), hsl() or one of the 148 CSS named colors (tomato), turned into a hex color by the compiler. It can also be a gradient (linear-gradient(), radial-gradient(), conic-gradient()), painted on the object as seen from the front, and taken by every material. A gradient can be animated and changed by :hover: it changes into another gradient of the same kind with as many colors, and each of its numbers moves on its own, the angle, the center, the positions and the colors. Through a variable, like a registered @property in CSS, one number is enough: linear-gradient(var(--angle), …) turns when a @keyframes changes --angle. A color cannot change into a gradient. On a light of @scene, color is the color of its light: a plain color, not a gradient.",
     examples: [
       {
         name: "color",
@@ -679,24 +679,52 @@ export const PROPERTIES: PropertyDef[] = [
   {
     name: "light",
     appliesTo: "scene",
-    syntax: "<angle> <angle>",
+    animatable: true,
+    syntax: "none | <angle> <angle> [ <color> || <number> ]?",
     initial: "-45deg 54.7deg",
     description:
-      "Sets the direction of the sun: first its azimuth around the vertical axis (0deg points to +z, 90deg to +x), then its elevation above the horizon (90deg is straight overhead). The default lights the scene from the upper left, in front.",
+      "Sets the sun: first its direction, its azimuth around the vertical axis (0deg points to +z, 90deg to +x), then its elevation above the horizon (90deg is straight overhead); then, if needed, its color (white by default) and its intensity (1 by default), in any order. The default lights the scene from the upper left, in front. none turns the sun off, for a scene lit only by its own lights (the light elements of @scene) and its ambient light. The scene can animate it, with animation on the scene: a sun that turns, changes color, or rises from none.",
     examples: [
       {
         name: "light",
         code: "@scene { cube; } cube { translate: 0 0.5 0; } scene { light: -120deg 30deg; }",
+      },
+      {
+        name: "a warm sun",
+        code: "@scene { sphere; } sphere { translate: 0 0.6 0; radius: 0.6; } scene { light: -60deg 25deg #ffb36b 1.2; ambient: 0.2 #6b8cff; }",
+      },
+      {
+        name: "no sun",
+        code: "@scene { sphere; light#lamp; } sphere { translate: 0 0.6 0; radius: 0.6; } #lamp { translate: 1 1.5 1; intensity: 2.5; } scene { light: none; ambient: 0.05; }",
+      },
+      {
+        name: "a day",
+        code: "@scene { cube; } cube { translate: 0 0.5 0; } scene { animation: day 6s ease-in-out infinite alternate; } @keyframes day { from { light: -80deg 5deg #ff8a5c 0.6; } to { light: 60deg 70deg #ffffff 1; } }",
+      },
+    ],
+  },
+  {
+    name: "intensity",
+    appliesTo: ["light"],
+    animatable: true,
+    syntax: "<number>",
+    initial: "1",
+    description:
+      "How much light a light of @scene gives: what a surface facing it receives at 1 unit, then less with the square of the distance (a quarter at 2 units, a ninth at 3). 0 turns it off. It can be animated, changed by :hover and set from JavaScript.",
+    examples: [
+      {
+        name: "intensity",
+        code: "@scene { light; sphere; } scene { light: none; ambient: 0.05; } light { translate: 0 2 1; intensity: 4; } sphere { translate: 0 0.6 0; radius: 0.6; }",
       },
     ],
   },
   {
     name: "ambient",
     appliesTo: "scene",
-    syntax: "<number>",
+    syntax: "<number> <color>?",
     initial: "0.1",
     description:
-      "Sets the minimum light received by surfaces facing away from the sun, from 0 (black shadows) to 1 (no shadows).",
+      "Sets the minimum light received by surfaces facing away from the sun, from 0 (black shadows) to 1 (no shadows). The sun gives the rest. A color can follow, for the light of the sky in the shadows: ambient: 0.2 #9db4ff gives bluish shadows under a warm sun.",
     examples: [
       {
         name: "ambient",
@@ -947,7 +975,7 @@ export const AT_RULES: AtRuleDef[] = [
     name: "property",
     syntax: '@property --<name> { syntax: "<number>" | "<angle>" | "<percentage>" | "<color>" | "<length>"; inherits: true | false; initial-value: <value>; }',
     description:
-      "Registers a variable that the page sets from JavaScript without compiling the scene again, like CSS @property. The syntax says what it holds: a number, an angle, a percentage, a color, or a length in px (the radius of blur() and bloom()); inherits is required, like CSS; initial-value is its value until the page sets another one. A registered variable has one value for the whole scene, like a variable on :root: scene { --speed: 8; } gives its start value, and declaring it on an object, a group, a :hover rule or a @keyframes frame is an error (a frame can read it). The page sets it with scene.setProperty(\"--lift\", \"2\"), on the scene that mount() returns or on the scene property of <gss-scene>: see Set variables from JavaScript. It goes wherever a value reaches the shader: the transforms (translate, rotate-x, rotate-y, rotate-z, scale, transform-origin), color and background, the sizes of the shapes (radius, size, height, thickness, corner-radius, stroke-width, depth), the numbers of a gradient (its angle, center, stops and colors), material, floor, ambient, light, fog, camera-target, blend, offset-distance and offset-rotate, texture-size, and filter, alone (translate: 0 var(--lift) 0), inside the math functions (calc(var(--lift) * 2), sin(), clamp()…) and inside the color functions (hsl(var(--hue) 80% 60%), oklch(), color-mix()…, computed in the same color spaces as the others). The GPU computes them at every frame. It cannot go where the scene is built when it compiles: the copies of * n, d and view-box, the timing of animations and transitions, the camera the mouse moves (camera-distance, camera-angle, camera-spin) and dpr. A value known only when the scene runs cannot be refused like a value written as is: it is kept in its range (a size is never below 0, a roughness stays between 0 and 1), and in color-mix(), a percentage set from JavaScript is kept between 0% and 100%, and percentages that add up to less than 100% are scaled up to 100% instead of being an error. An object whose size or place a variable sets is always drawn: its bounding sphere is not known. random() cannot use it: a random value is chosen once. The Shadertoy export keeps the initial values.",
+      "Registers a variable that the page sets from JavaScript without compiling the scene again, like CSS @property. The syntax says what it holds: a number, an angle, a percentage, a color, or a length in px (the radius of blur() and bloom()); inherits is required, like CSS; initial-value is its value until the page sets another one. A registered variable has one value for the whole scene, like a variable on :root: scene { --speed: 8; } gives its start value, and declaring it on an object, a group, a :hover rule or a @keyframes frame is an error (a frame can read it). The page sets it with scene.setProperty(\"--lift\", \"2\"), on the scene that mount() returns or on the scene property of <gss-scene>: see Set variables from JavaScript. It goes wherever a value reaches the shader: the transforms (translate, rotate-x, rotate-y, rotate-z, scale, transform-origin), color and background, the sizes of the shapes (radius, size, height, thickness, corner-radius, stroke-width, depth), the numbers of a gradient (its angle, center, stops and colors), material, floor, ambient, light (and the color and intensity of the lights of @scene), fog, camera-target, blend, offset-distance and offset-rotate, texture-size, and filter, alone (translate: 0 var(--lift) 0), inside the math functions (calc(var(--lift) * 2), sin(), clamp()…) and inside the color functions (hsl(var(--hue) 80% 60%), oklch(), color-mix()…, computed in the same color spaces as the others). The GPU computes them at every frame. It cannot go where the scene is built when it compiles: the copies of * n, d and view-box, the timing of animations and transitions, the camera the mouse moves (camera-distance, camera-angle, camera-spin) and dpr. A value known only when the scene runs cannot be refused like a value written as is: it is kept in its range (a size is never below 0, a roughness stays between 0 and 1), and in color-mix(), a percentage set from JavaScript is kept between 0% and 100%, and percentages that add up to less than 100% are scaled up to 100% instead of being an error. An object whose size or place a variable sets is always drawn: its bounding sphere is not known. random() cannot use it: a random value is chosen once. The Shadertoy export keeps the initial values.",
     examples: [
       {
         name: "property",
@@ -1418,6 +1446,50 @@ export const SHAPE_DOCS: ShapeDef[] = [
       {
         name: "group",
         code: "@scene { group#spin { sphere#a; sphere#b; } } #spin { translate: 0 0.6 0; animation: turn 4s linear; } #a { translate: 0.8 0 0; radius: 0.4; } #b { translate: -0.8 0 0; radius: 0.4; } @keyframes turn { to { rotate-y: -1turn; } }",
+      },
+    ],
+  },
+  {
+    name: "light",
+    description:
+      "Not a shape: a point of light, which draws nothing. Its color is the color of its light (white by default), and intensity how much light it gives: what a surface facing it receives at 1 unit, then less with the square of the distance. It is placed like an object: translate, the groups it is in, animations, :hover through its group, a motion path, and rotations around a transform-origin (numbers only, since a light has no size). Several lights add up, on top of the sun of the scene (light on the scene, which none turns off) and its ambient light; a scene has 8 lights at most. A light is never drawn: to see the bulb, put a shape at its place; and since it is not drawn, it cannot be hovered or pressed itself: hover an object, like #lamp:hover light. Objects cast no shadow: the light goes through them.",
+    takes: [
+      "color",
+      "intensity",
+      "translate",
+      "rotate-x",
+      "rotate-y",
+      "rotate-z",
+      "transform-origin",
+      "transition",
+      "animation",
+      "animation-duration",
+      "animation-delay",
+      "animation-iteration-count",
+      "animation-direction",
+      "animation-fill-mode",
+      "animation-timing-function",
+      "animation-timeline",
+      "offset-path",
+      "offset-distance",
+      "offset-rotate",
+    ],
+    examples: [
+      {
+        name: "a lamp",
+        code: "@scene { light#bulb; sphere; } scene { light: none; ambient: 0.05; } #bulb { translate: 0.9 1.6 0.9; color: #ffd27a; intensity: 2; } sphere { translate: 0 0.6 0; radius: 0.6; }",
+      },
+      {
+        name: "colored lights",
+        code: "@scene { light#warm; light#cold; cube; } scene { light: none; ambient: 0.05; } #warm { translate: -1.4 1.4 1; color: #ff5a36; intensity: 3; } #cold { translate: 1.4 1.4 1; color: #3a7bff; intensity: 3; } cube { translate: 0 0.5 0; color: #ffffff; }",
+      },
+      {
+        name: "a light that moves",
+        code: "@scene { light#firefly; sphere; } scene { light: none; ambient: 0.05; } #firefly { translate: 1.2 0.8 0; transform-origin: -1.2 0 0; color: #b6ff6b; intensity: 1.5; animation: circle 4s linear; } sphere { translate: 0 0.6 0; radius: 0.5; } @keyframes circle { to { rotate-y: 1turn; } }",
+      },
+      {
+        name: "a lamp to hover",
+        code: "@scene { light#bulb; group#lamp { sphere#shade; cube#stand; } } scene { light: none; ambient: 0.15; } #shade { translate: 0 1.5 0; radius: 0.3; color: #ffd27a; } #stand { translate: 0 0.6 0; size: 0.1 1.2 0.1; } #bulb { translate: 0 1.1 0.5; intensity: 0.2; transition: 0.4s; } #bulb:has(+ #lamp:hover) { intensity: 3; }",
       },
     ],
   },

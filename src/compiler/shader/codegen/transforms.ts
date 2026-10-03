@@ -1,10 +1,10 @@
 // Moving q into the space of a group or an object, and animate()
 import type { Keyframes } from "../../syntax/ast";
 import type { StyledInstance, Styles } from "../../cascade/resolve";
-import { label, type Hover } from "./glsl";
+import { glslFloat, label, type Hover } from "./glsl";
 import { ROTATIONS, readRotation, readScale, readTranslate } from "./read";
 import { hoverValue } from "./animation";
-import { offsetLines } from "./offset";
+import { offsetForwardLines, offsetLines } from "./offset";
 import { objectBox, readOrigin, type Box } from "./origin";
 
 // ----- Animations, computed once per pixel -----
@@ -32,14 +32,17 @@ export function hoist(hoisted: Hoisted | undefined, type: "float" | "vec3" | "ve
   return name;
 }
 
-// The globals and animate(), or "" when nothing moves
-export function animateCode(hoisted: Hoisted): string {
+// The globals and animate(), or "" when nothing moves. functions: GLSL that reads the
+// globals and that animate() calls, written between them (the place of each light of
+// @scene, decision 110).
+export function animateCode(hoisted: Hoisted, functions = ""): string {
   if (hoisted.values.length === 0) return "";
   return [
     "// Animations and :hover: they depend on the time, not on the point, so",
     "// animate() computes them once per pixel, and map() reads them",
     ...hoisted.values.map(({ type, name }) => `${type} ${name};`),
     "",
+    ...(functions ? [functions, ""] : []),
     "void animate() {",
     ...hoisted.values.map(({ name, expr }) => `  ${name} = ${expr};`),
     "}",
@@ -92,6 +95,36 @@ export function transformLines(
     `  q /= ${hoist(hoisted, "float", hoverValue(styles, keyframes, "scale", readScale, hover))};`,
     ...offsetLines(styles, keyframes, hover, hoisted), // the motion path, after scale like CSS
     ...(origin ? [`  q += ${origin};`] : []),
+  ];
+}
+
+// The other way, on v: from the space of a node to the space around it, the lines of
+// transformLines() undone in the reverse order. A light of @scene is placed this way
+// (decision 110); a value that changes nothing writes no line.
+export function forwardLines(
+  styles: Styles,
+  keyframes: Keyframes[],
+  hover?: Hover,
+  hoisted?: Hoisted,
+  box?: Box,
+): string[] {
+  const origin = originOf(styles, keyframes, hover, hoisted, box);
+  const scale = hoist(hoisted, "float", hoverValue(styles, keyframes, "scale", readScale, hover));
+  const translate = hoist(hoisted, "vec3", hoverValue(styles, keyframes, "translate", readTranslate, hover));
+  const turns: string[] = [];
+  for (const [property, axes] of ROTATIONS) {
+    const angle = hoverValue(styles, keyframes, property, readRotation, hover);
+    if (angle === "0.0") continue;
+    const back = /^-?[\d.]+$/.test(angle) ? glslFloat(-Number(angle)) : `-(${angle})`;
+    turns.unshift(`  v.${axes} *= ${hoist(hoisted, "mat2", `rot(${back})`)};`); // z, then y, then x
+  }
+  return [
+    ...(origin ? [`  v -= ${origin};`] : []),
+    ...offsetForwardLines(styles, keyframes, hover, hoisted),
+    ...(scale === "1.0" ? [] : [`  v *= ${scale};`]),
+    ...turns,
+    ...(origin ? [`  v += ${origin};`] : []),
+    ...(translate === "vec3(0.0)" ? [] : [`  v += ${translate};`]),
   ];
 }
 

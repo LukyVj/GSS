@@ -88,6 +88,13 @@ describe("only the properties the rule can take", () => {
     expect(suggest("@media (max-width: 600px) { scene { d| } }")!.names).toContain("dpr");
   });
 
+  it("a light of @scene: only what a light takes", () => {
+    const names = suggest("light#bulb { |}")!.names;
+    expect(names).toContain("intensity");
+    expect(names).toContain("translate");
+    expect(names).not.toContain("material");
+  });
+
   it("a nested rule: the selector with the parent in place of &", () => {
     const hovered = suggest("cube { color: red; &:hover { |} }")!.names;
     expect(hovered).toContain("color");

@@ -7,9 +7,9 @@ gss-lang.dev; npm package: `gss-lang`.
 ## Read first
 
 - `ROADMAP.md`: what GSS already does, and what comes next. The **Essentials** section (Oct. 2) is done;
-  Lucas's order for what comes next is at the top of **Priorities** (next up: several lights, and
-  colored lights; then the noise image function).
-- `DECISIONS.md`: every design decision, numbered. The next one is **110**. Add a decision for every
+  Lucas's order for what comes next is at the top of **Priorities** (next up: the noise image
+  function).
+- `DECISIONS.md`: every design decision, numbered. The next one is **111**. Add a decision for every
   new feature or behavior change.
 - `CONTRIBUTING.md`: where things live. `CHANGELOG.md`: user-facing changes, under "Unreleased".
 

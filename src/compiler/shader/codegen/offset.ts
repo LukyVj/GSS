@@ -236,6 +236,43 @@ export function offsetLines(
   return lines;
 }
 
+// The motion path the other way, on v: from the space of a node to the space around it.
+// A light of @scene is placed this way (decision 110): the lines of offsetLines(), undone
+// in the reverse order.
+export function offsetForwardLines(
+  styles: Styles,
+  keyframes: Keyframes[],
+  hover?: Hover,
+  hoisted?: Hoisted,
+): string[] {
+  const path = readOffsetPath(styles["offset-path"]);
+  if (!path) return [];
+  const rotate = readOffsetRotate(styles["offset-rotate"]);
+  const distance = hoverValue(styles, keyframes, "offset-distance", (v) => readDistance(path, v), hover);
+  const lines: string[] = [];
+  const sign = rotate.reverse ? "-" : "";
+  if (typeof rotate.angle === "string") lines.push(`  v.xy *= rot(-(${rotate.angle}));`);
+  else if (rotate.angle !== 0) lines.push(`  v.xy *= rot(${glslFloat(-round((rotate.angle * Math.PI) / 180))});`);
+  // The direction of the path turned v into (along, across): back into x and y
+  const unturn = (d: string, across: string) => `  v.xy = ${sign}(v.x * ${d} + v.y * ${across});`;
+  const constant = Number(distance);
+  if (!Number.isNaN(constant)) {
+    const at = pointAt(path, constant);
+    const straight = at.dx === 1 && at.dy === 0 && !rotate.reverse;
+    if (rotate.auto && !straight) lines.push(unturn(vec2(at.dx, at.dy), vec2(-at.dy, at.dx)));
+    lines.push(`  v.xy += ${vec2(at.x, at.y)};`);
+  } else if (path.type === "ray") {
+    if (rotate.auto && !(path.dx === 1 && path.dy === 0 && !rotate.reverse))
+      lines.push(unturn(vec2(path.dx, path.dy), vec2(-path.dy, path.dx)));
+    lines.push(`  v.xy += ${vec2(path.dx, path.dy)} * ${hoist(hoisted, "float", distance)};`);
+  } else {
+    const o = hoist(hoisted, "vec4", `${functionName(path)}(${distance})`);
+    if (rotate.auto) lines.push(unturn(`${o}.zw`, `vec2(-${o}.w, ${o}.z)`));
+    lines.push(`  v.xy += ${o}.xy;`);
+  }
+  return lines;
+}
+
 // How far the motion path can take a node's content from its origin, for the bounding
 // spheres: the farthest point of a path; a ray, only when its distance is known
 export function offsetReach(styles: Styles, keyframes: Keyframes[], hover?: Hover): number | null {

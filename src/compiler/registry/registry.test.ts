@@ -51,6 +51,8 @@ describe("registry", () => {
         "scale",
         "transform-origin",
         "offset-distance",
+        "light",
+        "intensity",
         "background",
         "fog",
       ]);
@@ -62,10 +64,12 @@ describe("registry", () => {
     // If a property is marked animatable, the compiler must really animate it
     for (const property of animatable) {
       it(`animates ${property.name}`, () => {
-        // A property of the scene is animated by the scene (decision 103)
-        const target = property.appliesTo === "scene" ? "scene" : "cube";
+        // A property of the scene is animated by the scene (decision 103), one of the
+        // lights of @scene by a light (decision 110)
+        const forLights = Array.isArray(property.appliesTo) && (property.appliesTo as string[]).includes("light");
+        const target = property.appliesTo === "scene" ? "scene" : forLights ? "light" : "cube";
         const shader = compileGSS(
-          `@scene { cube; } ${target} { ${NEEDS[property.name] ?? ""} animation: k 1s; } @keyframes k { to { ${property.name}: ${property.initial}; } }`,
+          `@scene { cube; light; } ${target} { ${NEEDS[property.name] ?? ""} animation: k 1s; } @keyframes k { to { ${property.name}: ${property.initial}; } }`,
         );
         expect(shader).toContain("mix(");
       });
@@ -147,9 +151,9 @@ describe("selectors", () => {
 });
 
 describe("shapes", () => {
-  it("documents every shape the compiler can draw, and only those (plus group)", () => {
+  it("documents every shape the compiler can draw, and only those (plus group and light)", () => {
     const documented = SHAPE_DOCS.map((shape) => shape.name).sort();
-    expect(documented).toEqual([...shapeNames(), "group"].sort());
+    expect(documented).toEqual([...shapeNames(), "group", "light"].sort());
   });
 
   it("lists only real properties in takes", () => {
