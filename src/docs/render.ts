@@ -9,21 +9,21 @@ import type {
 import { formatGss } from "./format";
 import { escapeHtml } from "./escape";
 import { highlightGss } from "./highlight";
-import { highlightSyntax } from "./highlight-code";
+import { highlightCode, highlightSyntax } from "./highlight-code";
 import { groupEntries } from "./navigation";
 import { GETTING_STARTED, INSTALLATION, type GuideEntry } from "./guide";
 
 export { escapeHtml }; // the tests and other pages import it from here
 
 // Each example in its own code block, indented, with a button to try it live.
-// The button carries the code, so the page script needs nothing else.
+// The button carries the code (and the HTML of element(#id)), so the page script needs nothing else.
 function renderExamples(examples: Example[]): string {
   return examples
     .map(
       (example) => `
       <div class="example">
-        <pre><code class="gss">${highlightGss(formatGss(example.code))}</code></pre>
-        <button type="button" class="try" data-example="${escapeHtml(example.code)}">Try it</button>
+        <pre><code class="gss">${highlightGss(formatGss(example.code))}</code></pre>${example.html ? `\n        <pre><code class="html">${highlightCode("html", example.html)}</code></pre>` : ""}
+        <button type="button" class="try" data-example="${escapeHtml(example.code)}"${example.html ? ` data-html="${escapeHtml(example.html)}"` : ""}>Try it</button>
       </div> ${example.name ? `<p class="example-name">${escapeHtml(example.name)}</p>` : ""}`,
     )
     .join("\n");
@@ -103,7 +103,7 @@ export function renderFunction(fn: FunctionDef): string {
         <dt>Syntax</dt>
         <dd><code class="gss syntax">${highlightSyntax(fn.syntax)}</code></dd>
         <dt>Computed</dt>
-        <dd>at compile time, once per object</dd>
+        <dd>${escapeHtml(fn.computed ?? "at compile time, once per object")}</dd>
       </dl>
       ${renderExamples(fn.examples)}
     </article>`;

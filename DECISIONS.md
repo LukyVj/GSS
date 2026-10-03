@@ -723,7 +723,7 @@ The public development hooks carry WebGPU types, so `@webgpu/types` is a type-on
 
 ## 101. `texture: element(#id)`: an HTML element as a live texture
 
-**Status**: planned, not built yet (Priorities, after the eight current ones). The choices below are Lucas's (Oct. 2).
+**Status**: the texture, the runtime, `<gss-scene>` and the docs examples with HTML are built (Oct. 3, Lucas: build it now, and come back to it after the origin trial ends on Oct. 20 if needed); the HTML tab of the playground comes next. The choices below are Lucas's (Oct. 2).
 
 **Decision**: `texture: element(#card)` paints a live image of an HTML element of the page on an object, like CSS `element()` (Images 4; `-moz-element()` in Firefox). It goes wherever `url()` goes: `texture`, and `::face()`. HTML and CSS make the content of a surface, GSS makes the world around it.
 
@@ -733,6 +733,13 @@ The public development hooks carry WebGPU types, so `@webgpu/types` is a type-on
 - **Without the API**, the texture stays empty and the object shows its `color`, like an image not loaded yet (decision 59): no special case. No html2canvas: a heavy dependency that only approximates the rendering, and the runtime without the compiler must stay small.
 - **The compiler stays pure**: an `element()` is one more texture slot (within the 16 of decision 59), filled by the runtime. The Shadertoy export leaves its channel empty, so the object shows its color (decision 60).
 - **The playground gets an HTML tab from the start**, beside the GSS one, and a share link carries both. A registry example can carry HTML, so the docs' "Try it" shows it too.
+
+**As built** (Oct. 3, checked in Chromium 153 with the `CanvasDrawElement` flag, which the GPU tests turn on):
+- **The compiler**: `readTexture()` reads `element(#card)` into the slot `"element(#card)"`, one of the 16 (`sceneTextures()`); the shader samples it like an image, and the Shadertoy export leaves its channel empty.
+- **The runtime, WebGL2** (`createTextureStore()`, `runtime/textures.ts`): a transparent pixel first; the canvas gets `layoutsubtree`, a `paint` listener and a `requestPaint()`, and each paint uploads every element with `texElementImage2D` (an element has no picture before its first paint: "No cached paint record"). The API moved during the trial: Chromium 148 to 150 take `(target, level, internalformat, format, type, element)`, Chromium 153 `(target, internalformat, element)` with `RGBA8`; the runtime picks by the function's length. `UNPACK_FLIP_Y_WEBGL` applies, so an element is oriented like an image. A restyle fires `paint`, so a changing element is uploaded again, and only then.
+- **Finding the element** (`findElement()`): a descendant of the canvas, or an element that a `<slot>` inside the canvas shows. `<gss-scene>` keeps its canvas in its shadow root with `<canvas layoutsubtree><slot></slot></canvas>`: its HTML children stay in the page, with the page's styles, and are drawn from there (checked: a slotted element is drawn).
+- **The docs**: an example of the registry can carry `html` (`Example.html`): the page shows it under the code, and "Try it" puts it inside its canvas (`docs/playground.ts`), whose renderer is WebGL2. `element()` has its own entry (`fn-element`, beside `texture`), and an entry of `FUNCTIONS` can say when it is computed (`computed`): the gradients and `noise()` at each pixel, `element()` by the browser, the others at compile time.
+- **WebGPU**: no Chromium copies an element to WebGPU yet (neither `copyElementImageToTexture` of the trial nor `drawElementImageToTexture` of the latest explainer is there), so the slot stays a transparent pixel and the object keeps its color; `mountAsync()` with `backend: "auto"` draws a scene that uses an element with WebGL2 (`usesElements()`), and `<gss-scene>` uses WebGL2 by default.
 
 **Differences from CSS**: CSS `element()` is an image anywhere an image goes (`background-image`…); in GSS it only goes in `texture`, not in `background`, `color` or a material.
 

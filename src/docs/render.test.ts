@@ -18,6 +18,7 @@ import {
   type AtRuleDef,
   SELECTORS,
   SHAPE_DOCS,
+  FUNCTIONS,
 } from "../compiler/registry/registry";
 
 const rotateX: PropertyDef = {
@@ -266,5 +267,27 @@ describe("a syntax line", () => {
     expect(html).toContain(
       '<dd><code class="gss syntax"><span class="gss-id">&lt;number&gt;</span>',
     );
+  });
+});
+
+// texture: element(#id) (decision 101): an example can carry the HTML its scene shows
+describe("an example with HTML", () => {
+  it("shows the HTML beside the code, and gives it to Try it", () => {
+    const html = renderProperty({
+      name: "texture",
+      appliesTo: "object",
+      syntax: "element(<id>)",
+      initial: "none",
+      description: "…",
+      examples: [{ code: "@scene { cube; } cube { texture: element(#card); }", html: '<div id="card">Hi</div>' }],
+    });
+    expect(html).toContain('<code class="html">');
+    expect(html).toContain('data-html="&lt;div id=&quot;card&quot;&gt;Hi&lt;/div&gt;"');
+  });
+
+  it("documents element() on its own page, with a live example", () => {
+    const fn = FUNCTIONS.find((f) => f.name === "element()")!;
+    expect(fn.anchor).toBe("fn-element");
+    expect(fn.examples.every((example) => example.html?.includes('id="card"'))).toBe(true);
   });
 });

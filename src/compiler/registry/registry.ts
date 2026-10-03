@@ -16,6 +16,7 @@ export type Shape =
 export type Example = {
   name?: string;
   code: string;
+  html?: string; // the HTML elements the scene shows with element(#id) (decision 101)
 };
 
 export type PropertyDef = {
@@ -61,6 +62,7 @@ export type FunctionDef = {
   anchor: string; // its id in the docs: "fn-calc"
   covers: string[]; // the functions of calc.ts it documents: ["sin", "cos", "tan"]
   syntax: string;
+  computed?: string; // when it is computed, if not at compile time (a gradient, element())
   description: string;
   examples: Example[];
 };
@@ -154,14 +156,19 @@ export const PROPERTIES: PropertyDef[] = [
   {
     name: "texture",
     appliesTo: "object",
-    syntax: 'url("<file>")',
+    syntax: 'url("<file>") | element(<id>)',
     initial: "none",
     description:
-      "Projects an image onto the surface of the object: one image per face, the top, the bottom and the sides, whatever the size of the object. The image replaces the base color of the material, and moves, turns and scales with the object.",
+      "Projects an image onto the surface of the object: one image per face, the top, the bottom and the sides, whatever the size of the object. The image replaces the base color of the material, and moves, turns and scales with the object. element(#card) shows a live image of an HTML element instead, like CSS element(): the browser draws it with the page's own CSS and fonts, and the object shows it again each time it changes. The element goes inside the scene: inside <gss-scene>, next to its script, or inside the canvas given to mount(). It stays in the page, so it stays accessible, but it is only seen on the object. This needs a browser that draws HTML in a canvas (Chromium, for now); elsewhere, the object keeps its color. A scene with an element is drawn with WebGL2.",
     examples: [
       {
         name: "texture",
         code: '@scene { cube; } cube { translate: 0 0.5 0; texture: url("/textures/dirt.png"); }',
+      },
+      {
+        name: "an HTML element, with element()",
+        code: "@scene { cube; } scene { floor: none; camera-angle: -20deg 10deg; camera-target: 0 0.8 0; camera-distance: 3.2; ambient: 0.55; } cube { translate: 0 0.8 0; size: 1.6 1 0.06; corner-radius: 0.03; } cube::face(front) { texture: element(#card); }",
+        html: "<article id=\"card\" style=\"\n  width: 320px; height: 200px; padding: 28px;\n  box-sizing: border-box; border-radius: 18px;\n  background: #f4f1ea; color: #1a1d2b;\n  font: 600 30px/1.2 system-ui, sans-serif;\">\n  Hello from <em style=\"color: #ff5a36;\">HTML</em>, on a 3D card\n</article>",
       },
     ],
   },
@@ -1546,6 +1553,7 @@ export const FUNCTIONS: FunctionDef[] = [
   {
     name: "linear-gradient(), radial-gradient(), conic-gradient()",
     anchor: "fn-gradients",
+    computed: "on the GPU, at each pixel",
     covers: [
       "linear-gradient",
       "radial-gradient",
@@ -1585,6 +1593,7 @@ export const FUNCTIONS: FunctionDef[] = [
     name: "noise()",
     anchor: "fn-noise",
     covers: ["noise"],
+    computed: "on the GPU, at each pixel",
     syntax:
       "noise([turbulence]? <number> <integer>? [seed <integer>]? [at <number> <number> <number>]?, <color> <percentage>{0,2}, …)",
     description:
@@ -1605,6 +1614,22 @@ export const FUNCTIONS: FunctionDef[] = [
       {
         name: "noise() in a material",
         code: "@scene { torus; } torus { translate: 0 0.6 0; rotate-x: 70deg; material: metal(noise(turbulence 6 3, #6b4a2b, #d4af37), 0.25); }",
+      },
+    ],
+  },
+  {
+    name: "element()",
+    anchor: "fn-element",
+    covers: [],
+    syntax: "element(<id>)",
+    computed: "by the browser, each time the element changes",
+    description:
+      "A live image of an HTML element of the page, like CSS element(), for texture. The browser draws the element itself, with the page's CSS and fonts, and the object shows it again each time the element changes: a card, a form, a chart, any web interface on a 3D surface. Put the element inside the scene: inside <gss-scene>, next to its script, or inside the canvas given to mount(). It stays in the page, so screen readers still read it, but it is only seen on the object. One image covers each face of the object, like any texture: give the element the proportions of the face, and use ::face(front) for one face only. This needs a browser that draws HTML in a canvas, Chromium for now; elsewhere, the object keeps its color. A scene with an element is drawn with WebGL2.",
+    examples: [
+      {
+        name: "an HTML card",
+        code: "@scene { cube; } scene { floor: none; camera-angle: -20deg 10deg; camera-target: 0 0.8 0; camera-distance: 3.2; ambient: 0.55; } cube { translate: 0 0.8 0; size: 1.6 1 0.06; corner-radius: 0.03; animation: sway 6s ease-in-out infinite alternate; } cube::face(front) { texture: element(#card); } @keyframes sway { to { rotate-y: 25deg; } }",
+        html: "<article id=\"card\" style=\"\n  width: 320px; height: 200px; padding: 28px;\n  box-sizing: border-box; border-radius: 18px;\n  background: #f4f1ea; color: #1a1d2b;\n  font: 600 30px/1.2 system-ui, sans-serif;\">\n  Hello from <em style=\"color: #ff5a36;\">HTML</em>, on a 3D card\n</article>",
       },
     ],
   },

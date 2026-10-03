@@ -7,17 +7,23 @@ const EXAMPLE = 'texture: url("dirt.png");';
 
 const MAX_IMAGES = 16; // WebGL2 guarantees 16 texture units
 
-// texture: url("dirt.png") → "dirt.png"
+// texture: url("dirt.png") → "dirt.png"; texture: element(#card) → "element(#card)", a slot
+// the runtime fills with a live image of that element of the page (decision 101)
 export function readTexture(value: Token[]): string {
   const call = readFunction(value);
   const [arg] = call?.args ?? [];
+  if (call?.name === "element") {
+    if (call.args.length !== 1 || arg.length !== 1 || arg[0].type !== "HASH")
+      throw errorAt(value, "element() takes the id of an element of the page, like: element(#card)");
+    return `element(#${arg[0].value})`;
+  }
   if (
     call?.name !== "url" ||
     call.args.length !== 1 ||
     arg.length !== 1 ||
     arg[0].type !== "STRING"
   ) {
-    throw errorAt(value, `texture expects url("…"), like: ${EXAMPLE}`);
+    throw errorAt(value, `texture expects url("…") or element(#id), like: ${EXAMPLE}`);
   }
   return arg[0].value;
 }

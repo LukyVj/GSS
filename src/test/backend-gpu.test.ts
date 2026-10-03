@@ -13,7 +13,8 @@ beforeAll(async () => {
     },
   }] });
   await server.listen();
-  browser = await chromium.launch({ args: ["--enable-unsafe-webgpu", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"] });
+  // CanvasDrawElement: HTML-in-Canvas, for texture: element(#id) (decision 101)
+  browser = await chromium.launch({ args: ["--enable-unsafe-webgpu", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--enable-blink-features=CanvasDrawElement"] });
   page = await browser.newPage();
   page.on("pageerror", error => console.error(error.message));
   page.on("console", message => { if (message.type() === "error") console.error(message.text()); });
@@ -22,12 +23,13 @@ beforeAll(async () => {
 }, 60000);
 afterAll(async () => { await browser?.close(); await server?.close(); });
 
-async function render(source: string, hover = false, set?: [string, string]) {
-  return page.evaluate(async ({ compiled, hover, set }) => {
+async function render(source: string, hover = false, set?: [string, string], html = "") {
+  return page.evaluate(async ({ compiled, hover, set, html }) => {
     const createViewAsync = (window as any).__createViewAsync;
     async function capture(backend: string) {
       const canvas = document.createElement("canvas");
       canvas.style.cssText = "width:96px;height:72px;display:block";
+      canvas.innerHTML = html; // the HTML elements of element(#id)
       document.body.append(canvas);
       const view = await createViewAsync(canvas, { backend });
       view.freeze(true);
@@ -49,7 +51,7 @@ async function render(source: string, hover = false, set?: [string, string]) {
       return pixels;
     }
     return { gl: await capture("webgl"), gpu: await capture("webgpu") };
-  }, { compiled: compileScene(source), hover, set });
+  }, { compiled: compileScene(source), hover, set, html });
 }
 const cases: [string, string, boolean?][] = [
   ["matte and camera", "@scene { sphere; } sphere { color: red; translate: 0 1 0; }"],
@@ -346,6 +348,64 @@ describe("noise() paints the scene, on both backends", () => {
     const there = await render(`@scene { sphere; } sphere { translate: 2.3 1.7 -1.1; ${paint} } ${view("2.3 1.7 -1.1")}`);
     expect(apart(here.gl, there.gl)).toBeLessThan(0.002);
     expect(apart(here.gpu, there.gpu)).toBeLessThan(0.002);
+  }, 60000);
+});
+
+// texture: element(#id): the browser draws the element (HTML-in-Canvas, behind a flag here),
+// and the scene shows it on the object; WebGPU cannot copy an element yet
+describe("element() shows an HTML element on an object", () => {
+  const card = '<div id="card" style="width:96px;height:96px;background:#ff0000"></div>';
+  const scene =
+    "@scene { cube; } cube { size: 1.6 1.6 0.2; texture: element(#card); } scene { floor: none; background: #000000; camera-target: 0 0 0; camera-angle: 0deg 0deg; camera-distance: 3; }";
+  const center = (pixels: number[]) => {
+    const i = (36 * 96 + 48) * 4;
+    return pixels.slice(i, i + 3);
+  };
+
+  it("with WebGL2, from the element inside the canvas", async () => {
+    const { gl } = await render(scene, false, undefined, card);
+    const [r, g, b] = center(gl);
+    expect(r).toBeGreaterThan(90); // a red face, lit at 47% by the default sun
+    expect(r).toBeGreaterThan(g * 2 + 20);
+    expect(r).toBeGreaterThan(b * 2 + 20);
+  }, 60000);
+
+  it("keeps the object's color without the element, and on WebGPU", async () => {
+    const without = await render(scene);
+    const { gpu } = await render(scene, false, undefined, card);
+    for (const [r, g] of [center(without.gl), center(gpu)]) expect(Math.abs(r - g)).toBeLessThan(30);
+  }, 60000);
+
+  it("draws a scene with an element with WebGL2 when the backend is auto", async () => {
+    const backend = await page.evaluate(async ({ compiled, card }) => {
+      const canvas = document.createElement("canvas");
+      canvas.innerHTML = card;
+      document.body.append(canvas);
+      const scene = await (window as any).__mountAsync(canvas, compiled);
+      const which = scene.backend;
+      scene.destroy();
+      canvas.remove();
+      return which;
+    }, { compiled: compileScene(scene), card });
+    expect(backend).toBe("webgl");
+  }, 60000);
+
+  it("in <gss-scene>, from its HTML children", async () => {
+    const [r, g] = await page.evaluate(async ({ card, scene }) => {
+      const element = document.createElement("gss-scene");
+      element.style.cssText = "width:96px;height:72px;display:block";
+      element.innerHTML = `${card}<script type="text/gss">${scene}</script>`;
+      document.body.append(element);
+      await new Promise((resolve) => element.addEventListener("load", resolve, { once: true }));
+      await new Promise<void>((resolve) => { let left = 6; const tick = () => (--left ? requestAnimationFrame(tick) : resolve()); requestAnimationFrame(tick); });
+      const canvas = element.shadowRoot!.querySelector("canvas")!;
+      const copy = document.createElement("canvas"); copy.width = canvas.width; copy.height = canvas.height;
+      const ctx = copy.getContext("2d")!; ctx.drawImage(canvas, 0, 0);
+      const pixel = [...ctx.getImageData(Math.floor(copy.width / 2), Math.floor(copy.height / 2), 1, 1).data];
+      element.remove();
+      return pixel;
+    }, { card, scene });
+    expect(r).toBeGreaterThan(g * 2 + 20);
   }, 60000);
 });
 

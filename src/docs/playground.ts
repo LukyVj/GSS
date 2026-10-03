@@ -23,7 +23,8 @@ export function closePlayground(): void {
   open = null;
 }
 
-function openPlayground(example: HTMLElement, code: string): void {
+// html: the elements the scene shows with element(#id), placed inside its canvas
+function openPlayground(example: HTMLElement, code: string, html = ""): void {
   closePlayground();
 
   const panel = document.createElement("div");
@@ -43,7 +44,9 @@ function openPlayground(example: HTMLElement, code: string): void {
   example.classList.add("is-open");
   example.querySelector("button.try")!.textContent = "Close";
 
-  const renderer = createRenderer(panel.querySelector("canvas")!, { scrollSlider: true });
+  const canvas = panel.querySelector("canvas")!;
+  canvas.innerHTML = html; // laid out inside the canvas, drawn on the object (decision 101)
+  const renderer = createRenderer(canvas, { scrollSlider: true });
   const editor = connectEditor(
     {
       host: panel.querySelector(".code-host")!,
@@ -70,6 +73,6 @@ export function enableTryIt(root: HTMLElement): void {
     if (!button) return;
     const example = button.closest<HTMLElement>(".example")!;
     if (open?.example === example) closePlayground();
-    else openPlayground(example, button.dataset.example ?? "");
+    else openPlayground(example, button.dataset.example ?? "", button.dataset.html ?? "");
   });
 }

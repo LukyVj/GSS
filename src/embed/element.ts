@@ -7,6 +7,9 @@ import { readControls, sourceUrl } from "./options";
 //   <gss-scene src="logo.gss"></gss-scene>
 //   <gss-scene controls="none"><script type="text/gss"> @scene { sphere; } </script></gss-scene>
 //
+// Its other HTML children are shown inside the canvas by a <slot>, laid out but not painted,
+// for texture: element(#id) (decision 101): they keep the styles of the page.
+//
 // The structure of the scene stays in @scene (decision 2): the element only gives it a
 // place in the page. Its size is the element's (16 / 9 by default, like a video).
 
@@ -35,7 +38,7 @@ export class GssSceneElement extends HTMLElement {
   constructor() {
     super();
     const root = this.attachShadow({ mode: "open" });
-    root.innerHTML = `<style>${STYLE}</style><canvas part="canvas"></canvas><pre class="error" part="error" hidden></pre>`;
+    root.innerHTML = `<style>${STYLE}</style><canvas part="canvas" layoutsubtree><slot></slot></canvas><pre class="error" part="error" hidden></pre>`;
     this.#canvas = root.querySelector("canvas")!;
     this.#error = root.querySelector("pre")!;
   }
@@ -83,8 +86,8 @@ export class GssSceneElement extends HTMLElement {
       const { code, base } = await this.#readSource();
       if (run !== this.#run) return;
       this.#stop(); // controls are set when the view is made: a change starts again
-      // A canvas cannot switch between WebGL and WebGPU contexts.
-      const canvas = this.#canvas.cloneNode() as HTMLCanvasElement;
+      // A canvas cannot switch between WebGL and WebGPU contexts. Its <slot> comes along.
+      const canvas = this.#canvas.cloneNode(true) as HTMLCanvasElement;
       this.#canvas.replaceWith(canvas);
       this.#canvas = canvas;
       canvas.addEventListener("gss-error", event => {

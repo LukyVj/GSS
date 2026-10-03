@@ -1,6 +1,7 @@
 import type { CompiledScene } from "../compiler";
 import { createView, type ViewOptions } from "../runtime/view";
 import { createViewAsync, type BackendOptions } from "../runtime/backend";
+import { usesElements } from "../runtime/textures";
 
 // gss-lang/runtime: draws a scene compiled at build time (the Vite plugin),
 // without shipping the compiler (decision 63). gss-lang (index.ts) adds GSS text.
@@ -17,7 +18,9 @@ export async function mountAsync(
   compiled: CompiledScene,
   options: BackendOptions = {},
 ): Promise<AsyncGssScene> {
-  const view = await createViewAsync(canvas, options);
+  // element(#id) is drawn with WebGL2 only for now (decision 101): auto picks it for such a scene
+  const backend = (options.backend ?? "auto") === "auto" && usesElements(compiled) ? "webgl" : options.backend;
+  const view = await createViewAsync(canvas, { ...options, backend });
   try { await view.show(compiled); }
   catch (error) { view.destroy(); throw error; }
   const lifecycle = observe(canvas, view);
