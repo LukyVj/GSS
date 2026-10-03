@@ -97,7 +97,7 @@ function named(token: Token): Token {
 // The transparency of the color being read: only the layers of background and mask-image
 // have one (decisions 112, 113). alpha: allowed; within: the alpha of the current call, 0 to 1.
 const transparency = { allowed: false, within: 1 };
-const NO_ALPHA = "GSS has no transparency yet, except in background and mask-image";
+const NO_ALPHA = "Only color, background and mask-image take a transparent color";
 
 // alpha: the colors may be transparent (the property is background or mask-image, decisions 112, 113)
 export function resolveColors(

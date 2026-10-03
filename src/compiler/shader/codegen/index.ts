@@ -25,11 +25,11 @@ import { SHADING } from "./shading";
 import { MARCH_LOOP, PICK_OUTPUT, PICK_PIXEL, SURFACE, TEMPLATE } from "./template";
 import { MASKED_MARCH_LOOP, SHELL, SKIN_MARCH_LOOP, holeNormal, holeNormals, maskCode, objectMask, skinFunction, type Masked } from "./masks";
 import { LAYERS, PAST_SURFACE, alphaFunction, colorFunction, objectAlpha, surfaceFunction, type Transparent } from "./transparency";
-import { readColor, readLight, readScale, readTranslate } from "./read";
+import { readColor, readLight, readScale, readSurfaceColor, readTranslate } from "./read";
 import { readOperation, SMOOTH } from "./operations";
 import { BOUNDED, SHAPES, type ShapeContext } from "./shapes";
 import { textureCode } from "./textures";
-import { backgroundCode, backgroundNeedsCamera, gradientCode, objectGradient, type Painted } from "./gradients";
+import { backgroundCode, backgroundNeedsCamera, gradientCode, objectGradient, paintsTransparent, type Painted } from "./gradients";
 import { BLEND_LIBRARY } from "./blend-library";
 import { readMaterial } from "./materials";
 import { activeSlots, hoverSlots, hoverValue, useTimelines } from "./animation";
@@ -110,8 +110,10 @@ export function generateShader(
     .map((instance) => objectMask(instance, keyframes, hoverOf(instance)))
     .filter((mask): mask is Masked => mask !== null);
   // opacity (decision 116): the objects that cover what is behind them only in part, skins too
+  // A gradient in color with transparent stops (decision 117), read once per object
+  const paints = new Set(instances.filter((instance) => paintsTransparent(instance.styles, keyframes, hoverOf(instance))));
   const transparent = instances
-    .map((instance) => ({ instance, alpha: objectAlpha(instance, keyframes, hoverOf(instance)) }))
+    .map((instance) => ({ instance, alpha: objectAlpha(instance, keyframes, hoverOf(instance), paints.has(instance)) }))
     .filter((item): item is Transparent => item.alpha !== null);
   const skins = new Set([...masked.map(({ instance }) => instance), ...transparent.map(({ instance }) => instance)]);
   // Which objects are skins: those with holes, or those and the transparent ones
@@ -220,13 +222,13 @@ export function generateShader(
   // The objects painted with a gradient (decision 82)
   const painted: Painted[] = [];
   const materialLines = instances.map((instance) => {
-    const { painted: gradient, styles } = objectGradient(instance, keyframes, hoverOf(instance));
+    const { painted: gradient, styles } = objectGradient(instance, keyframes, hoverOf(instance), paints.has(instance));
     if (gradient) painted.push(gradient);
     instance = gradient ? { ...instance, styles } : instance;
     // A gradient moves in gradientColor(): getMaterial() keeps the mean of its rest
     const color = gradient
       ? readColor(instance.styles["color"])
-      : hoverValue(instance.styles, keyframes, "color", readColor, hoverOf(instance));
+      : hoverValue(instance.styles, keyframes, "color", readSurfaceColor, hoverOf(instance));
     const material = readMaterial(instance.styles["material"], color);
     return `  if (id == ${glslFloat(instance.index)}) return ${material};  // ${label(instance)}`;
   });

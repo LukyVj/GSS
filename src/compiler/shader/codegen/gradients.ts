@@ -255,16 +255,27 @@ export function movingGradient(
 
 // ----- Gradients on objects (decision 82) -----
 
-export type Painted = { instance: StyledInstance; gradient: Gradient; moving: Map<string, string> };
+// alpha: the gradient has transparent stops (decision 117): its lines give a premultiplied vec4
+export type Painted = { instance: StyledInstance; gradient: Gradient; moving: Map<string, string>; alpha?: boolean };
+
+// Whether the color of an object is a gradient with transparent stops, at rest, in its
+// frames or on :hover (decision 117)
+export function paintsTransparent(styles: Styles, keyframes: Keyframes[], hover: Hover | undefined): boolean {
+  return valuesOf(styles, keyframes, "color", hover).some(
+    (value) => isGradient(value) && readGradient(value, true).stops.some((stop) => stop.color.startsWith("vec4(")),
+  );
+}
 
 // The gradient an object is painted with, from its color or the first argument of its
 // material (which wins, like a material's own color), and its styles where that gradient
 // is replaced by its mean color: what getMaterial() and the reflections see.
 // A gradient in color can be animated and changed by :hover (decision 102).
+// transparent: the gradient has transparent stops (paintsTransparent(), decision 117)
 export function objectGradient(
   instance: StyledInstance,
   keyframes: Keyframes[],
   hover: Hover | undefined,
+  transparent = false,
 ): { painted: Painted | null; styles: Styles } {
   const styles = instance.styles;
   const hash = (value: Token[]): Token => ({ type: "HASH", value: gradientMean(value) });
@@ -301,8 +312,10 @@ export function objectGradient(
     refuseGradients(styles, keyframes, "color", hover);
     return { painted: null, styles };
   }
-  const { gradient, moving } = movingGradient(styles, keyframes, "color", hover);
-  return { painted: { instance, gradient, moving }, styles: { ...styles, color: [hash(color)] } };
+  // Transparent stops make the object transparent where they are (decision 117)
+  const alpha = transparent;
+  const { gradient, moving } = movingGradient(styles, keyframes, "color", hover, { alpha });
+  return { painted: { instance, gradient, moving, ...(alpha ? { alpha } : {}) }, styles: { ...styles, color: [hash(color)] } };
 }
 
 // The rectangle a gradient covers: the object seen from the front, x right and y up
@@ -353,7 +366,8 @@ export function gradientCode(
   const spaces = painted
     .filter(({ instance }) => !textured.has(instance)) // a textured object has its space already
     .map(({ instance }) => spaceFunction(instance, keyframes, hoverOf));
-  const branches = painted.map(({ instance, gradient, moving }) => {
+  // ret: what the branch gives back from col
+  const branch = ({ instance, gradient, moving }: Painted, ret: string) => {
     const { size, at } = gradientBox(instance);
     return [
       `  if (id == ${glslFloat(instance.index)}) {  // ${label(instance)}`,
@@ -361,14 +375,29 @@ export function gradientCode(
       `    vec2 size = vec2(${size.map(g).join(", ")});`,
       `    vec2 at = ${at} + 0.5 * size;`,
       ...linesOf(gradient, moving).map((line) => `  ${line}`),
-      "    return col;",
+      `    return ${ret};`,
       "  }",
     ].join("\n");
-  });
+  };
+  // A transparent gradient gives its color without its alpha, and paintAlpha() its alpha
+  // (decision 117): its stops are premultiplied
+  const branches = painted.map((p) => branch(p, p.alpha ? "col.a > 0.0 ? col.rgb / col.a : col.rgb" : "col"));
+  const transparent = painted.filter((p) => p.alpha);
   return {
     functions: [
       ...spaces,
       ["vec3 gradientColor(float id, vec3 p, vec3 color) {", ...branches, "  return color;", "}"].join("\n"),
+      ...(transparent.length > 0
+        ? [
+            [
+              "// The transparent stops of a gradient: how much it covers at a point",
+              "float paintAlpha(float id, vec3 p) {",
+              ...transparent.map((p) => branch(p, "col.a")),
+              "  return 1.0;",
+              "}",
+            ].join("\n"),
+          ]
+        : []),
     ].join("\n\n"),
     call: "    m.color = gradientColor(id, p, m.color);",
   };

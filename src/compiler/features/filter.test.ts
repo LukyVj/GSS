@@ -61,8 +61,8 @@ describe("filter: blur() and bloom() add passes", () => {
   });
 
   it("says what is wrong", () => {
-    expect(() => filter("opacity(0.5)")).toThrow("needs transparency");
-    expect(() => filter("drop-shadow(2px 2px 4px black)")).toThrow("needs transparency");
+    expect(() => filter("opacity(0.5)")).toThrow("opacity() goes on objects and groups: the scene itself stays opaque");
+    expect(() => filter("drop-shadow(2px 2px 4px black)")).toThrow("drop-shadow() is not there yet");
     expect(() => filter("glow(1)")).toThrow('Unknown filter "glow()"');
     expect(() => filter("blur(4)")).toThrow("blur() expects a length in px");
     expect(() => filter("contrast(-1)")).toThrow("contrast() expects a positive number");

@@ -90,7 +90,7 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "<color> | <gradient>",
     initial: "#e6e6e6",
     description:
-      "Sets the base color of the object's surface: a hex color (#ff5a36), rgb(), hsl() or one of the 148 CSS named colors (tomato), turned into a hex color by the compiler. It can also be a gradient (linear-gradient(), radial-gradient(), conic-gradient()), painted on the object as seen from the front, and taken by every material, a noise() cut in the object's own space, or one of them moved by a map with displace(). A gradient can be animated and changed by :hover: it changes into another gradient of the same kind with as many colors, and each of its numbers moves on its own, the angle, the center, the positions and the colors. Through a variable, like a registered @property in CSS, one number is enough: linear-gradient(var(--angle), …) turns when a @keyframes changes --angle. A color cannot change into a gradient. On a light of @scene, color is the color of its light: a plain color, not a gradient.",
+      "Sets the base color of the object's surface: a hex color (#ff5a36), rgb(), hsl() or one of the 148 CSS named colors (tomato), turned into a hex color by the compiler. It can also be a gradient (linear-gradient(), radial-gradient(), conic-gradient()), painted on the object as seen from the front, and taken by every material, a noise() cut in the object's own space, or one of them moved by a map with displace(). A transparent color (#ff000080, rgb(255 0 0 / 50%), transparent) or the transparent stops of a gradient make the object transparent, like opacity: what is behind it shows through. A gradient can be animated and changed by :hover: it changes into another gradient of the same kind with as many colors, and each of its numbers moves on its own, the angle, the center, the positions and the colors. Through a variable, like a registered @property in CSS, one number is enough: linear-gradient(var(--angle), …) turns when a @keyframes changes --angle. A color cannot change into a gradient. On a light of @scene, color is the color of its light: a plain color, not a gradient.",
     examples: [
       {
         name: "color",
@@ -107,6 +107,14 @@ export const PROPERTIES: PropertyDef[] = [
       {
         name: "gradient on :hover",
         code: "@scene { cube; } cube { translate: 0 0.5 0; color: radial-gradient(circle at 30% 70%, #ffd27a, #ff5a36); transition: 0.4s; } cube:hover { color: radial-gradient(circle at 70% 30%, #7ad2ff, #3a3aff); }",
+      },
+      {
+        name: "a transparent color",
+        code: "@scene { sphere; cube; } sphere { translate: 0 1 0; radius: 0.7; color: rgb(58 123 255 / 40%); } cube { translate: 0 0.4 -1.2; size: 0.8; color: #ff5a36; }",
+      },
+      {
+        name: "a gradient that fades out",
+        code: "@scene { cube; } cube { translate: 0 0.7 0; size: 1.2; color: linear-gradient(#ff5a36, transparent); }",
       },
     ],
   },
@@ -207,7 +215,7 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "<number> | <percentage>",
     initial: "1",
     description:
-      "How much the object covers what is behind it, like CSS: from 0, invisible, to 1, opaque (the default), as a number or a percentage; a value outside is kept between them. Behind a transparent object, the eye sees its back face from the inside, then what is behind it, and what is inside it: a sphere at 50% looks like a bubble. On a group, the opacity multiplies into each of its objects; unlike CSS, which fades a group as one picture, its objects show through each other. It can be animated, changed by :hover and set from JavaScript, like color. With shadows, the light goes through a transparent object like through stained glass: what the object covers takes its color, so a red glass at 50% casts a pink light; close to opaque, it lets less and less light through. The mouse still points at a transparent object, like CSS. The reflections show the objects opaque.",
+      "How much the object covers what is behind it, like CSS: from 0, invisible, to 1, opaque (the default), as a number or a percentage; a value outside is kept between them. The alpha of its color and opacity() in filter multiply with it. Behind a transparent object, the eye sees its back face from the inside, then what is behind it, and what is inside it: a sphere at 50% looks like a bubble. On a group, the opacity multiplies into each of its objects; unlike CSS, which fades a group as one picture, its objects show through each other. It can be animated, changed by :hover and set from JavaScript, like color. With shadows, the light goes through a transparent object like through stained glass: what the object covers takes its color, so a red glass at 50% casts a pink light; close to opaque, it lets less and less light through. The mouse still points at a transparent object, like CSS. The reflections show the objects opaque.",
     examples: [
       {
         name: "a bubble",
@@ -878,7 +886,7 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "none | <filter-function>+",
     initial: "none",
     description:
-      "Post-processing, like CSS filter: a list of functions applied in order, on the whole image (scene { filter }), on an object, or on a group and everything in it. On an object or a group, the filters change only its own pixels, and reflections see them too: a blur() spreads it over what is around it, a bloom() makes only its bright parts glow. Like CSS, an object's filter comes before its group's, and the scene's comes last; on an object, the filters that read only their own pixel come before blur() and bloom(), and an object and its group cannot both have a blur() or a bloom(). brightness(), contrast(), saturate(), grayscale(), sepia(), invert() take a number or a percentage (1 or 100% changes nothing; grayscale(), sepia() and invert() go up to 1), hue-rotate() an angle; they cost almost nothing. grain() adds a film-like noise that moves at every frame (0.1 by default). blur() blurs by a length in px, like CSS; bloom() makes the bright parts glow: an amount (0.6 by default) and a radius in px (16px by default). blur() and bloom() read the pixels around each pixel: the scene is first drawn into an image, then blurred, which costs more as the radius grows. opacity() and drop-shadow() are not there yet: the opacity property makes an object transparent. The Shadertoy export keeps the filters that read only their own pixel, not blur() and bloom().",
+      "Post-processing, like CSS filter: a list of functions applied in order, on the whole image (scene { filter }), on an object, or on a group and everything in it. On an object or a group, the filters change only its own pixels, and reflections see them too: a blur() spreads it over what is around it, a bloom() makes only its bright parts glow. Like CSS, an object's filter comes before its group's, and the scene's comes last; on an object, the filters that read only their own pixel come before blur() and bloom(), and an object and its group cannot both have a blur() or a bloom(). brightness(), contrast(), saturate(), grayscale(), sepia(), invert() take a number or a percentage (1 or 100% changes nothing; grayscale(), sepia() and invert() go up to 1), hue-rotate() an angle; they cost almost nothing. grain() adds a film-like noise that moves at every frame (0.1 by default). blur() blurs by a length in px, like CSS; bloom() makes the bright parts glow: an amount (0.6 by default) and a radius in px (16px by default). blur() and bloom() read the pixels around each pixel: the scene is first drawn into an image, then blurred, which costs more as the radius grows. opacity() makes an object or a group transparent, like the opacity property, with which it multiplies; on the scene it is an error, since the scene stays opaque. drop-shadow() is not there yet. The Shadertoy export keeps the filters that read only their own pixel, not blur() and bloom().",
     examples: [
       {
         name: "brightness()",
@@ -929,6 +937,10 @@ export const PROPERTIES: PropertyDef[] = [
         code: "@scene { group#lights { sphere * 4 } cube; } #lights { filter: bloom(0.9, 18px); } #lights sphere { radius: 0.2; translate: calc(1.75 - sibling-index() * 0.7) 1.4 0; color: #ffd27a; } cube { translate: 0 0.5 0; color: #3a7bff; } scene { floor: none; background: #07070a; }",
       },
       {
+        name: "opacity() on a group",
+        code: "@scene { group#g { cube; sphere; } } #g { filter: opacity(0.5); } cube { translate: -0.6 0.5 0; color: #3a7bff; } sphere { translate: 0.6 0.5 0; radius: 0.5; color: #ff5a36; }",
+      },
+      {
         name: "filters together",
         code: "@scene { torus; sphere; } torus { translate: 0 1 0; rotate-x: 70deg; color: #ffd27a; material: gold; } sphere { radius: 0.3; translate: 0 1 0; color: #ff5a36; } scene { floor: none; background: radial-gradient(#2a2a3a, #07070a); filter: contrast(1.1) saturate(1.3) bloom(0.7, 18px) grain(0.06); }",
       },
@@ -941,7 +953,7 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "[ <gradient> , ]* [ <gradient> | <color> ]",
     initial: "#080808",
     description:
-      "Sets the background, visible wherever there is no object and no floor: a color, or a gradient drawn over the canvas like a CSS background (linear-gradient(), radial-gradient(), conic-gradient() and their repeating forms), a noise() or a displace(). The scene can animate it, with animation on the scene: a color into another color, a gradient into another gradient of the same kind with as many colors, or through the variables of the scene. A scene without objects and without a floor is then a flat, moving image. Like CSS, a background can have several layers, separated by commas, the first on top: background: noise(3, #ffffff00 40%, #ffffff), linear-gradient(#2f6bd8, #9fc4ff); only the last can be a color. The colors of these layers can be transparent (transparent, #ffffff80, rgb(… / 50%), a color-mix() under 100%), so a layer shows the ones below it, and background-blend-mode blends them; apart from mask-image, GSS has no transparency anywhere else.",
+      "Sets the background, visible wherever there is no object and no floor: a color, or a gradient drawn over the canvas like a CSS background (linear-gradient(), radial-gradient(), conic-gradient() and their repeating forms), a noise() or a displace(). The scene can animate it, with animation on the scene: a color into another color, a gradient into another gradient of the same kind with as many colors, or through the variables of the scene. A scene without objects and without a floor is then a flat, moving image. Like CSS, a background can have several layers, separated by commas, the first on top: background: noise(3, #ffffff00 40%, #ffffff), linear-gradient(#2f6bd8, #9fc4ff); only the last can be a color. The colors of these layers can be transparent (transparent, #ffffff80, rgb(… / 50%), a color-mix() under 100%), so a layer shows the ones below it, and background-blend-mode blends them.",
     examples: [
       {
         name: "background",
@@ -1766,7 +1778,7 @@ export const FUNCTIONS: FunctionDef[] = [
     covers: ["rgb", "rgba"],
     syntax: "rgb(<red> <green> <blue>) | rgb(<red>, <green>, <blue>)",
     description:
-      "A color from its red, green and blue channels, like CSS: numbers from 0 to 255, or percentages (100% is 255). Both syntaxes work, with spaces or with commas, and rgba() is the same function. Values outside the range are clamped. An alpha (rgb(255 0 0 / 50%)) makes the color transparent, which only the layers of background and mask-image take: anywhere else, it is an error. The math works inside, so one rule can give every copy its own color. It is turned into a hex color by the compiler, wherever a color is expected: color, floor, background, and the first argument of a material.",
+      "A color from its red, green and blue channels, like CSS: numbers from 0 to 255, or percentages (100% is 255). Both syntaxes work, with spaces or with commas, and rgba() is the same function. Values outside the range are clamped. An alpha (rgb(255 0 0 / 50%)) makes the color transparent, which only color, background and mask-image take: anywhere else, it is an error. The math works inside, so one rule can give every copy its own color. It is turned into a hex color by the compiler, wherever a color is expected: color, floor, background, and the first argument of a material.",
     examples: [
       {
         name: "rgb()",
@@ -1875,7 +1887,7 @@ export const FUNCTIONS: FunctionDef[] = [
     syntax:
       "color-mix(in <space> [shorter | longer hue]?, <color> <percentage>?, <color> <percentage>?)",
     description:
-      "Mixes two colors in a color space, like CSS: srgb, srgb-linear, lab, lch, oklab, oklch, hsl or hwb. Without percentages, half of each; with one, the other color takes the rest; with both, they are scaled to add up to 100%. Like CSS, when they add up to less than 100%, the color becomes transparent, which only the layers of background and mask-image take: anywhere else, it is an error; a percentage set from JavaScript (a variable registered with @property) is only known when the scene runs, so there it is kept between 0% and 100%, and percentages that add up to less are scaled up to 100% instead of being an error. In a space with a hue, the hue goes the shorter way round the wheel, or the longer one with longer hue; a gray takes the hue of the other color. oklab gives the most even mixes; mixing in srgb goes through duller middle colors.",
+      "Mixes two colors in a color space, like CSS: srgb, srgb-linear, lab, lch, oklab, oklch, hsl or hwb. Without percentages, half of each; with one, the other color takes the rest; with both, they are scaled to add up to 100%. Like CSS, when they add up to less than 100%, the color becomes transparent, which only color, background and mask-image take: anywhere else, it is an error; a percentage set from JavaScript (a variable registered with @property) is only known when the scene runs, so there it is kept between 0% and 100%, and percentages that add up to less are scaled up to 100% instead of being an error. In a space with a hue, the hue goes the shorter way round the wheel, or the longer one with longer hue; a gray takes the hue of the other color. oklab gives the most even mixes; mixing in srgb goes through duller middle colors.",
     examples: [
       {
         name: "color-mix()",

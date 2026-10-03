@@ -38,10 +38,12 @@ describe("background: transparent colors, in its layers only", () => {
     expect(shader).toContain("vec4(1.0, 0.0, 0.0, 1.0)");
   });
 
-  it("is still an error everywhere else", () => {
-    expect(() => compileGSS("@scene { sphere; } sphere { color: rgb(255 0 0 / 50%); }")).toThrow("GSS has no transparency yet");
-    expect(() => compileGSS("@scene { sphere; } sphere { color: linear-gradient(transparent, red); }")).toThrow(
-      "GSS has no transparency yet",
+  it("is an error where a color must be opaque", () => {
+    expect(() => compileGSS("@scene { sphere; } scene { floor: rgb(255 0 0 / 50%); }")).toThrow(
+      "Only color, background and mask-image take a transparent color",
+    );
+    expect(() => compileGSS("@scene { sphere; } sphere { material: metal(linear-gradient(transparent, red)); }")).toThrow(
+      "Only color, background and mask-image take a transparent color",
     );
   });
 });

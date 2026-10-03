@@ -630,6 +630,33 @@ describe("opacity, on both backends", () => {
   }, 60000);
 });
 
+// transparent colors and opacity() on objects
+describe("transparent colors and opacity() on objects, on both backends", () => {
+  const front = "scene { floor: none; background: #0000ff; camera-target: 0 0 0; camera-angle: 0deg 0deg; camera-distance: 5; light: 0deg 0deg; ambient: 1; }";
+  const at = (pixels: number[], x = 0) => pixels.slice((36 * 96 + 48 + x) * 4, (36 * 96 + 48 + x) * 4 + 3);
+  const near = (pixel: number[], expected: number[]) => pixel.every((c, k) => Math.abs(c - expected[k]) <= 4);
+
+  it("covers what is behind an object as much as the alpha of its color", async () => {
+    // 128 / 255 of red, front and back, over blue
+    const { gl, gpu } = await render(`@scene { cube; } ${front} cube { size: 2; color: rgb(255 0 0 / 50%); }`);
+    for (const pixels of [gl, gpu]) expect(near(at(pixels), [192, 0, 63]), `${at(pixels)}`).toBe(true);
+  }, 60000);
+
+  it("is as transparent as its gradient at each point", async () => {
+    const { gl, gpu } = await render(`@scene { cube; } ${front} cube { size: 2; color: linear-gradient(to right, transparent, #ff0000); }`);
+    for (const pixels of [gl, gpu]) {
+      const [left, right] = [at(pixels, -20), at(pixels, 20)];
+      expect(left[2] > 180 && left[0] < 80, `left ${left}`).toBe(true);
+      expect(right[0] > 200 && right[2] < 60, `right ${right}`).toBe(true);
+    }
+  }, 60000);
+
+  it("takes opacity() in filter like opacity", async () => {
+    const { gl, gpu } = await render(`@scene { cube; } ${front} cube { size: 2; color: #ff0000; filter: opacity(0.5); }`);
+    for (const pixels of [gl, gpu]) expect(near(at(pixels), [191, 0, 64]), `${at(pixels)}`).toBe(true);
+  }, 60000);
+});
+
 describe("the default camera does not mirror the scene", () => {
   const front = "scene { floor: none; background: #000000; camera-target: 0 0 0; camera-angle: 0deg 0deg; camera-distance: 5; light: 0deg 0deg; ambient: 1; }";
   // The mean column and row of the pixels where `channel` wins, per backend

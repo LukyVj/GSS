@@ -910,6 +910,18 @@ A range whose bound is excluded keeps its error, computed or not: no number is t
 **Different from CSS**: on a group, the opacity multiplies into each object, which then show through each other; CSS fades a group as one picture. A closed object shows two surfaces, its front and its back. The light through a transparent object is GSS's own: CSS has no light.
 **Accepted limits**: 6 surfaces along a ray at most; each surface is lit in full, which costs more on the transparent pixels; the reflections and the refractions show the transparent objects opaque.
 
+## 117. Transparent colors and `opacity()` on objects
+
+**Decision** (Lucas: the transparency of the objects, all of it like CSS; decision 116 was its first part): the color of an object can be transparent, and `filter: opacity()` goes on objects and groups. Both make the object transparent like `opacity` (decision 116), and multiply with it.
+- **Colors**: `color` takes a transparent color, like `background` and `mask-image` (decisions 112, 113): `#ff000080`, `transparent`, an alpha after `/`, a `color-mix()` under 100%. `getMaterial()` takes the color without its alpha (`readSurfaceColor()`), and `surfaceAlpha()` multiplies its alpha (`readColorAlpha()`), which moves with the color in `@keyframes` and on `:hover`. A color set from JS stays opaque: its uniform has no alpha.
+- **Gradients**: a gradient in `color` with transparent stops (`paintsTransparent()`) is read with its alpha (decision 112): its lines give a premultiplied `vec4`; `gradientColor()` gives its color without its alpha, and a new `paintAlpha(id, p)` its alpha at the point, which `surfaceAlpha()` multiplies. Its mean color (`gradientMean()`, for the reflections) reads a transparent stop by its color. `noise()` and `displace()` follow, being gradients.
+- **`opacity()`**: a step of its own in `filter` (`kind: "opacity"`, 0 to 1 like CSS), which the passes skip and `objectAlpha()` multiplies, from the object and each of its groups. On the scene it is an error (`readSceneSteps()`): the scene stays opaque.
+- **Still opaque**: the floor, the fog, the lights ("A light takes an opaque color"), the ambient light, and the colors written in a material ("A material takes an opaque color: the transparency of an object goes in color or opacity"); the error elsewhere is now "Only color, background and mask-image take a transparent color". `drop-shadow()` is not there yet.
+- An animation that keeps an alpha at 1 is not a transparency: `objectAlpha()` checks every value first, since the animated value of a color that never changes its alpha is `mix(1.0, 1.0, …)` (it made four scenes transparent before this check). The 284 shaders of the scenes and registry examples are identical, byte for byte.
+**Why**: CSS makes an element transparent by its color, its `opacity` and `filter: opacity()`; the three now do the same in GSS.
+**Different from CSS**: a transparent color makes the whole object transparent, its lighting included (CSS: only what the color paints). `opacity()` on a group multiplies into each object, like `opacity` (decision 116). The colors of a material stay opaque (CSS has no materials).
+**Accepted limits**: no `drop-shadow()`; a color set from JS has no alpha; the transparent stops of a gradient written in a material are an error.
+
 ## Open questions
 
 - **Targeting multiplied ids**: should `#hero` target `hero-1`, `hero-2` and `hero-3`?

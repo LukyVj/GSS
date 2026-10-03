@@ -111,6 +111,8 @@ function lightColor(value: Token[] | undefined): string {
   const gradient: boolean = isGradient(value); // a boolean: value stays a list of tokens after it
   if (gradient) throw errorAt(value, "A light takes a color, not a gradient, like: color: #ffd27a;");
   if (value.length !== 1) throw errorAt(value, "A light takes a color, like: color: #ffd27a;");
+  if (value[0].type === "HASH" && (value[0].value.length === 4 || value[0].value.length === 8))
+    throw errorAt(value, "A light takes an opaque color, like: color: #ffd27a;");
   return colorOf(value[0], value);
 }
 

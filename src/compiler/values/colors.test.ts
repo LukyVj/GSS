@@ -32,9 +32,9 @@ describe("rgb()", () => {
     );
   });
 
-  it("rejects an alpha: GSS has no transparency", () => {
+  it("rejects an alpha where a color must be opaque", () => {
     expect(() => resolve("rgb(255 0 0 / 50%)")).toThrow(
-      "GSS has no transparency yet",
+      "Only color, background and mask-image take a transparent color",
     );
   });
 
@@ -77,7 +77,7 @@ describe("hsl()", () => {
 
   it("rejects an alpha and a wrong number of values", () => {
     expect(() => resolve("hsl(0 100% 50% / 0.5)")).toThrow(
-      "GSS has no transparency yet",
+      "Only color, background and mask-image take a transparent color",
     );
     expect(() => resolve("hsl(0 100%)")).toThrow(
       "hsl() expects three channels, like: hsl(20 100% 60%)",
@@ -229,11 +229,11 @@ describe("the color functions of decision 79", () => {
 
   it("says what is wrong", () => {
     expect(() => resolve("color-mix(red, blue)")).toThrow('color-mix() starts with "in" and a color space');
-    expect(() => resolve("color-mix(in srgb, red 20%, blue 20%)")).toThrow("GSS has no transparency yet");
+    expect(() => resolve("color-mix(in srgb, red 20%, blue 20%)")).toThrow("Only color, background and mask-image take a transparent color");
     expect(() => resolve("color-mix(in srgb longer hue, red, blue)")).toThrow("in a space with a hue");
     expect(() => resolve("color-mix(in srgb, red, 2)")).toThrow("color-mix() expects colors");
     expect(() => resolve("color(rec2020 1 0 0)")).toThrow("color() starts with a color space");
-    expect(() => resolve("oklch(70% 0.1 30 / 0.5)")).toThrow("GSS has no transparency yet");
+    expect(() => resolve("oklch(70% 0.1 30 / 0.5)")).toThrow("Only color, background and mask-image take a transparent color");
     expect(() => resolve("lab(50 red 10)")).toThrow("lab() expects numbers or percentages");
     expect(() => resolve("light-dark(white)")).toThrow("light-dark() takes two colors");
   });

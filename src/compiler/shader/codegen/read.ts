@@ -92,10 +92,10 @@ export function readScale(value: Token[] | undefined): string {
 export function readColor(value: Token[] | undefined, fallback = "vec3(0.9)"): string {
   if (!value) return fallback;
   const [token] = value;
-  // #ff000080, transparent: only the layers of background and mask-image take a transparent
-  // color (decisions 112, 113)
+  // #ff000080, transparent: only color, the layers of background and mask-image take a
+  // transparent color (decisions 112, 113, 117); the color of an object, readSurfaceColor()
   if (value.length === 1 && token.type === "HASH" && (token.value.length === 4 || token.value.length === 8))
-    throw errorAt(value, "GSS has no transparency yet, except in background and mask-image: write an opaque color here");
+    throw errorAt(value, "Only color, background and mask-image take a transparent color: write an opaque color here");
   if (value.length !== 1 || token.type !== "HASH") {
     throw errorAt(
       value,
@@ -104,6 +104,24 @@ export function readColor(value: Token[] | undefined, fallback = "vec3(0.9)"): s
   }
   const rgb = locate(token, () => hexToRgb(token.value));
   return `vec3(${rgb.map(glslFloat).join(", ")})`;
+}
+
+// The color of an object (decision 117): a transparent color without its alpha, which
+// surfaceAlpha() reads with readColorAlpha()
+const transparentHash = (value: Token[] | undefined) =>
+  value?.length === 1 && value[0].type === "HASH" && (value[0].value.length === 4 || value[0].value.length === 8);
+export function readSurfaceColor(value: Token[] | undefined): string {
+  if (!transparentHash(value)) return readColor(value);
+  const hex = (value![0] as { value: string }).value;
+  return readColor([{ type: "HASH", value: hex.length === 4 ? hex.slice(0, 3) : hex.slice(0, 6) }]);
+}
+
+// The alpha of an object's color, in GLSL: 1 for an opaque color, a gradient or none
+export function readColorAlpha(value: Token[] | undefined): string {
+  if (!transparentHash(value)) return "1.0";
+  const hex = (value![0] as { value: string }).value;
+  const a = hex.length === 4 ? hex[3] + hex[3] : hex.slice(6, 8);
+  return glslFloat(round(parseInt(a, 16) / 255));
 }
 
 // Reads "azimuth elevation" and returns the direction toward the sun

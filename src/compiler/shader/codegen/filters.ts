@@ -2,14 +2,14 @@
 // (decision 83); on objects, on their own pixels, and their layer in the alpha for
 // the passes (decision 84)
 import type { StyledInstance, Styles } from "../../cascade/resolve";
-import { buildPasses, objectFilters, readSteps } from "../../features/filter";
+import { buildPasses, objectFilters, readSceneSteps } from "../../features/filter";
 import { glslFloat, label } from "./glsl";
 
 export function filterCode(instances: StyledInstance[], sceneStyles: Styles) {
   const objects = objectFilters(instances);
   const { sceneLines } = buildPasses(
     objects.layers,
-    sceneStyles["filter"] ? readSteps(sceneStyles["filter"]) : [],
+    sceneStyles["filter"] ? readSceneSteps(sceneStyles["filter"]) : [],
   );
   const byIndex = new Map(instances.map((instance) => [instance.index, instance]));
   const objectFilter =

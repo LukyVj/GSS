@@ -16,6 +16,7 @@ import { isLive, sub, type Num } from "../shader/codegen/live";
 export type Pass = { shader: string; wgsl?: string; inputs: number[] };
 
 export const FILTER_FUNCTIONS = [
+  "opacity", // on objects and groups (decision 117)
   "blur",
   "bloom",
   "brightness",
@@ -50,6 +51,7 @@ float grain(vec2 pixel, float time) {
 
 export type Step =
   | { kind: "pixel"; line: string }
+  | { kind: "opacity"; amount: Num } // decision 117: the object covers less of what is behind it
   | { kind: "blur"; sigma: Num }
   | { kind: "bloom"; amount: Num; sigma: Num };
 
@@ -78,8 +80,7 @@ export function readSteps(value: Token[]): Step[] {
 }
 
 function readStep(name: string, call: Token[]): Step | null {
-  if (name === "opacity" || name === "drop-shadow")
-    throw errorAt(call, `${name}() needs transparency, which GSS does not have: use ${name === "opacity" ? "brightness()" : "bloom()"} instead`);
+  if (name === "drop-shadow") throw errorAt(call, "drop-shadow() is not there yet: use bloom() instead");
   const args = readFunction(call)?.args ?? [];
   if (args.length > 2 || args.some((a) => a.length !== 1))
     throw errorAt(call, `${name}() takes at most two values`);
@@ -113,6 +114,9 @@ function readStep(name: string, call: Token[]): Step | null {
   };
 
   switch (name) {
+    // opacity(): from 0 to 1, like CSS, read by the transparency of the object (decision 117)
+    case "opacity":
+      return { kind: "opacity", amount: one(amount(first, 1, 1)) };
     case "blur": {
       const sigma = one(length(first, 0));
       return isLive(sigma) || sigma > 0 ? { kind: "blur", sigma } : null; // blur(0): nothing to do
@@ -289,7 +293,7 @@ export function buildPasses(layers: Layer[], sceneSteps: Step[]): { sceneLines: 
   // 1. Each layer: its own pixels, blurred (color and coverage), laid back over the image
   for (const { layer, steps } of layers) {
     for (const step of steps) {
-      if (step.kind === "pixel") continue; // done in the scene's shader, on its own pixels
+      if (step.kind === "pixel" || step.kind === "opacity") continue; // done in the scene's shader, on its own pixels
       if (step.kind === "blur") {
         // The layer, blurred: its color (premultiplied) and how much of it covers each pixel
         const across = add(blurCode(step.sigma, "vec2(1.0, 0.0)", "vec4(s.rgb, 1.0)", layer), [current]);
@@ -327,6 +331,7 @@ export function buildPasses(layers: Layer[], sceneSteps: Step[]): { sceneLines: 
       tail().push(step.line);
       continue;
     }
+    if (step.kind === "opacity") continue; // never on the scene: readSceneSteps() refuses it
     if (step.kind === "blur") {
       const across = add(blurCode(step.sigma, "vec2(1.0, 0.0)", "s"), [current]);
       current = add(blurCode(step.sigma, "vec2(0.0, 1.0)", "s"), [across]);
@@ -348,7 +353,15 @@ export function buildPasses(layers: Layer[], sceneSteps: Step[]): { sceneLines: 
 
 // The filter of the scene alone
 export function compileFilter(value: Token[] | undefined): { sceneLines: string[]; passes: Pass[] } {
-  return buildPasses([], value ? readSteps(value) : []);
+  return buildPasses([], value ? readSceneSteps(value) : []);
+}
+
+// The filter of the scene: the scene stays opaque, opacity() goes on objects and groups
+export function readSceneSteps(value: Token[]): Step[] {
+  const steps = readSteps(value);
+  if (steps.some((step) => step.kind === "opacity"))
+    throw errorAt(value, "opacity() goes on objects and groups: the scene itself stays opaque");
+  return steps;
 }
 
 // ----- Filters on objects and groups (decision 84) -----
@@ -372,7 +385,7 @@ export function objectFilters(
   const layerOf = new Map<number, number>();
   const layers: Layer[] = [];
   const byNode = new Map<string, number>(); // a group's layer, shared by its objects
-  const spread = (steps: Step[]) => steps.some((s) => s.kind !== "pixel");
+  const spread = (steps: Step[]) => steps.some((s) => s.kind === "blur" || s.kind === "bloom");
 
   for (const instance of instances) {
     const own = instance.styles["filter"] ? readSteps(instance.styles["filter"]) : [];

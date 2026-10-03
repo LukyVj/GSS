@@ -25,7 +25,7 @@ import {
 import { sceneTextures } from "./features/textures";
 import { readDpr, type Dpr } from "./features/dpr";
 import { readTransition, type Transition } from "./features/transition";
-import { buildPasses, FILTER_FUNCTIONS, objectFilters, readSteps, type Pass } from "./features/filter";
+import { buildPasses, FILTER_FUNCTIONS, objectFilters, readSceneSteps, type Pass } from "./features/filter";
 import { generateWGSL } from "./shader/wgsl";
 import { GRADIENT_FUNCTIONS } from "./shader/gradient";
 import {
@@ -280,7 +280,7 @@ function compileStylesheet(
     () =>
       buildPasses(
         objectFilters(drawn).layers,
-        computedScene["filter"] ? readSteps(computedScene["filter"]) : [],
+        computedScene["filter"] ? readSceneSteps(computedScene["filter"]) : [],
       ).passes,
   );
   const shader = checkedShader(styled, computedScene, [...shared, ...copies], errors, registered.length);
@@ -603,8 +603,10 @@ function computeVars(styles: Styles, variables: Variables): Styles {
 // The property is needed: material: gold is a material, color: gold is a color.
 function colorsOf(property: string, value: Token[]): Token[] {
   const scheme: ColorScheme = activeMedia.has(DARK_QUERY) ? "dark" : "light";
-  // The layers of background and mask-image can be transparent, nothing else (decisions 112, 113)
-  return resolveNamedColors(property, resolveColors(value, scheme, property === "background" || property === "mask-image"));
+  // The color of an object, the layers of background and mask-image can be transparent,
+  // nothing else (decisions 112, 113, 117)
+  const alpha = property === "color" || property === "background" || property === "mask-image";
+  return resolveNamedColors(property, resolveColors(value, scheme, alpha));
 }
 // The queries true in the version being compiled: read by light-dark() (decision 79)
 // and the media() of if() (decision 81)

@@ -89,10 +89,17 @@ export const BACKGROUND_CANVAS = [
 
 // The color of a gradient written on an object: the color the reflections see
 export function gradientMean(value: Token[]): string {
-  const { stops } = readGradient(value);
+  // A transparent stop counts by its color, out of its premultiplied vec4 (decision 117)
+  const { stops } = readGradient(value, true);
+  const own = (color: string, i: number) => {
+    const [r, g, b, a] = color.slice(5, -1).split(", ").map(Number);
+    return a > 0 ? [r, g, b][i] / a : 0.5;
+  };
   const rgb = [0, 1, 2].map((i) => {
     // a color set from JS counts as a gray: its mean is not known (decision 105)
-    const values = stops.map((s) => (s.color.startsWith("vec3(") ? Number(s.color.slice(5, -1).split(", ")[i]) : 0.5));
+    const values = stops.map((s) =>
+      s.color.startsWith("vec3(") ? Number(s.color.slice(5, -1).split(", ")[i]) : s.color.startsWith("vec4(") ? own(s.color, i) : 0.5,
+    );
     return Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 255);
   });
   return rgb.map((c) => c.toString(16).padStart(2, "0")).join("");
@@ -333,7 +340,7 @@ function colorOf(token: Token, value: Token[], alpha = false): string {
   const rgb = [0, 2, 4].map((i) => parseInt(full.slice(i, i + 2), 16) / 255);
   const a = full.length === 8 ? parseInt(full.slice(6, 8), 16) / 255 : 1;
   if (a === 1) return `vec3(${rgb.map((c) => f(+c.toFixed(3))).join(", ")})`;
-  if (!alpha) throw errorAt(value, "GSS has no transparency yet, except in background and mask-image: write opaque colors here");
+  if (!alpha) throw errorAt(value, "Only color, background and mask-image take a transparent color: write opaque colors here");
   return `vec4(${[...rgb.map((c) => c * a), a].map((c) => f(+c.toFixed(3))).join(", ")})`;
 }
 

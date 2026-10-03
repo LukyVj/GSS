@@ -153,7 +153,8 @@ and a readable path toward the shader underneath. It is not meant to replace GLS
 - **Shapes**: `cube`, `sphere`, `torus`, `cylinder`, `cone`, `capsule`, `plane`, `path` (a tube
   along an SVG path) and `prism` (a `polygon()` or `path()` contour, extruded).
 - **Materials**: `matte()`, `metal()`, `jelly()`, `glass()` with refraction and frost, and the
-  shortcuts `gold`, `chrome`, `ice`; `opacity`, the objects behind showing through.
+  shortcuts `gold`, `chrome`, `ice`; `opacity`, transparent colors and
+  `filter: opacity()`, the objects behind showing through.
 - **Textures**: `texture: url("dirt.png")` projected on each face, a different image per face
   (the Minecraft grass block), `image-rendering: pixelated` and `texture-size` to repeat it.
 - **Motion**: `@keyframes`, animation controls and easings (including `steps()`), computed on the GPU; `transition` for hover changes;

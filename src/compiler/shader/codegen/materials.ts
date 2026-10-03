@@ -157,6 +157,13 @@ export function readMaterial(value: Token[] | undefined, color: string): string 
   const args = [...call.args]; // a copy, so shift() does not touch call.args
   let ownColor = color;
   if (args.length > 0 && args[0][0].type === "HASH") {
+    const hex = (args[0][0] as { value: string }).value;
+    // The transparency of an object goes in its color or opacity (decision 117)
+    if (hex.length === 4 || hex.length === 8)
+      throw errorAt(
+        value,
+        "A material takes an opaque color: the transparency of an object goes in color or opacity, like: color: #ff000080; material: metal(0.2);",
+      );
     ownColor = readColor(args.shift());
   } else if (args.length > 0 && args[0].length === 1 && args[0][0].type === "EXPR" && args[0][0].syntax === "color") {
     ownColor = (args.shift()![0] as { code: string }).code; // set from JS (decision 105)

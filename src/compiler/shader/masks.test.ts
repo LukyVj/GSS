@@ -58,10 +58,10 @@ describe("mask-image: holes in an object", () => {
       );
   });
 
-  it("takes transparent colors, and only in mask-image or background", () => {
+  it("takes transparent colors", () => {
     for (const color of ["transparent", "#0000", "#00000000", "rgb(0 0 0 / 0%)", "oklch(0% 0 0 / 0.2)", "color-mix(in srgb, black 30%, white 10%)"])
       expect(() => scene(`mask-image: linear-gradient(${color}, black);`), color).not.toThrow();
-    expect(() => scene("color: linear-gradient(transparent, black);")).toThrow("GSS has no transparency yet");
+    expect(() => scene("material: metal(linear-gradient(transparent, black));")).toThrow("Only color, background and mask-image take a transparent color");
   });
 
   it("writes the space of an object once, when it is painted or textured too", () => {
