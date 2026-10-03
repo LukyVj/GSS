@@ -12,9 +12,9 @@ const readme = files["../README.md"] ?? "";
 const license = files["../LICENSE"] ?? "";
 
 describe("the npm package", () => {
-  it("can be published, as 0.0.3", () => {
+  it("can be published, as 0.0.4", () => {
     expect(pkg.private).toBeFalsy();
-    expect(pkg.version).toBe("0.0.3");
+    expect(pkg.version).toBe("0.0.4");
   });
 
   it("keeps the lockfile, README and CDN entry in sync", () => {

@@ -114,11 +114,17 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 | Formatter                  | `formatGss`, `Shift+Alt+F` in the playground                                                                                                                                 | 33         |
 | VS Code / Cursor extension | highlighting (nested rules, `&` and `@media` read since decision 106: rebuild the `.vsix` to ship it), formatter, icon for `.gss` files                                                                                                                               | 33, 106    |
 | Design                     | `DESIGN.md` "Distance field", tokens in `src/styles/tokens.css`, what every page shares in `src/styles/site.css` (`@layer site`: a page's own `<style>` always wins)         | –          |
-| npm package                | [`gss-lang`](https://www.npmjs.com/package/gss-lang) 0.0.3 (tag `v0.0.3`; 0.0.2: `v0.0.2`, 0.0.1: `v0.0.1`), Apache-2.0: `gss-lang` (compiler + `mount`), `gss-lang/runtime`, `gss-lang/vite`, `gss-lang/embed` (pinned CDN module) | 63, 85     |
+| npm package                | [`gss-lang`](https://www.npmjs.com/package/gss-lang) 0.0.4, prepared (0.0.3: tag `v0.0.3`; 0.0.2: `v0.0.2`, 0.0.1: `v0.0.1`), Apache-2.0: `gss-lang` (compiler + `mount`), `gss-lang/runtime`, `gss-lang/vite`, `gss-lang/embed` (pinned CDN module) | 63, 85     |
 | Scenes                     | every demo `.gss` in `src/scenes/` (playground examples, showcase, bench), all compiled by `gpu.test.ts`                                                                     | 63         |
 | Tests                      | Vitest (CPU) + GPU compilation of every registry example (Chromium)                                                                                                          | 12, 25     |
 | Profiler                   | a panel over the playground scene, public, closed by default and lazy (nothing measured before it opens), `perf` button or Alt+P (remembered), WebGL2 and WebGPU (timestamp queries when available): fps, frame, GPU and CPU time, real pixels, shader build time; over budget in signal | 64, 87, 91 |
 | Bench                      | `npm run bench:compare -- main --dpr 2`: another commit against the working tree, 3 alternating rounds, images compared pixel by pixel, report in `bench-results/compare.md` | 64         |
+
+## Release 0.0.4 (prepared Oct. 3, to publish)
+
+- [x] Package and lockfile version set to 0.0.4; README, installation snippets and changelog follow.
+- [x] What was unreleased goes into 0.0.4: decisions 101 to 117 (`element()`, animated gradients and the scene's animation, `@property` and `setProperty()`, nesting, `transform-origin`, fog, several and colored lights, `noise()`, layers of background, `mask-image`, `displace()`, shadows, `opacity` and transparent colors), and the clamped computed values (decision 104).
+- [ ] Published on npm, tag `v0.0.4`, site deployed (Lucas); for `element()` on gss-lang.dev, an origin trial token for HTML-in-Canvas (the trial ends Oct. 20).
 
 ## Release 0.0.3 ✅
 

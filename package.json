@@ -1,6 +1,6 @@
 {
   "name": "gss-lang",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Write 3D scenes in CSS: selectors, the cascade, @keyframes, and more compiled into GLSL and WGSL shaders for WebGL2 and WebGPU.",
   "keywords": [
     "css",
