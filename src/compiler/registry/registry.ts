@@ -376,10 +376,15 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "union | subtract | intersect",
     initial: "union",
     description:
-      "Sets how the object combines with the objects declared before it in @scene: union adds it, subtract carves it out of them, intersect keeps only their common part. The floor is never affected.",
+      "Sets how the object combines with the objects declared before it in `@scene`. The floor is never affected.",
+    values: [
+      ["union", "Adds the object: the default."],
+      ["subtract", "Carves it out of them."],
+      ["intersect", "Keeps only their common part."],
+    ],
     examples: [
       {
-        name: "operation",
+        name: "a sphere carved out of a cube",
         code: "@scene { cube; sphere; } cube { translate: 0 1 0; } sphere { translate: 0 1 0; radius: 0.65; operation: subtract; }",
       },
     ],
@@ -390,10 +395,10 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "<number>",
     initial: "0",
     description:
-      "Smooths the junction between the object and the objects declared before it, over the given distance. 0 keeps a sharp junction. Works with every operation.",
+      "Smooths the junction between the object and the objects declared before it, over the given distance. 0 keeps a sharp junction; it works with every `operation`.",
     examples: [
       {
-        name: "blend",
+        name: "two spheres that melt together",
         code: "@scene { sphere#a; sphere#b; } #a { translate: 0.4 1 0; } #b { translate: -0.4 1 0; blend: 0.4; }",
       },
     ],
@@ -615,18 +620,16 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "<number>{1,3} (cube) | <number>{1,2} (plane: width depth)",
     initial: "1 (cube), 1 (plane)",
     description:
-      "Sets the size of the cube along the x, y and z axes: one value makes a cube, three values make a box. On a plane, sets its width and depth: one value makes a square.",
+      "Sets the size of a cube along the x, y and z axes: one value makes a cube, three make a box. On a plane, it sets the width and the depth: one value makes a square.",
     examples: [
       {
-        name: "size of a cube",
+        name: "a box",
+        text: "Twice as wide as it is high.",
         code: "@scene { cube; } cube { translate: 0 0.5 0; size: 2 1 1; }",
       },
       {
-        name: "size of a plane",
-        code: "@scene { plane; } plane { translate: 0 1 0; rotate-x: 90deg; size: 2 1.5; color: #ff5a36; }",
-      },
-      {
-        name: "size of a plane with a different rotation",
+        name: "a plane, stood up",
+        text: "A width and a depth, on a plane turned like a wall.",
         code: "@scene { plane; } plane { translate: 0 1 0; rotate-x: 90deg; size: 2 1.5; color: #ff5a36; }",
       },
     ],
@@ -636,10 +639,10 @@ export const PROPERTIES: PropertyDef[] = [
     appliesTo: ["cube"],
     syntax: "<number>",
     initial: "0.08",
-    description: "Rounds the edges of the cube. 0 gives sharp edges.",
+    description: "Rounds the edges of a cube; 0 keeps them sharp.",
     examples: [
       {
-        name: "corner-radius",
+        name: "rounded edges",
         code: "@scene { cube; } cube { translate: 0 0.5 0; corner-radius: 0.3; }",
       },
     ],
@@ -651,18 +654,16 @@ export const PROPERTIES: PropertyDef[] = [
     initial:
       "0.5 (sphere), 1 (torus), 0.5 (cylinder), 0.5 0 (cone), 0.25 (capsule)",
     description:
-      "Sets the radius of the sphere, the cylinder or the capsule, or the radius of the torus ring, measured to the center of its tube. A cone takes a bottom and a top radius, like border-radius takes several values: the top one is 0 by default, which makes a point, and a positive top radius makes a truncated cone.",
+      "Sets the radius of a sphere, a cylinder or a capsule, or that of a torus ring, measured to the center of its tube.",
+    details: "A cone takes a bottom and a top radius, like `border-radius` takes several values: the top one is 0 by default, a point, and a positive one cuts the top.",
     examples: [
       {
-        name: "radius of a sphere",
+        name: "a big sphere",
         code: "@scene { sphere; } sphere { translate: 0 1 0; radius: 1; }",
       },
       {
-        name: "radius of a cone",
-        code: "@scene { cone; } cone { translate: 0 0.75 0; radius: 0.5 0.2; height: 1.5; }",
-      },
-      {
-        name: "radius of a cone with a different rotation",
+        name: "a cut cone",
+        text: "`radius: 0.5 0.2`: a wide base, a narrow top.",
         code: "@scene { cone; } cone { translate: 0 0.75 0; radius: 0.5 0.2; height: 1.5; }",
       },
     ],
@@ -672,10 +673,10 @@ export const PROPERTIES: PropertyDef[] = [
     appliesTo: ["torus"],
     syntax: "<number>",
     initial: "0.28",
-    description: "Sets the radius of the torus tube.",
+    description: "Sets the radius of the tube of a torus.",
     examples: [
       {
-        name: "thickness",
+        name: "a thick ring",
         code: "@scene { torus; } torus { translate: 0 0.5 0; thickness: 0.5; }",
       },
     ],
@@ -686,22 +687,20 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "<number>",
     initial: "1",
     description:
-      "Sets the full height of the cylinder, the cone or the capsule, along the y axis. The height of a capsule counts its round ends, so it must be at least twice its radius. The shape is centered on its origin: to stand it on the floor, set its y to half its height.",
+      "Sets the full height of a cylinder, a cone or a capsule, along the y axis. The shape is centered on its origin: to stand it on the floor, set its y to half its height.",
+    details: "The height of a capsule counts its round ends, so it is at least twice its radius.",
     examples: [
       {
-        name: "height of a cylinder",
+        name: "a tall cylinder",
         code: "@scene { cylinder; } cylinder { translate: 0 1 0; radius: 0.4; height: 2; }",
       },
       {
-        name: "height of a cone",
+        name: "a cone",
         code: "@scene { cone; } cone { translate: 0 0.75 0; radius: 0.5 0.2; height: 1.5; }",
       },
       {
-        name: "height of a cone with a different rotation",
-        code: "@scene { cone; } cone { translate: 0 0.75 0; radius: 0.5 0.2; height: 1.5; }",
-      },
-      {
-        name: "height of a capsule",
+        name: "a capsule",
+        text: "1.5 high, round ends included.",
         code: "@scene { capsule; } capsule { translate: 0 0.75 0; radius: 0.25; height: 1.5; }",
       },
     ],
@@ -712,22 +711,36 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: 'path("<svg path>") (path, prism) | polygon(<x> <y>, …) (prism)',
     initial: "none (required)",
     description:
-      "The line a path object follows, written like the d of an SVG path, or CSS path(): M moves, L H V draw lines, C S Q T draw curves, A draws an arc of ellipse (rx ry rotation large-arc sweep x y, like SVG), Z closes, in capitals (absolute) or lowercase (relative). A path copied from an SVG keeps its way up: y goes up in the scene, down in SVG, and GSS flips it. One path unit is one scene unit, so an icon drawn in a 24 or 32 box usually needs a scale. On a prism, d takes a polygon(), written like the one of CSS clip-path: one point per comma, x and y separated by a space, y going down like in SVG, and the polygon closes itself; or a path(), like above, whose every subpath is a closed contour, filled with the even-odd rule: a subpath inside another one is a hole, like the inside of an o. A logo exported as an SVG path becomes a solid shape this way.",
+      "The line a `path` follows, written like the `d` of an SVG path or CSS `path()`. On a `prism`, the contour to fill: a `polygon()` or a `path()`.",
+    valuesTitle: "Commands",
+    values: [
+      ["M", "Moves, without drawing."],
+      ["L, H, V", "A line; a horizontal line; a vertical line."],
+      ["C, S, Q, T", "Curves, like SVG."],
+      ["A", "An arc of ellipse: `rx ry rotation large-arc sweep x y`, like SVG."],
+      ["Z", "Closes the path."],
+      ["polygon()", "On a prism: one point per comma, x and y separated by a space, y going down, like CSS `clip-path`. It closes itself."],
+    ],
+    details: "Capitals are absolute, lowercase letters relative. A path copied from an SVG keeps its way up: y goes down in SVG and up in the scene, and GSS flips it. One path unit is one scene unit, so an icon drawn in a box of 24 or 32 usually needs a `scale`. On a prism, each subpath of a `path()` is a closed contour, filled with the even-odd rule: a contour inside another one is a hole, like the inside of an o.",
     examples: [
       {
-        name: "d of a path",
+        name: "a curve",
+        text: "One cubic curve, `C`.",
         code: '@scene { path; } path { translate: 0 1 0; d: path("M-1 0.5 C-1 -1 1 -1 1 0.5"); stroke-width: 0.25; color: #ff5a36; }',
       },
       {
-        name: "d of a path with a different scale",
+        name: "a zigzag, scaled down",
+        text: "Lines drawn 4 units wide, shown at half size by `scale`.",
         code: '@scene { path; } path { translate: 0 1.2 0; d: path("M0 0 L1 1.5 L2 0 L3 1.5 L4 0"); stroke-width: 0.3; scale: 0.5; material: gold; }',
       },
       {
-        name: "d of a path with a different rotation",
+        name: "a smiley",
+        text: "Two arcs draw the face, a third one the smile.",
         code: '@scene { path; } path { translate: 0 1 0; d: path("M-1 0 A1 1 0 1 1 1 0 A1 1 0 1 1 -1 0 M-0.4 -0.3 A0.5 0.5 0 0 0 0.4 -0.3"); stroke-width: 0.15; color: #ff5a36; }',
       },
       {
-        name: "d of a path with a different stroke-width",
+        name: "a thick line",
+        text: "One straight line, with a wide `stroke-width`.",
         code: '@scene { path; } path { translate: 0 1 0; d: path("M-1 0 L1 0"); stroke-width: 0.6; color: #3a7bff; }',
       },
     ],
@@ -738,10 +751,10 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "<number>",
     initial: "1",
     description:
-      "The thickness of the tube that follows the path, in path units, like the stroke-width of an SVG. The ends of the tube are round.",
+      "The thickness of the tube along the path, in path units, like the `stroke-width` of SVG. Its ends are round.",
     examples: [
       {
-        name: "stroke-width",
+        name: "a thick line",
         code: '@scene { path; } path { translate: 0 1 0; d: path("M-1 0 L1 0"); stroke-width: 0.6; color: #3a7bff; }',
       },
     ],
@@ -752,10 +765,10 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "<number>",
     initial: "0.2",
     description:
-      "The full thickness of a prism along the z axis, centered on its origin: depth: 1 goes from z = -0.5 to z = 0.5.",
+      "The full thickness of a prism along the z axis, centered on its origin: `depth: 1` goes from z = -0.5 to z = 0.5.",
     examples: [
       {
-        name: "depth",
+        name: "a triangle, 1 deep",
         code: "@scene { prism; } prism { translate: 0 1 0; d: polygon(0 -1, 1 1, -1 1); depth: 1; color: #ff5a36; }",
       },
     ],
@@ -766,10 +779,12 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "<number>{4}",
     initial: "the box of the path itself",
     description:
-      "The drawing area of the path: x, y, width and height, like the viewBox of an SVG. Its center becomes the origin of the object. Without it, each path is centered on itself; with the same view-box, paths copied from one SVG stay in place relative to each other.",
+      "The drawing area of a path: x, y, width and height, like the `viewBox` of SVG. Its center becomes the origin of the object.",
+    details: "Without it, each path is centered on itself; with the same `view-box`, the paths copied from one SVG keep their places relative to each other.",
     examples: [
       {
-        name: "view-box",
+        name: "two braces of one icon",
+        text: "Both paths share the 32 × 32 box of their icon, and keep their places.",
         code: '@scene { path#left; path#right; } path { translate: 0 1.6 0; view-box: 0 0 32 32; stroke-width: 2.4; scale: 0.1; color: #e6e6e6; } #left { d: path("M12.5 4.5C9.5 4.5 9 6 9 8.5v4c0 2-1 3.5-3.5 3.5C8 16 9 17.5 9 19.5v4c0 2.5.5 4 3.5 4"); } #right { d: path("M19.5 4.5C22.5 4.5 23 6 23 8.5v4c0 2 1 3.5 3.5 3.5C24 16 23 17.5 23 19.5v4c0 2.5-.5 4-3.5 4"); }',
       },
     ],
@@ -1609,10 +1624,10 @@ export const SHAPE_DOCS: ShapeDef[] = [
   {
     name: "cube",
     description:
-      "A box with slightly rounded edges, centered on its origin: 1 × 1 × 1 by default.",
+      "A box with slightly rounded edges, centered on its origin: 1 × 1 × 1 by default. `size` stretches it into any box, and `corner-radius` rounds its edges.",
     examples: [
       {
-        name: "cube",
+        name: "a cube on the floor",
         code: "@scene { cube; } cube { translate: 0 0.5 0; }",
       },
     ],
@@ -1620,10 +1635,10 @@ export const SHAPE_DOCS: ShapeDef[] = [
   {
     name: "sphere",
     description:
-      "A ball centered on its origin, with a radius of 0.5 by default.",
+      "A ball centered on its origin, with a `radius` of 0.5 by default.",
     examples: [
       {
-        name: "sphere",
+        name: "a sphere on the floor",
         code: "@scene { sphere; } sphere { translate: 0 0.5 0; }",
       },
     ],
@@ -1631,10 +1646,10 @@ export const SHAPE_DOCS: ShapeDef[] = [
   {
     name: "torus",
     description:
-      "A ring lying flat around the y axis: a radius of 1 to the center of its tube, and a tube of 0.28 by default.",
+      "A ring lying flat around the y axis: a `radius` of 1 to the center of its tube, and a tube of 0.28 by default, set by `thickness`.",
     examples: [
       {
-        name: "torus",
+        name: "a torus on the floor",
         code: "@scene { torus; } torus { translate: 0 0.28 0; }",
       },
     ],
@@ -1642,10 +1657,10 @@ export const SHAPE_DOCS: ShapeDef[] = [
   {
     name: "cylinder",
     description:
-      "A cylinder standing on the y axis, centered on its origin: a radius of 0.5 and a height of 1 by default.",
+      "A cylinder standing on the y axis, centered on its origin: a `radius` of 0.5 and a `height` of 1 by default.",
     examples: [
       {
-        name: "cylinder",
+        name: "a cylinder on the floor",
         code: "@scene { cylinder; } cylinder { translate: 0 0.5 0; }",
       },
     ],
@@ -1653,10 +1668,10 @@ export const SHAPE_DOCS: ShapeDef[] = [
   {
     name: "cone",
     description:
-      "A cone standing on the y axis, centered on its origin, pointing up: a radius of 0.5 and a height of 1 by default. A second radius makes a truncated cone.",
+      "A cone standing on the y axis, centered on its origin, pointing up: a `radius` of 0.5 and a `height` of 1 by default. A second radius cuts its top.",
     examples: [
       {
-        name: "cone",
+        name: "a cone on the floor",
         code: "@scene { cone; } cone { translate: 0 0.5 0; }",
       },
     ],
@@ -1664,10 +1679,10 @@ export const SHAPE_DOCS: ShapeDef[] = [
   {
     name: "capsule",
     description:
-      "A cylinder with round ends, standing on the y axis and centered on its origin. Its height counts the round ends: a radius of 0.25 and a height of 1 by default.",
+      "A cylinder with round ends, standing on the y axis and centered on its origin: a `radius` of 0.25 and a `height` of 1 by default, round ends included.",
     examples: [
       {
-        name: "capsule",
+        name: "a capsule on the floor",
         code: "@scene { capsule; } capsule { translate: 0 0.5 0; }",
       },
     ],
@@ -1675,10 +1690,10 @@ export const SHAPE_DOCS: ShapeDef[] = [
   {
     name: "path",
     description:
-      "A tube with round ends that follows an SVG path. It needs a d; stroke-width and view-box work like in SVG.",
+      "A tube with round ends that follows an SVG path, given by `d`. `stroke-width` and `view-box` work like in SVG.",
     examples: [
       {
-        name: "path",
+        name: "a curve",
         code: '@scene { path; } path { translate: 0 1 0; d: path("M-1 0.5 C-1 -1 1 -1 1 0.5"); stroke-width: 0.25; color: #ff5a36; }',
       },
     ],
@@ -1686,10 +1701,10 @@ export const SHAPE_DOCS: ShapeDef[] = [
   {
     name: "plane",
     description:
-      "A thin, flat rectangle lying in the xz plane, centered on its origin: 1 × 1 by default. size sets its width and depth, rotate-x: 90deg stands it up like a wall.",
+      "A thin, flat rectangle lying in the xz plane, centered on its origin: 1 × 1 by default. `size` sets its width and its depth, and `rotate-x: 90deg` stands it up, like a wall.",
     examples: [
       {
-        name: "plane",
+        name: "a mat on the floor",
         code: "@scene { plane; } plane { translate: 0 0.01 0; size: 3 2; color: #3ad16b; }",
       },
     ],
@@ -1697,14 +1712,17 @@ export const SHAPE_DOCS: ShapeDef[] = [
   {
     name: "prism",
     description:
-      "A contour, filled, then given a depth: a star, a letter, an arrow, a logo. The contour is a polygon() or a path() (see d); a path can hold several contours, and one inside another is a hole. It stands in the xy plane, facing the camera, and is centered on its contours (or its view-box), like a path.",
+      "A contour, filled, then given a `depth`: a star, a letter, an arrow, a logo. The contour is a `polygon()` or a `path()` (see `d`), and a contour inside another one is a hole.",
+    details: "It stands in the xy plane, facing the camera, centered on its contours (or on its `view-box`), like a path.",
     examples: [
       {
-        name: "prism",
+        name: "a gold star",
+        text: "A star, from a `polygon()` of ten points.",
         code: "@scene { prism; } prism { translate: 0 1 0; d: polygon(0 -1, -0.25 -0.34, -0.95 -0.31, -0.4 0.13, -0.59 0.81, 0 0.42, 0.59 0.81, 0.4 0.13, 0.95 -0.31, 0.25 -0.34); depth: 0.3; material: gold; }",
       },
       {
-        name: "prism",
+        name: "a square with a round hole",
+        text: "A `path()` with two contours: the circle inside the square is a hole.",
         code: '@scene { prism; } prism { translate: 0 1 0; d: path("M-1 -1 H1 V1 H-1 Z M0 -0.6 A0.6 0.6 0 1 1 0 0.6 A0.6 0.6 0 1 1 0 -0.6 Z"); depth: 0.4; color: #ff5a36; }',
       },
     ],
@@ -1712,7 +1730,8 @@ export const SHAPE_DOCS: ShapeDef[] = [
   {
     name: "group",
     description:
-      "Not a shape: it holds objects and other groups, like <g> in SVG, and draws nothing itself. Its translate, rotations and scale apply to everything inside it, and the positions of its children become relative to it: move the group, everything follows. Other properties (color, material, size…) are not passed down to its children; to style them, use a descendant selector: #letters cube.",
+      "Not a shape: it holds objects and other groups, like `<g>` in SVG, and draws nothing itself. Its `translate`, rotations and `scale` apply to everything inside it, and the positions of its children become relative to it.",
+    details: "Its other properties (`color`, `material`, `size`…) are not passed down to its children: to style them, use a descendant selector, like `#letters cube`.",
     takes: [
       "filter",
       "translate",
@@ -1735,11 +1754,13 @@ export const SHAPE_DOCS: ShapeDef[] = [
     ],
     examples: [
       {
-        name: "group",
+        name: "letters moved as one",
+        text: "The group places and turns its three cubes together.",
         code: "@scene { group#letters { cube#l; cube#u; cube#c; } } #letters { translate: 1 0.5 0; rotate-y: -20deg; } #letters cube { size: 0.3 1 0.3; color: #ff5a36; } #u { translate: -1 0 0; } #c { translate: -2 0 0; }",
       },
       {
-        name: "group",
+        name: "a group that turns",
+        text: "An animation on the group turns both spheres around its center.",
         code: "@scene { group#spin { sphere#a; sphere#b; } } #spin { translate: 0 0.6 0; animation: turn 4s linear; } #a { translate: 0.8 0 0; radius: 0.4; } #b { translate: -0.8 0 0; radius: 0.4; } @keyframes turn { to { rotate-y: -1turn; } }",
       },
     ],
@@ -1747,7 +1768,8 @@ export const SHAPE_DOCS: ShapeDef[] = [
   {
     name: "light",
     description:
-      "Not a shape: a point of light, which draws nothing. Its color is the color of its light (white by default), and intensity how much light it gives: what a surface facing it receives at 1 unit, then less with the square of the distance. It is placed like an object: translate, the groups it is in, animations, :hover through its group, a motion path, and rotations around a transform-origin (numbers only, since a light has no size). Several lights add up, on top of the sun of the scene (light on the scene, which none turns off) and its ambient light; a scene has 8 lights at most. A light is never drawn: to see the bulb, put a shape at its place; and since it is not drawn, it cannot be hovered or pressed itself: hover an object, like #lamp:hover light. Objects cast no shadow: the light goes through them.",
+      "Not a shape: a point of light, which draws nothing. Its `color` is the color of its light (white by default), and `intensity` how much light it gives, on top of the sun and the `ambient` light of the scene.",
+    details: "It moves like an object: `translate`, the groups it is in, animations, `:hover` through its group, a motion path, and rotations around a `transform-origin`, in numbers, since a light has no size. Lights add up, 8 at most per scene. A light is never drawn, so it cannot be hovered or pressed: to see the bulb, put a shape at its place, and hover the shape, like `#lamp:hover light`. Without `shadows`, the light goes through the objects.",
     takes: [
       "color",
       "intensity",
@@ -1772,18 +1794,22 @@ export const SHAPE_DOCS: ShapeDef[] = [
     examples: [
       {
         name: "a lamp",
+        text: "A warm bulb, with a faint ambient light and no sun.",
         code: "@scene { light#bulb; sphere; } scene { light: none; ambient: 0.05; } #bulb { translate: 0.9 1.6 0.9; color: #ffd27a; intensity: 2; } sphere { translate: 0 0.6 0; radius: 0.6; }",
       },
       {
         name: "colored lights",
+        text: "A red and a blue light, one on each side of a white cube.",
         code: "@scene { light#warm; light#cold; cube; } scene { light: none; ambient: 0.05; } #warm { translate: -1.4 1.4 1; color: #ff5a36; intensity: 3; } #cold { translate: 1.4 1.4 1; color: #3a7bff; intensity: 3; } cube { translate: 0 0.5 0; color: #ffffff; }",
       },
       {
         name: "a light that moves",
+        text: "A firefly that circles the sphere, around its `transform-origin`.",
         code: "@scene { light#firefly; sphere; } scene { light: none; ambient: 0.05; } #firefly { translate: 1.2 0.8 0; transform-origin: -1.2 0 0; color: #b6ff6b; intensity: 1.5; animation: circle 4s linear; } sphere { translate: 0 0.6 0; radius: 0.5; } @keyframes circle { to { rotate-y: 1turn; } }",
       },
       {
         name: "a lamp to hover",
+        text: "Hovering the lamp turns its light up.",
         code: "@scene { light#bulb; group#lamp { sphere#shade; cube#stand; } } scene { light: none; ambient: 0.15; } #shade { translate: 0 1.5 0; radius: 0.3; color: #ffd27a; } #stand { translate: 0 0.6 0; size: 0.1 1.2 0.1; } #bulb { translate: 0 1.1 0.5; intensity: 0.2; transition: 0.4s; } #bulb:has(+ #lamp:hover) { intensity: 3; }",
       },
     ],
