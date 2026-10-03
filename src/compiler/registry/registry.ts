@@ -201,6 +201,43 @@ export const PROPERTIES: PropertyDef[] = [
     ],
   },
   {
+    name: "mask-image",
+    appliesTo: "object",
+    animatable: true,
+    syntax: "none | <gradient>",
+    initial: "none",
+    description:
+      "Cuts holes in the object, like a CSS mask: where the image covers the surface, the object is there; where the image is transparent, the surface is not drawn, and the eye sees the inside of the object, then what is behind it. The image is a gradient or a noise(), read like a gradient in color: seen from the front in the object's own space, and noise() in 3D, so the holes move and turn with the object. Its colors can be transparent: transparent, #00000000, rgb(0 0 0 / 0%), a color-mix() under 100%. By default the alpha of the image counts (see mask-mode). A part covered less than half is a hole, so the edge of a hole is sharp: unlike CSS, a mask does not fade the object. It can be animated and changed by :hover like a gradient in color: moving the stops of a noise() dissolves the object. The holes are seen everywhere, in the reflections too, and the mouse goes through them: :hover reaches the object behind a hole.",
+    examples: [
+      {
+        name: "holes from a noise",
+        code: "@scene { sphere; } sphere { translate: 0 1 0; radius: 0.8; color: #ff5a36; mask-image: noise(4 3, black 48%, transparent 52%); }",
+      },
+      {
+        name: "a sphere seen through a cube",
+        code: "@scene { cube; sphere; } scene { camera-angle: 20deg 15deg; } cube { translate: 0 0.7 0; size: 1.4; color: #3a7bff; mask-image: radial-gradient(circle, transparent 35%, black 36%); } sphere { translate: 0 0.7 0; radius: 0.35; color: #ff5a36; }",
+      },
+      {
+        name: "a dissolve",
+        code: "@scene { sphere; } sphere { translate: 0 1 0; radius: 0.8; color: #ff5a36; mask-image: noise(4 3, black 20%, transparent 20%); animation: dissolve 3s ease-in-out alternate; } @keyframes dissolve { to { mask-image: noise(4 3, black 80%, transparent 80%); } }",
+      },
+    ],
+  },
+  {
+    name: "mask-mode",
+    appliesTo: "object",
+    syntax: "alpha | luminance | match-source",
+    initial: "match-source",
+    description:
+      "Which part of mask-image counts, like CSS. alpha: the transparency of its colors, so black and white are both there. luminance: their brightness, times their alpha, like an SVG mask: white is there, black is a hole. match-source, the default, reads a gradient by its alpha, like CSS.",
+    examples: [
+      {
+        name: "a cage, with luminance",
+        code: "@scene { cube; sphere; } cube { translate: 0 0.7 0; size: 1.4; mask-image: repeating-linear-gradient(90deg, white 0% 10%, black 10% 20%); mask-mode: luminance; } sphere { translate: 0 0.7 0; radius: 0.45; color: #ff5a36; }",
+      },
+    ],
+  },
+  {
     name: "rotate-x",
     appliesTo: "object",
     animatable: true,
@@ -336,7 +373,7 @@ export const PROPERTIES: PropertyDef[] = [
       "<keyframes-name> <time> [<easing>] [<time>] [<number> | infinite] [normal | reverse | alternate | alternate-reverse] [none | forwards | backwards | both]",
     initial: "none",
     description:
-      "Plays a @keyframes animation on the object, like CSS. After the name: the duration (s or ms), then if needed an easing, a delay, a number of iterations, a direction and a fill mode, in any order. Unlike CSS, an animation loops forever unless you give it a number of iterations. The second time is the delay: the animation starts after it, or partway with a negative delay. A number plays that many times (1.5 stops halfway through the second), infinite loops. alternate plays it forward then backward, reverse backward, alternate-reverse backward first. The fill mode says what the object shows outside the animation: none, its own value, like CSS; backwards, the first frame during the delay; forwards, the last frame once it is over; both, the two. The easing shapes each step: linear, the default, keeps a constant speed; ease, ease-in, ease-out and ease-in-out speed up and slow down; cubic-bezier() and linear() draw your own curve; steps() moves by jumps. In an animation, ease-in-out is computed as a smoothstep, a very close curve. Each part also has its own property: animation-duration, animation-delay, animation-iteration-count, animation-direction, animation-fill-mode and animation-timing-function, which win over what animation says. Animatable properties: translate, rotate-x, rotate-y, rotate-z, scale, color (a gradient too) and offset-distance, and background on the scene. On a group, it animates translate, the rotations and scale of the whole group. On the scene, it animates the background and the variables of the scene that the background uses; the objects do not follow the variables a scene animates, they play their own animation.",
+      "Plays a @keyframes animation on the object, like CSS. After the name: the duration (s or ms), then if needed an easing, a delay, a number of iterations, a direction and a fill mode, in any order. Unlike CSS, an animation loops forever unless you give it a number of iterations. The second time is the delay: the animation starts after it, or partway with a negative delay. A number plays that many times (1.5 stops halfway through the second), infinite loops. alternate plays it forward then backward, reverse backward, alternate-reverse backward first. The fill mode says what the object shows outside the animation: none, its own value, like CSS; backwards, the first frame during the delay; forwards, the last frame once it is over; both, the two. The easing shapes each step: linear, the default, keeps a constant speed; ease, ease-in, ease-out and ease-in-out speed up and slow down; cubic-bezier() and linear() draw your own curve; steps() moves by jumps. In an animation, ease-in-out is computed as a smoothstep, a very close curve. Each part also has its own property: animation-duration, animation-delay, animation-iteration-count, animation-direction, animation-fill-mode and animation-timing-function, which win over what animation says. Animatable properties: translate, rotate-x, rotate-y, rotate-z, scale, color (a gradient too), mask-image and offset-distance, and background on the scene. On a group, it animates translate, the rotations and scale of the whole group. On the scene, it animates the background and the variables of the scene that the background uses; the objects do not follow the variables a scene animates, they play their own animation.",
     examples: [
       {
         name: "animation",
@@ -881,7 +918,7 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "[ <gradient> , ]* [ <gradient> | <color> ]",
     initial: "#080808",
     description:
-      "Sets the background, visible wherever there is no object and no floor: a color, or a gradient drawn over the canvas like a CSS background (linear-gradient(), radial-gradient(), conic-gradient() and their repeating forms). The scene can animate it, with animation on the scene: a color into another color, a gradient into another gradient of the same kind with as many colors, or through the variables of the scene. A scene without objects and without a floor is then a flat, moving image. Like CSS, a background can have several layers, separated by commas, the first on top: background: noise(3, #ffffff00 40%, #ffffff), linear-gradient(#2f6bd8, #9fc4ff); only the last can be a color. The colors of these layers can be transparent (transparent, #ffffff80, rgb(… / 50%), a color-mix() under 100%), so a layer shows the ones below it, and background-blend-mode blends them; everywhere else, GSS has no transparency yet.",
+      "Sets the background, visible wherever there is no object and no floor: a color, or a gradient drawn over the canvas like a CSS background (linear-gradient(), radial-gradient(), conic-gradient() and their repeating forms). The scene can animate it, with animation on the scene: a color into another color, a gradient into another gradient of the same kind with as many colors, or through the variables of the scene. A scene without objects and without a floor is then a flat, moving image. Like CSS, a background can have several layers, separated by commas, the first on top: background: noise(3, #ffffff00 40%, #ffffff), linear-gradient(#2f6bd8, #9fc4ff); only the last can be a color. The colors of these layers can be transparent (transparent, #ffffff80, rgb(… / 50%), a color-mix() under 100%), so a layer shows the ones below it, and background-blend-mode blends them; apart from mask-image, GSS has no transparency anywhere else.",
     examples: [
       {
         name: "background",
@@ -1004,7 +1041,7 @@ export const AT_RULES: AtRuleDef[] = [
     name: "property",
     syntax: '@property --<name> { syntax: "<number>" | "<angle>" | "<percentage>" | "<color>" | "<length>"; inherits: true | false; initial-value: <value>; }',
     description:
-      "Registers a variable that the page sets from JavaScript without compiling the scene again, like CSS @property. The syntax says what it holds: a number, an angle, a percentage, a color, or a length in px (the radius of blur() and bloom()); inherits is required, like CSS; initial-value is its value until the page sets another one. A registered variable has one value for the whole scene, like a variable on :root: scene { --speed: 8; } gives its start value, and declaring it on an object, a group, a :hover rule or a @keyframes frame is an error (a frame can read it). The page sets it with scene.setProperty(\"--lift\", \"2\"), on the scene that mount() returns or on the scene property of <gss-scene>: see Set variables from JavaScript. It goes wherever a value reaches the shader: the transforms (translate, rotate-x, rotate-y, rotate-z, scale, transform-origin), color and background, the sizes of the shapes (radius, size, height, thickness, corner-radius, stroke-width, depth), the numbers of a gradient (its angle, center, stops and colors), material, floor, ambient, light (and the color and intensity of the lights of @scene), fog, camera-target, blend, offset-distance and offset-rotate, texture-size, and filter, alone (translate: 0 var(--lift) 0), inside the math functions (calc(var(--lift) * 2), sin(), clamp()…) and inside the color functions (hsl(var(--hue) 80% 60%), oklch(), color-mix()…, computed in the same color spaces as the others). The GPU computes them at every frame. It cannot go where the scene is built when it compiles: the copies of * n, d and view-box, the timing of animations and transitions, the camera the mouse moves (camera-distance, camera-angle, camera-spin) and dpr. A value known only when the scene runs cannot be refused like a value written as is: it is kept in its range (a size is never below 0, a roughness stays between 0 and 1), and in color-mix(), a percentage set from JavaScript is kept between 0% and 100%, and percentages that add up to less than 100% are scaled up to 100% instead of being an error. An object whose size or place a variable sets is always drawn: its bounding sphere is not known. random() cannot use it: a random value is chosen once. The Shadertoy export keeps the initial values.",
+      "Registers a variable that the page sets from JavaScript without compiling the scene again, like CSS @property. The syntax says what it holds: a number, an angle, a percentage, a color, or a length in px (the radius of blur() and bloom()); inherits is required, like CSS; initial-value is its value until the page sets another one. A registered variable has one value for the whole scene, like a variable on :root: scene { --speed: 8; } gives its start value, and declaring it on an object, a group, a :hover rule or a @keyframes frame is an error (a frame can read it). The page sets it with scene.setProperty(\"--lift\", \"2\"), on the scene that mount() returns or on the scene property of <gss-scene>: see Set variables from JavaScript. It goes wherever a value reaches the shader: the transforms (translate, rotate-x, rotate-y, rotate-z, scale, transform-origin), color, background and mask-image, the sizes of the shapes (radius, size, height, thickness, corner-radius, stroke-width, depth), the numbers of a gradient (its angle, center, stops and colors), material, floor, ambient, light (and the color and intensity of the lights of @scene), fog, camera-target, blend, offset-distance and offset-rotate, texture-size, and filter, alone (translate: 0 var(--lift) 0), inside the math functions (calc(var(--lift) * 2), sin(), clamp()…) and inside the color functions (hsl(var(--hue) 80% 60%), oklch(), color-mix()…, computed in the same color spaces as the others). The GPU computes them at every frame. It cannot go where the scene is built when it compiles: the copies of * n, d and view-box, the timing of animations and transitions, the camera the mouse moves (camera-distance, camera-angle, camera-spin) and dpr. A value known only when the scene runs cannot be refused like a value written as is: it is kept in its range (a size is never below 0, a roughness stays between 0 and 1), and in color-mix(), a percentage set from JavaScript is kept between 0% and 100%, and percentages that add up to less than 100% are scaled up to 100% instead of being an error. An object whose size or place a variable sets is always drawn: its bounding sphere is not known. random() cannot use it: a random value is chosen once. The Shadertoy export keeps the initial values.",
     examples: [
       {
         name: "property",
@@ -1208,7 +1245,7 @@ export const SELECTORS: SelectorDef[] = [
     anchor: "selector-hover",
     specificity: "100, like a class, added to the rest",
     description:
-      "A pseudo-class, like CSS: the rule applies while the mouse is over the object. It can go anywhere after the shape name (cube:hover.big) on a preceding sibling (sphere:hover + cube), or on a group: #letters:hover cube lifts every cube of #letters as soon as the mouse is over any object of the group, like hovering a child hovers its parent in CSS. The :hover rules join the cascade like any other: #a { color: blue; } beats cube:hover { color: red; }, and a normal !important beats them all. A :hover rule changes the animatable properties only (translate, rotate-x, rotate-y, rotate-z, scale, color, offset-distance, and variables), never a face, and it styles objects, not groups: #g:hover { translate: 0 1 0; } is an error, write #g:hover cube. With transition, the change glides instead of jumping.",
+      "A pseudo-class, like CSS: the rule applies while the mouse is over the object. It can go anywhere after the shape name (cube:hover.big) on a preceding sibling (sphere:hover + cube), or on a group: #letters:hover cube lifts every cube of #letters as soon as the mouse is over any object of the group, like hovering a child hovers its parent in CSS. The :hover rules join the cascade like any other: #a { color: blue; } beats cube:hover { color: red; }, and a normal !important beats them all. A :hover rule changes the animatable properties only (translate, rotate-x, rotate-y, rotate-z, scale, color, mask-image, offset-distance, and variables), never a face, and it styles objects, not groups: #g:hover { translate: 0 1 0; } is an error, write #g:hover cube. With transition, the change glides instead of jumping.",
     examples: [
       {
         name: "selector-hover",
@@ -1661,7 +1698,7 @@ export const FUNCTIONS: FunctionDef[] = [
     covers: ["rgb", "rgba"],
     syntax: "rgb(<red> <green> <blue>) | rgb(<red>, <green>, <blue>)",
     description:
-      "A color from its red, green and blue channels, like CSS: numbers from 0 to 255, or percentages (100% is 255). Both syntaxes work, with spaces or with commas, and rgba() is the same function. Values outside the range are clamped. GSS has no transparency yet: an alpha (rgb(255 0 0 / 50%)) is an error. The math works inside, so one rule can give every copy its own color. It is turned into a hex color by the compiler, wherever a color is expected: color, floor, background, and the first argument of a material.",
+      "A color from its red, green and blue channels, like CSS: numbers from 0 to 255, or percentages (100% is 255). Both syntaxes work, with spaces or with commas, and rgba() is the same function. Values outside the range are clamped. An alpha (rgb(255 0 0 / 50%)) makes the color transparent, which only the layers of background and mask-image take: anywhere else, it is an error. The math works inside, so one rule can give every copy its own color. It is turned into a hex color by the compiler, wherever a color is expected: color, floor, background, and the first argument of a material.",
     examples: [
       {
         name: "rgb()",
@@ -1770,7 +1807,7 @@ export const FUNCTIONS: FunctionDef[] = [
     syntax:
       "color-mix(in <space> [shorter | longer hue]?, <color> <percentage>?, <color> <percentage>?)",
     description:
-      "Mixes two colors in a color space, like CSS: srgb, srgb-linear, lab, lch, oklab, oklch, hsl or hwb. Without percentages, half of each; with one, the other color takes the rest; with both, they are scaled to add up to 100%. They cannot add up to less, since GSS has no transparency; a percentage set from JavaScript (a variable registered with @property) is only known when the scene runs, so there it is kept between 0% and 100%, and percentages that add up to less are scaled up to 100% instead of being an error. In a space with a hue, the hue goes the shorter way round the wheel, or the longer one with longer hue; a gray takes the hue of the other color. oklab gives the most even mixes; mixing in srgb goes through duller middle colors.",
+      "Mixes two colors in a color space, like CSS: srgb, srgb-linear, lab, lch, oklab, oklch, hsl or hwb. Without percentages, half of each; with one, the other color takes the rest; with both, they are scaled to add up to 100%. Like CSS, when they add up to less than 100%, the color becomes transparent, which only the layers of background and mask-image take: anywhere else, it is an error; a percentage set from JavaScript (a variable registered with @property) is only known when the scene runs, so there it is kept between 0% and 100%, and percentages that add up to less are scaled up to 100% instead of being an error. In a space with a hue, the hue goes the shorter way round the wheel, or the longer one with longer hue; a gray takes the hue of the other color. oklab gives the most even mixes; mixing in srgb goes through duller middle colors.",
     examples: [
       {
         name: "color-mix()",

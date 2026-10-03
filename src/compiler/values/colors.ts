@@ -82,7 +82,8 @@ function isFirstArgument(value: Token[], i: number): boolean {
 }
 
 // The token of a color name, as a HASH; any other token comes back unchanged.
-// transparent is a name too, but only the layers of background take it (decision 112).
+// transparent is a name too, but only the layers of background and mask-image take it
+// (decisions 112, 113).
 function named(token: Token): Token {
   if (token.type !== "IDENT") return token;
   const hex = token.value.toLowerCase() === "transparent" ? "00000000" : NAMED_COLORS[token.value.toLowerCase()];
@@ -93,12 +94,12 @@ function named(token: Token): Token {
   return hash;
 }
 
-// The transparency of the color being read: only the layers of background have one
-// (decision 112). alpha: allowed; within: the alpha of the current call, 0 to 1.
+// The transparency of the color being read: only the layers of background and mask-image
+// have one (decisions 112, 113). alpha: allowed; within: the alpha of the current call, 0 to 1.
 const transparency = { allowed: false, within: 1 };
-const NO_ALPHA = "GSS has no transparency yet, except in the layers of background";
+const NO_ALPHA = "GSS has no transparency yet, except in background and mask-image";
 
-// alpha: the colors may be transparent (the property is background, decision 112)
+// alpha: the colors may be transparent (the property is background or mask-image, decisions 112, 113)
 export function resolveColors(
   value: Token[],
   scheme: ColorScheme = "light",
@@ -226,7 +227,7 @@ function readCall(
 function channelsOf(args: Token[], call: Token[], example: string): Token[] {
   const name = (call[0] as { value: string }).value;
 
-  // 1. A "/" means an alpha: only in the layers of background (decision 112)
+  // 1. A "/" means an alpha: only in the layers of background and mask-image (decisions 112, 113)
   const slash = args.findIndex((t) => t.type === "PUNCT" && t.value === "/");
   if (slash >= 0) {
     if (!transparency.allowed) throw errorAt(call, `${NO_ALPHA}: remove the alpha after the /`);

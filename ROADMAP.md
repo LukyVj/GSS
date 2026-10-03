@@ -53,8 +53,9 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 | Motion path  | `offset-path: path()` / `ray()`, `offset-distance` (animatable), `offset-rotate`                    | 97     |
 | Look         | `color`, `material`                                                                                | 26     |
 | Textures     | `texture: url("…")` or `element(#id)` (a live HTML element, dec. 101), `image-rendering: pixelated`, `texture-size`                                  | 59     |
+| Masks        | `mask-image: <gradient> \| noise()` cuts sharp holes where the image is transparent, `mask-mode: alpha \| luminance` | 113 |
 | Combinations | `operation: union \| subtract \| intersect`, `blend` (smooth union)                                | 18, 19 |
-| Animation    | `animation`; animatable: `translate`, `rotate-*`, `scale`, `transform-origin`, `color` (a gradient too), `offset-distance`, the `intensity` of a light (also what `:hover` can change); on the scene, `background`, `fog` and `light` | 24, 62, 102, 103, 107, 108, 110 |
+| Animation    | `animation`; animatable: `translate`, `rotate-*`, `scale`, `transform-origin`, `color` (a gradient too), `mask-image`, `offset-distance`, the `intensity` of a light (also what `:hover` can change); on the scene, `background`, `fog` and `light` | 24, 62, 102, 103, 107, 108, 110 |
 | Transition   | `transition: 0.3s ease-out`, one per object; easings: keywords, `cubic-bezier()`, `linear()`       | 68     |
 
 ### Materials
@@ -136,7 +137,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 
 **Next, in Lucas's order** (Oct. 2, after 0.0.3; replaces the list of Oct. 1):
 
-**Next up** (Lucas, Oct. 3: "the order that makes the most sense"): the rest of item 7, in this order: ~~layers of `background` with `background-blend-mode`~~ ✅ decision 112; then `mask-image`; then a displacement like `feDisplacementMap`. (Decision 101 to come back to after the origin trial ends on Oct. 20 if needed.)
+**Next up** (Lucas, Oct. 3: "the order that makes the most sense"): the rest of item 7, in this order: ~~layers of `background` with `background-blend-mode`~~ ✅ decision 112; ~~`mask-image`~~ ✅ decision 113; then a displacement like `feDisplacementMap`. (Decision 101 to come back to after the origin trial ends on Oct. 20 if needed.)
 
 1. ~~**Animated gradients**~~ ✅ decisions 102, 103: a gradient changes into another of the same kind in `@keyframes` and on `:hover`, through a variable too; the scene plays an animation, so its `background` moves (a flat, moving image)
 2. **`setProperty()` from JS**: first step ✅ decision 105 (`@property`, `setProperty()` / `getPropertyValue()` / `removeProperty()`, in `translate`, `rotate-*`, `scale`, `color`, `offset-distance`, `background`). Second step ✅: inside `calc()` and the math functions, and the color functions (`hsl(var(--hue) …)`, `color-mix()`…), computed on the GPU. Third step ✅, Lucas's choice "everywhere": the sizes of shapes (without their bounding spheres), the numbers of a gradient, materials, `light`, `ambient`, `floor`, `camera-target`, `blend`, `offset-rotate`, `texture-size`, filters (with a `"<length>"` syntax in px, the passes included). Not read at run time: the copies of `* n`, `d`, `view-box`, the timings, the camera the mouse moves, `dpr`. The playground panel of sliders: later (Playground, below)
@@ -144,7 +145,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 4. ~~**`transform-origin`**~~ ✅ decision 107: keywords and percentages on the box of the object, numbers from its center like `translate`; animatable, on groups with numbers
 5. ~~**Fog**~~ ✅ decision 108: `fog: [<color>] <start> <end>` on the scene, into the background behind each object or a color that covers the background too; animatable, readable from `@property`
 6. ~~`:nth-child()`~~ ✅ already done (decision 92)
-7. ~~**A noise image function**~~ ✅ decision 111: `noise()` wherever a gradient goes, colors placed by a 3D noise like `feTurbulence` (scale, octaves, `turbulence`, `seed`, `at`), in the object's own space, animated like a gradient. Still to come from this item: several `background` layers with `background-blend-mode`, then `mask-image` and a displacement like `feDisplacementMap`
+7. ~~**A noise image function**~~ ✅ decision 111: `noise()` wherever a gradient goes, colors placed by a 3D noise like `feTurbulence` (scale, octaves, `turbulence`, `seed`, `at`), in the object's own space, animated like a gradient. Since then: layers of `background` with `background-blend-mode` (decision 112) and `mask-image` (decision 113); still to come: a displacement like `feDisplacementMap`
 8. ~~**Several lights, and colored lights**~~ ✅ decision 110: `light` elements in `@scene` (point lights, `color`, `intensity`, placed like objects, animated, `:hover` through their group), the sun with a color, an intensity and `none`, a colored `ambient`
 9. ~~**`texture: element(#id)`**~~ ✅ decision 101 (Oct. 3: the texture, the WebGL2 runtime, `<gss-scene>`, the docs examples, the HTML tab of the playground): a live image of an HTML element on an object, like CSS `element()`, rendered by HTML-in-Canvas (`layoutsubtree`, `texElementImage2D` / `copyElementImageToTexture`, the `paint` event); the element is a child of `<gss-scene>` or of the `<canvas>`; without the API, the object shows its `color`. Comes with an **HTML tab in the playground** (share links carry it, registry examples can carry HTML). Waits until the future of the API after its origin trial is clearer
 
@@ -272,6 +273,7 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 
 ## Done recently
 
+- `mask-image` cuts holes in an object, read like a gradient in `color` with transparent colors, `mask-mode: luminance` too; the ray, the reflections and the mouse go through the holes, and an object inside shows through them (decision 113)
 - Layers of background, like CSS, with transparent colors in them (and only there) and the 16 modes of `background-blend-mode`, each layer animated like a gradient (decision 112)
 - The playground has an `html` tab for the elements that `element(#id)` shows; share links carry it (`#code=…&html=…`), and the examples and the docs pass it on (decision 101)
 - `texture: element(#card)`, first step: an HTML element of the page as a live texture, uploaded at each `paint` of the canvas with `texElementImage2D` (both shapes of the API), found inside the canvas or through the `<slot>` of `<gss-scene>`; WebGL2 only, `auto` picks it (decision 101)
@@ -421,7 +423,7 @@ A score for how well a CSS notion carries over to GSS (a style language → an S
 | `filter`                                                              |   1.0 | Already in GSS on the scene, objects and groups (dec. 83, 84)  |
 | fog (GSS / atmosphere, not a strict CSS property)                     |   1.0 | Already in GSS (dec. 108)                   |
 | `backdrop-filter`                                                     |   0.6 | Post-process behind the object              |
-| `mask` (+ clip/composite/image/mode/origin/position/repeat/size/type) |  0.55 | CSG / alpha mask adjacent                   |
+| `mask` (+ clip/composite/image/mode/origin/position/repeat/size/type) |  0.55 | `mask-image`, `mask-mode` in GSS as holes (dec. 113) |
 | `mask-border` (+ longhands)                                           |   0.2 | Box mask image                              |
 | `-webkit-mask-*`                                                      |   0.1 | Vendor                                      |
 | `clip-path`                                                           |   0.6 | Cutting → SDF / CSG                         |

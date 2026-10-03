@@ -22,7 +22,8 @@ import { sceneTextures } from "../../features/textures";
 import { glslFloat, moreLines, round, section, used, label, vec3, type Hover } from "./glsl";
 import { EASINGS, MAP_HELPERS, MATERIALS, PATH_HELPERS, SHADE_CALLS, SHAPE_FUNCTIONS } from "./library";
 import { SHADING } from "./shading";
-import { PICK_OUTPUT, PICK_PIXEL, TEMPLATE } from "./template";
+import { MARCH_LOOP, PICK_OUTPUT, PICK_PIXEL, TEMPLATE } from "./template";
+import { HOLE_NORMAL, MASKED_MARCH_LOOP, SHELL, holeNormals, maskCode, objectMask, type Masked } from "./masks";
 import { readColor, readLight, readScale, readTranslate } from "./read";
 import { readOperation, SMOOTH } from "./operations";
 import { BOUNDED, SHAPES, type ShapeContext } from "./shapes";
@@ -102,6 +103,12 @@ export function generateShader(
   const nearest =
     hasFloor && instances.every(plainUnion) ? "min(res.x, p.y)" : "res.x";
 
+  // mask-image (decision 113): the objects with holes, skins while march() looks for a surface
+  const masked = instances
+    .map((instance) => objectMask(instance, keyframes, hoverOf(instance)))
+    .filter((mask): mask is Masked => mask !== null);
+  const skins = new Set(masked.map(({ instance }) => instance));
+
   const mapLines = instances.map((instance) => {
     const shape = SHAPES[instance.tag];
     if (!shape) {
@@ -137,7 +144,10 @@ export function generateShader(
     const operation = readOperation(instance.styles["operation"]);
     // A blend set from JS (decision 105) is always smooth, and never 0: it divides
     const blend = liveNumber(instance.styles["blend"], "blend", 0, true);
-    const shapeValue = `vec2(${shapeCode} * ${scales.join(" * ")}, ${glslFloat(instance.index)})`;
+    const distance = `${shapeCode} * ${scales.join(" * ")}`;
+    // A subtracted or intersected object cuts the others: it stays solid
+    const skin = skins.has(instance) && operation === "opU";
+    const shapeValue = `vec2(${skin ? `shell(${distance})` : distance}, ${glslFloat(instance.index)})`;
 
     const combine =
       isLive(blend)
@@ -265,6 +275,8 @@ export function generateShader(
     ),
   );
   const gradients = gradientCode(painted, textured, keyframes, hoverOf);
+  // mask-image (decision 113): how much of the surface of each object with holes is there
+  const masks = maskCode(masked, new Set([...textured, ...painted.map(({ instance }) => instance)]), keyframes, hoverOf);
   // A color is a constant; a gradient a function of the pixel (decision 81); either one
   // can follow an animation of the scene (decision 103)
   const background = backgroundCode(sceneStyles, keyframes);
@@ -286,7 +298,7 @@ export function generateShader(
         "// The easings of the animations: only those the scene uses",
         used(
           EASINGS,
-          [map, animate, textures.functions, gradients.functions, textures.call, materials, background].join("\n"),
+          [map, animate, textures.functions, gradients.functions, masks, textures.call, materials, background].join("\n"),
         ),
       ),
     )
@@ -297,7 +309,9 @@ export function generateShader(
         section(
           "// Rotations and the other operations: only those map() calls",
           used(MAP_HELPERS, map + animate),
-        ) + (animate ? `\n\n${animate}` : ""),
+        ) +
+          (masked.length > 0 ? `\n\n${SHELL}` : "") +
+          (animate ? `\n\n${animate}` : ""),
       )
       .replace(
         "/*@SHAPES*/",
@@ -337,7 +351,8 @@ uniform vec2 uPick;`
         ) +
           (gradients.functions
             ? `\n\n// Gradients on objects: the color at the point that was hit\n${gradients.functions}`
-            : ""),
+            : "") +
+          (masks ? `\n\n// mask-image: how much of each object's surface is there, from 0 to 1\n${masks}` : ""),
       )
       .replace(
         "/*@TEXTURE_CALL*/",
@@ -349,14 +364,14 @@ uniform vec2 uPick;`
           // The colors a variable set from JS changes (decision 105)
           section(
             "// The color spaces of CSS: only those the colors set from JS use",
-            used(COLOR_LIBRARY, [materials, background, gradients.functions].join("\n")),
+            used(COLOR_LIBRARY, [materials, background, gradients.functions, masks].join("\n")),
           ),
           section(
             "// The metal, jelly and glass materials: only those getMaterial() uses",
             used(MATERIALS, materials),
           ),
           // noise() (decision 111): in the background and on the objects it paints
-          section("// The noise of noise(): only what the scene uses", used(NOISE_LIBRARY, [background, gradients.functions].join("\n"))),
+          section("// The noise of noise(): only what the scene uses", used(NOISE_LIBRARY, [background, gradients.functions, masks].join("\n"))),
           // background-blend-mode (decision 112): only the modes of the layers
           section("// The blend modes of the background: only those its layers use", used(BLEND_LIBRARY, background)),
         ]
@@ -368,6 +383,7 @@ uniform vec2 uPick;`
       .replace(
         "/*@SHADING*/",
         [
+          ...(masked.length > 0 ? [HOLE_NORMAL] : []),
           ...((filterLines + filterFunctions).includes("grain(") ? [GRAIN] : []),
           ...(filterFunctions ? [filterFunctions] : []),
           section(
@@ -420,6 +436,8 @@ uniform vec2 uPick;`
         "vec2 march(vec3 ro, vec3 rd) {\n",
         `vec2 march(vec3 ro, vec3 rd) {\n${sceneSphereCode}`,
       )
+      // Through the holes of mask-image (decision 113)
+      .replace(MARCH_LOOP, masked.length > 0 ? MASKED_MARCH_LOOP : MARCH_LOOP)
       .replace("  outColor = vec4(col, 1.0);\n}", `${filterLines}  outColor = vec4(col, ${alpha});\n}`)
       // Reflections see the filters of the objects they meet
       .replace(
@@ -434,6 +452,8 @@ uniform vec2 uPick;`
       // The parts left out leave blank lines behind: never more than one in a row
       .replace(/\n[ \t]*\n(?:[ \t]*\n)+/g, "\n\n")
   );
+  // The normals of a scene with holes (decision 113)
+  const turned = masked.length > 0 ? holeNormals(shader) : shader;
   // Every light in the highlights of the materials too
-  return lights ? lights.rewrite(shader) : shader;
+  return lights ? lights.rewrite(turned) : turned;
 }

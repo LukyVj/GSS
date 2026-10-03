@@ -108,12 +108,12 @@ export type Gradient = {
   stops: { color: string; at: Num }[];
   // noise() (decision 111): kind, octaves and seed cannot change; scale and offset can
   noise?: { turbulence: boolean; scale: Num; octaves: number; seed: number; offset: [Num, Num, Num] };
-  // A layer of background (decision 112): its colors can be transparent, and it gives a
-  // premultiplied vec4, like CSS mixes the stops of a gradient
+  // A layer of background or a mask-image (decisions 112, 113): its colors can be transparent,
+  // and it gives a premultiplied vec4, like CSS mixes the stops of a gradient
   alpha?: boolean;
 };
 
-// alpha: a layer of background, whose colors can be transparent (decision 112)
+// alpha: a layer of background or a mask-image, whose colors can be transparent (decisions 112, 113)
 export function readGradient(value: Token[], alpha = false): Gradient {
   const call = readFunction(value)!;
   const radial = call.name.includes("radial");
@@ -244,7 +244,7 @@ function isColor(token: Token | undefined): boolean {
 }
 
 // A color in GLSL: vec3, or a premultiplied vec4 when it is transparent, which only a
-// layer of background takes (alpha, decision 112)
+// layer of background or a mask-image takes (alpha, decisions 112, 113)
 function colorOf(token: Token, value: Token[], alpha = false): string {
   if (token.type === "EXPR") return token.code;
   const word = (token as { value: string }).value.toLowerCase();
@@ -255,7 +255,7 @@ function colorOf(token: Token, value: Token[], alpha = false): string {
   const rgb = [0, 2, 4].map((i) => parseInt(full.slice(i, i + 2), 16) / 255);
   const a = full.length === 8 ? parseInt(full.slice(6, 8), 16) / 255 : 1;
   if (a === 1) return `vec3(${rgb.map((c) => f(+c.toFixed(3))).join(", ")})`;
-  if (!alpha) throw errorAt(value, "GSS has no transparency yet, except in the layers of background: write opaque colors here");
+  if (!alpha) throw errorAt(value, "GSS has no transparency yet, except in background and mask-image: write opaque colors here");
   return `vec4(${[...rgb.map((c) => c * a), a].map((c) => f(+c.toFixed(3))).join(", ")})`;
 }
 

@@ -440,6 +440,68 @@ describe("background layers composite like CSS, on both backends", () => {
   }, 60000);
 });
 
+// mask-image (decision 113): the ray goes through the holes, and so does the mouse
+describe("mask-image cuts holes, on both backends", () => {
+  const front = (ambient: number) =>
+    `scene { floor: none; background: #0000ff; camera-target: 0 0 0; camera-angle: 0deg 0deg; camera-distance: 5; light: 0deg 0deg; ambient: ${ambient}; }`;
+  // The pixel x to the right of the center and y below it
+  const at = (pixels: number[], x = 0, y = 0) => {
+    const i = ((36 + y) * 96 + 48 + x) * 4;
+    return pixels.slice(i, i + 3);
+  };
+  const is = (pixel: number[], channel: number) => pixel[channel] > 200 && pixel.every((c, k) => k === channel || c < 60);
+  const hole = "mask-image: radial-gradient(circle, transparent 30%, black 31%);";
+
+  it("shows what is behind the object through a hole", async () => {
+    const { gl, gpu } = await render(`@scene { cube; } ${front(1)} cube { size: 2; color: #ff0000; ${hole} }`);
+    for (const pixels of [gl, gpu]) {
+      expect(is(at(pixels), 2), `center ${at(pixels)}`).toBe(true); // through the front face and the back one
+      expect(is(at(pixels, 20), 0), `face ${at(pixels, 20)}`).toBe(true);
+    }
+  }, 60000);
+
+  it("lights the inside of the object, seen through the hole, from inside", async () => {
+    // No ambient light: only the light from the camera, which the inside of the back face turns to
+    const { gl, gpu } = await render(`@scene { cube; } ${front(0)} cube { size: 2; color: #ff0000; ${hole} }`);
+    for (const pixels of [gl, gpu]) expect(is(at(pixels, 10), 0), `inside ${at(pixels, 10)}`).toBe(true);
+  }, 60000);
+
+  it("shows an object inside the one with holes, lit as if it were alone", async () => {
+    // No ambient light: the sphere looks the same only with its own normals, not the cube's
+    const sphere = "sphere { radius: 0.3; color: #00ff00; }";
+    const inside = await render(`@scene { cube; sphere; } ${front(0)} cube { size: 2; color: #ff0000; ${hole} } ${sphere}`);
+    const alone = await render(`@scene { sphere; } ${front(0)} ${sphere}`);
+    for (const [a, b] of [[inside.gl, alone.gl], [inside.gpu, alone.gpu]])
+      for (let y = -5; y <= 5; y++)
+        for (let x = -5; x <= 5; x++)
+          if (x * x + y * y <= 25)
+            at(a, x, y).forEach((c, k) => expect(Math.abs(c - at(b, x, y)[k]), `${x} ${y}: ${at(a, x, y)} / ${at(b, x, y)}`).toBeLessThanOrEqual(8));
+  }, 60000);
+
+  it("reads the brightness of the mask with mask-mode: luminance", async () => {
+    const mask = "mask-image: linear-gradient(white, black);";
+    const luminance = await render(`@scene { cube; } ${front(1)} cube { size: 2; color: #ff0000; ${mask} mask-mode: luminance; }`);
+    const alpha = await render(`@scene { cube; } ${front(1)} cube { size: 2; color: #ff0000; ${mask} }`);
+    for (const pixels of [luminance.gl, luminance.gpu]) {
+      expect(is(at(pixels, 0, -15), 0), `white ${at(pixels, 0, -15)}`).toBe(true); // white: there
+      expect(is(at(pixels, 0, 15), 2), `black ${at(pixels, 0, 15)}`).toBe(true); // black: a hole
+    }
+    // By their alpha, black and white are both there
+    for (const pixels of [alpha.gl, alpha.gpu]) expect(is(at(pixels, 0, 15), 0), `alpha ${at(pixels, 0, 15)}`).toBe(true);
+  }, 60000);
+
+  it("lets the mouse through a hole, to the object behind it", async () => {
+    const { gl, gpu } = await render(
+      `@scene { cube; sphere; } ${front(1)} cube { size: 2; translate: 0 0 1; color: #ff0000; ${hole} } cube:hover { color: #ffff00; } sphere { translate: 0 0 -1; radius: 0.5; color: #000000; } sphere:hover { color: #00ff00; }`,
+      true,
+    );
+    for (const pixels of [gl, gpu]) {
+      expect(is(at(pixels), 1), `sphere ${at(pixels)}`).toBe(true); // hovered, through the hole
+      expect(is(at(pixels, 20), 0), `cube ${at(pixels, 20)}`).toBe(true); // not hovered
+    }
+  }, 60000);
+});
+
 describe("the default camera does not mirror the scene", () => {
   const front = "scene { floor: none; background: #000000; camera-target: 0 0 0; camera-angle: 0deg 0deg; camera-distance: 5; light: 0deg 0deg; ambient: 1; }";
   // The mean column and row of the pixels where `channel` wins, per backend

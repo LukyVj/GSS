@@ -173,7 +173,7 @@ function layeredBackground(styles: Styles, keyframes: Keyframes[]): string {
 
 // Every value a property takes: at rest, in the frames of its animation, and in each
 // :hover or :active layer with the frames of theirs
-function valuesOf(styles: Styles, keyframes: Keyframes[], property: string, hover: Hover | undefined): Token[][] {
+export function valuesOf(styles: Styles, keyframes: Keyframes[], property: string, hover: Hover | undefined): Token[][] {
   const values: Token[][] = [];
   for (const state of [styles, ...(hover ?? []).map((layer) => layer.styles)]) {
     if (state[property]) values.push(state[property]);
@@ -295,7 +295,7 @@ export function objectGradient(
 // The rectangle a gradient covers: the object seen from the front, x right and y up
 // (seen from above for a plane, the top of the picture away from the camera).
 // A size set from JS (decision 105) makes the rectangle follow it.
-function gradientBox(instance: StyledInstance): { size: Num[]; at: string } {
+export function gradientBox(instance: StyledInstance): { size: Num[]; at: string } {
   const styles = instance.styles;
   const front = (w: Num, h: Num) => ({ size: [w, h], at: "q.xy" });
   switch (instance.tag) {

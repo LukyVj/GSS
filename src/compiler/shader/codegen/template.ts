@@ -10,6 +10,15 @@ export const PICK_OUTPUT = `
     return;
   }`;
 
+// The loop of march(): mask-image puts another in its place (masks.ts)
+export const MARCH_LOOP = `  for (int i = 0; i < 100; i++) {
+    vec2 res = map(ro + rd * t);
+    id = res.y;
+    t += res.x;
+    if (res.x < 0.001 || t > MAX_DIST) break;
+  }
+`;
+
 // The shader skeleton. Only the /*@...*/ parts change from one scene to the next.
 export const TEMPLATE = `#version 300 es
 precision highp float;
@@ -82,13 +91,7 @@ const vec3 LIGHT_DIR = /*@LIGHT*/;
 vec2 march(vec3 ro, vec3 rd) {
   float t = 0.0;
   float id = 0.0;
-  for (int i = 0; i < 100; i++) {
-    vec2 res = map(ro + rd * t);
-    id = res.y;
-    t += res.x;
-    if (res.x < 0.001 || t > MAX_DIST) break;
-  }
-
+${MARCH_LOOP}
   return vec2(t,id);
 }
 

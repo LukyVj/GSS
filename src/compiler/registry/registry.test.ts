@@ -45,6 +45,7 @@ describe("registry", () => {
       expect(animatable.map((property) => property.name)).toEqual([
         "translate",
         "color",
+        "mask-image",
         "rotate-x",
         "rotate-y",
         "rotate-z",
@@ -59,7 +60,12 @@ describe("registry", () => {
     });
 
     // What a property needs to mean something: offset-distance moves along offset-path
-    const NEEDS: Record<string, string> = { "offset-distance": "offset-path: ray(0deg);" };
+    const NEEDS: Record<string, string> = {
+      "offset-distance": "offset-path: ray(0deg);",
+      "mask-image": "mask-image: linear-gradient(black, transparent);",
+    };
+    // A mask changes into another mask, not into none, its initial value
+    const FRAME: Record<string, string> = { "mask-image": "linear-gradient(black 20%, transparent)" };
 
     // If a property is marked animatable, the compiler must really animate it
     for (const property of animatable) {
@@ -69,7 +75,7 @@ describe("registry", () => {
         const forLights = Array.isArray(property.appliesTo) && (property.appliesTo as string[]).includes("light");
         const target = property.appliesTo === "scene" ? "scene" : forLights ? "light" : "cube";
         const shader = compileGSS(
-          `@scene { cube; light; } ${target} { ${NEEDS[property.name] ?? ""} animation: k 1s; } @keyframes k { to { ${property.name}: ${property.initial}; } }`,
+          `@scene { cube; light; } ${target} { ${NEEDS[property.name] ?? ""} animation: k 1s; } @keyframes k { to { ${property.name}: ${FRAME[property.name] ?? property.initial}; } }`,
         );
         expect(shader).toContain("mix(");
       });

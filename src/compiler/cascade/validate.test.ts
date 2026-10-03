@@ -91,7 +91,7 @@ describe("validateKeyframes", () => {
   it("lists the animatable properties in the error", () => {
     expect(() =>
       compileGSS("@scene { cube; } @keyframes k { to { size: 2; } }"),
-    ).toThrow("translate, color, rotate-x, rotate-y, rotate-z, scale");
+    ).toThrow("translate, color, mask-image, rotate-x, rotate-y, rotate-z, scale");
   });
 });
 
