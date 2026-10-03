@@ -35,7 +35,7 @@ function renderNote(note: Note | undefined): string {
   if (!note) return "";
   return `
       <aside class="callout">
-        <p><strong>${escapeHtml(note.title)}</strong> ${escapeHtml(note.text)}</p>
+        <p><span class="keyword">note</span> <strong>${escapeHtml(note.title)}</strong> ${escapeHtml(note.text)}</p>
       </aside>`;
 }
 

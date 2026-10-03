@@ -439,13 +439,18 @@
       .property > p code {
         color: var(--gss-bone);
       }
-      /* A callout under the description: what to know before trying it */
+      /* A note under the description: what to know before trying it. Like the notes
+         of DESIGN.md: a 1px dashed isoline box, a mono keyword in signal, no fill */
       .callout {
         max-width: 65ch;
         margin: 0 0 24px;
         padding: 14px 16px;
-        border-left: 2px solid var(--gss-signal);
-        background: var(--gss-surface);
+        border: 1px dashed var(--gss-isoline);
+      }
+      .callout .keyword {
+        margin-right: 6px;
+        color: var(--gss-signal);
+        font: 12px var(--gss-font-code);
       }
       .callout p {
         margin: 0;

@@ -278,6 +278,8 @@ describe("a note", () => {
     expect(html).toContain('<aside class="callout">');
     expect(html.indexOf("Rotates the object")).toBeLessThan(html.indexOf('class="callout"'));
     expect(html).toContain("<strong>Behind a flag for now.</strong> Turn it on to see it.");
+    // Like the notes of DESIGN.md: a mono keyword in signal
+    expect(html).toContain('<span class="keyword">note</span>');
   });
 
   it("is left out without one", () => {
