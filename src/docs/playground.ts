@@ -46,7 +46,7 @@ function openPlayground(example: HTMLElement, code: string, html = ""): void {
 
   const canvas = panel.querySelector("canvas")!;
   canvas.innerHTML = html; // laid out inside the canvas, drawn on the object (decision 101)
-  const renderer = createRenderer(canvas, { scrollSlider: true });
+  const renderer = createRenderer(canvas, { scrollSlider: true, dprPicker: true });
   const editor = connectEditor(
     {
       host: panel.querySelector(".code-host")!,

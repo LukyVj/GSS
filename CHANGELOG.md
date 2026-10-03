@@ -9,6 +9,7 @@ The 0.0.1 history was reconstructed from GitHub.
 ### Added
 
 - Seven studies open the showcase, one at a time in a viewer: Glass Circuit, Soft Relic, Candy Garden, Chromatic Bloom, the Zdog character and burger reconstructions, and a Nikon F exterior with an illustrative exploded lens. A study driven by `scroll()` has a slider. Each one opens in the playground, where they have their own group, "Studies".
+- Playground and docs: a dpr menu at the top right of the render. `auto`, the default, lowers the pixel density while the frames are slow and raises it back when they are fast, never above the scene's `dpr`; a number fixes it. The choice is kept in the browser.
 
 ### Changed
 

@@ -281,6 +281,7 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 
 ## Done recently
 
+- A dpr menu over the renders of the playground and the docs: `auto` follows the frame rate, a number fixes it (decision 120)
 - Seven studies open the showcase, one at a time in a viewer, a slider for those driven by `scroll()`; their own group in the playground (decision 119)
 - Notes in the docs: a callout under the description (`note` in the registry), first on `element()` and `texture`, for the flag and the origin trial (decision 118)
 - Transparent colors on objects (plain, gradients with transparent stops) and `filter: opacity()` on objects and groups, multiplied with `opacity` (decision 117)

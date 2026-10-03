@@ -295,6 +295,15 @@ describe("a note", () => {
     }
     expect(renderFunction(fn)).toContain('<aside class="callout">');
   });
+
+  // The dpr menu over the examples and the playground (decision 120) can draw an example
+  // at another density than its own scene { dpr }: the dpr page says so
+  it("tells, on dpr, that the menu over a render picks the density for the viewer", () => {
+    const dpr = PROPERTIES.find((p) => p.name === "dpr")!;
+    expect(dpr.note?.text).toMatch(/menu/);
+    expect(dpr.note?.text).toMatch(/auto/);
+    expect(renderProperty(dpr)).toContain('<aside class="callout">');
+  });
 });
 
 // texture: element(#id) (decision 101): an example can carry the HTML its scene shows

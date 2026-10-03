@@ -47,6 +47,7 @@ const renderer = await createRendererAsync(sceneCanvas, {
   profile,
   profileWebGPU,
   scrollSlider: true, // the playground does not scroll: a slider stands in for scroll()
+  dprPicker: true, // a menu over the render: the dpr, auto follows the frame rate (decision 120)
 }).catch((error) => {
   $("#error").textContent =
     error instanceof Error ? error.message : String(error);

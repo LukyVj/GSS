@@ -1,7 +1,8 @@
 import type { CompiledScene } from "../compiler";
 import type { AsyncView, BackendOptions } from "./backend";
 import { createClock } from "./clock";
-import { pixelRatio } from "./dpr";
+import { pixelRatio, createDensity } from "./dpr";
+import { createDprPicker, savedDpr } from "./dpr-picker";
 import { pickPixel, pointerValues, createPress, decodeId } from "./hover";
 import { createTransitions } from "./transitions";
 import { createScrollSlider, timelineValues } from "./timeline";
@@ -55,6 +56,8 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
   let hovered = 0;
   const press = createPress(); // :active (decision 95)
   const slider = options.scrollSlider ? createScrollSlider(canvas) : null; // decision 96
+  const density = options.dprPicker ? createDensity(savedDpr()) : null; // decision 120
+  const dprMenu = density ? createDprPicker(canvas, density) : null;
   let reducedMotion = false;
   const properties = createProperties(); // @property: what the page set (decision 105)
   let transitions = createTransitions([]);
@@ -125,14 +128,16 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
     next.uniforms.destroy(); next.pickUniforms.destroy();
     next.images.forEach(t => t.destroy());
   }
-  function resize() {
-    const ratio = pixelRatio(scene?.compiled.dpr ?? "auto", window.devicePixelRatio);
+  function resize(): number {
+    const authored = pixelRatio(scene?.compiled.dpr ?? "auto", window.devicePixelRatio);
+    const ratio = density ? density.ratio(authored, window.devicePixelRatio) : authored;
     const max = device.limits.maxTextureDimension2D;
     const width = Math.max(1, Math.min(max, Math.floor(canvas.clientWidth * ratio)));
     const height = Math.max(1, Math.min(max, Math.floor(canvas.clientHeight * ratio)));
-    if (canvas.width === width && canvas.height === height) return;
+    if (canvas.width === width && canvas.height === height) return ratio;
     canvas.width = width; canvas.height = height;
     if (scene) { scene.images.forEach(t => t.destroy()); scene.images = []; scene.groups = []; }
+    return ratio;
   }
   function bindings(current: Scene) {
     const passes = current.pipelines.length - 1;
@@ -201,6 +206,7 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
     probe?.shaderBuilt(performance.now() - start);
     hovered = 0; press.reset(); pickGeneration++;
     slider?.show(compiled.timelines !== undefined);
+    density?.restart(performance.now()); // its compile is not a slow frame
     transitions = createTransitions(compiled.transitions);
     if (resetCamera) {
       const next = compiled.camera;
@@ -224,8 +230,10 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
     if (scene) dt = clock.tick(now);
     else clock.resume(now);
     if (settings && !camera.dragging) camera.yaw -= dt * settings.spin;
-    resize();
+    const drawn = resize(); // not inside dprMenu?.(): it must run without the menu too
+    dprMenu?.update(drawn);
     if (scene) {
+      if (!document.hidden) density?.frame(now); // a hidden page is throttled, not slow
       probe?.frameStart(now, canvas.width, canvas.height);
       probe?.drawStart();
       firstPass = true;
@@ -301,7 +309,7 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
       if (destroyed) return;
       destroyed = true; revision++; pickGeneration++; playing = false;
       cancelAnimationFrame(frameId); stopMedia(); listeners.forEach(stop => stop());
-      probe?.destroy?.(); slider?.destroy();
+      probe?.destroy?.(); slider?.destroy(); dprMenu?.destroy();
       if (scene) release(scene); scene = null;
       for (const entry of textures.values()) { entry.image.onload = null; entry.image.onerror = null; entry.texture.destroy(); }
       textures.clear(); fallback.destroy(); pickTexture.destroy(); readback.destroy(); context.unconfigure(); device.destroy();

@@ -1055,6 +1055,10 @@ export const PROPERTIES: PropertyDef[] = [
     initial: "auto",
     description:
       "Sets the pixel density of the render, like the device pixel ratio of the screen. auto follows the screen up to 2. max follows the screen, however dense: the sharpest image, and the slowest. A number from 0.25 to 4 sets the density, never above the screen's: below 1, the render is coarser and faster.",
+    note: {
+      title: "A menu picks it here.",
+      text: "In the playground and in the examples of these docs, the dpr menu at the top right of the render picks the density for you. auto starts at the scene's dpr and lowers it while the frames are slow; a number replaces the scene's dpr, never above the screen's. Your choice is kept in this browser. On your own site, the scene's dpr applies.",
+    },
     examples: [
       {
         name: "dpr",

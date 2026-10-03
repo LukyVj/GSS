@@ -6,7 +6,8 @@ import { createPicker } from "./picker";
 import { createClock } from "./clock";
 import type { FrameProbe } from "../profiler/profiler";
 import type { Dpr } from "../compiler/features/dpr";
-import { pixelRatio } from "./dpr";
+import { pixelRatio, createDensity } from "./dpr";
+import { createDprPicker, savedDpr } from "./dpr-picker";
 import { createTransitions } from "./transitions";
 import { createScrollSlider, timelineValues } from "./timeline";
 import type { Timeline } from "../compiler/features/timeline";
@@ -47,6 +48,9 @@ export type ViewOptions = {
   // The playground and the docs, which do not scroll: a slider stands in for the
   // scroll of the page when a scene uses scroll() or view() (decision 96)
   scrollSlider?: boolean;
+  // The docs and the playground: a menu over the render picks the dpr, auto follows the
+  // frame rate (decision 120)
+  dprPicker?: boolean;
 };
 
 // The vertex shader: a giant triangle that covers the whole canvas.
@@ -98,6 +102,8 @@ export function createView(
   let hovered = 0; // the id under the mouse, as last read back (0: nothing)
   const press = createPress(); // :active: the object pressed, until the button goes up
   const slider = options.scrollSlider ? createScrollSlider(canvas) : null;
+  const density = options.dprPicker ? createDensity(savedDpr()) : null; // the viewer's dpr
+  const dprMenu = density ? createDprPicker(canvas, density) : null;
   let dpr: Dpr = "auto"; // the pixel density the scene asks for (scene { dpr })
   let transitions = createTransitions([]); // how each hover slot glides (transition)
   let reducedMotion = false; // freeze(): transitions jump, like the animations stop
@@ -263,14 +269,16 @@ export function createView(
   }
 
   // --- 4. Adapt the canvas size to its box ---
-  function resize() {
-    const ratio = pixelRatio(dpr, window.devicePixelRatio);
+  function resize(): number {
+    const authored = pixelRatio(dpr, window.devicePixelRatio);
+    const ratio = density ? density.ratio(authored, window.devicePixelRatio) : authored;
     const width = Math.floor(canvas.clientWidth * ratio);
     const height = Math.floor(canvas.clientHeight * ratio);
     if (canvas.width !== width || canvas.height !== height) {
       canvas.width = width;
       canvas.height = height;
     }
+    return ratio;
   }
 
   // --- 5. The render loop: once per image ---
@@ -287,12 +295,14 @@ export function createView(
     // Automatic rotation, except during the drag
     if (settings && !camera.dragging) camera.yaw -= dt * settings.spin;
 
-    resize();
+    const drawn = resize(); // not inside dprMenu?.(): it must run without the menu too
+    dprMenu?.update(drawn);
     gl!.viewport(0, 0, canvas.width, canvas.height);
 
     probe?.frameStart(now, canvas.width, canvas.height);
 
     if (scene) {
+      if (!document.hidden) density?.frame(now); // a hidden page is throttled, not slow
       // We send the state to the shader
       gl!.useProgram(scene.program);
       gl!.uniform3f(scene.uResolution, canvas.width, canvas.height, 1);
@@ -372,6 +382,7 @@ export function createView(
     press.reset();
     slider?.show(compiled.timelines !== undefined);
     dpr = compiled.dpr;
+    density?.restart(performance.now()); // its compile is not a slow frame
     transitions = createTransitions(compiled.transitions);
     if (resetCamera) applyCameraSettings(compiled.camera);
   }
@@ -425,6 +436,7 @@ export function createView(
       window.removeEventListener("pointerup", release);
       window.removeEventListener("pointercancel", release);
       slider?.destroy();
+      dprMenu?.destroy();
       playing = false;
       cancelAnimationFrame(frameId);
       if (scene) gl.deleteProgram(scene.program);
