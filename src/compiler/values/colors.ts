@@ -81,10 +81,11 @@ function isFirstArgument(value: Token[], i: number): boolean {
   );
 }
 
-// The token of a color name, as a HASH; any other token comes back unchanged
+// The token of a color name, as a HASH; any other token comes back unchanged.
+// transparent is a name too, but only the layers of background take it (decision 112).
 function named(token: Token): Token {
   if (token.type !== "IDENT") return token;
-  const hex = NAMED_COLORS[token.value.toLowerCase()];
+  const hex = token.value.toLowerCase() === "transparent" ? "00000000" : NAMED_COLORS[token.value.toLowerCase()];
   if (!hex) return token;
   const hash: Token = { type: "HASH", value: hex };
   const span = spanAcross(token);
@@ -92,11 +93,28 @@ function named(token: Token): Token {
   return hash;
 }
 
+// The transparency of the color being read: only the layers of background have one
+// (decision 112). alpha: allowed; within: the alpha of the current call, 0 to 1.
+const transparency = { allowed: false, within: 1 };
+const NO_ALPHA = "GSS has no transparency yet, except in the layers of background";
+
+// alpha: the colors may be transparent (the property is background, decision 112)
 export function resolveColors(
   value: Token[],
   scheme: ColorScheme = "light",
+  alpha = false,
 ): Token[] {
   if (!value.some((_, i) => isColorCall(value, i))) return value;
+  const before = transparency.allowed;
+  transparency.allowed = alpha;
+  try {
+    return resolveCalls(value, scheme);
+  } finally {
+    transparency.allowed = before;
+  }
+}
+
+function resolveCalls(value: Token[], scheme: ColorScheme): Token[] {
   const out: Token[] = [];
   let i = 0;
   while (i < value.length) {
@@ -110,10 +128,11 @@ export function resolveColors(
     const args = value.slice(i + 2, end); // only what is between the parentheses
     const name = (value[i] as { value: string }).value;
     // A variable set from JS inside: the color is computed on the GPU (decision 105)
+    transparency.within = 1;
     out.push(
       args.some((t) => t.type === "EXPR")
         ? liveColor(name, args, call, scheme)
-        : toHash(readCall(name, args, call, scheme), call),
+        : toHash(readCall(name, args, call, scheme), call, transparency.within),
     );
     i = end + 1;
   }
@@ -207,12 +226,16 @@ function readCall(
 function channelsOf(args: Token[], call: Token[], example: string): Token[] {
   const name = (call[0] as { value: string }).value;
 
-  // 1. A "/" means an alpha: GSS has none
-  if (args.some((t) => t.type === "PUNCT" && t.value === "/")) {
-    throw errorAt(
-      call,
-      "GSS has no transparency yet: remove the alpha after the /",
-    );
+  // 1. A "/" means an alpha: only in the layers of background (decision 112)
+  const slash = args.findIndex((t) => t.type === "PUNCT" && t.value === "/");
+  if (slash >= 0) {
+    if (!transparency.allowed) throw errorAt(call, `${NO_ALPHA}: remove the alpha after the /`);
+    const alpha = args.slice(slash + 1);
+    const [a] = alpha;
+    if (alpha.length !== 1 || (a.type !== "NUMBER" && a.type !== "PERCENTAGE"))
+      throw errorAt(call, `${name}() takes one alpha after the /, a number or a percentage, like: ${name}(… / 50%)`);
+    transparency.within = bound(a.type === "PERCENTAGE" ? a.value / 100 : a.value, 0, 1);
+    args = args.slice(0, slash);
   }
   // 2. The commas of the old syntax change nothing: drop them
   const channels = args.filter((t) => t.type !== "PUNCT" || t.value !== ",");
@@ -435,7 +458,10 @@ function readColorMix(args: Token[], call: Token[], scheme: ColorScheme): Rgb {
   else if (p2 === undefined) p2 = 100 - p1;
   const sum = p1 + p2!;
   if (sum === 0) throw errorAt(call, "color-mix() needs percentages that do not add up to 0%");
-  if (sum < 100) throw errorAt(call, "GSS has no transparency yet: the percentages of color-mix() must add up to 100% or more");
+  // Under 100%, the mix is transparent, like CSS: in the layers of background only
+  if (sum < 100 && !transparency.allowed)
+    throw errorAt(call, `${NO_ALPHA}: the percentages of color-mix() must add up to 100% or more`);
+  if (sum < 100) transparency.within *= sum / 100;
   const t = p2! / sum; // the share of the second color
 
   const [a, b] = read.map((c) => mix.to(c.rgb));
@@ -461,9 +487,9 @@ function readColorMix(args: Token[], call: Token[], scheme: ColorScheme): Rgb {
 }
 
 // [1, 0.35, 0.21] → the token #ff5a36, placed where the call was. A color outside sRGB is
-// clipped to it.
-function toHash(rgb: Rgb, call: Token[]): Token {
-  const hex = rgb
+// clipped to it. A transparent one (the layers of background) gets its alpha: #ff5a3680.
+function toHash(rgb: Rgb, call: Token[], alpha = 1): Token {
+  const hex = [...rgb, ...(alpha < 1 ? [alpha] : [])]
     .map((c) => Math.round(unit(c) * 255).toString(16).padStart(2, "0"))
     .join("");
   const token: Token = { type: "HASH", value: hex };

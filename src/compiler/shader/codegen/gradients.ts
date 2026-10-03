@@ -5,6 +5,8 @@ import { errorAt } from "../../syntax/errors";
 import { closingParen } from "../../values/calc";
 import { readAnimation } from "../../features/animation";
 import {
+  BACKGROUND_CAMERA,
+  BACKGROUND_CANVAS,
   backgroundFunction,
   channel,
   channels,
@@ -16,6 +18,8 @@ import {
 } from "../gradient";
 import { animatedValue, hoverValue } from "./animation";
 import { glslFloat, label, type Hover } from "./glsl";
+import { BLEND_MODES } from "./blend-library";
+import { NAMED_COLORS } from "../../values/named-colors";
 import { readColor } from "./read";
 import { add, g, largest, liveFlatSize, liveNumber, liveRadii, liveSize3, mul, type Num } from "./live";
 import { shapeRadius } from "./shapes";
@@ -25,6 +29,8 @@ import { spaceFunction } from "./transforms";
 // the scene changes either one (decision 103): the color is then computed at every pixel.
 export function backgroundCode(styles: Styles, keyframes: Keyframes[]): string {
   const value = styles["background"];
+  // Several layers, or transparent colors: composited like CSS (decision 112)
+  if (usesLayers(value)) return layeredBackground(styles, keyframes);
   if (isGradient(value)) {
     const { gradient, moving } = movingGradient(styles, keyframes, "background", undefined);
     return backgroundFunction(gradient, moving);
@@ -38,6 +44,126 @@ export function backgroundCode(styles: Styles, keyframes: Keyframes[]): string {
     "// The background: a color that changes with the animation of the scene",
     "vec3 background(vec3 rd) {",
     `  return ${color};`,
+    "}",
+    "#define BACKGROUND background(rd)",
+  ].join("\n");
+}
+
+// ----- The layers of background (decision 112) -----
+
+// background: noise(…), linear-gradient(…), #102040 → each layer, the first on top
+export function layersOf(value: Token[]): Token[][] {
+  const layers: Token[][] = [[]];
+  let depth = 0;
+  for (const token of value) {
+    if (token.type === "PUNCT" && token.value === "(") depth++;
+    if (token.type === "PUNCT" && token.value === ")") depth--;
+    if (depth === 0 && token.type === "PUNCT" && token.value === ",") layers.push([]);
+    else layers[layers.length - 1].push(token);
+  }
+  return layers;
+}
+
+const transparent = (token: Token) =>
+  (token.type === "HASH" && (token.value.length === 4 || token.value.length === 8)) ||
+  (token.type === "IDENT" && token.value.toLowerCase() === "transparent");
+
+// Several layers, or a transparent color in one: the layered background
+export function usesLayers(value: Token[] | undefined): boolean {
+  return !!value && (layersOf(value).length > 1 || value.some(transparent));
+}
+
+// Does the background need the camera at the start of main()? A gradient or layers do
+export function backgroundNeedsCamera(value: Token[] | undefined): boolean {
+  return isGradient(value) || usesLayers(value);
+}
+
+// The color under the layers: the last layer when it is a color, composited over the
+// default background when it is transparent; the default background otherwise
+const DEFAULT_BACKGROUND = [0.03, 0.03, 0.03];
+function baseColor(layer: Token[] | undefined): string {
+  const image: boolean = isGradient(layer); // a boolean: layer stays a list of tokens after it
+  if (!layer || image) return "vec3(0.03)";
+  const [token] = layer;
+  if (layer.length === 1 && token.type === "EXPR") return token.code; // set from JS (decision 105)
+  const word = token?.type === "IDENT" ? token.value.toLowerCase() : "";
+  const hex = token?.type === "HASH" ? token.value : word === "transparent" ? "00000000" : NAMED_COLORS[word];
+  const full = hex && (hex.length === 3 || hex.length === 4) ? [...hex].map((c) => c + c).join("") : hex;
+  if (layer.length !== 1 || !full || !/^([0-9a-f]{6}|[0-9a-f]{8})$/i.test(full))
+    throw errorAt(layer, "the last layer of background is a color or an image, like: background: noise(3, #ffffff00, #ffffff), #102040;");
+  const a = full.length === 8 ? parseInt(full.slice(6), 16) / 255 : 1;
+  const rgb = [0, 2, 4].map((i, k) => (parseInt(full.slice(i, i + 2), 16) / 255) * a + DEFAULT_BACKGROUND[k] * (1 - a));
+  return `vec3(${rgb.map((c) => glslFloat(+c.toFixed(3))).join(", ")})`;
+}
+
+// background-blend-mode: one mode per layer, the list repeated over the layers, like CSS
+function blendModes(value: Token[] | undefined, count: number): string[] {
+  if (!value) return Array(count).fill("normal");
+  const modes = layersOf(value).map((part) => {
+    const [word] = part;
+    if (part.length !== 1 || word.type !== "IDENT" || !(word.value in BLEND_MODES))
+      throw errorAt(
+        value,
+        `background-blend-mode expects ${Object.keys(BLEND_MODES).join(", ")}, one per layer, like: background-blend-mode: multiply;`,
+      );
+    return word.value;
+  });
+  return Array.from({ length: count }, (_, i) => modes[i % modes.length]);
+}
+
+// The background in layers: each image in its own function, giving a premultiplied vec4;
+// background() puts them over the base, from the bottom up, each with its blend mode
+function layeredBackground(styles: Styles, keyframes: Keyframes[]): string {
+  const value = styles["background"];
+  const layers = layersOf(value);
+  for (const layer of layers.slice(0, -1))
+    if (!isGradient(layer))
+      throw errorAt(layer, "only the last layer of background can be a color, like CSS: background: noise(3, #ffffff00, #ffffff), #102040;");
+  for (const other of valuesOf(styles, keyframes, "background", undefined))
+    if (layersOf(other).length !== layers.length)
+      throw errorAt(
+        other,
+        `a background keeps its number of layers when it changes: ${layers.length} here, ${layersOf(other).length} there`,
+      );
+  const images = isGradient(layers[layers.length - 1]) ? layers : layers.slice(0, -1);
+  const modes = blendModes(styles["background-blend-mode"], images.length);
+  const base =
+    images.length === layers.length
+      ? "vec3(0.03)"
+      : animatedValue(styles, keyframes, "background", (v) => baseColor(v ? layersOf(v)[layers.length - 1] : undefined));
+
+  const functions = images.map((_, i) => {
+    const { gradient, moving } = movingGradient(styles, keyframes, "background", undefined, { layer: i, alpha: true });
+    return [
+      `// Layer ${i + 1} of the background, from the top: a premultiplied color`,
+      `vec4 backgroundLayer${i}(vec3 rd, vec2 at, vec2 size) {`,
+      ...linesOf(gradient, moving, "rd"),
+      "  return col;",
+      "}",
+    ].join("\n");
+  });
+  const blends = images
+    .map((_, i) => i)
+    .reverse() // from the bottom up
+    .flatMap((i) => {
+      const blend = BLEND_MODES[modes[i]];
+      return [
+        `  vec4 layer${i} = backgroundLayer${i}(rd, at, size);`,
+        blend
+          ? `  col = mix(col, ${blend}(col, unpremultiply(layer${i})), layer${i}.a); // ${modes[i]}`
+          : `  col = col * (1.0 - layer${i}.a) + layer${i}.rgb; // over`,
+      ];
+    });
+  return [
+    ...BACKGROUND_CAMERA,
+    "",
+    ...functions.flatMap((code) => [code, ""]),
+    "// The background: its layers over the last one, from the bottom up, like CSS",
+    "vec3 background(vec3 rd) {",
+    ...BACKGROUND_CANVAS,
+    `  vec3 col = ${base};`,
+    ...blends,
+    "  return col;",
     "}",
     "#define BACKGROUND background(rd)",
   ].join("\n");
@@ -63,10 +189,10 @@ function valuesOf(styles: Styles, keyframes: Keyframes[], property: string, hove
 
 // A gradient changes into another of the same kind, with as many colors: each number
 // moves from one to the other, like CSS interpolates a list of numbers
-function sameKind(gradient: Gradient, value: Token[]): Gradient {
+function sameKind(gradient: Gradient, value: Token[], alpha = false): Gradient {
   if (!isGradient(value))
     throw errorAt(value, `a gradient can only change into another gradient, not a color: write a ${gradient.name}() here too`);
-  const other = readGradient(value);
+  const other = readGradient(value, alpha);
   if (other.name !== gradient.name)
     throw errorAt(value, `a ${gradient.name}() can only change into another ${gradient.name}(), not a ${other.name}()`);
   if (other.shape !== gradient.shape)
@@ -94,19 +220,22 @@ function refuseGradients(styles: Styles, keyframes: Keyframes[], property: strin
 // The gradient of a property, and the GLSL of each of its numbers that an animation or a
 // :hover changes. A number that never changes stays a constant: a still gradient keeps
 // the lines it always had.
+// options.layer: one layer of a background, options.alpha: its colors can be transparent (decision 112)
 export function movingGradient(
   styles: Styles,
   keyframes: Keyframes[],
   property: string,
   hover: Hover | undefined,
+  options: { layer?: number; alpha?: boolean } = {},
 ): { gradient: Gradient; moving: Map<string, string> } {
-  const gradient = readGradient(styles[property]);
-  const others = valuesOf(styles, keyframes, property, hover).map((value) => sameKind(gradient, value));
+  const pick = (value: Token[]) => (options.layer === undefined ? value : layersOf(value)[options.layer]);
+  const gradient = readGradient(pick(styles[property]), options.alpha);
+  const others = valuesOf(styles, keyframes, property, hover).map((value) => sameKind(gradient, pick(value), options.alpha));
   const moving = new Map<string, string>();
   for (const key of channels(gradient)) {
     const still = channel(gradient, key);
     if (others.every((other) => channel(other, key) === still)) continue;
-    moving.set(key, hoverValue(styles, keyframes, property, (value) => channel(readGradient(value!), key), hover));
+    moving.set(key, hoverValue(styles, keyframes, property, (value) => channel(readGradient(pick(value!), options.alpha), key), hover));
   }
   return { gradient, moving };
 }

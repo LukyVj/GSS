@@ -878,10 +878,10 @@ export const PROPERTIES: PropertyDef[] = [
     name: "background",
     appliesTo: "scene",
     animatable: true,
-    syntax: "<color> | <gradient>",
+    syntax: "[ <gradient> , ]* [ <gradient> | <color> ]",
     initial: "#080808",
     description:
-      "Sets the background, visible wherever there is no object and no floor: a color, or a gradient drawn over the canvas like a CSS background (linear-gradient(), radial-gradient(), conic-gradient() and their repeating forms). The scene can animate it, with animation on the scene: a color into another color, a gradient into another gradient of the same kind with as many colors, or through the variables of the scene. A scene without objects and without a floor is then a flat, moving image.",
+      "Sets the background, visible wherever there is no object and no floor: a color, or a gradient drawn over the canvas like a CSS background (linear-gradient(), radial-gradient(), conic-gradient() and their repeating forms). The scene can animate it, with animation on the scene: a color into another color, a gradient into another gradient of the same kind with as many colors, or through the variables of the scene. A scene without objects and without a floor is then a flat, moving image. Like CSS, a background can have several layers, separated by commas, the first on top: background: noise(3, #ffffff00 40%, #ffffff), linear-gradient(#2f6bd8, #9fc4ff); only the last can be a color. The colors of these layers can be transparent (transparent, #ffffff80, rgb(… / 50%), a color-mix() under 100%), so a layer shows the ones below it, and background-blend-mode blends them; everywhere else, GSS has no transparency yet.",
     examples: [
       {
         name: "background",
@@ -892,8 +892,30 @@ export const PROPERTIES: PropertyDef[] = [
         code: "@scene { sphere; } sphere { translate: 0 1 0; color: #ff5a36; } scene { floor: none; background: radial-gradient(circle at 50% 40%, #2a2a3a, #07070a); }",
       },
       {
+        name: "layers: clouds over a sky",
+        code: "@scene { sphere; } sphere { translate: 0 1 0; material: chrome; } scene { floor: none; background: noise(2 4, #ffffff00 45%, #ffffff 80%), linear-gradient(#2f6bd8, #9fc4ff); }",
+      },
+      {
         name: "animated background",
         code: "@scene { } scene { floor: none; --x: 20%; background: radial-gradient(circle at var(--x) 40%, #ffb36b, #ff6540 30%, #722cff 70%, #171322); animation: drift 8s ease-in-out alternate; filter: grain(0.06); } @keyframes drift { to { --x: 80%; } }",
+      },
+    ],
+  },
+  {
+    name: "background-blend-mode",
+    appliesTo: "scene",
+    syntax: "<blend-mode>#",
+    initial: "normal",
+    description:
+      "How each layer of background blends with what is below it, like CSS: normal, multiply, screen, overlay, darken, lighten, color-dodge, color-burn, hard-light, soft-light, difference, exclusion, hue, saturation, color or luminosity. One mode per layer, the first for the top layer; a shorter list repeats over the layers. The transparency of a layer still applies: a transparent part blends nothing.",
+    examples: [
+      {
+        name: "a grain over a gradient",
+        code: "@scene { } scene { floor: none; background: noise(40 2, #808080, #ffffff), linear-gradient(135deg, #ff5a36, #3a7bff); background-blend-mode: multiply; }",
+      },
+      {
+        name: "two noises, screened",
+        code: "@scene { sphere; } sphere { translate: 0 1 0; material: chrome; } scene { floor: none; background: noise(3 3, #000000 45%, #ff5a36), noise(2 4 seed 3, #000000 40%, #3a7bff), #000000; background-blend-mode: screen; }",
       },
     ],
   },

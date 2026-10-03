@@ -409,6 +409,37 @@ describe("element() shows an HTML element on an object", () => {
   }, 60000);
 });
 
+// The layers of background: composited like CSS, premultiplied, with the blend modes of CSS
+describe("background layers composite like CSS, on both backends", () => {
+  const flat = (background: string, more = "") => `@scene { } scene { floor: none; background: ${background}; ${more} }`;
+  const center = (pixels: number[]) => {
+    const i = (36 * 96 + 48) * 4;
+    return pixels.slice(i, i + 3);
+  };
+  const cases: [string, string, string, number[]][] = [
+    ["half a red over blue", "linear-gradient(rgb(255 0 0 / 50%), rgb(255 0 0 / 50%)), #0000ff", "", [128, 0, 128]],
+    ["multiply", "linear-gradient(#808080, #808080), #ff0000", "background-blend-mode: multiply;", [128, 0, 0]],
+    ["screen", "linear-gradient(#808080, #808080), #ff0000", "background-blend-mode: screen;", [255, 128, 128]],
+    ["difference", "linear-gradient(#ff0000, #ff0000), #ff0000", "background-blend-mode: difference;", [0, 0, 0]],
+    ["color", "linear-gradient(#ff0000, #ff0000), #808080", "background-blend-mode: color;", [255, 73, 73]],
+    ["luminosity", "linear-gradient(#ffffff, #ffffff), #ff0000", "background-blend-mode: luminosity;", [255, 255, 255]],
+  ];
+  for (const [name, background, more, expected] of cases)
+    it(name, async () => {
+      const { gl, gpu } = await render(flat(background, more));
+      for (const pixels of [gl, gpu])
+        center(pixels).forEach((c, k) => expect(Math.abs(c - expected[k]), `${name} channel ${k}: ${c}`).toBeLessThanOrEqual(3));
+    }, 60000);
+
+  it("a transparent layer leaves the image of what is below", async () => {
+    const a = await render(flat("linear-gradient(transparent, transparent), noise(3 2, #000000, #3a7bff)"));
+    const b = await render(flat("noise(3 2, #000000, #3a7bff)"));
+    const apart = (p: number[], q: number[]) => p.filter((v, i) => Math.abs(v - q[i]) > 6).length / p.length;
+    expect(apart(a.gl, b.gl)).toBe(0);
+    expect(apart(a.gpu, b.gpu)).toBe(0);
+  }, 60000);
+});
+
 describe("the default camera does not mirror the scene", () => {
   const front = "scene { floor: none; background: #000000; camera-target: 0 0 0; camera-angle: 0deg 0deg; camera-distance: 5; light: 0deg 0deg; ambient: 1; }";
   // The mean column and row of the pixels where `channel` wins, per backend

@@ -601,7 +601,8 @@ function computeVars(styles: Styles, variables: Variables): Styles {
 // The property is needed: material: gold is a material, color: gold is a color.
 function colorsOf(property: string, value: Token[]): Token[] {
   const scheme: ColorScheme = activeMedia.has(DARK_QUERY) ? "dark" : "light";
-  return resolveNamedColors(property, resolveColors(value, scheme));
+  // The layers of background can be transparent, nothing else (decision 112)
+  return resolveNamedColors(property, resolveColors(value, scheme, property === "background"));
 }
 // The queries true in the version being compiled: read by light-dark() (decision 79)
 // and the media() of if() (decision 81)

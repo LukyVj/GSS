@@ -19,7 +19,6 @@ import type { StyledInstance, Styles } from "../../cascade/resolve";
 import { errorAt } from "../../syntax/errors";
 import { readNumber } from "../../values/values";
 import { sceneTextures } from "../../features/textures";
-import { isGradient } from "../gradient";
 import { glslFloat, moreLines, round, section, used, label, vec3, type Hover } from "./glsl";
 import { EASINGS, MAP_HELPERS, MATERIALS, PATH_HELPERS, SHADE_CALLS, SHAPE_FUNCTIONS } from "./library";
 import { SHADING } from "./shading";
@@ -28,7 +27,8 @@ import { readColor, readLight, readScale, readTranslate } from "./read";
 import { readOperation, SMOOTH } from "./operations";
 import { BOUNDED, SHAPES, type ShapeContext } from "./shapes";
 import { textureCode } from "./textures";
-import { backgroundCode, gradientCode, objectGradient, type Painted } from "./gradients";
+import { backgroundCode, backgroundNeedsCamera, gradientCode, objectGradient, type Painted } from "./gradients";
+import { BLEND_LIBRARY } from "./blend-library";
 import { readMaterial } from "./materials";
 import { activeSlots, hoverSlots, hoverValue, useTimelines } from "./animation";
 import { sceneTimelines } from "../../features/timeline";
@@ -357,6 +357,8 @@ uniform vec2 uPick;`
           ),
           // noise() (decision 111): in the background and on the objects it paints
           section("// The noise of noise(): only what the scene uses", used(NOISE_LIBRARY, [background, gradients.functions].join("\n"))),
+          // background-blend-mode (decision 112): only the modes of the layers
+          section("// The blend modes of the background: only those its layers use", used(BLEND_LIBRARY, background)),
         ]
           .filter(Boolean)
           .join("\n\n"),
@@ -404,7 +406,7 @@ uniform vec2 uPick;`
       // The background gradient needs the camera, and the reflections the gradients of objects
       .replace(
         "  vec3 up = cross(right, forward);\n",
-        isGradient(sceneStyles["background"])
+        backgroundNeedsCamera(sceneStyles["background"])
           ? "  vec3 up = cross(right, forward);\n  camForward = forward;\n  camRight = right;\n  camUp = up;\n"
           : "  vec3 up = cross(right, forward);\n",
       )

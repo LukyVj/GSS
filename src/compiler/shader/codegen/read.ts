@@ -92,6 +92,9 @@ export function readScale(value: Token[] | undefined): string {
 export function readColor(value: Token[] | undefined, fallback = "vec3(0.9)"): string {
   if (!value) return fallback;
   const [token] = value;
+  // #ff000080, transparent: only the layers of background take a transparent color (decision 112)
+  if (value.length === 1 && token.type === "HASH" && (token.value.length === 4 || token.value.length === 8))
+    throw errorAt(value, "GSS has no transparency yet, except in the layers of background: write an opaque color here");
   if (value.length !== 1 || token.type !== "HASH") {
     throw errorAt(
       value,

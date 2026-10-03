@@ -33,35 +33,58 @@ const isWord = (t: Token | undefined, ...words: string[]) =>
   t?.type === "IDENT" && words.includes(t.value);
 
 export function isGradient(value: Token[] | undefined): value is Token[] {
+  if (value && hasTopComma(value)) return false; // several layers of background (decision 112)
   const call = value && readFunction(value);
   return !!call && GRADIENT_FUNCTIONS.includes(call.name);
+}
+
+// A comma outside any parentheses: a list, like the layers of a background
+function hasTopComma(value: Token[]): boolean {
+  let depth = 0;
+  for (const token of value) {
+    if (token.type !== "PUNCT") continue;
+    if (token.value === "(") depth++;
+    else if (token.value === ")") depth--;
+    else if (token.value === "," && depth === 0) return true;
+  }
+  return false;
 }
 
 // The GLSL of the background: a function of the ray's direction, and BACKGROUND that calls it.
 // moving: the numbers an animation of the scene changes (decision 103)
 export function backgroundFunction(gradient: Gradient, moving: Map<string, string> = new Map()): string {
   return [
-    "// The camera, for the background: set at the start of main()",
-    "vec3 camForward;",
-    "vec3 camRight;",
-    "vec3 camUp;",
+    ...BACKGROUND_CAMERA,
     "",
     "// The background: a gradient over the canvas, like a CSS background. A ray is",
     "// projected through the camera onto the canvas, so a reflection sees the gradient",
     "// where it points, not the pixel it was cast from.",
     "vec3 background(vec3 rd) {",
-    "  vec2 size = iResolution.xy;",
-    "  vec2 d = vec2(dot(rd, camRight), dot(rd, camUp));",
-    "  float z = dot(rd, camForward);",
-    "  // Through the camera onto the canvas; a ray going sideways or back reaches its edge",
-    "  vec2 at = z > 0.001 ? 1.5 * d / z * size.y + 0.5 * size : 0.5 * size + normalize(d + 1e-6) * 1e4;",
-    "  at = clamp(at, vec2(0.0), size); // like CSS, nothing exists outside the box: its edge",
+    ...BACKGROUND_CANVAS,
     ...linesOf(gradient, moving, "rd"),
     "  return col;",
     "}",
     "#define BACKGROUND background(rd)",
   ].join("\n");
 }
+
+// The camera, for a background drawn over the canvas: set at the start of main()
+export const BACKGROUND_CAMERA = [
+  "// The camera, for the background: set at the start of main()",
+  "vec3 camForward;",
+  "vec3 camRight;",
+  "vec3 camUp;",
+];
+
+// The first lines of background(): where the ray lands on the canvas (at), and its size
+export const BACKGROUND_CANVAS = [
+  "  vec2 size = iResolution.xy;",
+  "  vec2 d = vec2(dot(rd, camRight), dot(rd, camUp));",
+  "  float z = dot(rd, camForward);",
+  "  // Through the camera onto the canvas; a ray going sideways or back reaches its edge",
+  "  vec2 at = z > 0.001 ? 1.5 * d / z * size.y + 0.5 * size : 0.5 * size + normalize(d + 1e-6) * 1e4;",
+  "  at = clamp(at, vec2(0.0), size); // like CSS, nothing exists outside the box: its edge",
+];
 
 // The color of a gradient written on an object: the color the reflections see
 export function gradientMean(value: Token[]): string {
@@ -85,9 +108,13 @@ export type Gradient = {
   stops: { color: string; at: Num }[];
   // noise() (decision 111): kind, octaves and seed cannot change; scale and offset can
   noise?: { turbulence: boolean; scale: Num; octaves: number; seed: number; offset: [Num, Num, Num] };
+  // A layer of background (decision 112): its colors can be transparent, and it gives a
+  // premultiplied vec4, like CSS mixes the stops of a gradient
+  alpha?: boolean;
 };
 
-export function readGradient(value: Token[]): Gradient {
+// alpha: a layer of background, whose colors can be transparent (decision 112)
+export function readGradient(value: Token[], alpha = false): Gradient {
   const call = readFunction(value)!;
   const radial = call.name.includes("radial");
   const conic = call.name.includes("conic");
@@ -105,7 +132,8 @@ export function readGradient(value: Token[]): Gradient {
   } else if (conic) Object.assign(gradient, readConic(setup, value));
   else if (radial) Object.assign(gradient, readRadial(setup, value));
   else gradient.direction = readLinear(setup, value);
-  gradient.stops = readStops(hasSetup ? rest : call.args, value, call.name) as Gradient["stops"];
+  gradient.stops = readStops(hasSetup ? rest : call.args, value, call.name, alpha) as Gradient["stops"];
+  if (alpha) gradient.alpha = true;
   return gradient;
 }
 
@@ -152,7 +180,15 @@ export function channel(gradient: Gradient, name: string): string {
   if (name === "cy") return code(sub(1, gradient.center[1])); // y goes up in the shader
   if (name === "from") return code(gradient.from, true);
   const stop = gradient.stops[Number(name.replace(/\D+/, ""))];
-  return name.startsWith("at") ? code(stop.at) : stop.color;
+  if (name.startsWith("at")) return code(stop.at);
+  return gradient.alpha ? opaque4(stop.color) : stop.color;
+}
+
+// A color of a layer as a premultiplied vec4: vec3(1.0, 0.0, 0.0) → vec4(1.0, 0.0, 0.0, 1.0)
+function opaque4(color: string): string {
+  if (color.startsWith("vec4(")) return color;
+  const inside = color.match(/^vec3\((.*)\)$/)?.[1];
+  return inside !== undefined && !inside.includes("(") ? `vec4(${inside}, 1.0)` : `vec4(${color}, 1.0)`;
 }
 
 // The lines that compute `vec3 col` from `vec2 at` and `vec2 size`
@@ -185,7 +221,7 @@ export function linesOf(gradient: Gradient, moving: Map<string, string> = new Ma
   if (repeating && (moves("at0") || moves(`at${last}`)))
     lines.push(`  t = ${get("at0")} + mod(t - ${get("at0")}, max(${get(`at${last}`)} - ${get("at0")}, 0.00001));`);
   else if (repeating && tn > t0) lines.push(`  t = ${f(t0)} + mod(t - ${f(t0)}, ${f(tn - t0)});`);
-  lines.push(`  vec3 col = ${get("color0")};`);
+  lines.push(`  ${gradient.alpha ? "vec4" : "vec3"} col = ${get("color0")};`);
   for (let i = 1; i < stops.length; i++) {
     const a = stops[i - 1].at as number;
     const b = stops[i].at as number;
@@ -203,21 +239,28 @@ export function linesOf(gradient: Gradient, moving: Map<string, string> = new Ma
 function isColor(token: Token | undefined): boolean {
   if (token?.type === "HASH") return true;
   if (token?.type === "EXPR") return token.syntax === "color"; // set from JS (decision 105)
+  if (token?.type === "IDENT" && token.value.toLowerCase() === "transparent") return true;
   return token?.type === "IDENT" && Object.hasOwn(NAMED_COLORS, token.value.toLowerCase());
 }
 
-function colorOf(token: Token, value: Token[]): string {
+// A color in GLSL: vec3, or a premultiplied vec4 when it is transparent, which only a
+// layer of background takes (alpha, decision 112)
+function colorOf(token: Token, value: Token[], alpha = false): string {
   if (token.type === "EXPR") return token.code;
-  const hex =
-    token.type === "HASH" ? token.value : NAMED_COLORS[(token as { value: string }).value.toLowerCase()];
-  const full = hex.length === 3 ? [...hex].map((c) => c + c).join("") : hex;
-  if (!/^[0-9a-f]{6}$/i.test(full)) throw errorAt(value, `"#${hex}" is not a hex color`);
+  const word = (token as { value: string }).value.toLowerCase();
+  const hex = token.type === "HASH" ? token.value : word === "transparent" ? "00000000" : NAMED_COLORS[word];
+  // #rgb, #rgba: each digit twice
+  const full = hex.length === 3 || hex.length === 4 ? [...hex].map((c) => c + c).join("") : hex;
+  if (!/^([0-9a-f]{6}|[0-9a-f]{8})$/i.test(full)) throw errorAt(value, `"#${hex}" is not a hex color`);
   const rgb = [0, 2, 4].map((i) => parseInt(full.slice(i, i + 2), 16) / 255);
-  return `vec3(${rgb.map((c) => f(+c.toFixed(3))).join(", ")})`;
+  const a = full.length === 8 ? parseInt(full.slice(6, 8), 16) / 255 : 1;
+  if (a === 1) return `vec3(${rgb.map((c) => f(+c.toFixed(3))).join(", ")})`;
+  if (!alpha) throw errorAt(value, "GSS has no transparency yet, except in the layers of background: write opaque colors here");
+  return `vec4(${[...rgb.map((c) => c * a), a].map((c) => f(+c.toFixed(3))).join(", ")})`;
 }
 
 // red, #fff 20%, blue 40% 60%: a color, then 0, 1 or 2 positions, completed like CSS
-function readStops(args: Token[][], value: Token[], name: string): Stop[] {
+function readStops(args: Token[][], value: Token[], name: string, alpha = false): Stop[] {
   const example = name === "noise" ? "noise(4, #1c1c24, #07070a)" : `${name}(#1c1c24, #07070a)`;
   const stops: Stop[] = [];
   for (const arg of args) {
@@ -233,7 +276,7 @@ function readStops(args: Token[][], value: Token[], name: string): Stop[] {
       throw errorAt(value, `The positions of ${name}() are angles or percentages, like: #fff 90deg`);
     if (!conic && positions.some((p) => !percent(p)))
       throw errorAt(value, `The positions of ${name}() are percentages, like: #fff 20%`);
-    const vec = colorOf(color, value);
+    const vec = colorOf(color, value, alpha);
     if (positions.length === 0) stops.push({ color: vec, at: null });
     for (const p of positions)
       stops.push({
