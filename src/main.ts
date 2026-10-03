@@ -13,6 +13,7 @@ import { EXAMPLES, renderExampleOptions } from "./playground/examples";
 import { statusParts, fpsText } from "./runtime/status";
 import { mountSearch } from "./docs/search-box";
 import { profile, profileWebGPU, mountPanel } from "./profiler/panel";
+import { mountSplitter } from "./playground/splitter";
 
 mountSearch();
 
@@ -33,6 +34,24 @@ backendSelect.addEventListener("change", async () => {
   if (currentSource) url.hash = await encodeCode(currentSource(), html);
   location.assign(url.href);
 });
+
+// ----- The separator between the editor and the scene (decision 123) -----
+
+// On a phone (the same query as the CSS), the editor sits under the scene: its height
+const phone = matchMedia("(max-width: 720px)");
+const splitter = mountSplitter({
+  root: document.body,
+  handle: $(".splitter"),
+  axis: () => (phone.matches ? "y" : "x"),
+  track: () => {
+    if (!phone.matches) return { start: 0, end: innerWidth, length: innerWidth };
+    const start = $(".topbar").getBoundingClientRect().bottom;
+    const end = $(".statusbar").getBoundingClientRect().top;
+    return { start, end, length: end - start };
+  },
+});
+addEventListener("resize", splitter.update);
+phone.addEventListener("change", splitter.update);
 
 // A shared link opens its scene, and the HTML of its element(#id); otherwise the first example
 const start = (await decodeCode(location.hash)) ?? EXAMPLES[0].code;

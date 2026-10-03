@@ -37,7 +37,8 @@
         font-family: var(--gss-font-code); /* the whole playground is a tool */
         line-height: normal; /* fixed-height bars: no body-text leading */
         display: grid;
-        grid-template-columns: minmax(320px, 480px) 1fr;
+        /* the width of the editor: set by the separator (src/playground/splitter.ts) */
+        grid-template-columns: var(--editor-width, clamp(280px, 40vw, 480px)) minmax(0, 1fr);
         grid-template-rows: 52px minmax(0, 1fr) 32px;
         grid-template-areas:
           "top top"
@@ -103,7 +104,9 @@
         grid-area: editor;
         display: flex;
         flex-direction: column;
+        min-width: 0;
         min-height: 0;
+        overflow: hidden;
         background: var(--gss-surface);
         border-right: 1px solid var(--gss-line);
       }
@@ -129,6 +132,110 @@
         font: inherit;
         font-size: 12px;
         white-space: pre-wrap;
+      }
+
+      /* ----- The separator between the editor and the scene (src/playground/splitter.ts) -----
+         The hairline of the editor stays; over it, a 9px hit area. A grip of three dots shows
+         on hover, the line turns signal while dragged or focused (DESIGN.md: flat, hairlines,
+         colour-only transitions). Folded, the editor leaves the line and the grip at the edge. */
+      .splitter {
+        --grip: var(--gss-dim);
+        grid-area: scene;
+        justify-self: start;
+        position: relative;
+        z-index: 2;
+        width: 9px;
+        margin-left: -5px;
+        cursor: col-resize;
+        touch-action: none;
+        outline: none;
+      }
+      .splitter::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 4px;
+        width: 1px;
+        background: transparent;
+        transition: background-color var(--gss-transition);
+      }
+      .splitter::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 1px;
+        width: 7px;
+        height: 21px;
+        margin-top: -10px;
+        background: radial-gradient(circle, var(--grip) 1.1px, transparent 1.6px) 0 0 / 7px 7px;
+        opacity: 0;
+        transition: opacity var(--gss-transition);
+      }
+      .splitter:hover::after,
+      .splitter:focus-visible::after,
+      .resizing .splitter::after {
+        opacity: 1;
+      }
+      .splitter:focus-visible::before,
+      .resizing .splitter::before {
+        background: var(--gss-signal);
+      }
+      .resizing .splitter {
+        --grip: var(--gss-signal);
+      }
+      /* While dragged: the cursor everywhere, no text selected, the scene left alone */
+      .resizing,
+      .resizing * {
+        cursor: col-resize !important;
+        user-select: none;
+      }
+      /* Folded: the editor becomes a 12px rail in its place, the grip in its middle,
+         seen over any scene; drag it or click it to open the editor again */
+      body.editor-collapsed {
+        grid-template-columns: 12px minmax(0, 1fr);
+      }
+      .editor-collapsed .editor {
+        display: none;
+      }
+      .editor-collapsed .splitter {
+        grid-area: editor;
+        justify-self: stretch;
+        width: auto;
+        margin: 0;
+        border-right: 1px solid var(--gss-line);
+        background: var(--gss-surface);
+        cursor: e-resize;
+        transition: background-color var(--gss-transition);
+      }
+      .editor-collapsed .splitter:hover {
+        background: var(--gss-raised);
+        --grip: var(--gss-bone);
+      }
+      .editor-collapsed .splitter::before {
+        display: none;
+      }
+      .editor-collapsed .splitter::after {
+        left: 50%;
+        margin-left: -4px;
+        opacity: 1;
+      }
+      /* A finger: a 44px hit area around the line, and the grip always shown */
+      @media (pointer: coarse) {
+        body.editor-collapsed {
+          grid-template-columns: 28px minmax(0, 1fr);
+        }
+        .splitter {
+          width: 44px;
+          margin-left: -22px;
+        }
+        .splitter::before {
+          left: 21px;
+        }
+        .splitter::after {
+          left: 18px;
+          opacity: 1;
+        }
       }
 
       /* ----- The scene ----- */
@@ -174,8 +281,49 @@
       @media (max-width: 720px) {
         body {
           grid-template-columns: minmax(0, 1fr);
-          grid-template-rows: 52px minmax(0, 1fr) 40vh 32px;
+          grid-template-rows: 52px minmax(0, 1fr) var(--editor-height, 45%) 32px;
           grid-template-areas: "top" "scene" "editor" "status";
+        }
+        body.editor-collapsed {
+          grid-template-columns: minmax(0, 1fr);
+          grid-template-rows: 52px minmax(0, 1fr) 12px 32px;
+        }
+        /* The separator lies between the scene, on top, and the editor */
+        .splitter {
+          justify-self: stretch;
+          align-self: end;
+          width: auto;
+          height: 9px;
+          margin: 0 0 -5px;
+          cursor: row-resize;
+        }
+        .splitter::before {
+          inset: 4px 0 auto;
+          width: auto;
+          height: 1px;
+        }
+        .splitter::after {
+          top: 1px;
+          left: 50%;
+          width: 21px;
+          height: 7px;
+          margin: 0 0 0 -10px;
+        }
+        .resizing,
+        .resizing * {
+          cursor: row-resize !important;
+        }
+        .editor-collapsed .splitter {
+          align-self: stretch;
+          height: auto;
+          margin: 0;
+          border-right: 0;
+          border-top: 1px solid var(--gss-line);
+          cursor: n-resize;
+        }
+        .editor-collapsed .splitter::after {
+          top: 50%;
+          margin: -4px 0 0 -10px;
         }
         .topbar {
           padding: 0 12px;
@@ -199,6 +347,25 @@
         .editor {
           border-right: 0;
           border-top: 1px solid var(--gss-line);
+        }
+      }
+      /* A finger on a phone: 44px around the horizontal line (folded: the rail is the target) */
+      @media (max-width: 720px) and (pointer: coarse) {
+        body.editor-collapsed {
+          grid-template-rows: 52px minmax(0, 1fr) 28px 32px;
+        }
+        .splitter {
+          width: auto;
+          height: 44px;
+          margin: 0 0 -10px;
+        }
+        .splitter::before {
+          inset: 34px 0 auto;
+          left: 0;
+        }
+        .splitter::after {
+          top: 31px;
+          left: 50%;
         }
       }
     </style>
@@ -244,12 +411,13 @@
       </button>
       <button type="button" id="share" class="button primary">share</button>
     </header>
-    <aside class="editor">
+    <aside class="editor" id="editor">
       <div id="code" class="code-host"></div>
       <div id="html" class="code-host" hidden></div>
       <div id="glsl" class="code-host" hidden></div>
       <pre id="error" class="error" hidden></pre>
     </aside>
+    <div class="splitter"></div>
     <canvas id="scene"></canvas>
     <footer class="statusbar">
       <span id="stats" class="stats" aria-live="polite"></span>

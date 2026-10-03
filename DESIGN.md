@@ -197,7 +197,9 @@ The same message appears in the status bar count (`● 1 error`).
 - Landing: headline left (≤ 680px), render / isolines right, three pillar columns
   below, divided by hairlines.
 - Playground: 52px header, editor docked left (≈ 480px, `surface`), viewport fills
-  the rest (`void`), 32px status bar.
+  the rest (`void`), 32px status bar. The hairline between them is a separator: a
+  9px hit area (44px to a finger), a grip of three `dim` dots on hover, the line in
+  signal while dragged or focused. Folded, the editor is a 12px `surface` rail.
 - Docs: three columns: nav 260px, content (max ~720px of text), on-this-page 240px.
 
 ## 8. Depth and elevation

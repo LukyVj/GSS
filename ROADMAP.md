@@ -281,6 +281,7 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 
 ## Done recently
 
+- A resizable playground: a separator between the editor and the scene, by mouse, finger or keyboard; the editor folds into a rail; the size is kept (decision 123)
 - An image on the floor: a gradient, a `noise()` or a `displace()`, a gradient over a square of 40 under the scene (decision 122)
 - The docs, page by page: a short lead, a table of the values, a paragraph, titled examples with a sentence each, code shown as code; "light (sun)" and "light (point)"; Colors and Selectors split into smaller groups (decision 121)
 - A dpr menu over the renders of the playground and the docs: `auto` follows the frame rate, a number fixes it (decision 120)
