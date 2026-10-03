@@ -72,7 +72,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 
 | Property                                                          | Role                                                                                 |
 | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| `floor`                                                           | floor color, or `none`                                                               |
+| `floor`                                                           | floor color, a gradient, a `noise()` or a `displace()` (dec. 122), or `none`         |
 | `background`                                                      | background color                                                                     |
 | `light`, `ambient`                                                | the sun (`<azimuth> <elevation> [<color>] [<intensity>]`, or `none`), the ambient light (`<number> [<color>]`); lights of `@scene` add up (dec. 110) |
 | `fog`                                                             | `none`, or `[<color>] <start> <end>` from the camera (dec. 108)                       |
@@ -281,6 +281,7 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 
 ## Done recently
 
+- An image on the floor: a gradient, a `noise()` or a `displace()`, a gradient over a square of 40 under the scene (decision 122)
 - The docs, page by page: a short lead, a table of the values, a paragraph, titled examples with a sentence each, code shown as code; "light (sun)" and "light (point)"; Colors and Selectors split into smaller groups (decision 121)
 - A dpr menu over the renders of the playground and the docs: `auto` follows the frame rate, a number fixes it (decision 120)
 - Seven studies open the showcase, one at a time in a viewer, a slider for those driven by `scroll()`; their own group in the playground (decision 119)

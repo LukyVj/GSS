@@ -29,7 +29,8 @@ import { readColor, readLight, readScale, readSurfaceColor, readTranslate } from
 import { readOperation, SMOOTH } from "./operations";
 import { BOUNDED, SHAPES, type ShapeContext } from "./shapes";
 import { textureCode } from "./textures";
-import { backgroundCode, backgroundNeedsCamera, gradientCode, objectGradient, paintsTransparent, type Painted } from "./gradients";
+import { backgroundCode, backgroundNeedsCamera, floorGradient, gradientCode, objectGradient, paintsTransparent, type Painted } from "./gradients";
+import { gradientMean } from "../gradient";
 import { BLEND_LIBRARY } from "./blend-library";
 import { readMaterial } from "./materials";
 import { activeSlots, hoverSlots, hoverValue, useTimelines } from "./animation";
@@ -239,6 +240,8 @@ export function generateShader(
     floor?.length === 1 &&
     floor[0].type === "IDENT" &&
     floor[0].value === "none";
+  // A gradient, a noise() or a displace() paints the floor (decision 122)
+  const floorImage = noFloor ? null : floorGradient(floor);
 
   // ambient: the share of light received in the shadow; the sun gives the rest.
   // Set from JS (decision 105): kept between 0 and 1 on the GPU.
@@ -291,7 +294,7 @@ export function generateShader(
         sceneTextures([instance]).length > 0,
     ),
   );
-  const gradients = gradientCode(painted, textured, keyframes, hoverOf);
+  const gradients = gradientCode(painted, textured, keyframes, hoverOf, floorImage);
   // mask-image (decision 113): how much of the surface of each object with holes is there
   const masks = maskCode(masked, new Set([...textured, ...painted.map(({ instance }) => instance)]), keyframes, hoverOf, transparent.length === 0);
   // opacity (decision 116): how much each surface covers, the color the light takes through it
@@ -386,7 +389,7 @@ uniform vec2 uPick;`
           textures.functions,
         ) +
           (gradients.functions
-            ? `\n\n// Gradients on objects: the color at the point that was hit\n${gradients.functions}`
+            ? `\n\n// Gradients on objects${floorImage ? " and on the floor" : ""}: the color at the point that was hit\n${gradients.functions}`
             : "") +
           (masks ? `\n\n// mask-image: how much of each object's surface is there, from 0 to 1\n${masks}` : "") +
           (transparency ? `\n\n${transparency}` : ""),
@@ -434,7 +437,12 @@ uniform vec2 uPick;`
       .replace("/*@FOG*/", fog?.line ?? "")
       .replace(
         "/*@FLOOR*/",
-        noFloor ? "vec3(0.0)" : liveRead("floor", (value) => readColor(value, "vec3(0.91, 0.89, 0.86)"))(floor),
+        noFloor
+          ? "vec3(0.0)"
+          : // An image moves in gradientColor(): getMaterial() keeps the mean of its colors
+            floorImage
+            ? readColor([{ type: "HASH", value: gradientMean(floor!) }])
+            : liveRead("floor", (value) => readColor(value, "vec3(0.91, 0.89, 0.86)"))(floor),
       )
       .replace("/*@FLOOR_DISTANCE*/", noFloor ? "1e10" : "p.y")
       // A sun set from JS (decision 105): a function, since a constant cannot read a uniform
@@ -465,7 +473,7 @@ uniform vec2 uPick;`
       )
       .replace(
         "return diffuse(n, getMaterial(hit.y).color);",
-        painted.length > 0
+        painted.length > 0 || floorImage
           ? "return diffuse(n, gradientColor(hit.y, p, getMaterial(hit.y).color));"
           : "return diffuse(n, getMaterial(hit.y).color);",
       )

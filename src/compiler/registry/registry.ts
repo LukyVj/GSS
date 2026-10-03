@@ -1044,10 +1044,17 @@ export const PROPERTIES: PropertyDef[] = [
   {
     name: "floor",
     appliesTo: "scene",
-    syntax: "<color> | none",
+    syntax: "<color> | <gradient> | none",
     initial: "#e8e3db",
     description:
-      "Sets the color of the floor, an infinite plane at y = 0, lit like the objects. `none` removes it: the objects float over the `background`, like the GSS logo.",
+      "Sets the color of the floor, an infinite plane at y = 0, lit like the objects. It can also be a gradient, a `noise()`, or one of them moved by `displace()`. `none` removes it: the objects float over the `background`, like the GSS logo.",
+    values: [
+      ["<color>", "Any opaque CSS color."],
+      ["<gradient>", "`linear-gradient()`, `radial-gradient()` or `conic-gradient()`, spread over a square of 40 units centered under the scene: everything the scene draws."],
+      ["noise()", "A noise read at each point of the floor, in the units of the scene: its scale is how many patterns fit in one unit."],
+      ["none", "No floor."],
+    ],
+    details: "A gradient is seen from above, like on a `plane`: its top is away from the camera at rest, so `linear-gradient(#0b1020, #273d62)` goes from the horizon to the camera, and past the square it goes on with its first and last colors. A `displace()` moves the image by a share of that square: `0.02` moves it by up to 0.4 units. The floor takes one image, not layers, and opaque colors only. It is not animated, but the numbers of its image can be set from JavaScript. Reflections see it, and `fog` covers it like the rest of the scene.",
     examples: [
       {
         name: "a dark floor",
@@ -1057,6 +1064,16 @@ export const PROPERTIES: PropertyDef[] = [
         name: "no floor",
         text: "`floor: none`, over a dark background.",
         code: "@scene { sphere; } sphere { color: #ff5a36; material: jelly(0.6); } scene { floor: none; background: #0a0a0c; }",
+      },
+      {
+        name: "a noise() on the floor",
+        text: "Blue stone under a chrome sphere, which reflects it.",
+        code: "@scene { sphere; } sphere { translate: 0 1 0; material: chrome; } scene { floor: noise(2 3, #10182b, #273d62 55%, #0b1020); background: #0b1020; }",
+      },
+      {
+        name: "a pool of light",
+        text: "A `radial-gradient()` that fades into the color of the background, around the scene.",
+        code: "@scene { cube; } cube { translate: 0 0.5 0; color: #ff5a36; } scene { floor: radial-gradient(circle, #4a4f6a, #0b1020 12%); background: #0b1020; }",
       },
     ],
   },
@@ -2107,7 +2124,7 @@ export const FUNCTIONS: FunctionDef[] = [
     syntax:
       "linear-gradient([<angle> | to <side> <side>?]?, <color> <percentage>{0,2}, …) | radial-gradient([circle | ellipse]? [closest-side | farthest-side | closest-corner | farthest-corner]? [at <position>]?, <color> <percentage>{0,2}, …) | conic-gradient([from <angle>]? [at <position>]?, <color> [<angle> | <percentage>]{0,2}, …)",
     description:
-      "The gradients of CSS, for the `background` of the scene, the `color` of an object and the color of a material. Each color can have one or two positions; the missing ones are spread like CSS, and two colors at the same place make a hard edge.",
+      "The gradients of CSS, for the `background` of the scene, the `color` of an object, the color of a material and the `floor`. Each color can have one or two positions; the missing ones are spread like CSS, and two colors at the same place make a hard edge.",
     valuesTitle: "Functions",
     values: [
       ["linear-gradient()", "Along a line, `to bottom` by default. It takes an angle (`0deg` up, `90deg` right), or `to` a side or a corner."],
@@ -2115,7 +2132,7 @@ export const FUNCTIONS: FunctionDef[] = [
       ["conic-gradient()", "Around a center, clockwise from the top: `from 90deg` starts a quarter turn later, and `at 30% 40%` moves the center. Its colors take angles or percentages: a color wheel, a pie chart, the sweep of a hand."],
       ["repeating-linear-gradient()", "Repeats the stops; also `repeating-radial-gradient()` and `repeating-conic-gradient()`."],
     ],
-    details: "In the background, the gradient covers the canvas and follows its size; reflections and glass see it in the direction they look. On an object, it covers the object as seen from the front, from left to right and from bottom to top (a plane is seen from above): `to top` goes from its bottom to its top, whatever its size, and it moves and turns with the object. Colors are mixed in sRGB, like CSS with hex colors.",
+    details: "In the background, the gradient covers the canvas and follows its size; reflections and glass see it in the direction they look. On an object, it covers the object as seen from the front, from left to right and from bottom to top (a plane is seen from above): `to top` goes from its bottom to its top, whatever its size, and it moves and turns with the object. On the `floor`, it covers a square of 40 units centered under the scene, seen from above. Colors are mixed in sRGB, like CSS with hex colors.",
     examples: [
       {
         name: "linear-gradient()",
@@ -2152,7 +2169,7 @@ export const FUNCTIONS: FunctionDef[] = [
     syntax:
       "noise([turbulence]? <number> <integer>? [seed <integer>]? [at <number> <number> <number>]?, <color> <percentage>{0,2}, …)",
     description:
-      "A noise image, wherever a gradient goes: the `background`, the `color` of an object, the color of a material. Its colors are placed like the stops of a gradient, along the value of a smooth 3D noise, like SVG `feTurbulence`.",
+      "A noise image, wherever a gradient goes: the `background`, the `color` of an object, the color of a material, the `floor`. Its colors are placed like the stops of a gradient, along the value of a smooth 3D noise, like SVG `feTurbulence`.",
     valuesTitle: "Arguments",
     values: [
       ["<number>", "The scale: how many patterns fit in one unit."],
@@ -2161,7 +2178,7 @@ export const FUNCTIONS: FunctionDef[] = [
       ["seed <integer>", "Another pattern."],
       ["at <x> <y> <z>", "Moves the pattern."],
     ],
-    details: "On an object, the noise is cut in the object's own space, like a block of stone: no seam, and it moves and turns with the object. In the background, it follows the direction of the view. Like a gradient, it can be animated and changed by `:hover`, into another `noise()` of the same kind with as many colors: animating `at` makes it drift, like clouds or smoke. Its numbers can be set from JavaScript.",
+    details: "On an object, the noise is cut in the object's own space, like a block of stone: no seam, and it moves and turns with the object. On the `floor`, it is read at each point of the floor, in the units of the scene. In the background, it follows the direction of the view. Like a gradient, it can be animated and changed by `:hover`, into another `noise()` of the same kind with as many colors: animating `at` makes it drift, like clouds or smoke. Its numbers can be set from JavaScript.",
     examples: [
       {
         name: "noise() on an object",
@@ -2192,7 +2209,7 @@ export const FUNCTIONS: FunctionDef[] = [
     computed: "on the GPU, at each pixel",
     syntax: "displace(<gradient> | <noise()>, <gradient> | <noise()>, <number> | <percentage>)",
     description:
-      "Moves an image by another one, like SVG `feDisplacementMap`, wherever a gradient goes: `color`, a material, `background` and its layers, `mask-image`. Stripes moved by a turbulence make marble, rings make wood, a mask gets ragged edges.",
+      "Moves an image by another one, like SVG `feDisplacementMap`, wherever a gradient goes: `color`, a material, `background` and its layers, `mask-image`, `floor`. Stripes moved by a turbulence make marble, rings make wood, a mask gets ragged edges.",
     valuesTitle: "Arguments",
     values: [
       ["<image>", "The gradient or the `noise()` to move."],

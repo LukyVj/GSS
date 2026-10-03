@@ -351,6 +351,42 @@ describe("noise() paints the scene, on both backends", () => {
   }, 60000);
 });
 
+// The floor painted with an image (decision 122): a noise() read at its point, a gradient
+// spread over a square of 40 under the scene
+describe("noise() and the gradients paint the floor, on both backends", () => {
+  const apart = (pixels: number[], reference: number[]) =>
+    pixels.filter((v, i) => Math.abs(v - reference[i]) > 40).length / pixels.length;
+  // Seen from above, the floor fills the view; ambient: 1 gives each pixel its own color
+  const floor = (value: string) =>
+    `@scene { } scene { floor: ${value}; ambient: 1; background: #000000; camera-target: 0 0 0; camera-angle: 0deg 60deg; camera-distance: 4; }`;
+  const red = (pixels: number[], x: number, y = 36) => pixels[(y * 96 + x) * 4];
+
+  it("with one color twice, is that color", async () => {
+    const a = await render(floor("noise(3 4, #ff5a36, #ff5a36)"));
+    const b = await render(floor("#ff5a36"));
+    expect(apart(a.gl, b.gl)).toBe(0);
+    expect(apart(a.gpu, b.gpu)).toBe(0);
+  }, 60000);
+
+  it("varies from one color to the other, the same on WebGL2 and WebGPU", async () => {
+    const { gl, gpu } = await render(floor("noise(3 4, #000000, #ffffff)"));
+    const reds = gl.filter((_, i) => i % 4 === 0);
+    expect(Math.min(...reds)).toBeLessThan(40);
+    expect(Math.max(...reds)).toBeGreaterThan(150);
+    expect(apart(gl, gpu)).toBeLessThan(0.01);
+  }, 60000);
+
+  it("spreads a gradient over a square of 40 under the scene", async () => {
+    // The view is 3.5 units wide at the target: 9 % of the square, from about 116 to 139
+    const { gl, gpu } = await render(floor("linear-gradient(to right, #000000, #ffffff)"));
+    for (const pixels of [gl, gpu]) {
+      expect(Math.abs(red(pixels, 48) - 128)).toBeLessThan(5);
+      expect(red(pixels, 95) - red(pixels, 0)).toBeGreaterThan(15);
+      expect(red(pixels, 95) - red(pixels, 0)).toBeLessThan(30);
+    }
+  }, 60000);
+});
+
 // texture: element(#id): the browser draws the element (HTML-in-Canvas, behind a flag here),
 // and the scene shows it on the object; WebGPU cannot copy an element yet
 describe("element() shows an HTML element on an object", () => {

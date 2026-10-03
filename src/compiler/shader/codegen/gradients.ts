@@ -355,14 +355,38 @@ export function gradientBox(instance: StyledInstance): { size: Num[]; at: string
   return front(2 * r, 2 * r);
 }
 
-// gradientColor(): the color of a painted object at the point that was hit
+// ----- The floor (decision 122) -----
+
+// The square a gradient covers on the floor: everything the scene draws (MAX_DIST around
+// the camera), centered under the scene
+const FLOOR_SIZE = 40;
+
+// The image on the floor: a gradient, a noise() or a displace(); null for a color. The floor
+// is not animated: the numbers of its image only move with the variables set from JS.
+export function floorGradient(value: Token[] | undefined): Gradient | null {
+  if (!value) return null;
+  if (layersOf(value).length > 1)
+    throw errorAt(value, "floor takes one image, not layers: only background has layers, like: floor: noise(3 4, #1a1d2b, #3a7bff);");
+  const image: boolean = isGradient(value); // a boolean: value stays a list of tokens after it
+  if (image) return readGradient(value);
+  const [token] = value;
+  if (value.length !== 1 || (token.type !== "HASH" && token.type !== "EXPR"))
+    throw errorAt(
+      value,
+      "floor expects a color, a gradient, a noise() or none, like: floor: #1a1a1f; or floor: noise(3 4, #1a1d2b, #3a7bff); or floor: none;",
+    );
+  return null;
+}
+
+// gradientColor(): the color of a painted object, or of a painted floor, at the point that was hit
 export function gradientCode(
   painted: Painted[],
   textured: Set<StyledInstance>,
   keyframes: Keyframes[],
   hoverOf: (instance: StyledInstance) => Hover | undefined,
+  floor: Gradient | null = null,
 ) {
-  if (painted.length === 0) return { functions: "", call: "" };
+  if (painted.length === 0 && !floor) return { functions: "", call: "" };
   const spaces = painted
     .filter(({ instance }) => !textured.has(instance)) // a textured object has its space already
     .map(({ instance }) => spaceFunction(instance, keyframes, hoverOf));
@@ -382,6 +406,20 @@ export function gradientCode(
   // A transparent gradient gives its color without its alpha, and paintAlpha() its alpha
   // (decision 117): its stops are premultiplied
   const branches = painted.map((p) => branch(p, p.alpha ? "col.a > 0.0 ? col.rgb / col.a : col.rgb" : "col"));
+  // The floor, after the objects like in map(): seen from above like a plane, and a noise()
+  // read at its point, in the units of the scene
+  if (floor)
+    branches.push(
+      [
+        "  if (id == 0.0) {  // the floor",
+        "    vec3 q = p;",
+        `    vec2 size = vec2(${glslFloat(FLOOR_SIZE)}, ${glslFloat(FLOOR_SIZE)});`,
+        "    vec2 at = vec2(q.x, -q.z) + 0.5 * size;",
+        ...linesOf(floor).map((line) => `  ${line}`),
+        "    return col;",
+        "  }",
+      ].join("\n"),
+    );
   const transparent = painted.filter((p) => p.alpha);
   return {
     functions: [
