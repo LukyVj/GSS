@@ -1,0 +1,37 @@
+/* Runtime controls demo: @property values can be changed without recompiling. */
+@property --lift { syntax: "<number>"; inherits: false; initial-value: 0.35; }
+@property --hue { syntax: "<number>"; inherits: false; initial-value: 205; }
+@property --energy { syntax: "<number>"; inherits: false; initial-value: 0.45; }
+
+@scene {
+  group#rig {
+    torus.ring * 3;
+    sphere#core;
+    light#key;
+  }
+  cube#base;
+  sphere#orb * 5;
+}
+
+scene {
+  background: noise(2 3, #070914, #18265a 58%, #5e3bc7);
+  floor: #0b0d18;
+  camera-distance: 10;
+  camera-angle: -24deg 25deg;
+  camera-target: 0 0.9 0;
+  ambient: calc(0.18 + var(--energy) * 0.35);
+  light: -45deg 52deg #b8d7ff 0.7;
+  fog: #11152c 6 15;
+}
+
+#base { size: 4.8 0.3 3.4; translate: 0 0.15 0; color: #20283d; material: metal(0.65); }
+#rig { translate: 0 calc(1.8 + var(--lift)) 0; animation: hover 4s ease-in-out alternate; }
+.ring { radius: calc(1.2 + sibling-index() * 0.25); thickness: 0.035; rotate-x: 68deg; rotate-z: calc(sibling-index() * 35deg); color: hsl(calc(var(--hue) + sibling-index() * 18) 90% 70%); material: metal(0.2); }
+#core { radius: 0.62; color: hsl(var(--hue) 95% 62%); material: glass(currentColor, 1.35, frosted 0.08); }
+#key { translate: 2.2 2.5 1.4; color: hsl(var(--hue) 80% 75%); intensity: calc(1 + var(--energy) * 3); }
+#orb { --i: sibling-index(); radius: 0.11; translate: calc(cos(var(--i) * 72deg) * 2.4) calc(0.4 + mod(var(--i), 2) * 0.18) calc(sin(var(--i) * 72deg) * 2.4); color: hsl(calc(var(--hue) + var(--i) * 22) 90% 70%); animation: orbit 7s linear infinite; }
+#rig:hover .ring { scale: 1.08; transition: 0.25s ease-out; }
+
+@keyframes hover { from { translate: 0 calc(1.8 + var(--lift)) 0; } to { translate: 0 calc(2.05 + var(--lift)) 0; } }
+@keyframes orbit { to { rotate-y: 360deg; } }
+@media (prefers-reduced-motion: reduce) { #rig, #orb { animation: none; } }

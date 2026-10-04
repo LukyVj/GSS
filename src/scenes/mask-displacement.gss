@@ -1,0 +1,30 @@
+/* Masked and displaced object: hover reveals a luminous cutout. */
+@scene {
+  group#sculpture {
+    torus#outer;
+    sphere#inside;
+    cube#plate * 3;
+  }
+  plane#ground;
+}
+
+scene {
+  background: radial-gradient(circle at 50% 35%, #243b72, transparent 68%), #07070c;
+  background-blend-mode: screen, normal;
+  floor: #11121c;
+  camera-distance: 9;
+  camera-angle: -22deg 28deg;
+  camera-target: 0 1 0;
+  ambient: 0.35;
+  light: -50deg 50deg #b7d5ff 0.9;
+  shadows: hard;
+}
+
+#sculpture { translate: 0 1.1 0; animation: turn 14s linear infinite; }
+#outer { radius: 1.65; thickness: 0.16; rotate-x: 70deg; color: displace(linear-gradient(0deg, #3c5ee8, #f05f9f), noise(3 3, #222, #ddd), 0.22); material: glass(#74a8ff, 1.45, frosted 0.08); mask-image: radial-gradient(circle at 50% 50%, transparent 24%, #ffffff 40%, transparent 73%); }
+#inside { radius: 0.62; color: noise(3 3, #ff7a55, #ffe08b 55%, #a65bff); material: jelly(0.45); transition: 0.3s ease-out; }
+#sculpture:hover #inside { scale: 1.25; color: noise(3 3, #fff4ee, #ffffff 55%, #f6efff); }
+#plate { --i: sibling-index(); size: 2.4 0.035 0.08; translate: 0 calc((var(--i) - 2) * 0.52) 0; rotate-z: calc((var(--i) - 2) * 18deg); color: #83a5ff; opacity: 0.7; material: metal(0.15); }
+#ground { size: 7; translate: 0 0.01 0; rotate-x: 90deg; color: #161a2a; material: matte(); }
+@keyframes turn { to { rotate-y: 360deg; } }
+@media (prefers-reduced-motion: reduce) { #sculpture { animation: none; } }

@@ -21,6 +21,22 @@ describe("playground examples", () => {
     expect(card?.html).toContain('id="card"');
   });
 
+  it("carry, for every element(#id) they show, an element with that id", () => {
+    for (const example of EXAMPLES) {
+      for (const [, id] of example.code.matchAll(/\belement\(#([\w-]+)\)/g)) {
+        expect(example.html ?? "", example.name).toContain(`id="${id}"`);
+      }
+    }
+  });
+
+  it("show the newest features in a group of their own, between Start here and the studies", () => {
+    const names = EXAMPLES.filter((example) => example.group === "New features").map((example) => example.name);
+    expect(names).toContain("Astral Greenhouse (the ten latest features)");
+    expect(names).toContain("Property Control Room (@property and its panel)");
+    const options = renderExampleOptions();
+    expect(options.indexOf('label="New features"')).toBeLessThan(options.indexOf('label="Studies"'));
+  });
+
   it("start with the first scene", () => {
     expect(EXAMPLES[0].name).toBe("First scene");
     expect(renderExampleOptions()).toContain('<optgroup label="Start here"><option value="0">First scene</option>');

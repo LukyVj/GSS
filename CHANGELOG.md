@@ -8,6 +8,7 @@ The 0.0.1 history was reconstructed from GitHub.
 
 ### Added
 
+- Playground: a "New features" group in the examples menu. Astral Greenhouse shows the ten latest additions in one scene; Property Control Room has three variables for the panel; Noise Atmosphere, Mask & Displacement and an HTML card shown with `element()` show one feature each.
 - Playground: a panel of variables at the top left of the render, when the scene registers variables with `@property`. Each one has a slider and its number, or a color picker for a color, that sets it as it moves, without compiling the scene again; a number typed past the end of a slider widens it. A start value changed in the code gives the variable back to the code, and a button resets a moved one. The panel folds, and the choice is kept in the browser.
 - Playground: a separator between the editor and the scene. Drag it to resize the editor (its height on a phone), double-click it for the default size, move it with the arrow keys, or fold the editor into a thin rail by dragging it to the edge; a click opens it again. The size is kept in this browser.
 - Seven studies open the showcase, one at a time in a viewer: Glass Circuit, Soft Relic, Candy Garden, Chromatic Bloom, the Zdog character and burger reconstructions, and a Nikon F exterior with an illustrative exploded lens. A study driven by `scroll()` has a slider. Each one opens in the playground, where they have their own group, "Studies".

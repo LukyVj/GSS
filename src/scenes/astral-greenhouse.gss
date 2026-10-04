@@ -1,0 +1,235 @@
+/* Astral Greenhouse: the ten latest additions to GSS in one scene,
+ * from the newest: an image on the floor, transparent colors and
+ * filter: opacity(), opacity, shadows, displace(), mask-image, layers of
+ * background, element(), noise(), several and colored lights.
+ * The HTML of #specimen is in the html tab.
+ */
+@property --opening {
+  syntax: "<angle>";
+  inherits: true;
+  initial-value: 52deg;
+}
+
+@scene {
+  cylinder#plinth;
+  cylinder#step;
+  torus#inlay;
+  torus#footlight;
+  cube#label;
+  group#flower {
+    group.petal-arm * 8 {
+      cube.petal;
+    }
+    sphere#seed;
+    sphere#veil;
+    group#astrolabe {
+      torus.orbit * 3;
+    }
+    group#moons {
+      sphere.moon * 3;
+    }
+  }
+  light#cyan;
+  light#amber;
+}
+
+scene {
+  background: noise(1.8 3 seed 8, #123c4d00 32%, #347b8266 76%), linear-gradient(155deg, #090e1c, #18273c 55%, #392137);
+  background-blend-mode: screen, normal;
+  floor: radial-gradient(circle, #344958, #101a2b 13%, #090e1c 38%);
+  light: -42deg 58deg #ffe7b8 0.85;
+  ambient: 0.32 #a6c7df;
+  shadows: soft;
+  fog: 12 19;
+  camera-distance: 10.8;
+  camera-angle: 12deg 20deg;
+  camera-target: 0 1.9 0;
+  dpr: 1;
+  filter: bloom(0.22, 12px) grain(0.025);
+  animation: nebula 26s ease-in-out infinite alternate;
+}
+
+#plinth {
+  radius: 2.25;
+  height: 0.35;
+  translate: 0 0.175 0;
+  color: displace(repeating-linear-gradient(125deg, #bbc9cb 0% 12%, #426675 13%, #bbc9cb 15%), noise(turbulence 1.5 3, black, white), 0.24);
+  material: metal(0.65);
+}
+
+#step {
+  radius: 1.8;
+  height: 0.19;
+  translate: 0 0.445 0;
+  color: #132536;
+  material: metal(0.4);
+}
+
+#inlay {
+  radius: 2.2;
+  thickness: 0.023;
+  translate: 0 0.355 0;
+  color: #e8be7f;
+  material: metal(0.25);
+}
+
+#footlight {
+  radius: 1.76;
+  thickness: 0.024;
+  translate: 0 0.55 0;
+  color: #8cf5ed;
+  filter: brightness(1.6);
+}
+
+#label {
+  size: 1.25 0.32 0.055;
+  corner-radius: 0.02;
+  translate: 0 0.24 2.24;
+  color: #d5b98d;
+  material: metal(0.55);
+}
+
+#label::face(front) {
+  texture: element(#specimen);
+}
+
+#flower {
+  translate: 0 2.4 0;
+  animation: breathe 7s ease-in-out infinite alternate;
+
+  .petal-arm {
+    rotate-y: calc((sibling-index() - 1) * 45deg);
+  }
+
+  .petal {
+    size: 0.7 2.05 0.11;
+    corner-radius: 0.05;
+    translate: 0 0.28 0.85;
+    transform-origin: 0 -0.95 0;
+    rotate-x: calc(-1 * var(--opening));
+    color: linear-gradient(20deg, #125d6c, #72e6cf 52%, #ffe4af);
+    material: metal(0.35);
+    mask-image: displace(repeating-linear-gradient(0deg, black 0% 13%, transparent 13% 16%), noise(3 2 seed 4, black, white), 0.08);
+    transition: 0.35s ease;
+    animation: iridescence 9s ease-in-out infinite alternate;
+
+    &:hover {
+      rotate-x: -76deg;
+    }
+
+    &:active {
+      rotate-x: -86deg;
+    }
+  }
+}
+
+#seed {
+  radius: 0.5;
+  color: noise(2.8 3 seed 7, #c05036, #ffb765 55%, #fff5d4);
+  filter: brightness(1.45);
+  animation: heart 6s ease-in-out infinite alternate;
+}
+
+#veil {
+  radius: 0.78;
+  color: #b6f8e9;
+  opacity: 0.22;
+  mask-image: noise(2 2 seed 3, black 45%, transparent 56%);
+  animation: veil 18s linear infinite;
+}
+
+#astrolabe {
+  animation: precession 28s linear infinite;
+}
+
+.orbit {
+  radius: calc(1.04 + sibling-index() * 0.17);
+  thickness: 0.024;
+  rotate-x: calc(52deg + sibling-index() * 23deg);
+  rotate-z: calc(sibling-index() * 55deg);
+  color: #edcf99;
+  material: metal(0.22);
+}
+
+#moons {
+  animation: revolution 22s linear infinite;
+}
+
+.moon {
+  --a: calc(sibling-index() * 120deg);
+  radius: 0.13;
+  translate: calc(cos(var(--a)) * 1.85) calc(sin(var(--a)) * 0.45) calc(sin(var(--a)) * 1.85);
+  color: rgb(167 245 239 / 78%);
+  filter: opacity(0.85) brightness(1.7);
+}
+
+#cyan {
+  translate: -2.4 3.8 2.5;
+  color: #6df5ed;
+  intensity: 3;
+}
+
+#amber {
+  translate: 2.2 3.2 -1.2;
+  color: #ffc07e;
+  intensity: 2.5;
+}
+
+@keyframes nebula {
+  to {
+    background: noise(1.8 3 seed 8 at 0 0.45 0, #123c4d00 32%, #347b8266 76%), linear-gradient(155deg, #090e1c, #18273c 55%, #392137);
+  }
+}
+
+@keyframes iridescence {
+  to {
+    color: linear-gradient(65deg, #324575, #99d6f3 52%, #f9c8a5);
+  }
+}
+
+@keyframes breathe {
+  to {
+    translate: 0 2.57 0;
+  }
+}
+
+@keyframes heart {
+  to {
+    color: noise(2.8 3 seed 7 at 0 0.6 0, #c05036, #ffb765 55%, #fff5d4);
+  }
+}
+
+@keyframes veil {
+  to {
+    rotate-y: 360deg;
+  }
+}
+
+@keyframes precession {
+  to {
+    rotate-y: 360deg;
+    rotate-z: 360deg;
+  }
+}
+
+@keyframes revolution {
+  to {
+    rotate-y: -360deg;
+  }
+}
+
+@media (max-width: 650px) {
+  scene {
+    camera-distance: 14;
+    camera-target: 0 1.8 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  scene, #flower, .petal, #seed, #veil, #astrolabe, #moons {
+    animation: none;
+  }
+  .petal {
+    transition: none;
+  }
+}

@@ -1,0 +1,32 @@
+/* element() demo: the browser's live HTML becomes a texture on a 3D card. */
+@scene {
+  cube#card;
+  torus#orbit * 2;
+}
+
+scene {
+  background: radial-gradient(circle at 50% 45%, #253b72, transparent 70%), #090b13;
+  background-blend-mode: screen, normal;
+  floor: #10121c;
+  camera-distance: 5.6;
+  camera-angle: -18deg 12deg;
+  camera-target: 0 0.8 0;
+  ambient: 0.55;
+  light: -45deg 52deg #d2e1ff 0.8;
+  shadows: soft;
+}
+
+#card {
+  size: 2.9 1.8 0.12;
+  translate: 0 1.05 0;
+  corner-radius: 0.12;
+  color: #f4f1ea;
+  animation: sway 6s ease-in-out infinite alternate;
+}
+#card::face(front) { texture: element(#gss-card); }
+#orbit { radius: 1.9; thickness: 0.025; rotate-x: 76deg; color: #8baeff; material: glass(#8baeff, 1.35); animation: orbit 10s linear infinite; }
+#orbit:nth-child(4) { radius: 2.15; rotate-x: 67deg; rotate-z: 55deg; color: #ff8f72; }
+
+@keyframes sway { from { rotate-y: -12deg; rotate-z: -3deg; } to { rotate-y: 12deg; rotate-z: 3deg; } }
+@keyframes orbit { to { rotate-y: 360deg; } }
+@media (prefers-reduced-motion: reduce) { #card, #orbit { animation: none; } }
