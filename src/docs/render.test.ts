@@ -355,17 +355,17 @@ describe("the parts of a page", () => {
   });
 
   it("puts the values in a table under a heading, then the paragraph, before the examples", () => {
-    expect(html).toContain("<h4>Values</h4>");
+    expect(html).toContain('<h4 id="material--values">Values</h4>');
     expect(html).toContain('<dl class="values">');
     expect(html).toMatch(/<dt><code class="gss syntax"><span class="gss-function">matte<\/span>/);
     expect(html).toContain("<dd>Reflects the scene: <code>metal(0.2)</code>.</dd>");
-    const order = ["<dt>Syntax</dt>", "<h4>Values</h4>", "<p>A material can take a gradient.</p>", 'class="example-part"'];
+    const order = ["<dt>Syntax</dt>", '<h4 id="material--values">Values</h4>', "<p>A material can take a gradient.</p>", 'class="example-part"'];
     expect(order.map((part) => html.indexOf(part))).toEqual(order.map((part) => html.indexOf(part)).sort((a, b) => a - b));
   });
 
   it("names the heading of the table when the entry does", () => {
-    expect(renderProperty({ ...material, valuesTitle: "Functions" })).toContain("<h4>Functions</h4>");
-    expect(renderProperty({ ...material, values: undefined, details: undefined })).not.toContain("<h4>");
+    expect(renderProperty({ ...material, valuesTitle: "Functions" })).toContain('<h4 id="material--functions">Functions</h4>');
+    expect(renderProperty({ ...material, values: undefined, details: undefined })).not.toMatch(/<h4 id=/);
   });
 
   it("titles each example and says what it shows, above its code", () => {

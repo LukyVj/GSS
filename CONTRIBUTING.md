@@ -51,6 +51,11 @@ that no registered entry is missing or assigned twice. Installation guides live 
 JavaScript", the page of the JavaScript API: its live demo is wired by `src/docs/variables-demo.ts`.
 A registry entry links to such a page with `see` (a "See also" row; at-rules only for now).
 
+The docs search (Algolia DocSearch) is filled by the Algolia Crawler, which reads `/docs` with
+the `recordExtractor` of `src/docs/crawler.ts`. After changing it, run
+`npm run docsearch:extractor | pbcopy` and paste the function into the crawler editor, in place
+of the one there. Its tests keep the page under the 750 records the crawler takes from a page.
+
 ## Publishing
 
 1. Update `package.json` and the root package version in `package-lock.json` together. The site and installation snippets read that version through `src/version.ts`.

@@ -2,6 +2,7 @@ import { enableTocGroups } from "./toc-groups";
 import { encodeCode } from "../runtime/share";
 import { mountCopyPage } from "./copy-page";
 import { closePlayground } from "./playground";
+import { chapterAnchor, exampleAnchor } from "./anchors";
 
 // The docs show one entry at a time, like pages (design/reference/png/03-docs.png):
 // the contents on the left, the entry in the middle, "On this page" on the right.
@@ -41,10 +42,6 @@ function link(href: string, text: string, className?: string): HTMLAnchorElement
   return a;
 }
 
-// "From mount()" → "from-mount": the anchor of a chapter
-const slug = (text: string) =>
-  text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-
 // "Three methods" → "three methods", like the other labels; "CDN" keeps its case
 const lowerFirst = (text: string) => (/^[A-Z][a-z]/.test(text) ? text[0].toLowerCase() + text.slice(1) : text);
 
@@ -63,11 +60,11 @@ export function partsOf(article: HTMLElement): { id: string; label: string }[] {
       parts.push({ id: child.id, label: first });
     } else if (child.matches("h4")) {
       const text = child.textContent?.trim() ?? "";
-      if (!child.id) child.id = `${article.id}--${slug(text)}`;
+      if (!child.id) child.id = chapterAnchor(article.id, text);
       parts.push({ id: child.id, label: lowerFirst(text) });
     } else if (child.matches(".example-part")) {
       const i = examples.indexOf(child);
-      child.id = `${article.id}--example-${i + 1}`;
+      child.id = exampleAnchor(article.id, i);
       const name = child.querySelector(":scope > .example-name")?.textContent?.trim();
       parts.push({ id: child.id, label: name || (examples.length > 1 ? `example ${i + 1}` : "example") });
     }

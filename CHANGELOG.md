@@ -20,6 +20,10 @@ The 0.0.1 history was reconstructed from GitHub.
 - Showcase: the note under "On your site" no longer says GSS has no transparency: a transparent object shows the scene behind it, not the page, so the scene still takes the background of the page.
 - Docs: a callout under `element()` and `texture` says how to see `element()` today: behind `chrome://flags/#canvas-draw-element` in Chromium, or on a site with the HTML-in-Canvas origin trial and its token, until the trial ends on October 20, 2026.
 
+### Fixed
+
+- Docs search: every page is found again, `opacity`, `shadows`, `fog`, `mask-image` and the point light included, and a result lands on what it found: an example, the table of values or a chapter, not the top of the page. A link to a part of a page works before the page script runs.
+
 ## [0.0.4] — 2026-10-03
 
 ### Added

@@ -61,6 +61,25 @@ describe("On this page chapters", () => {
   });
 });
 
+// The search reads the page without its script: the anchor of each part is in the HTML,
+// the one "On this page" links to, so a result can land on an example or a chapter
+describe("the anchors of the parts, in the HTML", () => {
+  it("are the ones the page gives, for every chapter and every example", () => {
+    const root = document.createElement("div");
+    root.innerHTML = renderDocs(PROPERTIES, AT_RULES, SELECTORS, SHAPE_DOCS, FUNCTIONS);
+    const wrong: string[] = [];
+    for (const article of root.querySelectorAll<HTMLElement>("article")) {
+      const parts = [...article.querySelectorAll<HTMLElement>(":scope > h4, :scope > .example-part")];
+      const written = parts.map((part) => part.id);
+      partsOf(article);
+      parts.forEach((part, i) => {
+        if (written[i] !== part.id) wrong.push(`${article.id}: "${written[i]}" instead of "${part.id}"`);
+      });
+    }
+    expect(wrong).toEqual([]);
+  });
+});
+
 const index: PageIndex = {
   sections: [
     { id: "getting-started", entries: ["why-gss", "first-scene"] },

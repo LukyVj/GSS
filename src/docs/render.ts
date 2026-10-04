@@ -16,6 +16,7 @@ import { renderProse } from "./prose";
 import { highlightCode, highlightSyntax } from "./highlight-code";
 import { groupEntries, qualified, QUALIFIERS } from "./navigation";
 import { GETTING_STARTED, INSTALLATION, type GuideEntry } from "./guide";
+import { chapterAnchor, exampleAnchor } from "./anchors";
 
 export { escapeHtml }; // the tests and other pages import it from here
 
@@ -26,11 +27,12 @@ const prose = (text: string) => renderProse(text, PROPERTY_NAMES);
 // Each example in its own code block, indented, with a button to try it live, under its
 // name and the sentence that says what it shows, like the examples of a popular language.
 // The button carries the code (and the HTML of element(#id)), so the page script needs nothing else.
-function renderExamples(examples: Example[]): string {
+// Each one has the anchor of "On this page", for the links and the search.
+function renderExamples(page: string, examples: Example[]): string {
   return examples
     .map(
-      (example) => `
-      <div class="example-part">${example.name ? `
+      (example, i) => `
+      <div class="example-part" id="${escapeHtml(exampleAnchor(page, i))}">${example.name ? `
         <h4 class="example-name">${escapeHtml(example.name)}</h4>` : ""}${example.text ? `
         <p class="example-text">${prose(example.text)}</p>` : ""}
         <div class="example">
@@ -58,14 +60,14 @@ function renderTitle(anchor: string, name: string): string {
 }
 
 // Under the table of the entry: what each value does, then a paragraph, when the entry has them
-function renderValues({ values, valuesTitle = "Values", details }: {
+function renderValues(page: string, { values, valuesTitle = "Values", details }: {
   values?: Value[];
   valuesTitle?: string;
   details?: string;
 }): string {
   const table = values?.length
     ? `
-      <h4>${escapeHtml(valuesTitle)}</h4>
+      <h4 id="${escapeHtml(chapterAnchor(page, valuesTitle))}">${escapeHtml(valuesTitle)}</h4>
       <dl class="values">${values
         .map(
           ([value, text]) => `
@@ -103,8 +105,8 @@ export function renderProperty(property: PropertyDef): string {
         <dd>${appliesTo}</dd>
         <dt>Animatable</dt>
         <dd>${property.animatable ? "yes" : "no"}</dd>
-      </dl>${renderValues(property)}
-      ${renderExamples(property.examples)}
+      </dl>${renderValues(property.name, property)}
+      ${renderExamples(property.name, property.examples)}
     </article>`;
 }
 
@@ -124,8 +126,8 @@ export function renderAtRule(atRule: AtRuleDef): string {
           see ? `
         <dt>See also</dt>
         <dd>${see}</dd>` : ""}
-      </dl>${renderValues(atRule)}
-      ${renderExamples(atRule.examples)}
+      </dl>${renderValues(`at-${atRule.name}`, atRule)}
+      ${renderExamples(`at-${atRule.name}`, atRule.examples)}
     </article>`;
 }
 
@@ -138,8 +140,8 @@ export function renderSelector(selector: SelectorDef): string {
       <dl>
         <dt>Specificity</dt>
         <dd>${prose(selector.specificity)}</dd>
-      </dl>${renderValues(selector)}
-      ${renderExamples(selector.examples)}
+      </dl>${renderValues(selector.anchor, selector)}
+      ${renderExamples(selector.anchor, selector.examples)}
     </article>`;
 }
 
@@ -154,8 +156,8 @@ export function renderFunction(fn: FunctionDef): string {
         <dd><code class="gss syntax">${highlightSyntax(fn.syntax)}</code></dd>
         <dt>Computed</dt>
         <dd>${prose(fn.computed ?? "at compile time, once per object")}</dd>
-      </dl>${renderValues(fn)}
-      ${renderExamples(fn.examples)}
+      </dl>${renderValues(fn.anchor, fn)}
+      ${renderExamples(fn.anchor, fn.examples)}
     </article>`;
 }
 
@@ -196,8 +198,8 @@ export function renderShape(
       <p>${prose(shape.description)}</p>
       <dl>
         ${propertyList}
-      </dl>${renderValues(shape)}
-      ${renderExamples(shape.examples)}
+      </dl>${renderValues(`shape-${shape.name}`, shape)}
+      ${renderExamples(`shape-${shape.name}`, shape.examples)}
     </article>`;
 }
 
@@ -271,17 +273,29 @@ function renderTocTimelines(sections: Section[]): string {
 
 // One hand-written entry of "Getting started"
 function renderGuideEntry(entry: GuideEntry): string {
+  // A chapter gets the anchor "On this page" gives it, from the text of its title
+  const chapter = (html: string) =>
+    html.replace(/^<h4>(.*)<\/h4>$/s, (_, title: string) => {
+      const text = title
+        .replace(/<[^>]*>/g, "")
+        .replaceAll("&lt;", "<")
+        .replaceAll("&gt;", ">")
+        .replaceAll("&quot;", '"')
+        .replaceAll("&amp;", "&")
+        .trim();
+      return `<h4 id="${escapeHtml(chapterAnchor(entry.anchor, text))}">${title}</h4>`;
+    });
   const paragraphs = (list: string[] = []) =>
     // a block of code (<pre>), a live demo or a table (<div>), a chapter (<h4>) or a paragraph
     // that has its own class (<p>) is not wrapped in a paragraph: it goes in as it is
     list
-      .map((text) => (/^<(pre|div|h4|p)\b/.test(text) ? text : `<p>${text}</p>`))
+      .map((text) => (/^<(pre|div|h4|p)\b/.test(text) ? chapter(text) : `<p>${text}</p>`))
       .join("\n      ");
   return `
     <article class="guide" id="${escapeHtml(entry.anchor)}">
       <h3>${escapeHtml(entry.label)}</h3>
       ${paragraphs(entry.paragraphs)}
-      ${entry.example ? renderExamples([{ code: entry.example }]) : ""}
+      ${entry.example ? renderExamples(entry.anchor, [{ code: entry.example }]) : ""}
       ${paragraphs(entry.after)}
     </article>`;
 }
