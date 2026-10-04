@@ -38,6 +38,7 @@ import {
 } from "@codemirror/autocomplete";
 import { setDiagnostics, lintGutter, type Diagnostic } from "@codemirror/lint";
 import type { Renderer, AsyncRenderer } from "./renderer";
+import type { CompiledScene } from "../compiler";
 import { classifyGss } from "../docs/highlight";
 import { formatGss } from "../docs/format";
 import { plainText } from "../docs/prose";
@@ -58,7 +59,7 @@ export type EditorElements = {
 export type Editor = {
   getCode(): string;
   setCode(code: string): void; // replaces everything (undoable with Cmd/Ctrl+Z)
-  onCompile(listener: (code: string) => void): void; // after each successful compile
+  onCompile(listener: (code: string, compiled: CompiledScene) => void): void; // after each successful compile
   onStats(listener: (stats: Stats) => void): void; // after each compile, successful or not
   destroy(): void;
 };
@@ -289,14 +290,14 @@ export function connectEditor(
   renderer: Renderer | AsyncRenderer,
   source: string,
 ): Editor {
-  const compileListeners: ((code: string) => void)[] = [];
+  const compileListeners: ((code: string, compiled: CompiledScene) => void)[] = [];
   const statsListeners: ((stats: Stats) => void)[] = [];
   let lastStats: Stats | null = null;
   function emitStats(stats: Stats): void {
     lastStats = stats;
     for (const listener of statsListeners) listener(stats);
   }
-  let lastCompiled: string | null = null; // the last code that compiled
+  let lastCompiled: { code: string; compiled: CompiledScene } | null = null; // the last code that compiled
   let typingTimer: number | undefined;
   let destroyed = false;
   let loadRevision = 0;
@@ -406,7 +407,7 @@ export function connectEditor(
     view.dispatch(setDiagnostics(view.state, []), {
       effects: setErrorLines.of([]),
     });
-    lastCompiled = code;
+    lastCompiled = { code, compiled };
     emitStats({
       errors: 0,
       objects: compiled.objects,
@@ -414,7 +415,7 @@ export function connectEditor(
       ...("backend" in renderer && renderer.backend === "webgpu" ? { shaderLanguage: "wgsl" as const } : {}),
       compileMs,
     });
-    for (const listener of compileListeners) listener(code);
+    for (const listener of compileListeners) listener(code, compiled);
   }
 
   function setCode(code: string): void {
@@ -430,7 +431,7 @@ export function connectEditor(
     setCode,
     onCompile(listener) {
       compileListeners.push(listener);
-      if (lastCompiled !== null) listener(lastCompiled); // the first compile already happened
+      if (lastCompiled !== null) listener(lastCompiled.code, lastCompiled.compiled); // the first compile already happened
     },
     onStats(listener) {
       statsListeners.push(listener);

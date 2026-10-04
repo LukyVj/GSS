@@ -14,6 +14,7 @@ import { statusParts, fpsText } from "./runtime/status";
 import { mountSearch } from "./docs/search-box";
 import { profile, profileWebGPU, mountPanel } from "./profiler/panel";
 import { mountSplitter } from "./playground/splitter";
+import { mountVariablesPanel } from "./playground/variables-panel";
 
 mountSearch();
 
@@ -88,6 +89,11 @@ const editor = connectEditor(
   start,
 );
 currentSource = editor.getCode;
+
+// ----- The panel of variables: a control per @property, set live (decision 127) -----
+
+const variables = mountVariablesPanel(document.body, renderer);
+editor.onCompile((_code, compiled) => variables.update(compiled.properties));
 
 // ----- The status bar: the numbers of the last compile, and the frame rate -----
 

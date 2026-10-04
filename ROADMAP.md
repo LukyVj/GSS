@@ -146,10 +146,10 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 
 **Next, in Lucas's order** (Oct. 2, after 0.0.3; replaces the list of Oct. 1):
 
-**Next up** (Lucas, Oct. 3: "the order that makes the most sense"): the rest of item 7, in this order: ~~layers of `background` with `background-blend-mode`~~ ✅ decision 112; ~~`mask-image`~~ ✅ decision 113; ~~a displacement like `feDisplacementMap`~~ ✅ decision 114 (`displace()`). Lucas's list of Oct. 2 is done; then, his choice (Oct. 3): ~~soft shadows~~ ✅ decision 115; the transparency of the objects: ~~`opacity`~~ ✅ decision 116, ~~the transparent colors and `opacity()` on objects~~ ✅ decision 117. Ask him for the next one. (Decision 101 to come back to after the origin trial ends on Oct. 20 if needed.)
+**Next up** (Lucas, Oct. 3: "the order that makes the most sense"): the rest of item 7, in this order: ~~layers of `background` with `background-blend-mode`~~ ✅ decision 112; ~~`mask-image`~~ ✅ decision 113; ~~a displacement like `feDisplacementMap`~~ ✅ decision 114 (`displace()`). Lucas's list of Oct. 2 is done; then, his choice (Oct. 3): ~~soft shadows~~ ✅ decision 115; the transparency of the objects: ~~`opacity`~~ ✅ decision 116, ~~the transparent colors and `opacity()` on objects~~ ✅ decision 117; then, his choice (Oct. 4): ~~the panel of sliders for the `@property` variables~~ ✅ decision 127. Ask him for the next one. (Decision 101 to come back to after the origin trial ends on Oct. 20 if needed.)
 
 1. ~~**Animated gradients**~~ ✅ decisions 102, 103: a gradient changes into another of the same kind in `@keyframes` and on `:hover`, through a variable too; the scene plays an animation, so its `background` moves (a flat, moving image)
-2. **`setProperty()` from JS**: first step ✅ decision 105 (`@property`, `setProperty()` / `getPropertyValue()` / `removeProperty()`, in `translate`, `rotate-*`, `scale`, `color`, `offset-distance`, `background`). Second step ✅: inside `calc()` and the math functions, and the color functions (`hsl(var(--hue) …)`, `color-mix()`…), computed on the GPU. Third step ✅, Lucas's choice "everywhere": the sizes of shapes (without their bounding spheres), the numbers of a gradient, materials, `light`, `ambient`, `floor`, `camera-target`, `blend`, `offset-rotate`, `texture-size`, filters (with a `"<length>"` syntax in px, the passes included). Not read at run time: the copies of `* n`, `d`, `view-box`, the timings, the camera the mouse moves, `dpr`. The playground panel of sliders: later (Playground, below)
+2. **`setProperty()` from JS**: first step ✅ decision 105 (`@property`, `setProperty()` / `getPropertyValue()` / `removeProperty()`, in `translate`, `rotate-*`, `scale`, `color`, `offset-distance`, `background`). Second step ✅: inside `calc()` and the math functions, and the color functions (`hsl(var(--hue) …)`, `color-mix()`…), computed on the GPU. Third step ✅, Lucas's choice "everywhere": the sizes of shapes (without their bounding spheres), the numbers of a gradient, materials, `light`, `ambient`, `floor`, `camera-target`, `blend`, `offset-rotate`, `texture-size`, filters (with a `"<length>"` syntax in px, the passes included). Not read at run time: the copies of `* n`, `d`, `view-box`, the timings, the camera the mouse moves, `dpr`. The playground panel of sliders ✅ decision 127
 3. ~~**Nesting** with `&`~~ ✅ decision 106: rules inside rules, `&`, a descendant without `&`, `@media` inside a rule; unfolded by the parser
 4. ~~**`transform-origin`**~~ ✅ decision 107: keywords and percentages on the box of the object, numbers from its center like `translate`; animatable, on groups with numbers
 5. ~~**Fog**~~ ✅ decision 108: `fog: [<color>] <start> <end>` on the scene, into the background behind each object or a color that covers the background too; animatable, readable from `@property`
@@ -214,7 +214,7 @@ Next, on this page:
 
 ### Playground
 
-- [ ] **A panel of sliders for the `@property` variables** (decision 105), kept for later by Lucas (Oct. 2): one control per registered variable, by its syntax (a slider for a number, an angle, a percentage or a length; a color picker for a color), calling `setProperty()` live, without compiling again. The best demo of `setProperty()`
+- [x] **A panel of sliders for the `@property` variables** ✅ decision 127 (decision 105), kept for later by Lucas (Oct. 2): one control per registered variable, by its syntax (a slider for a number, an angle, a percentage or a length; a color picker for a color), calling `setProperty()` live, without compiling again. The best demo of `setProperty()`
 - [ ] `view: distance` / `view: shaded` (promised in the design, missing)
 
 ### Performance
@@ -282,6 +282,7 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 
 ## Done recently
 
+- A panel of variables over the playground render: a slider and its number, or a color picker, per `@property` variable, set live without compiling again; the range comes from the start value and widens for a typed number (decision 127)
 - A resizable playground: a separator between the editor and the scene, by mouse, finger or keyboard; the editor folds into a rail; the size is kept (decision 123)
 - An image on the floor: a gradient, a `noise()` or a `displace()`, a gradient over a square of 40 under the scene (decision 122)
 - The docs, page by page: a short lead, a table of the values, a paragraph, titled examples with a sentence each, code shown as code; "light (sun)" and "light (point)"; Colors and Selectors split into smaller groups (decision 121)

@@ -1,0 +1,169 @@
+/* The panel of variables, over the top-left corner of the playground scene (the performance
+   panel takes the top-right one). */
+
+@import "../styles/tokens.css";
+
+.vars-panel {
+  grid-area: scene; /* same cell as the canvas, drawn above it */
+  align-self: start;
+  justify-self: start;
+  z-index: 1;
+  margin: 12px;
+  width: min(300px, calc(100% - 150px)); /* the dpr menu keeps the top-right corner */
+  box-sizing: border-box;
+  background: rgb(10 10 12 / 0.86); /* --gss-void, the scene shows through a little */
+  border: 1px solid var(--gss-isoline);
+  border-radius: var(--gss-radius-control);
+  font: 400 11px/1.6 var(--gss-font-code);
+  color: var(--gss-bone);
+}
+.vars-panel[hidden] {
+  display: none;
+}
+
+/* The title folds the list */
+.vars-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 28px;
+  padding: 0 12px;
+  border: 0;
+  background: none;
+  color: var(--gss-dim);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: color var(--gss-transition);
+}
+.vars-toggle::before {
+  content: "";
+  width: 0;
+  height: 0;
+  border-left: 4px solid currentColor;
+  border-top: 3.5px solid transparent;
+  border-bottom: 3.5px solid transparent;
+  transition: transform var(--gss-transition);
+}
+.vars-toggle[aria-expanded="true"]::before {
+  transform: rotate(90deg);
+}
+.vars-toggle:hover {
+  color: var(--gss-bone);
+}
+.vars-toggle:focus-visible {
+  outline: 1px solid var(--gss-signal);
+  outline-offset: -1px;
+}
+
+.vars-list {
+  display: grid;
+  gap: 4px;
+  padding: 0 12px 10px;
+}
+.vars-list[hidden] {
+  display: none;
+}
+
+/* A row: the name above, then the control, its number, its unit and the reset */
+.vars-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 64px 22px 18px;
+  grid-template-areas: "name name name name" "control field unit reset";
+  align-items: center;
+  column-gap: 6px;
+}
+.vars-name {
+  grid-area: name;
+  overflow: hidden;
+  color: var(--gss-ash);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.vars-row input[type="range"],
+.vars-row input[type="color"] {
+  grid-area: control;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  accent-color: var(--gss-signal);
+}
+.vars-row input[type="color"] {
+  height: 20px;
+  padding: 0;
+  border: 1px solid var(--gss-isoline);
+  border-radius: var(--gss-radius-control);
+  background: none;
+  cursor: pointer;
+}
+.vars-row input[type="number"],
+.vars-row output {
+  grid-area: field;
+  box-sizing: border-box;
+  width: 100%;
+  height: 20px;
+  padding: 0 4px;
+  color: var(--gss-bone);
+  font: inherit;
+  font-variant-numeric: tabular-nums; /* numbers do not jump as they change */
+}
+.vars-row input[type="number"] {
+  border: 1px solid var(--gss-isoline);
+  border-radius: var(--gss-radius-control);
+  background: var(--gss-surface);
+  text-align: right;
+  appearance: textfield;
+}
+.vars-row input[type="number"]::-webkit-inner-spin-button,
+.vars-row input[type="number"]::-webkit-outer-spin-button {
+  appearance: none;
+  margin: 0;
+}
+.vars-row input[type="number"]:focus-visible {
+  border-color: var(--gss-signal);
+  outline: none;
+}
+.vars-row output {
+  grid-column: field / reset;
+  line-height: 20px;
+}
+.vars-unit {
+  grid-area: unit;
+  color: var(--gss-dim);
+}
+.vars-reset {
+  grid-area: reset;
+  width: 18px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--gss-dim);
+  font: inherit;
+  cursor: pointer;
+  transition: color var(--gss-transition);
+}
+.vars-reset:hover {
+  color: var(--gss-signal);
+}
+.vars-reset:focus-visible {
+  outline: 1px solid var(--gss-signal);
+}
+.vars-reset[hidden] {
+  display: block;
+  visibility: hidden; /* keeps its column: the row does not move when it shows */
+}
+
+/* A finger: taller rows */
+@media (pointer: coarse) {
+  .vars-toggle {
+    height: 40px;
+  }
+  .vars-row input[type="range"],
+  .vars-row input[type="color"],
+  .vars-row input[type="number"],
+  .vars-reset {
+    height: 32px;
+  }
+}
