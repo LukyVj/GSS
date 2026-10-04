@@ -9,6 +9,11 @@ export const ALGOLIA = {
   indices: ["GSS-lang docs"],
 };
 
+// The searches people make the most: the Query Suggestions index Algolia builds from the
+// analytics of the docs index (Algolia dashboard → Query Suggestions, on "GSS-lang docs").
+// Until it exists, the search shows none.
+export const SUGGESTIONS_INDEX = "GSS-lang docs_query_suggestions";
+
 // https://www.gss-lang.dev/docs#shape-cone → /docs#shape-cone
 export function localUrl(url: string): string {
   const { pathname, hash } = new URL(url);

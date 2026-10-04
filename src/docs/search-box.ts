@@ -4,11 +4,12 @@ import docsearch from "@docsearch/js/docsearch";
 import "@docsearch/css/dist/style.css";
 import "../styles/docsearch.css"; // after @docsearch/css: our values win
 import { ALGOLIA, localUrl } from "./search";
+import { mountStartScreen } from "./start-screen";
 
 // Puts the search button in the element of the page, if the page has one
 export function mountSearch(selector = "#docsearch"): void {
   if (!document.querySelector(selector)) return; // no box on this page: nothing breaks
-  docsearch({
+  const search = docsearch({
     container: selector,
     ...ALGOLIA,
     placeholder: "Search the docs",
@@ -16,4 +17,5 @@ export function mountSearch(selector = "#docsearch"): void {
     transformItems: (items) =>
       items.map((item) => ({ ...item, url: localUrl(item.url) })),
   });
+  mountStartScreen(search); // what the search shows before a word is typed
 }

@@ -33,7 +33,11 @@ type Parts = {
 // A callout under the description: what a reader must know before trying it
 export type Note = { title: string; text: string };
 
-export type PropertyDef = Parts & {
+// The version that added the entry: "0.0.4". The search shows the entries of the newest
+// version when it opens (decision 125); an entry from before 0.0.4 has none.
+type Since = { since?: string };
+
+export type PropertyDef = Parts & Since & {
   name: string;
   appliesTo: "object" | "scene" | "everywhere" | (Shape | "light")[]; // [...]: only these shapes (or lights); everywhere: the scene too
   syntax: string;
@@ -45,7 +49,7 @@ export type PropertyDef = Parts & {
 };
 
 // A block of the language: @scene, @keyframes
-export type AtRuleDef = Parts & {
+export type AtRuleDef = Parts & Since & {
   name: string; // without the @: "keyframes"
   syntax: string;
   description: string;
@@ -55,7 +59,7 @@ export type AtRuleDef = Parts & {
 
 // A shape that can be declared in @scene. Its own properties are not listed here:
 // the docs find them in PROPERTIES, through appliesTo.
-export type ShapeDef = Parts & {
+export type ShapeDef = Parts & Since & {
   name: Shape | "group" | "light"; // the Shape type checks the spelling; group is drawn by its children, light draws nothing
   description: string;
   examples: Example[];
@@ -63,7 +67,7 @@ export type ShapeDef = Parts & {
 };
 
 // A way to target objects, or to win the cascade: cube, .class, #id, *, a, b, !important
-export type SelectorDef = Parts & {
+export type SelectorDef = Parts & Since & {
   name: string; // what the reader writes: "*", ".class"
   anchor: string; // its id in the docs: "selector-universal" (a name like "*" cannot be an id)
   specificity: string; // shown as is: "0", "100", or a sentence
@@ -72,7 +76,7 @@ export type SelectorDef = Parts & {
 };
 
 // A function that computes a value at compile time: calc(), sibling-index(), sin()… (decision 52), var() (decision 55)
-export type FunctionDef = Parts & {
+export type FunctionDef = Parts & Since & {
   name: string; // what the docs show: "calc()", or "sin(), cos(), tan()"
   anchor: string; // its id in the docs: "fn-calc"
   covers: string[]; // the functions of calc.ts it documents: ["sin", "cos", "tan"]
@@ -275,6 +279,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "opacity",
+    since: "0.0.4",
     appliesTo: "object",
     animatable: true,
     syntax: "<number> | <percentage>",
@@ -302,6 +307,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "mask-image",
+    since: "0.0.4",
     appliesTo: "object",
     animatable: true,
     syntax: "none | <gradient>",
@@ -329,6 +335,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "mask-mode",
+    since: "0.0.4",
     appliesTo: "object",
     syntax: "alpha | luminance | match-source",
     initial: "match-source",
@@ -409,6 +416,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "transform-origin",
+    since: "0.0.4",
     appliesTo: "object",
     animatable: true,
     syntax: "[ left | center | right | top | bottom | <percentage> | <number> ]{1,2} <number>?",
@@ -957,6 +965,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "intensity",
+    since: "0.0.4",
     appliesTo: ["light"],
     animatable: true,
     syntax: "<number>",
@@ -1201,6 +1210,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "background-blend-mode",
+    since: "0.0.4",
     appliesTo: "scene",
     syntax: "<blend-mode>#",
     initial: "normal",
@@ -1232,6 +1242,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "fog",
+    since: "0.0.4",
     appliesTo: "scene",
     animatable: true,
     syntax: "none | [ <color> ]? <number> <number> [ <color> ]?",
@@ -1264,6 +1275,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "shadows",
+    since: "0.0.4",
     appliesTo: "scene",
     syntax: "none | hard | soft",
     initial: "none",
@@ -1384,6 +1396,7 @@ export const AT_RULES: AtRuleDef[] = [
   },
   {
     name: "property",
+    since: "0.0.4",
     syntax: '@property --<name> { syntax: "<number>" | "<angle>" | "<percentage>" | "<color>" | "<length>"; inherits: true | false; initial-value: <value>; }',
     description:
       "Registers a variable that the page changes from JavaScript while the scene runs, without compiling it again, like CSS `@property`. Like a variable on `:root`, it has one value for the whole scene.",
@@ -1577,6 +1590,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: "&",
     anchor: "selector-nesting",
+    since: "0.0.4",
     specificity: "The sum of the rule around it and of the nested selector",
     description:
       "Nesting, like CSS: a rule can hold other rules, and `&` stands for the selector of the rule around it. In `#g { &:hover { … } }`, the nested rule is `#g:hover`.",
@@ -1992,6 +2006,7 @@ export const SHAPE_DOCS: ShapeDef[] = [
   },
   {
     name: "light",
+    since: "0.0.4",
     description:
       "Not a shape: a point of light, which draws nothing. Its `color` is the color of its light (white by default), and `intensity` how much light it gives, on top of the sun and the `ambient` light of the scene.",
     details: "It moves like an object: `translate`, the groups it is in, animations, `:hover` through its group, a motion path, and rotations around a `transform-origin`, in numbers, since a light has no size. Lights add up, 8 at most per scene. A light is never drawn, so it cannot be hovered or pressed: to see the bulb, put a shape at its place, and hover the shape, like `#lamp:hover light`. Without `shadows`, the light goes through the objects.",
@@ -2164,6 +2179,7 @@ export const FUNCTIONS: FunctionDef[] = [
   {
     name: "noise()",
     anchor: "fn-noise",
+    since: "0.0.4",
     covers: ["noise"],
     computed: "on the GPU, at each pixel",
     syntax:
@@ -2205,6 +2221,7 @@ export const FUNCTIONS: FunctionDef[] = [
   {
     name: "displace()",
     anchor: "fn-displace",
+    since: "0.0.4",
     covers: ["displace"],
     computed: "on the GPU, at each pixel",
     syntax: "displace(<gradient> | <noise()>, <gradient> | <noise()>, <number> | <percentage>)",
@@ -2238,6 +2255,7 @@ export const FUNCTIONS: FunctionDef[] = [
   {
     name: "element()",
     anchor: "fn-element",
+    since: "0.0.4",
     covers: [],
     syntax: "element(<id>)",
     computed: "by the browser, each time the element changes",

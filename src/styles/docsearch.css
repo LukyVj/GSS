@@ -165,3 +165,57 @@
 .DocSearch-Label {
   color: var(--gss-dim);
 }
+
+/* ----- Before a word is typed: where to start, what the newest version added, what people
+   search the most (src/docs/start-screen.ts). Secondary controls (DESIGN.md § 6) under
+   eyebrows like the ones of the hits. ----- */
+.gss-search-start {
+  padding-bottom: var(--docsearch-spacing);
+}
+/* In the place of the list of DocSearch, when it shows none: it scrolls like it */
+.gss-search-start--alone {
+  max-height: calc(var(--docsearch-modal-height) - var(--docsearch-spacing) - var(--docsearch-footer-height));
+  padding-inline: var(--docsearch-spacing);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--docsearch-muted-color) var(--docsearch-modal-background);
+}
+.gss-search-start-title {
+  padding: 14px 0 8px;
+  font: 11px/16px var(--gss-font-code);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gss-dim);
+}
+.gss-search-start-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.gss-search-start-chip {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  height: var(--gss-control-height);
+  padding: 0 12px;
+  border: 1px solid var(--gss-isoline);
+  border-radius: var(--gss-radius-control);
+  background: none;
+  font: 13px var(--gss-font-code);
+  color: var(--gss-ash);
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    color var(--gss-transition),
+    border-color var(--gss-transition);
+}
+.gss-search-start-chip:hover {
+  border-color: var(--gss-dim);
+  color: var(--gss-bone);
+  text-decoration: none;
+}
+.gss-search-start-chip:focus-visible {
+  outline: 1px solid var(--gss-signal);
+  outline-offset: 1px;
+  color: var(--gss-bone);
+}

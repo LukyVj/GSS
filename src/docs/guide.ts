@@ -12,6 +12,7 @@ export type GuideEntry = {
   paragraphs: string[];
   example?: string; // shown with a "Try it" button, like the reference examples
   after?: string[]; // paragraphs under the example
+  since?: string; // the version that added the page, like the entries of the registry
 };
 
 // Also checked by the tests: it must compile, on the CPU and on the GPU
@@ -157,6 +158,7 @@ other.setProperty("--lift", 2);`;
 INSTALLATION.push({
   anchor: "set-variables",
   label: "Set variables from JavaScript",
+  since: "0.0.4",
   paragraphs: [
     'A variable the scene registers with <a href="#at-property"><code>@property</code></a> can be set by the page at any moment, without compiling the scene again, the way <code>element.style.setProperty()</code> sets a CSS custom property. Drive a scene from a slider, the scroll position or your data. Move the slider:',
     `<div class="variables-demo">` +
