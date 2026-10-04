@@ -64,7 +64,7 @@ export const DOC_GROUPS: NavGroup[] = [
   { id: "pseudo-classes", title: "Pseudo-classes", category: "Language", order: 13, anchors: ["selector-hover", "selector-active", "selector-has", "selector-not", "selector-nth-child", "selector-nth-of-type", "selector-first-child", "selector-face"] },
   { id: "variables-conditions", title: "Variables and conditions", category: "Language", order: 14, anchors: ["fn-var", "fn-if"] },
   { id: "values", title: "Math", category: "Language", order: 15, anchors: ["fn-calc", "fn-trig", "fn-inverse-trig", "fn-min-max-clamp", "fn-abs-sqrt-pow", "fn-stepped", "fn-exponential", "fn-progress", "fn-random", "fn-sibling-index", "fn-sibling-count"] },
-  { id: "shapes", title: "Shapes and groups", category: "Structure", order: 20, anchors: ["shape-cube", "shape-sphere", "shape-torus", "shape-cylinder", "shape-cone", "shape-capsule", "shape-plane", "shape-path", "shape-prism", "shape-group"] },
+  { id: "shapes", title: "Shapes and groups", category: "Structure", order: 20, anchors: ["shape-cube", "shape-sphere", "shape-torus", "shape-cylinder", "shape-cone", "shape-capsule", "shape-plane", "shape-path", "shape-prism", "shape-lathe", "shape-group"] },
   { id: "object-properties", title: "Geometry", category: "Structure", order: 21, anchors: ["size", "radius", "height", "depth", "thickness", "corner-radius", "d", "view-box", "stroke-width"] },
   { id: "combinations", title: "Combinations", category: "Structure", order: 22, anchors: ["operation", "blend"] },
   { id: "colors", title: "Colors", category: "Appearance", order: 30, anchors: ["color", "background", "background-blend-mode", "floor"] },

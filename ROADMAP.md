@@ -28,7 +28,7 @@ What the language and the tools can do today. Each feature is detailed in the re
 | Units                | angles `deg` `rad` `turn` (always with a unit), durations `s` `ms`, `%`                                                                                                                     | 9, 17, 20             |
 | Modern CSS functions | commas or spaces: `metal(#d4af37, 0.2)`, `polygon(0 1, 1 0, -1 0)`                                                                                                                          | 28                    |
 
-### Shapes (10)
+### Shapes (11)
 
 | Shape                 | Own properties                                                                                        | Dec.   |
 | --------------------- | ----------------------------------------------------------------------------------------------------- | ------ |
@@ -40,6 +40,7 @@ What the language and the tools can do today. Each feature is detailed in the re
 | `plane`               | `size` (1 or 2 values)                                                                                | 40     |
 | `path`                | a tube along an SVG path: `d: path("M… C… A…")`, `stroke-width`, `view-box`                           | 35, 49 |
 | `prism`               | a filled contour given a depth: `d: polygon(…)` or `d: path(…)` (even-odd holes), `depth`, `view-box` | 41, 50 |
+| `lathe`               | a filled contour turned around the y axis: `d: polygon(…)` or `d: path(…)`, x = 0 is the axis, `view-box` | 130    |
 | `group`               | draws nothing, holds the others                                                                       | 45     |
 | `light`               | a point of light, never drawn: `color`, `intensity`, placed like an object (translate, groups, animations, motion path); 8 at most | 110    |
 
@@ -123,7 +124,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 
 ## Release 0.0.5 (in preparation)
 
-- Everything under "Unreleased" in `CHANGELOG.md`: decisions 118 to 129 (notes in the docs, the studies of the showcase, the dpr menu, the docs rewrite, the floor images, the resizable playground, the docs search, the panel of variables and `@property-panel`, the New features examples).
+- Everything under "Unreleased" in `CHANGELOG.md`: decisions 118 to 130 (notes in the docs, the studies of the showcase, the dpr menu, the docs rewrite, the floor images, the resizable playground, the docs search, the panel of variables and `@property-panel`, the New features examples, the `lathe` shape).
 - At the bump to 0.0.5: `@property-panel` already has `since: "0.0.5"`, and "New in 0.0.5" shows it by itself (decision 129). Rebuild the `.vsix` of the extension for the grammar of decision 129.
 
 ## Release 0.0.4 ✅
@@ -236,7 +237,7 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 ### Shapes / rendering
 
 - [x] Solid fill of a path: `prism` with `d: path(…)`, holes included (decision 50)
-- [ ] `lathe` (mentioned as a future shape)
+- [x] `lathe` ✅ decision 130: a contour turned around the y axis, its axis at x = 0 of the contour. Still to come: a `stroke-width` for thin shells
 - [ ] Lost ray: when `march` runs out of its 100 steps without hitting anything or passing `MAX_DIST`, `main()` treats it as a hit (fixed for rays that pass by the sphere of the scene, decision 76; still there in scenes without one)
 - [x] Fade the floor into the background: the floor stops sharply at `MAX_DIST` ✅ a fog that ends before it hides the edge (decision 108)
 - [x] Soft shadows ✅ decision 115: `scene { shadows: none | hard | soft }`, off by default, from the sun and every light; still to come: a setting per light, a softness, shadows in reflections
@@ -288,6 +289,7 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 
 ## Done recently
 
+- `lathe`, a new shape: a `polygon()` or `path()` contour turned around the y axis (a vase, a bowl, a ring), where a `prism` pushes it into a flat plate; its curves cut 50 times finer than a prism's; a page whose first example shows both (decision 130)
 - `@property-panel { display: open | folded | none; }`: the scene asks for the panel of variables, a page of the reference with its examples; no panel without it (decision 128); `since: "0.0.5"`, shown under "New in" once the package is 0.0.5, and the VS Code grammar colors it with `@property` (decision 129)
 - A "New features" group in the playground examples: Astral Greenhouse, Property Control Room, Noise Atmosphere, Mask & Displacement, HTML Card (scenes started in other worktrees, fixed to compile)
 - A panel of variables over the render of the playground and of Try it: a slider and its number, or a color picker, per `@property` variable, set live without compiling again; the range comes from the start value and widens for a typed number (decision 127)

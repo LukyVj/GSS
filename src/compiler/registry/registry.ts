@@ -13,7 +13,8 @@ export type Shape =
   | "cone"
   | "capsule"
   | "plane"
-  | "prism";
+  | "prism"
+  | "lathe";
 
 export type Example = {
   name?: string; // its heading in the docs, and its name in the menu of the playground
@@ -843,11 +844,11 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "d",
-    appliesTo: ["path", "prism"],
-    syntax: 'path("<svg path>") (path, prism) | polygon(<x> <y>, …) (prism)',
+    appliesTo: ["path", "prism", "lathe"],
+    syntax: 'path("<svg path>") | polygon(<x> <y>, …) (prism, lathe)',
     initial: "none (required)",
     description:
-      "The line a `path` follows, written like the `d` of an SVG path or CSS `path()`. On a `prism`, the contour to fill: a `polygon()` or a `path()`.",
+      "The line a `path` follows, written like the `d` of an SVG path or CSS `path()`. On a `prism`, the contour to fill; on a `lathe`, the contour to turn around its axis: a `polygon()` or a `path()`.",
     valuesTitle: "Commands",
     values: [
       ["M", "Moves, without drawing."],
@@ -855,9 +856,9 @@ export const PROPERTIES: PropertyDef[] = [
       ["C, S, Q, T", "Curves, like SVG."],
       ["A", "An arc of ellipse: `rx ry rotation large-arc sweep x y`, like SVG."],
       ["Z", "Closes the path."],
-      ["polygon()", "On a prism: one point per comma, x and y separated by a space, y going down, like CSS `clip-path`. It closes itself."],
+      ["polygon()", "On a prism or a lathe: one point per comma, x and y separated by a space, y going down, like CSS `clip-path`. It closes itself."],
     ],
-    details: "Capitals are absolute, lowercase letters relative. A path copied from an SVG keeps its way up: y goes down in SVG and up in the scene, and GSS flips it. One path unit is one scene unit, so an icon drawn in a box of 24 or 32 usually needs a `scale`. On a prism, each subpath of a `path()` is a closed contour, filled with the even-odd rule: a contour inside another one is a hole, like the inside of an o.",
+    details: "Capitals are absolute, lowercase letters relative. A path copied from an SVG keeps its way up: y goes down in SVG and up in the scene, and GSS flips it. One path unit is one scene unit, so an icon drawn in a box of 24 or 32 usually needs a `scale`. On a prism or a lathe, each subpath of a `path()` is a closed contour, filled with the even-odd rule: a contour inside another one is a hole, like the inside of an o. A lathe turns its contour around x = 0, so its x are never negative.",
     examples: [
       {
         name: "a curve",
@@ -911,12 +912,12 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "view-box",
-    appliesTo: ["path", "prism"],
+    appliesTo: ["path", "prism", "lathe"],
     syntax: "<number>{4}",
     initial: "the box of the path itself",
     description:
       "The drawing area of a path: x, y, width and height, like the `viewBox` of SVG. Its center becomes the origin of the object.",
-    details: "Without it, each path is centered on itself; with the same `view-box`, the paths copied from one SVG keep their places relative to each other.",
+    details: "Without it, each path is centered on itself; with the same `view-box`, the paths copied from one SVG keep their places relative to each other. On a lathe, only its y and its height count: the height is centered on them, and x = 0 stays the axis.",
     examples: [
       {
         name: "two braces of one icon",
@@ -1983,8 +1984,8 @@ export const SHAPE_DOCS: ShapeDef[] = [
   {
     name: "prism",
     description:
-      "A contour, filled, then given a `depth`: a star, a letter, an arrow, a logo. The contour is a `polygon()` or a `path()` (see `d`), and a contour inside another one is a hole.",
-    details: "It stands in the xy plane, facing the camera, centered on its contours (or on its `view-box`), like a path.",
+      "A contour, filled, then given a `depth`: a flat object, like a star, a letter, an arrow, a logo. The contour is a `polygon()` or a `path()` (see `d`), and a contour inside another one is a hole.",
+    details: "It stands in the xy plane, facing the camera, centered on its contours (or on its `view-box`), like a path. To make a round object of a contour, like a vase or a bowl, turn it with a `lathe` instead.",
     examples: [
       {
         name: "a gold star",
@@ -1995,6 +1996,35 @@ export const SHAPE_DOCS: ShapeDef[] = [
         name: "a square with a round hole",
         text: "A `path()` with two contours: the circle inside the square is a hole.",
         code: '@scene { prism; } prism { translate: 0 1 0; d: path("M-1 -1 H1 V1 H-1 Z M0 -0.6 A0.6 0.6 0 1 1 0 0.6 A0.6 0.6 0 1 1 0 -0.6 Z"); depth: 0.4; color: #ff5a36; }',
+      },
+    ],
+  },
+  {
+    name: "lathe",
+    since: "0.0.5",
+    description:
+      "A contour, filled, then turned around the vertical axis, like clay on a potter's wheel: a vase, a bowl, a bottle, a chess piece. A `prism` pushes its contour straight back into a flat plate; a lathe turns it into an object that is round from every side. The contour is a `polygon()` or a `path()` (see `d`), drawn right of the axis x = 0.",
+    details: "Draw half the outline: x is the distance from the axis, and y goes down, like SVG. A contour that does not touch the axis turns into a ring, and a contour inside another one is a hole. The height is centered on the contours (or on the `view-box`), and y goes up in the scene, like a path. Seen from the front, a prism and a lathe of the same contour can look alike; turned, the prism is a cut-out as thick as its `depth`, and the lathe stays round.",
+    examples: [
+      {
+        name: "a lathe and a prism of the same contour",
+        text: "Both turned by 60deg: the lathe, on the left, is a vase from every side; the prism is a flat plate.",
+        code: '@scene { lathe; prism; } lathe, prism { d: path("M0 -1 H0.35 C0.35 -0.7 0.2 -0.6 0.2 -0.4 C0.2 0 0.75 0.3 0.6 0.7 C0.55 0.9 0.45 1 0 1 Z"); rotate-y: 60deg; color: #c8643c; } lathe { translate: -0.9 1 0; } prism { translate: 0.9 1 0; depth: 0.3; }',
+      },
+      {
+        name: "a vase",
+        text: "A `path()` of three curves, from the neck to the foot, closed along the axis.",
+        code: '@scene { lathe; } lathe { translate: 0 1 0; d: path("M0 -1 H0.35 C0.35 -0.7 0.2 -0.6 0.2 -0.4 C0.2 0 0.75 0.3 0.6 0.7 C0.55 0.9 0.45 1 0 1 Z"); color: #c8643c; }',
+      },
+      {
+        name: "a bowl",
+        text: "The contour goes up the outer wall and comes down the inner one: the bowl is hollow.",
+        code: '@scene { lathe; } lathe { translate: 0 0.4 0; d: path("M0 0.4 H0.35 C0.9 0.4 1 0 1 -0.4 H0.92 C0.92 0.05 0.75 0.3 0.3 0.3 H0 Z"); color: #f2efe8; }',
+      },
+      {
+        name: "a ring",
+        text: "A square away from the axis: once turned, a ring with a hole in its middle.",
+        code: "@scene { lathe; } lathe { translate: 0 0.15 0; d: polygon(0.6 -0.15, 1 -0.15, 1 0.15, 0.6 0.15); material: gold; }",
       },
     ],
   },

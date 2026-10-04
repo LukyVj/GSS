@@ -151,7 +151,8 @@ and a readable path toward the shader underneath. It is not meant to replace GLS
   `:not()` leaves some out: `cube:not(:first-child, :last-child)`. Rules nest like CSS:
   `#g { cube { &:hover { color: white; } } }`.
 - **Shapes**: `cube`, `sphere`, `torus`, `cylinder`, `cone`, `capsule`, `plane`, `path` (a tube
-  along an SVG path) and `prism` (a `polygon()` or `path()` contour, extruded).
+  along an SVG path), `prism` (a `polygon()` or `path()` contour, extruded into a flat object)
+  and `lathe` (the same contour, turned around an axis into a round one: a vase, a bowl).
 - **Materials**: `matte()`, `metal()`, `jelly()`, `glass()` with refraction and frost, and the
   shortcuts `gold`, `chrome`, `ice`; `opacity`, transparent colors and
   `filter: opacity()`, the objects behind showing through.

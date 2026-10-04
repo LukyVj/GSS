@@ -7,8 +7,10 @@ import { readSvgPath, type Point } from "../../values/svgpath";
 import {
   pathFunction,
   polygonFunction,
+  latheFunction,
   pathRadius,
   polygonRadius,
+  latheRadius,
   type ViewBox,
 } from "../path";
 import { glslFloat } from "./glsl";
@@ -44,12 +46,10 @@ function readD(value: Token[] | undefined): Token & { type: "STRING" } {
   return arg[0];
 }
 
-// Reads the contours of a prism: d: polygon(0 1, 1 -1, -1 -1), one contour,
+// Reads the contours of a prism or a lathe: d: polygon(0 1, 1 -1, -1 -1), one contour,
 // or d: path("…"), one contour per subpath (the holes of a letter are subpaths)
-function readPrismD(value: Token[] | undefined): Point[][] {
-  const example =
-    'd: polygon(0 -1, 1 1, -1 1); or d: path("M0 0 L1 0 L1 1 Z");';
-  if (!value) throw new Error(`prism needs a d, like: ${example}`);
+function readContours(value: Token[] | undefined, tag: "prism" | "lathe", example: string): Point[][] {
+  if (!value) throw new Error(`${tag} needs a d, like: ${example}`);
   const points = readPolygon(value);
   if (points) return [points];
 
@@ -63,18 +63,21 @@ function readPrismD(value: Token[] | undefined): Point[][] {
   ) {
     const d = arg[0];
     // The precision follows the size of the shape: a logo 400 units wide
-    // is cut as finely, relative to its size, as a shape 2 units wide
+    // is cut as finely, relative to its size, as a shape 2 units wide.
+    // A lathe is cut 50 times finer: its whole surface is made of the curves, and the
+    // light shows each segment as a band, where a prism only has them on its walls
     const rough = locate(d, () => readSvgPath(d.value, Infinity)).flat();
     const size =
       Math.max(...rough.map((p) => p.x)) -
       Math.min(...rough.map((p) => p.x)) +
       Math.max(...rough.map((p) => p.y)) -
       Math.min(...rough.map((p) => p.y));
-    return locate(d, () => readSvgPath(d.value, Math.max(size, 1e-6) / 1000));
+    const precision = tag === "lathe" ? 50_000 : 1000;
+    return locate(d, () => readSvgPath(d.value, Math.max(size, 1e-6) / precision));
   }
   throw errorAt(
     value,
-    `d expects polygon(…) or path("…") on a prism, like: ${example}`,
+    `d expects polygon(…) or path("…") on a ${tag}, like: ${example}`,
   );
 }
 
@@ -180,7 +183,11 @@ export const SHAPES: Record<
   },
   // A polygon, filled, then given a depth
   prism: (styles, context) => {
-    const contours = readPrismD(styles["d"]);
+    const contours = readContours(
+      styles["d"],
+      "prism",
+      'd: polygon(0 -1, 1 1, -1 1); or d: path("M0 0 L1 0 L1 1 Z");',
+    );
     const depth = liveNumber(styles["depth"], "depth", 0.2);
     const viewBox = readViewBox(styles["view-box"]);
     const code = locate(styles["d"], () =>
@@ -190,6 +197,30 @@ export const SHAPES: Record<
       code: `${useFunction(context, code)}(q)`,
       radius: isLive(depth) ? null : polygonRadius(contours, depth, viewBox),
     };
+  },
+  // A contour, filled, then turned around the y axis (decision 130)
+  lathe: (styles, context) => {
+    const example = 'd: polygon(0 0, 0.5 0, 0.3 1, 0 1); or d: path("M0 0 H0.5 V1 H0 Z");';
+    const contours = readContours(styles["d"], "lathe", example);
+    // A curve that ends on the axis can be cut a hair from it: that hair is the axis
+    const points = contours.flat();
+    const hair = 1e-9 * Math.max(1, ...points.map((p) => Math.max(Math.abs(p.x), Math.abs(p.y))));
+    if (points.some((p) => p.x < -hair)) {
+      throw errorAt(
+        styles["d"],
+        `a lathe turns its contour around x = 0: every x must be 0 or more, like: ${example}`,
+      );
+    }
+    if (points.every((p) => p.x <= hair)) {
+      throw errorAt(
+        styles["d"],
+        `the contour of a lathe must go right of its axis, x = 0: it turns around it, like: ${example}`,
+      );
+    }
+    const onAxis = contours.map((contour) => contour.map((p) => (p.x <= hair ? { x: 0, y: p.y } : p)));
+    const viewBox = readViewBox(styles["view-box"]);
+    const code = locate(styles["d"], () => latheFunction("NAME", onAxis, viewBox));
+    return { code: `${useFunction(context, code)}(q)`, radius: latheRadius(onAxis, viewBox) };
   },
   // A thin box: the ray could jump over a surface with no thickness
   plane: (styles) => {
@@ -209,8 +240,8 @@ const known = (n: Num): number | null => (isLive(n) ? null : n);
 // Measured (npm run bench, dpr 2, M4 Pro): bounding every object made the scenes of
 // simple shapes slower (spiral +44 %, todal +21 %): for a sphere, the test costs as
 // much as the shape, and one branch per object breaks the straight-line code GPUs
-// run best. Bounding only path and prism keeps what orrery and macropad gained.
-export const BOUNDED = new Set(["path", "prism"]);
+// run best. Bounding only path, prism and lathe keeps what orrery and macropad gained.
+export const BOUNDED = new Set(["path", "prism", "lathe"]);
 
 // The radius of an object's bounding sphere, for the tests
 export function shapeRadius(tag: string, styles: Styles): number | null {

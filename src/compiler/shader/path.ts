@@ -98,6 +98,29 @@ ${body}
 }`.replace(/NAME/g, name);
 }
 
+// The distance to the nearest side (d, squared) and the inside test (s) of filled contours,
+// in the GLSL of a prism or a lathe, for the point q
+function fillBody(sides: [Point, Point][]): string {
+  // Sides are grouped by 8, like the segments of a path. A group is skipped for the
+  // distance when its box is further than the nearest side found so far, and for the
+  // inside test when the horizontal line through q does not cross its height.
+  // Crossings are counted over every contour: a hole flips the inside back (even-odd rule).
+  const body: string[] = [];
+  for (let i = 0; i < sides.length; i += 8) {
+    const group = sides.slice(i, i + 8);
+    const groupBox = boxOf(group.flat());
+    const center = vec2({ x: groupBox.x + groupBox.width / 2, y: groupBox.y + groupBox.height / 2 });
+    const half = vec2({ x: groupBox.width / 2, y: groupBox.height / 2 });
+    const distance = group.map(([a, b]) => `    d = min(d, segment2(q, ${vec2(a)}, ${vec2(b)}));`);
+    const crossing = group.map(([a, b]) => `    if (crosses(q, ${vec2(a)}, ${vec2(b)})) s = -s;`);
+    body.push(
+      `  if (box2(q, ${center}, ${half}) < d) {\n${distance.join("\n")}\n  }`,
+      `  if (q.y >= ${float(groupBox.y)} && q.y <= ${float(groupBox.y + groupBox.height)}) {\n${crossing.join("\n")}\n  }`,
+    );
+  }
+  return body.join("\n");
+}
+
 // Returns the GLSL function of a "prism" object: contours, filled, then given a depth.
 // One contour for a polygon(), one per subpath for a path() (the holes of a letter).
 // Same coordinates as a path: centered on the view-box (or the contours), y up.
@@ -126,23 +149,7 @@ export function polygonFunction(
     );
   }
 
-  // Sides are grouped by 8, like the segments of a path. A group is skipped for the
-  // distance when its box is further than the nearest side found so far, and for the
-  // inside test when the horizontal line through q does not cross its height.
-  // Crossings are counted over every contour: a hole flips the inside back (even-odd rule).
-  const body: string[] = [];
-  for (let i = 0; i < sides.length; i += 8) {
-    const group = sides.slice(i, i + 8);
-    const groupBox = boxOf(group.flat());
-    const center = vec2({ x: groupBox.x + groupBox.width / 2, y: groupBox.y + groupBox.height / 2 });
-    const half = vec2({ x: groupBox.width / 2, y: groupBox.height / 2 });
-    const distance = group.map(([a, b]) => `    d = min(d, segment2(q, ${vec2(a)}, ${vec2(b)}));`);
-    const crossing = group.map(([a, b]) => `    if (crosses(q, ${vec2(a)}, ${vec2(b)})) s = -s;`);
-    body.push(
-      `  if (box2(q, ${center}, ${half}) < d) {\n${distance.join("\n")}\n  }`,
-      `  if (q.y >= ${float(groupBox.y)} && q.y <= ${float(groupBox.y + groupBox.height)}) {\n${crossing.join("\n")}\n  }`,
-    );
-  }
+  const body = fillBody(sides);
 
   const all = boxOf(sides.flat());
   const allCenter = vec2({ x: all.x + all.width / 2, y: all.y + all.height / 2 });
@@ -157,8 +164,54 @@ export function polygonFunction(
   vec2 q = p.xy;
   float d = 1e10; // squared distance to the nearest side
   float s = 1.0; // becomes -1.0 inside the shape
-${body.join("\n")}
+${body}
   return extrude(s * sqrt(d), p.z, ${h});
+}`.replace(/NAME/g, name);
+}
+
+// The points of a lathe in scene coordinates: x stays as written, since x = 0 is the axis;
+// the height is centered on the view-box (or the contours), y up
+function latheScene(contours: Point[][], viewBox: ViewBox | null): Point[][] {
+  const box = viewBox ?? boxOf(contours.flat());
+  const cy = box.y + box.height / 2;
+  return contours.map((contour) => contour.map(({ x, y }) => ({ x, y: cy - y })));
+}
+
+// Returns the GLSL function of a "lathe" object: contours, filled, then turned around the
+// y axis, like a vase on a potter's wheel. The point is brought back into the half plane of
+// its contour, (distance to the axis, height), so the 2D distance there is the 3D distance.
+export function latheFunction(name: string, contours: Point[][], viewBox: ViewBox | null): string {
+  // Each point with the next one, like a prism. A side on the axis is left out: once turned,
+  // it is inside the solid, not a surface. A ray toward +x (crosses()) never meets it either.
+  const sides: [Point, Point][] = [];
+  for (const contour of latheScene(contours, viewBox)) {
+    contour.forEach((a, i) => {
+      const b = contour[(i + 1) % contour.length];
+      if ((a.x !== b.x || a.y !== b.y) && (a.x !== 0 || b.x !== 0)) sides.push([a, b]);
+    });
+  }
+  if (sides.length > MAX_SEGMENTS) {
+    throw new Error(
+      `This shape is too detailed: ${sides.length} sides, the limit is ${MAX_SEGMENTS}`,
+    );
+  }
+
+  const body = fillBody(sides);
+
+  const all = boxOf(sides.flat());
+  const allCenter = vec2({ x: all.x + all.width / 2, y: all.y + all.height / 2 });
+  const allHalf = vec2({ x: all.width / 2, y: all.height / 2 });
+
+  return `float NAME(vec3 p) {
+  vec2 q = vec2(length(p.xz), p.y);
+  // Far from the whole shape, the distance to its box is enough
+  float far = sqrt(box2(q, ${allCenter}, ${allHalf}));
+  if (far > 0.5) return far;
+
+  float d = 1e10; // squared distance to the nearest side
+  float s = 1.0; // becomes -1.0 inside the shape
+${body}
+  return s * sqrt(d);
 }`.replace(/NAME/g, name);
 }
 
@@ -202,4 +255,13 @@ export function polygonRadius(
   const points = contours.flat();
   if (points.length === 0) return null;
   return Math.hypot(reach(toSceneBox(points, viewBox)), depth / 2);
+}
+
+// A lathe: its widest point from the axis, and its centered height
+export function latheRadius(contours: Point[][], viewBox: ViewBox | null): number | null {
+  const points = latheScene(contours, viewBox).flat();
+  if (points.length === 0) return null;
+  const x = Math.max(...points.map((p) => p.x));
+  const y = Math.max(...points.map((p) => Math.abs(p.y)));
+  return Math.hypot(x, y);
 }
