@@ -5,7 +5,7 @@ import { prerenderSite } from "./src/vite/prerender-site.ts";
 
 // Five pages: the home page (index.html), the editor (playground.html),
 // the reference (docs.html), the marks (brand.html) and the showcase (showcase.html). Without this list, `vite build` only builds index.html.
-// prerenderSite fills docs / home / showcase HTML at build (and in dev) so they read without JS.
+// prerenderSite fills docs / home / showcase / brand HTML at build (and in dev) so they read without JS.
 export default defineConfig({
   plugins: [prerenderSite()],
   build: {

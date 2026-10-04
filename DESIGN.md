@@ -186,6 +186,16 @@ The same message appears in the status bar count (`● 1 error`).
 **Nav (docs)**: mono 13px, section eyebrows in uppercase `dim`; the current page is
 `bone` on `raised` with a 2px signal left rule.
 
+**Icons (docs nav)**: one per group of the sidebar, before its title
+(`src/docs/nav-icons.ts`). The 16px grid of the chevron, a 1.25 stroke in
+`currentColor` with round caps and joins, a face or a part filled at 35%, no
+other colour: an icon is `ash` at rest, `bone` on hover or open, signal on the
+group being read. On hover each one plays its own short motion, once (the
+arrow drops into the tray, the shutter closes), 0.4–0.8s; none with reduced
+motion. Line drawings of the subject (a cube, a drop, a camera);
+Rendering borrows the isoline motif. The brand page shows them all and offers
+each as a file.
+
 **Chips on the viewport** (`view: shaded`, `view: distance`): mono 11px,
 1px `line` border; active = signal border and text.
 

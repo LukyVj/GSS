@@ -15,6 +15,7 @@ import { highlightGss } from "./highlight";
 import { renderProse } from "./prose";
 import { highlightCode, highlightSyntax } from "./highlight-code";
 import { groupEntries, qualified, QUALIFIERS } from "./navigation";
+import { navIcon, navIconMotion } from "./nav-icons";
 import { GETTING_STARTED, INSTALLATION, type GuideEntry } from "./guide";
 import { chapterAnchor, exampleAnchor } from "./anchors";
 
@@ -218,7 +219,7 @@ function renderToc(sections: Section[]): string {
       ${section.category !== sections[i - 1]?.category ? `<h3 class="toc-category">${escapeHtml(section.category ?? "Reference")}</h3>` : ""}
       <details class="toc-group" data-group="${escapeHtml(section.id)}"${section.id === "getting-started" ? " open" : ""}>
         <summary>
-          <span class="toc-group-title">${escapeHtml(section.title)}</span>
+          ${navIcon(section.id)}<span class="toc-group-title">${escapeHtml(section.title)}</span>
           <span class="toc-group-count" aria-hidden="true">${section.entries.length}</span>
           <svg class="toc-chevron" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><path d="m6 4 4 4-4 4" /></svg>
         </summary>
@@ -238,6 +239,7 @@ function renderToc(sections: Section[]): string {
         <h2><button type="button" class="toc-toggle" aria-expanded="false">Contents</button></h2>
         <div id="docsearch"></div>
         <nav class="toc-nav"> ${groups.join("\n")}</nav>
+        <style>${navIconMotion(".toc-group > summary:is(:hover, :focus-visible)")}</style>
       </div>
     </div>`;
 }

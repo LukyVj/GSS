@@ -204,6 +204,31 @@
         color: var(--gss-dim);
       }
 
+      /* The doc icons: each at twice its size, then at its own */
+      .doc-icons {
+        grid-template-columns: repeat(6, 1fr);
+      }
+      .doc-icon .art {
+        flex: none; /* a name on two lines does not move the icons of its row */
+        min-height: 128px;
+        padding: 24px;
+        gap: 20px;
+        color: var(--gss-bone);
+      }
+      .doc-icon .large {
+        width: 32px;
+        height: 32px;
+      }
+      .doc-icon .small {
+        color: var(--gss-ash);
+      }
+      .doc-icon footer {
+        align-items: flex-start;
+      }
+      .doc-icon footer .name {
+        white-space: normal;
+      }
+
       /* Clear space and minimum size */
       .rule-art svg {
         width: 100%;
@@ -364,6 +389,9 @@
         .cols-4 {
           grid-template-columns: repeat(2, 1fr);
         }
+        .doc-icons {
+          grid-template-columns: repeat(4, 1fr);
+        }
         .head {
           grid-template-columns: 1fr;
           gap: 8px;
@@ -380,6 +408,9 @@
         .cols-3,
         .cols-4 {
           grid-template-columns: 1fr;
+        }
+        .doc-icons {
+          grid-template-columns: repeat(2, 1fr);
         }
         .topbar {
           padding: 0 16px;
@@ -419,8 +450,8 @@
         <p class="eyebrow">Brand</p>
         <h1>The GSS marks.</h1>
         <p class="lead">
-          Everything you need to show GSS: the mark, the wordmark, the icon and
-          the social cards. Every file is a vector SVG with its text outlined,
+          Everything you need to show GSS: the mark, the wordmark, the icon,
+          the doc icons and the social cards. Every file is a vector SVG with its text outlined,
           so it needs no font. The braces and the dot share their geometry with
           the logo scene, so the flat mark and the 3D one are the same drawing.
         </p>
@@ -964,10 +995,25 @@
         </div>
       </section>
 
-      <!-- 07 Don't -->
+      <!-- 07 Doc icons -->
+      <section id="doc-icons-section" aria-labelledby="doc-icons-title">
+        <div class="head">
+          <h2 id="doc-icons-title"><span class="n">07</span>Doc icons</h2>
+          <p>
+            One for each group of the docs sidebar. A 16 px grid, a 1.25 stroke
+            with round ends, a face filled at 35%. They are drawn in
+            <code>currentColor</code>: an icon takes the colour of the text next
+            to it, <code>ash</code> at rest, <code>bone</code> on hover,
+            <code>signal</code> on the page being read.
+          </p>
+        </div>
+        <div class="grid doc-icons" id="doc-icons"></div>
+      </section>
+
+      <!-- 08 Don't -->
       <section id="dont" aria-labelledby="dont-title">
         <div class="head">
-          <h2 id="dont-title"><span class="n">07</span>Don't</h2>
+          <h2 id="dont-title"><span class="n">08</span>Don't</h2>
           <p>
             The mark is a piece of code: it is drawn once, in two colours, and
             left alone.
