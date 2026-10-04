@@ -20,6 +20,7 @@ The 0.0.1 history was reconstructed from GitHub.
 
 ### Changed
 
+- A scene that does not move draws nothing until something changes: the mouse over an object with `:hover`, a variable set from the page, an image that arrives, the size of the canvas. The image stays on screen and the GPU rests, instead of drawing the same frame 60 or 120 times a second. A scene that moves draws every frame, as before; the performance panel, while open, too.
 - Scenes with many objects draw much faster, with the same image: the shader groups the objects by where they are, whatever the groups of the code, and skips those far from each point. In the bench, a scene of 82 objects went from 75 ms to under 20 ms a frame, a field of 64 tufts of grass from 26 ms to 5 ms.
 - Docs: every page of the reference is shorter and cut into parts, like the reference of a popular language: a lead of three sentences at most, a table of its values, a paragraph, then its examples, each under a heading with a sentence that says what it shows. "On this page" lists them, and the code in the text shows as code. "Embedding a scene" and "Set variables from JavaScript" have chapters.
 - Docs navigation: "light (sun)" and "light (point)" instead of two "light"; Colors is split into Colors, Color functions, and Gradients and noise; Selectors into Selectors, Combinators, and Pseudo-classes. The examples of the reference have telling names, in the docs and in the Examples menu of the playground.

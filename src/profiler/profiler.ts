@@ -8,6 +8,9 @@ export type FrameProbe = {
   drawStart(): void;
   drawEnd(): void;
   shaderBuilt(ms: number): void; // GPU shader/pipeline preparation, in ms
+  // Is it measuring now? Then every frame is drawn, even when nothing changes (decision 134),
+  // so that it measures the scene. Without it, a probe always measures (the bench).
+  measuring?(): boolean;
   timestampWrites?(first: boolean, last: boolean): GPURenderPassTimestampWrites | undefined;
   resolveTimestamps?(encoder: GPUCommandEncoder): void;
   timestampsSubmitted?(): void;

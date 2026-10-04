@@ -11,6 +11,7 @@ let timer: GpuTimer | WebGPUTimer | null = null;
 let backendLabel = "WebGL2";
 let wanted = false; // the panel has been opened at least once
 let lastShaderMs: number | null = null; // the build before the panel opened, shown when it does
+let open = false; // the panel is on screen: the scene draws every frame for it (decision 134)
 
 // Where the visitor's choice is kept. Not "gss-perf": while the panel was open by
 // default, every visit saved "1" there, so it would keep the panel open for them.
@@ -36,6 +37,7 @@ function connect(factory: () => GpuTimer | WebGPUTimer): FrameProbe {
     frameStart: (now, width, height) => profiler?.frameStart(now, width, height),
     drawStart: () => profiler?.drawStart(),
     drawEnd: () => profiler?.drawEnd(),
+    measuring: () => profiler !== null && open,
     shaderBuilt: (ms) => {
       lastShaderMs = ms;
       profiler?.shaderBuilt(ms);
@@ -94,6 +96,7 @@ export function mountPanel(statusbar: HTMLElement): void {
   // remember: only a choice of the visitor is kept, never the default
   function setVisible(next: boolean, remember = true) {
     visible = next;
+    open = next;
     if (next) start();
     panel.hidden = !next;
     toggle.setAttribute("aria-pressed", String(visible));

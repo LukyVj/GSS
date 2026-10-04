@@ -6,7 +6,7 @@ import { decodeId } from "./hover";
 export type Picker = {
   // Draws the picking pass with draw(), then asks for its pixel without waiting.
   // Skipped while the previous pixel is still on its way.
-  request(draw: () => void): void;
+  request(draw: () => void): boolean; // false: a pixel is still on its way, nothing sent
   // The id read back since the last call (0: the background), or null if none came back
   poll(): number | null;
   destroy(): void;
@@ -33,7 +33,7 @@ export function createPicker(gl: WebGL2RenderingContext): Picker {
 
   return {
     request(draw) {
-      if (sync) return; // a pixel is on its way: one at a time
+      if (sync) return false; // a pixel is on its way: one at a time
       gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
       gl.viewport(0, 0, 1, 1);
       draw();
@@ -44,6 +44,7 @@ export function createPicker(gl: WebGL2RenderingContext): Picker {
       gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
       sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0); // "tell me when all this is done"
       gl.bindFramebuffer(gl.FRAMEBUFFER, null); // back to the canvas
+      return true;
     },
 
     poll() {
