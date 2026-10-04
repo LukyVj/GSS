@@ -1,0 +1,405 @@
+/* The search, around its list (src/docs/start-screen.ts): the contents of the docs on the
+   left, the start screen in the middle while nothing is typed, four ideas drawn small on the
+   right. Three columns divided by hairlines, like the docs (DESIGN.md § 7); two without the
+   contents under 1024px; on a phone, DocSearch is full screen and the ideas come last in the
+   middle. Imported after docsearch.css. */
+
+/* ----- The modal, in columns (DocSearch is full screen up to 768px) ----- */
+@media (width > 768px) {
+  .DocSearch-Modal {
+    display: grid;
+    width: 100%;
+    max-width: min(960px, calc(100vw - 48px));
+    height: min(680px, calc(100dvh - 120px));
+    grid-template-columns: minmax(0, 1fr) 280px;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      "bar bar"
+      "main concepts"
+      "footer footer";
+  }
+  .DocSearch-Modal > * {
+    grid-area: main;
+    min-width: 0;
+    min-height: 0;
+  }
+  .DocSearch-Modal > .DocSearch-SearchBar {
+    grid-area: bar;
+    border-bottom: 1px solid var(--gss-line);
+  }
+  .DocSearch-Modal > .DocSearch-Footer {
+    grid-area: footer;
+  }
+  .DocSearch-Modal > .DocSearch-Dropdown {
+    height: auto;
+    max-height: none;
+  }
+  .DocSearch-Modal > .gss-search-concepts {
+    grid-area: concepts;
+  }
+  .gss-search-contents,
+  .gss-search-start-ideas {
+    display: none;
+  }
+}
+@media (width >= 1024px) {
+  .DocSearch-Modal {
+    max-width: min(1120px, calc(100vw - 64px));
+    grid-template-columns: 232px minmax(0, 1fr) 300px;
+    grid-template-areas:
+      "bar bar bar"
+      "contents main concepts"
+      "footer footer footer";
+  }
+  .DocSearch-Modal > .gss-search-contents {
+    display: block;
+    grid-area: contents;
+  }
+}
+@media (width <= 768px) {
+  .gss-search-contents,
+  .gss-search-concepts {
+    display: none;
+  }
+}
+
+/* ----- What every column shares: eyebrows, counts, scrolling ----- */
+.gss-search-start-title {
+  padding: 20px 0 8px;
+  font: 11px/16px var(--gss-font-code);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gss-dim);
+}
+.gss-search-count {
+  font: 11px var(--gss-font-code);
+  color: var(--gss-dim);
+  white-space: nowrap;
+}
+.gss-search-contents,
+.gss-search-concepts,
+.gss-search-start--alone {
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--gss-isoline) transparent;
+}
+.gss-search-start a,
+.gss-search-contents a,
+.gss-search-concepts a {
+  text-decoration: none;
+  transition:
+    color var(--gss-transition),
+    background-color var(--gss-transition),
+    border-color var(--gss-transition);
+}
+.gss-search-start a:focus-visible,
+.gss-search-contents a:focus-visible,
+.gss-search-concepts a:focus-visible,
+.gss-search-start-chip:focus-visible {
+  outline: 1px solid var(--gss-signal);
+  outline-offset: -1px;
+}
+
+/* ----- Left: the contents, like the nav of the docs ----- */
+.gss-search-contents {
+  box-sizing: border-box;
+  padding: 0 12px 16px;
+  border-right: 1px solid var(--gss-line);
+}
+.gss-search-contents .gss-search-start-title {
+  padding-inline: 10px;
+}
+.gss-search-contents-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 28px;
+  padding: 0 10px 0 8px;
+  border-left: 2px solid transparent;
+  font: 13px var(--gss-font-code);
+  color: var(--gss-ash);
+}
+.gss-search-contents-link:hover {
+  border-left-color: var(--gss-signal);
+  background: var(--gss-raised);
+  color: var(--gss-bone);
+}
+
+/* ----- Middle: the start screen ----- */
+.gss-search-start {
+  box-sizing: border-box;
+  padding-bottom: 24px;
+}
+.gss-search-start--alone {
+  padding-inline: 28px;
+}
+.gss-search-start-intro {
+  padding-top: 24px;
+}
+.gss-search-start-heading {
+  margin: 0;
+  font: 600 20px/1.2 var(--gss-font-display);
+  letter-spacing: -0.03em;
+  color: var(--gss-bone);
+}
+.gss-search-start-lead {
+  max-width: 52ch;
+  margin: 8px 0 0;
+  font: 14px/1.5 var(--gss-font-body);
+  color: var(--gss-ash);
+}
+
+/* Start here: three cells divided by hairlines, like the pillars of the home page */
+.gss-search-start-pages {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-block: 1px solid var(--gss-line);
+}
+.gss-search-start-page {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 14px 16px;
+}
+.gss-search-start-page + .gss-search-start-page {
+  border-left: 1px solid var(--gss-line);
+}
+.gss-search-start-page:hover {
+  background: var(--gss-raised);
+}
+.gss-search-start-page-label {
+  font: 500 13px var(--gss-font-code);
+  color: var(--gss-bone);
+}
+.gss-search-start-page:hover .gss-search-start-page-label {
+  color: var(--gss-signal-hover);
+}
+.gss-search-start-page-text {
+  font: 13px/1.45 var(--gss-font-body);
+  color: var(--gss-ash);
+}
+.gss-search-start-site {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+  padding-top: 12px;
+}
+.gss-search-start-site-link {
+  font: 13px var(--gss-font-code);
+  color: var(--gss-signal);
+}
+.gss-search-start-site-link:hover {
+  color: var(--gss-signal-hover);
+}
+
+/* New in …: two columns of rows, the name then its group */
+.gss-search-start-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 24px;
+}
+/* A group that does not fit goes to a second line, which the row hides */
+.gss-search-start-item {
+  --row: 32px;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  column-gap: 12px;
+  height: var(--row);
+  overflow: hidden;
+  padding: 0 8px;
+  border-bottom: 1px solid var(--gss-line);
+  line-height: var(--row);
+}
+.gss-search-start-item .gss-search-count {
+  margin-left: auto;
+  line-height: var(--row);
+}
+.gss-search-start-item:hover {
+  background: var(--gss-raised);
+}
+.gss-search-start-item-label {
+  max-width: 100%;
+  overflow: hidden;
+  font: 13px/var(--row) var(--gss-font-code);
+  color: var(--gss-bone);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Popular searches: secondary controls (DESIGN.md § 6) */
+.gss-search-start-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.gss-search-start-chip {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  height: var(--gss-control-height);
+  padding: 0 12px;
+  border: 1px solid var(--gss-isoline);
+  border-radius: var(--gss-radius-control);
+  background: none;
+  font: 13px var(--gss-font-code);
+  color: var(--gss-ash);
+  cursor: pointer;
+  transition:
+    color var(--gss-transition),
+    border-color var(--gss-transition);
+}
+.gss-search-start-chip:hover {
+  border-color: var(--gss-dim);
+  color: var(--gss-bone);
+}
+
+/* ----- Right: how GSS works ----- */
+.gss-search-concepts {
+  box-sizing: border-box;
+  padding: 0 20px 16px;
+  border-left: 1px solid var(--gss-line);
+}
+.gss-concept {
+  padding-bottom: 20px;
+}
+.gss-concept + .gss-concept {
+  padding-top: 20px;
+  border-top: 1px solid var(--gss-line);
+}
+/* Each drawing sits on void, like a render */
+.gss-concept-figure {
+  border: 1px solid var(--gss-line);
+  background: var(--gss-void);
+}
+.gss-concept-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.gss-concept-title {
+  margin: 12px 0 4px;
+  font: 600 13px/1.3 var(--gss-font-display);
+  letter-spacing: -0.03em;
+  color: var(--gss-bone);
+}
+.gss-concept-text {
+  margin: 0;
+  font: 13px/1.5 var(--gss-font-body);
+  color: var(--gss-ash);
+}
+.gss-concept-link {
+  display: inline-block;
+  margin-top: 6px;
+  font: 12px var(--gss-font-code);
+  color: var(--gss-signal);
+}
+.gss-concept-link:hover {
+  color: var(--gss-signal-hover);
+}
+
+/* The drawings: hairlines, code in its syntax colours (DESIGN.md: .gss-dark), the one dot in signal */
+.gss-concept-svg text {
+  font: 11px var(--gss-font-code);
+  fill: var(--gss-ash);
+}
+.gss-concept-svg .c-label {
+  font-size: 10px;
+  fill: var(--gss-dim);
+}
+.gss-concept-svg .c-at { fill: #ff7aa8; }
+.gss-concept-svg .c-tag,
+.gss-concept-svg .c-class { fill: #7cb4ff; }
+.gss-concept-svg .c-id { fill: #d29bff; }
+.gss-concept-svg .c-number { fill: #ffb86b; }
+.gss-concept-svg .c-line,
+.gss-concept-svg .c-axis {
+  fill: none;
+  stroke: var(--gss-dim);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.gss-concept-svg .c-axis {
+  stroke: var(--gss-ash);
+}
+.gss-concept-svg .c-shape,
+.gss-concept-svg .c-cube {
+  fill: var(--gss-raised);
+  stroke: var(--gss-bone);
+  stroke-linejoin: round;
+}
+.gss-concept-svg .c-dot,
+.gss-concept-svg .c-point {
+  fill: var(--gss-bone);
+}
+.gss-concept-svg .c-ray {
+  stroke: var(--gss-bone);
+  stroke-linecap: round;
+  opacity: 0.6;
+}
+.gss-concept-svg .c-row {
+  fill: none;
+  stroke: var(--gss-line);
+}
+.gss-concept-svg .c-win {
+  stroke: var(--gss-signal);
+}
+.gss-concept-svg .c-floor {
+  fill: var(--gss-surface);
+  stroke: var(--gss-isoline);
+}
+.gss-concept-svg .c-floor-line {
+  stroke: var(--gss-isoline);
+}
+.gss-concept-svg .c-step {
+  fill: none;
+  stroke: var(--gss-dim);
+  stroke-opacity: 0.45;
+}
+.gss-concept-svg .c-ray-line {
+  stroke: var(--gss-ash);
+  stroke-dasharray: 2 3;
+}
+
+/* ----- A phone: one column, the ideas last ----- */
+@media (width <= 768px) {
+  .gss-search-start--alone {
+    flex: 1 1 auto;
+    min-height: 0;
+    padding-inline: 16px;
+  }
+  .gss-search-start-pages {
+    grid-template-columns: 1fr;
+  }
+  .gss-search-start-page + .gss-search-start-page {
+    border-left: 0;
+    border-top: 1px solid var(--gss-line);
+  }
+  .gss-search-start-list {
+    grid-template-columns: 1fr;
+  }
+  .gss-search-start-concepts {
+    display: grid;
+    gap: 20px;
+  }
+  .gss-search-start-concepts .gss-concept + .gss-concept {
+    padding-top: 0;
+    border-top: 0;
+  }
+}
+
+/* A finger needs 44px */
+@media (pointer: coarse) {
+  .gss-search-contents-link {
+    min-height: 44px;
+  }
+  .gss-search-start-item {
+    --row: 44px;
+  }
+  .gss-search-start-site-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+}

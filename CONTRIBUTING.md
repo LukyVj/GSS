@@ -57,7 +57,8 @@ the `recordExtractor` of `src/docs/crawler.ts`. After changing it, run
 of the one there. Its tests keep the page under the 750 records the crawler takes from a page.
 A new page of the docs takes `since: "<the version that ships it>"` in the registry (or in
 `src/docs/guide.ts`): the search shows the pages of the newest version under "New in …"
-when it opens (`src/docs/start-screen.ts`).
+when it opens (`src/docs/start-screen.ts`). The drawings of "How GSS works", in the right column of
+the search, are inline SVG in `src/docs/concepts.ts`; their styles are in `src/styles/search-start.css`.
 
 ## Publishing
 
