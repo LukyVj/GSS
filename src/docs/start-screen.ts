@@ -8,6 +8,7 @@ import { GETTING_STARTED, INSTALLATION } from "./guide";
 import { groupEntries, qualified } from "./navigation";
 import { ALGOLIA, SUGGESTIONS_INDEX } from "./search";
 import { CONCEPTS } from "./concepts";
+import { VERSION } from "../version";
 
 export type DocEntry = { anchor: string; label: string; group: string; since?: string };
 export type DocSection = { id: string; title: string; category: string; entries: DocEntry[] };
@@ -53,9 +54,12 @@ export function compareVersions(a: string, b: string): number {
   return 0;
 }
 
-// The pages of the newest version that added pages
-export function newestPages(entries: DocEntry[]): News | null {
-  const versions = entries.flatMap((entry) => (entry.since ? [entry.since] : []));
+// The pages of the newest version that added pages. A page of a version not published yet
+// (newer than the package) waits: the docs describe it, "New in" names it once it is out.
+export function newestPages(entries: DocEntry[], published = VERSION): News | null {
+  const versions = entries.flatMap((entry) =>
+    entry.since && compareVersions(entry.since, published) <= 0 ? [entry.since] : [],
+  );
   if (!versions.length) return null;
   const version = versions.reduce((newest, other) => (compareVersions(other, newest) > 0 ? other : newest));
   const pages = entries

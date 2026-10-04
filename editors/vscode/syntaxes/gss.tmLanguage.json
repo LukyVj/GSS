@@ -13,6 +13,12 @@
       "include": "#at-keyframes"
     },
     {
+      "include": "#at-property-panel"
+    },
+    {
+      "include": "#at-property"
+    },
+    {
       "include": "#selector"
     },
     {
@@ -138,6 +144,51 @@
               "include": "#rule-block"
             }
           ]
+        }
+      ]
+    },
+    "at-property-panel": {
+      "comment": "@property-panel { display: open; }: before at-property, which would stop at the hyphen",
+      "begin": "(@)(property-panel)(?![\\w-])",
+      "beginCaptures": {
+        "1": {
+          "name": "punctuation.definition.keyword.gss"
+        },
+        "0": {
+          "name": "keyword.control.at-rule.property-panel.gss"
+        }
+      },
+      "end": "(?<=\\})",
+      "patterns": [
+        {
+          "include": "#comment"
+        },
+        {
+          "include": "#rule-block"
+        }
+      ]
+    },
+    "at-property": {
+      "comment": "@property --speed { syntax: \"<number>\"; inherits: false; initial-value: 4; }",
+      "begin": "(@)(property)(?![\\w-])\\s*(--[\\w-]+)?",
+      "beginCaptures": {
+        "1": {
+          "name": "punctuation.definition.keyword.gss"
+        },
+        "0": {
+          "name": "keyword.control.at-rule.property.gss"
+        },
+        "3": {
+          "name": "variable.other.custom-property.gss"
+        }
+      },
+      "end": "(?<=\\})",
+      "patterns": [
+        {
+          "include": "#comment"
+        },
+        {
+          "include": "#rule-block"
         }
       ]
     },

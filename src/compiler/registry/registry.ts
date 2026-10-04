@@ -1431,6 +1431,7 @@ export const AT_RULES: AtRuleDef[] = [
   },
   {
     name: "property-panel",
+    since: "0.0.5",
     syntax: "@property-panel { display: open | folded | none; }",
     description:
       "Shows a control for each variable of `@property` over the render, in the playground and in Try it: a slider and its number, or a color picker for a color. Moving a control sets the variable without compiling the scene again.",

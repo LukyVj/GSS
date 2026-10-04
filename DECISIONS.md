@@ -1008,7 +1008,15 @@ The two columns stay while the reader types, so the window does not jump at the 
 - **The docs**: `@property-panel` is a page of the reference, under At-rules, with two examples, open and folded; `@property` and "Set variables from JavaScript" link to it. The two scenes of the New features group that have variables ask for the panel.
 **Why**: Lucas did not see the panel documented: it came with any `@property`, with no word of the language behind it. A rule in the code makes it a feature the reference can describe, and lets an author choose. An at-rule leaves room for later descriptors (the variables to show, their ranges).
 **Different from CSS**: CSS has no such rule; its name and its descriptor follow the at-rules of CSS, in kebab-case with keywords, like `@view-transition { navigation: auto; }`.
-**Accepted limits**: no `since` yet: the rule comes with the next version, and the docs search would show "New in" a version not yet published. The VS Code grammar does not color it, like `@property`.
+**Since decision 129**: the entry has `since: "0.0.5"`, and the VS Code grammar colors `@property-panel` and `@property`.
+
+## 129. "New in" names a version once it is published; the VS Code grammar knows `@property`
+
+**Decision** (Lucas: do it now, not at the release):
+- **"New in"**, the block of the docs search (decision 125), takes the newest version that added pages among the versions published so far: a `since` newer than the package version (`VERSION`, from `package.json`) waits. `@property-panel` has `since: "0.0.5"` today and shows under "New in 0.0.5" once the package is 0.0.5, with no other change at the release. `newestPages()` takes the version to compare with (the package version by default).
+- **The VS Code grammar** colors `@property --name { … }` (the keyword, the variable it names, then its block as declarations) and `@property-panel { … }`. `@property-panel` comes first, and `@property` ends with `(?![\w-])` rather than `\b`: a hyphen is a word boundary, so `@property\b` would read the start of `@property-panel`. A test (`src/test/vscode-grammar.test.ts`) tries the patterns of the top level in order, like VS Code, and checks that each at-rule of the reference starts as itself; it fails when the order or the boundary is wrong.
+**Why**: a `since` set at the release is a step that can be forgotten; set with the page, it is right as soon as the version is out. The grammar had no rule for `@property` since decision 105.
+**Accepted limits**: the extension keeps its version (0.3.1): the grammar goes out with its next release. The test reads the regexes with JavaScript, not Oniguruma; the patterns it tries are plain enough for both.
 
 ## Open questions
 

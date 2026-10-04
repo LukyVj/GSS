@@ -56,14 +56,28 @@ describe("what is new", () => {
       { anchor: "d", label: "d", group: "B", since: "0.0.9" },
       { anchor: "e", label: "e", group: "C", since: "0.0.10" },
     ];
-    expect(newestPages(entries)).toEqual({
+    expect(newestPages(entries, "0.0.10")).toEqual({
       version: "0.0.10",
       pages: [
         { anchor: "c", label: "c", group: "B" },
         { anchor: "e", label: "e", group: "C" },
       ],
     });
-    expect(newestPages([{ anchor: "b", label: "b", group: "A" }])).toBeNull();
+    expect(newestPages([{ anchor: "b", label: "b", group: "A" }], "0.0.10")).toBeNull();
+  });
+
+  it("leaves out a version not published yet: the pages wait for the package to have it", () => {
+    const entries = [
+      { anchor: "a", label: "a", group: "A", since: "0.0.4" },
+      { anchor: "b", label: "b", group: "A", since: "0.0.5" },
+    ];
+    expect(newestPages(entries, "0.0.4")).toEqual({ version: "0.0.4", pages: [{ anchor: "a", label: "a", group: "A" }] });
+    expect(newestPages(entries, "0.0.5")).toEqual({ version: "0.0.5", pages: [{ anchor: "b", label: "b", group: "A" }] });
+    expect(newestPages([entries[1]], "0.0.4")).toBeNull();
+  });
+
+  it("gives @property-panel to the next version", () => {
+    expect(docEntries().find((entry) => entry.anchor === "at-property-panel")?.since).toBe("0.0.5");
   });
 
   it("is the 15 pages 0.0.4 added", () => {
