@@ -198,7 +198,8 @@ variables the page sets) and sends it as uniforms.
 
 - **Playground**: [gss-lang.dev/playground](https://www.gss-lang.dev/playground). Every error
   of a scene at once, each under its line; examples, generated GLSL and WGSL, backend selection,
-  a panel of sliders for the variables of `@property-panel`,
+  a panel of sliders for the variables of `@property-panel`, the chips `view: shaded` and
+  `view: distance` (the isolines of the distance field over the scene),
   share by URL, export to Shadertoy, a formatter (`Shift+Alt+F`) and a performance panel (`Alt+P`)
   for WebGL2 and WebGPU. It shows FPS, frame and CPU times, resolution, shader preparation time,
   and GPU time when the backend exposes timer queries. WebGPU uses optional `timestamp-query`;

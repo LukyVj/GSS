@@ -816,3 +816,32 @@ it("the playground renders with WebGPU and displays WGSL", async () => {
   expect(await page.locator(".perf-panel h2").textContent()).toContain("WebGL2");
 }, 60000);
 
+
+// view: distance (decision 131): the isolines of the distance to the objects, over the scene
+describe("view: distance draws the isolines over the scene, on both backends", () => {
+  // The test of the playground above leaves the page of these tests: back to it
+  beforeAll(async () => {
+    await page.goto(`${server.resolvedUrls!.local[0]}__gpu`);
+    await page.waitForFunction(() => (window as any).__createViewAsync);
+  }, 60000);
+  // A sphere of radius 1 on the target, seen from the front. On the plane through the target a
+  // pixel is 5 / (1.5 × 72) wide: the line d = 0.25 (r = 1.25) crosses the pixel 27 to the right
+  // of the center, and the pixel 30 lies between the first two lines
+  const scene = (view: string) =>
+    `@scene { sphere; } scene { view: ${view}; floor: none; background: #000000; camera-target: 0 0 0; camera-angle: 0deg 0deg; camera-distance: 5; } sphere { radius: 1; color: #ff0000; }`;
+  const at = (pixels: number[], x: number) => {
+    const i = (36 * 96 + 48 + x) * 4;
+    return pixels.slice(i, i + 3);
+  };
+
+  it("draws a light line a quarter of a unit from the sphere, and leaves the sphere and the rest", async () => {
+    const shaded = await render(scene("shaded"));
+    const distance = await render(scene("distance"));
+    for (const [lines, plain] of [[distance.gl, shaded.gl], [distance.gpu, shaded.gpu]]) {
+      at(lines, 0).forEach((c, k) => expect(Math.abs(c - at(plain, 0)[k]), `sphere ${at(lines, 0)}`).toBeLessThanOrEqual(2));
+      expect(at(plain, 27)).toEqual([0, 0, 0]);
+      expect(Math.min(...at(lines, 27)), `line ${at(lines, 27)}`).toBeGreaterThan(40);
+      expect(Math.max(...at(lines, 30)), `between ${at(lines, 30)}`).toBeLessThanOrEqual(4);
+    }
+  }, 60000);
+});

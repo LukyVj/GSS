@@ -59,6 +59,7 @@ export type EditorElements = {
 export type Editor = {
   getCode(): string;
   setCode(code: string): void; // replaces everything (undoable with Cmd/Ctrl+Z)
+  refresh(): void; // compiles the code again, as it is (the chips of the view, decision 131)
   onCompile(listener: (code: string, compiled: CompiledScene) => void): void; // after each successful compile
   onStats(listener: (stats: Stats) => void): void; // after each compile, successful or not
   destroy(): void;
@@ -429,6 +430,7 @@ export function connectEditor(
   return {
     getCode: () => view.state.doc.toString(),
     setCode,
+    refresh: tryLoad,
     onCompile(listener) {
       compileListeners.push(listener);
       if (lastCompiled !== null) listener(lastCompiled.code, lastCompiled.compiled); // the first compile already happened

@@ -1,0 +1,62 @@
+/* The chips of the view, over the top-left corner of the render (src/playground/view-chips.ts):
+   in the playground, and in "Try it" of the docs (docs.html places them). Above the panel of
+   variables, on the row of the dpr menu, or under it when the render is narrow. */
+
+@import "../styles/tokens.css";
+
+.view-chips {
+  grid-area: scene; /* same cell as the canvas, drawn above it */
+  align-self: start;
+  justify-self: start;
+  z-index: 2;
+  display: flex;
+  gap: 8px;
+  margin: 8px 12px;
+}
+
+/* DESIGN.md, chips on the viewport: mono 11px, a 1px line border; active, the signal */
+.view-chip {
+  box-sizing: border-box;
+  height: 22px;
+  padding: 0 8px;
+  border: 1px solid var(--gss-line);
+  border-radius: var(--gss-radius-control);
+  background: color-mix(in srgb, var(--gss-void) 60%, transparent);
+  color: var(--gss-dim);
+  font: 11px var(--gss-font-code);
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    color var(--gss-transition),
+    border-color var(--gss-transition);
+}
+.view-chip:hover {
+  color: var(--gss-bone);
+}
+.view-chip[aria-pressed="true"] {
+  border-color: var(--gss-signal);
+  color: var(--gss-signal);
+  cursor: default;
+}
+.view-chip:focus-visible {
+  outline: 1px solid var(--gss-signal);
+  outline-offset: 2px;
+}
+/* A narrow render: under the row of the dpr menu, and the panel of variables under them */
+.view-chips.is-narrow {
+  margin-top: 40px;
+}
+:has(> .view-chips.is-narrow) > .vars-panel {
+  margin-top: 72px;
+}
+@media (pointer: coarse) {
+  .view-chip {
+    height: 32px;
+  }
+  .view-chips.is-narrow {
+    margin-top: 48px;
+  }
+  :has(> .view-chips.is-narrow) > .vars-panel {
+    margin-top: 88px;
+  }
+}

@@ -1334,6 +1334,36 @@ export const PROPERTIES: PropertyDef[] = [
       },
     ],
   },
+  {
+    name: "view",
+    since: "0.0.5",
+    appliesTo: "scene",
+    syntax: "shaded | distance",
+    initial: "shaded",
+    description:
+      "Shows the scene as it is lit, or with the isolines of its distance field over it: the distance to the nearest object, which the shader measures at every step of every ray.",
+    values: [
+      ["shaded", "The scene, lit: the default."],
+      ["distance", "The same scene, with a line every 0.25 units from the objects, fainter as it goes away. The lines lie on the plane that faces the camera through `camera-target`, and show where that plane is in front of the objects."],
+    ],
+    details: "The floor is left out of the distance: the lines go around the objects only. Far from a `path`, a `prism` or a `lathe`, the distance is the one to its box, which the shader uses to skip it quickly, and the lines show that box. The lines are light on a dark scene and dark on a light one.",
+    note: {
+      title: "Two chips switch it here.",
+      text: "In the playground and in the examples of these docs, the chips `view: shaded` and `view: distance` at the top left of the render switch the view, without touching the code; when the code changes its `view`, the code wins again. On your own site, the `view` of the scene applies.",
+    },
+    examples: [
+      {
+        name: "the distance around a sphere",
+        text: "Rings around the sphere, one every 0.25.",
+        code: "@scene { sphere; } sphere { translate: 0 0.5 0; } scene { view: distance; }",
+      },
+      {
+        name: "on a dark scene",
+        text: "Without a floor, on a dark background: the lines of the field around two objects meet halfway.",
+        code: "@scene { sphere; cube; } sphere { translate: -0.8 0.5 0; color: #ff5a36; } cube { translate: 0.8 0.5 0; color: #e8e6e1; } scene { view: distance; floor: none; background: #0a0a0c; }",
+      },
+    ],
+  },
 ];
 
 export const AT_RULES: AtRuleDef[] = [

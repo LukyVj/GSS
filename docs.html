@@ -699,10 +699,11 @@
         touch-action: none;
         cursor: grab;
       }
-      /* The panel of variables lies over the render, in the same cell
-         (src/playground/variables-panel.css) */
+      /* The panel of variables and the chips of the view lie over the render, in the same
+         cell (src/playground/variables-panel.css, src/playground/view-chips.css) */
       .playground-body canvas,
-      .playground-body .vars-panel {
+      .playground-body .vars-panel,
+      .playground-body .view-chips {
         grid-row: 1;
         grid-column: 2;
       }
@@ -738,7 +739,8 @@
           border-bottom: 1px solid var(--gss-line);
         }
         .playground-body canvas,
-        .playground-body .vars-panel {
+        .playground-body .vars-panel,
+        .playground-body .view-chips {
           grid-row: 2;
           grid-column: 1;
         }

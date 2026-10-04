@@ -79,6 +79,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 | `fog`                                                             | `none`, or `[<color>] <start> <end>` from the camera (dec. 108)                       |
 | `shadows`                                                         | `none` (default), `hard` or `soft`: from the sun and every light (dec. 115)          |
 | `dpr`                                                             | pixel density of the render: `auto` (the screen, up to 2), `max`, a number (dec. 67) |
+| `view`                                                            | `shaded` (default) or `distance`: the isolines of the distance to the objects over the scene; chips switch it in the playground and Try it (dec. 131) |
 | `camera-target`, `camera-distance`, `camera-angle`, `camera-spin` | camera (mouse orbit; automatic turn as a duration, `none` by default, dec. 54)       |
 
 ### Rendering
@@ -103,7 +104,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 | Tool                       | Where                                                                                                                                                                        | Dec.       |
 | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
 | Home page                  | `/` (`index.html`), live demo, numbers read from the registry                                                                                                                | 51         |
-| Playground                 | `playground.html`: CodeMirror, code in the URL (sharing), examples (Start here, New features, Studies, the reference), HTML, GLSL and WGSL tabs, backend selection (auto, WebGPU, WebGL2), a resizable editor, the dpr menu, the panel of variables of `@property-panel` | 34, 90, 101, 120, 123, 127, 128 |
+| Playground                 | `playground.html`: CodeMirror, code in the URL (sharing), examples (Start here, New features, Studies, the reference), HTML, GLSL and WGSL tabs, backend selection (auto, WebGPU, WebGL2), a resizable editor, the dpr menu, the panel of variables of `@property-panel`, the chips of the view | 34, 90, 101, 120, 123, 127, 128, 131 |
 | Status bar                 | `ok · 0 objects · glsl 104 lines · compiled in 4 ms · 60 fps`                                                                                                                | 42         |
 | Located errors             | every error of a compile at once (the text first, then the values), each underlined and written under its line (`15:3 …`); `3 errors` in the status bar; line and column in Vite's terminal | 43, 86     |
 | Generated docs             | `docs.html`, one page per entry, from the registry, live "Try it" everywhere; "Set variables from JavaScript", the JS API with a live slider; a lead, a table of the values, titled examples | 12, 39, 44, 109, 121 |
@@ -124,7 +125,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 
 ## Release 0.0.5 (in preparation)
 
-- Everything under "Unreleased" in `CHANGELOG.md`: decisions 118 to 130 (notes in the docs, the studies of the showcase, the dpr menu, the docs rewrite, the floor images, the resizable playground, the docs search, the panel of variables and `@property-panel`, the New features examples, the `lathe` shape).
+- Everything under "Unreleased" in `CHANGELOG.md`: decisions 118 to 131 (notes in the docs, the studies of the showcase, the dpr menu, the docs rewrite, the floor images, the resizable playground, the docs search, the panel of variables and `@property-panel`, the New features examples, the `lathe` shape, `view: distance` and its chips).
 - At the bump to 0.0.5: `@property-panel` already has `since: "0.0.5"`, and "New in 0.0.5" shows it by itself (decision 129). Rebuild the `.vsix` of the extension for the grammar of decision 129.
 
 ## Release 0.0.4 ✅
@@ -222,7 +223,7 @@ Next, on this page:
 ### Playground
 
 - [x] **A panel of sliders for the `@property` variables** ✅ decision 127 (decision 105), kept for later by Lucas (Oct. 2): one control per registered variable, by its syntax (a slider for a number, an angle, a percentage or a length; a color picker for a color), calling `setProperty()` live, without compiling again. The best demo of `setProperty()`
-- [ ] `view: distance` / `view: shaded` (promised in the design, missing)
+- [x] `view: distance` / `view: shaded` ✅ decision 131: a property of the scene, the isolines of the distance to the objects on the plane through the camera target; chips over the render switch it without touching the code
 
 ### Performance
 
@@ -289,6 +290,7 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 
 ## Done recently
 
+- `view: shaded | distance` on the scene: the isolines of the distance field over the scene, one every 0.25, fainter as they go away, the floor left out; the chips `view: shaded` and `view: distance` over the render of the playground and of Try it switch it without touching the code; a page of the reference (decision 131)
 - `lathe`, a new shape: a `polygon()` or `path()` contour turned around the y axis (a vase, a bowl, a ring), where a `prism` pushes it into a flat plate; its curves cut 50 times finer than a prism's; a page whose first example shows both (decision 130)
 - `@property-panel { display: open | folded | none; }`: the scene asks for the panel of variables, a page of the reference with its examples; no panel without it (decision 128); `since: "0.0.5"`, shown under "New in" once the package is 0.0.5, and the VS Code grammar colors it with `@property` (decision 129)
 - A "New features" group in the playground examples: Astral Greenhouse, Property Control Room, Noise Atmosphere, Mask & Displacement, HTML Card (scenes started in other worktrees, fixed to compile)

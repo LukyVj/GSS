@@ -14,6 +14,7 @@
 //   textures.ts    texture, ::face() (decision 59)
 //   gradients.ts   gradients in the background and on objects (decisions 81, 82), animated (102, 103)
 //   filters.ts     filter on the scene and on objects (decisions 83, 84)
+//   view.ts        view: distance, the isolines of the distance field (decision 131)
 import type { Keyframes } from "../../syntax/ast";
 import type { StyledInstance, Styles } from "../../cascade/resolve";
 import { errorAt } from "../../syntax/errors";
@@ -48,6 +49,8 @@ import { isLive, liveCode, liveNumber } from "./live";
 import { liveLight, liveRead } from "./properties";
 import { DIFFUSE, isLight, lightingCode, splitAmbient } from "./lights";
 import { readShadows } from "./shadows";
+import { ISOLINES, ISOLINES_CALL, withObjectsAlone } from "./view";
+import type { View } from "../../features/view";
 
 export { activeSlots, hoverSlots } from "./animation";
 export { shapeNames, shapeRadius } from "./shapes";
@@ -57,6 +60,7 @@ export function generateShader(
   sceneStyles: Styles = {},
   keyframes: Keyframes[] = [],
   properties = 0, // the variables registered with @property: uProperties[] (decision 105)
+  view: View = "shaded", // distance: the isolines of the distance to the objects (decision 131)
 ): string {
   // scroll() and view(): one component of uTimeline each (decision 96)
   const timelines = sceneTimelines([
@@ -93,7 +97,7 @@ export function generateShader(
   // What an object must beat to matter. With only plain unions, map() is a plain min():
   // an object further than the floor can never be the nearest, so the floor counts
   // from the start. Otherwise the order of the operations matters, and only the
-  // objects already combined count (res.x).
+  // objects already combined count (res.x). view: distance measures the objects alone.
   const plainUnion = (instance: StyledInstance) =>
     readOperation(instance.styles["operation"]) === "opU" &&
     liveNumber(instance.styles["blend"], "blend", 0, true) === 0;
@@ -103,8 +107,9 @@ export function generateShader(
     floorStyle[0].type === "IDENT" &&
     floorStyle[0].value === "none"
   );
+  const distanceView = view === "distance";
   const nearest =
-    hasFloor && instances.every(plainUnion) ? "min(res.x, p.y)" : "res.x";
+    hasFloor && !distanceView && instances.every(plainUnion) ? "min(res.x, p.y)" : "res.x";
 
   // mask-image (decision 113): the objects with holes, skins while march() looks for a surface
   const masked = instances
@@ -324,10 +329,11 @@ export function generateShader(
     : TEMPLATE;
   // opacity (decision 116): the surface goes into a function, and main() draws each surface
   // along the ray with it; the filters of an object go on its own color
-  const template =
+  const layered =
     transparent.length > 0
       ? lit.replace(SURFACE, LAYERS).replace("void main() {", `${surfaceFunction(SURFACE)}void main() {`)
       : lit;
+  const template = distanceView ? withObjectsAlone(layered) : layered;
   const objectLine = "  if (t < MAX_DIST) col = objectFilter(id, col);\n";
   const finalLines = transparent.length > 0 ? filterLines.replace(objectLine, "") : filterLines;
   const shader = (
@@ -431,6 +437,7 @@ uniform vec2 uPick;`
             used(SHADING, shadeCalls),
           ),
           ...(fog ? [fog.functions] : []),
+          ...(distanceView ? [ISOLINES] : []),
         ].join("\n\n"),
       )
       .replace("/*@SHADE_CALLS*/", moreLines(shadeCalls))
@@ -484,7 +491,7 @@ uniform vec2 uPick;`
       // Through the holes of mask-image (decision 113)
       .replace(MARCH_LOOP, masked.length > 0 ? MASKED_MARCH_LOOP : transparent.length > 0 ? SKIN_MARCH_LOOP : MARCH_LOOP)
       .replace("/*@SURFACE_FILTER*/", transparent.length > 0 && filterLines.includes(objectLine) ? objectLine : "")
-      .replace("  outColor = vec4(col, 1.0);\n}", `${finalLines}  outColor = vec4(col, ${alpha});\n}`)
+      .replace("  outColor = vec4(col, 1.0);\n}", `${finalLines}${distanceView ? ISOLINES_CALL : ""}  outColor = vec4(col, ${alpha});\n}`)
       // Reflections see the filters of the objects they meet
       .replace(
         /return (diffuse\(n, .*\));  \/\/ its color, lit/,

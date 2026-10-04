@@ -15,6 +15,7 @@ import { mountSearch } from "./docs/search-box";
 import { profile, profileWebGPU, mountPanel } from "./profiler/panel";
 import { mountSplitter } from "./playground/splitter";
 import { mountVariablesPanel } from "./playground/variables-panel";
+import { mountViewChips } from "./playground/view-chips";
 
 mountSearch();
 
@@ -94,6 +95,11 @@ currentSource = editor.getCode;
 
 const variables = mountVariablesPanel(document.body, renderer);
 editor.onCompile((_code, compiled) => variables.update(compiled.properties, compiled.propertyPanel));
+
+// ----- The chips of the view: shaded, or the isolines of the distance field (decision 131) -----
+
+const chips = mountViewChips(document.body, { setView: renderer.setView, refresh: editor.refresh }, sceneCanvas);
+editor.onCompile((_code, compiled) => chips.update(compiled));
 
 // ----- The status bar: the numbers of the last compile, and the frame rate -----
 

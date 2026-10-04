@@ -11,6 +11,7 @@ vi.mock("../runtime/renderer", () => ({
   createRenderer: () => ({
     setProperty: (name: string, value: string) => void calls.push(`set ${name} ${value}`),
     removeProperty: (name: string) => void calls.push(`remove ${name}`),
+    setView: (view: string | null) => void calls.push(`view ${view}`),
     destroy: () => {},
   }),
 }));
@@ -18,6 +19,7 @@ vi.mock("../runtime/editor", () => ({
   connectEditor: (_elements: unknown, _renderer: unknown, code: string) => ({
     onCompile: (listener: (code: string, compiled: { properties?: RegisteredProperty[]; propertyPanel?: string }) => void) =>
       listener(code, { properties: registered, propertyPanel: display }),
+    refresh: () => void calls.push("refresh"),
     destroy: () => {},
   }),
 }));
@@ -70,5 +72,20 @@ describe("Try it", () => {
     button.click();
     button.click();
     expect(document.querySelector(".vars-panel")).toBeNull();
+  });
+
+  it("shows the chips of the view over the render: they compile the scene again in the view chosen", () => {
+    example("@scene { sphere; }").querySelector("button")!.click();
+    const chips = [...document.querySelectorAll<HTMLButtonElement>(".playground-body .view-chip")];
+    expect(chips.map((chip) => chip.textContent)).toEqual(["view: shaded", "view: distance"]);
+    chips[1].click();
+    expect(calls).toEqual(["view distance", "refresh"]);
+  });
+
+  it("takes the chips away with the render when Try it closes", () => {
+    const button = example("@scene { sphere; }").querySelector("button")!;
+    button.click();
+    button.click();
+    expect(document.querySelector(".view-chips")).toBeNull();
   });
 });

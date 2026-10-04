@@ -24,6 +24,7 @@ import {
 } from "./values/colors";
 import { sceneTextures } from "./features/textures";
 import { readDpr, type Dpr } from "./features/dpr";
+import { readView, type View } from "./features/view";
 import { readTransition, type Transition } from "./features/transition";
 import { buildPasses, FILTER_FUNCTIONS, objectFilters, readSceneSteps, type Pass } from "./features/filter";
 import { generateWGSL } from "./shader/wgsl";
@@ -37,7 +38,8 @@ import {
   type RegisteredProperty,
 } from "./features/properties";
 
-export type CompileOptions = { target?: "glsl" | "dual" };
+// view: replaces the view of the scene in the shader, like the chips of the playground (decision 131)
+export type CompileOptions = { target?: "glsl" | "dual"; view?: View };
 
 // Everything the runtime needs to display a scene
 export type CompiledScene = {
@@ -63,6 +65,9 @@ export type CompiledScene = {
   // @property-panel (decision 128): the playground and Try it show a control per variable,
   // open or folded at the start. Absent without the rule, or with display: none.
   propertyPanel?: PropertyPanel;
+  // view (decision 131): the view the code asks for, absent when it is shaded. The shader
+  // draws the view of the compile option instead, when there is one.
+  view?: "distance";
   // @media: the queries, and the scene for every combination of them. variants[mask]
   // is the scene when the queries whose bit is set in mask match (bit 0: queries[0]).
   // The fields above are variants[0], the scene when none matches.
@@ -78,7 +83,7 @@ const MAX_QUERIES = 4;
 // A compile reports every error it finds, not only the first one (decision 86): every
 // error of the text first; once the text reads, every error of the values.
 export function compileScene(source: string, options: CompileOptions = {}): CompiledScene {
-  const compiled = compileSource(source);
+  const compiled = compileSource(source, options.view);
   if (options.target === "glsl") return compiled;
   const lower = (scene: CompiledScene): CompiledScene => ({
     ...scene,
@@ -91,7 +96,7 @@ export function compileScene(source: string, options: CompileOptions = {}): Comp
   };
 }
 
-function compileSource(source: string): CompiledScene {
+function compileSource(source: string, view?: View): CompiledScene {
   const errors = new ErrorSink();
   const tokens = tokenize(source, errors);
   const stylesheet = parse(tokens, errors);
@@ -112,7 +117,7 @@ function compileSource(source: string): CompiledScene {
       ...mediaQueriesOf(tokens),
     ]),
   ];
-  if (queries.length === 0) return compileStylesheet(stylesheet);
+  if (queries.length === 0) return compileStylesheet(stylesheet, new Set(), view);
   if (queries.length > MAX_QUERIES) {
     const extra = stylesheet.rules.find(
       (rule) => rule.media === queries[MAX_QUERIES],
@@ -133,6 +138,7 @@ function compileSource(source: string): CompiledScene {
         ),
       },
       new Set(queries.filter((_, n) => (mask & (1 << n)) !== 0)),
+      view,
     )),
   );
   // The same error in several versions of the scene is reported once
@@ -145,6 +151,7 @@ function compileSource(source: string): CompiledScene {
 function compileStylesheet(
   stylesheet: Stylesheet,
   media: Set<string> = new Set(),
+  viewOption?: View,
 ): CompiledScene {
   activeMedia = media;
   // Every error of this version; a part that fails is left out, and the rest goes on
@@ -289,7 +296,8 @@ function compileStylesheet(
         computedScene["filter"] ? readSceneSteps(computedScene["filter"]) : [],
       ).passes,
   );
-  const shader = checkedShader(styled, computedScene, [...shared, ...copies], errors, registered.length);
+  const view = errors.run(() => readView(computedScene));
+  const shader = checkedShader(styled, computedScene, [...shared, ...copies], errors, registered.length, viewOption ?? view);
   const camera = errors.run(() => readCamera(computedScene));
   const dpr = errors.run(() => readDpr(computedScene));
   // After the cascade and var(): the texture an object really ends up with
@@ -321,6 +329,7 @@ function compileStylesheet(
       : {}),
     ...(registered.length > 0 ? { properties: registered } : {}),
     ...(panel ? { propertyPanel: panel } : {}),
+    ...(view === "distance" ? { view } : {}),
     shader: shader!,
     camera: camera!,
     dpr: dpr!,
@@ -341,14 +350,15 @@ function checkedShader(
   keyframes: Keyframes[],
   errors: ErrorSink,
   properties: number,
+  view: View = "shaded",
 ): string | undefined {
   const whole = new ErrorSink();
-  const shader = whole.run(() => generateShader(styled, sceneStyles, keyframes, properties));
+  const shader = whole.run(() => generateShader(styled, sceneStyles, keyframes, properties, view));
   if (shader !== undefined) return shader;
   const before = errors.size;
-  errors.run(() => generateShader([], sceneStyles, keyframes, properties));
+  errors.run(() => generateShader([], sceneStyles, keyframes, properties, view));
   for (const instance of styled)
-    errors.run(() => generateShader([instance], sceneStyles, keyframes, properties));
+    errors.run(() => generateShader([instance], sceneStyles, keyframes, properties, view));
   // An error that needs several objects together: the one the whole scene gave
   if (errors.size === before) whole.list.forEach((error) => errors.add(error));
   return undefined;

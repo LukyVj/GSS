@@ -18,7 +18,7 @@ npm run format     # format the .gss files (npm run format:check to only list th
 | `src/runtime/` | WebGL2 and WebGPU renderers (`backend.ts` picks one), camera, :hover picking, editor and autocompletion, share links |
 | `src/embed/`, `src/vite/` | the npm package: `mount()`, `<gss-scene>`, the Vite plugin |
 | `src/docs/` | the generated reference and the syntax highlighter |
-| `src/playground/`, `src/home/`, `src/showcase/` | the playground (its examples, the splitter, the panel of variables, also used by Try it in the docs), the home page, the showcase |
+| `src/playground/`, `src/home/`, `src/showcase/` | the playground (its examples, the splitter, the panel of variables and the chips of the view, also used by Try it in the docs), the home page, the showcase |
 | `src/profiler/`, `src/bench/` | the performance panel of the playground (`perf` or Alt+P, closed by default) and the bench (dev only) |
 | `editors/vscode/` | the VS Code / Cursor extension; `src/test/vscode-grammar.test.ts` checks that its grammar starts every at-rule of the registry as itself |
 | `DESIGN.md` | the visual identity ("Distance field") |

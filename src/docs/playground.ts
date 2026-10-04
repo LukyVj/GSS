@@ -3,6 +3,7 @@ import { connectEditor, type Editor } from "../runtime/editor";
 import { encodeCode } from "../runtime/share";
 import { formatGss } from "./format";
 import { mountVariablesPanel } from "../playground/variables-panel";
+import { mountViewChips } from "../playground/view-chips";
 
 // "Try it" opens a live editor under an example. Only one is open at a time:
 // browsers limit how many WebGL canvases a page can have.
@@ -11,12 +12,14 @@ let open: {
   panel: HTMLElement;
   renderer: Renderer;
   editor: Editor;
+  chips: ReturnType<typeof mountViewChips>;
 } | null = null;
 
 // Also called when the docs change page (src/docs/pages.ts)
 export function closePlayground(): void {
   if (!open) return;
   open.editor.destroy();
+  open.chips.destroy();
   open.renderer.destroy();
   open.panel.remove();
   open.example.classList.remove("is-open");
@@ -60,15 +63,22 @@ function openPlayground(example: HTMLElement, code: string, html = ""): void {
 
   // A control per @property over the render, like the playground (decisions 127, 128)
   const variables = mountVariablesPanel(panel.querySelector(".playground-body")!, renderer);
+  // The chips of the view, over the top-left corner of the render (decision 131)
+  const chips = mountViewChips(
+    panel.querySelector(".playground-body")!,
+    { setView: (view) => renderer.setView(view), refresh: () => editor.refresh() },
+    canvas,
+  );
 
   // The link carries the code as it is now, edits included
   const link = panel.querySelector<HTMLAnchorElement>(".open-playground")!;
   editor.onCompile(async (current, compiled) => {
     variables.update(compiled.properties, compiled.propertyPanel);
+    chips.update(compiled);
     link.href = `./playground.html${await encodeCode(current, html)}`; // the HTML goes too
   });
 
-  open = { example, panel, renderer, editor };
+  open = { example, panel, renderer, editor, chips };
 }
 
 // One listener for the whole page, whatever the number of examples
