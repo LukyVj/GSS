@@ -115,3 +115,93 @@ describe("the bounding sphere of each shape holds it", () => {
     expect(pathRadius([], 1, null)).toBeNull();
   });
 });
+
+// map() groups the objects it can skip by where they are, whatever the groups of the GSS:
+// a tree of spheres built at compile time (decision 132)
+describe("the tree of spheres in map()", () => {
+  const TEST = /if \((?:.* && )?length\(p - vec3\(([^)]*)\)\) - ([\d.]+) <= [^)]*\)+ \{/g;
+  // Each test of the tree: its sphere, and where its block starts and ends in map()
+  const nodesOf = (map: string) =>
+    [...map.matchAll(TEST)].map((match) => {
+      const open = match.index! + match[0].length - 1;
+      let depth = 0;
+      let end = open;
+      for (; end < map.length; end++) {
+        if (map[end] === "{") depth++;
+        else if (map[end] === "}" && --depth === 0) break;
+      }
+      const numbers = match[1].split(",").map(Number);
+      return {
+        center: numbers.length === 1 ? [numbers[0], numbers[0], numbers[0]] : numbers,
+        radius: Number(match[2]),
+        start: match.index!,
+        end,
+      };
+    });
+  // The tests around an object, from the outside in
+  const around = (map: string, name: string) => {
+    const at = map.indexOf(`// ${name}\n`);
+    expect(at).toBeGreaterThan(-1);
+    return nodesOf(map).filter((node) => node.start < at && at < node.end);
+  };
+  const spheres = (names: string[], at: (i: number) => string) =>
+    `@scene { ${names.map((name) => `sphere#${name};`).join(" ")} } ${names.map((name, i) => `#${name} { translate: ${at(i)}; }`).join(" ")}`;
+  const LEFT = ["a1", "a2", "a3", "a4"];
+  const RIGHT = ["b1", "b2", "b3", "b4"];
+  const CLUSTERS = spheres([...LEFT, ...RIGHT], (i) => `${i < 4 ? -6 + (i % 2) : 6 - (i % 2)} 0.5 ${Math.floor((i % 4) / 2)}`);
+
+  it("puts the objects close together under one test, without a group", () => {
+    const map = mapOf(CLUSTERS);
+    for (const names of [LEFT, RIGHT]) {
+      const inner = names.map((name) => around(map, `sphere#${name}`).at(-1)!);
+      expect(new Set(inner.map((node) => node.start)).size).toBe(1); // the same test for the 4
+      expect(Math.sign(inner[0].center[0])).toBe(names === LEFT ? -1 : 1);
+    }
+    expect(around(map, "sphere#a1").length).toBe(2); // in the test of all 8, then of their side
+  });
+
+  it("keeps every object inside the spheres of its tests", () => {
+    const map = mapOf(CLUSTERS);
+    [...LEFT, ...RIGHT].forEach((name, i) => {
+      const center = [i < 4 ? -6 + (i % 2) : 6 - (i % 2), 0.5, Math.floor((i % 4) / 2)];
+      for (const node of around(map, `sphere#${name}`))
+        expect(Math.hypot(...center.map((c, k) => c - node.center[k])) + 0.5).toBeLessThanOrEqual(node.radius);
+    });
+  });
+
+  it("counts the floor from the start when map() is a plain min()", () => {
+    expect(mapOf(CLUSTERS)).toMatch(/length\(p - vec3\([^)]*\)\) - [\d.]+ <= min\(res\.x, p\.y\)\) \{/);
+  });
+
+  it("leaves a big object out of the smaller tests: inside, it would make them as big as itself", () => {
+    const names = ["s1", "s2", "s3", "s4", "s5", "s6"];
+    const scene = spheres(names, (i) => `${i - 2.5} 0.5 0`).replace("@scene { ", "@scene { cube#big; ") + " #big { size: 8; }";
+    const map = mapOf(scene);
+    expect(around(map, "cube#big").length).toBe(1);
+    expect(around(map, "sphere#s1").length).toBeGreaterThan(1);
+  });
+
+  it("keeps the order around a subtraction: it cuts the objects before it, never those after", () => {
+    const scene = spheres(["a", "b", "c", "hole", "d", "e", "f"], (i) => `${i} 0.5 0`) + " #hole { operation: subtract; }";
+    const map = mapOf(scene);
+    const at = (name: string) => map.indexOf(`// sphere#${name}\n`);
+    for (const name of ["a", "b", "c"]) expect(at(name)).toBeLessThan(at("hole"));
+    for (const name of ["d", "e", "f"]) expect(at(name)).toBeGreaterThan(at("hole"));
+    expect(around(map, "sphere#hole")).toEqual([]);
+  });
+
+  it("evaluates first, and never skips, an object whose sphere is not known", () => {
+    const scene =
+      '@property --r { syntax: "<number>"; inherits: false; initial-value: 0.5; } ' +
+      spheres(["a", "b", "c", "live"], (i) => `${i} 0.5 0`) +
+      " #live { radius: var(--r); }";
+    const map = mapOf(scene);
+    expect(around(map, "sphere#live")).toEqual([]);
+    expect(map.indexOf("// sphere#live\n")).toBeLessThan(map.indexOf("// sphere#a\n"));
+    expect(around(map, "sphere#a").length).toBe(1);
+  });
+
+  it("does not test fewer than 3 objects: the test would cost about what it saves", () => {
+    expect(nodesOf(mapOf(spheres(["a", "b"], (i) => `${4 * i} 0.5 0`)))).toEqual([]);
+  });
+});

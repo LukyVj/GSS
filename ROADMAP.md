@@ -95,7 +95,8 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 | `map()` skips a `path` or a `prism` whose bounding sphere is further than the nearest object: same image, macropad −37 %, logo −50 % on the GPU at dpr 2                          | 66           |
 | Animations and `:hover` computed once per pixel, in `animate()`                                                                                                                   | 75           |
 | A sphere around the whole scene: a ray that passes by it only meets the floor                                                                                                     | 76           |
-| One bounding test per group of 3 objects or more                                                                                                                                  | 77           |
+| A tree of spheres around the objects, built by where they are: one test per group of 3 objects or more                                                                            | 77, 132      |
+| Render on demand: a frame is drawn only when what it shows can have changed; a still scene leaves the GPU idle                                                                    | 134          |
 | Fog: mixed into the color after the lighting, from the camera; the bounding spheres follow `transform-origin`                                                                     | 107, 108     |
 | Lights: the sun, the ambient light and up to 8 point lights of `@scene`, in `diffuse()` and the highlights of metal, jelly and glass; shadows with `scene { shadows }` (dec. 115) | 110, 115     |
 
@@ -125,7 +126,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 
 ## Release 0.0.5 (in preparation)
 
-- Everything under "Unreleased" in `CHANGELOG.md`: decisions 118 to 131 (notes in the docs, the studies of the showcase, the dpr menu, the docs rewrite, the floor images, the resizable playground, the docs search, the panel of variables and `@property-panel`, the New features examples, the `lathe` shape, `view: distance` and its chips).
+- Everything under "Unreleased" in `CHANGELOG.md`: decisions 118 to 134 (notes in the docs, the studies of the showcase, the dpr menu, the docs rewrite, the floor images, the resizable playground, the docs search, the panel of variables and `@property-panel`, the New features examples, the `lathe` shape, `view: distance` and its chips, the tree of spheres, render on demand).
 - At the bump to 0.0.5: `@property-panel` already has `since: "0.0.5"`, and "New in 0.0.5" shows it by itself (decision 129). Rebuild the `.vsix` of the extension for the grammar of decision 129.
 
 ## Release 0.0.4 ✅
@@ -232,6 +233,9 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 - [x] **Animations once per pixel**, in `animate()` (decision 75): L'Orrery 20.3 → 9.2 ms
 - [x] **A sphere around the whole scene** (decision 76): a ray that passes by it only meets the floor; todal −18 %, spiral −15 %
 - [x] **Bounds on whole groups**, one test per group of 3 objects or more (decision 77): macropad 16.6 → 4.0 ms, todal 19.4 → 3.9 ms
+- [x] **A tree of spheres**, built by where the objects are, for every shape and without groups (decision 132): camera-cutaway 75 → under 20 ms, grass 26 → 5 ms, ripple and noise-atmosphere −60 %
+- Set aside: a mask of the objects each ray can meet (decision 133): faster on camera-cutaway and grass, slower on glass and shadows, and it moves edge pixels; kept on the branch `perf/ray-mask-experiment`
+- [x] **Render on demand** (decision 134): a frame is drawn only when what it shows can have changed; a still scene, or one at rest under the mouse, leaves the GPU idle
 - Set aside: animations computed on the CPU and sent as uniforms (decision 75: after `animate()`, it would only save one evaluation per pixel, and the image would change)
 - [x] `scene { dpr: auto | max | <number>; }`: the pixel density of the render, chosen by the author (decision 67). With `@media` (decision 71): `@media (max-width: 600px) { scene { dpr: 1; } }`
 
@@ -290,6 +294,8 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 
 ## Done recently
 
+- Render on demand: both backends draw a frame only when the size, the time (for a scene that moves), the camera, `:hover`, the timelines, the variables or the images changed; the picking pass still follows the mouse over a resting frame; the profiler draws every frame while its panel is open (decision 134). A mask of the objects each ray can meet, tried and set aside (decision 133)
+- A tree of spheres in `map()`, built by where the objects are (the surface-area heuristic), for every shape and without groups: camera-cutaway 75 → under 20 ms, grass 26 → 5 ms at dpr 2, the same image (decision 132)
 - `view: shaded | distance` on the scene: the isolines of the distance field over the scene, one every 0.25, fainter as they go away, the floor left out; the chips `view: shaded` and `view: distance` over the render of the playground and of Try it switch it without touching the code; a page of the reference (decision 131)
 - `lathe`, a new shape: a `polygon()` or `path()` contour turned around the y axis (a vase, a bowl, a ring), where a `prism` pushes it into a flat plate; its curves cut 50 times finer than a prism's; a page whose first example shows both (decision 130)
 - `@property-panel { display: open | folded | none; }`: the scene asks for the panel of variables, a page of the reference with its examples; no panel without it (decision 128); `since: "0.0.5"`, shown under "New in" once the package is 0.0.5, and the VS Code grammar colors it with `@property` (decision 129)

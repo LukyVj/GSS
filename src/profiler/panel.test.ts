@@ -80,6 +80,19 @@ describe("the profiler behind the panel", () => {
     expect(document.querySelector(".perf-panel")!.textContent).toContain("42");
   });
 
+  it("asks the scene to draw every frame only while the panel is open (decision 134)", async () => {
+    const { profile, mountPanel } = await freshPanel();
+    document.body.innerHTML = '<div class="statusbar"></div>';
+    const probe = profile(fakeGl());
+    mountPanel(document.querySelector<HTMLElement>(".statusbar")!);
+    expect(probe.measuring?.()).toBe(false);
+    const toggle = document.querySelector<HTMLButtonElement>(".perf-toggle")!;
+    toggle.click();
+    expect(probe.measuring?.()).toBe(true);
+    toggle.click();
+    expect(probe.measuring?.()).toBe(false);
+  });
+
   it("starts at once when the panel was left open on the last visit", async () => {
     localStorage.setItem("gss-perf-panel", "1");
     const { profile, mountPanel } = await freshPanel();

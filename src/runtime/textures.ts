@@ -4,6 +4,8 @@ export type TextureStore = {
   // The texture of a file. Until the image arrives it is one transparent pixel,
   // so the object keeps its color (triplanar() mixes by the alpha).
   get(file: string): WebGLTexture;
+  // How many times an image arrived or an element was drawn again: the frame changes (decision 134)
+  version(): number;
   // Frees every texture (the renderer is destroyed)
   destroy(): void;
 };
@@ -13,6 +15,7 @@ export function createTextureStore(gl: WebGL2RenderingContext): TextureStore {
   const elements = new Map<string, WebGLTexture>(); // element(#id): id → its texture
   const canvas = gl.canvas instanceof HTMLCanvasElement ? gl.canvas : null;
   const warned = new Set<string>();
+  let version = 0;
   const warn = (message: string) => {
     if (!warned.has(message)) console.warn(message);
     warned.add(message);
@@ -43,6 +46,7 @@ export function createTextureStore(gl: WebGL2RenderingContext): TextureStore {
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      version++;
     }
   }
   let watching = false;
@@ -69,9 +73,11 @@ export function createTextureStore(gl: WebGL2RenderingContext): TextureStore {
     // Smooth for now; step 4: image-rendering: pixelated → NEAREST
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    version++;
   }
 
   return {
+    version: () => version,
     get(file) {
       const known = textures.get(file);
       if (known) return known;

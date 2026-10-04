@@ -31,7 +31,10 @@ async function render(source: string, hover = false, set?: [string, string], htm
       canvas.style.cssText = "width:96px;height:72px;display:block";
       canvas.innerHTML = html; // the HTML elements of element(#id)
       document.body.append(canvas);
-      const view = await createViewAsync(canvas, { backend });
+      // A probe that measures: every frame is drawn, so the canvas can be read in the frame
+      // that drew it (a resting scene draws nothing, decision 134, and its canvas reads empty)
+      const probe = { frameStart() {}, drawStart() {}, drawEnd() {}, shaderBuilt() {} };
+      const view = await createViewAsync(canvas, { backend, profile: () => probe, profileWebGPU: () => probe });
       view.freeze(true);
       await view.show(compiled);
       if (set) view.setProperty(...set); // @property (decision 105)
@@ -431,13 +434,25 @@ describe("element() shows an HTML element on an object", () => {
       const element = document.createElement("gss-scene");
       element.style.cssText = "width:96px;height:72px;display:block";
       element.innerHTML = `${card}<script type="text/gss">${scene}</script>`;
-      document.body.append(element);
-      await new Promise((resolve) => element.addEventListener("load", resolve, { once: true }));
-      await new Promise<void>((resolve) => { let left = 6; const tick = () => (--left ? requestAnimationFrame(tick) : resolve()); requestAnimationFrame(tick); });
-      const canvas = element.shadowRoot!.querySelector("canvas")!;
-      const copy = document.createElement("canvas"); copy.width = canvas.width; copy.height = canvas.height;
-      const ctx = copy.getContext("2d")!; ctx.drawImage(canvas, 0, 0);
-      const pixel = [...ctx.getImageData(Math.floor(copy.width / 2), Math.floor(copy.height / 2), 1, 1).data];
+      // A resting scene draws nothing (decision 134) and its canvas then reads empty: the
+      // center is read right after each frame the scene draws
+      let pixel: number[] = [];
+      const proto = WebGL2RenderingContext.prototype;
+      const drawArrays = proto.drawArrays;
+      proto.drawArrays = function (...args: Parameters<typeof drawArrays>) {
+        drawArrays.apply(this, args);
+        if (this.getParameter(this.FRAMEBUFFER_BINDING) !== null || (this.canvas as HTMLCanvasElement).getRootNode() !== element.shadowRoot) return;
+        const data = new Uint8Array(4);
+        this.readPixels(Math.floor(this.drawingBufferWidth / 2), Math.floor(this.drawingBufferHeight / 2), 1, 1, this.RGBA, this.UNSIGNED_BYTE, data);
+        pixel = [...data];
+      };
+      try {
+        document.body.append(element);
+        await new Promise((resolve) => element.addEventListener("load", resolve, { once: true }));
+        await new Promise<void>((resolve) => { let left = 6; const tick = () => (--left ? requestAnimationFrame(tick) : resolve()); requestAnimationFrame(tick); });
+      } finally {
+        proto.drawArrays = drawArrays;
+      }
       element.remove();
       return pixel;
     }, { card, scene });
@@ -731,7 +746,9 @@ describe("the default camera does not mirror the scene", () => {
 it("invalid updates preserve the displayed scene; resizing and destruction remain usable", async () => {
   const result = await page.evaluate(async compiled => {
     const canvas = document.createElement("canvas"); canvas.style.cssText = "width:96px;height:72px"; document.body.append(canvas);
-    const view = await (window as any).__createViewAsync(canvas, { backend: "webgpu" });
+    // A probe that measures: every frame is drawn and can be read (decision 134)
+    const probe = { frameStart() {}, drawStart() {}, drawEnd() {}, shaderBuilt() {} };
+    const view = await (window as any).__createViewAsync(canvas, { backend: "webgpu", profileWebGPU: () => probe });
     view.freeze(true); await view.show(compiled);
     const capture = () => new Promise<number[]>(resolve => requestAnimationFrame(() => {
       const copy = document.createElement("canvas"); copy.width = canvas.width; copy.height = canvas.height;
@@ -845,3 +862,62 @@ describe("view: distance draws the isolines over the scene, on both backends", (
     }
   }, 60000);
 });
+
+// Render on demand (decision 134): a still scene draws its first frame, then rests until
+// something changes (a variable, the mouse over an object with :hover); a scene that moves
+// draws every frame. Counted on both backends: the draws of WebGL2, the submits of WebGPU.
+it("a still scene draws once, then only when something changes (decision 134)", async () => {
+  const still = compileScene('@property --tint { syntax: "<color>"; inherits: false; initial-value: #ff0000; } @scene { sphere; } scene { camera-angle: 0deg 0deg; camera-distance: 5; camera-target: 0 0 0; floor: none; } sphere { radius: 1; color: var(--tint); } sphere:hover { scale: 1.1; }');
+  const moving = compileScene("@scene { sphere; } sphere { animation: rise 2s infinite alternate; } @keyframes rise { to { translate: 0 1 0; } }");
+  const counts = await page.evaluate(async ({ still, moving }) => {
+    const createViewAsync = (window as any).__createViewAsync;
+    const frames = (n: number) => new Promise<void>(resolve => {
+      const tick = () => --n ? requestAnimationFrame(tick) : resolve();
+      requestAnimationFrame(tick);
+    });
+    let draws = 0;
+    const gl = WebGL2RenderingContext.prototype;
+    const drawArrays = gl.drawArrays;
+    gl.drawArrays = function (...args: Parameters<typeof drawArrays>) { draws++; return drawArrays.apply(this, args); };
+    const queue = GPUQueue.prototype;
+    const submit = queue.submit;
+    queue.submit = function (...args: Parameters<typeof submit>) { draws++; return submit.apply(this, args); };
+    const result: Record<string, number[]> = {};
+    for (const backend of ["webgl", "webgpu"]) {
+      const canvas = document.createElement("canvas");
+      canvas.style.cssText = "width:96px;height:72px;display:block";
+      document.body.append(canvas);
+      const view = await createViewAsync(canvas, { backend });
+      await view.show(still);
+      await frames(5);
+      draws = 0;
+      await frames(10);
+      const resting = draws;
+      view.setProperty("--tint", "rgb(0 0 255)");
+      await frames(3);
+      const changed = draws - resting;
+      await frames(5);
+      draws = 0;
+      const box = canvas.getBoundingClientRect();
+      canvas.dispatchEvent(new PointerEvent("pointermove", { clientX: box.left + 48, clientY: box.top + 36 }));
+      await frames(12);
+      const hovered = draws;
+      await view.show(moving);
+      await frames(3);
+      draws = 0;
+      await frames(10);
+      result[backend] = [resting, changed, hovered, draws];
+      view.destroy();
+      canvas.remove();
+    }
+    gl.drawArrays = drawArrays;
+    queue.submit = submit;
+    return result;
+  }, { still, moving });
+  for (const [resting, changed, hovered, movingDraws] of Object.values(counts)) {
+    expect(resting).toBe(0);
+    expect(changed).toBeGreaterThan(0);
+    expect(hovered).toBeGreaterThan(0);
+    expect(movingDraws).toBeGreaterThanOrEqual(8);
+  }
+}, 60000);

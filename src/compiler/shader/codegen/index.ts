@@ -10,7 +10,7 @@
 //   materials.ts   material: matte(), metal(), jelly(), glass() and their keywords
 //   animation.ts   @keyframes, easings and :hover as GLSL expressions
 //   transforms.ts  the moves into a node's space, and animate() (decision 75)
-//   bounds.ts      the sphere of the scene and bounds on groups (decisions 76, 77)
+//   bounds.ts      the sphere of the scene and the tree of spheres (decisions 76, 132)
 //   textures.ts    texture, ::face() (decision 59)
 //   gradients.ts   gradients in the background and on objects (decisions 81, 82), animated (102, 103)
 //   filters.ts     filter on the scene and on objects (decisions 83, 84)
@@ -40,7 +40,7 @@ import { offsetLines, offsetReach, useOffsetFunctions } from "./offset";
 import { animateCode, createHoisted, hoist, originOf, rotationLines, transformLines } from "./transforms";
 import { objectBox } from "./origin";
 import { fogCode } from "./fog";
-import { enclosing, groupBounds, objectSphere, sceneMiss, type Sphere } from "./bounds";
+import { boundedMap, enclosing, objectSphere, sceneMiss, type Sphere } from "./bounds";
 import { GRAIN } from "../../features/filter";
 import { filterCode } from "./filters";
 import { COLOR_LIBRARY } from "./color-library";
@@ -268,7 +268,7 @@ export function generateShader(
     .map(([code, name]) => code.replaceAll("NAME", name))
     .join("\n\n");
 
-  const map = groupBounds(instances, mapLines, spheres, plainUnion, nearest);
+  const map = boundedMap(instances, mapLines, spheres, plainUnion, nearest);
   // A blend adds a fillet up to its distance around the objects it joins
   const blends = instances.map((i) => liveNumber(i.styles["blend"], "blend", 0, true));
   const maxBlend = Math.max(0, ...blends.filter((b): b is number => !isLive(b)));

@@ -14,6 +14,7 @@ import type { Timeline } from "../compiler/features/timeline";
 import { pickVariant, watchMedia, matchesNow } from "./media";
 import { createPost } from "./post";
 import { createProperties } from "./properties";
+import { createDemand, movesWithTime } from "./demand";
 
 // Draws compiled GSS scenes in a canvas, with a camera the mouse can move.
 // It never imports the compiler (decision 63): a page that embeds a scene compiled
@@ -81,6 +82,7 @@ type GpuScene = {
   uPicking: WebGLUniformLocation | null;
   uPick: WebGLUniformLocation | null;
   uProperties: WebGLUniformLocation | null; // @property (decision 105)
+  moves: boolean; // the image changes with time alone (decision 134)
 };
 
 export function createView(
@@ -110,6 +112,10 @@ export function createView(
   let shown: CompiledScene | null = null; // the version on screen (@media)
   let stopMedia = () => {}; // stops listening to the @media queries of the scene
   const properties = createProperties(); // @property: what the page set (decision 105)
+  const demand = createDemand(); // render on demand (decision 134)
+  let pickWanted = false; // the pointer moved since the last picking pass
+  // The profiler draws every frame while it measures (decision 134)
+  const measuring = () => probe !== undefined && (probe.measuring?.() ?? true);
 
   function compileShader(type: number, source: string): WebGLShader {
     const shader = gl!.createShader(type)!;
@@ -150,10 +156,12 @@ export function createView(
     hover: number[][],
     active?: number[][],
     timelines?: Timeline[],
+    moves = true,
   ): GpuScene {
     const program = link(fragSource);
     return {
       program,
+      moves,
       uResolution: gl!.getUniformLocation(program, "iResolution"),
       uTime: gl!.getUniformLocation(program, "iTime"),
       uCamera: gl!.getUniformLocation(program, "uCamera"),
@@ -219,6 +227,7 @@ export function createView(
   // so the press also aims the picking pass (decision 95)
   canvas.addEventListener("pointerdown", (e) => {
     pointer = { x: e.clientX, y: e.clientY };
+    pickWanted = true;
     press.down(hovered);
   });
   // Released anywhere, like CSS: the button can go up outside the canvas
@@ -228,6 +237,7 @@ export function createView(
 
   canvas.addEventListener("pointermove", (e) => {
     pointer = { x: e.clientX, y: e.clientY }; // before the return: hover works without a drag
+    pickWanted = true;
     if (!camera.dragging) return;
     camera.yaw += e.movementX * 0.01;
     camera.pitch += e.movementY * 0.01;
@@ -243,10 +253,9 @@ export function createView(
     pointer = null; // nothing is hovered any more
   });
 
-  // :hover: asks which object is under the mouse. The picking pass is the scene
-  // drawn on one pixel; picker.ts brings its id back later, without waiting.
-  function requestPick(scene: GpuScene): void {
-    const pixel = pointer
+  // The pixel of the canvas under the mouse, or null when the mouse is outside it
+  function pointerPixel(): [number, number] | null {
+    return pointer
       ? pickPixel(
           pointer.x,
           pointer.y,
@@ -255,16 +264,18 @@ export function createView(
           canvas.height,
         )
       : null;
-    if (!pixel) {
-      hovered = 0; // outside the canvas: nothing is hovered, at once
-      return;
-    }
-    picker.request(() => {
+  }
+
+  // :hover: asks which object is under the mouse. The picking pass is the scene
+  // drawn on one pixel; picker.ts brings its id back later, without waiting.
+  function requestPick(scene: GpuScene, pixel: [number, number]): void {
+    const sent = picker.request(() => {
       gl!.uniform1i(scene.uPicking, 1);
       gl!.uniform2f(scene.uPick, pixel[0], pixel[1]);
       gl!.drawArrays(gl!.TRIANGLES, 0, 3);
       gl!.uniform1i(scene.uPicking, 0);
     });
+    if (sent) pickWanted = false;
     gl!.viewport(0, 0, canvas.width, canvas.height); // the picker drew on 1×1
   }
 
@@ -303,19 +314,58 @@ export function createView(
 
     if (scene) {
       if (!document.hidden) density?.frame(now); // a hidden page is throttled, not slow
+      // :hover: which object is under the mouse, then how far each slot has glided
+      const hovers = scene.hover.length + (scene.active?.length ?? 0) > 0;
+      const pixel = hovers ? pointerPixel() : null;
+      let glides: Float32Array | null = null;
+      if (hovers) {
+        const id = picker.poll(); // the answer to an earlier request, if it came back
+        if (id !== null && pointer) {
+          hovered = id;
+          press.picked(id);
+        }
+        if (!pixel) {
+          hovered = 0; // outside the canvas: nothing is hovered, at once
+          pickWanted = false;
+        }
+        const targets = pointerValues(scene.hover, scene.active, hovered, press.id);
+        glides = transitions.update(targets, now, reducedMotion);
+      }
+      const values = properties.values();
+      const timeline = scene.timelines
+        ? timelineValues(scene.timelines, canvas, slider?.value() ?? null)
+        : null;
+      // Render on demand (decision 134): the state of the last frame drawn, nothing to draw;
+      // the mouse may still have moved over the frame on screen
+      const changed = demand.need([
+        canvas.width,
+        canvas.height,
+        canvas.clientWidth,
+        scene.moves ? clock.seconds : 0,
+        camera.yaw,
+        camera.pitch,
+        camera.dist,
+        store.version(),
+        ...(values ?? []),
+        ...(timeline ?? []),
+        ...(glides ?? []),
+      ]);
+      if (!changed && !measuring()) {
+        if (pixel && pickWanted) {
+          gl!.useProgram(scene.program); // its uniforms are those of the frame on screen
+          requestPick(scene, pixel);
+        }
+        frameId = requestAnimationFrame(frame);
+        return;
+      }
       // We send the state to the shader
       gl!.useProgram(scene.program);
       gl!.uniform3f(scene.uResolution, canvas.width, canvas.height, 1);
       gl!.uniform1f(scene.uTime, clock.seconds);
       gl!.uniform2f(scene.uCamera, camera.yaw, camera.pitch);
       gl!.uniform1f(scene.uDist, camera.dist);
-      const values = properties.values();
       if (values) gl!.uniform4fv(scene.uProperties, values);
-      if (scene.timelines)
-        gl!.uniform4fv(
-          scene.uTimeline,
-          timelineValues(scene.timelines, canvas, slider?.value() ?? null),
-        );
+      if (timeline) gl!.uniform4fv(scene.uTimeline, timeline);
       // Each image on its own texture unit, and each uTextureN told which unit to read
       scene.textures.forEach((texture, i) => {
         gl!.activeTexture(gl!.TEXTURE0 + i);
@@ -323,19 +373,10 @@ export function createView(
         gl!.uniform1i(scene!.uTextures[i], i);
       });
       probe?.drawStart(); // before the picking: its pass costs GPU time too
-      // :hover: which object is under the mouse, then uHover[] for every slot
-      if (scene.hover.length + (scene.active?.length ?? 0) > 0) {
-        const id = picker.poll(); // the answer to an earlier request, if it came back
-        if (id !== null && pointer) {
-          hovered = id;
-          press.picked(id);
-        }
-        requestPick(scene);
-        const targets = pointerValues(scene.hover, scene.active, hovered, press.id);
-        gl!.uniform1fv(
-          scene.uHover,
-          transitions.update(targets, now, reducedMotion),
-        );
+      // :hover: the object under the mouse in this frame, then uHover[] for every slot
+      if (hovers) {
+        if (pixel) requestPick(scene, pixel);
+        gl!.uniform1fv(scene.uHover, glides!);
       }
       if (post.active()) {
         // filter: the scene into an image, then the passes; blur(4px) is 4 CSS pixels
@@ -366,6 +407,7 @@ export function createView(
       compiled.hover,
       compiled.active,
       compiled.timelines,
+      movesWithTime(compiled),
     ); // GLSL errors
     try {
       post.set(compiled.passes); // GLSL errors of the passes
@@ -377,6 +419,7 @@ export function createView(
     if (scene) gl!.deleteProgram(scene.program);
     scene = next;
     shown = compiled;
+    demand.forget(); // a new shader: its first frame is drawn
     properties.use(compiled.properties);
     hovered = 0; // the ids belong to the new scene now
     press.reset();

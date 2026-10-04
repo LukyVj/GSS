@@ -137,6 +137,16 @@ describe("createPicker", () => {
     expect(drawn).toEqual([1, 3]);
   });
 
+  it("says whether it sent the request: not while the previous pixel is on its way", () => {
+    const fake = fakeGl();
+    const picker = createPicker(fake.gl);
+    expect(picker.request(() => {})).toBe(true);
+    expect(picker.request(() => {})).toBe(false);
+    fake.gpuDone(3, 0);
+    picker.poll();
+    expect(picker.request(() => {})).toBe(true);
+  });
+
   it("has nothing to give before any request", () => {
     const fake = fakeGl();
     expect(createPicker(fake.gl).poll()).toBeNull();
