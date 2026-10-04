@@ -296,7 +296,7 @@ export const PROPERTIES: PropertyDef[] = [
       {
         name: "a colored shadow",
         text: "A red pane at 50% casts a pink light.",
-        code: "@scene { cube; sphere; } scene { shadows: soft; light: 30deg 55deg; } cube { translate: 0 0.9 0; size: 1.2 1.2 0.05; color: #ff2a2a; opacity: 0.5; } sphere { translate: 0.9 0.4 -1; radius: 0.4; }",
+        code: "@scene { cube; sphere; } scene { shadows: soft; light: 30deg 55deg; } cube { translate: 0 0.9 0; size: 1.2 2.2 0.05; color: #ff2a2a; opacity: 0.5; animation: move 5s ease alternate; } sphere { translate: 0.9 0.4 -1; radius: 0.4; } @keyframes move { to { translate: 1 0.9 0; } }",
       },
     ],
   },
