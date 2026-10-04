@@ -132,6 +132,11 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 - [x] VS Code extension 0.4.0: the `.vsix` rebuilt with the grammar of decisions 106 and 129 (nested rules, `&`, `@media`, `@property`, `@property-panel`).
 - [ ] Published on npm, tag `v0.0.5`, site deployed (Lucas).
 
+## VS Code extension on the Marketplace (Lucas, Oct. 4: for Oct. 5)
+
+- [ ] Publish the extension (0.4.0, publisher `lukyvj`) on the VS Code Marketplace; Lucas signs in and holds the token. Its `package.json` has no `repository` yet, and `npm run package` skips the license: both to settle before publishing.
+- [ ] Say in the docs that GSS has syntax highlighting (and formatting) in VS Code, with the link to the Marketplace: the docs do not mention the extension today.
+
 ## Release 0.0.4 ✅
 
 - [x] Package and lockfile version set to 0.0.4; README, installation snippets and changelog follow.
