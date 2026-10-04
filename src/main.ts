@@ -90,10 +90,10 @@ const editor = connectEditor(
 );
 currentSource = editor.getCode;
 
-// ----- The panel of variables: a control per @property, set live (decision 127) -----
+// ----- The panel of variables: a control per @property, set live (decisions 127, 128) -----
 
 const variables = mountVariablesPanel(document.body, renderer);
-editor.onCompile((_code, compiled) => variables.update(compiled.properties));
+editor.onCompile((_code, compiled) => variables.update(compiled.properties, compiled.propertyPanel));
 
 // ----- The status bar: the numbers of the last compile, and the frame rate -----
 

@@ -5,7 +5,7 @@ import { MATH_FUNCTIONS } from "../values/calc";
 import { GRADIENT_FUNCTIONS } from "../shader/gradient";
 import { COLOR_FUNCTIONS } from "../values/colors";
 import { shapeNames } from "../shader/codegen/shapes";
-import { compileGSS, LIVE_PROPERTIES } from "../index";
+import { compileGSS, compileScene, LIVE_PROPERTIES } from "../index";
 
 describe("registry", () => {
   it("has no duplicate property names", () => {
@@ -90,13 +90,23 @@ describe("at-rules", () => {
     expect(new Set(names).size).toBe(names.length);
   });
 
-  it("documents @scene, @keyframes, @property and @media", () => {
+  it("documents @scene, @keyframes, @property, @property-panel and @media", () => {
     expect(AT_RULES.map((atRule) => atRule.name)).toEqual([
       "scene",
       "keyframes",
       "property",
+      "property-panel",
       "media",
     ]);
+  });
+
+  it("@property-panel gives each of its examples a panel and a variable", () => {
+    const panel = AT_RULES.find((atRule) => atRule.name === "property-panel")!;
+    for (const { code } of panel.examples) {
+      const scene = compileScene(code);
+      expect(scene.propertyPanel, code).toBeDefined();
+      expect(scene.properties?.length, code).toBeGreaterThan(0);
+    }
   });
 
   it("gives every at-rule a description and at least one example", () => {

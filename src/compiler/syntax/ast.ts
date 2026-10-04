@@ -6,6 +6,13 @@ export type Stylesheet = {
   rules: Rule[];
   keyframes: Keyframes[]; // all the @keyframes blocks
   properties: PropertyRule[]; // the @property rules (decision 105)
+  panels: PanelRule[]; // the @property-panel rules (decision 128)
+};
+
+// @property-panel { display: open; }
+export type PanelRule = {
+  at: Token; // the @property-panel keyword (for the errors)
+  descriptors: Declaration[];
 };
 
 // @property --speed { syntax: "<number>"; inherits: false; initial-value: 4; }

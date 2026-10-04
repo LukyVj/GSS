@@ -10,6 +10,10 @@
   initial-value: 52deg;
 }
 
+@property-panel {
+  display: open;
+}
+
 @scene {
   cylinder#plinth;
   cylinder#step;

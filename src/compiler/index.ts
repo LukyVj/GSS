@@ -31,7 +31,9 @@ import { GRADIENT_FUNCTIONS } from "./shader/gradient";
 import {
   propertyFloats,
   propertyToken,
+  readPropertyPanel,
   readPropertyRules,
+  type PropertyPanel,
   type RegisteredProperty,
 } from "./features/properties";
 
@@ -58,6 +60,9 @@ export type CompiledScene = {
   // @property (decision 105): the variables the page sets from JS, in the order of
   // uProperties[], with the 4 floats each starts from. Absent when there is none.
   properties?: RegisteredProperty[];
+  // @property-panel (decision 128): the playground and Try it show a control per variable,
+  // open or folded at the start. Absent without the rule, or with display: none.
+  propertyPanel?: PropertyPanel;
   // @media: the queries, and the scene for every combination of them. variants[mask]
   // is the scene when the queries whose bit is set in mask match (bit 0: queries[0]).
   // The fields above are variants[0], the scene when none matches.
@@ -157,6 +162,7 @@ function compileStylesheet(
   // @property (decision 105): each registered variable reads its uniform; the scene gives
   // its start value, or its initial-value does
   const registered = errors.run(() => registeredProperties(stylesheet, sceneStyles)) ?? [];
+  const panel = errors.run(() => readPropertyPanel(stylesheet.panels));
   const live: Variables = Object.fromEntries(registered.map((p, i) => [p.name, [propertyToken(p, i)]]));
   const rootVariables = { ...customProperties(sceneStyles), ...live };
 
@@ -314,6 +320,7 @@ function compileStylesheet(
         }
       : {}),
     ...(registered.length > 0 ? { properties: registered } : {}),
+    ...(panel ? { propertyPanel: panel } : {}),
     shader: shader!,
     camera: camera!,
     dpr: dpr!,

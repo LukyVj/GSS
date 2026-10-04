@@ -332,7 +332,7 @@ export function parse(tokens: Token[], errors?: ErrorSink): Stylesheet {
   // @media inside a rule: its declarations and rules go to the selectors of the rule
   function parseNestedAt(selectors: Token[][], outer?: string): Rule[] {
     const at = next();
-    if (at.type === "AT_KEYWORD" && ["scene", "keyframes", "property"].includes(at.value as string))
+    if (at.type === "AT_KEYWORD" && ["scene", "keyframes", "property", "property-panel"].includes(at.value as string))
       throw errorAt(at, `@${at.value} goes outside the rules`);
     if (at.type !== "AT_KEYWORD" || at.value !== "media")
       throw errorAt(at, `@${at.value} isn't supported yet`);
@@ -393,6 +393,8 @@ export function parse(tokens: Token[], errors?: ErrorSink): Stylesheet {
       const token = peek();
       if (!token) throw errorAt(open, '@media never closed: "}" missing');
       const read = attempt(() => {
+        if (token.type === "AT_KEYWORD" && token.value === "property-panel")
+          throw errorAt(token, "@property-panel goes outside the rules");
         if (token.type === "AT_KEYWORD")
           throw errorAt(
             token,
@@ -407,7 +409,7 @@ export function parse(tokens: Token[], errors?: ErrorSink): Stylesheet {
   }
 
   // The whole file: a sequence of @scene and rules
-  const stylesheet: Stylesheet = { scene: [], rules: [], keyframes: [], properties: [] };
+  const stylesheet: Stylesheet = { scene: [], rules: [], keyframes: [], properties: [], panels: [] };
 
   // One @scene, @keyframes, @media or rule
   function parseStatement(): void {
@@ -429,6 +431,11 @@ export function parse(tokens: Token[], errors?: ErrorSink): Stylesheet {
         // @property --speed { syntax: "<number>"; … }: read in features/properties.ts
         const name = next();
         stylesheet.properties.push({ name, descriptors: parseDeclarationBlock() });
+      } else if (token.value === "property-panel") {
+        // @property-panel { display: open; }: read in features/properties.ts (decision 128)
+        if (!isPunct(peek(), "{"))
+          throw errorAt(peek() ?? token, "@property-panel takes a block, like: @property-panel { display: open; }");
+        stylesheet.panels.push({ at: token, descriptors: parseDeclarationBlock() });
       } else {
         throw errorAt(token, `@${token.value} isn't supported yet`);
       }

@@ -1,13 +1,12 @@
 import "./variables-panel.css";
-import type { RegisteredProperty } from "../compiler/features/properties";
+import type { PropertyPanel, RegisteredProperty } from "../compiler/features/properties";
 
-// The panel of variables (decision 127): over the top-left corner of the render, in the
-// playground and in "Try it" of the docs, one control per variable the scene registers with @property, that calls setProperty() as
+// The panel of variables (decisions 127, 128): over the top-left corner of the render, in the
+// playground and in "Try it" of the docs, when the scene asks for it with @property-panel,
+// one control per variable the scene registers with @property, that calls setProperty() as
 // it moves, without compiling again. Nothing goes into the code: the share link carries the
 // code, and the code its start values. @property has no min or max: the range of a slider
 // comes from the start value, and a number typed outside it widens it.
-
-export const STORAGE_KEY = "gss-variables";
 
 type Unit = "" | "deg" | "%" | "px";
 export type Control =
@@ -68,22 +67,6 @@ type Row = {
   element: HTMLElement;
   start: string; // the syntax and the start value: a change in the code makes a new row
 };
-
-function readFolded(): boolean {
-  try {
-    return localStorage.getItem(STORAGE_KEY) === "folded";
-  } catch {
-    return false; // private mode, blocked storage: open
-  }
-}
-
-function saveFolded(folded: boolean): void {
-  try {
-    localStorage.setItem(STORAGE_KEY, folded ? "folded" : "open");
-  } catch {
-    // folded for this page only
-  }
-}
 
 function input(type: string, label: string): HTMLInputElement {
   const element = document.createElement("input");
@@ -183,23 +166,25 @@ export function mountVariablesPanel(parent: HTMLElement, scene: Scene) {
   panel.append(toggle, list);
   parent.append(panel); // a grid item: the CSS puts it in the cell of the render
 
-  let folded = readFolded();
+  let folded = false;
   const fold = () => {
     toggle.setAttribute("aria-expanded", String(!folded));
     list.hidden = folded;
   };
   toggle.addEventListener("click", () => {
     folded = !folded;
-    saveFolded(folded);
     fold();
   });
   fold();
+  // The display the code asked for last: the viewer's click holds until the code changes it
+  let asked: PropertyPanel | undefined;
 
   const rows = new Map<string, Row>();
   return {
-    // After each compile: the variables of the scene now on screen. A row whose syntax and
-    // start value did not change keeps its value; otherwise the code's start value wins.
-    update(properties: RegisteredProperty[] | undefined): void {
+    // After each compile: the variables of the scene now on screen, and its @property-panel
+    // (none: no panel). A row whose syntax and start value did not change keeps its value;
+    // otherwise the code's start value wins.
+    update(properties: RegisteredProperty[] | undefined, display: PropertyPanel | undefined): void {
       const next = properties ?? [];
       for (const [name, row] of rows) {
         const property = next.find((p) => p.name === name);
@@ -213,7 +198,12 @@ export function mountVariablesPanel(parent: HTMLElement, scene: Scene) {
       }
       list.replaceChildren(...next.map((property) => rows.get(property.name)!.element));
       toggle.textContent = `variables · ${next.length}`;
-      panel.hidden = next.length === 0;
+      if (display && display !== asked) {
+        folded = display === "folded";
+        fold();
+      }
+      asked = display;
+      panel.hidden = !display || next.length === 0;
     },
   };
 }

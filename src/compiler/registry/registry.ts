@@ -1406,7 +1406,7 @@ export const AT_RULES: AtRuleDef[] = [
       ["inherits", "Required, like CSS: `true` or `false`."],
       ["initial-value", "Its value until the page sets another one. `scene { --lift: 2; }` gives another start value; declared anywhere else, on an object, a group, a `:hover` rule or a frame, the variable is an error. A frame can read it."],
     ],
-    details: "It goes wherever the shader reads a value at each frame: the transforms (`translate`, `rotate-x`, `rotate-y`, `rotate-z`, `scale`, `transform-origin`), `color`, `opacity`, `background`, `mask-image`, the sizes of the shapes (`size`, `radius`, `height`, `thickness`, `corner-radius`, `stroke-width`, `depth`), the numbers of a gradient, `material`, `floor`, `ambient`, `light` and the `intensity` of the point lights, `fog`, `camera-target`, `blend`, `offset-distance`, `offset-rotate`, `texture-size` and `filter`, alone or inside the math and color functions. It cannot go where the scene is built when it compiles: the copies of `* n`, `d` and `view-box`, the timing of animations and transitions, the camera the mouse moves, `dpr` and `random()`. A value set from JavaScript is never refused: it is kept in its range, so a size never goes below 0. In the playground and in Try it, each registered variable gets a control over the render, a slider or a color picker, that sets it as it moves.",
+    details: "It goes wherever the shader reads a value at each frame: the transforms (`translate`, `rotate-x`, `rotate-y`, `rotate-z`, `scale`, `transform-origin`), `color`, `opacity`, `background`, `mask-image`, the sizes of the shapes (`size`, `radius`, `height`, `thickness`, `corner-radius`, `stroke-width`, `depth`), the numbers of a gradient, `material`, `floor`, `ambient`, `light` and the `intensity` of the point lights, `fog`, `camera-target`, `blend`, `offset-distance`, `offset-rotate`, `texture-size` and `filter`, alone or inside the math and color functions. It cannot go where the scene is built when it compiles: the copies of `* n`, `d` and `view-box`, the timing of animations and transitions, the camera the mouse moves, `dpr` and `random()`. A value set from JavaScript is never refused: it is kept in its range, so a size never goes below 0. With `@property-panel`, the playground and Try it show a control for each registered variable over the render.",
     examples: [
       {
         name: "a number",
@@ -1424,7 +1424,38 @@ export const AT_RULES: AtRuleDef[] = [
         code: '@property --hue { syntax: "<number>"; inherits: false; initial-value: 20; } @scene { sphere * 5; } sphere { radius: 0.35; translate: calc(sibling-index() * 0.8 - 2.4) calc(0.6 + sin(var(--hue) * 1deg) * 0.3) 0; color: oklch(70% 0.16 calc(var(--hue) + sibling-index() * 30)); }',
       },
     ],
-    see: [{ anchor: "set-variables", label: "Set variables from JavaScript" }],
+    see: [
+      { anchor: "set-variables", label: "Set variables from JavaScript" },
+      { anchor: "at-property-panel", label: "@property-panel" },
+    ],
+  },
+  {
+    name: "property-panel",
+    syntax: "@property-panel { display: open | folded | none; }",
+    description:
+      "Shows a control for each variable of `@property` over the render, in the playground and in Try it: a slider and its number, or a color picker for a color. Moving a control sets the variable without compiling the scene again.",
+    valuesTitle: "Descriptors",
+    values: [
+      ["display", "`open`, the default: the panel shows its controls. `folded`: only its title, `variables · 2`, which opens it. `none`: no panel, as without the rule."],
+    ],
+    details:
+      "A slider goes from 0 to twice the start value of its variable, at least from 0 to 1, and around 0 for a negative value; an angle from 0 to 360deg, a percentage from 0% to 100%. A number typed past the end of a slider widens it, and the reset button gives the start value back. When the code changes a start value, the code wins over the slider. The panel never writes into the code, and a page that embeds the scene shows no panel: it sets the variables with `setProperty()`.",
+    examples: [
+      {
+        name: "a slider",
+        text: "Drag `--lift` and the sphere rises, without compiling again.",
+        code: '@property --lift { syntax: "<number>"; inherits: false; initial-value: 1; } @property-panel { display: open; } @scene { sphere; } sphere { translate: 0 var(--lift) 0; radius: 0.5; color: #ff5a36; }',
+      },
+      {
+        name: "folded, with a color and an angle",
+        text: "The panel starts folded: its title opens it.",
+        code: '@property --tint { syntax: "<color>"; inherits: false; initial-value: #3a7bff; } @property --turn { syntax: "<angle>"; inherits: false; initial-value: 30deg; } @property-panel { display: folded; } @scene { cube; } cube { translate: 0 0.8 0; rotate-y: var(--turn); color: var(--tint); }',
+      },
+    ],
+    see: [
+      { anchor: "at-property", label: "@property" },
+      { anchor: "set-variables", label: "Set variables from JavaScript" },
+    ],
   },
   {
     name: "media",

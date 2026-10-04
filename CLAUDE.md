@@ -9,7 +9,7 @@ gss-lang.dev; npm package: `gss-lang`.
 - `ROADMAP.md`: what GSS already does, and what comes next. The **Essentials** section (Oct. 2) is done;
   Lucas's order for what comes next is at the top of **Priorities** (the transparency of the
   objects is done: ask him for the next one).
-- `DECISIONS.md`: every design decision, numbered. The next one is **128**. Add a decision for every
+- `DECISIONS.md`: every design decision, numbered. The next one is **129**. Add a decision for every
   new feature or behavior change.
 - `CONTRIBUTING.md`: where things live. `CHANGELOG.md`: user-facing changes, under "Unreleased".
 

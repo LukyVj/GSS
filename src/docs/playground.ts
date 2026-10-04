@@ -58,13 +58,13 @@ function openPlayground(example: HTMLElement, code: string, html = ""): void {
     formatGss(code),
   );
 
-  // A control per @property over the render, like the playground (decision 127)
+  // A control per @property over the render, like the playground (decisions 127, 128)
   const variables = mountVariablesPanel(panel.querySelector(".playground-body")!, renderer);
 
   // The link carries the code as it is now, edits included
   const link = panel.querySelector<HTMLAnchorElement>(".open-playground")!;
   editor.onCompile(async (current, compiled) => {
-    variables.update(compiled.properties);
+    variables.update(compiled.properties, compiled.propertyPanel);
     link.href = `./playground.html${await encodeCode(current, html)}`; // the HTML goes too
   });
 

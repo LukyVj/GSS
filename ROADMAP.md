@@ -282,6 +282,7 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 
 ## Done recently
 
+- `@property-panel { display: open | folded | none; }`: the scene asks for the panel of variables, a page of the reference with its examples; no panel without it (decision 128). At the release: `since` on its registry entry
 - A "New features" group in the playground examples: Astral Greenhouse, Property Control Room, Noise Atmosphere, Mask & Displacement, HTML Card (scenes started in other worktrees, fixed to compile)
 - A panel of variables over the render of the playground and of Try it: a slider and its number, or a color picker, per `@property` variable, set live without compiling again; the range comes from the start value and widens for a typed number (decision 127)
 - A resizable playground: a separator between the editor and the scene, by mouse, finger or keyboard; the editor folds into a rail; the size is kept (decision 123)

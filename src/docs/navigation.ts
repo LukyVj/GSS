@@ -58,7 +58,7 @@ export const ENTRY_ORDER: Record<string, number> = {
 export const DOC_GROUPS: NavGroup[] = [
   { id: "getting-started", title: "Getting started", category: "Start here", order: 0, anchors: ["why-gss", "first-scene"] },
   { id: "installation", title: "Installation", category: "Start here", order: 1, anchors: ["embedding", "install-package", "install-vite", "install-cdn", "set-variables"] },
-  { id: "at-rules", title: "At-rules", category: "Language", order: 10, anchors: ["at-scene", "at-media", "at-keyframes", "at-property"] },
+  { id: "at-rules", title: "At-rules", category: "Language", order: 10, anchors: ["at-scene", "at-media", "at-keyframes", "at-property", "at-property-panel"] },
   { id: "selectors", title: "Selectors", category: "Language", order: 11, anchors: ["selector-type", "selector-class", "selector-id", "selector-universal", "selector-list", "selector-nesting", "selector-important"] },
   { id: "combinators", title: "Combinators", category: "Language", order: 12, anchors: ["selector-descendant", "selector-child", "selector-adjacent", "selector-sibling"] },
   { id: "pseudo-classes", title: "Pseudo-classes", category: "Language", order: 13, anchors: ["selector-hover", "selector-active", "selector-has", "selector-not", "selector-nth-child", "selector-nth-of-type", "selector-first-child", "selector-face"] },

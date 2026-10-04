@@ -374,3 +374,46 @@ describe("a variable set from JS in a frame of @keyframes (decision 105)", () =>
     expect(shader).toContain("mix(vec3(0.0, 0.0, 0.0), vec3(0.0, uProperties[0].x, 0.0), ");
   });
 });
+
+describe("@property-panel: a control per variable in the playground (decision 128)", () => {
+  const scene = (rules: string) => compileScene(`${NUMBER} ${rules} @scene { cube } cube { translate: 0 var(--h) 0; }`);
+
+  it("asks for the panel, open or folded", () => {
+    expect(scene("@property-panel { display: open; }").propertyPanel).toBe("open");
+    expect(scene("@property-panel { display: folded; }").propertyPanel).toBe("folded");
+  });
+
+  it("is open when display is not written, like a descriptor at its initial value", () => {
+    expect(scene("@property-panel { }").propertyPanel).toBe("open");
+  });
+
+  it("gives no panel without the rule, or with display: none", () => {
+    expect(scene("").propertyPanel).toBeUndefined();
+    expect(scene("@property-panel { display: none; }").propertyPanel).toBeUndefined();
+  });
+
+  it("takes the last rule, like the cascade", () => {
+    expect(scene("@property-panel { display: open; } @property-panel { display: folded; }").propertyPanel).toBe("folded");
+  });
+
+  it("leaves the shader as it was", () => {
+    expect(scene("@property-panel { display: open; }").shader).toBe(scene("").shader);
+  });
+
+  it("says what it takes", () => {
+    expect(() => scene("@property-panel { display: shown; }")).toThrow(
+      "display of @property-panel is open, folded or none, not shown",
+    );
+    expect(() => scene("@property-panel { width: 300px; }")).toThrow("@property-panel takes display, not width");
+    expect(() => scene("@property-panel --h { display: open; }")).toThrow(
+      "@property-panel takes a block, like: @property-panel { display: open; }",
+    );
+  });
+
+  it("goes outside the rules", () => {
+    expect(() => scene("cube { @property-panel { display: open; } }")).toThrow("@property-panel goes outside the rules");
+    expect(() => scene("@media (min-width: 600px) { @property-panel { display: open; } }")).toThrow(
+      "@property-panel goes outside the rules",
+    );
+  });
+});

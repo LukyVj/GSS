@@ -5,7 +5,7 @@
 // A registered variable is not replaced by its value like the others (decision 55): var()
 // gives a token that reads the uniform uProperties[i], and the runtime fills it, from its
 // initial value or from setProperty(). One value for the whole scene, like :root.
-import type { PropertyRule } from "../syntax/ast";
+import type { PanelRule, PropertyRule } from "../syntax/ast";
 import type { PropertySyntax, Token } from "../syntax/tokenizer";
 import { errorAt } from "../syntax/errors";
 import { hexToRgb } from "../shader/codegen/read";
@@ -64,6 +64,28 @@ export function readPropertyRules(rules: PropertyRule[]): { name: string; syntax
     found.set(name.value, { name: name.value, syntax: SYNTAXES[text], initial: initial.value });
   }
   return [...found.values()];
+}
+
+// @property-panel { display: open | folded | none; } (decision 128): a control per registered
+// variable over the render of the playground and of Try it, open or folded at the start.
+// display is open when it is not written; the last rule wins, like the cascade.
+export type PropertyPanel = "open" | "folded";
+const DISPLAYS = ["open", "folded", "none"];
+
+export function readPropertyPanel(rules: PanelRule[]): PropertyPanel | undefined {
+  let display = "none";
+  for (const rule of rules) {
+    display = "open";
+    for (const d of rule.descriptors) {
+      if (d.property !== "display") throw errorAt(d, `@property-panel takes display, not ${d.property}`);
+      const [token] = d.value;
+      const text = d.value.map((t) => String(t.value)).join(" ");
+      if (d.value.length !== 1 || token.type !== "IDENT" || !DISPLAYS.includes(String(token.value)))
+        throw errorAt(d.value, `display of @property-panel is open, folded or none, not ${text}`);
+      display = String(token.value);
+    }
+  }
+  return display === "none" ? undefined : (display as PropertyPanel);
 }
 
 // A value of a registered variable, its colors and math already computed: the 4 floats of

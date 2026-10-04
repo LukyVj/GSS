@@ -2,6 +2,7 @@
 @property --lift { syntax: "<number>"; inherits: false; initial-value: 0.35; }
 @property --hue { syntax: "<number>"; inherits: false; initial-value: 205; }
 @property --energy { syntax: "<number>"; inherits: false; initial-value: 0.45; }
+@property-panel { display: open; }
 
 @scene {
   group#rig {

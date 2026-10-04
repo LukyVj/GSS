@@ -1,13 +1,14 @@
 // @vitest-environment happy-dom
 import { describe, it, expect, beforeEach } from "vitest";
-import { controlFor, widen, cssValue, mountVariablesPanel, STORAGE_KEY } from "./variables-panel";
+import { controlFor, widen, cssValue, mountVariablesPanel } from "./variables-panel";
 import { compileScene } from "../compiler";
 import { AT_RULES } from "../compiler/registry/registry";
 import type { RegisteredProperty } from "../compiler/features/properties";
 
 // The panel of the playground: one control per variable of @property, over the render, that
-// calls setProperty() as it moves, without compiling again. @property has no min or max:
-// the range comes from the start value, and a number typed outside it widens it.
+// calls setProperty() as it moves, without compiling again, when the scene asks for it with
+// @property-panel. @property has no min or max: the range comes from the start value, and a
+// number typed outside it widens it.
 
 const number = (name: string, value: number): RegisteredProperty => ({ name, syntax: "number", initial: [value, 0, 0, 0] });
 
@@ -98,7 +99,6 @@ function type(input: HTMLInputElement, value: string) {
 describe("mountVariablesPanel", () => {
   beforeEach(() => {
     document.body.innerHTML = "";
-    localStorage.clear();
   });
 
   const panel = () => document.querySelector<HTMLElement>(".vars-panel")!;
@@ -109,17 +109,17 @@ describe("mountVariablesPanel", () => {
 
   it("stays hidden while the scene registers no variable", () => {
     const vars = mountVariablesPanel(document.body, fakeScene());
-    vars.update(undefined);
+    vars.update(undefined, "open");
     expect(panel().hidden).toBe(true);
-    vars.update([number("--lift", 1)]);
+    vars.update([number("--lift", 1)], "open");
     expect(panel().hidden).toBe(false);
-    vars.update([]);
+    vars.update([], "open");
     expect(panel().hidden).toBe(true);
   });
 
   it("shows one row per variable, in the order of the scene, at its start value", () => {
     const vars = mountVariablesPanel(document.body, fakeScene());
-    vars.update([number("--lift", 1), number("--hue", 20)]);
+    vars.update([number("--lift", 1), number("--hue", 20)], "open");
     const names = [...panel().querySelectorAll<HTMLElement>("[data-variable]")].map((r) => r.dataset.variable);
     expect(names).toEqual(["--lift", "--hue"]);
     expect(slider("--hue").min).toBe("0");
@@ -132,7 +132,7 @@ describe("mountVariablesPanel", () => {
   it("sets the variable as the slider moves, and shows the number", () => {
     const scene = fakeScene();
     const vars = mountVariablesPanel(document.body, scene);
-    vars.update([{ name: "--turn", syntax: "angle", initial: [0, 0, 0, 0] }]);
+    vars.update([{ name: "--turn", syntax: "angle", initial: [0, 0, 0, 0] }], "open");
     slide(slider("--turn"), "90");
     expect(scene.calls).toEqual(["set --turn 90deg"]);
     expect(field("--turn").value).toBe("90");
@@ -141,7 +141,7 @@ describe("mountVariablesPanel", () => {
   it("widens the slider for a number typed outside its range", () => {
     const scene = fakeScene();
     const vars = mountVariablesPanel(document.body, scene);
-    vars.update([number("--lift", 1)]);
+    vars.update([number("--lift", 1)], "open");
     type(field("--lift"), "5");
     expect(slider("--lift").max).toBe("10");
     expect(slider("--lift").value).toBe("5");
@@ -151,7 +151,7 @@ describe("mountVariablesPanel", () => {
   it("puts back the last value for a field left empty", () => {
     const scene = fakeScene();
     const vars = mountVariablesPanel(document.body, scene);
-    vars.update([number("--lift", 1)]);
+    vars.update([number("--lift", 1)], "open");
     type(field("--lift"), "");
     expect(field("--lift").value).toBe("1");
     expect(scene.calls).toEqual([]);
@@ -160,7 +160,7 @@ describe("mountVariablesPanel", () => {
   it("sets a color from the color picker", () => {
     const scene = fakeScene();
     const vars = mountVariablesPanel(document.body, scene);
-    vars.update([{ name: "--tint", syntax: "color", initial: [1, 0.353, 0.212, 0] }]);
+    vars.update([{ name: "--tint", syntax: "color", initial: [1, 0.353, 0.212, 0] }], "open");
     const picker = row("--tint").querySelector<HTMLInputElement>('input[type="color"]')!;
     expect(picker.value).toBe("#ff5a36");
     slide(picker, "#3a7bff");
@@ -170,9 +170,9 @@ describe("mountVariablesPanel", () => {
   it("keeps a moved value when the code compiles again with the same start value", () => {
     const scene = fakeScene();
     const vars = mountVariablesPanel(document.body, scene);
-    vars.update([number("--lift", 1)]);
+    vars.update([number("--lift", 1)], "open");
     slide(slider("--lift"), "1.5");
-    vars.update([number("--lift", 1), number("--hue", 20)]);
+    vars.update([number("--lift", 1), number("--hue", 20)], "open");
     expect(slider("--lift").value).toBe("1.5");
     expect(scene.calls).toEqual(["set --lift 1.5"]);
   });
@@ -180,9 +180,9 @@ describe("mountVariablesPanel", () => {
   it("gives the code back its say when the start value changes there", () => {
     const scene = fakeScene();
     const vars = mountVariablesPanel(document.body, scene);
-    vars.update([number("--lift", 1)]);
+    vars.update([number("--lift", 1)], "open");
     slide(slider("--lift"), "1.5");
-    vars.update([number("--lift", 3)]);
+    vars.update([number("--lift", 3)], "open");
     expect(slider("--lift").value).toBe("3");
     expect(slider("--lift").max).toBe("6");
     expect(scene.calls).toEqual(["set --lift 1.5", "remove --lift"]);
@@ -191,9 +191,9 @@ describe("mountVariablesPanel", () => {
   it("forgets a variable the code no longer registers", () => {
     const scene = fakeScene();
     const vars = mountVariablesPanel(document.body, scene);
-    vars.update([number("--lift", 1), number("--hue", 20)]);
+    vars.update([number("--lift", 1), number("--hue", 20)], "open");
     slide(slider("--lift"), "1.5");
-    vars.update([number("--hue", 20)]);
+    vars.update([number("--hue", 20)], "open");
     expect(row("--lift")).toBeNull();
     expect(scene.calls).toEqual(["set --lift 1.5", "remove --lift"]);
   });
@@ -201,7 +201,7 @@ describe("mountVariablesPanel", () => {
   it("resets a moved variable to its start value", () => {
     const scene = fakeScene();
     const vars = mountVariablesPanel(document.body, scene);
-    vars.update([number("--lift", 1)]);
+    vars.update([number("--lift", 1)], "open");
     expect(reset("--lift").hidden).toBe(true);
     slide(slider("--lift"), "1.5");
     expect(reset("--lift").hidden).toBe(false);
@@ -212,24 +212,38 @@ describe("mountVariablesPanel", () => {
     expect(scene.calls).toEqual(["set --lift 1.5", "remove --lift"]);
   });
 
-  it("folds, and the next playground opens folded", () => {
+  it("stays hidden without @property-panel, even with variables", () => {
     const vars = mountVariablesPanel(document.body, fakeScene());
-    vars.update([number("--lift", 1)]);
+    vars.update([number("--lift", 1)], undefined);
+    expect(panel().hidden).toBe(true);
+  });
+
+  it("opens folded when the scene asks for it", () => {
+    const vars = mountVariablesPanel(document.body, fakeScene());
+    vars.update([number("--lift", 1)], "folded");
     const toggle = panel().querySelector<HTMLButtonElement>(".vars-toggle")!;
-    expect(toggle.getAttribute("aria-expanded")).toBe("true");
-    toggle.click();
     expect(toggle.getAttribute("aria-expanded")).toBe("false");
     expect(panel().querySelector<HTMLElement>(".vars-list")!.hidden).toBe(true);
-    expect(localStorage.getItem(STORAGE_KEY)).toBe("folded");
+    toggle.click();
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    expect(panel().querySelector<HTMLElement>(".vars-list")!.hidden).toBe(false);
+  });
 
-    document.body.innerHTML = "";
-    mountVariablesPanel(document.body, fakeScene()).update([number("--lift", 1)]);
-    expect(panel().querySelector(".vars-toggle")!.getAttribute("aria-expanded")).toBe("false");
+  it("keeps the viewer's fold while the code compiles again, until display changes", () => {
+    const vars = mountVariablesPanel(document.body, fakeScene());
+    const expanded = () => panel().querySelector(".vars-toggle")!.getAttribute("aria-expanded");
+    vars.update([number("--lift", 1)], "open");
+    panel().querySelector<HTMLButtonElement>(".vars-toggle")!.click();
+    vars.update([number("--lift", 1)], "open");
+    expect(expanded()).toBe("false");
+    vars.update([number("--lift", 1)], "folded");
+    vars.update([number("--lift", 1)], "open");
+    expect(expanded()).toBe("true");
   });
 
   it("names its count in the toggle", () => {
     const vars = mountVariablesPanel(document.body, fakeScene());
-    vars.update([number("--lift", 1), number("--hue", 20)]);
+    vars.update([number("--lift", 1), number("--hue", 20)], "open");
     expect(panel().querySelector(".vars-toggle")!.textContent).toBe("variables · 2");
   });
 });
