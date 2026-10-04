@@ -165,7 +165,8 @@ and a readable path toward the shader underneath. It is not meant to replace GLS
 - **Variables**: `--size: 2` and `var(--size, 1)`, inherited from the scene to groups to objects,
   and animatable in `@keyframes`. A variable registered with `@property` is set from the page at any
   moment, without compiling again: `scene.setProperty("--lift", "2")`
-  ([set variables from JavaScript](https://www.gss-lang.dev/docs#set-variables)).
+  ([set variables from JavaScript](https://www.gss-lang.dev/docs#set-variables)). With
+  `@property-panel { display: open; }`, the playground shows a slider for each of them.
 - **Colors**: hex, `rgb()`, `hsl()`, `oklch()`, `color-mix()` and the other CSS color functions, the
   CSS named colors (`tomato`) and `currentColor`, with math and `var()` inside:
   `hsl(calc(sibling-index() * 45) 90% 60%)`.
@@ -196,6 +197,7 @@ variables the page sets) and sends it as uniforms.
 
 - **Playground**: [gss-lang.dev/playground](https://www.gss-lang.dev/playground). Every error
   of a scene at once, each under its line; examples, generated GLSL and WGSL, backend selection,
+  a panel of sliders for the variables of `@property-panel`,
   share by URL, export to Shadertoy, a formatter (`Shift+Alt+F`) and a performance panel (`Alt+P`)
   for WebGL2 and WebGPU. It shows FPS, frame and CPU times, resolution, shader preparation time,
   and GPU time when the backend exposes timer queries. WebGPU uses optional `timestamp-query`;

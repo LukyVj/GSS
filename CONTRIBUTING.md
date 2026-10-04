@@ -18,9 +18,9 @@ npm run format     # format the .gss files (npm run format:check to only list th
 | `src/runtime/` | WebGL2 and WebGPU renderers (`backend.ts` picks one), camera, :hover picking, editor and autocompletion, share links |
 | `src/embed/`, `src/vite/` | the npm package: `mount()`, `<gss-scene>`, the Vite plugin |
 | `src/docs/` | the generated reference and the syntax highlighter |
-| `src/playground/`, `src/home/`, `src/showcase/` | the playground, the home page, the showcase |
+| `src/playground/`, `src/home/`, `src/showcase/` | the playground (its examples, the splitter, the panel of variables, also used by Try it in the docs), the home page, the showcase |
 | `src/profiler/`, `src/bench/` | the performance panel of the playground (`perf` or Alt+P, closed by default) and the bench (dev only) |
-| `editors/vscode/` | the VS Code / Cursor extension |
+| `editors/vscode/` | the VS Code / Cursor extension; `src/test/vscode-grammar.test.ts` checks that its grammar starts every at-rule of the registry as itself |
 | `DESIGN.md` | the visual identity ("Distance field") |
 
 Every property, shape, selector and function is described once in the registry
@@ -57,7 +57,7 @@ the `recordExtractor` of `src/docs/crawler.ts`. After changing it, run
 of the one there. Its tests keep the page under the 750 records the crawler takes from a page.
 A new page of the docs takes `since: "<the version that ships it>"` in the registry (or in
 `src/docs/guide.ts`): the search shows the pages of the newest version under "New in …"
-when it opens (`src/docs/start-screen.ts`). The drawings of "How GSS works", in the right column of
+when it opens (`src/docs/start-screen.ts`), once `package.json` has that version. The drawings of "How GSS works", in the right column of
 the search, are inline SVG in `src/docs/concepts.ts`; their styles are in `src/styles/search-start.css`.
 
 ## Publishing

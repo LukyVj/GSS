@@ -4,7 +4,7 @@ A living list of the next features. Tick an item or move it to **Done recently**
 
 **Rule:** every new feature or entry goes into the **registry** (in the right place) **and** into the **docs** (syntax, example, etc.).
 
-## Already in GSS (Oct. 2, 2026)
+## Already in GSS (Oct. 4, 2026)
 
 What the language and the tools can do today. Each feature is detailed in the registry (so in the docs), and the "why" is in `DECISIONS.md` (column _Dec._).
 
@@ -22,7 +22,7 @@ What the language and the tools can do today. Each feature is detailed in the re
 | Easings              | `linear`, `ease`, `ease-in`, `ease-out`, `ease-in-out`, `step-start`, `step-end`, `cubic-bezier()`, `linear()`, `steps()`, in `@keyframes` and `transition` | 68, 80                |
 | Media queries        | `@media (…) { … }`: any query the browser knows (width, orientation, `prefers-color-scheme`, `prefers-reduced-motion`…), up to 4 per scene, switched live; range syntax (`width < 600px`); `if(media(…))` and `light-dark()` add their own (dec. 79, 81)                                   | 71                    |
 | Math                 | `calc()`, `min()`, `max()`, `clamp()`, `abs()`, `sqrt()`, `pow()`, trigonometry and its inverses (`asin()` … `atan2()`), `sign()`, `round()`, `mod()`, `rem()`, `hypot()`, `log()`, `exp()`, `progress()`, `random()`, `pi`, `e` | 52, 78, 81, 104          |
-| Variables            | `--size: 2`, `var(--size, 1)`; inherited scene → group → object, a variable can use another, animatable in `@keyframes`; `@property` registers one that the page sets with `setProperty()`, without compiling again | 55, 105               |
+| Variables            | `--size: 2`, `var(--size, 1)`; inherited scene → group → object, a variable can use another, animatable in `@keyframes`; `@property` registers one that the page sets with `setProperty()`, without compiling again; `@property-panel { display: open \| folded \| none; }` gives it a control over the render of the playground and of Try it | 55, 105, 127, 128               |
 | Colors               | `#ff5a36`, `rgb()`, `hsl()`, `hwb()`, `lab()`, `lch()`, `oklab()`, `oklch()`, `color()`, `color-mix()`, `light-dark()`, `contrast-color()`, `currentColor` (dec. 94), the 148 CSS names (`tomato`) where a color is expected; a gradient (`linear-`, `radial-`, `conic-`, dec. 82, 98) in `color` or a material, animated in `color` (dec. 102); `noise()` placed by a 3D noise (dec. 111); `displace()`, an image moved by a map (dec. 114); math and `var()` inside | 58, 79                |
 | CSS-style loops      | `sibling-index()`, `sibling-count()`: each copy of a `* n` gets its own value                                                                                                               | 52                    |
 | Units                | angles `deg` `rad` `turn` (always with a unit), durations `s` `ms`, `%`                                                                                                                     | 9, 17, 20             |
@@ -102,7 +102,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 | Tool                       | Where                                                                                                                                                                        | Dec.       |
 | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
 | Home page                  | `/` (`index.html`), live demo, numbers read from the registry                                                                                                                | 51         |
-| Playground                 | `playground.html`: CodeMirror, code in the URL (sharing), examples, GLSL and WGSL tabs, backend selection (auto, WebGPU, WebGL2) | 34, 90 |
+| Playground                 | `playground.html`: CodeMirror, code in the URL (sharing), examples (Start here, New features, Studies, the reference), HTML, GLSL and WGSL tabs, backend selection (auto, WebGPU, WebGL2), a resizable editor, the dpr menu, the panel of variables of `@property-panel` | 34, 90, 101, 120, 123, 127, 128 |
 | Status bar                 | `ok · 0 objects · glsl 104 lines · compiled in 4 ms · 60 fps`                                                                                                                | 42         |
 | Located errors             | every error of a compile at once (the text first, then the values), each underlined and written under its line (`15:3 …`); `3 errors` in the status bar; line and column in Vite's terminal | 43, 86     |
 | Generated docs             | `docs.html`, one page per entry, from the registry, live "Try it" everywhere; "Set variables from JavaScript", the JS API with a live slider; a lead, a table of the values, titled examples | 12, 39, 44, 109, 121 |
@@ -110,22 +110,28 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 | Brand page                 | `/brand` (`brand.html`): marks, wordmark, lockup, icons, social cards                                                                                                        | 57         |
 | Shadertoy export           | `→ shadertoy` button in the playground, images in `iChannel0`…`3` (at most 4)                                                                                                | 60         |
 | Analytics                  | DocSearch Insights (Algolia) + Umami, events through `track()`                                                                                                               | 61         |
-| Docs search                | DocSearch v5 on every page; the Algolia Crawler reads `/docs` with `src/docs/crawler.ts` (one record per page and per part, 420, under the 750 a page), pasted with `npm run docsearch:extractor`; before a word is typed: Start here, New in 0.0.4 (`since` in the registry), Popular searches (Query Suggestions); three columns: the contents, the list, "How GSS works" in four drawings (`concepts.ts`) | 124–126    |
+| Docs search                | DocSearch v5 on every page; the Algolia Crawler reads `/docs` with `src/docs/crawler.ts` (one record per page and per part, 420, under the 750 a page), pasted with `npm run docsearch:extractor`; before a word is typed: Start here, New in 0.0.4 (`since` in the registry, a version once the package has it, dec. 129), Popular searches (Query Suggestions); three columns: the contents, the list, "How GSS works" in four drawings (`concepts.ts`) | 124–126    |
 | Autocompletion             | property names while typing, only those the rule can take (scene, shape, group, `:hover`, face, `@keyframes`, a nested rule), with their syntax and description | 89, 106    |
 | Formatter                  | `formatGss`, `Shift+Alt+F` in the playground                                                                                                                                 | 33         |
-| VS Code / Cursor extension | highlighting (nested rules, `&` and `@media` read since decision 106: rebuild the `.vsix` to ship it), formatter, icon for `.gss` files                                                                                                                               | 33, 106    |
+| VS Code / Cursor extension | highlighting (nested rules, `&` and `@media` since decision 106, `@property` and `@property-panel` since decision 129: rebuild the `.vsix` to ship it), formatter, icon for `.gss` files                                                                                                                               | 33, 106    |
 | Design                     | `DESIGN.md` "Distance field", tokens in `src/styles/tokens.css`, what every page shares in `src/styles/site.css` (`@layer site`: a page's own `<style>` always wins)         | –          |
-| npm package                | [`gss-lang`](https://www.npmjs.com/package/gss-lang) 0.0.4, prepared (0.0.3: tag `v0.0.3`; 0.0.2: `v0.0.2`, 0.0.1: `v0.0.1`), Apache-2.0: `gss-lang` (compiler + `mount`), `gss-lang/runtime`, `gss-lang/vite`, `gss-lang/embed` (pinned CDN module) | 63, 85     |
+| npm package                | [`gss-lang`](https://www.npmjs.com/package/gss-lang) 0.0.4, published Oct. 3 (tag `v0.0.4`; 0.0.3: tag `v0.0.3`; 0.0.2: `v0.0.2`, 0.0.1: `v0.0.1`), Apache-2.0: `gss-lang` (compiler + `mount`), `gss-lang/runtime`, `gss-lang/vite`, `gss-lang/embed` (pinned CDN module) | 63, 85     |
 | Scenes                     | every demo `.gss` in `src/scenes/` (playground examples, showcase, bench), all compiled by `gpu.test.ts`                                                                     | 63         |
 | Tests                      | Vitest (CPU) + GPU compilation of every registry example (Chromium)                                                                                                          | 12, 25     |
 | Profiler                   | a panel over the playground scene, public, closed by default and lazy (nothing measured before it opens), `perf` button or Alt+P (remembered), WebGL2 and WebGPU (timestamp queries when available): fps, frame, GPU and CPU time, real pixels, shader build time; over budget in signal | 64, 87, 91 |
 | Bench                      | `npm run bench:compare -- main --dpr 2`: another commit against the working tree, 3 alternating rounds, images compared pixel by pixel, report in `bench-results/compare.md` | 64         |
 
-## Release 0.0.4 (prepared Oct. 3, to publish)
+## Release 0.0.5 (in preparation)
+
+- Everything under "Unreleased" in `CHANGELOG.md`: decisions 118 to 129 (notes in the docs, the studies of the showcase, the dpr menu, the docs rewrite, the floor images, the resizable playground, the docs search, the panel of variables and `@property-panel`, the New features examples).
+- At the bump to 0.0.5: `@property-panel` already has `since: "0.0.5"`, and "New in 0.0.5" shows it by itself (decision 129). Rebuild the `.vsix` of the extension for the grammar of decision 129.
+
+## Release 0.0.4 ✅
 
 - [x] Package and lockfile version set to 0.0.4; README, installation snippets and changelog follow.
 - [x] What was unreleased goes into 0.0.4: decisions 101 to 117 (`element()`, animated gradients and the scene's animation, `@property` and `setProperty()`, nesting, `transform-origin`, fog, several and colored lights, `noise()`, layers of background, `mask-image`, `displace()`, shadows, `opacity` and transparent colors), and the clamped computed values (decision 104).
-- [ ] Published on npm, tag `v0.0.4`, site deployed (Lucas); for `element()` on gss-lang.dev, an origin trial token for HTML-in-Canvas (the trial ends Oct. 20).
+- [x] Published on npm (Oct. 3), tag `v0.0.4`, site deployed (v0.0.4 in the footer).
+- [ ] For `element()` on gss-lang.dev, an origin trial token for HTML-in-Canvas (the trial ends Oct. 20): none on the site yet.
 
 ## Release 0.0.3 ✅
 
@@ -146,7 +152,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 
 **Next, in Lucas's order** (Oct. 2, after 0.0.3; replaces the list of Oct. 1):
 
-**Next up** (Lucas, Oct. 3: "the order that makes the most sense"): the rest of item 7, in this order: ~~layers of `background` with `background-blend-mode`~~ ✅ decision 112; ~~`mask-image`~~ ✅ decision 113; ~~a displacement like `feDisplacementMap`~~ ✅ decision 114 (`displace()`). Lucas's list of Oct. 2 is done; then, his choice (Oct. 3): ~~soft shadows~~ ✅ decision 115; the transparency of the objects: ~~`opacity`~~ ✅ decision 116, ~~the transparent colors and `opacity()` on objects~~ ✅ decision 117; then, his choice (Oct. 4): ~~the panel of sliders for the `@property` variables~~ ✅ decision 127. Ask him for the next one. (Decision 101 to come back to after the origin trial ends on Oct. 20 if needed.)
+**Next up** (Lucas, Oct. 3: "the order that makes the most sense"): the rest of item 7, in this order: ~~layers of `background` with `background-blend-mode`~~ ✅ decision 112; ~~`mask-image`~~ ✅ decision 113; ~~a displacement like `feDisplacementMap`~~ ✅ decision 114 (`displace()`). Lucas's list of Oct. 2 is done; then, his choice (Oct. 3): ~~soft shadows~~ ✅ decision 115; the transparency of the objects: ~~`opacity`~~ ✅ decision 116, ~~the transparent colors and `opacity()` on objects~~ ✅ decision 117; then, his choice (Oct. 4): ~~the panel of sliders for the `@property` variables~~ ✅ decision 127, asked for by the scene with `@property-panel` (decision 128). Ask him for the next one. (Decision 101 to come back to after the origin trial ends on Oct. 20 if needed.)
 
 1. ~~**Animated gradients**~~ ✅ decisions 102, 103: a gradient changes into another of the same kind in `@keyframes` and on `:hover`, through a variable too; the scene plays an animation, so its `background` moves (a flat, moving image)
 2. **`setProperty()` from JS**: first step ✅ decision 105 (`@property`, `setProperty()` / `getPropertyValue()` / `removeProperty()`, in `translate`, `rotate-*`, `scale`, `color`, `offset-distance`, `background`). Second step ✅: inside `calc()` and the math functions, and the color functions (`hsl(var(--hue) …)`, `color-mix()`…), computed on the GPU. Third step ✅, Lucas's choice "everywhere": the sizes of shapes (without their bounding spheres), the numbers of a gradient, materials, `light`, `ambient`, `floor`, `camera-target`, `blend`, `offset-rotate`, `texture-size`, filters (with a `"<length>"` syntax in px, the passes included). Not read at run time: the copies of `* n`, `d`, `view-box`, the timings, the camera the mouse moves, `dpr`. The playground panel of sliders ✅ decision 127
