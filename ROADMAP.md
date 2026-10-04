@@ -131,6 +131,8 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 - [x] "New in 0.0.5" in the docs search: `view`, `@property-panel` and `lathe`, which carry `since: "0.0.5"` (decision 129).
 - [x] VS Code extension 0.4.0: the `.vsix` rebuilt with the grammar of decisions 106 and 129 (nested rules, `&`, `@media`, `@property`, `@property-panel`).
 - [ ] Published on npm, tag `v0.0.5`, site deployed (Lucas).
+- [x] The launch film (`video/launch/`, Oct. 5): 45 s, landscape and portrait, every 3D frame in GSS, the letters included (Martian Mono, extruded). "css" turns into "gss.", a rule is typed, "If you can write CSS, you can write GSS", then eleven cards of features from 0.0.1 to 0.0.5, the showcase, and the end card with the version.
+- [ ] The pen of the release (`codepen/`, not in git): one GSS scene of 30 s in a loop that presents GSS, its GSS in the CSS panel of CodePen; posted the day of the public release (Lucas).
 
 ## VS Code extension on the Marketplace (Lucas, Oct. 4: for Oct. 5)
 

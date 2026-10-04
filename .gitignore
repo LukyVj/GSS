@@ -35,3 +35,6 @@ lib
 # the bench (npm run bench): results and the worktrees of other commits
 bench-results
 .bench-worktrees
+
+# the GSS piece for CodePen, posted on the day of the public release
+codepen
