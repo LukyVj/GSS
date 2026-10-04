@@ -2,6 +2,7 @@ import { createRenderer, type Renderer } from "../runtime/renderer";
 import { connectEditor, type Editor } from "../runtime/editor";
 import { encodeCode } from "../runtime/share";
 import { formatGss } from "./format";
+import { mountVariablesPanel } from "../playground/variables-panel";
 
 // "Try it" opens a live editor under an example. Only one is open at a time:
 // browsers limit how many WebGL canvases a page can have.
@@ -57,9 +58,13 @@ function openPlayground(example: HTMLElement, code: string, html = ""): void {
     formatGss(code),
   );
 
+  // A control per @property over the render, like the playground (decision 127)
+  const variables = mountVariablesPanel(panel.querySelector(".playground-body")!, renderer);
+
   // The link carries the code as it is now, edits included
   const link = panel.querySelector<HTMLAnchorElement>(".open-playground")!;
-  editor.onCompile(async (current) => {
+  editor.onCompile(async (current, compiled) => {
+    variables.update(compiled.properties);
     link.href = `./playground.html${await encodeCode(current, html)}`; // the HTML goes too
   });
 

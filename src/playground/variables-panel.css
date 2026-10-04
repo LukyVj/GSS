@@ -1,5 +1,5 @@
-/* The panel of variables, over the top-left corner of the playground scene (the performance
-   panel takes the top-right one). */
+/* The panel of variables, over the top-left corner of the render: in the playground (the
+   performance panel takes the top-right one) and in "Try it" of the docs (docs.html places it). */
 
 @import "../styles/tokens.css";
 
@@ -8,8 +8,8 @@
   align-self: start;
   justify-self: start;
   z-index: 1;
-  margin: 12px;
-  width: min(300px, calc(100% - 150px)); /* the dpr menu keeps the top-right corner */
+  margin: 40px 12px 12px; /* under the row of the dpr menu, at the top right: any width fits */
+  width: min(300px, calc(100% - 24px));
   box-sizing: border-box;
   background: rgb(10 10 12 / 0.86); /* --gss-void, the scene shows through a little */
   border: 1px solid var(--gss-isoline);
@@ -69,7 +69,7 @@
 /* A row: the name above, then the control, its number, its unit and the reset */
 .vars-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 64px 22px 18px;
+  grid-template-columns: minmax(0, 1fr) minmax(36px, 56px) auto 18px; /* the unit only when there is one */
   grid-template-areas: "name name name name" "control field unit reset";
   align-items: center;
   column-gap: 6px;

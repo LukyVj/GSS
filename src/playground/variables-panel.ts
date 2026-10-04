@@ -1,8 +1,8 @@
 import "./variables-panel.css";
 import type { RegisteredProperty } from "../compiler/features/properties";
 
-// The panel of variables (decision 127): over the top-left corner of the playground scene,
-// one control per variable the scene registers with @property, that calls setProperty() as
+// The panel of variables (decision 127): over the top-left corner of the render, in the
+// playground and in "Try it" of the docs, one control per variable the scene registers with @property, that calls setProperty() as
 // it moves, without compiling again. Nothing goes into the code: the share link carries the
 // code, and the code its start values. @property has no min or max: the range of a slider
 // comes from the start value, and a number typed outside it widens it.
@@ -167,6 +167,8 @@ function createRow(property: RegisteredProperty, scene: Scene): HTMLElement {
   return row;
 }
 
+let panels = 0;
+
 export function mountVariablesPanel(parent: HTMLElement, scene: Scene) {
   const panel = document.createElement("section");
   panel.className = "vars-panel";
@@ -176,10 +178,10 @@ export function mountVariablesPanel(parent: HTMLElement, scene: Scene) {
   toggle.className = "vars-toggle";
   const list = document.createElement("div");
   list.className = "vars-list";
-  list.id = "vars-list";
+  list.id = `vars-list-${++panels}`; // the docs may hold a panel of their own
   toggle.setAttribute("aria-controls", list.id);
   panel.append(toggle, list);
-  parent.append(panel); // a grid item of <body>: the CSS puts it in the scene cell
+  parent.append(panel); // a grid item: the CSS puts it in the cell of the render
 
   let folded = readFolded();
   const fold = () => {

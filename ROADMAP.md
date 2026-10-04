@@ -283,7 +283,7 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 ## Done recently
 
 - A "New features" group in the playground examples: Astral Greenhouse, Property Control Room, Noise Atmosphere, Mask & Displacement, HTML Card (scenes started in other worktrees, fixed to compile)
-- A panel of variables over the playground render: a slider and its number, or a color picker, per `@property` variable, set live without compiling again; the range comes from the start value and widens for a typed number (decision 127)
+- A panel of variables over the render of the playground and of Try it: a slider and its number, or a color picker, per `@property` variable, set live without compiling again; the range comes from the start value and widens for a typed number (decision 127)
 - A resizable playground: a separator between the editor and the scene, by mouse, finger or keyboard; the editor folds into a rail; the size is kept (decision 123)
 - An image on the floor: a gradient, a `noise()` or a `displace()`, a gradient over a square of 40 under the scene (decision 122)
 - The docs, page by page: a short lead, a table of the values, a paragraph, titled examples with a sentence each, code shown as code; "light (sun)" and "light (point)"; Colors and Selectors split into smaller groups (decision 121)

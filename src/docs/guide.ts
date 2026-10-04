@@ -190,6 +190,8 @@ INSTALLATION.push({
     "<code>mount()</code> returns the scene at once, <code>mountAsync()</code> a promise of it. <code>mount()</code> from <code>gss-lang/runtime</code>, for a scene compiled by the Vite plugin, has the same methods.",
     `<pre><code class="js">${highlightCode("js", MOUNT_JS)}</code></pre>`,
     "A value set this way stays when <code>scene.update(source)</code> gives another scene, as long as the new scene registers the variable with the same syntax.",
+    "<h4>In the playground</h4>",
+    "The playground, and Try it under the examples of these docs, show a panel over the render with a control for each registered variable: a slider and its number, or a color picker for a <code>\"&lt;color&gt;\"</code>. It calls <code>setProperty()</code> as it moves, and its reset button calls <code>removeProperty()</code>. A slider goes from 0 to twice the start value (0 to 360deg for an angle, 0% to 100% for a percentage); a number typed past its end widens it.",
     "<h4>From <code>&lt;gss-scene&gt;</code></h4>",
     'Its <code>scene</code> property gives the scene, with the same methods. It is <code>null</code> until the element fires <code>"load"</code>, since the scene only starts when it comes near the screen. Set your values on <code>"load"</code>, as the demo does: it fires again each time the element starts a new scene (a new <code>src</code>, <code>controls</code> or <code>backend</code>, or the element moved in the page), and a new scene starts from its start values.',
   ],

@@ -699,6 +699,13 @@
         touch-action: none;
         cursor: grab;
       }
+      /* The panel of variables lies over the render, in the same cell
+         (src/playground/variables-panel.css) */
+      .playground-body canvas,
+      .playground-body .vars-panel {
+        grid-row: 1;
+        grid-column: 2;
+      }
       .playground pre.error {
         margin: 0;
         padding: 10px 14px;
@@ -729,6 +736,11 @@
           height: 200px;
           border-right: 0;
           border-bottom: 1px solid var(--gss-line);
+        }
+        .playground-body canvas,
+        .playground-body .vars-panel {
+          grid-row: 2;
+          grid-column: 1;
         }
         .hint {
           display: none;
