@@ -80,16 +80,10 @@ describe("what is new", () => {
     expect(docEntries().find((entry) => entry.anchor === "at-property-panel")?.since).toBe("0.0.5");
   });
 
-  it("is the 15 pages 0.0.4 added", () => {
+  it("is the 3 pages 0.0.5 added", () => {
     const news = newestPages(docEntries())!;
-    expect(news.version).toBe("0.0.4");
-    expect(news.pages.map((page) => page.anchor).sort()).toEqual(
-      [
-        "set-variables", "at-property", "selector-nesting", "background-blend-mode", "fn-displace",
-        "fn-noise", "fn-element", "mask-image", "mask-mode", "opacity", "transform-origin", "fog",
-        "intensity", "shape-light", "shadows",
-      ].sort(),
-    );
+    expect(news.version).toBe("0.0.5");
+    expect(news.pages.map((page) => page.anchor).sort()).toEqual(["view", "at-property-panel", "shape-lathe"].sort());
   });
 });
 

@@ -2,7 +2,7 @@
   "name": "gss-language",
   "displayName": "GSS \u2014 GPU Style Sheets",
   "description": "Syntax highlighting, file icon and formatting for GSS",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "publisher": "lukyvj",
   "engines": {
     "vscode": "^1.80.0"
