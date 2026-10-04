@@ -1,10 +1,10 @@
-// Bounding spheres: the sphere of the scene (decision 76) and bounds on groups (decision 77)
+// Bounding spheres: the sphere of the scene (decision 76) and the tree of spheres (decisions 77, 132)
 import type { Token } from "../../syntax/tokenizer";
 import type { Keyframes } from "../../syntax/ast";
 import type { StyledInstance } from "../../cascade/resolve";
 import type { Easing } from "../../values/easing";
 import { readTransition } from "../../features/transition";
-import { glslFloat, label, vec3, type Hover } from "./glsl";
+import { glslFloat, vec3, type Hover } from "./glsl";
 import { ROTATIONS, readRotation, readScale, readTranslate } from "./read";
 import { hoverValue } from "./animation";
 import { offsetReach } from "./offset";
@@ -86,10 +86,17 @@ export type Sphere = { center: number[]; radius: number };
 
 const length3 = (v: number[]) => Math.hypot(v[0], v[1], v[2]);
 
+// The box of some points: its lowest and highest corners
+function boundsOf(points: number[][]): { low: number[]; high: number[] } {
+  return {
+    low: [0, 1, 2].map((i) => Math.min(...points.map((p) => p[i]))),
+    high: [0, 1, 2].map((i) => Math.max(...points.map((p) => p[i]))),
+  };
+}
+
 // The box of some points: its middle, and half its diagonal
 function boxOfPoints(points: number[][]): { middle: number[]; reach: number } {
-  const low = [0, 1, 2].map((i) => Math.min(...points.map((p) => p[i])));
-  const high = [0, 1, 2].map((i) => Math.max(...points.map((p) => p[i])));
+  const { low, high } = boundsOf(points);
   return {
     middle: low.map((l, i) => (l + high[i]) / 2),
     reach: length3(low.map((l, i) => (high[i] - l) / 2)),
@@ -200,16 +207,73 @@ export function enclosing(spheres: Sphere[]): Sphere {
   return { center: box.middle, radius };
 }
 
-// ----- Bounds on whole groups -----
-// A group of several objects gets one test around all of them: when the point is
-// further from the group's sphere than the nearest object so far, none of its objects
-// can be nearer, and map() skips them all (their transforms and their shapes). Only
-// plain unions can be skipped, and only when every object's sphere is known (the
-// same spheres as the sphere of the scene: every moment of the animations, hovered).
-// Nested groups get their own test inside their parent's.
+// ----- A tree of spheres around the objects (decision 132) -----
+// The objects map() can skip are grouped by where they are, whatever the groups of the GSS:
+// each group gets one test around all its objects, and the groups inside it their own
+// tests. When the point is further from a group's sphere than the nearest object so far,
+// none of its objects can be nearer, and map() skips them all (their transforms and their
+// shapes). Only plain unions can be skipped, and only when the object's sphere is known
+// (the same spheres as the sphere of the scene: every moment of the animations, hovered).
+// The value of map() stays the same: a skipped object is never the nearest.
 const GROUP_MIN = 3; // fewer objects: the test costs about what it saves
 
-export function groupBounds(
+type Item = { object: number } | { sphere: Sphere; items: Item[] };
+
+// The objects, grouped two by two by where they are: of every way to cut them in two along
+// x, y or z, the one where the two boxes around them, their size squared times their number
+// of objects (the chance that a point comes close enough to test what is inside), cost the
+// least; down to fewer than GROUP_MIN. A big object then ends up alone, rather than make a
+// small group big; between equal cuts, the most even one.
+function grouped(members: number[], spheres: Sphere[], parent = Infinity): Item[] {
+  if (members.length < GROUP_MIN) return members.map((object) => ({ object }));
+  const sphere = enclosing(members.map((m) => spheres[m]));
+  const n = members.length;
+  let best = { cost: Infinity, uneven: Infinity, parts: [members] };
+  for (const axis of [0, 1, 2]) {
+    const sorted = [...members].sort((a, b) => spheres[a].center[axis] - spheres[b].center[axis] || a - b);
+    // The size of the box of the first k objects, and of the last n - k
+    const sizes = (order: number[]) => {
+      const low = [Infinity, Infinity, Infinity];
+      const high = [-Infinity, -Infinity, -Infinity];
+      return order.map((m) => {
+        const { center, radius } = spheres[m];
+        for (let i = 0; i < 3; i++) {
+          low[i] = Math.min(low[i], center[i] - radius);
+          high[i] = Math.max(high[i], center[i] + radius);
+        }
+        return length3(high.map((h, i) => (h - low[i]) / 2)) ** 2;
+      });
+    };
+    const before = sizes(sorted);
+    const after = sizes([...sorted].reverse()).reverse();
+    for (let cut = 1; cut < n; cut++) {
+      const cost = before[cut - 1] * cut + after[cut] * (n - cut);
+      const uneven = Math.abs(n - 2 * cut);
+      if (cost < best.cost * (1 - 1e-9) || (cost <= best.cost * (1 + 1e-9) && uneven < best.uneven))
+        best = { cost, uneven, parts: [sorted.slice(0, cut), sorted.slice(cut)] };
+    }
+  }
+  const items = best.parts.flatMap((part) => grouped(part, spheres, sphere.radius));
+  // Inside its parent, a group's test passes about as often as its sphere covers the
+  // parent's, (radius / parent)²; it costs about one object, and saves all of them when it
+  // fails. Too close to its parent's size, it would cost more than it saves.
+  return (sphere.radius / parent) ** 2 < 1 - 1 / n ? [{ sphere, items }] : items;
+}
+
+// The sphere of a group, in GLSL: a little bigger, rounded up, since the GPU computes in
+// 32-bit floats; the center is rounded to 0.0001, so the radius grows by as much as it may move
+function sphereCode(sphere: Sphere): { center: string; radius: string } {
+  const r = Math.ceil((sphere.radius + 0.001) * 10000) / 10000;
+  return {
+    center: vec3(sphere.center.map((c) => Math.round(c * 10000) / 10000)),
+    radius: glslFloat(Math.ceil((r + 0.0001) * 10000) / 10000),
+  };
+}
+
+// map(): the objects in their order, except that between two operations that are not plain
+// unions (a subtraction cuts what comes before it), the objects are free to move: those
+// with no known sphere first, then the tree of the others
+export function boundedMap(
   instances: StyledInstance[],
   codes: string[],
   spheres: (Sphere | null)[],
@@ -217,39 +281,33 @@ export function groupBounds(
   nearest: string,
 ): string {
   const indent = (code: string) => code.replace(/^/gm, "  ");
-  const emit = (members: number[], depth: number): string[] => {
-    const out: string[] = [];
-    let i = 0;
-    while (i < members.length) {
-      const group = instances[members[i]].groups[depth];
-      let j = i + 1;
-      while (group && j < members.length && instances[members[j]].groups[depth] === group) j++;
-      const run = members.slice(i, j);
-      const bounded =
-        group &&
-        run.length >= GROUP_MIN &&
-        run.every((m) => spheres[m] !== null && plainUnion(instances[m]));
-      if (!group) out.push(codes[members[i]]);
-      else if (!bounded) out.push(...emit(run, depth + 1));
-      else {
-        const sphere = enclosing(run.map((m) => spheres[m]!));
-        // A little bigger, rounded up: the GPU computes in 32-bit floats
-        const r = Math.ceil((sphere.radius + 0.001) * 10000) / 10000;
-        const center = vec3(sphere.center.map((c) => Math.round(c * 10000) / 10000));
-        // the center is rounded to 0.0001: the radius grows by as much as it may move
-        const safe = Math.ceil((r + 0.0001) * 10000) / 10000;
-        out.push(
-          [
-            ` // ${label(group as StyledInstance)}: ${run.length} objects, one test for all`,
-            `  if (length(p - ${center}) - ${glslFloat(safe)} <= ${nearest}) {`,
-            indent(emit(run, depth + 1).join("\n\n")),
-            "  }",
-          ].join("\n"),
-        );
-      }
-      i = j;
-    }
-    return out;
+  const emit = (item: Item): string => {
+    if ("object" in item) return codes[item.object];
+    const { center, radius } = sphereCode(item.sphere);
+    const count = (i: Item): number => ("object" in i ? 1 : i.items.reduce((n, inner) => n + count(inner), 0));
+    return [
+      ` // ${count(item)} objects close together: one test for all`,
+      `  if (length(p - ${center}) - ${radius} <= ${nearest}) {`,
+      indent(item.items.map(emit).join("\n\n")),
+      "  }",
+    ].join("\n");
   };
-  return emit(instances.map((_, i) => i), 0).join("\n\n");
+  const out: string[] = [];
+  let run: number[] = [];
+  const flush = () => {
+    const known = run.filter((m) => spheres[m] !== null);
+    if (known.length < GROUP_MIN) out.push(...run.map((m) => codes[m]));
+    else {
+      out.push(...run.filter((m) => spheres[m] === null).map((m) => codes[m]));
+      out.push(...grouped(known, spheres as Sphere[]).map(emit));
+    }
+    run = [];
+  };
+  instances.forEach((instance, i) => {
+    if (plainUnion(instance)) return run.push(i);
+    flush();
+    out.push(codes[i]);
+  });
+  flush();
+  return out.join("\n\n");
 }
