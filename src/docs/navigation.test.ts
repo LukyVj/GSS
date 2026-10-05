@@ -70,4 +70,13 @@ describe("documentation navigation", () => {
     expect(installation.indexOf('id="set-variables"')).toBeGreaterThan(installation.indexOf('id="install-cdn"'));
     expect(html).not.toContain('id="other-reference"');
   });
+  it("ends Installation with the editor extension: where to get it, and how to install it", () => {
+    const html = renderDocs(PROPERTIES, AT_RULES, SELECTORS, SHAPE_DOCS, FUNCTIONS);
+    const installation = html.slice(html.indexOf('<section id="installation"'), html.indexOf('<section id="at-rules"'));
+    const editor = installation.slice(installation.indexOf('id="editor-support"'));
+    expect(installation.indexOf('id="editor-support"')).toBeGreaterThan(installation.indexOf('id="set-variables"'));
+    expect(editor).toContain("https://marketplace.visualstudio.com/items?itemName=lukyvj.gss-language");
+    expect(editor).toContain("https://open-vsx.org/extension/lukyvj/gss-language");
+    expect(editor).toContain("code --install-extension lukyvj.gss-language");
+  });
 });

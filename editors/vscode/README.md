@@ -1,22 +1,32 @@
 # GSS — GPU Style Sheets
 
-Colors and formats `.gss` files in VS Code and Cursor.
+Colors and formats `.gss` files in VS Code, and in the editors built on it: Cursor, VSCodium, Windsurf.
 
-For installing the GSS 0.0.5 runtime, the included Vite plugin, or the browser CDN module, see the [installation guide](https://www.gss-lang.dev/docs#installation). The extension has its own version and is not required to run GSS.
+[GSS](https://www.gss-lang.dev) is a CSS-like language for 3D scenes: selectors, properties, `@keyframes` and `@media`, compiled to one shader that runs on the GPU. This extension is not needed to run a scene: to put GSS on a page (npm, the Vite plugin or a `<script>` tag), see the [installation guide](https://www.gss-lang.dev/docs#installation).
 
 - **Highlighting**: selectors, properties, values, colors, numbers and units, `@scene`, `@keyframes`, `@media`, `@property` and `@property-panel`, nested rules and `&`.
-- **Formatting**: *Format Document* (or save the file) rewrites the code with the GSS style: one instance per line in `@scene`, one declaration per line, two-space indentation, comments kept. It is the same formatter as `npm run format` and the docs.
+- **Formatting**: *Format Document* (or saving the file) rewrites the code in the GSS style: one shape per line in `@scene`, one declaration per line, two-space indentation, comments kept. It is the same formatter as the docs and the playground.
+- **File icon**: `.gss` files get the GSS icon in the explorer.
 
-Formatting on save is on by default for `.gss` files. To turn it off:
+## Install
+
+Search for *GSS* in the Extensions view, or run:
+
+```sh
+code --install-extension lukyvj.gss-language
+```
+
+Cursor, VSCodium and Windsurf install it from [Open VSX](https://open-vsx.org/extension/lukyvj/gss-language).
+
+## Format on save
+
+Formatting on save is on by default for `.gss` files. To turn it off, add this to your `settings.json`:
 
 ```json
 "[gss]": { "editor.formatOnSave": false }
 ```
 
-## Build
+## Links
 
-```sh
-npm run generate-vscode-extension   # from the project root
-```
-
-Then, in VS Code or Cursor: *Extensions: Install from VSIX…* and pick `editors/vscode/gss-language-0.3.0.vsix`.
+- [Documentation](https://www.gss-lang.dev/docs)
+- [Playground](https://www.gss-lang.dev/playground)

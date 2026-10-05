@@ -196,3 +196,28 @@ INSTALLATION.push({
     'Its <code>scene</code> property gives the scene, with the same methods. It is <code>null</code> until the element fires <code>"load"</code>, since the scene only starts when it comes near the screen. Set your values on <code>"load"</code>, as the demo does: it fires again each time the element starts a new scene (a new <code>src</code>, <code>controls</code> or <code>backend</code>, or the element moved in the page), and a new scene starts from its start values.',
   ],
 });
+
+// The editor extension has its own version, published apart from the package
+const EXTENSION_ID = "lukyvj.gss-language";
+const MARKETPLACE_URL = `https://marketplace.visualstudio.com/items?itemName=${EXTENSION_ID}`;
+const OPEN_VSX_URL = "https://open-vsx.org/extension/lukyvj/gss-language";
+
+INSTALLATION.push({
+  anchor: "editor-support",
+  label: "Editor support",
+  paragraphs: [
+    "The GSS extension colors and formats <code>.gss</code> files in VS Code and in the editors built on it, like Cursor, VSCodium and Windsurf. It is not needed to run a scene.",
+    table([
+      ["Highlighting", "Selectors, properties, values, colors, numbers and units, the at-rules, nested rules and <code>&amp;</code>."],
+      ["Formatting", "<em>Format Document</em>, or saving the file, writes the code in the style of these docs: one shape per line in <code>@scene</code>, one declaration per line, two-space indentation, comments kept."],
+      ["File icon", "<code>.gss</code> files get the GSS icon in the explorer."],
+    ]),
+    "<h4>Install</h4>",
+    `In VS Code, open the Extensions view (<code>Ctrl+Shift+X</code>, or <code>Cmd+Shift+X</code> on a Mac), search for <em>GSS</em> and install <em>GSS — GPU Style Sheets</em>. Or install it from the <a href="${MARKETPLACE_URL}">Visual Studio Marketplace</a>, or from the command line:`,
+    `<pre><code class="sh">code --install-extension ${EXTENSION_ID}</code></pre>`,
+    `Cursor, VSCodium and Windsurf install their extensions from <a href="${OPEN_VSX_URL}">Open VSX</a>: search for <em>GSS</em> in their Extensions view.`,
+    "<h4>Format on save</h4>",
+    "Formatting on save is on by default for <code>.gss</code> files. To turn it off, add this to your <code>settings.json</code>:",
+    `<pre><code class="js">${highlightCode("js", '"[gss]": { "editor.formatOnSave": false }')}</code></pre>`,
+  ],
+});

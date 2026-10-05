@@ -16,6 +16,7 @@ export const ENTRY_ORDER: Record<string, number> = {
   "install-vite": -20,
   "install-cdn": -10,
   "set-variables": 0,
+  "editor-support": 10,
   "selector-type": -60,
   "selector-class": -50,
   "selector-id": -40,
@@ -57,7 +58,7 @@ export const ENTRY_ORDER: Record<string, number> = {
 };
 export const DOC_GROUPS: NavGroup[] = [
   { id: "getting-started", title: "Getting started", category: "Start here", order: 0, anchors: ["why-gss", "first-scene"] },
-  { id: "installation", title: "Installation", category: "Start here", order: 1, anchors: ["embedding", "install-package", "install-vite", "install-cdn", "set-variables"] },
+  { id: "installation", title: "Installation", category: "Start here", order: 1, anchors: ["embedding", "install-package", "install-vite", "install-cdn", "set-variables", "editor-support"] },
   { id: "at-rules", title: "At-rules", category: "Language", order: 10, anchors: ["at-scene", "at-media", "at-keyframes", "at-property", "at-property-panel"] },
   { id: "selectors", title: "Selectors", category: "Language", order: 11, anchors: ["selector-type", "selector-class", "selector-id", "selector-universal", "selector-list", "selector-nesting", "selector-important"] },
   { id: "combinators", title: "Combinators", category: "Language", order: 12, anchors: ["selector-descendant", "selector-child", "selector-adjacent", "selector-sibling"] },

@@ -4,6 +4,18 @@
   "description": "Syntax highlighting, file icon and formatting for GSS",
   "version": "0.4.0",
   "publisher": "lukyvj",
+  "license": "Apache-2.0",
+  "homepage": "https://www.gss-lang.dev/docs#editor-support",
+  "keywords": [
+    "gss",
+    "gpu style sheets",
+    "css",
+    "3d",
+    "shader",
+    "raymarching",
+    "syntax highlighting",
+    "formatter"
+  ],
   "engines": {
     "vscode": "^1.80.0"
   },
@@ -51,7 +63,9 @@
   },
   "scripts": {
     "build": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --platform=node --format=cjs --target=node18 --external:vscode",
-    "package": "npm run build && vsce package --allow-missing-repository --skip-license"
+    "package": "npm run build && vsce package --allow-missing-repository",
+    "publish:marketplace": "npm run package && vsce publish --allow-missing-repository --packagePath gss-language-$npm_package_version.vsix",
+    "publish:open-vsx": "npx ovsx publish gss-language-$npm_package_version.vsix"
   },
   "devDependencies": {
     "@types/vscode": "^1.80.0",

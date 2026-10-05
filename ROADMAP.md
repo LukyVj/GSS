@@ -136,8 +136,9 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 
 ## VS Code extension on the Marketplace (Lucas, Oct. 4: for Oct. 5)
 
-- [ ] Publish the extension (0.4.0, publisher `lukyvj`) on the VS Code Marketplace; Lucas signs in and holds the token. Its `package.json` has no `repository` yet, and `npm run package` skips the license: both to settle before publishing.
-- [ ] Say in the docs that GSS has syntax highlighting (and formatting) in VS Code, with the link to the Marketplace: the docs do not mention the extension today.
+- [x] Ready to publish (Oct. 5, decision 136): the license (Apache-2.0) in the `.vsix`, a `homepage`, keywords, a README for the registries; `npm run publish:marketplace` and `npm run publish:open-vsx` in `editors/vscode`. No `repository` while the GitHub repository is private.
+- [ ] Publish 0.4.0 on the VS Code Marketplace and on Open VSX (Lucas, with his tokens).
+- [x] The docs say how to install it: "Editor support", at the end of Installation (decision 136).
 
 ## Release 0.0.4 ✅
 

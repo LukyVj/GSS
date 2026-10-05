@@ -6,6 +6,10 @@ The 0.0.1 history was reconstructed from GitHub.
 
 ## Unreleased
 
+### Added
+
+- Docs: "Editor support", at the end of Installation. The GSS extension for VS Code (highlighting, formatting, the `.gss` file icon) is on the Visual Studio Marketplace, and on Open VSX for Cursor, VSCodium and Windsurf: search for *GSS* in the Extensions view, or run `code --install-extension lukyvj.gss-language`.
+
 ## [0.0.5] — 2026-10-04
 
 ### Added
