@@ -136,8 +136,9 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 
 ## VS Code extension on the Marketplace (Lucas, Oct. 4: for Oct. 5)
 
-- [x] Ready to publish (Oct. 5, decision 136): the license (Apache-2.0) in the `.vsix`, a `homepage`, keywords, a README for the registries; `npm run publish:marketplace` and `npm run publish:open-vsx` in `editors/vscode`. No `repository` while the GitHub repository is private.
-- [ ] Publish 0.4.0 on the VS Code Marketplace and on Open VSX (Lucas, with his tokens).
+- [x] Ready to publish (Oct. 5, decision 136): the license (Apache-2.0) in the `.vsix`, a `homepage`, keywords, a README for the registries; `npm run package`, then an upload by hand on the Marketplace (no Azure DevOps), and `npm run publish:open-vsx`. No `repository` while the GitHub repository is private.
+- [x] 0.4.0 uploaded on the VS Code Marketplace (Oct. 5, publisher `lukyvj`).
+- [ ] Publish 0.4.0 on Open VSX, for Cursor, VSCodium and Windsurf (Lucas, with his token).
 - [x] The docs say how to install it: "Editor support", at the end of Installation (decision 136).
 
 ## Release 0.0.4 ✅
