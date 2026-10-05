@@ -138,7 +138,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 
 - [x] Ready to publish (Oct. 5, decision 136): the license (Apache-2.0) in the `.vsix`, a `homepage`, keywords, a README for the registries; `npm run package`, then an upload by hand on the Marketplace (no Azure DevOps), and `npm run publish:open-vsx`. No `repository` while the GitHub repository is private.
 - [x] 0.4.0 uploaded on the VS Code Marketplace (Oct. 5, publisher `lukyvj`).
-- [ ] Publish 0.4.0 on Open VSX, for Cursor, VSCodium and Windsurf (Lucas, with his token).
+- [x] 0.4.0 published on Open VSX, for Cursor, VSCodium and Windsurf (Oct. 5, namespace `lukyvj`).
 - [x] The docs say how to install it: "Editor support", at the end of Installation (decision 136).
 
 ## Release 0.0.4 ✅
