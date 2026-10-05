@@ -13,6 +13,10 @@ The 0.0.1 history was reconstructed from GitHub.
 - Showcase: an eighth study, the GSS 0.0.5 announcement. A 30-second film written as one stylesheet: "css" types itself and turns into "gss.", the braces close the rule, then eight features take the stage one after the other. It opens in the playground, in the "Studies" group.
 - Docs: "Editor support", at the end of Installation. The GSS extension for VS Code (highlighting, formatting, the `.gss` file icon) is on the Visual Studio Marketplace, and on Open VSX for Cursor, VSCodium and Windsurf: search for *GSS* in the Extensions view, or run `code --install-extension lukyvj.gss-language`.
 
+### Changed
+
+- The eight studies render at a pixel density of 1.5 (`dpr: 1.5`), in the showcase and in the playground: sharper than before on a standard screen, lighter than before on a high-density one.
+
 ## [0.0.5] — 2026-10-04
 
 ### Added
