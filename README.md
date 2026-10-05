@@ -107,6 +107,11 @@ works (`controls="none"` keeps only `:hover`). It starts when it comes into view
 leaves it, and stands still under `prefers-reduced-motion`. Images are read next to the `.gss`
 file, like `url()` in a stylesheet.
 
+`<gss-scene poster="cover.jpg">` shows an image until the scene draws, like a `<video>`. On a
+computer without a graphics card, the processor would draw the scene slowly enough to freeze the
+page: `<gss-scene>` then keeps its poster and shows a button, and draws only when the reader asks.
+With `mount()`, `softwareRendering()` returns `true` on such a computer, to do the same.
+
 **WebGPU, with a WebGL2 fallback.** Use the asynchronous API to select a rendering backend:
 
 ```js

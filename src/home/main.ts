@@ -7,12 +7,15 @@ import { encodeCode } from "../runtime/share";
 import { statusParts } from "../runtime/status";
 import { mountSearch } from "../docs/search-box";
 import { createLogoReveal } from "./logo-reveal";
+import { softwareRendering } from "../runtime/software";
+import { softwareGate } from "../runtime/software-gate";
 
 mountSearch();
 
 // Hero: SVG in front, hero-logo.gss behind, revealed by a drag bar
 const heroField = document.querySelector<SVGSVGElement>(".hero svg.field");
-if (heroField) {
+// Without a GPU, the SVG stays alone: the scene behind it would freeze the page (decision 137)
+if (heroField && !softwareRendering()) {
   try {
     createLogoReveal(heroField, { initial: 50 });
   } catch (error) {
@@ -35,6 +38,7 @@ const DEMO_SCENE = `${FIRST_SCENE.replace("glass(1.5, frosted 0.3)", "jelly(0.6)
 // (a WebGL context and a shader compile are not free: no cost for visitors who don't scroll) -----
 function startDemo(): void {
   const renderer = createRenderer($<HTMLCanvasElement>("#demo-scene"), { scrollSlider: true });
+  softwareGate($<HTMLCanvasElement>("#demo-scene"), renderer); // without a GPU: on a click
   const editor = connectEditor(
     { host: $("#demo-code"), error: $("#demo-error") },
     renderer,

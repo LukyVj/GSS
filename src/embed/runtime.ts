@@ -7,6 +7,8 @@ import { usesElements } from "../runtime/textures";
 // without shipping the compiler (decision 63). gss-lang (index.ts) adds GSS text.
 export type { CompiledScene };
 export type { Backend, BackendOptions } from "../runtime/backend";
+// No GPU: WebGL drawn on the CPU, where a scene freezes the page (decision 137)
+export { softwareRendering } from "../runtime/software";
 
 export type AsyncGssScene = Omit<GssScene, "update"> & {
   readonly backend: "webgl" | "webgpu";

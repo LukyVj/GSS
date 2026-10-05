@@ -122,6 +122,31 @@ body.gss-dark {
     background: var(--gss-signal-hover);
   }
 
+  /* ----- Without a GPU: a notice over a canvas, until the reader asks
+     (runtime/software-gate.ts) ----- */
+  .software-gate {
+    position: absolute;
+    z-index: 1;
+    box-sizing: border-box;
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    gap: 14px;
+    min-width: 0;
+    padding: 24px;
+    background: var(--gss-void);
+    color: var(--gss-ash);
+    text-align: center;
+  }
+  .software-gate p {
+    margin: 0;
+    max-width: 36ch;
+  }
+  /* The dpr menu is placed by the frames: none is drawn while the notice waits */
+  .software-gate ~ .gss-dpr {
+    visibility: hidden;
+  }
+
   /* ----- The dpr menu over a render, docs and playground (runtime/dpr-picker.ts):
      a signal outline, mono 11px, on the void a little see-through, top right ----- */
   .gss-dpr {

@@ -1,11 +1,17 @@
 import { mount, mountAsync, type EmbeddedScene, type AsyncEmbeddedScene } from "./index";
 import { readControls, sourceUrl } from "./options";
+import { softwareRendering } from "./runtime";
+import { SOFTWARE_NOTICE, SOFTWARE_PLAY } from "../runtime/software";
 
 // <gss-scene>: a GSS scene in any page, without a build step (decision 63).
 //
 //   <script type="module" src="https://www.gss-lang.dev/embed.js"></script>
 //   <gss-scene src="logo.gss"></gss-scene>
 //   <gss-scene controls="none"><script type="text/gss"> @scene { sphere; } </script></gss-scene>
+//   <gss-scene src="logo.gss" poster="logo.jpg"></gss-scene>
+//
+// poster: an image shown until the scene draws, like the poster of a <video>. On a machine
+// without a GPU, the scene waits for a click on a button, over its poster (decision 137).
 //
 // Its other HTML children are shown inside the canvas by a <slot>, laid out but not painted,
 // for texture: element(#id) (decision 101): they keep the styles of the page.
@@ -23,13 +29,26 @@ const STYLE = `
     color: #ff9a80; background: #0a0a0ce6; border-top: 1px solid #202026;
   }
   .error[hidden] { display: none; }
+  .poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
+  .gate {
+    position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 10px;
+    padding: 16px; text-align: center; font: 13px/1.45 system-ui, sans-serif; color: #c8c8d0;
+  }
+  .gate p { margin: 0; max-width: 32ch; padding: 4px 8px; background: #0a0a0cb3; }
+  .gate button {
+    font: inherit; color: #0a0a0c; background: #e8e8ec; border: 0; border-radius: 4px; padding: 6px 12px; cursor: pointer;
+  }
+  .poster[hidden], .gate[hidden] { display: none; }
 `;
 
 export class GssSceneElement extends HTMLElement {
-  static observedAttributes = ["src", "controls", "backend"];
+  static observedAttributes = ["src", "controls", "backend", "poster"];
 
   #canvas: HTMLCanvasElement;
   #error: HTMLPreElement;
+  #poster: HTMLImageElement;
+  #gate: HTMLDivElement;
+  #allowed = false; // without a GPU: the reader asked for the scene anyway
   #scene: EmbeddedScene | AsyncEmbeddedScene | null = null;
   #waiting: IntersectionObserver | null = null;
   #started = false;
@@ -38,13 +57,24 @@ export class GssSceneElement extends HTMLElement {
   constructor() {
     super();
     const root = this.attachShadow({ mode: "open" });
-    root.innerHTML = `<style>${STYLE}</style><canvas part="canvas" layoutsubtree><slot></slot></canvas><pre class="error" part="error" hidden></pre>`;
+    root.innerHTML = `<style>${STYLE}</style><canvas part="canvas" layoutsubtree><slot></slot></canvas>`
+      + `<img class="poster" part="poster" alt="" hidden><pre class="error" part="error" hidden></pre>`
+      + `<div class="gate" part="gate" hidden><p>${SOFTWARE_NOTICE}</p>`
+      + `<button type="button" part="play">${SOFTWARE_PLAY}</button></div>`;
     this.#canvas = root.querySelector("canvas")!;
     this.#error = root.querySelector("pre")!;
+    this.#poster = root.querySelector("img")!;
+    this.#gate = root.querySelector(".gate")!;
+    this.#gate.querySelector("button")!.addEventListener("click", () => {
+      this.#allowed = true;
+      this.#gate.hidden = true;
+      void this.#start();
+    });
   }
 
   // The WebGL context and the compile only start when the scene comes near the screen
   connectedCallback(): void {
+    this.#showPoster(true);
     if (typeof IntersectionObserver === "undefined") return void this.#start();
     this.#waiting = new IntersectionObserver(
       (entries) => {
@@ -67,10 +97,11 @@ export class GssSceneElement extends HTMLElement {
   }
 
   attributeChangedCallback(
-    _name: string,
+    name: string,
     before: string | null,
     after: string | null,
   ): void {
+    if (name === "poster") return void this.#showPoster(this.#scene === null);
     if (this.#started && before !== after) void this.#start();
   }
 
@@ -82,6 +113,10 @@ export class GssSceneElement extends HTMLElement {
   async #start(): Promise<void> {
     this.#started = true;
     const run = ++this.#run;
+    if (!this.#allowed && softwareRendering()) {
+      this.#gate.hidden = false;
+      return;
+    }
     try {
       const { code, base } = await this.#readSource();
       if (run !== this.#run) return;
@@ -109,6 +144,7 @@ export class GssSceneElement extends HTMLElement {
       if (run !== this.#run) { scene.destroy(); return; }
       this.#scene = scene;
       this.#error.hidden = true;
+      this.#showPoster(false);
       this.dispatchEvent(new Event("load"));
     } catch (error) {
       if (run !== this.#run) return;
@@ -134,6 +170,13 @@ export class GssSceneElement extends HTMLElement {
     if (!inline)
       throw new Error('no scene: add src="…" or a <script type="text/gss">');
     return { code: inline.textContent ?? "", base: document.baseURI };
+  }
+
+  // The poster, while there is one and no scene drawn
+  #showPoster(shown: boolean): void {
+    const poster = this.getAttribute("poster");
+    if (poster) this.#poster.src = poster;
+    this.#poster.hidden = !shown || !poster;
   }
 
   #stop(): void {

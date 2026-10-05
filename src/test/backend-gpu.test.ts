@@ -9,7 +9,7 @@ beforeAll(async () => {
   server = await createServer({ configFile: false, server: { host: "127.0.0.1", port: 0 }, logLevel: "error", plugins: [{
     name: "gpu-test-page",
     configureServer(server) {
-      server.middlewares.use("/__gpu", (_req, res) => { res.setHeader("Content-Type", "text/html"); res.end('<html><body style="margin:0"><script type="module">import { createViewAsync } from "/src/runtime/backend.ts"; import { mountAsync } from "/src/embed/runtime.ts"; import "/src/embed/element.ts"; window.__createViewAsync = createViewAsync; window.__mountAsync = mountAsync;</script></body></html>'); });
+      server.middlewares.use("/__gpu", (_req, res) => { res.setHeader("Content-Type", "text/html"); res.end('<html><body style="margin:0"><script type="module">import { createViewAsync } from "/src/runtime/backend.ts"; import { mountAsync } from "/src/embed/runtime.ts"; import "/src/embed/element.ts"; window.__createViewAsync = createViewAsync; window.__mountAsync = mountAsync; window.__drawAnyway = (element) => new Promise((resolve) => { const look = () => { const play = element.shadowRoot.querySelector("[part=play]"); if (play.closest("[hidden]")) return requestAnimationFrame(look); play.click(); resolve(); }; look(); });</script></body></html>'); });
     },
   }] });
   await server.listen();
@@ -447,8 +447,11 @@ describe("element() shows an HTML element on an object", () => {
         pixel = [...data];
       };
       try {
+        const loaded = new Promise((resolve) => element.addEventListener("load", resolve, { once: true }));
         document.body.append(element);
-        await new Promise((resolve) => element.addEventListener("load", resolve, { once: true }));
+        // SwiftShader is a GPU drawn by the processor: the scene waits for its button (decision 137)
+        await (window as any).__drawAnyway(element);
+        await loaded;
         await new Promise<void>((resolve) => { let left = 6; const tick = () => (--left ? requestAnimationFrame(tick) : resolve()); requestAnimationFrame(tick); });
       } finally {
         proto.drawArrays = drawArrays;
@@ -796,7 +799,7 @@ it("public asynchronous mounting and custom elements select either backend", asy
       element.addEventListener("load", () => resolve(), { once: true });
       element.addEventListener("error", (e: any) => reject(new Error(e.detail)), { once: true });
     });
-    let pending = loaded(); document.body.append(element); await pending;
+    let pending = loaded(); document.body.append(element); await (window as any).__drawAnyway(element); await pending;
     const first = (element as any).scene.backend;
     pending = loaded(); element.setAttribute("backend", "webgl"); await pending;
     const second = (element as any).scene.backend; element.remove();
@@ -809,6 +812,7 @@ it("the playground renders with WebGPU and displays WGSL", async () => {
   await page.setViewportSize({ width: 1040, height: 700 });
   await page.goto(`${server.resolvedUrls!.local[0]}playground.html?backend=webgpu`, { waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => document.querySelector("#stats")?.textContent?.includes("ok"));
+  await page.locator(".software-gate button").click(); // SwiftShader: drawn on a click (decision 137)
   expect(await page.locator("#stats").innerText()).toContain("wgsl");
   await page.locator(".perf-toggle").click();
   await page.waitForFunction(() => {
@@ -829,6 +833,7 @@ it("the playground renders with WebGPU and displays WGSL", async () => {
   await page.locator("#backend").selectOption("webgl");
   await page.waitForURL("**/playground.html?backend=webgl*");
   await page.waitForFunction(() => document.querySelector("#stats")?.textContent?.includes("ok"));
+  await page.locator(".software-gate button").click();
   expect(await page.locator("#stats").innerText()).toContain("glsl");
   expect(await page.locator(".perf-panel h2").textContent()).toContain("WebGL2");
 }, 60000);

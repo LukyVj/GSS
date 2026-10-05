@@ -14,6 +14,7 @@ export type { CompiledScene, GssScene, MountOptions, AsyncGssScene, BackendOptio
 export type { CompileOptions } from "../compiler";
 export type { Backend } from "../runtime/backend";
 export { compileScene as compile };
+export { softwareRendering } from "./runtime";
 
 export type EmbeddedScene = Omit<GssScene, "update"> & {
   update(scene: string | CompiledScene): void;

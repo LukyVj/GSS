@@ -306,6 +306,7 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 
 ## Done recently
 
+- Without a GPU, a scene waits for a click: `softwareRendering()`; `<gss-scene poster>` shows its poster and "Draw it anyway"; the home page keeps its hero SVG alone, and its demo, the playground and Try it compile and show the code, paused under a notice until the click (decision 137). Next: posters for the showcase's `<gss-scene>`
 - An eighth study in the showcase, last: the GSS 0.0.5 announcement, a 30-second film written as one stylesheet (the word types itself, then eight features one after the other); also in the playground's "Studies" group
 - Icons for the docs sidebar: one per group, before its title, 16 px in `currentColor` (signal on the group being read); the brand page shows them and offers each as an SVG file, from the same source (decision 135)
 - Render on demand: both backends draw a frame only when the size, the time (for a scene that moves), the camera, `:hover`, the timelines, the variables or the images changed; the picking pass still follows the mouse over a resting frame; the profiler draws every frame while its panel is open (decision 134). A mask of the objects each ray can meet, tried and set aside (decision 133)
