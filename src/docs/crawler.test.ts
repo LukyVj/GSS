@@ -102,4 +102,11 @@ describe("the extractor to paste into the crawler", () => {
     const pasted = new Function(`return (${source})`)() as typeof recordExtractor;
     expect(pasted({ $: load(page), url }) as DocSearchRecord[]).toEqual(extract());
   });
+
+  // The editor of the crawler parses ES2019: `??` and `?.` are a parsing error there
+  it("has no syntax newer than ES2019", () => {
+    const script = fileURLToPath(new URL("../../scripts/docsearch-extractor.mjs", import.meta.url));
+    const source = execFileSync(process.execPath, [script], { encoding: "utf8" });
+    expect(source).not.toMatch(/\?\?|\?\./);
+  });
 });
