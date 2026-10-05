@@ -47,8 +47,9 @@ describe("the showcase", () => {
     expect(missing).toEqual([]);
   });
 
-  it("shows seven studies", () => {
-    expect(STUDIES).toHaveLength(7);
+  it("shows eight studies, the 0.0.5 announcement last", () => {
+    expect(STUDIES).toHaveLength(8);
+    expect(STUDIES.at(-1)?.key).toBe("release");
   });
 
   it("links each study on its own, apart from the other ids of the page", () => {

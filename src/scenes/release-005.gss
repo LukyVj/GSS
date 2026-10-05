@@ -1,0 +1,381 @@
+@scene {
+  group#mark {
+    group#word {
+      group.letter { group#flip { prism#c.glyph; prism#g.glyph; } }
+      group.letter { prism.glyph.s; }
+      group.letter { prism.glyph.s; }
+      group#stop { sphere#dot; }
+    }
+    group#left { path#brace-left.brace; }
+    group#right { path#brace-right.brace; }
+  }
+
+
+  group#carousel {
+    group.slot#shapes {
+      cube.shape.hot; sphere.shape; torus.shape.hot;
+      cone.shape; capsule.shape.hot; cylinder.shape;
+    }
+    group.slot#materials {
+      sphere#chrome; torus#gold; sphere#rough; sphere#jelly;
+    }
+    group.slot#carve-melt {
+      group#carve { cube#block; sphere#bite; }
+      group#melt { sphere#core.drop; sphere#drop-a.drop; sphere#drop-b.drop; }
+    }
+    group.slot#paths {
+      prism#heart;
+      prism#star;
+    }
+    group.slot#selectors {
+      group#ribbon { cube.tile * 9; }
+    }
+    group.slot#motion {
+      group#track { path#eight; group.runner * 3 { capsule.pill; } }
+    }
+    group.slot#paint {
+      sphere#conic; sphere#marble; sphere#dissolve;
+    }
+    group.slot#glow {
+      torus#halo;
+      group#beads { sphere.bead * 12; }
+    }
+  }
+
+  /* The studio: a grey wall and two strip lights behind the camera, for the metal to reflect */
+  plane#wall;
+  plane.strip#strip-left;
+  plane.strip#strip-right;
+}
+
+scene {
+  --loop: 30s;
+  background: radial-gradient(circle at 50% 42%, #18181d, #0a0a0c 72%);
+  floor: none;
+  camera-target: 0 0.3 0;
+  camera-distance: 8.5;
+  camera-angle: 0deg 0deg;
+  camera-spin: none;
+  light: -25deg 40deg;
+  ambient: 0.4;
+  dpr: auto; /* light on every GPU */
+}
+
+#wall { translate: 0 0 13; rotate-x: 90deg; size: 40 30; color: #8a8a96; }
+.strip { rotate-x: 90deg; size: 2.2 10; color: white; filter: brightness(2.6); }
+#strip-left { translate: -3.4 0.8 11; }
+#strip-right { translate: 3.4 0.8 11; }
+
+
+/* ------------------------------------------------------------------
+   1. "css": three letters, typed. The c turns over: it was a g.
+   ------------------------------------------------------------------ */
+
+#mark {
+  translate: 0 0.45 0;
+  animation: mark var(--loop) infinite;
+}
+
+/* Up and small while the features play, back for the end, then it falls away */
+@keyframes mark {
+  0%, 20% { translate: 0 0.45 0; scale: 1; }
+  22%, 86% { translate: 0 1.95 0; scale: 0.4; }
+  88%, 96% { translate: 0 0.45 0; scale: 1; }
+  99% { translate: 0 -6 0; scale: 1; }
+  99.5%, 100% { translate: 0 0.45 0; scale: 0.001; }
+}
+
+.glyph {
+  view-box: 0 -0.82 0.7 1.03; /* one box for every letter: they share a baseline */
+  depth: 0.2;
+  scale: 1.5;
+  color: #e8e6e1;
+  transition: 0.4s cubic-bezier(0.3, 1.6, 0.5, 1);
+  &:hover { rotate-y: -25deg; }
+}
+
+#c { d: path("M.368 .02Q.276 .02 .208 -.02Q.14 -.06 .103 -.133Q.066 -.207 .066 -.307Q.066 -.409 .104 -.484Q.141 -.559 .21 -.599Q.278 -.64 .371 -.64Q.456 -.64 .519 -.605Q.581 -.571 .617 -.508Q.652 -.446 .655 -.36L.495 -.36Q.482 -.418 .45 -.45Q.418 -.482 .371 -.482Q.309 -.482 .274 -.436Q.239 -.39 .239 -.307Q.239 -.227 .273 -.182Q.307 -.138 .367 -.138Q.409 -.138 .439 -.164Q.468 -.19 .482 -.238L.644 -.238Q.637 -.159 .601 -.101Q.565 -.043 .505 -.011Q.446 .02 .368 .02Z"); }
+#g { d: path("M.633 -.03Q.633 .047 .596 .103Q.558 .159 .49 .19Q.421 .22 .328 .22Q.25 .22 .189 .196Q.128 .172 .09 .128Q.052 .084 .043 .023L.221 .023Q.237 .045 .265 .058Q.293 .07 .328 .07Q.387 .07 .42 .044Q.453 .017 .453 -.03L.453 -.095L.413 -.095Q.396 -.064 .36 -.046Q.324 -.028 .279 -.028Q.206 -.028 .154 -.064Q.101 -.101 .072 -.167Q.043 -.234 .043 -.325Q.043 -.421 .072 -.49Q.101 -.56 .154 -.598Q.206 -.636 .279 -.636Q.325 -.636 .362 -.616Q.398 -.596 .413 -.561L.453 -.561L.453 -.62L.633 -.62L.633 -.03ZM.215 -.328Q.215 -.257 .248 -.217Q.281 -.178 .339 -.178Q.397 -.178 .43 -.217Q.462 -.257 .462 -.328Q.462 -.4 .43 -.439Q.397 -.478 .339 -.478Q.281 -.478 .248 -.439Q.215 -.4 .215 -.328Z"); }
+.s { d: path("M.255 -.194Q.268 -.164 .295 -.147Q.322 -.131 .363 -.131Q.409 -.131 .433 -.143Q.456 -.156 .456 -.179Q.456 -.201 .441 -.212Q.425 -.223 .391 -.226L.295 -.236Q.19 -.247 .138 -.294Q.085 -.342 .085 -.429Q.085 -.527 .157 -.583Q.228 -.64 .355 -.64Q.491 -.64 .563 -.583Q.635 -.527 .641 -.414L.473 -.414Q.463 -.451 .434 -.47Q.404 -.489 .355 -.489Q.307 -.489 .282 -.476Q.257 -.463 .257 -.439Q.257 -.418 .273 -.407Q.288 -.396 .322 -.392L.417 -.383Q.524 -.372 .576 -.325Q.627 -.278 .627 -.191Q.627 -.125 .596 -.077Q.565 -.03 .506 -.005Q.447 .02 .363 .02Q.234 .02 .164 -.034Q.094 -.088 .085 -.194L.255 -.194Z"); }
+
+/* The g waits on the back of the c */
+#g {
+  rotate-y: 180deg;
+  color: #ff5a36;
+  material: jelly(0.6);
+  &:hover { rotate-y: 155deg; }
+}
+
+.letter {
+  translate: calc((sibling-index() - 2.5) * 1.05) 0 0;
+  animation: type var(--loop) infinite;
+  animation-delay: calc(sibling-index() * 0.3s);
+}
+@keyframes type {
+  0% { scale: 0.001; }
+  1% { scale: 1.2; }
+  1.6%, 100% { scale: 1; }
+}
+
+#flip { animation: flip var(--loop) infinite; }
+@keyframes flip {
+  0%, 6% { rotate-y: 0deg; }
+  7.6% { rotate-y: 196deg; }
+  8%, 99% { rotate-y: 180deg; }
+  99.5%, 100% { rotate-y: 0deg; }
+}
+
+/* Each side shows while it faces us */
+#c { animation: front var(--loop) infinite; }
+#g { animation: back var(--loop) infinite; }
+@keyframes front {
+  0%, 6.9% { scale: 1.5; }
+  7%, 99.4% { scale: 0.001; }
+  99.5%, 100% { scale: 1.5; }
+}
+@keyframes back {
+  0%, 6.9% { scale: 0.001; }
+  7%, 99.4% { scale: 1.5; }
+  99.5%, 100% { scale: 0.001; }
+}
+
+/* The light comes on: the word swings, it was 3D all along */
+#word { animation: swing var(--loop) infinite; }
+@keyframes swing {
+  0%, 7% { rotate-x: 0deg; rotate-y: 0deg; }
+  10% { rotate-x: 12deg; rotate-y: -30deg; }
+  15%, 100% { rotate-x: 0deg; rotate-y: 0deg; }
+}
+
+
+/* ------------------------------------------------------------------
+   2. The full stop falls in: "gss."
+   ------------------------------------------------------------------ */
+
+#stop {
+  translate: 1.575 -0.27 0;
+  animation: fall-in var(--loop) infinite;
+}
+@keyframes fall-in {
+  0%, 9% { translate: 1.575 5 0; }
+  10% { translate: 1.575 -0.27 0; }
+  10.5% { translate: 1.575 0.08 0; }
+  11%, 100% { translate: 1.575 -0.27 0; }
+}
+
+#dot {
+  radius: 0.21;
+  color: #ff5a36;
+  material: jelly(0.6);
+  transition: 0.35s cubic-bezier(0.3, 1.8, 0.5, 1);
+  &:hover { scale: 1.8; }
+  &:active { color: #ffd28a; }
+}
+
+
+/* ------------------------------------------------------------------
+   3. The braces close the rule: { gss. }
+   ------------------------------------------------------------------ */
+
+.brace {
+  view-box: 0 0 600 600;
+  stroke-width: 18;
+  scale: 0.007;
+  color: #e8e6e1;
+}
+#brace-left {
+  d: path("M170 140 C120 140 112 165 112 205 v55 c0 32 -16 40 -55 40 c39 0 55 8 55 40 v55 c0 40 8 65 58 65");
+}
+#brace-right {
+  d: path("M430 140 C480 140 488 165 488 205 v55 c0 32 16 40 55 40 c-39 0 -55 8 -55 40 v55 c0 40 -8 65 -58 65");
+}
+
+#left { animation: brace-left var(--loop) infinite; }
+#right { animation: brace-right var(--loop) infinite; }
+@keyframes brace-left {
+  0%, 12% { translate: -9 0 0; rotate-y: -220deg; }
+  13.6% { translate: -1.086 0 0; rotate-y: 8deg; }
+  14%, 99% { translate: -1.336 0 0; rotate-y: 0deg; }
+  99.5%, 100% { translate: -9 0 0; rotate-y: -220deg; }
+}
+@keyframes brace-right {
+  0%, 12% { translate: 9 0 0; rotate-y: 220deg; }
+  13.6% { translate: 1.022 0 0; rotate-y: -8deg; }
+  14%, 99% { translate: 1.272 0 0; rotate-y: 0deg; }
+  99.5%, 100% { translate: 9 0 0; rotate-y: 220deg; }
+}
+
+
+/* ------------------------------------------------------------------
+   4. Eight features, one after the other, under the mark.
+      Each slot pops in for 2.4 seconds: the same keyframes, delayed
+      by its place among its siblings.
+   ------------------------------------------------------------------ */
+
+#carousel { translate: 0 -0.3 0; }
+
+/* Out of the picture while it waits: a tiny object still shows a speck */
+.slot {
+  translate: 0 -30 0;
+  scale: 0.001;
+  animation: slot var(--loop) infinite;
+  animation-delay: calc(6.6s + (sibling-index() - 1) * 2.4s);
+}
+@keyframes slot {
+  0% { translate: 0 0 0; scale: 0.001; }
+  1% { scale: 1.08; }
+  1.5%, 7.2% { scale: 1; }
+  8% { translate: 0 0 0; scale: 0.001; }
+  8.1%, 100% { translate: 0 -30 0; scale: 0.001; }
+}
+
+@keyframes turn {
+  to { rotate-y: 1turn; }
+}
+
+/* 4.1 Shapes */
+.shape {
+  translate: calc((sibling-index() - 3.5) * 0.88) 0 0;
+  rotate-x: 20deg;
+  color: #e8e6e1;
+  animation: turn 5s linear infinite;
+}
+.shape.hot { color: #ff5a36; material: jelly(0.6); }
+cube.shape { size: 0.55; corner-radius: 0.05; }
+sphere.shape { radius: 0.33; }
+torus.shape { radius: 0.25; thickness: 0.1; }
+cone.shape { radius: 0.32 0; height: 0.65; }
+capsule.shape { radius: 0.17; height: 0.7; }
+cylinder.shape { radius: 0.25; height: 0.6; }
+
+/* 4.2 Materials */
+#chrome { translate: -1.8 0 0; radius: 0.46; material: chrome; }
+#gold { translate: -0.6 0 0; radius: 0.34; thickness: 0.13; rotate-x: 60deg; material: gold; animation: turn 4s linear infinite; }
+#rough { translate: 0.6 0 0; radius: 0.46; color: #8a8f99; material: metal(0.6); }
+#jelly { translate: 1.8 0 0; radius: 0.46; color: #ff5a36; material: jelly; }
+
+/* 4.3 Carve, then melt */
+#carve { translate: -0.95 0 0; animation: carve-turn 7s linear infinite; }
+@keyframes carve-turn {
+  from { rotate-x: 28deg; rotate-y: 0deg; }
+  to { rotate-x: 28deg; rotate-y: 1turn; }
+}
+#block { size: 1; corner-radius: 0.08; color: #e8e6e1; }
+#bite { translate: 0.4 0.4 0.4; radius: 0.5; operation: subtract; }
+#melt { translate: 1 0 0; }
+.drop { color: #ff5a36; material: jelly(0.55); }
+#core { radius: 0.4; }
+#drop-a { radius: 0.25; blend: 0.45; animation: melt-a 1.2s ease-in-out infinite alternate; }
+#drop-b { radius: 0.2; blend: 0.45; animation: melt-b 1.5s ease-in-out infinite alternate; }
+@keyframes melt-a {
+  from { translate: 0.75 0.45 0; }
+  to { translate: 0.22 0.12 0; }
+}
+@keyframes melt-b {
+  from { translate: -0.55 -0.62 0; }
+  to { translate: -0.1 -0.22 0; }
+}
+
+/* 4.4 SVG paths and polygons, pushed into 3D */
+#heart {
+  translate: -0.85 0 0;
+  view-box: 0 0 32 32;
+  d: path("M16 28 C7 21 3 15.5 3 10.5 C3 6.5 6 4 9.5 4 C12.5 4 14.6 6 16 8.3 C17.4 6 19.5 4 22.5 4 C26 4 29 6.5 29 10.5 C29 15.5 25 21 16 28 Z");
+  depth: 6;
+  scale: 0.042;
+  color: #ff5a36;
+  material: jelly(0.55);
+  animation: sway 1.4s ease-in-out infinite alternate;
+}
+@keyframes sway {
+  from { rotate-y: -35deg; }
+  to { rotate-y: 35deg; }
+}
+#star {
+  translate: 0.95 0 0;
+  d: polygon(0 -1, 0.24 -0.33, 0.95 -0.31, 0.39 0.12, 0.59 0.81, 0 0.4, -0.59 0.81, -0.39 0.12, -0.95 -0.31, -0.24 -0.33);
+  depth: 0.3;
+  scale: 0.6;
+  material: gold;
+  animation: turn 3s linear infinite;
+}
+
+/* 4.5 Selectors you know: every other tile, a twist by its index */
+#ribbon { rotate-y: -30deg; animation: roll 4s linear infinite; }
+@keyframes roll {
+  from { rotate-y: -30deg; rotate-x: 0deg; }
+  to { rotate-y: -30deg; rotate-x: 1turn; }
+}
+.tile {
+  size: 0.13 0.9 0.5;
+  corner-radius: 0.04;
+  translate: calc((sibling-index() - 5) * 0.32) 0 0;
+  rotate-x: calc(sibling-index() * 40deg);
+  color: #e8e6e1;
+  &:nth-child(odd) { color: #ff5a36; material: jelly(0.6); }
+}
+
+/* 4.6 Keyframes on a motion path */
+#track { scale: 1.75; rotate-x: -50deg; }
+#eight {
+  d: path("M0 0 C0.35 0.45 0.85 0.45 0.85 0 C0.85 -0.45 0.35 -0.45 0 0 C-0.35 0.45 -0.85 0.45 -0.85 0 C-0.85 -0.45 -0.35 -0.45 0 0 Z");
+  stroke-width: 0.022;
+  color: #e8e6e1;
+}
+.runner {
+  offset-path: path("M0 0 C0.35 0.45 0.85 0.45 0.85 0 C0.85 -0.45 0.35 -0.45 0 0 C-0.35 0.45 -0.85 0.45 -0.85 0 C-0.85 -0.45 -0.35 -0.45 0 0 Z");
+  offset-rotate: auto;
+  animation: run 2s linear infinite;
+  animation-delay: calc(sibling-index() * -0.67s);
+}
+@keyframes run {
+  from { offset-distance: 0%; }
+  to { offset-distance: 100%; }
+}
+.pill { radius: 0.05; height: 0.17; rotate-z: 90deg; color: #ff5a36; material: jelly(0.5); }
+
+/* 4.7 Gradients, noise, and a mask that eats the ball */
+#paint > * { radius: 0.52; }
+#conic {
+  translate: -1.25 0 0;
+  color: conic-gradient(#ff5a36, #ffd28a, #8affed, #7c5cff, #ff5a36);
+  animation: wheel 3s linear infinite;
+}
+@keyframes wheel {
+  to { rotate-z: -1turn; }
+}
+#marble {
+  color: displace(repeating-linear-gradient(45deg, #f4f1ea 0% 9%, #8d8678 10%, #f4f1ea 11%), noise(turbulence 1 4, black, white), 0.35);
+  animation: turn 5s linear infinite;
+}
+#dissolve {
+  translate: 1.25 0 0;
+  color: #ff5a36;
+  material: jelly(0.6);
+  mask-image: noise(4 3, black 90%, transparent 90%);
+  animation: dissolve 1.1s ease-in-out infinite alternate;
+}
+@keyframes dissolve {
+  from { mask-image: noise(4 3, black 90%, transparent 90%); }
+  to { mask-image: noise(4 3, black 30%, transparent 30%); }
+}
+
+/* 4.8 Colour by position */
+#halo {
+  radius: 0.75;
+  thickness: 0.05;
+  rotate-x: 90deg;
+  color: #8affed;
+  filter: brightness(1.6);
+}
+#beads { animation: spin 6s linear infinite; }
+@keyframes spin {
+  to { rotate-z: -1turn; }
+}
+.bead {
+  --a: calc(sibling-index() * 30deg);
+  translate: calc(cos(var(--a)) * 1.05) calc(sin(var(--a)) * 1.05) 0;
+  radius: 0.12;
+  color: oklch(72% 0.17 calc(sibling-index() * 30));
+  material: jelly(0.5);
+}

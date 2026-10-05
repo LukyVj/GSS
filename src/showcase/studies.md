@@ -35,8 +35,8 @@ The scroll-driven lens explosion, iris blades and interior are illustrative,
 not an exact reconstruction of Nikon's mechanical or optical design.
 
 All three reference studies mount on WebGL for predictable startup. Their GLSL
-and WGSL compile in the language compiler, and `gpu.test.ts` validates all seven
-studies on WebGL. Soft Relic and the camera drop SwiftShader's WebGPU instance
-during validation (every WebGPU test after them then fails), so `wgsl-gpu.test.ts`
-skips those two; both run on WebGPU in Chrome on Metal. No compiler or shared
+and WGSL compile in the language compiler, and `gpu.test.ts` validates all eight
+studies on WebGL. Soft Relic, the camera and the 0.0.5 announcement drop
+SwiftShader's WebGPU instance during validation (every WebGPU test after them then
+fails), so `wgsl-gpu.test.ts` skips those three; all run on WebGPU in Chrome on Metal. No compiler or shared
 renderer behavior was changed for these studies.

@@ -1,6 +1,7 @@
 import burgerSource from "../scenes/zdog-burger.gss?raw";
 import characterSource from "../scenes/zdog-character.gss?raw";
 import cameraSource from "../scenes/camera-cutaway.gss?raw";
+import releaseSource from "../scenes/release-005.gss?raw";
 import bloomSource from "../scenes/chromatic-bloom.gss?raw";
 import circuitSource from "../scenes/glass-circuit.gss?raw";
 import relicSource from "../scenes/soft-relic.gss?raw";
@@ -69,6 +70,7 @@ export const EXAMPLES: Example[] = [
   { group: "Studies", name: "High Strut (Zdog reconstruction)", code: characterSource },
   { group: "Studies", name: "Tasty Burger (Zdog reconstruction)", code: burgerSource },
   { group: "Studies", name: "Nikon F (illustrative cutaway)", code: cameraSource },
+  { group: "Studies", name: "GSS 0.0.5 (announcement film)", code: releaseSource },
   ...AT_RULES.flatMap((atRule) => fromReference(`@${atRule.name}`, atRule.examples)),
   ...FUNCTIONS.flatMap((fn) => fromReference(fn.name, fn.examples)),
   ...PROPERTIES.flatMap((property) => fromReference(property.name, property.examples)),

@@ -5,7 +5,7 @@ import { compileScene } from "../compiler";
 import { PROPERTIES, SELECTORS, SHAPE_DOCS, FUNCTIONS } from "../compiler/registry/registry";
 const scenes = import.meta.glob<string>(["../scenes/*.gss", "../scene.gss", "../home/*.gss"], { query: "?raw", import: "default", eager: true });
 const examples = [...PROPERTIES, ...SELECTORS, ...SHAPE_DOCS, ...FUNCTIONS].flatMap(item => item.examples.map((e, n) => [item.name + n, e.code]));
-const SWIFTSHADER_DROPS = new Set(["../scenes/soft-relic.gss", "../scenes/camera-cutaway.gss"]);
+const SWIFTSHADER_DROPS = new Set(["../scenes/soft-relic.gss", "../scenes/camera-cutaway.gss", "../scenes/release-005.gss"]);
 afterAll(closeWebGPU);
 // 3 min: the WebGPU of the test browser is SwiftShader. It builds a pipeline on the CPU,
 // after inlining every function call: the distance function of the scene is compiled
@@ -14,8 +14,8 @@ afterAll(closeWebGPU);
 // the timeout only stops a hang.
 describe("generated shaders and pipelines validate on WebGPU", () => {
   for (const [name, source] of [...Object.entries(scenes), ...examples]) {
-    // Two studies drop SwiftShader's WebGPU instance, and every test after them fails
-    // with it. Both run on WebGPU in Chrome on Metal; gpu.test.ts validates them on WebGL.
+    // Three studies drop SwiftShader's WebGPU instance, and every test after them fails
+    // with it. All run on WebGPU in Chrome on Metal; gpu.test.ts validates them on WebGL.
     const test = SWIFTSHADER_DROPS.has(name) ? it.skip : it;
     test(name, async () => {
       const scene = compileScene(source);

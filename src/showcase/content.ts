@@ -27,6 +27,7 @@ import bloom from "../scenes/chromatic-bloom.gss?raw";
 import burger from "../scenes/zdog-burger.gss?raw";
 import character from "../scenes/zdog-character.gss?raw";
 import camera from "../scenes/camera-cutaway.gss?raw";
+import release from "../scenes/release-005.gss?raw";
 
 import { FIRST_SCENE } from "../docs/guide";
 import { formatGss } from "../docs/format";
@@ -352,5 +353,15 @@ export const STUDIES: Study[] = [
     scene: camera,
     reference: { href: "https://imaging.nikon.com/imaging/information/chronicle/rhnc05f-e/", label: "exterior reference: Nikon ↗" },
     webgl: true,
+  },
+  {
+    key: "release",
+    name: "gss 0.0.5 · announcement",
+    eyebrow: "STUDY 08 / ANNOUNCEMENT",
+    title: "GSS\n0.0.5.",
+    description: "A 30-second film, written as a stylesheet.\nThe word types itself, then eight features take the stage.",
+    features: ["SVG glyphs", "sibling-index()", "animation-delay", "noise()"],
+    hint: "watch the loop · hover the letters · drag to orbit",
+    scene: release,
   },
 ];
