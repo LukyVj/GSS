@@ -17,7 +17,7 @@
   }
 }
 path, prism { view-box: -2 -2 4 4; }
-scene { background: #fae0be; floor: none; ambient: 1; camera-angle: -45deg 8deg; camera-distance: 8.8; camera-target: 0 2 0.3; }
+scene { background: #fae0be; floor: none; ambient: 1; camera-angle: -45deg 8deg; camera-distance: 8.8; camera-target: 0 2 0.3; dpr: 1.5; }
 #figure { translate: 0 1.6 0; }
 #hips { d: path("M-0.36 0 L0.36 0"); stroke-width: 0.48; color: #636; }
 #kick { translate: -0.36 0 0; rotate-x: 90deg; }

@@ -58,7 +58,7 @@ scene {
   camera-spin: none;
   light: -25deg 40deg;
   ambient: 0.4;
-  dpr: auto; /* light on every GPU */
+  dpr: 1.5;
 }
 
 #wall { translate: 0 0 13; rotate-x: 90deg; size: 40 30; color: #8a8a96; }

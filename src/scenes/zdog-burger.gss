@@ -13,7 +13,7 @@
   group#patty { cylinder#meat; torus#meat-edge; }
   group#bottom { cylinder#heel; torus.heel-edge * 2; }
 }
-scene { background: #fae0be; floor: none; ambient: 1; camera-distance: 12; camera-angle: 0deg 20deg; camera-target: 0 2.7 0; }
+scene { background: #fae0be; floor: none; ambient: 1; camera-distance: 12; camera-angle: 0deg 20deg; camera-target: 0 2.7 0; dpr: 1.5; }
 #top { translate: 0 2 0; animation: open-top 1s ease-in-out; animation-timeline: scroll(root); }
 #dome { radius: 1.2; color: #e62; }
 #cut { size: 3 2 3; translate: 0 -1 0; operation: subtract; }

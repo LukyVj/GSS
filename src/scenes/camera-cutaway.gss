@@ -28,7 +28,7 @@
   group#front { cylinder#front-ring; cylinder#front-hole; torus#front-bezel; cylinder#lens; cube#lens-label; path#engraved-ticks; }
 }
 path, prism { view-box: -2 -2 4 4; }
-scene { background: #101118; floor: #171922; ambient: 0.5; light: -45deg 55deg; camera-distance: 10; camera-angle: 24deg 18deg; camera-target: 0 1.8 0.8; }
+scene { background: #101118; floor: #171922; ambient: 0.5; light: -45deg 55deg; camera-distance: 10; camera-angle: 24deg 18deg; camera-target: 0 1.8 0.8; dpr: 1.5; }
 #body { translate: 0 1.8 0; }
 #shell { size: 3.5 1.85 1.05; corner-radius: 0.12; material: metal(#bcc0c6, 0.28); }
 #chamber { size: 2.9 1.35 0.8; corner-radius: 0.05; operation: subtract; }

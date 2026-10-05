@@ -14,6 +14,7 @@
   torus#trim;
 }
 scene {
+  dpr: 1.5;
   background: #101118;
   floor: #171922;
   camera-distance: 11.5;
