@@ -74,7 +74,7 @@
     display: block;
     grid-area: concepts;
     justify-self: start;
-    margin-left: -5px;
+    margin-left: -4px; /* centred on the 1px border at the left of the column */
   }
 }
 @media (width >= 1024px) {
@@ -82,7 +82,7 @@
     display: block;
     grid-area: contents;
     justify-self: end;
-    margin-right: -5px;
+    margin-right: -4px; /* centred on the 1px border at the right of the column */
   }
 }
 .DocSearch-Modal > .gss-search-resizer {
@@ -105,33 +105,46 @@
   background: var(--gss-signal);
 }
 /* The grip: a small pill with two upright strokes, halfway down the hairline, that says the
-   line can be taken. Dim at rest, lit with the line. */
+   line can be taken. Dim at rest, lit with the line. Laid on whole pixels, centred on the
+   line: the handle is 9px wide, the line its fifth pixel, the pill 11px from -1px. The strokes
+   are 3px apart, half a pixel thick on a dense screen. */
+.gss-search-resizer {
+  --grip-stroke: var(--gss-dim);
+  --grip-width: 1px;
+  --grip-x: 2px;
+}
 .gss-search-resizer::before {
   content: "";
   position: absolute;
   z-index: 1;
-  top: 50%;
-  left: 50%;
-  width: 9px;
-  height: 28px;
+  top: round(50% - 13px, 1px);
+  left: -1px;
+  width: 11px;
+  height: 26px;
   box-sizing: border-box;
-  translate: -50% -50%;
   border: 1px solid var(--gss-isoline);
-  border-radius: 3px;
+  border-radius: 6px;
   background:
-    linear-gradient(var(--gss-dim), var(--gss-dim)) 2px 50% / 1px 12px no-repeat,
-    linear-gradient(var(--gss-dim), var(--gss-dim)) 4px 50% / 1px 12px no-repeat,
+    linear-gradient(var(--grip-stroke), var(--grip-stroke)) var(--grip-x) 50% / var(--grip-width) 10px no-repeat,
+    linear-gradient(var(--grip-stroke), var(--grip-stroke)) calc(var(--grip-x) + 4px) 50% / var(--grip-width) 10px no-repeat,
     var(--gss-surface);
   transition: border-color var(--gss-transition);
+}
+@media (resolution >= 2dppx) {
+  .gss-search-resizer {
+    --grip-width: 0.5px;
+    --grip-x: 2.25px;
+  }
+}
+.gss-search-resizer:hover,
+.gss-search-resizer:focus-visible,
+.gss-search-resizing .gss-search-resizer {
+  --grip-stroke: var(--gss-bone);
 }
 .gss-search-resizer:hover::before,
 .gss-search-resizer:focus-visible::before,
 .gss-search-resizing .gss-search-resizer::before {
   border-color: var(--gss-signal);
-  background:
-    linear-gradient(var(--gss-bone), var(--gss-bone)) 2px 50% / 1px 12px no-repeat,
-    linear-gradient(var(--gss-bone), var(--gss-bone)) 4px 50% / 1px 12px no-repeat,
-    var(--gss-surface);
 }
 .gss-search-resizer:focus-visible {
   outline: none;
