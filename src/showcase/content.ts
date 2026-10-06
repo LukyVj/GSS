@@ -21,6 +21,7 @@ import steveHouse from "../scenes/steveHouse.gss?raw";
 import stevePortal from "../scenes/stevePortal.gss?raw";
 import grass from "../scenes/grass.gss?raw";
 import teapot from "../scenes/teapot.gss?raw";
+import mistralFour from "../scenes/mistral-four.gss?raw";
 import circuit from "../scenes/glass-circuit.gss?raw";
 import relic from "../scenes/soft-relic.gss?raw";
 import garden from "../scenes/candy-garden.gss?raw";
@@ -265,6 +266,11 @@ export const INSPIRATION: Inspiration[] = [
     slug: "teapot",
     title: "The Utah teapot: hover lifts the lid, a click hits a speed bump",
     code: teapot,
+  },
+  {
+    slug: "mistral-four",
+    title: "Le Chonk: a pixel 4 that falls over when clicked",
+    code: mistralFour,
   },
 ];
 

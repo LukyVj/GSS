@@ -1,0 +1,46 @@
+/*
+ * LE CHONK
+ * The pixel "4" of Mistral AI, in a museum. Click it: it tips over to the left,
+ * then falls on its back and bounces once. Click again to replay.
+ */
+
+@scene {
+  prism#four;
+}
+
+scene {
+  shadows: soft;
+  ambient: 0.35;
+  floor: #d8d2c8;
+  background: linear-gradient(#5a5048, #2b2622);
+  camera-target: 0 1.2 0;
+  camera-distance: 8;
+  camera-angle: 25deg 14deg;
+}
+
+#four {
+  /* One cell is 0.35: the horizontal bar, the vertical bar on the right,
+     the staircase up to the top, and the small staircase hole inside */
+  d: path("M-1.225 0.875 V0.175 H-0.875 V-0.175 H-0.525 V-0.525 H-0.175 V-0.875 H0.175 V-1.225 H0.525 V-1.575 H1.225 V1.575 H0.525 V0.875 Z M-0.175 0.175 V-0.175 H0.175 V-0.525 H0.525 V0.175 Z");
+  depth: 0.9;
+  translate: 0 1.575 0;
+  color: #ff7000;
+  texture: url("/textures/mistral-tiles.svg");
+  image-rendering: pixelated;
+}
+
+/* A press starts the fall; it plays to its end, and the last frame stays */
+#four:active {
+  animation: fall 2.5s 1 forwards;
+}
+
+/* It turns around its center while the center moves, so an edge stays on the
+   floor: first the bottom left corner, then the bottom edge */
+@keyframes fall {
+  0% { rotate-z: 0deg; rotate-x: 0deg; translate: 0 1.575 0; }
+  30% { rotate-z: -25deg; rotate-x: 0deg; translate: -0.78 1.945 0; }
+  42% { rotate-z: -25deg; rotate-x: 10deg; translate: -0.78 1.945 -0.2; }
+  80% { rotate-z: -8deg; rotate-x: 90deg; translate: -0.3 0.45 -2.025; }
+  86% { rotate-z: -8deg; rotate-x: 84deg; translate: -0.3 0.6 -2; }
+  100% { rotate-z: -8deg; rotate-x: 90deg; translate: -0.3 0.45 -2.025; }
+}
