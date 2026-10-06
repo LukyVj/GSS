@@ -105,11 +105,12 @@
   background: var(--grip-lit);
 }
 /* The grip: a small pill with two upright strokes, halfway down the hairline, that says the
-   line can be taken. Dim at rest, lit with the line, in the same washed-out signal. Laid on whole pixels, centred on the
+   line can be taken. Dim at rest, lit with the line, in the same washed-out signal, the strokes a little more. Laid on whole pixels, centred on the
    line: the handle is 9px wide, the line its fifth pixel, the pill 11px from -1px. The strokes
    are 3px apart, half a pixel thick on a dense screen. */
 .gss-search-resizer {
   --grip-lit: color-mix(in srgb, var(--gss-signal) 25%, transparent); /* washed out, the line and the grip alike */
+  --grip-lit-stroke: color-mix(in srgb, var(--gss-signal) 35%, transparent); /* the strokes, a little more */
   --grip-stroke: var(--gss-dim);
   --grip-width: 1px;
   --grip-x: 2px;
@@ -140,7 +141,7 @@
 .gss-search-resizer:hover,
 .gss-search-resizer:focus-visible,
 .gss-search-resizing .gss-search-resizer {
-  --grip-stroke: var(--grip-lit);
+  --grip-stroke: var(--grip-lit-stroke);
 }
 .gss-search-resizer:hover::before,
 .gss-search-resizer:focus-visible::before,
