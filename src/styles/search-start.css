@@ -25,9 +25,9 @@
     min-width: 0;
     min-height: 0;
   }
+  /* Its line is the one of the form of DocSearch: one hairline, not two */
   .DocSearch-Modal > .DocSearch-SearchBar {
     grid-area: bar;
-    border-bottom: 1px solid var(--gss-line);
   }
   .DocSearch-Modal > .DocSearch-Footer {
     grid-area: footer;
