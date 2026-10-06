@@ -7,6 +7,7 @@ Colors and formats `.gss` files in VS Code, and in the editors built on it: Curs
 - **Highlighting**: selectors, properties, values, colors, numbers and units, `@scene`, `@keyframes`, `@media`, `@property` and `@property-panel`, nested rules and `&`.
 - **Formatting**: *Format Document* (or saving the file) rewrites the code in the GSS style: one shape per line in `@scene`, one declaration per line, two-space indentation, comments kept. It is the same formatter as the docs and the playground.
 - **File icon**: `.gss` files get the GSS icon in the explorer.
+- **HTML snippets**: `gss-scene` inserts a scene loaded from a `.gss` file; `gss-scene-inline` inserts the documented inline `<script type="text/gss">` form.
 
 ## Install
 

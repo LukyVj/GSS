@@ -1,7 +1,7 @@
 {
   "name": "gss-language",
   "displayName": "GSS \u2014 GPU Style Sheets",
-  "description": "Syntax highlighting, file icon and formatting for GSS",
+  "description": "Syntax highlighting, formatting, file icon and HTML snippets for GSS",
   "version": "0.4.0",
   "publisher": "lukyvj",
   "license": "Apache-2.0",
@@ -29,7 +29,8 @@
   },
   "categories": [
     "Programming Languages",
-    "Formatters"
+    "Formatters",
+    "Snippets"
   ],
   "main": "./dist/extension.js",
   "activationEvents": [
@@ -58,6 +59,12 @@
         "language": "gss",
         "scopeName": "source.gss",
         "path": "./syntaxes/gss.tmLanguage.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "html",
+        "path": "./snippets/html.json"
       }
     ],
     "configurationDefaults": {
