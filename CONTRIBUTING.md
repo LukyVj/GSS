@@ -69,6 +69,10 @@ A new page of the docs takes `since: "<the version that ships it>"` in the regis
 `src/docs/guide.ts`): the search shows the pages of the newest version under "New in …"
 when it opens (`src/docs/start-screen.ts`), once `package.json` has that version. The drawings of "How GSS works", in the right column of
 the search, are inline SVG in `src/docs/concepts.ts`; their styles are in `src/styles/search-start.css`.
+While a word is typed, that column shows the page of the selected result (`src/docs/search-preview.ts`);
+the reader sets the width of the columns (`src/docs/search-columns.ts`), and "Try it" opens the example
+beside the search (`src/docs/search-try.ts`), with the live panel of the docs (`src/docs/playground.ts`,
+`src/styles/playground-panel.css`).
 
 ## Publishing
 

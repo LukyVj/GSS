@@ -57,6 +57,22 @@ describe("the preview, in the page", () => {
     expect(preview.querySelector("a")!.getAttribute("href")).toBe("./docs.html#material--example-1");
   });
 
+  it("offers to try the example, with its code and its HTML", () => {
+    const withHtml = PROPERTIES.flatMap((property) => property.examples.map((example, i) => ({ property, example, i }))).find(({ example }) => example.html)!;
+    const preview = renderPreview(previewEntry(`${withHtml.property.name}--example-${withHtml.i + 1}`)!, "#");
+    const button = preview.querySelector<HTMLButtonElement>("button.gss-search-try")!;
+    expect(button.textContent).toBe("Try it");
+    expect(button.dataset.example).toBe(withHtml.example.code);
+    expect(button.dataset.html).toBe(withHtml.example.html);
+    const plain = renderPreview(previewEntry("material")!, "#").querySelector<HTMLButtonElement>("button.gss-search-try")!;
+    expect(plain.dataset.html).toBeUndefined();
+  });
+
+  it("offers nothing to try on a page without an example", () => {
+    const guide = GETTING_STARTED.find((entry) => !entry.example)!;
+    expect(renderPreview(previewEntry(guide.anchor)!, "#").querySelector("button.gss-search-try")).toBeNull();
+  });
+
   it("takes the place of the drawings, which come back without it", () => {
     const column = document.createElement("aside");
     column.innerHTML = '<div class="gss-search-start-title"></div><article class="gss-concept"></article>';

@@ -546,3 +546,121 @@
     min-height: 44px;
   }
 }
+
+/* ----- Try it: the example of the preview, live beside the search (search-try.ts) ----- */
+.gss-search-preview-example-box {
+  position: relative;
+}
+/* Signal, filled: the one action of the preview */
+.gss-search-try {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  height: 28px;
+  padding: 0 12px;
+  border: 1px solid var(--gss-signal);
+  border-radius: var(--gss-radius-control);
+  background: var(--gss-signal);
+  color: var(--gss-void);
+  font: 500 12px var(--gss-font-code);
+  text-transform: lowercase;
+  cursor: pointer;
+  transition:
+    background-color var(--gss-transition),
+    border-color var(--gss-transition);
+}
+.gss-search-try:hover {
+  border-color: var(--gss-signal-hover);
+  background: var(--gss-signal-hover);
+}
+.gss-search-try:focus-visible {
+  outline: 1px solid var(--gss-bone);
+  outline-offset: 2px;
+}
+@media (pointer: coarse) {
+  .gss-search-try {
+    height: 44px;
+  }
+}
+
+/* The search, slid to the left: its width and its place come from search-try.ts */
+.DocSearch-Container[data-gss-try] > .DocSearch-Modal {
+  width: var(--gss-try-modal);
+  max-width: none;
+  margin-left: var(--gss-try-left);
+  margin-right: 0;
+}
+/* The playground, 16px to its right, as tall as the search */
+.playground.gss-search-try-panel {
+  container: gss-search-try / inline-size;
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  margin: 0;
+  box-shadow: 0 24px 64px rgb(0 0 0 / 0.5);
+}
+.gss-search-try-panel .playground-bar {
+  flex: none;
+  padding-right: 8px;
+}
+.gss-search-try-close {
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--gss-isoline);
+  border-radius: var(--gss-radius-control);
+  background: none;
+  font: 12px var(--gss-font-code);
+  color: var(--gss-ash);
+  text-transform: lowercase;
+  cursor: pointer;
+  transition:
+    color var(--gss-transition),
+    border-color var(--gss-transition);
+}
+.gss-search-try-close:hover {
+  border-color: var(--gss-dim);
+  color: var(--gss-bone);
+}
+/* Narrow: the render on top, the code under it */
+.gss-search-try-panel .playground-body {
+  flex: 1;
+  min-height: 0;
+  height: auto;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) minmax(0, 0.8fr);
+}
+.gss-search-try-panel .code-host {
+  grid-row: 2;
+  grid-column: 1;
+  border-right: 0;
+  border-top: 1px solid var(--gss-line);
+}
+.gss-search-try-panel .playground-body canvas,
+.gss-search-try-panel .playground-body .vars-panel,
+.gss-search-try-panel .playground-body .view-chips {
+  grid-row: 1;
+  grid-column: 1;
+}
+@container gss-search-try (width < 560px) {
+  .gss-search-try-panel .hint {
+    display: none;
+  }
+}
+/* Wide: the code and the render side by side, like Try it in the docs */
+@container gss-search-try (width >= 700px) {
+  .gss-search-try-panel .playground-body {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+  }
+  .gss-search-try-panel .code-host {
+    grid-row: 1;
+    border-top: 0;
+    border-right: 1px solid var(--gss-line);
+  }
+  .gss-search-try-panel .playground-body canvas,
+  .gss-search-try-panel .playground-body .vars-panel,
+  .gss-search-try-panel .playground-body .view-chips {
+    grid-column: 2;
+  }
+}

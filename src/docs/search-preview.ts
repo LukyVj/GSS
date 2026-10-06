@@ -83,11 +83,18 @@ export function renderPreview(preview: Preview, href: string): HTMLElement {
   }
   if (preview.example) {
     if (preview.example.name) panel.append(element("div", "gss-search-preview-example", preview.example.name));
+    const box = element("div", "gss-search-preview-example-box");
     const pre = element("pre", "gss-search-preview-code");
     const code = element("code", "gss");
     code.innerHTML = highlightGss(formatGss(preview.example.code));
     pre.append(code);
-    panel.append(pre);
+    // Opens the example live beside the search (search-try.ts), like "Try it" in the docs
+    const button = element("button", "gss-search-try", "Try it");
+    button.type = "button";
+    button.dataset.example = preview.example.code;
+    if (preview.example.html) button.dataset.html = preview.example.html;
+    box.append(pre, button);
+    panel.append(box);
   }
   const link = element("a", "gss-concept-link", "Open the page →");
   link.href = href;
