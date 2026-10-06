@@ -38,24 +38,24 @@ scene {
    so that its bottom left corner never leaves the floor, first tipping left,
    then falling on its back, faster and faster, with one bounce */
 @keyframes fall {
-  0% { rotate-z: -0deg; rotate-x: 0deg; translate: 0 1.575 0; }
-  5% { rotate-z: -0.75deg; rotate-x: 0deg; translate: -0.021 1.591 0; }
-  10% { rotate-z: -2.62deg; rotate-x: 0deg; translate: -0.073 1.629 0; }
-  15% { rotate-z: -5.44deg; rotate-x: 0deg; translate: -0.155 1.684 0; }
-  20% { rotate-z: -9.13deg; rotate-x: 0deg; translate: -0.265 1.749 0; }
-  25% { rotate-z: -13.64deg; rotate-x: 0deg; translate: -0.406 1.82 0; }
-  30% { rotate-z: -18.94deg; rotate-x: 0deg; translate: -0.578 1.887 0; }
-  35% { rotate-z: -25deg; rotate-x: 0deg; translate: -0.78 1.945 0; }
-  40% { rotate-z: -25deg; rotate-x: 0deg; translate: -0.78 1.945 0; }
-  45% { rotate-z: -25deg; rotate-x: 2.62deg; translate: -0.78 1.964 -0.09; }
-  50% { rotate-z: -25deg; rotate-x: 8.53deg; translate: -0.78 1.99 -0.293; }
-  55% { rotate-z: -25deg; rotate-x: 16.99deg; translate: -0.78 1.992 -0.588; }
-  60% { rotate-z: -25deg; rotate-x: 27.7deg; translate: -0.78 1.931 -0.956; }
-  65% { rotate-z: -25deg; rotate-x: 40.48deg; translate: -0.78 1.772 -1.37; }
-  70% { rotate-z: -25deg; rotate-x: 55.19deg; translate: -0.78 1.48 -1.79; }
-  75% { rotate-z: -25deg; rotate-x: 71.72deg; translate: -0.78 1.037 -2.156; }
-  80% { rotate-z: -25deg; rotate-x: 90deg; translate: -0.78 0.45 -2.395; }
-  84% { rotate-z: -25deg; rotate-x: 84.6deg; translate: -0.78 0.631 -2.344; }
-  88% { rotate-z: -25deg; rotate-x: 90deg; translate: -0.78 0.45 -2.395; }
-  100% { rotate-z: -25deg; rotate-x: 90deg; translate: -0.78 0.45 -2.395; }
+  0% { rotate-z: 0deg; rotate-x: 0deg; translate: 0 1.575 0; }
+  5% { rotate-z: 0.753deg; rotate-x: 0deg; translate: -0.021 1.591 0; }
+  10% { rotate-z: 2.622deg; rotate-x: 0deg; translate: -0.073 1.629 0; }
+  15% { rotate-z: 5.44deg; rotate-x: 0deg; translate: -0.155 1.684 0; }
+  20% { rotate-z: 9.13deg; rotate-x: 0deg; translate: -0.265 1.749 0; }
+  25% { rotate-z: 13.643deg; rotate-x: 0deg; translate: -0.406 1.82 0; }
+  30% { rotate-z: 18.942deg; rotate-x: 0deg; translate: -0.578 1.887 0; }
+  35% { rotate-z: 25deg; rotate-x: 0deg; translate: -0.78 1.945 0; }
+  40% { rotate-z: 25deg; rotate-x: 0deg; translate: -0.78 1.945 0; }
+  45% { rotate-z: 25deg; rotate-x: -2.624deg; translate: -0.78 1.964 -0.09; }
+  50% { rotate-z: 25deg; rotate-x: -8.526deg; translate: -0.78 1.99 -0.293; }
+  55% { rotate-z: 25deg; rotate-x: -16.986deg; translate: -0.78 1.992 -0.588; }
+  60% { rotate-z: 25deg; rotate-x: -27.701deg; translate: -0.78 1.931 -0.956; }
+  65% { rotate-z: 25deg; rotate-x: -40.48deg; translate: -0.78 1.772 -1.37; }
+  70% { rotate-z: 25deg; rotate-x: -55.188deg; translate: -0.78 1.48 -1.79; }
+  75% { rotate-z: 25deg; rotate-x: -71.723deg; translate: -0.78 1.037 -2.156; }
+  80% { rotate-z: 25deg; rotate-x: -90deg; translate: -0.78 0.45 -2.395; }
+  84% { rotate-z: 25deg; rotate-x: -84.6deg; translate: -0.78 0.631 -2.344; }
+  88% { rotate-z: 25deg; rotate-x: -90deg; translate: -0.78 0.45 -2.395; }
+  100% { rotate-z: 25deg; rotate-x: -90deg; translate: -0.78 0.45 -2.395; }
 }
