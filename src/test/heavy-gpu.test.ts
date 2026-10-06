@@ -61,6 +61,17 @@ async function watch(compiled: unknown, width: number, height: number, ms: numbe
 }
 
 describe("a scene on a GPU too slow for it (decision 142)", () => {
+  it("has no dpr menu: only the docs and the playground ask for one", async () => {
+    const menus = await page.evaluate(() => {
+      document.body.innerHTML = "<div><canvas></canvas></div>";
+      const view = (window as any).__createView(document.querySelector("canvas"), { controls: false });
+      const count = document.querySelectorAll(".gss-dpr").length;
+      view.destroy();
+      return count;
+    });
+    expect(menus).toBe(0);
+  });
+
   it("starts at half its ratio, and climbs to it when the GPU keeps up", async () => {
     const { widths, heavyAt } = await watch(light, 40, 30, 15000, 40);
     expect(widths[0]).toBe(20);

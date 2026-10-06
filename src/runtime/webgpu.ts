@@ -60,7 +60,7 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
   const press = createPress(); // :active (decision 95)
   const slider = options.scrollSlider ? createScrollSlider(canvas) : null; // decision 96
   const density = viewDensity(options); // decisions 120 and 142
-  const dprMenu = density ? createDprPicker(canvas, density) : null;
+  const dprMenu = density && options.dprPicker ? createDprPicker(canvas, density) : null; // docs and playground only
   let reducedMotion = false;
   const properties = createProperties(); // @property: what the page set (decision 105)
   let transitions = createTransitions([]);

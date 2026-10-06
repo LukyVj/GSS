@@ -113,7 +113,7 @@ export function createView(
   const press = createPress(); // :active: the object pressed, until the button goes up
   const slider = options.scrollSlider ? createScrollSlider(canvas) : null;
   const density = viewDensity(options); // decisions 120 and 142
-  const dprMenu = density ? createDprPicker(canvas, density) : null;
+  const dprMenu = density && options.dprPicker ? createDprPicker(canvas, density) : null; // docs and playground only
   let dpr: Dpr = "auto"; // the pixel density the scene asks for (scene { dpr })
   let transitions = createTransitions([]); // how each hover slot glides (transition)
   let triggers = createTriggers([], 0); // the states that start an animation (decision 141)
