@@ -56,7 +56,7 @@ describe("the preview, in the page", () => {
     expect(preview.querySelector("pre code.gss .gss-property")).not.toBeNull();
     expect(preview.querySelector("a")!.getAttribute("href")).toBe("./docs.html#material--example-1");
     const more = preview.querySelector(".gss-search-preview-more")!;
-    expect(more.querySelector(".gss-search-preview-subset")!.textContent).toBe("An excerpt of the page");
+    expect(more.querySelector(".gss-search-preview-subset")!.textContent).toBe("This is an excerpt of the page");
     expect(more.lastElementChild!.tagName).toBe("A");
   });
 

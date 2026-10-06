@@ -100,12 +100,14 @@ export function mountColumnResizers(modal: HTMLElement): void {
       const startX = event.clientX;
       const startWidth = current();
       modal.classList.add("gss-search-resizing");
+      handle.classList.add("gss-search-resizer--active"); // this one lit, not the other
       const move = (moveEvent: PointerEvent) => set(startWidth + direction * (moveEvent.clientX - startX));
       const stop = () => {
         window.removeEventListener("pointermove", move);
         window.removeEventListener("pointerup", stop);
         window.removeEventListener("pointercancel", stop);
         modal.classList.remove("gss-search-resizing");
+        handle.classList.remove("gss-search-resizer--active");
         saveWidths(widths);
       };
       window.addEventListener("pointermove", move);

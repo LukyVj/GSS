@@ -85,7 +85,10 @@ describe("the handles between the columns", () => {
     const separator = handle(element, "concepts");
     separator.dispatchEvent(new PointerEvent("pointerdown", { clientX: 800, button: 0, bubbles: true }));
     window.dispatchEvent(new PointerEvent("pointermove", { clientX: 700, bubbles: true }));
+    expect(separator.classList.contains("gss-search-resizer--active")).toBe(true);
+    expect(handle(element, "contents").classList.contains("gss-search-resizer--active")).toBe(false);
     window.dispatchEvent(new PointerEvent("pointerup", { clientX: 700, bubbles: true }));
+    expect(separator.classList.contains("gss-search-resizer--active")).toBe(false);
     expect(width(element, "concepts")).toBe(`${COLUMNS.concepts.initial + 100}px`);
     window.dispatchEvent(new PointerEvent("pointermove", { clientX: 600, bubbles: true }));
     expect(width(element, "concepts")).toBe(`${COLUMNS.concepts.initial + 100}px`);
