@@ -288,7 +288,7 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 - [x] Split `shader/codegen.ts` by concern into `shader/codegen/`, and move `readAngle` / `readNumber` to `values/` ✅ decision 88
 - [ ] Autocompletion: values (`gold`, `ease-out`…), shapes in `@scene`, and the same suggestions in the VS Code extension
 - [ ] Align the TextMate highlighting of the extension with `classifyGss` (web)
-- [ ] `gpu.test.ts` compiles the scenes of the inspiration grid (`INSPIRATION`), not only the use cases: `starorbit` broke WebGL2 without a test failing (decision 100)
+- [x] `gpu.test.ts` compiles the scenes of the inspiration grid (`INSPIRATION`), not only the use cases: `starorbit` broke WebGL2 without a test failing (decision 100)
 
 ## Out of scope
 
