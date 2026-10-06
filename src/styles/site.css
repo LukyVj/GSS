@@ -54,11 +54,12 @@ body.gss-dark {
   }
   .topbar nav {
     display: flex;
-    gap: 20px;
+    gap: clamp(12px, 2.2vw, 20px); /* the gaps give way first, then the labels, then the rows */
     align-items: center;
   }
   .topbar nav a {
     color: var(--gss-ash);
+    white-space: nowrap; /* a link never breaks: the bar rearranges instead */
     transition: color var(--gss-transition);
   }
   .topbar nav a:hover {
@@ -130,8 +131,15 @@ body.gss-dark {
     width: 15px;
     height: 15px;
   }
-  /* On a phone the bar tightens: 16px at the sides, and the GitHub and X links
-     keep their mark and lose their text */
+  /* The bar shrinks in steps. Under 800px the GitHub and X links keep their
+     mark and lose their text: a mark reads at a glance, and the nav keeps its
+     words. On a phone the bar tightens to 16px at the sides. */
+  @media (max-width: 800px) {
+    .topbar .github span,
+    .topbar .x span {
+      display: none;
+    }
+  }
   @media (max-width: 640px) {
     .topbar {
       padding: 0 16px;
@@ -139,10 +147,6 @@ body.gss-dark {
     }
     .topbar nav {
       gap: 14px;
-    }
-    .topbar .github span,
-    .topbar .x span {
-      display: none;
     }
   }
 

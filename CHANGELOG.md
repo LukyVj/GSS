@@ -18,7 +18,7 @@ The 0.0.1 history was reconstructed from GitHub.
 
 ### Changed
 
-- The site on small screens: the side padding follows the width (56, 32, then 16 pixels), the top bars and the footers with it. On a phone the home bar is two rows, the GitHub and X links keep their mark and lose their text, and the footers stack.
+- The site on small screens: the side padding follows the width (56, 32, then 16 pixels), the top bars and the footers with it. The bars shrink in steps: the gaps first, then the GitHub and X links keep their mark and lose their text (under 800 pixels), then, on a phone, the home bar is two rows and the footers stack. A link never breaks on two lines.
 - The eight studies render at a pixel density of 1.5 (`dpr: 1.5`), in the showcase and in the playground: sharper than before on a standard screen, lighter than before on a high-density one.
 
 ## [0.0.5] — 2026-10-04

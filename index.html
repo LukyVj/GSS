@@ -74,7 +74,7 @@
         margin-left: 8px;
       }
       .topbar nav {
-        gap: 32px;
+        gap: clamp(14px, 2.6vw, 32px);
       }
 
       /* ----- Hero: the words on the left, the distance field on the right ----- */
@@ -526,9 +526,6 @@
       @media (max-width: 960px) {
         .wrap {
           padding: 0 32px;
-        }
-        .topbar nav {
-          gap: 24px;
         }
         footer .wrap {
           padding-top: 28px;
