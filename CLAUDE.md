@@ -8,10 +8,9 @@ gss-lang.dev; npm package: `gss-lang`.
 
 - `ROADMAP.md`: what GSS already does, and what comes next. The **Essentials** section (Oct. 2) is done;
   Lucas's order for what comes next is at the top of **Priorities** (the panel of variables,
-  `@property-panel`, is done: ask him for the next one). 0.0.5 is prepared (Oct. 4) and waits for
-  Lucas to publish it ("Release 0.0.5" in the roadmap); what comes after goes under "Unreleased" in
-  `CHANGELOG.md`.
-- `DECISIONS.md`: every design decision, numbered. The next one is **141**. Add a decision for every
+  `@property-panel`, is done: ask him for the next one). 0.0.5 is published (Oct. 4, tag `v0.0.5`); what
+  comes next goes under "Unreleased" in `CHANGELOG.md`, on the branch `release/0.0.6`.
+- `DECISIONS.md`: every design decision, numbered. The next one is **142**. Add a decision for every
   new feature or behavior change.
 - `CONTRIBUTING.md`: where things live. `CHANGELOG.md`: user-facing changes, under "Unreleased".
 
