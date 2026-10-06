@@ -7,7 +7,7 @@ npm install
 npm run dev        # the site: home, playground, docs, brand, showcase
 npm test           # Vitest
 npm run build      # type-check, then build the site to dist/ and embed.js
-npm run build:lib  # the npm package and standalone CDN module, to lib/
+npm run build:lib  # the npm package, minified, to lib/ (embed.js included)
 npm run format     # format the .gss files (npm run format:check to only list them)
 ```
 
@@ -25,6 +25,8 @@ npm run format     # format the .gss files (npm run format:check to only list th
 
 Every property, shape, selector and function is described once in the registry
 (`src/compiler/registry/registry.ts`): the reference and the tests of its examples are generated from it.
+The compiler reads it only through `registry/core.ts` (names, where a property applies, whether it
+animates): the npm package replaces that file with plain data, so a page never downloads the docs.
 A page of the reference reads: `description` (a lead of three sentences at most), the table
 of the entry, then `values` (one row per keyword or function), `details` (one paragraph), and the
 examples, each with a `name` and a one-sentence `text` (decision 121). Code goes between backticks.
@@ -78,9 +80,9 @@ beside the search (`src/docs/search-try.ts`), with the live panel of the docs (`
 
 1. Update `package.json` and the root package version in `package-lock.json` together. The site and installation snippets read that version through `src/version.ts`.
 2. Update the changelog, README, roadmap and decisions. Keep a prepared release marked as such until it is published.
-3. Run the complete tests (including WebGL), `npm run build`, `npm run build:lib`, and `npm pack --dry-run`. Check that `lib/embed.js` is in the package and standalone.
+3. Run the complete tests (including WebGL), `npm run build`, `npm run build:lib`, and `npm pack --dry-run`. Check that `lib/embed.js` is in the package; `package-size.test.ts` holds each entry to its budget.
 4. Publish the npm package, then tag the release and deploy the site. Publish before deploying versioned CDN instructions: jsDelivr can only serve a version after npm has it.
 
-`npm publish` rebuilds `lib/` (including the standalone `gss-lang/embed` browser entry) and runs
+`npm publish` rebuilds `lib/` (including the `gss-lang/embed` browser entry, which imports the same compiler and runtime files) and runs
 the non-GPU tests first (`prepublishOnly`). The unversioned site `/embed.js` remains available;
 the installation guide recommends the versioned jsDelivr URL for reproducibility.

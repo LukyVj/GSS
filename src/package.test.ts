@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 
 // The npm package (gss-lang) and its public page on npm: the README.
 // Read as text, like the scenes: no Node API in the tests.
-const files = import.meta.glob<string>(["../package.json", "../README.md", "../LICENSE", "../package-lock.json"], {
+const files = import.meta.glob<string>(["../package.json", "../README.md", "../LICENSE", "../package-lock.json", "../vite.lib.config.ts"], {
   query: "?raw",
   import: "default",
   eager: true,
@@ -10,6 +10,7 @@ const files = import.meta.glob<string>(["../package.json", "../README.md", "../L
 const pkg = JSON.parse(files["../package.json"]);
 const readme = files["../README.md"] ?? "";
 const license = files["../LICENSE"] ?? "";
+const libConfig = files["../vite.lib.config.ts"] ?? "";
 
 describe("the npm package", () => {
   it("can be published, as 0.0.5", () => {
@@ -24,7 +25,11 @@ describe("the npm package", () => {
     expect(readme).toContain(`npm install gss-lang@${pkg.version}`);
     expect(readme).toContain(`https://cdn.jsdelivr.net/npm/gss-lang@${pkg.version}/lib/embed.js`);
     expect(pkg.exports["./embed"]).toBe("./lib/embed.js");
-    expect(pkg.scripts["build:lib"]).toContain("vite.embed.config.ts --outDir lib");
+  });
+
+  it("builds embed.js with the other entries, so the package holds the compiler once", () => {
+    expect(libConfig).toContain('embed: "src/embed/element.ts"');
+    expect(pkg.scripts["build:lib"]).not.toContain("vite.embed.config.ts");
   });
 
   it("says what it is, and where to find more", () => {

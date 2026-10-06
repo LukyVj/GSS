@@ -250,6 +250,8 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 - Set aside: a mask of the objects each ray can meet (decision 133): faster on camera-cutaway and grass, slower on glass and shadows, and it moves edge pixels; kept on the branch `perf/ray-mask-experiment`
 - [x] **Render on demand** (decision 134): a frame is drawn only when what it shows can have changed; a still scene, or one at rest under the mouse, leaves the GPU idle
 - Set aside: animations computed on the CPU and sent as uniforms (decision 75: after `animate()`, it would only save one evaluation per pixel, and the image would change)
+- [x] **A smaller package** (decision 147): `embed.js` shares the files of the package, the compiler leaves the docs of the registry behind, `lib/` is minified; a budget per entry in `package-size.test.ts`. `gss-lang` 130 → 87 kB gzipped, the tarball 263 → 114 kB
+- [ ] Build the WGSL only when WebGPU draws (`compileScene()` returns both shaders today)
 - [x] `scene { dpr: auto | max | <number>; }`: the pixel density of the render, chosen by the author (decision 67). With `@media` (decision 71): `@media (max-width: 600px) { scene { dpr: 1; } }`
 
 ### Shapes / rendering

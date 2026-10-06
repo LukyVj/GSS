@@ -14,7 +14,7 @@ import { resolveVars, usesVariables, hasVar, type Variables } from "./cascade/va
 import { mediaQueriesOf, resolveIf } from "./values/conditionals";
 import { refuseInColor, resolveCurrentColor } from "./values/current-color";
 import { sceneTimelines, type Timeline } from "./features/timeline";
-import { PROPERTIES } from "./registry/registry";
+import { PROPERTIES } from "./registry/core";
 import {
   type ColorScheme,
   DARK_QUERY,

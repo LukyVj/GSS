@@ -1,5 +1,5 @@
 import type { Declaration, Keyframe, Rule, Keyframes } from "../syntax/ast";
-import { PROPERTIES, SHAPE_DOCS } from "../registry/registry";
+import { PROPERTIES, LIGHT_TAKES } from "../registry/core";
 import { parseSelector, isSceneSelector, needsHover, needsPointer } from "./resolve";
 import { ErrorSink, errorAt } from "../syntax/errors";
 import { ANIMATION_LONGHANDS } from "../features/animation";
@@ -65,11 +65,10 @@ function checkDeclaration(rule: Rule, declaration: Declaration): true {
   }
 
   // A light of @scene takes only a few properties (decision 110)
-  const light = SHAPE_DOCS.find((shape) => shape.name === "light")!;
-  if (selector.tag === "light" && !light.takes!.includes(property.name) && !Array.isArray(property.appliesTo)) {
+  if (selector.tag === "light" && !LIGHT_TAKES.includes(property.name) && !Array.isArray(property.appliesTo)) {
     throw errorAt(
       declaration,
-      `"${property.name}" does not apply to a light. A light takes: ${light.takes!.join(", ")}.`,
+      `"${property.name}" does not apply to a light. A light takes: ${LIGHT_TAKES.join(", ")}.`,
     );
   }
 

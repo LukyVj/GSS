@@ -110,7 +110,7 @@ INSTALLATION.push(
     anchor: "install-cdn",
     label: "CDN (no build step)",
     paragraphs: [
-      `Load the standalone browser module of <code>v${VERSION}</code> from jsDelivr: no install, no bundler. The version is pinned, so an update never changes your scene unexpectedly.`,
+      `Load the browser module of <code>v${VERSION}</code> from jsDelivr: no install, no bundler. The version is pinned, so an update never changes your scene unexpectedly.`,
       `<pre><code class="html">${highlightCode("html", EMBED_SNIPPETS[0].code)}</code></pre>`,
       `The script defines <code>&lt;gss-scene&gt;</code>. Point its <code>src</code> to a <code>.gss</code> file, or write the GSS inline, as above. Serve the page over HTTP(S). The module: <a href="${CDN_URL}">${CDN_URL}</a>.`,
       'To drive the scene from a script, see <a href="#set-variables">Set variables from JavaScript</a>.',
