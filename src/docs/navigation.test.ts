@@ -76,6 +76,7 @@ describe("documentation navigation", () => {
     const embedding = installation.slice(0, installation.indexOf('id="install-package"'));
     expect(embedding).toContain('href="https://github.com/LukyVj/GSS"');
     expect(embedding).toContain('href="https://github.com/LukyVj/GSS/issues"');
+    expect(embedding).toContain('href="https://x.com/GSS_lang"');
   });
   it("ends Installation with the editor extension: where to get it, and how to install it", () => {
     const html = renderDocs(PROPERTIES, AT_RULES, SELECTORS, SHAPE_DOCS, FUNCTIONS);

@@ -11,7 +11,7 @@ gss-lang.dev; npm package: `gss-lang`.
   `@property-panel`, is done: ask him for the next one). 0.0.5 is prepared (Oct. 4) and waits for
   Lucas to publish it ("Release 0.0.5" in the roadmap); what comes after goes under "Unreleased" in
   `CHANGELOG.md`.
-- `DECISIONS.md`: every design decision, numbered. The next one is **139**. Add a decision for every
+- `DECISIONS.md`: every design decision, numbered. The next one is **141**. Add a decision for every
   new feature or behavior change.
 - `CONTRIBUTING.md`: where things live. `CHANGELOG.md`: user-facing changes, under "Unreleased".
 

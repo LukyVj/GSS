@@ -1109,3 +1109,21 @@ The two columns stay while the reader types, so the window does not jump at the 
 **Why**: a language without a readable source is hard to trust or adopt, and the license (Apache-2.0) already gave the code to everyone through npm. A text link where the bar has room, as Vite, Svelte and Tailwind do; the mark alone where it has none.
 **Accepted limits**: no star count: a number fetched from the GitHub API on each visit, and 0 on the first day. npm shows the link from the next published version, the registries from the next version of the extension. The `video/` folder (the sources of the launch films) is removed from the repository and from its history before it opens.
 
+## 139. The X account, `@GSS_lang`, on every page; "post it on X" after a share
+
+**Decision**: GSS has an official X account, `x.com/GSS_lang`, and the site sends people to it, as the place to ask, show and follow, next to GitHub for bugs.
+- **The top bars**: the X mark (X's own glyph, inline, in `currentColor`) and `@GSS_lang` after the GitHub link, in the wide bars (home, showcase, brand); the mark alone in the tight ones (playground, docs), a square of the control height with `aria-label="GSS on X, @GSS_lang"`. One class, `.x` (`.x.alone`), that shares the rules of `.github` in `site.css`. On a phone (≤ 640px), both links keep their mark and lose their text.
+- **The footers**: `@GSS_lang` right after `github`, and one line of contact under the nav, on every page: *Questions, ideas, a scene to show? Say hi on X, @GSS_lang, or open an issue on GitHub.* The playground's status bar shows `@GSS_lang` next to the version.
+- **The docs**: the first part of Installation, after the link to the issues, says where to ask: on X.
+- **The cards**: `<meta name="twitter:site" content="@GSS_lang">` on every page, so a link to the site shared on X carries the account.
+- **The share button**: once the link is copied, the status bar shows *post it on X ↗* for 15 seconds: X's post composer (`x.com/intent/post`) opens with "Made with @GSS_lang, CSS for 3D scenes" and the share link (`playground/post-on-x.ts`); the click is an analytics event, `playground-share-x`. A refused clipboard no longer stops the button: it says *link in the address bar*, and the post link still shows.
+- **The README**: a Community section, X for news and questions, GitHub issues for bugs.
+**Why**: a language grows where people talk about it, and a site that hides its account grows nowhere. The X mark next to the GitHub one in the top bar is what Bun and Tailwind do; the contact line in the footer answers the question every reader asks at the end of a page: where do I go from here? The post after a share is the step that brings followers: every scene shared from the playground is a post that names the account, written by the reader, with their own scene. `twitter:site` is the attribution X reads on a card.
+**Accepted limits**: no Discord, no newsletter: one account to grow first. The post text is fixed (the reader edits it in the composer). The home bar hides *try it* on a phone (the hero has the same call), and the brand bar hides *showcase* there (the footer has it): three links and two marks do not fit 375px.
+
+## 140. The bars and the footers breathe with the screen
+
+**Decision**: the side padding of the site goes 56px → 32px (≤ 960px on the home page, ≤ 1024px on the showcase and the brand page) → 16px (≤ 640px), on the content, the top bars and the footers alike. On a phone, the home bar is two rows, the mark then the nav spread across the width; the footers go to a column (tagline, links, contact line) with tighter gaps; the docs' *playground →* button never wraps. The playground's bar, which holds the tabs, the search, two menus and *share*, scrolls sideways on a phone instead of widening the page, and loses its two marks there (the status bar keeps `@GSS_lang`).
+**Why**: the bars and footers took the full set of links on a 375px screen at the desktop gaps and 56px of padding: three rows on the home page, an overflow on the showcase and the brand page. Padding that follows the width keeps the same margins as the content on every screen.
+**Accepted limits**: no hamburger menu: the nav stays in the open, and loses one link on a phone (decision 139).
+

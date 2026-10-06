@@ -28,6 +28,7 @@
       content="Style sheets for the GPU. The GSS logo, rendered by GSS, in its distance field"
     />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@GSS_lang" />
     <link rel="canonical" href="https://www.gss-lang.dev/" />
     <link rel="stylesheet" href="/src/styles/site.css" />
     <style>
@@ -509,15 +510,29 @@
       footer nav a {
         color: var(--gss-ash);
       }
-
-      @media (max-width: 600px) {
-        .topbar .wrap { flex-wrap: wrap; height: auto; min-height: 72px; gap: 12px; padding-top: 12px; padding-bottom: 12px; }
-        .topbar nav { flex-wrap: wrap; gap: 16px; }
+      footer .contact {
+        flex-basis: 100%;
+        margin: 0;
+        color: var(--gss-ash);
       }
-      /* ----- Smaller screens ----- */
+      footer .contact a {
+        color: var(--gss-bone);
+      }
+      footer .contact a:hover {
+        color: var(--gss-signal);
+      }
+
+      /* ----- Smaller screens: the side padding goes 56 → 32 → 16px ----- */
       @media (max-width: 960px) {
         .wrap {
-          padding: 0 24px;
+          padding: 0 32px;
+        }
+        .topbar nav {
+          gap: 24px;
+        }
+        footer .wrap {
+          padding-top: 28px;
+          padding-bottom: 40px;
         }
         .hero .wrap {
           grid-template-columns: 1fr;
@@ -569,12 +584,38 @@
           display: none;
         }
       }
-      @media (max-width: 600px) {
+      @media (max-width: 640px) {
+        .wrap {
+          padding: 0 16px;
+        }
+        /* The bar: the mark on one row, the nav on the next, "try it" left to the hero */
+        .topbar .wrap {
+          flex-wrap: wrap;
+          height: auto;
+          gap: 8px 12px;
+          padding-top: 12px;
+          padding-bottom: 12px;
+        }
         .topbar nav {
-          gap: 20px;
+          flex-basis: 100%;
+          justify-content: space-between;
+          gap: 12px;
+        }
+        .topbar nav a[href="#live"] {
+          display: none;
         }
         .pillars .wrap {
           grid-template-columns: 1fr;
+        }
+        footer .wrap {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 14px;
+          padding-top: 24px;
+          padding-bottom: 32px;
+        }
+        footer nav {
+          gap: 10px 18px;
         }
       }
     </style>
@@ -596,7 +637,8 @@
           <a href="./docs.html">docs</a>
           <a href="./showcase.html">showcase</a>
           <a href="#live">try it</a>
-          <a class="github" href="https://github.com/LukyVj/GSS"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>github</a>
+          <a class="github" href="https://github.com/LukyVj/GSS"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg><span>github</span></a>
+          <a class="x" href="https://x.com/GSS_lang" aria-label="GSS on X, @GSS_lang"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg><span>@GSS_lang</span></a>
         </nav>
       </div>
     </header>
@@ -779,12 +821,14 @@ vec2 map(vec3 p) { … }</code></pre>
         <nav aria-label="Footer">
           <a href="https://www.npmjs.com/package/gss-lang/v/%GSS_VERSION%" aria-label="GSS version %GSS_VERSION%">v%GSS_VERSION%</a>
           <a href="https://github.com/LukyVj/GSS">github</a>
+          <a href="https://x.com/GSS_lang">@GSS_lang</a>
           <a href="./docs.html#installation">installation</a>
           <a href="./playground.html">playground</a>
           <a href="./docs.html">docs</a>
           <a href="./showcase.html">showcase</a>
           <a href="./brand.html">brand</a>
         </nav>
+        <p class="contact">Questions, ideas, a scene to show? Say hi on X, <a href="https://x.com/GSS_lang">@GSS_lang</a>, or <a href="https://github.com/LukyVj/GSS/issues">open an issue</a> on GitHub.</p>
       </div>
     </footer>
 

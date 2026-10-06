@@ -93,20 +93,24 @@ body.gss-dark {
     background: var(--gss-signal);
   }
 
-  /* The link to the repository: the GitHub mark, then "github" in the
-     wide bars, the mark alone in the tight ones (.github.alone) */
-  .github {
+  /* The links to the repository and to the X account: the GitHub mark, then
+     "github"; the X mark, then "@GSS_lang", in the wide bars; the mark alone
+     in the tight ones (.alone) */
+  .github,
+  .x {
     display: inline-flex;
     align-items: center;
     gap: 6px;
   }
-  .github svg {
+  .github svg,
+  .x svg {
     width: 14px;
     height: 14px;
     flex: none;
     fill: currentColor;
   }
-  .topbar .github.alone {
+  .topbar .github.alone,
+  .topbar .x.alone {
     flex: none;
     justify-content: center;
     width: var(--gss-control-height);
@@ -114,12 +118,32 @@ body.gss-dark {
     color: var(--gss-ash);
     transition: color var(--gss-transition);
   }
-  .topbar .github.alone:hover {
+  .topbar .github.alone:hover,
+  .topbar .x.alone:hover {
     color: var(--gss-bone);
   }
   .topbar .github.alone svg {
     width: 16px;
     height: 16px;
+  }
+  .topbar .x.alone svg {
+    width: 15px;
+    height: 15px;
+  }
+  /* On a phone the bar tightens: 16px at the sides, and the GitHub and X links
+     keep their mark and lose their text */
+  @media (max-width: 640px) {
+    .topbar {
+      padding: 0 16px;
+      gap: 10px;
+    }
+    .topbar nav {
+      gap: 14px;
+    }
+    .topbar .github span,
+    .topbar .x span {
+      display: none;
+    }
   }
 
   /* ----- Buttons: secondary by default, .primary for the one main action ----- */

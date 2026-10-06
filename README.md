@@ -220,6 +220,11 @@ Version 0.0.5: early, and moving fast. The syntax may still change between versi
 
 See the [changelog](https://github.com/LukyVj/GSS/blob/main/CHANGELOG.md) for release history and unreleased changes.
 
+## Community
+
+- **X**: [@GSS_lang](https://x.com/GSS_lang), for news, scenes, questions and ideas. Share what you make with GSS there: mention the account.
+- **GitHub**: [issues](https://github.com/LukyVj/GSS/issues) for bugs and feature requests.
+
 ## License
 
 [Apache 2.0](LICENSE).

@@ -64,7 +64,7 @@ export const INSTALLATION: GuideEntry[] = [
     label: "Embedding a scene",
     paragraphs: [
       `A GSS scene runs on any web page, in three ways. All three use the package <code>gss-lang@${VERSION}</code>.`,
-      `GSS is open source, under the Apache-2.0 license: its code is on <a href="${REPOSITORY_URL}">GitHub</a>, where you can <a href="${REPOSITORY_URL}/issues">report a bug</a>.`,
+      `GSS is open source, under the Apache-2.0 license: its code is on <a href="${REPOSITORY_URL}">GitHub</a>, where you can <a href="${REPOSITORY_URL}/issues">report a bug</a>. Questions, ideas, a scene to show: say hi on X, <a href="https://x.com/GSS_lang">@GSS_lang</a>.`,
       table([
         ['<a href="#install-cdn">A tag</a>', "No build step: load <code>embed.js</code> once, then write <code>&lt;gss-scene&gt;</code>."],
         ['<a href="#install-package">A function</a>', "<code>mount(canvas, source)</code> from <code>gss-lang</code> compiles the scene in the page."],

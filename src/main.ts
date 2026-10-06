@@ -8,6 +8,8 @@ import { connectEditor, theme } from "./runtime/editor";
 import { glslLanguage } from "./runtime/glsl";
 import { htmlLanguage } from "./runtime/html-language";
 import { encodeCode, decodeCode, decodeHtml } from "./runtime/share";
+import { postOnXUrl } from "./playground/post-on-x";
+import { track } from "./analytics/track";
 import { compileGSS, compileScene } from "./compiler";
 import { toShadertoy } from "./compiler/shader/shadertoy";
 import { EXAMPLES, renderExampleOptions } from "./playground/examples";
@@ -172,12 +174,24 @@ window.addEventListener("hashchange", async () => {
 });
 
 const shareButton = $<HTMLButtonElement>("#share");
+const postOnX = $<HTMLAnchorElement>("#post-on-x");
+let hidePostOnX = 0;
 shareButton.addEventListener("click", async () => {
   history.replaceState(null, "", await encodeCode(editor.getCode(), html));
-  await navigator.clipboard.writeText(location.href);
-  shareButton.textContent = "link copied";
+  try {
+    await navigator.clipboard.writeText(location.href);
+    shareButton.textContent = "link copied";
+  } catch {
+    shareButton.textContent = "link in the address bar"; // the clipboard was refused
+  }
   setTimeout(() => (shareButton.textContent = "share"), 2000);
+  // The link is in the clipboard (or in the address bar); the status bar offers to post it on X, for a while
+  postOnX.href = postOnXUrl(location.href);
+  postOnX.hidden = false;
+  clearTimeout(hidePostOnX);
+  hidePostOnX = window.setTimeout(() => (postOnX.hidden = true), 15000);
 });
+postOnX.addEventListener("click", () => track("playground-share-x"));
 
 // ----- The examples menu -----
 
