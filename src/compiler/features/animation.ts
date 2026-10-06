@@ -64,6 +64,14 @@ const isOneOf = <T extends string>(
 ): token is Token & { value: T } =>
   token.type === "IDENT" && (list as string[]).includes(token.value);
 
+// Whether the styles say how many times the animation plays: a count or infinite in
+// the shorthand, or animation-iteration-count. Without it, an animation started by a
+// state plays once (decision 141), while an animation of the rest loops (decision 70).
+export function countsIterations(styles: Styles): boolean {
+  if (styles["animation-iteration-count"]) return true;
+  return (styles["animation"] ?? []).slice(1).some((token) => iterationsOf(token) !== null);
+}
+
 // The animation of an object or a group, or null when it has none
 export function readAnimation(styles: Styles): AnimationSpec | null {
   const value = styles["animation"];

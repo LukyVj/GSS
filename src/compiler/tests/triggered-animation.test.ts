@@ -47,7 +47,17 @@ describe("an animation started by a state", () => {
     expect(length("fall 2s 0.5s 3")).toBe(6.5);
     expect(length("fall 2s 1 forwards")).toBe(null); // the last frame stays
     expect(length("fall 2s 1 both")).toBe(null);
-    expect(length("fall 2s")).toBe(null); // infinite, the GSS default
+    expect(length("fall 2s infinite")).toBe(null);
+  });
+
+  it("plays once unless it says how many times: a button fires, it does not loop", () => {
+    const compile = (animation: string) =>
+      compileScene(`@scene { cube; } cube:active { animation: ${animation}; } ${FALL}`);
+    expect(compile("fall 2s").triggers![0].hold).toBe(2);
+    expect(compile("fall 2s").shader).toContain("playhead((iTime - uStart[0]), 2.0, 1.0, 0)");
+    expect(compile("fall 2s forwards").triggers![0].hold).toBe(null);
+    expect(compile("fall 2s infinite").shader).toContain("fract((iTime - uStart[0]) / 2.0)");
+    expect(compileScene(`@scene { cube; } cube:active { animation: fall 2s; animation-iteration-count: 3; } ${FALL}`).triggers![0].hold).toBe(6);
   });
 
   it("leaves the base animation alone: it keeps its own clock", () => {

@@ -516,7 +516,7 @@ export const PROPERTIES: PropertyDef[] = [
       ["normal, reverse, alternate, alternate-reverse", "The direction: forward, backward, forward then backward, or backward first."],
       ["none, forwards, backwards, both", "The fill mode: what the object shows outside the animation."],
     ],
-    details: "Unlike CSS, an animation loops forever unless it has a number of iterations. Each part also has a property of its own, like `animation-duration`, which wins over what `animation` says. On an object, it animates `translate`, the rotations, `scale`, `color` (a gradient too), `opacity`, `mask-image` and `offset-distance`; on a group, its transforms. On the scene, it animates the properties of the scene, like `background`, `light` or `fog`, and the variables they use: the objects do not follow the variables a scene animates. In a `:hover` or `:active` rule, the animation starts with the state and plays to its end, like a button that fires: see `:active`.",
+    details: "Unlike CSS, an animation loops forever unless it has a number of iterations. Each part also has a property of its own, like `animation-duration`, which wins over what `animation` says. On an object, it animates `translate`, the rotations, `scale`, `color` (a gradient too), `opacity`, `mask-image` and `offset-distance`; on a group, its transforms. On the scene, it animates the properties of the scene, like `background`, `light` or `fog`, and the variables they use: the objects do not follow the variables a scene animates. In a `:hover` or `:active` rule, the animation starts with the state and plays to its end, once unless it says how many times, like a button that fires: see `:active`.",
     examples: [
       {
         name: "up and down",
@@ -1756,7 +1756,7 @@ export const SELECTORS: SelectorDef[] = [
       ["#g:active cube", "On a group: every cube of `#g` is pressed when any of its objects is."],
       ["#lamp:has(#switch:active) #bulb", "Inside `:has()`: press one object, change another."],
     ],
-    details: "A pressed object is under the pointer, so its `:hover` rules still apply, and `:active` wins over them at equal specificity when written after them: `cube:hover { scale: 1.1; } cube:active { scale: 0.95; }` grows under the mouse and sinks when clicked. Like `:hover`, it changes animatable properties only, and styles objects, not groups. With `transition`, pressing takes the transition of the `:active` rule, and releasing the one of the hovered state. An `animation` in a `:active` rule starts at the press and plays to its end, released or not, like a button that fires: the pressed state stays on until the animation ends, or for good with `forwards`, and the next press plays it again.",
+    details: "A pressed object is under the pointer, so its `:hover` rules still apply, and `:active` wins over them at equal specificity when written after them: `cube:hover { scale: 1.1; } cube:active { scale: 0.95; }` grows under the mouse and sinks when clicked. Like `:hover`, it changes animatable properties only, and styles objects, not groups. With `transition`, pressing takes the transition of the `:active` rule, and releasing the one of the hovered state. An `animation` in a `:active` rule starts at the press and plays to its end, released or not, like a button that fires: once, unless it says how many times; the pressed state stays on until the animation ends, or for good with `forwards`, and the next press plays it again.",
     examples: [
       {
         name: "a button that sinks when pressed",
@@ -1766,7 +1766,7 @@ export const SELECTORS: SelectorDef[] = [
       {
         name: "a click starts an animation",
         text: "The press starts the fall, which plays to its end even once the button is up; `forwards` keeps the cube down, and the next click plays it again.",
-        code: "@scene { cube; } cube { size: 0.6 1.6 0.6; translate: 0 0.8 0; color: #ff5a36; } cube:active { animation: topple 0.8s ease-in 1 forwards; } @keyframes topple { to { rotate-z: -90deg; translate: -0.8 0.3 0; } }",
+        code: "@scene { cube; } cube { size: 0.6 1.6 0.6; translate: 0 0.8 0; color: #ff5a36; } cube:active { animation: topple 0.8s ease-in forwards; } @keyframes topple { to { rotate-z: -90deg; translate: -0.8 0.3 0; } }",
       },
       {
         name: "press one, move another",

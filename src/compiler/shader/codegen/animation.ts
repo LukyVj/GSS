@@ -4,7 +4,7 @@ import type { Keyframes } from "../../syntax/ast";
 import type { StyledInstance, Styles } from "../../cascade/resolve";
 import { errorAt } from "../../syntax/errors";
 import { type Easing, stepsShape } from "../../values/easing";
-import { readAnimation, type AnimationSpec } from "../../features/animation";
+import { countsIterations, readAnimation, type AnimationSpec } from "../../features/animation";
 import { timelineCode, type Timeline } from "../../features/timeline";
 import { glslFloat, round, type Hover, type HoverLayer } from "./glsl";
 import { liveRead } from "./properties";
@@ -65,7 +65,15 @@ export function layerClock(layer: HoverLayer): string {
 // The animation a state starts (decision 141): the one its own rules set (starts, from
 // the cascade), not the one of the state below it. null: none.
 export function startedAnimation(styles: Styles, writes: boolean): AnimationSpec | null {
-  return writes ? readAnimation(styles) : null;
+  return writes ? startedSpec(styles) : null;
+}
+
+// An animation a state starts plays once unless it says how many times (decision 141):
+// a button that fires, where the rest of GSS loops (decision 70)
+function startedSpec(styles: Styles): AnimationSpec | null {
+  const spec = readAnimation(styles);
+  if (!spec || countsIterations(styles)) return spec;
+  return { ...spec, iterations: 1 };
 }
 
 // How long a started animation holds its state, in seconds: null when the last frame
@@ -209,7 +217,7 @@ export function animatedValue(
 ): string {
   read = liveRead(property, read); // a variable set from JS (decision 105)
   const own = read(styles[property]);
-  const animation = readAnimation(styles);
+  const animation = clock === "iTime" ? readAnimation(styles) : startedSpec(styles);
   if (!animation) return own;
 
   const { name } = animation;
