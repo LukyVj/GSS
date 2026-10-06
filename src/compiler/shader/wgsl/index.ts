@@ -40,6 +40,7 @@ class Lowering {
   private uniforms = new Map<string, string>();
   private hover = 0;
   private properties = 0;
+  private starts = 0; // uStart[]: the states that start an animation (decision 141)
   private serial = 0;
 
   constructor(source: string) {
@@ -101,6 +102,7 @@ class Lowering {
         if (this.accept("[")) {
           const size = Number(this.take());
           if (name === "uProperties") this.properties = size; // @property (decision 105)
+          else if (name === "uStart") this.starts = size; // decision 141
           else this.hover = size;
           this.expect("]");
         }
@@ -134,7 +136,7 @@ class Lowering {
     return [
       // scroll() and view() (decision 96): after hover, so that no other offset moves;
       // @property (decision 105) after them
-      `struct GssUniforms {\n  resolutionTime: vec4<f32>,\n  cameraDistanceRatio: vec4<f32>,\n  pick: vec4<f32>,\n  hover: array<vec4<f32>, ${Math.max(1, this.hover)}>,\n${this.uniforms.has("uTimeline") ? "  timeline: vec4<f32>,\n" : ""}${this.properties ? `  properties: array<vec4<f32>, ${this.properties}>,\n` : ""}}`,
+      `struct GssUniforms {\n  resolutionTime: vec4<f32>,\n  cameraDistanceRatio: vec4<f32>,\n  pick: vec4<f32>,\n  hover: array<vec4<f32>, ${Math.max(1, this.hover)}>,\n${this.uniforms.has("uTimeline") ? "  timeline: vec4<f32>,\n" : ""}${this.properties ? `  properties: array<vec4<f32>, ${this.properties}>,\n` : ""}${this.starts ? `  start: array<vec4<f32>, ${this.starts}>,\n` : ""}}`,
       "@group(0) @binding(0) var<uniform> gss: GssUniforms;",
       ...(textures.length ? ["@group(0) @binding(1) var gssSampler: sampler;"] : []),
       ...textures.map(([name], i) => `@group(0) @binding(${i + 2}) var ${nameOf(name)}: texture_2d<f32>;`),
@@ -269,7 +271,7 @@ class Lowering {
         const uniform: Record<string, string> = {
           iResolution: "gss.resolutionTime.xyz", iTime: "gss.resolutionTime.w",
           uCamera: "gss.cameraDistanceRatio.xy", uDist: "gss.cameraDistanceRatio.z", uRatio: "gss.cameraDistanceRatio.w",
-          uPick: "gss.pick.xy", uPicking: "(gss.pick.z != 0.0)", uHover: "gss.hover", uTimeline: "gss.timeline", uProperties: "gss.properties",
+          uPick: "gss.pick.xy", uPicking: "(gss.pick.z != 0.0)", uHover: "gss.hover", uTimeline: "gss.timeline", uProperties: "gss.properties", uStart: "gss.start",
         };
         expr = { code: this.uniforms.has(token) ? uniform[token] ?? nameOf(token) : nameOf(token), type };
       }
@@ -283,7 +285,7 @@ class Lowering {
         expr = { code: `${expr.code}.${struct ? nameOf(field) : field}`, type };
       } else if (this.accept("[")) {
         const index = this.expression(); this.expect("]");
-        const hover = expr.code === "gss.hover";
+        const hover = expr.code === "gss.hover" || expr.code === "gss.start"; // one float per 16-byte slot
         expr = { code: `${expr.code}[${index.code}]${hover ? ".x" : ""}`, type: hover ? "f32" : scalar(expr.type) };
       } else break;
     }

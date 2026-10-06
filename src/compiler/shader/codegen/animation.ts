@@ -6,7 +6,7 @@ import { errorAt } from "../../syntax/errors";
 import { type Easing, stepsShape } from "../../values/easing";
 import { readAnimation, type AnimationSpec } from "../../features/animation";
 import { timelineCode, type Timeline } from "../../features/timeline";
-import { glslFloat, round, type Hover } from "./glsl";
+import { glslFloat, round, type Hover, type HoverLayer } from "./glsl";
 import { liveRead } from "./properties";
 
 // The objects that can be hovered, in scene order: each one gets a slot in uHover[]
@@ -17,6 +17,24 @@ export function hoverSlots(instances: StyledInstance[]): StyledInstance[] {
 // The objects that can be pressed (:active): their slots come after the hover slots
 export function activeSlots(instances: StyledInstance[]): StyledInstance[] {
   return instances.filter((instance) => instance.activeTriggers.length > 0);
+}
+
+// The states that start an animation (decision 141), in slot order: the slot, its
+// index in uStart[], and how long it holds (null: until the next start)
+export type Trigger = { slot: number; start: number; hold: number | null };
+export function sceneTriggers(instances: StyledInstance[]): Trigger[] {
+  const hovers = hoverSlots(instances);
+  const actives = activeSlots(instances);
+  const started: { slot: number; hold: number | null }[] = [];
+  hovers.forEach((instance, slot) => {
+    const spec = startedAnimation(instance.hoverStyles, instance.starts.hover);
+    if (spec) started.push({ slot, hold: holdOf(spec) });
+  });
+  actives.forEach((instance, i) => {
+    const spec = startedAnimation(instance.activeStyles, instance.starts.active);
+    if (spec) started.push({ slot: hovers.length + i, hold: holdOf(spec) });
+  });
+  return started.sort((a, b) => a.slot - b.slot).map((trigger, start) => ({ ...trigger, start }));
 }
 
 // A property at rest, or mixed with its hovered value when :hover changes it,
@@ -32,11 +50,29 @@ export function hoverValue(
   let value = rest;
   let target = rest; // the value of the state below this layer
   for (const layer of hover ?? []) {
-    const next = animatedValue(layer.styles, keyframes, property, read);
+    const next = animatedValue(layer.styles, keyframes, property, read, layerClock(layer));
     if (next !== target) value = `mix(${value}, ${next}, uHover[${layer.slot}])`;
     target = next; // a layer that changes nothing more is left out
   }
   return value;
+}
+
+// The clock of a state's animation: the time since the state started it (decision 141)
+export function layerClock(layer: HoverLayer): string {
+  return layer.start === undefined ? "iTime" : `(iTime - uStart[${layer.start}])`;
+}
+
+// The animation a state starts (decision 141): the one its own rules set (starts, from
+// the cascade), not the one of the state below it. null: none.
+export function startedAnimation(styles: Styles, writes: boolean): AnimationSpec | null {
+  return writes ? readAnimation(styles) : null;
+}
+
+// How long a started animation holds its state, in seconds: null when the last frame
+// stays (forwards, both, or an infinite animation)
+export function holdOf(spec: AnimationSpec): number | null {
+  if (spec.iterations === Infinity || spec.fill === "forwards" || spec.fill === "both") return null;
+  return round(Math.max(spec.delay, 0) + spec.iterations * spec.duration);
 }
 
 // The timelines of the scene being generated: scroll() and view() (decision 96)
@@ -57,7 +93,7 @@ const FOREVER = 1e9;
 // How the shader plays an animation: the progress (0 to 1) in the current iteration,
 // and when the animation shows at all (null: always). Without a delay, a count or a
 // direction other than alternate, the expressions are the ones GSS always wrote.
-function playback(spec: AnimationSpec): {
+function playback(spec: AnimationSpec, clock: string): {
   progress: string;
   active: string | null;
 } {
@@ -75,7 +111,7 @@ function playback(spec: AnimationSpec): {
     };
   }
   const plain = delay === 0 && iterations === Infinity;
-  const time = `iTime / ${glslFloat(duration)}`;
+  const time = `${clock} / ${glslFloat(duration)}`;
   if (plain && direction === "normal")
     return { progress: `fract(${time})`, active: null }; // 0 → 1, 0 → 1 …
   if (plain && direction === "alternate")
@@ -83,10 +119,10 @@ function playback(spec: AnimationSpec): {
 
   const t =
     delay === 0
-      ? "iTime"
+      ? clock
       : delay > 0
-        ? `iTime - ${glslFloat(delay)}`
-        : `iTime + ${glslFloat(-delay)}`;
+        ? `${clock} - ${glslFloat(delay)}`
+        : `${clock} + ${glslFloat(-delay)}`;
   const n = iterations === Infinity ? FOREVER : iterations;
   const progress = `playhead(${t}, ${glslFloat(duration)}, ${glslFloat(n)}, ${DIRECTION_NUMBERS[direction]})`;
 
@@ -96,9 +132,9 @@ function playback(spec: AnimationSpec): {
   const holdsBefore = delay <= 0 || fill === "backwards" || fill === "both";
   const holdsAfter =
     iterations === Infinity || fill === "forwards" || fill === "both";
-  if (!holdsBefore) conditions.push(`iTime >= ${glslFloat(delay)}`);
+  if (!holdsBefore) conditions.push(`${clock} >= ${glslFloat(delay)}`);
   if (!holdsAfter)
-    conditions.push(`iTime < ${glslFloat(round(delay + iterations * duration))}`);
+    conditions.push(`${clock} < ${glslFloat(round(delay + iterations * duration))}`);
   return {
     progress,
     active: conditions.length > 0 ? conditions.join(" && ") : null,
@@ -162,12 +198,14 @@ function readOffset(token: Token, name: string): number {
 }
 
 // A property's value: fixed, or changing over time with the animation.
-// "read" turns the GSS value into GLSL (readTranslate, readScale, readColor…)
+// "read" turns the GSS value into GLSL (readTranslate, readScale, readColor…);
+// clock: the time the animation plays from, iTime unless a state started it
 export function animatedValue(
   styles: Styles,
   keyframes: Keyframes[],
   property: string,
   read: (value: Token[] | undefined) => string,
+  clock = "iTime",
 ): string {
   read = liveRead(property, read); // a variable set from JS (decision 105)
   const own = read(styles[property]);
@@ -199,7 +237,7 @@ export function animatedValue(
     .sort((a, b) => a.offset - b.offset);
 
   // Chain of mix: each segment takes over when the previous one is done
-  const { progress, active } = playback(animation);
+  const { progress, active } = playback(animation, clock);
   let result = stops[0].value;
   for (let i = 1; i < stops.length; i++) {
     const start = stops[i - 1].offset;

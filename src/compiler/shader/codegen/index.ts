@@ -34,7 +34,7 @@ import { backgroundCode, backgroundNeedsCamera, floorGradient, gradientCode, obj
 import { gradientMean } from "../gradient";
 import { BLEND_LIBRARY } from "./blend-library";
 import { readMaterial } from "./materials";
-import { activeSlots, hoverSlots, hoverValue, useTimelines } from "./animation";
+import { activeSlots, hoverSlots, hoverValue, sceneTriggers, useTimelines } from "./animation";
 import { sceneTimelines } from "../../features/timeline";
 import { offsetLines, offsetReach, useOffsetFunctions } from "./offset";
 import { animateCode, createHoisted, hoist, originOf, rotationLines, transformLines } from "./transforms";
@@ -52,7 +52,7 @@ import { readShadows } from "./shadows";
 import { ISOLINES, ISOLINES_CALL, withObjectsAlone } from "./view";
 import type { View } from "../../features/view";
 
-export { activeSlots, hoverSlots } from "./animation";
+export { activeSlots, hoverSlots, sceneTriggers, type Trigger } from "./animation";
 export { shapeNames, shapeRadius } from "./shapes";
 
 export function generateShader(
@@ -78,15 +78,21 @@ export function generateShader(
   const instances = everything.filter((instance) => !isLight(instance));
   // uHover[]: the hover slots, then the :active ones (decision 95)
   const slots = [...hovers, ...actives];
+  // uStart[]: when each state that starts an animation started it (decision 141)
+  const triggers = sceneTriggers(everything);
   // The hover and pressed states of one object, or undefined when it has neither
   const hoverOf = (instance: StyledInstance): Hover | undefined => {
     const hover = hovers.indexOf(instance);
     const active = actives.indexOf(instance);
+    const startOf = (slot: number) => {
+      const start = triggers.findIndex((trigger) => trigger.slot === slot);
+      return start === -1 ? {} : { start };
+    };
     const layers: Hover = [
-      ...(hover === -1 ? [] : [{ styles: instance.hoverStyles, slot: hover, state: ":hover" as const }]),
+      ...(hover === -1 ? [] : [{ styles: instance.hoverStyles, slot: hover, state: ":hover" as const, ...startOf(hover) }]),
       ...(active === -1
         ? []
-        : [{ styles: instance.activeStyles, slot: hovers.length + active, state: ":active" as const }]),
+        : [{ styles: instance.activeStyles, slot: hovers.length + active, state: ":active" as const, ...startOf(hovers.length + active) }]),
     ];
     return layers.length > 0 ? layers : undefined;
   };
@@ -378,6 +384,9 @@ export function generateShader(
           : "") +
           (properties > 0
             ? `uniform vec4 uProperties[${properties}]; // @property: the variables set from JS${slots.length > 0 ? "\n" : ""}`
+            : "") +
+          (triggers.length > 0
+            ? `uniform float uStart[${triggers.length}]; // when each state that starts an animation started it (seconds of iTime)\n`
             : "") +
           (slots.length > 0
             ? `uniform float uHover[${slots.length}]; // 0 at rest, 1 hovered

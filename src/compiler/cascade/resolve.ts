@@ -1,5 +1,6 @@
 import type { Rule } from "../syntax/ast";
 import { errorAt } from "../syntax/errors";
+import { ANIMATION_LONGHANDS } from "../features/animation";
 import { spaceBetween } from "../syntax/nesting";
 import { closingParen } from "../values/calc";
 import type { Token } from "../syntax/tokenizer";
@@ -19,6 +20,9 @@ export type StyledInstance = SceneInstance & {
   hoverStyles: Styles;
   activeTriggers: number[]; // the objects that, pressed, put this one in its active state
   activeStyles: Styles; // pressed: the :active rules on top of the :hover ones
+  // Whether the :hover rules, then the :active ones, write an animation of their own:
+  // the state starts it (decision 141)
+  starts: { hover: boolean; active: boolean };
 };
 
 // The states the pointer gives: :hover (under the pointer) and :active (pressed)
@@ -709,9 +713,17 @@ export function resolveStyles(
     }
   }
 
-  return instances.map((instance) => ({
+  return instances.map((instance) => {
+    const styles = cascade(instance);
+    const hoverStyles = cascade(instance, undefined, "hover");
+    const activeStyles = cascade(instance, undefined, "active");
+    // A state writes its own animation when one of its rules sets it: the declaration
+    // is then another one than the state below (the same rule gives the same value)
+    const writes = (above: Styles, below: Styles) =>
+      ["animation", ...ANIMATION_LONGHANDS].some((property) => above[property] !== below[property]);
+    return {
     ...instance,
-    styles: cascade(instance),
+    styles,
     groupStyles: instance.groups.map((group) => cascade(group)),
     faceStyles: Object.fromEntries(
       FACES.map((face) => [face, cascade(instance, face)]),
@@ -729,7 +741,7 @@ export function resolveStyles(
           .map((other) => other.index),
       ),
     ].sort((a, b) => a - b),
-    hoverStyles: cascade(instance, undefined, "hover"),
+    hoverStyles,
     activeTriggers: [
       ...new Set(
         sortedRules
@@ -743,8 +755,10 @@ export function resolveStyles(
           .map((other) => other.index),
       ),
     ].sort((a, b) => a - b),
-    activeStyles: cascade(instance, undefined, "active"),
-  }));
+    activeStyles,
+    starts: { hover: writes(hoverStyles, styles), active: writes(activeStyles, hoverStyles) },
+    };
+  });
 }
 
 // The objects a rule waits for: a light is never drawn, so it can be neither hovered nor

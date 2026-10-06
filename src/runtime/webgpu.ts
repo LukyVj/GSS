@@ -5,6 +5,7 @@ import { pixelRatio, createDensity } from "./dpr";
 import { createDprPicker, savedDpr } from "./dpr-picker";
 import { pickPixel, pointerValues, createPress, decodeId } from "./hover";
 import { createTransitions } from "./transitions";
+import { createTriggers } from "./triggers";
 import { createScrollSlider, timelineValues } from "./timeline";
 import { matchesNow, pickVariant, watchMedia } from "./media";
 import { elementId, resolveImage } from "./textures";
@@ -63,6 +64,7 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
   let reducedMotion = false;
   const properties = createProperties(); // @property: what the page set (decision 105)
   let transitions = createTransitions([]);
+  let triggers = createTriggers([], 0); // the states that start an animation (decision 141)
   let settings: CompiledScene["camera"] | null = null;
   const camera = { yaw: 0, pitch: 0, dist: 8, dragging: false };
   let pointer: { x: number; y: number } | null = null;
@@ -175,8 +177,9 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
     const count = Math.max(compiled.textures.length, compiled.passes?.length ? 3 : 0);
     if (count > device.limits.maxSampledTexturesPerShaderStage) throw new Error("This scene exceeds the WebGPU device's texture limit");
     const slots = compiled.hover.length + (compiled.active?.length ?? 0);
-    // uTimeline goes after the hover slots (decision 96), uProperties after it (decision 105)
-    const size = 48 + 16 * Math.max(1, slots) + (compiled.timelines ? 16 : 0) + 16 * (compiled.properties?.length ?? 0);
+    // uTimeline goes after the hover slots (decision 96), uProperties after it (decision 105),
+    // uStart after them (decision 141)
+    const size = 48 + 16 * Math.max(1, slots) + (compiled.timelines ? 16 : 0) + 16 * (compiled.properties?.length ?? 0) + 16 * (compiled.triggers?.length ?? 0);
     if (size > device.limits.maxUniformBufferBindingSize) throw new Error("This scene exceeds the WebGPU device's uniform buffer limit");
     const layout = device.createBindGroupLayout({ entries: [
       { binding: 0, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform", minBindingSize: size } },
@@ -217,6 +220,7 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
     slider?.show(compiled.timelines !== undefined);
     density?.restart(performance.now()); // its compile is not a slow frame
     transitions = createTransitions(compiled.transitions);
+    triggers = createTriggers(compiled.triggers ?? [], compiled.transitions.length);
     if (resetCamera) {
       const next = compiled.camera;
       if (!settings || next.yaw !== settings.yaw || next.pitch !== settings.pitch) { camera.yaw = next.yaw; camera.pitch = next.pitch; }
@@ -246,13 +250,17 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
       const current = scene;
       const v = current.values;
       v.set([canvas.width, canvas.height, 1, clock.seconds, camera.yaw, camera.pitch, camera.dist, canvas.width / Math.max(canvas.clientWidth, 1), 0, 0, 0, 0]);
-      const targets = transitions.update(pointerValues(current.compiled.hover, current.compiled.active, hovered, press.id), now, reducedMotion);
+      // A state that starts an animation holds until it ends (decision 141)
+      const held = triggers.update(pointerValues(current.compiled.hover, current.compiled.active, hovered, press.id), clock.seconds);
+      const targets = transitions.update(held.targets, now, reducedMotion);
       targets.forEach((value, i) => { v[12 + 4 * i] = value; });
       const { timelines, hover, active } = current.compiled;
       const after = 12 + 4 * Math.max(1, hover.length + (active?.length ?? 0));
       if (timelines) v.set(timelineValues(timelines, canvas, slider?.value() ?? null), after);
       const values = properties.values();
       if (values) v.set(values, after + (timelines ? 4 : 0));
+      const startsAt = after + (timelines ? 4 : 0) + (values?.length ?? 0); // 4 floats per property
+      held.starts.forEach((value, i) => { v[startsAt + 4 * i] = value; });
       // Render on demand (decision 134): the state of the last frame drawn, nothing to draw;
       // the mouse may still have moved over the frame on screen
       const state = Array.from(v);

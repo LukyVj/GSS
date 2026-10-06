@@ -3,7 +3,8 @@
 import type { StyledInstance, Styles } from "../../cascade/resolve";
 
 // What an object looks like when hovered (or pressed), and its number in uHover[]
-export type HoverLayer = { styles: Styles; slot: number; state: ":hover" | ":active" };
+// start: the index in uStart[] when the state starts an animation (decision 141)
+export type HoverLayer = { styles: Styles; slot: number; state: ":hover" | ":active"; start?: number };
 // The layers mixed over the rest state: hovered, then pressed (decision 95)
 export type Hover = HoverLayer[];
 

@@ -1127,3 +1127,18 @@ The two columns stay while the reader types, so the window does not jump at the 
 **Why**: the bars and footers took the full set of links on a 375px screen at the desktop gaps and 56px of padding: three rows on the home page, an overflow on the showcase and the brand page. Padding that follows the width keeps the same margins as the content on every screen.
 **Accepted limits**: no hamburger menu: the nav stays in the open, and loses one link on a phone (decision 139).
 
+## 141. An animation started by `:hover` or `:active`
+
+**Decision**: `animation` (and its longhands) can go in a `:hover` or `:active` rule, with the syntax of CSS: `cube:active { animation: topple 0.8s ease-in 1 forwards; }`. The state starts the animation, and the animation plays to its end.
+
+- **The start**: the moment the state begins (the press, or the pointer arriving), not the load of the scene. The shader plays it from `iTime - uStart[k]`, a new uniform, `uniform float uStart[K]`, one float per state that starts an animation, in slot order; `CompiledScene.triggers` lists them (`slot`, `start`, `hold`). Written only when a state starts an animation: every other scene compiles exactly as before (shaders compared byte for byte on every scene and example). In WGSL, `start` comes last in the uniform struct, after `properties`, so no offset moves; Shadertoy shows the rest (`const float uStart[K]`).
+- **The hold**: once started, the slot of the state stays at 1 until the animation ends (`delay + iterations × duration`), the button up or the pointer gone, and for good when the last frame stays (`forwards`, `both`, or an infinite animation). `runtime/triggers.ts`, between `pointerValues()` and the transitions, on both backends. A state that only changes properties holds nothing: nothing changes for it.
+- **Again**: the next start of the state (a new press, the pointer coming back) restarts the animation from its first frame, like CSS when a class is taken off and put back. The cascade says which state writes its own animation (`starts.hover`, `starts.active`): the base animation of the object, or the `:hover` one under `:active`, keeps its own clock and is not started again.
+- **The docs**: `:active` (an example, "a click starts an animation"), `:hover` and `animation` say it.
+
+**Differences from CSS**: in CSS, an animation in a `:active` rule stops the moment the rule stops applying, at the release; GSS plays it to its end, and keeps the state on meanwhile. A pressed state is read as a trigger, not as a condition.
+
+**Why**: the first thing asked of a click is "do this once": a lid that flips, a coin that drops, a sign that falls over. CSS has no way to say it; a transition with `linear()` can fake a short move, but not a choreography of several keyframes, and it comes back the moment the button goes up. Keeping the syntax of CSS, and writing the one difference down, costs the reader nothing: `animation` in a state rule reads as what it does. `@run <name>` was considered and left out: a new word that would have to repeat the duration, the easing and the fill mode `animation` already carries.
+
+**Accepted limits**: one animation per state (the last `animation` wins, like CSS). A scene with a started animation reads `iTime`, so it draws every frame like an animated scene does, even at rest. A started animation along a timeline (`animation-timeline: scroll()`) follows the scroll, not the start.
+

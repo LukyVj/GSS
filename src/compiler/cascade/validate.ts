@@ -2,6 +2,7 @@ import type { Declaration, Keyframe, Rule, Keyframes } from "../syntax/ast";
 import { PROPERTIES, SHAPE_DOCS } from "../registry/registry";
 import { parseSelector, isSceneSelector, needsHover, needsPointer } from "./resolve";
 import { ErrorSink, errorAt } from "../syntax/errors";
+import { ANIMATION_LONGHANDS } from "../features/animation";
 
 // Throws if a rule uses a property that is not in the registry,
 // or a property that does not apply to what the rule targets.
@@ -27,6 +28,9 @@ export function validateProperties(rules: Rule[], errors?: ErrorSink): Rule[] {
   return valid;
 }
 
+// animation and its longhands: a state can start an animation (decision 141)
+const startsAnimation = (name: string) => name === "animation" || ANIMATION_LONGHANDS.includes(name);
+
 // Returns true, or throws the error of the declaration
 function checkDeclaration(rule: Rule, declaration: Declaration): true {
   // A custom property (--anything) is valid everywhere, like CSS
@@ -42,8 +46,9 @@ function checkDeclaration(rule: Rule, declaration: Declaration): true {
     throw errorAt(declaration, `Unknown property "${declaration.property}"`);
   }
 
-  // transition is not animated, but :hover can set it, like CSS
-  if (hover && !property.animatable && property.name !== "transition") {
+  // transition is not animated, but :hover can set it, like CSS; an animation
+  // in a :hover or :active rule starts when the state does (decision 141)
+  if (hover && !property.animatable && property.name !== "transition" && !startsAnimation(property.name)) {
     const animatable = PROPERTIES.filter((p) => p.animatable).map((p) => p.name);
     throw errorAt(
       declaration,
