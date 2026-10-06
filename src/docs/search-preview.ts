@@ -100,7 +100,7 @@ export function renderPreview(preview: Preview, href: string): HTMLElement {
   const more = element("div", "gss-search-preview-more");
   const link = element("a", "gss-concept-link", "Open the page →");
   link.href = href;
-  more.append(element("span", "gss-search-preview-subset", "An excerpt of the page"), link);
+  more.append(element("span", "gss-search-preview-subset", "This is an excerpt of the page"), link);
   panel.append(more);
   return panel;
 }
