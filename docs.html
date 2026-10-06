@@ -217,7 +217,7 @@
          bottom right, gathering speed. It waits outside the icon the rest of the time. */
       .toc-icon .glint {
         color: var(--gss-signal);
-        opacity: 0.8;
+        stroke-width: 1.75;
       }
       .toc-icon .glint-band {
         transform: translate(-20px, -20px);
@@ -229,7 +229,7 @@
       }
       @media (prefers-reduced-motion: no-preference) {
         .toc-group > summary:is(:hover, :focus-visible) .glint-band {
-          animation: toc-glint 700ms ease-in both;
+          animation: toc-glint 1100ms ease-in both;
         }
       }
       .toc-group-title {
