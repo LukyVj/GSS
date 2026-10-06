@@ -43,6 +43,10 @@ gss-lang.dev; npm package: `gss-lang`.
 
 ## Practical notes
 
+- **New features go to `release/0.0.6`** (Lucas's choice, Oct. 6), not to `main`: `main` holds the
+  published 0.0.5. Work and commit on the release branch; only fixes of the published version go
+  to `main` (then merge `main` into the release branch). See "Branches" in `CONTRIBUTING.md`.
+
 - **Several Claude sessions may work in this repo at once.** Look at `git status` before starting,
   tell the other sessions which files you will edit (and wait for their go before touching theirs),
   take the next free decision number, and commit only your own files.

@@ -29,6 +29,16 @@ A page of the reference reads: `description` (a lead of three sentences at most)
 of the entry, then `values` (one row per keyword or function), `details` (one paragraph), and the
 examples, each with a `name` and a one-sentence `text` (decision 121). Code goes between backticks.
 
+## Branches
+
+New features go to the branch of the next release, not to `main`: `release/0.0.6` for now.
+`main` holds the published version.
+
+- Branch from `release/0.0.6`, and open pull requests against it.
+- A fix for the published version goes to `main`, then `main` is merged into the release branch.
+- When the release is published, its branch is merged into `main` and tagged (see Publishing),
+  and the branch of the next release starts from there.
+
 ## Decisions
 
 The design decisions, and why they were made, are recorded in [`DECISIONS.md`](DECISIONS.md).
