@@ -1,5 +1,6 @@
 import { createRenderer, type Renderer } from "../runtime/renderer";
 import { renderGate } from "../runtime/software-gate";
+import { sleepOffscreen } from "../runtime/offscreen";
 import { connectEditor, type Editor } from "../runtime/editor";
 import { encodeCode } from "../runtime/share";
 import { formatGss } from "./format";
@@ -12,6 +13,7 @@ let open: {
   example: HTMLElement;
   panel: HTMLElement;
   renderer: Renderer;
+  sleep: ReturnType<typeof sleepOffscreen>;
   editor: Editor;
   chips: ReturnType<typeof mountViewChips>;
 } | null = null;
@@ -21,6 +23,7 @@ export function closePlayground(): void {
   if (!open) return;
   open.editor.destroy();
   open.chips.destroy();
+  open.sleep.stop();
   open.renderer.destroy();
   open.panel.remove();
   open.example.classList.remove("is-open");
@@ -52,7 +55,8 @@ function openPlayground(example: HTMLElement, code: string, html = ""): void {
   const canvas = panel.querySelector("canvas")!;
   canvas.innerHTML = html; // laid out inside the canvas, drawn on the object (decision 101)
   const renderer = createRenderer(canvas, { scrollSlider: true, dprPicker: true });
-  renderGate(canvas, renderer); // without a GPU, or too heavy: drawn on a click (decisions 137, 142)
+  const sleep = sleepOffscreen(canvas, renderer); // scrolled away: no frames, no GPU
+  renderGate(canvas, sleep); // without a GPU, or too heavy: drawn on a click (decisions 137, 142)
   const editor = connectEditor(
     {
       host: panel.querySelector(".code-host")!,
@@ -80,7 +84,7 @@ function openPlayground(example: HTMLElement, code: string, html = ""): void {
     link.href = `./playground.html${await encodeCode(current, html)}`; // the HTML goes too
   });
 
-  open = { example, panel, renderer, editor, chips };
+  open = { example, panel, renderer, sleep, editor, chips };
 }
 
 // One listener for the whole page, whatever the number of examples

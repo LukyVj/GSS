@@ -12,7 +12,7 @@ beforeAll(async () => {
   server = await createServer({ configFile: false, server: { host: "127.0.0.1", port: 0 }, logLevel: "error", plugins: [{
     name: "heavy-test-page",
     configureServer(server) {
-      server.middlewares.use("/__heavy", (_req, res) => { res.setHeader("Content-Type", "text/html"); res.end('<html><body style="margin:0"><script type="module">import { createView } from "/src/runtime/view.ts"; window.__createView = createView;</script></body></html>'); });
+      server.middlewares.use("/__heavy", (_req, res) => { res.setHeader("Content-Type", "text/html"); res.end('<html><body style="margin:0"><script type="module">import { createView } from "/src/runtime/view.ts"; import { sleepOffscreen } from "/src/runtime/offscreen.ts"; window.__createView = createView; window.__sleepOffscreen = sleepOffscreen;</script></body></html>'); });
     },
   }] });
   await server.listen();
@@ -26,11 +26,12 @@ afterAll(async () => { await browser?.close(); await server?.close(); });
 
 // Cheap to compile, slow to draw: glass on glass in soft shadows, on a large canvas, turning
 // (a still scene draws only when something changes)
-const heavy = compileScene(`@scene { sphere * 120; }
+const heavy = compileScene(`@scene { sphere * 40; }
 scene { shadows: soft; floor: #333; camera-spin: 20s; }
 sphere { material: glass(1.5, frosted 0.3); radius: 0.3;
   translate: calc(sin(sibling-index() * 1.7) * 2) calc(cos(sibling-index() * 2.3) * 1 + 1) calc(sin(sibling-index() * 3.1) * 2); }`);
 const light = compileScene("@scene { sphere; } scene { background: #000; }");
+const moving = compileScene("@scene { sphere; } scene { background: #000; camera-spin: 10s; }");
 
 // Mounts a view on a canvas of this CSS size, then reports what happened over `ms`
 // Stops early once it is too heavy, or once it draws at `full` pixels wide
@@ -80,9 +81,44 @@ describe("a scene on a GPU too slow for it (decision 142)", () => {
   }, 30000);
 
   it("stops, says so with gss-too-heavy, and draws nothing more", async () => {
-    const { widths, heavyAt, drawsAfter } = await watch(heavy, 2400, 1500, 50000);
-    expect(widths).toEqual([1200]); // never a frame at its full ratio
+    const { widths, heavyAt, drawsAfter } = await watch(heavy, 3200, 2000, 50000);
+    expect(widths).toEqual([1600]); // never a frame at its full ratio
     expect(heavyAt).toBeGreaterThan(0);
     expect(drawsAfter).toBe(0);
   }, 90000);
+});
+
+// The live demo of the home page and the Try it of the docs scroll with their page
+describe("a scene scrolled away (sleepOffscreen)", () => {
+  it("draws on screen, nothing off screen, and again back on screen", async () => {
+    const draws = await page.evaluate(async (compiled) => {
+      document.body.innerHTML = '<canvas style="display:block;width:80px;height:60px"></canvas><div style="height:3000px"></div>';
+      const canvas = document.querySelector("canvas")!;
+      const view = (window as any).__createView(canvas, { controls: false, adaptDpr: false });
+      (window as any).__sleepOffscreen(canvas, view);
+      view.show(compiled);
+      const gl = canvas.getContext("webgl2")!;
+      let count = 0;
+      const draw = gl.drawArrays.bind(gl);
+      gl.drawArrays = (...args: Parameters<typeof draw>) => { count++; draw(...args); };
+      const over = async (ms: number) => {
+        const before = count;
+        await new Promise(resolve => setTimeout(resolve, ms));
+        return count - before;
+      };
+      await over(1500); // the first frame, the compile
+      const on = await over(500);
+      window.scrollTo(0, 2000);
+      await over(300); // the observer answers
+      const off = await over(500);
+      window.scrollTo(0, 0);
+      await over(300);
+      const back = await over(500);
+      view.destroy();
+      return { on, off, back };
+    }, moving);
+    expect(draws.on).toBeGreaterThan(3);
+    expect(draws.off).toBe(0);
+    expect(draws.back).toBeGreaterThan(3);
+  }, 30000);
 });

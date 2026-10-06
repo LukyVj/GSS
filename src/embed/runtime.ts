@@ -2,6 +2,7 @@ import type { CompiledScene } from "../compiler";
 import { createView, type ViewOptions } from "../runtime/view";
 import { createViewAsync, type BackendOptions } from "../runtime/backend";
 import { usesElements } from "../runtime/textures";
+import { sleepOffscreen } from "../runtime/offscreen";
 
 // gss-lang/runtime: draws a scene compiled at build time (the Vite plugin),
 // without shipping the compiler (decision 63). gss-lang (index.ts) adds GSS text.
@@ -69,27 +70,8 @@ function variables(view: Pick<GssScene, "setProperty" | "getPropertyValue" | "re
 }
 
 function observe(canvas: HTMLCanvasElement, view: Pick<GssScene, "pause" | "play" | "destroy"> & { freeze(frozen: boolean): void }) {
-
-  let visible = true;
-  let paused = false; // by the page, with pause(): the screen does not wake it up
-  const update = () => (visible && !paused ? view.play() : view.pause());
-
   // Off screen: no frames, no GPU, and the clock waits (the animation resumes where it was)
-  const observer =
-    typeof IntersectionObserver === "undefined"
-      ? null
-      : new IntersectionObserver((entries) => {
-          visible = entries.some((entry) => entry.isIntersecting);
-          update();
-        });
-  observer?.observe(canvas);
-
-  // Too heavy for the computer (decision 142): the view stopped; coming back on screen does
-  // not wake it up, only play() from the page
-  const onHeavy = () => {
-    paused = true;
-  };
-  canvas.addEventListener("gss-too-heavy", onHeavy);
+  const sleep = sleepOffscreen(canvas, view);
 
   // prefers-reduced-motion: the scene is drawn (hover, drag), but the time stands still
   const motion =
@@ -101,17 +83,10 @@ function observe(canvas: HTMLCanvasElement, view: Pick<GssScene, "pause" | "play
   motion?.addEventListener("change", onMotion);
 
   return {
-    pause() {
-      paused = true;
-      update();
-    },
-    play() {
-      paused = false;
-      update();
-    },
+    pause: sleep.pause,
+    play: sleep.play,
     destroy() {
-      observer?.disconnect();
-      canvas.removeEventListener("gss-too-heavy", onHeavy);
+      sleep.stop();
       motion?.removeEventListener("change", onMotion);
       view.destroy();
     },

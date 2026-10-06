@@ -22,6 +22,7 @@ The 0.0.1 history was reconstructed from GitHub.
 
 ### Changed
 
+- The live demo of the home page and the Try it of the docs stop drawing when they are scrolled off screen, and resume where they were, like `<gss-scene>` and `mount()` already did.
 - Every scene starts at a density of 0.5, then climbs to its `dpr` in under a second while the frames keep up, and lowers it while they are slow: in `mount()`, `<gss-scene>`, the home page and the showcase too, not only in the docs and the playground. A weak graphics card no longer draws the first frames of a heavy scene at full density, which froze some browsers on the home page.
 - The site on small screens: the side padding follows the width (56, 32, then 16 pixels), the top bars and the footers with it. The bars shrink in steps: the gaps first, then the GitHub and X links keep their mark and lose their text (under 800 pixels), then, on a phone, the home bar is two rows and the footers stack. A link never breaks on two lines.
 - The eight studies render at a pixel density of 1.5 (`dpr: 1.5`), in the showcase and in the playground: sharper than before on a standard screen, lighter than before on a high-density one.
