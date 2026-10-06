@@ -5,7 +5,10 @@
 
 export const ALGOLIA = {
   appId: "PVXYD3XMQP",
-  apiKey: "99a61699372fc3eae78901da90112c8b", // Settings → API Keys → Search-Only API Key
+  // Settings → API Keys → Search-Only API Key. Kept out of source so it can be rotated
+  // (e.g. after quota-exhaustion abuse) without a code change; falls back to the key
+  // published alongside the docs when no override is configured.
+  apiKey: import.meta.env.VITE_ALGOLIA_API_KEY ?? "99a61699372fc3eae78901da90112c8b",
   indices: ["GSS-lang docs"],
 };
 
