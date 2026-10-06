@@ -1169,7 +1169,7 @@ The two columns stay while the reader types, so the window does not jump at the 
 - **Its sentence**: the description of the registry, or the first paragraph of a guide.
 - **Its syntax**, in the colors of the docs, when the page has one (a property, an at-rule, a function).
 - **An example**: the one the result lands on (`material--example-2`), else the first of the page; a chapter (`material--values`) shows the first. A guide shows its scene.
-- **"Open the page →"**, to the part the result lands on.
+- **"Open the page →"**, to the part the result lands on, after "Only part of the page" in grey on the same line (Lucas, Oct. 6): the preview never shows the whole page, and says so.
 With an empty box, or no result selected ("No results"), the drawings come back. On a phone there is no right column, so no preview. The preview is read from the registry, like the docs (`search-preview.ts`): no request, and never another text than the page. The code takes the colors of the dark docs on every page (home, playground, showcase).
 **Why**: a result is a name and a group; the reader had to open it to learn whether it was the page they were after. The column was already there, and the drawings matter most before a word is typed. Following the selection, not only the pointer, gives the keyboard the same preview, and the list of DocSearch stays as it is.
 **Accepted limits**: the preview shows one example and no table (initial value, applies to, values); "Open the page" has them. It reads `aria-selected` on the results of DocSearch, like decision 125 reads its class names. Between 768 and 1024px the column is 280px: long lines of code scroll in their block.

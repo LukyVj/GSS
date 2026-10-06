@@ -96,9 +96,12 @@ export function renderPreview(preview: Preview, href: string): HTMLElement {
     box.append(pre, button);
     panel.append(box);
   }
+  // The preview is a part of the page: said in grey, on the line of the link to the whole
+  const more = element("div", "gss-search-preview-more");
   const link = element("a", "gss-concept-link", "Open the page →");
   link.href = href;
-  panel.append(link);
+  more.append(element("span", "gss-search-preview-subset", "Only part of the page"), link);
+  panel.append(more);
   return panel;
 }
 

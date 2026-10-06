@@ -448,8 +448,20 @@
 .gss-search-preview-example + .gss-search-preview-code {
   margin-top: 6px;
 }
-.gss-search-preview .gss-concept-link {
+.gss-search-preview-more {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
   margin-top: 12px;
+}
+.gss-search-preview-subset {
+  font: 12px var(--gss-font-body);
+  color: var(--gss-dim);
+}
+.gss-search-preview .gss-concept-link {
+  margin-top: 0;
+  white-space: nowrap;
 }
 
 /* The drawings: hairlines, code in its syntax colours (DESIGN.md: .gss-dark), the one dot in signal */

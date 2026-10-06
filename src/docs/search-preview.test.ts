@@ -55,6 +55,9 @@ describe("the preview, in the page", () => {
     expect(preview.classList.contains("gss-dark")).toBe(true);
     expect(preview.querySelector("pre code.gss .gss-property")).not.toBeNull();
     expect(preview.querySelector("a")!.getAttribute("href")).toBe("./docs.html#material--example-1");
+    const more = preview.querySelector(".gss-search-preview-more")!;
+    expect(more.querySelector(".gss-search-preview-subset")!.textContent).toBe("Only part of the page");
+    expect(more.lastElementChild!.tagName).toBe("A");
   });
 
   it("offers to try the example, with its code and its HTML", () => {
