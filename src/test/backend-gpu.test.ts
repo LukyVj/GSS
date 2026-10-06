@@ -839,6 +839,62 @@ it("the playground renders with WebGPU and displays WGSL", async () => {
 }, 60000);
 
 
+// shape-rendering: geometricPrecision (#2): a sample contributes only after the next
+// march step proves the primary ray passed it without hitting.
+describe("shape-rendering: geometricPrecision", () => {
+  const single = (value: "auto" | "geometricPrecision") =>
+    `@scene { sphere#ball; } scene { shape-rendering: ${value}; dpr: 1; floor: none; background: #000000; camera-target: 0 0 0; camera-angle: 0deg 0deg; camera-distance: 5; ambient: 0.25; light: -45deg 45deg; } #ball { radius: 1; color: #ff8040; }`;
+
+  it("adds only missed silhouette coverage and leaves exact hits unchanged", async () => {
+    const plain = await render(single("auto"));
+    const precise = await render(single("geometricPrecision"));
+
+    for (const [auto, smooth] of [[plain.gl, precise.gl], [plain.gpu, precise.gpu]]) {
+      let exactHits = 0;
+      let coveredMisses = 0;
+      for (let i = 0; i < auto.length; i += 4) {
+        const autoLight = auto[i] + auto[i + 1] + auto[i + 2];
+        const smoothLight = smooth[i] + smooth[i + 1] + smooth[i + 2];
+        if (autoLight > 24) {
+          exactHits++;
+          expect(Math.max(
+            Math.abs(smooth[i] - auto[i]),
+            Math.abs(smooth[i + 1] - auto[i + 1]),
+            Math.abs(smooth[i + 2] - auto[i + 2]),
+          )).toBeLessThanOrEqual(3);
+        } else if (smoothLight > 8) {
+          coveredMisses++;
+        }
+      }
+      expect(exactHits).toBeGreaterThan(500);
+      expect(coveredMisses).toBeGreaterThan(4);
+    }
+  }, 60000);
+
+  const layered = (value: "auto" | "geometricPrecision") =>
+    `@scene { sphere#front; sphere#back; } scene { shape-rendering: ${value}; dpr: 1; floor: none; background: #000000; camera-target: 0 0 0; camera-angle: 0deg 0deg; camera-distance: 5; ambient: 1; light: none; } #front { translate: 0 0 0.8; radius: 1; color: #ff0000; } #back { translate: 0 0 -1.2; radius: 2; color: #0000ff; }`;
+
+  it("blends a passed foreground silhouette over a farther hit", async () => {
+    const plain = await render(layered("auto"));
+    const precise = await render(layered("geometricPrecision"));
+
+    for (const [auto, smooth] of [[plain.gl, precise.gl], [plain.gpu, precise.gpu]]) {
+      let blended = 0;
+      for (let i = 0; i < auto.length; i += 4) {
+        const plainBack = auto[i] < 8 && auto[i + 1] < 8 && auto[i + 2] > 247;
+        const mixedEdge =
+          smooth[i] > 8 &&
+          smooth[i] < 247 &&
+          smooth[i + 1] < 8 &&
+          smooth[i + 2] > 8 &&
+          smooth[i + 2] < 247;
+        if (plainBack && mixedEdge) blended++;
+      }
+      expect(blended).toBeGreaterThan(4);
+    }
+  }, 60000);
+});
+
 // view: distance (decision 131): the isolines of the distance to the objects, over the scene
 describe("view: distance draws the isolines over the scene, on both backends", () => {
   // The test of the playground above leaves the page of these tests: back to it

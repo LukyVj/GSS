@@ -1335,6 +1335,27 @@ export const PROPERTIES: PropertyDef[] = [
     ],
   },
   {
+    name: "shape-rendering",
+    appliesTo: "scene",
+    syntax: "auto | geometricPrecision",
+    initial: "auto",
+    description:
+      "Controls the precision of object silhouettes without changing the pixel density of the render.",
+    values: [
+      ["auto", "One ray per pixel, with the same sharp silhouette GSS has by default."],
+      ["geometricPrecision", "After the same ray passes a subpixel near miss without hitting it, blends that silhouette over the miss or a farther surface."],
+    ],
+    details:
+      "This does not supersample, cast another camera ray, add a rendering pass or enlarge the backing store. A sample is kept only after the next march step proves the ray passed its local distance minimum without hitting it (or another surface became nearest); floor id 0 never contributes silhouette coverage. Exact-hit pixels shade exactly once.",
+    examples: [
+      {
+        name: "smooth silhouettes",
+        text: "The sphere keeps one ray per pixel; only its grazing edge gets partial coverage.",
+        code: "@scene { sphere; } scene { shape-rendering: geometricPrecision; floor: none; } sphere { radius: 1; }",
+      },
+    ],
+  },
+  {
     name: "view",
     since: "0.0.5",
     appliesTo: "scene",
