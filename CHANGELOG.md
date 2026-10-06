@@ -12,6 +12,7 @@ The 0.0.1 history was reconstructed from GitHub.
 - Computers without a graphics card: the processor would draw a scene so slowly that the page could freeze, so the scene waits for a click. `<gss-scene>` shows its poster and a button, "Draw it anyway"; the site does the same on the home page, in the playground and in Try it, where the code still shows. `softwareRendering()`, from `gss-lang` and `gss-lang/runtime`, tells a page that uses `mount()`.
 - `<gss-scene poster="cover.jpg">`: an image shown until the scene draws, like the poster of a `<video>`.
 - Showcase: an eighth study, the GSS 0.0.5 announcement. A 30-second film written as one stylesheet: "css" types itself and turns into "gss.", the braces close the rule, then eight features take the stage one after the other. It opens in the playground, in the "Studies" group.
+- Showcase: the Utah teapot joins the inspiration grid. A `lathe` body and lid, a `cone` spout and a `path` handle melted into the body; hover lifts the lid, a click sends the teapot over a speed bump, with `linear()` transitions that overshoot and settle.
 - Docs: "Editor support", at the end of Installation. The GSS extension for VS Code (highlighting, formatting, the `.gss` file icon) is on the Visual Studio Marketplace, and on Open VSX for Cursor, VSCodium and Windsurf: search for *GSS* in the Extensions view, or run `code --install-extension lukyvj.gss-language`.
 
 ### Changed

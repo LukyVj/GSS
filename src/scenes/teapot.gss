@@ -1,0 +1,80 @@
+/* The Utah teapot: hover to lift the lid, click for a speed bump. */
+
+@scene {
+  group#teapot {
+    lathe#body;
+    cone#spout;
+    path#handle;
+    lathe#lid;
+    sphere#knob;
+  }
+}
+
+scene {
+  shadows: soft;
+  dpr: 2;
+  camera-target: 0 0.7 0;
+  camera-distance: 4.5;
+}
+
+#teapot { translate: 0 0.6 0; rotate-y: -30deg; }
+
+#teapot > * {
+  color: #e9e2d6;
+  material: metal(0.45);
+  transition: 0.5s linear(0, 1.2 40%, 0.9 65%, 1.05 85%, 1);
+}
+
+lathe { view-box: -2 -1 4 2; }
+
+#body {
+  d: path("M0 0.55 H0.5 C0.85 0.55 0.98 0.3 0.98 0 C0.98 -0.35 0.8 -0.5 0.55 -0.52 H0 Z");
+}
+
+#spout {
+  radius: 0.24 0.07;
+  height: 1.15;
+  rotate-z: 52deg;
+  translate: 1.08 0.08 0;
+  blend: 0.18;
+}
+
+#handle {
+  view-box: -2 -1 4 2;
+  d: path("M-0.85 0.3 C-1.5 0.25 -1.5 -0.45 -0.8 -0.42");
+  stroke-width: 0.14;
+  blend: 0.08;
+}
+
+#lid {
+  d: path("M0 -0.5 H0.62 V-0.56 C0.5 -0.68 0.3 -0.75 0 -0.78 Z");
+}
+
+#knob {
+  radius: 0.1;
+  translate: 0 0.82 0;
+}
+
+/* hover: the lid lifts a little */
+#teapot:hover #lid { translate: 0 0.12 0; transition: 0.25s ease-out; }
+#teapot:hover #knob { translate: 0 0.94 0; transition: 0.25s ease-out; }
+
+/* click: speed bump */
+#teapot:active #body,
+#teapot:active #spout,
+#teapot:active #handle {
+  transition: 0.35s linear(0, 1.5 30%, 0.7 55%, 1.15 80%, 1);
+}
+#teapot:active #body { translate: 0 0.22 0; rotate-z: 5deg; }
+#teapot:active #spout { translate: 1.08 0.3 0; rotate-z: 57deg; }
+#teapot:active #handle { translate: 0 0.22 0; rotate-z: 5deg; }
+#teapot:active #lid {
+  translate: 0.1 0.7 0;
+  rotate-z: 18deg;
+  transition: 0.35s linear(0, 1.4 35%, 0.9 60%, 1.1 80%, 1);
+}
+#teapot:active #knob {
+  translate: 0.35 1.45 0;
+  rotate-z: 18deg;
+  transition: 0.35s linear(0, 1.4 35%, 0.9 60%, 1.1 80%, 1);
+}

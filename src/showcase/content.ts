@@ -20,6 +20,7 @@ import steve2 from "../scenes/steve2.gss?raw";
 import steveHouse from "../scenes/steveHouse.gss?raw";
 import stevePortal from "../scenes/stevePortal.gss?raw";
 import grass from "../scenes/grass.gss?raw";
+import teapot from "../scenes/teapot.gss?raw";
 import circuit from "../scenes/glass-circuit.gss?raw";
 import relic from "../scenes/soft-relic.gss?raw";
 import garden from "../scenes/candy-garden.gss?raw";
@@ -259,6 +260,11 @@ export const INSPIRATION: Inspiration[] = [
     slug: "grass",
     title: "Some grass blades, blowing in the wind",
     code: grass,
+  },
+  {
+    slug: "teapot",
+    title: "The Utah teapot: hover lifts the lid, a click hits a speed bump",
+    code: teapot,
   },
 ];
 
