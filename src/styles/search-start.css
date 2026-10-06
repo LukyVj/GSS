@@ -104,6 +104,35 @@
 .gss-search-resizing .gss-search-resizer::after {
   background: var(--gss-signal);
 }
+/* The grip: a small pill with two upright strokes, halfway down the hairline, that says the
+   line can be taken. Dim at rest, lit with the line. */
+.gss-search-resizer::before {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: 50%;
+  width: 9px;
+  height: 28px;
+  box-sizing: border-box;
+  translate: -50% -50%;
+  border: 1px solid var(--gss-isoline);
+  border-radius: 3px;
+  background:
+    linear-gradient(var(--gss-dim), var(--gss-dim)) 2px 50% / 1px 12px no-repeat,
+    linear-gradient(var(--gss-dim), var(--gss-dim)) 4px 50% / 1px 12px no-repeat,
+    var(--gss-surface);
+  transition: border-color var(--gss-transition);
+}
+.gss-search-resizer:hover::before,
+.gss-search-resizer:focus-visible::before,
+.gss-search-resizing .gss-search-resizer::before {
+  border-color: var(--gss-signal);
+  background:
+    linear-gradient(var(--gss-bone), var(--gss-bone)) 2px 50% / 1px 12px no-repeat,
+    linear-gradient(var(--gss-bone), var(--gss-bone)) 4px 50% / 1px 12px no-repeat,
+    var(--gss-surface);
+}
 .gss-search-resizer:focus-visible {
   outline: none;
 }
