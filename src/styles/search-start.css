@@ -102,7 +102,7 @@
 .gss-search-resizer:hover::after,
 .gss-search-resizer:focus-visible::after,
 .gss-search-resizing .gss-search-resizer::after {
-  background: var(--gss-signal);
+  background: color-mix(in srgb, var(--gss-signal) 50%, transparent); /* washed out: the grip says more */
 }
 /* The grip: a small pill with two upright strokes, halfway down the hairline, that says the
    line can be taken. Dim at rest, lit with the line. Laid on whole pixels, centred on the
