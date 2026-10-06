@@ -2,7 +2,7 @@ import "./styles/gss-code.css";
 import { EditorState } from "@codemirror/state";
 import { EditorView, lineNumbers } from "@codemirror/view";
 import { createRendererAsync } from "./runtime/renderer";
-import { softwareGate } from "./runtime/software-gate";
+import { renderGate } from "./runtime/software-gate";
 import type { Backend } from "./runtime/backend";
 import { connectEditor, theme } from "./runtime/editor";
 import { glslLanguage } from "./runtime/glsl";
@@ -78,8 +78,9 @@ const renderer = await createRendererAsync(sceneCanvas, {
   $("#error").hidden = false;
   throw error;
 });
-// Without a GPU, nothing is drawn before the reader's click (decision 137)
-softwareGate(sceneCanvas, renderer);
+// Without a GPU, nothing is drawn before the reader's click (decision 137); too heavy, the
+// scene stops and waits for one too (decision 142)
+renderGate(sceneCanvas, renderer);
 mountPanel($(".statusbar"));
 backendSelect.title = `Rendering with ${renderer.backend === "webgpu" ? "WebGPU" : "WebGL2"}`;
 $<HTMLCanvasElement>("#scene").addEventListener("gss-error", (event) => {

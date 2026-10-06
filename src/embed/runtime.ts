@@ -34,7 +34,9 @@ export type MountOptions = ViewOptions;
 export type GssScene = {
   // Another scene in the same canvas; the camera the user placed stays
   update(compiled: CompiledScene): void;
-  // Stop and start drawing. A scene also sleeps on its own when it leaves the screen.
+  // Stop and start drawing. A scene also sleeps on its own when it leaves the screen, and
+  // stops when it is too heavy for the computer, with a gss-too-heavy event on the canvas:
+  // play() then draws it anyway.
   pause(): void;
   play(): void;
   // Frees the GPU (a browser keeps about 16 WebGL contexts)
@@ -82,6 +84,13 @@ function observe(canvas: HTMLCanvasElement, view: Pick<GssScene, "pause" | "play
         });
   observer?.observe(canvas);
 
+  // Too heavy for the computer (decision 142): the view stopped; coming back on screen does
+  // not wake it up, only play() from the page
+  const onHeavy = () => {
+    paused = true;
+  };
+  canvas.addEventListener("gss-too-heavy", onHeavy);
+
   // prefers-reduced-motion: the scene is drawn (hover, drag), but the time stands still
   const motion =
     typeof matchMedia === "undefined"
@@ -102,6 +111,7 @@ function observe(canvas: HTMLCanvasElement, view: Pick<GssScene, "pause" | "play
     },
     destroy() {
       observer?.disconnect();
+      canvas.removeEventListener("gss-too-heavy", onHeavy);
       motion?.removeEventListener("change", onMotion);
       view.destroy();
     },

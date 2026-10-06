@@ -1,5 +1,5 @@
 import { createRenderer, type Renderer } from "../runtime/renderer";
-import { softwareGate } from "../runtime/software-gate";
+import { renderGate } from "../runtime/software-gate";
 import { connectEditor, type Editor } from "../runtime/editor";
 import { encodeCode } from "../runtime/share";
 import { formatGss } from "./format";
@@ -52,7 +52,7 @@ function openPlayground(example: HTMLElement, code: string, html = ""): void {
   const canvas = panel.querySelector("canvas")!;
   canvas.innerHTML = html; // laid out inside the canvas, drawn on the object (decision 101)
   const renderer = createRenderer(canvas, { scrollSlider: true, dprPicker: true });
-  softwareGate(canvas, renderer); // without a GPU: drawn on a second click (decision 137)
+  renderGate(canvas, renderer); // without a GPU, or too heavy: drawn on a click (decisions 137, 142)
   const editor = connectEditor(
     {
       host: panel.querySelector(".code-host")!,

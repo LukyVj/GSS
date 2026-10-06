@@ -1,8 +1,8 @@
 import type { CompiledScene } from "../compiler";
 import type { AsyncView, BackendOptions } from "./backend";
 import { createClock } from "./clock";
-import { pixelRatio, createDensity } from "./dpr";
-import { createDprPicker, savedDpr } from "./dpr-picker";
+import { pixelRatio } from "./dpr";
+import { createDprPicker, viewDensity } from "./dpr-picker";
 import { pickPixel, pointerValues, createPress, decodeId } from "./hover";
 import { createTransitions } from "./transitions";
 import { createTriggers } from "./triggers";
@@ -59,7 +59,7 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
   let hovered = 0;
   const press = createPress(); // :active (decision 95)
   const slider = options.scrollSlider ? createScrollSlider(canvas) : null; // decision 96
-  const density = options.dprPicker ? createDensity(savedDpr()) : null; // decision 120
+  const density = viewDensity(options); // decisions 120 and 142
   const dprMenu = density ? createDprPicker(canvas, density) : null;
   let reducedMotion = false;
   const properties = createProperties(); // @property: what the page set (decision 105)
@@ -70,6 +70,7 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
   let pointer: { x: number; y: number } | null = null;
   const clock = createClock(performance.now());
   let playing = true;
+  let halted = false; // too heavy for the computer (decision 142), until play()
   let frameId = 0;
   let frames = 0;
   let sampleStart = performance.now();
@@ -246,7 +247,13 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
     const drawn = resize(); // not inside dprMenu?.(): it must run without the menu too
     dprMenu?.update(drawn);
     if (scene) {
-      if (!document.hidden) density?.frame(now); // a hidden page is throttled, not slow
+      // Too heavy for the computer: stop, and say so (decision 142)
+      if (!document.hidden && density?.frame(now)) {
+        playing = false;
+        halted = true;
+        canvas.dispatchEvent(new CustomEvent("gss-too-heavy"));
+        return;
+      }
       const current = scene;
       const v = current.values;
       v.set([canvas.width, canvas.height, 1, clock.seconds, camera.yaw, camera.pitch, camera.dist, canvas.width / Math.max(canvas.clientWidth, 1), 0, 0, 0, 0]);
@@ -317,6 +324,11 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
     canvas.dispatchEvent(new CustomEvent("gss-error", { detail: new Error(`WebGPU device lost: ${info.message}`) }));
   });
   frameId = requestAnimationFrame(frame);
+  // Back on a hidden page: the time it was away is not a slow frame
+  const onVisible = () => {
+    if (!document.hidden) density?.resume(performance.now());
+  };
+  document.addEventListener("visibilitychange", onVisible);
   return {
     backend: "webgpu",
     async show(compiled) {
@@ -335,7 +347,15 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
     },
     sampleFrames() { const now = performance.now(); const result = { frames, ms: now - sampleStart }; frames = 0; sampleStart = now; return result; },
     pause() { playing = false; cancelAnimationFrame(frameId); },
-    play() { if (playing || destroyed) return; playing = true; clock.resume(performance.now()); frameId = requestAnimationFrame(frame); },
+    play() {
+      if (playing || destroyed) return;
+      playing = true;
+      if (halted) density?.insist(); // drawn anyway: never stopped again
+      halted = false;
+      density?.resume(performance.now());
+      clock.resume(performance.now());
+      frameId = requestAnimationFrame(frame);
+    },
     freeze(frozen) { clock.freeze(frozen); reducedMotion = frozen; },
     setProperty: properties.set,
     getPropertyValue: properties.get,
@@ -344,6 +364,7 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
       if (destroyed) return;
       destroyed = true; revision++; pickGeneration++; playing = false;
       cancelAnimationFrame(frameId); stopMedia(); listeners.forEach(stop => stop());
+      document.removeEventListener("visibilitychange", onVisible);
       probe?.destroy?.(); slider?.destroy(); dprMenu?.destroy();
       if (scene) release(scene); scene = null;
       for (const entry of textures.values()) { entry.image.onload = null; entry.image.onerror = null; entry.texture.destroy(); }

@@ -22,3 +22,5 @@ export function softwareRendering(): boolean {
 // What the reader is told, over the poster of a scene or in the place of its canvas
 export const SOFTWARE_NOTICE = "No graphics card found: the processor would draw this scene, slowly, and the page could freeze.";
 export const SOFTWARE_PLAY = "Draw it anyway";
+// A GPU too slow for the scene: it stopped after a second or two of frozen frames (decision 142)
+export const HEAVY_NOTICE = "This scene is too heavy for this computer: drawing it could freeze the page.";

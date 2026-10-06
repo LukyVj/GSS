@@ -307,6 +307,7 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 
 ## Done recently
 
+- A scene starts light and stops when too heavy (decision 142, Oct. 6, after readers wrote that the home page froze their browser): every view starts at a density of 0.5 and climbs to its `dpr` in under a second while the frames keep up, then follows the frame rate (decision 120), in `mount()`, `<gss-scene>`, the home page and the showcase too; more than 1.5 s under 5 fps at 0.5 (or one frame of 3 s) stops it, with `gss-too-heavy` on the canvas and "Draw it anyway"; the hero falls back to its SVG. `adaptDpr: false` for the bench, the films and the pixel tests
 - The GitHub repository opens: a link in the top bars (the mark and `github`, or the mark alone in the playground and the docs), in the footers, at the top of Installation, and `repository` and `bugs` in both manifests; `video/` leaves the repository and its history (decision 138)
 - Without a GPU, a scene waits for a click: `softwareRendering()`; `<gss-scene poster>` shows its poster and "Draw it anyway"; the home page keeps its hero SVG alone, and its demo, the playground and Try it compile and show the code, paused under a notice until the click (decision 137). Next: posters for the showcase's `<gss-scene>`
 - An eighth study in the showcase, last: the GSS 0.0.5 announcement, a 30-second film written as one stylesheet (the word types itself, then eight features one after the other); also in the playground's "Studies" group

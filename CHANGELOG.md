@@ -11,6 +11,8 @@ The 0.0.1 history was reconstructed from GitHub.
 - GSS is open source on GitHub: [github.com/LukyVj/GSS](https://github.com/LukyVj/GSS). The site links to it from its top bars and footers, the docs at the top of Installation, and the package and the VS Code extension declare it, so npm and the extension registries link to the code and the issues.
 - Computers without a graphics card: the processor would draw a scene so slowly that the page could freeze, so the scene waits for a click. `<gss-scene>` shows its poster and a button, "Draw it anyway"; the site does the same on the home page, in the playground and in Try it, where the code still shows. `softwareRendering()`, from `gss-lang` and `gss-lang/runtime`, tells a page that uses `mount()`.
 - `<gss-scene poster="cover.jpg">`: an image shown until the scene draws, like the poster of a `<video>`.
+- A scene too heavy for the computer stops instead of freezing the page: after a second or two of frozen frames at its lowest density, it stops drawing, `<gss-scene>` and the site show "Draw it anyway", and `mount()` fires a `gss-too-heavy` event on the canvas, where `scene.play()` draws it anyway.
+- `mount(canvas, scene, { adaptDpr: false })`: the `dpr` as written, never lowered and never stopped, for a capture or a benchmark.
 - Showcase: an eighth study, the GSS 0.0.5 announcement. A 30-second film written as one stylesheet: "css" types itself and turns into "gss.", the braces close the rule, then eight features take the stage one after the other. It opens in the playground, in the "Studies" group.
 - An `animation` in a `:hover` or `:active` rule starts with the state and plays to its end, like a button that fires: the pointer can leave, the button can go up, the animation goes on, once unless it says how many times; the state stays on until it ends, or for good with `forwards`, and the next press plays it again. `cube:active { animation: topple 0.8s forwards; }`.
 - Showcase: "Le Chonk", a pixel 4 in the inspiration grid. A `prism` from a staircase contour, pixelated tiles from a texture; a click tips it over to the left, then on its back, with an animation started by `:active`.
@@ -20,6 +22,7 @@ The 0.0.1 history was reconstructed from GitHub.
 
 ### Changed
 
+- Every scene starts at a density of 0.5, then climbs to its `dpr` in under a second while the frames keep up, and lowers it while they are slow: in `mount()`, `<gss-scene>`, the home page and the showcase too, not only in the docs and the playground. A weak graphics card no longer draws the first frames of a heavy scene at full density, which froze some browsers on the home page.
 - The site on small screens: the side padding follows the width (56, 32, then 16 pixels), the top bars and the footers with it. The bars shrink in steps: the gaps first, then the GitHub and X links keep their mark and lose their text (under 800 pixels), then, on a phone, the home bar is two rows and the footers stack. A link never breaks on two lines.
 - The eight studies render at a pixel density of 1.5 (`dpr: 1.5`), in the showcase and in the playground: sharper than before on a standard screen, lighter than before on a high-density one.
 

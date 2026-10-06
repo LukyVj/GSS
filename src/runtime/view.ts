@@ -6,8 +6,8 @@ import { createPicker } from "./picker";
 import { createClock } from "./clock";
 import type { FrameProbe } from "../profiler/profiler";
 import type { Dpr } from "../compiler/features/dpr";
-import { pixelRatio, createDensity } from "./dpr";
-import { createDprPicker, savedDpr } from "./dpr-picker";
+import { pixelRatio } from "./dpr";
+import { createDprPicker, viewDensity } from "./dpr-picker";
 import { createTransitions } from "./transitions";
 import { createTriggers } from "./triggers";
 import { createScrollSlider, timelineValues } from "./timeline";
@@ -26,7 +26,9 @@ export type View = {
   show(compiled: CompiledScene): void;
   // Images drawn since the previous call, and over how many milliseconds (for "60 fps")
   sampleFrames(): { frames: number; ms: number };
-  // Stops drawing (off screen) and starts again; the clock stops too
+  // Stops drawing (off screen) and starts again; the clock stops too. A scene too heavy for
+  // the computer stops on its own and fires gss-too-heavy on the canvas (decision 142):
+  // play() then draws it anyway, and it never stops on its own again.
   pause(): void;
   play(): void;
   // prefers-reduced-motion: the time and the camera spin stand still
@@ -53,6 +55,10 @@ export type ViewOptions = {
   // The docs and the playground: a menu over the render picks the dpr, auto follows the
   // frame rate (decision 120)
   dprPicker?: boolean;
+  // true (default): the dpr starts light and follows the frame rate, and a scene too heavy
+  // for the computer stops (decision 142). false: always the scene's dpr, never stopped,
+  // for a capture or a benchmark.
+  adaptDpr?: boolean;
 };
 
 // The vertex shader: a giant triangle that covers the whole canvas.
@@ -106,7 +112,7 @@ export function createView(
   let hovered = 0; // the id under the mouse, as last read back (0: nothing)
   const press = createPress(); // :active: the object pressed, until the button goes up
   const slider = options.scrollSlider ? createScrollSlider(canvas) : null;
-  const density = options.dprPicker ? createDensity(savedDpr()) : null; // the viewer's dpr
+  const density = viewDensity(options); // decisions 120 and 142
   const dprMenu = density ? createDprPicker(canvas, density) : null;
   let dpr: Dpr = "auto"; // the pixel density the scene asks for (scene { dpr })
   let transitions = createTransitions([]); // how each hover slot glides (transition)
@@ -300,6 +306,7 @@ export function createView(
   const clock = createClock(performance.now());
   let frameId = 0;
   let playing = true;
+  let halted = false; // too heavy for the computer (decision 142), until play()
   let framesSinceSample = 0;
   let sampleStart = performance.now();
 
@@ -317,7 +324,13 @@ export function createView(
     probe?.frameStart(now, canvas.width, canvas.height);
 
     if (scene) {
-      if (!document.hidden) density?.frame(now); // a hidden page is throttled, not slow
+      // Too heavy for the computer: stop, and say so (decision 142)
+      if (!document.hidden && density?.frame(now)) {
+        playing = false;
+        halted = true;
+        canvas.dispatchEvent(new CustomEvent("gss-too-heavy"));
+        return;
+      }
       // :hover: which object is under the mouse, then how far each slot has glided
       const hovers = scene.hover.length + (scene.active?.length ?? 0) > 0;
       const pixel = hovers ? pointerPixel() : null;
@@ -406,6 +419,11 @@ export function createView(
     frameId = requestAnimationFrame(frame);
   }
   frameId = requestAnimationFrame(frame);
+  // Back on a hidden page: the time it was away is not a slow frame
+  const onVisible = () => {
+    if (!document.hidden) density?.resume(performance.now());
+  };
+  document.addEventListener("visibilitychange", onVisible);
 
   // One compiled scene (one version, with @media) on screen
   function display(compiled: CompiledScene, resetCamera: boolean) {
@@ -473,6 +491,9 @@ export function createView(
     play() {
       if (playing) return;
       playing = true;
+      if (halted) density?.insist(); // drawn anyway: never stopped again
+      halted = false;
+      density?.resume(performance.now());
       clock.resume(performance.now());
       frameId = requestAnimationFrame(frame);
     },
@@ -486,6 +507,7 @@ export function createView(
     destroy() {
       probe?.destroy?.();
       stopMedia();
+      document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("pointerup", release);
       window.removeEventListener("pointercancel", release);
       slider?.destroy();

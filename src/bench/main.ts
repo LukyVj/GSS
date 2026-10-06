@@ -54,6 +54,7 @@ if (mode === "diff") {
   try {
     if (source === undefined) throw new Error(`no scene "${name}"`);
     view = createRenderer(canvas, {
+      adaptDpr: false, // the dpr of the bench, measured as asked (decision 142)
       profile: (gl) => {
         const info = gl.getExtension("WEBGL_debug_renderer_info");
         renderer = String(

@@ -8,7 +8,7 @@ import { statusParts } from "../runtime/status";
 import { mountSearch } from "../docs/search-box";
 import { createLogoReveal } from "./logo-reveal";
 import { softwareRendering } from "../runtime/software";
-import { softwareGate } from "../runtime/software-gate";
+import { renderGate } from "../runtime/software-gate";
 
 mountSearch();
 
@@ -38,7 +38,7 @@ const DEMO_SCENE = `${FIRST_SCENE.replace("glass(1.5, frosted 0.3)", "jelly(0.6)
 // (a WebGL context and a shader compile are not free: no cost for visitors who don't scroll) -----
 function startDemo(): void {
   const renderer = createRenderer($<HTMLCanvasElement>("#demo-scene"), { scrollSlider: true });
-  softwareGate($<HTMLCanvasElement>("#demo-scene"), renderer); // without a GPU: on a click
+  renderGate($<HTMLCanvasElement>("#demo-scene"), renderer); // without a GPU, or too heavy: on a click
   const editor = connectEditor(
     { host: $("#demo-code"), error: $("#demo-error") },
     renderer,

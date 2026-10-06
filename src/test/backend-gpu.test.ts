@@ -34,7 +34,7 @@ async function render(source: string, hover = false, set?: [string, string], htm
       // A probe that measures: every frame is drawn, so the canvas can be read in the frame
       // that drew it (a resting scene draws nothing, decision 134, and its canvas reads empty)
       const probe = { frameStart() {}, drawStart() {}, drawEnd() {}, shaderBuilt() {} };
-      const view = await createViewAsync(canvas, { backend, profile: () => probe, profileWebGPU: () => probe });
+      const view = await createViewAsync(canvas, { backend, adaptDpr: false, profile: () => probe, profileWebGPU: () => probe });
       view.freeze(true);
       await view.show(compiled);
       if (set) view.setProperty(...set); // @property (decision 105)
@@ -421,7 +421,7 @@ describe("element() shows an HTML element on an object", () => {
       const canvas = document.createElement("canvas");
       canvas.innerHTML = card;
       document.body.append(canvas);
-      const scene = await (window as any).__mountAsync(canvas, compiled);
+      const scene = await (window as any).__mountAsync(canvas, compiled, { adaptDpr: false });
       const which = scene.backend;
       scene.destroy();
       canvas.remove();
@@ -752,7 +752,7 @@ it("invalid updates preserve the displayed scene; resizing and destruction remai
     const canvas = document.createElement("canvas"); canvas.style.cssText = "width:96px;height:72px"; document.body.append(canvas);
     // A probe that measures: every frame is drawn and can be read (decision 134)
     const probe = { frameStart() {}, drawStart() {}, drawEnd() {}, shaderBuilt() {} };
-    const view = await (window as any).__createViewAsync(canvas, { backend: "webgpu", profileWebGPU: () => probe });
+    const view = await (window as any).__createViewAsync(canvas, { backend: "webgpu", adaptDpr: false, profileWebGPU: () => probe });
     view.freeze(true); await view.show(compiled);
     const capture = () => new Promise<number[]>(resolve => requestAnimationFrame(() => {
       const copy = document.createElement("canvas"); copy.width = canvas.width; copy.height = canvas.height;

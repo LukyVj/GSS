@@ -1319,8 +1319,8 @@ export const PROPERTIES: PropertyDef[] = [
       ["<number>", "From 0.25 to 4, never above the screen's. Below 1, the render is coarser and faster."],
     ],
     note: {
-      title: "A menu picks it here.",
-      text: "In the playground and in the examples of these docs, the dpr menu at the top right of the render picks the density for you. `auto` starts at the `dpr` of the scene and lowers it while the frames are slow; a number replaces it, never above the screen's. Your choice is kept in this browser. On your own site, the `dpr` of the scene applies.",
+      title: "The density follows the computer.",
+      text: "A scene starts at a density of 0.5, then climbs to its `dpr` while the frames keep up, and lowers it while they are slow: a weak graphics card never draws a heavy scene at full density at once. When it is still far too slow at 0.5, the scene stops and offers to draw it anyway. In the playground and in the examples of these docs, the dpr menu at the top right of the render picks the density for you: `auto` follows the frame rate, a number replaces the `dpr`, never above the screen's. Your choice is kept in this browser.",
     },
     examples: [
       {

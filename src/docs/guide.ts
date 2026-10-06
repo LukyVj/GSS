@@ -115,6 +115,7 @@ INSTALLATION.push(
       `The script defines <code>&lt;gss-scene&gt;</code>. Point its <code>src</code> to a <code>.gss</code> file, or write the GSS inline, as above. Serve the page over HTTP(S). The module: <a href="${CDN_URL}">${CDN_URL}</a>.`,
       'To drive the scene from a script, see <a href="#set-variables">Set variables from JavaScript</a>.',
       '<code>poster="cover.jpg"</code> shows an image until the scene draws, like the poster of a <code>&lt;video&gt;</code>. On a computer without a graphics card, the processor would draw the scene, slowly enough to freeze the page: <code>&lt;gss-scene&gt;</code> then shows its poster and a button, and draws the scene only when the reader asks. With <code>mount()</code>, <code>softwareRendering()</code>, from <code>gss-lang</code> or <code>gss-lang/runtime</code>, returns <code>true</code> on such a computer, to do the same.',
+      'A scene starts at a density of 0.5, then climbs to its <code>dpr</code> while the frames keep up: a weak graphics card never draws a heavy scene at full density at once. When the scene is still far too slow at 0.5, it stops: <code>&lt;gss-scene&gt;</code> shows a button that draws it anyway, and <code>mount()</code> fires a <code>gss-too-heavy</code> event on the canvas, where <code>scene.play()</code> draws it anyway. <code>mount(canvas, scene, { adaptDpr: false })</code> keeps the <code>dpr</code> as written and never stops, for a capture or a benchmark.',
     ],
   },
 );
