@@ -70,6 +70,13 @@ describe("documentation navigation", () => {
     expect(installation.indexOf('id="set-variables"')).toBeGreaterThan(installation.indexOf('id="install-cdn"'));
     expect(html).not.toContain('id="other-reference"');
   });
+  it("says at the top of Installation where the source code and the issues are", () => {
+    const html = renderDocs(PROPERTIES, AT_RULES, SELECTORS, SHAPE_DOCS, FUNCTIONS);
+    const installation = html.slice(html.indexOf('<section id="installation"'), html.indexOf('<section id="at-rules"'));
+    const embedding = installation.slice(0, installation.indexOf('id="install-package"'));
+    expect(embedding).toContain('href="https://github.com/LukyVj/GSS"');
+    expect(embedding).toContain('href="https://github.com/LukyVj/GSS/issues"');
+  });
   it("ends Installation with the editor extension: where to get it, and how to install it", () => {
     const html = renderDocs(PROPERTIES, AT_RULES, SELECTORS, SHAPE_DOCS, FUNCTIONS);
     const installation = html.slice(html.indexOf('<section id="installation"'), html.indexOf('<section id="at-rules"'));

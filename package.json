@@ -13,6 +13,13 @@
     "raymarching"
   ],
   "homepage": "https://www.gss-lang.dev",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LukyVj/GSS.git"
+  },
+  "bugs": {
+    "url": "https://github.com/LukyVj/GSS/issues"
+  },
   "license": "Apache-2.0",
   "type": "module",
   "exports": {

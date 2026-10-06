@@ -93,6 +93,35 @@ body.gss-dark {
     background: var(--gss-signal);
   }
 
+  /* The link to the repository: the GitHub mark, then "github" in the
+     wide bars, the mark alone in the tight ones (.github.alone) */
+  .github {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .github svg {
+    width: 14px;
+    height: 14px;
+    flex: none;
+    fill: currentColor;
+  }
+  .topbar .github.alone {
+    flex: none;
+    justify-content: center;
+    width: var(--gss-control-height);
+    height: var(--gss-control-height);
+    color: var(--gss-ash);
+    transition: color var(--gss-transition);
+  }
+  .topbar .github.alone:hover {
+    color: var(--gss-bone);
+  }
+  .topbar .github.alone svg {
+    width: 16px;
+    height: 16px;
+  }
+
   /* ----- Buttons: secondary by default, .primary for the one main action ----- */
   .button {
     height: var(--gss-control-height);

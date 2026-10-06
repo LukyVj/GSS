@@ -306,6 +306,7 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 
 ## Done recently
 
+- The GitHub repository opens: a link in the top bars (the mark and `github`, or the mark alone in the playground and the docs), in the footers, at the top of Installation, and `repository` and `bugs` in both manifests; `video/` leaves the repository and its history (decision 138)
 - Without a GPU, a scene waits for a click: `softwareRendering()`; `<gss-scene poster>` shows its poster and "Draw it anyway"; the home page keeps its hero SVG alone, and its demo, the playground and Try it compile and show the code, paused under a notice until the click (decision 137). Next: posters for the showcase's `<gss-scene>`
 - An eighth study in the showcase, last: the GSS 0.0.5 announcement, a 30-second film written as one stylesheet (the word types itself, then eight features one after the other); also in the playground's "Studies" group
 - Icons for the docs sidebar: one per group, before its title, 16 px in `currentColor` (signal on the group being read); the brand page shows them and offers each as an SVG file, from the same source (decision 135)
