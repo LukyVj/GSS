@@ -1,7 +1,8 @@
-// What the search shows around its list (decisions 125, 126). Before a word is typed, the middle
+// What the search shows around its list (decisions 125, 126, 143). Before a word is typed, the middle
 // says where to start, the pages the newest version added and the searches people make the
 // most; around it, two columns stay while the reader searches: the contents of the docs on
-// the left, and four ideas of GSS, drawn small, on the right. DocSearch has no option for
+// the left, and four ideas of GSS, drawn small, on the right, where the selected result shows
+// its page while a word is typed (search-preview.ts). DocSearch has no option for
 // any of it: the panels go into its modal, around its list.
 import { PROPERTIES, AT_RULES, SELECTORS, SHAPE_DOCS, FUNCTIONS } from "../compiler/registry/registry";
 import { GETTING_STARTED, INSTALLATION } from "./guide";
@@ -9,6 +10,7 @@ import { groupEntries, qualified } from "./navigation";
 import { ALGOLIA, SUGGESTIONS_INDEX } from "./search";
 import { CONCEPTS } from "./concepts";
 import { VERSION } from "../version";
+import { placePreview } from "./search-preview";
 
 export type DocEntry = { anchor: string; label: string; group: string; since?: string };
 export type DocSection = { id: string; title: string; category: string; entries: DocEntry[] };
@@ -273,9 +275,13 @@ export function mountStartScreen(docsearch: { close(): void }): void {
       center: renderStartScreen({ news, popular: [], onDocs }),
       concepts: renderConcepts(onDocs),
     };
-    const place = () => placeStartScreen(modal, panels);
+    const place = () => {
+      placeStartScreen(modal, panels);
+      placePreview(modal, panels.concepts, docsHref(onDocs)); // the selected result, on the right
+    };
     place();
-    new MutationObserver(place).observe(modal, { childList: true, subtree: true });
+    // DocSearch marks the selected result with aria-selected, as the pointer or the arrows move
+    new MutationObserver(place).observe(modal, { childList: true, subtree: true, attributes: true, attributeFilter: ["aria-selected"] });
     modal.addEventListener("input", place);
     modal.addEventListener("click", (event) => {
       const target = event.target as Element;

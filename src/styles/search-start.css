@@ -299,6 +299,59 @@
   color: var(--gss-signal-hover);
 }
 
+/* ----- Right, while a word is typed: the page of the selected result (search-preview.ts) ----- */
+.gss-search-concepts[data-preview] > :not(.gss-search-preview) {
+  display: none;
+}
+.gss-search-preview {
+  padding-bottom: 8px;
+}
+.gss-search-preview-title {
+  margin: 0;
+  font: 500 15px/1.3 var(--gss-font-code);
+  color: var(--gss-bone);
+}
+.gss-search-preview-text {
+  margin: 8px 0 0;
+  font: 13px/1.5 var(--gss-font-body);
+  color: var(--gss-ash);
+}
+.gss-search-preview-text code {
+  font: 12px var(--gss-font-code);
+}
+.gss-search-preview-syntax {
+  display: block;
+  margin-top: 12px;
+  padding: 8px 10px;
+  border: 1px solid var(--gss-line);
+  font: 12px/1.5 var(--gss-font-code);
+  overflow-wrap: anywhere;
+}
+.gss-search-preview-example {
+  margin-top: 16px;
+  font: 11px/16px var(--gss-font-code);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gss-dim);
+}
+/* The code on void, like a render; long lines scroll, never the column */
+.gss-search-preview-code {
+  margin: 8px 0 0;
+  padding: 10px 12px;
+  border: 1px solid var(--gss-line);
+  background: var(--gss-void);
+  font: 12px/1.55 var(--gss-font-code);
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--gss-isoline) transparent;
+}
+.gss-search-preview-example + .gss-search-preview-code {
+  margin-top: 6px;
+}
+.gss-search-preview .gss-concept-link {
+  margin-top: 12px;
+}
+
 /* The drawings: hairlines, code in its syntax colours (DESIGN.md: .gss-dark), the one dot in signal */
 .gss-concept-svg text {
   font: 11px var(--gss-font-code);

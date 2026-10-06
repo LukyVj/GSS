@@ -4,6 +4,7 @@ import docsearch from "@docsearch/js/docsearch";
 import "@docsearch/css/dist/style.css";
 import "../styles/docsearch.css"; // after @docsearch/css: our values win
 import "../styles/search-start.css"; // the columns around the list, after docsearch.css
+import "../styles/gss-code.css"; // the code of the preview of a result, on every page
 import { ALGOLIA, localUrl } from "./search";
 import { mountStartScreen } from "./start-screen";
 

@@ -18,6 +18,7 @@ The 0.0.1 history was reconstructed from GitHub.
 - Showcase: "Le Chonk", a pixel 4 in the inspiration grid. A `prism` from a staircase contour, pixelated tiles from a texture; a click tips it over to the left, then on its back, with an animation started by `:active`.
 - Showcase: the Utah teapot joins the inspiration grid. A `lathe` body and lid, a `cone` spout and a `path` handle melted into the body; hover lifts the lid, a click sends the teapot over a speed bump, with `linear()` transitions that overshoot and settle.
 - GSS is on X: [@GSS_lang](https://x.com/GSS_lang), for news, scenes, questions and ideas. The site links to it from its top bars and footers, with a contact line in every footer (X for questions, GitHub for issues), the docs say so at the top of Installation, and a link shared on X attributes the card to the account. In the playground, once the share link is copied, the status bar offers to post it on X, with the account mentioned.
+- Docs search: once a word is typed, the right column shows the page of the selected result, by the pointer or the arrows: its sentence, its syntax and an example (the one the result lands on), with a link to open it. With an empty box, the four drawings come back.
 - Docs: "Editor support", at the end of Installation. The GSS extension for VS Code (highlighting, formatting, the `.gss` file icon) is on the Visual Studio Marketplace, and on Open VSX for Cursor, VSCodium and Windsurf: search for *GSS* in the Extensions view, or run `code --install-extension lukyvj.gss-language`.
 
 ### Changed
