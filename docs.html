@@ -212,6 +212,16 @@
          Its motion on hover comes with the contents. */
       .toc-icon {
         flex: none;
+        border-radius: 3px;
+      }
+      /* On hover, a thin orange glint crosses the icon from its top left to its bottom right. */
+      .toc-group > summary:is(:hover, :focus-visible) .toc-icon {
+        background: linear-gradient(
+          135deg,
+          transparent 42%,
+          color-mix(in srgb, var(--gss-signal) 45%, transparent) 50%,
+          transparent 58%
+        );
       }
       .toc-group-title {
         flex: 1;

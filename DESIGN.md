@@ -192,7 +192,8 @@ The same message appears in the status bar count (`● 1 error`).
 other colour: an icon is `ash` at rest, `bone` on hover or open, signal on the
 group being read. On hover each one plays its own short motion, once (the
 arrow drops into the tray, the shutter closes), 0.4–0.8s; none with reduced
-motion. Line drawings of the subject (a cube, a drop, a camera);
+motion. A thin signal glint, faded at both ends, crosses the icon from its top
+left to its bottom right while the pointer is over it. Line drawings of the subject (a cube, a drop, a camera);
 Rendering borrows the isoline motif. The brand page shows them all and offers
 each as a file.
 
