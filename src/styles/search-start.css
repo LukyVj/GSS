@@ -2,7 +2,9 @@
    left, the start screen in the middle while nothing is typed, four ideas drawn small on the
    right. Three columns divided by hairlines, like the docs (DESIGN.md § 7); two without the
    contents under 1024px; on a phone, DocSearch is full screen and the ideas come last in the
-   middle. Imported after docsearch.css. */
+   middle. The reader sets the width of the two columns (search-columns.ts): the grid reads
+   --gss-search-contents and --gss-search-concepts, and each column lays itself out by its own
+   width with container queries. Imported after docsearch.css. */
 
 /* ----- The modal, in columns (DocSearch is full screen up to 768px) ----- */
 @media (width > 768px) {
@@ -11,7 +13,7 @@
     width: 100%;
     max-width: min(960px, calc(100vw - 48px));
     height: min(680px, calc(100dvh - 120px));
-    grid-template-columns: minmax(0, 1fr) 280px;
+    grid-template-columns: minmax(0, 1fr) var(--gss-search-concepts, 280px);
     grid-template-rows: auto minmax(0, 1fr) auto;
     grid-template-areas:
       "bar bar"
@@ -45,7 +47,7 @@
 @media (width >= 1024px) {
   .DocSearch-Modal {
     max-width: min(1120px, calc(100vw - 64px));
-    grid-template-columns: 232px minmax(0, 1fr) 300px;
+    grid-template-columns: var(--gss-search-contents, 232px) minmax(0, 1fr) var(--gss-search-concepts, 300px);
     grid-template-areas:
       "bar bar bar"
       "contents main concepts"
@@ -61,6 +63,54 @@
   .gss-search-concepts {
     display: none;
   }
+}
+
+/* ----- The handles: on the hairline beside each column, signal while held ----- */
+.gss-search-resizer {
+  display: none;
+}
+@media (width > 768px) {
+  .DocSearch-Modal > .gss-search-resizer[data-column="concepts"] {
+    display: block;
+    grid-area: concepts;
+    justify-self: start;
+    margin-left: -5px;
+  }
+}
+@media (width >= 1024px) {
+  .DocSearch-Modal > .gss-search-resizer[data-column="contents"] {
+    display: block;
+    grid-area: contents;
+    justify-self: end;
+    margin-right: -5px;
+  }
+}
+.DocSearch-Modal > .gss-search-resizer {
+  position: relative;
+  z-index: 1;
+  width: 9px;
+  cursor: col-resize;
+  touch-action: none;
+}
+.gss-search-resizer::after {
+  content: "";
+  position: absolute;
+  inset: 0 4px;
+  background: transparent;
+  transition: background-color var(--gss-transition);
+}
+.gss-search-resizer:hover::after,
+.gss-search-resizer:focus-visible::after,
+.gss-search-resizing .gss-search-resizer::after {
+  background: var(--gss-signal);
+}
+.gss-search-resizer:focus-visible {
+  outline: none;
+}
+.gss-search-resizing,
+.gss-search-resizing * {
+  cursor: col-resize;
+  user-select: none;
 }
 
 /* ----- What every column shares: eyebrows, counts, scrolling ----- */
@@ -102,6 +152,7 @@
 
 /* ----- Left: the contents, like the nav of the docs ----- */
 .gss-search-contents {
+  container: gss-search-contents / inline-size;
   box-sizing: border-box;
   padding: 0 12px 16px;
   border-right: 1px solid var(--gss-line);
@@ -112,7 +163,6 @@
 .gss-search-contents-link {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 8px;
   min-height: 28px;
   padding: 0 10px 0 8px;
@@ -125,9 +175,27 @@
   background: var(--gss-raised);
   color: var(--gss-bone);
 }
+.gss-search-contents-label {
+  flex: 1;
+  min-width: 0;
+}
+/* The icon of each group, like the sidebar of the docs, once the column has room for it */
+.gss-search-contents-icon {
+  display: none;
+  flex: none;
+}
+@container gss-search-contents (width >= 248px) {
+  .gss-search-contents-icon {
+    display: block;
+  }
+  .gss-search-contents-link {
+    gap: 10px;
+  }
+}
 
 /* ----- Middle: the start screen ----- */
 .gss-search-start {
+  container: gss-search-start / inline-size;
   box-sizing: border-box;
   padding-bottom: 24px;
 }
@@ -179,6 +247,16 @@
   font: 13px/1.45 var(--gss-font-body);
   color: var(--gss-ash);
 }
+/* Too narrow for three cells: one under the other */
+@container gss-search-start (width < 520px) {
+  .gss-search-start-pages {
+    grid-template-columns: 1fr;
+  }
+  .gss-search-start-page + .gss-search-start-page {
+    border-left: 0;
+    border-top: 1px solid var(--gss-line);
+  }
+}
 .gss-search-start-site {
   display: flex;
   flex-wrap: wrap;
@@ -200,6 +278,11 @@
   column-gap: 24px;
 }
 /* A group that does not fit goes to a second line, which the row hides */
+@container gss-search-start (width < 440px) {
+  .gss-search-start-list {
+    grid-template-columns: 1fr;
+  }
+}
 .gss-search-start-item {
   --row: 32px;
   display: flex;
@@ -257,6 +340,7 @@
 
 /* ----- Right: how GSS works ----- */
 .gss-search-concepts {
+  container: gss-search-side / inline-size;
   box-sizing: border-box;
   padding: 0 20px 16px;
   border-left: 1px solid var(--gss-line);
@@ -297,6 +381,22 @@
 }
 .gss-concept-link:hover {
   color: var(--gss-signal-hover);
+}
+/* A wide column: each drawing beside its text */
+@container gss-search-side (width >= 360px) {
+  .gss-concept {
+    display: grid;
+    grid-template-columns: minmax(0, 9fr) minmax(0, 10fr);
+    grid-template-rows: auto auto 1fr;
+    column-gap: 16px;
+    align-items: start;
+  }
+  .gss-concept-figure {
+    grid-row: 1 / 4;
+  }
+  .gss-concept-title {
+    margin-top: 0;
+  }
 }
 
 /* ----- Right, while a word is typed: the page of the selected result (search-preview.ts) ----- */
@@ -421,16 +521,6 @@
     flex: 1 1 auto;
     min-height: 0;
     padding-inline: 16px;
-  }
-  .gss-search-start-pages {
-    grid-template-columns: 1fr;
-  }
-  .gss-search-start-page + .gss-search-start-page {
-    border-left: 0;
-    border-top: 1px solid var(--gss-line);
-  }
-  .gss-search-start-list {
-    grid-template-columns: 1fr;
   }
   .gss-search-start-concepts {
     display: grid;
