@@ -2,7 +2,7 @@
  * LE CHONK
  * The pixel "4" of Mistral AI, in a museum. Click it: it tips over to the left
  * until the end of its bar meets the floor, then falls on its back.
- * The frames are the ones of the film, 25 a second, measured on it.
+ *
  */
 
 @scene {
