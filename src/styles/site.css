@@ -37,6 +37,20 @@ body.gss-dark {
     outline-offset: 2px;
   }
 
+  /* ----- The launch banner: above the top bar, it scrolls away ----- */
+  .launch-banner {
+    display: block;
+    padding: 9px 24px;
+    background: var(--gss-signal);
+    color: var(--gss-void);
+    font: 500 13px var(--gss-font-code);
+    text-align: center;
+  }
+  .launch-banner:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
   /* ----- The top bar: { ● } / page name … actions ----- */
   .topbar {
     position: sticky;
