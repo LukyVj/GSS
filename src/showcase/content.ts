@@ -31,6 +31,7 @@ import character from "../scenes/zdog-character.gss?raw";
 import camera from "../scenes/camera-cutaway.gss?raw";
 import release from "../scenes/release-005.gss?raw";
 import productHunt from "../scenes/product-hunt.gss?raw";
+import sunlitRoom from "../scenes/sunlit-room.gss?raw";
 
 import { FIRST_SCENE } from "../docs/guide";
 import { formatGss } from "../docs/format";
@@ -277,6 +278,11 @@ export const INSPIRATION: Inspiration[] = [
     slug: "product-hunt",
     title: "The Product Hunt mark, a coin under two sweeping lights",
     code: productHunt,
+  },
+  {
+    slug: "sunlit-room",
+    title: "A room lit by one shaft of sun, after Maxime Heckel's global illumination study",
+    code: sunlitRoom,
   },
 ];
 
