@@ -1,0 +1,104 @@
+/* The Product Hunt mark in 3D: an orange coin, a white P pushed out of it.
+   The P is the d="…" of the flat logo (a 40 × 40 box), pasted into path().
+   No sun: two spotlights sweep the stage, and the coin floats over its own shadows. */
+
+@scene {
+  group#stand {
+    group#mark {
+      cylinder#coin;
+      prism#p;
+    }
+  }
+  light#key;
+  light#rim;
+}
+
+scene {
+  background: #050506;
+  floor: #36363c;
+  fog: #050506 7 16;
+  shadows: soft;
+  light: none;
+  ambient: 0.06;
+  camera-target: 0 0.9 0;
+  camera-distance: 8.5;
+  camera-angle: 0deg 30deg;
+}
+
+/* The coin floats above the floor, and rises and falls while it sways. */
+#stand {
+  translate: 0 1.35 0;
+  animation: float 3s ease-in-out alternate;
+}
+
+#mark {
+  animation: sway 6s ease-in-out alternate;
+}
+
+/* A cylinder stands on y: lying on x, it faces the camera. */
+#coin {
+  radius: 1;
+  height: 0.3;
+  rotate-x: 90deg;
+  color: #ff6154;
+}
+
+#p {
+  d: path("M22.667 20H17v-6h5.667a3 3 0 0 1 0 6m0-10H13v20h4v-6h5.667a7 7 0 1 0 0-14");
+  view-box: 0 0 40 40;
+  scale: 0.05;
+  depth: 9;
+  color: #ffffff;
+}
+
+/* The key light, warm, high in front on the left: its shadow falls back to the right.
+   The rim light, white, high behind on the right: its shadow falls toward us, on the left. */
+#key {
+  translate: -2.6 3.4 1.6;
+  color: #ffc9a8;
+  intensity: 18;
+  animation: sweep-key 7s ease-in-out alternate;
+}
+
+#rim {
+  translate: 2.4 3 -1.8;
+  color: #ffffff;
+  intensity: 14;
+  animation: sweep-rim 9s ease-in-out alternate;
+}
+
+@keyframes sway {
+  from {
+    rotate-y: 25deg;
+  }
+  to {
+    rotate-y: -25deg;
+  }
+}
+
+@keyframes float {
+  from {
+    translate: 0 1.35 0;
+  }
+  to {
+    translate: 0 1.5 0;
+  }
+}
+
+@keyframes sweep-key {
+  from {
+    translate: -3 3.4 1.6;
+  }
+  to {
+    translate: -1.2 3.4 1.6;
+  }
+}
+
+@keyframes sweep-rim {
+  from {
+    translate: 2.8 3 -1.8;
+  }
+  to {
+    translate: 1 3 -1.8;
+  }
+}
