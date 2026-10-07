@@ -30,6 +30,7 @@ import burger from "../scenes/zdog-burger.gss?raw";
 import character from "../scenes/zdog-character.gss?raw";
 import camera from "../scenes/camera-cutaway.gss?raw";
 import release from "../scenes/release-005.gss?raw";
+import productHunt from "../scenes/product-hunt.gss?raw";
 
 import { FIRST_SCENE } from "../docs/guide";
 import { formatGss } from "../docs/format";
@@ -271,6 +272,11 @@ export const INSPIRATION: Inspiration[] = [
     slug: "mistral-four",
     title: "Le Chonk: a pixel 4 that falls over when clicked",
     code: mistralFour,
+  },
+  {
+    slug: "product-hunt",
+    title: "The Product Hunt mark, a coin under two sweeping lights",
+    code: productHunt,
   },
 ];
 
