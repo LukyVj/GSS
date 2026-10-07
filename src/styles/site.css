@@ -47,6 +47,7 @@ body.gss-dark {
     text-align: center;
   }
   .launch-banner:hover {
+    color: #ffffff;
     text-decoration: underline;
     text-underline-offset: 3px;
   }
