@@ -70,7 +70,7 @@ export const DOC_GROUPS: NavGroup[] = [
   { id: "combinations", title: "Combinations", category: "Structure", order: 22, anchors: ["operation", "blend"] },
   { id: "colors", title: "Colors", category: "Appearance", order: 30, anchors: ["color", "background", "background-blend-mode", "floor"] },
   { id: "color-functions", title: "Color functions", category: "Appearance", order: 31, anchors: ["fn-rgb", "fn-hsl", "fn-hwb", "fn-lab-lch", "fn-oklab-oklch", "fn-color", "fn-color-mix", "fn-light-dark", "fn-contrast-color", "fn-currentcolor"] },
-  { id: "gradients", title: "Gradients and noise", category: "Appearance", order: 32, anchors: ["fn-gradients", "fn-noise", "fn-displace"] },
+  { id: "gradients", title: "Gradients and noise", category: "Appearance", order: 32, anchors: ["fn-gradients", "fn-noise", "fn-checker", "fn-stripes", "fn-displace"] },
   { id: "materials", title: "Materials", category: "Appearance", order: 33, anchors: ["material"] },
   { id: "textures", title: "Textures", category: "Appearance", order: 34, anchors: ["texture", "fn-element", "fn-paint", "texture-size", "image-rendering"] },
   { id: "filters", title: "Filters", category: "Appearance", order: 35, anchors: ["filter"] },

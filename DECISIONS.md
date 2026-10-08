@@ -1258,3 +1258,13 @@ Measured, gzipped (hero.gss, Oct. 6): `gss-lang/runtime` and its scene 16 → 12
 Gradients and `transform-origin` read a pyramid like a cube, an octahedron like a sphere, and a tube like a cylinder.
 **Why**: common shapes, cheap distance functions, from Lucas's list; `lathe` (decision 130) already covers vases and bottles.
 **Accepted limits**: a pyramid has a square-based look: a rectangular base works, but its distance is only a lower bound, so the march takes a few more steps near it. No rounded edges on these three. `ellipsoid`, `hex-prism` and `text` wait.
+
+## 155. `checker()` and `stripes()`: patterns, like `noise()`
+
+**Decision** (Lucas's list for 0.0.6, Oct. 8, layer 1 of the texture shaders: named procedural textures, no GLSL): two image functions, wherever a gradient goes (`color`, a material's color, `background`, `floor`, the map of `displace()`), built on `noise()` (decision 111): a value at the point, 0 or 1, and the colors placed on it like the stops of a gradient.
+- `checker(<scale> [at x y z], <color>, <color>)`: a grid of cubes of 1 / scale, the parity of `floor(x) + floor(y) + floor(z)`.
+- `stripes(<scale> [x | y | z] [at x y z], <color>, <color>)`: bands along an axis, `y` by default, half of each color.
+They read the point in the object's own space, like `noise()`: the cells keep their size whatever the shape, there is no seam, and they move and turn with the object; on the floor, the units of the scene; in the background, the direction of the view. Internally they are a `noise` with a `pattern` and an `axis`, so they animate (into another of the same function and axis), take numbers from JS, and work in `displace()`, with no code of their own for that.
+**Changed from the plan**: the plan proposed triplanar `u`/`v`, like `texture`. In the object's space, like `noise()`, a pattern has no seams between the faces and works the same on a sphere; it is also what the other procedural image of GSS does.
+**Differences from CSS**: CSS has no `checker()` or `stripes()`; a CSS checkerboard is a `repeating-conic-gradient()` tiled with `background-size`, and CSS stripes a `repeating-linear-gradient()`, which GSS has, seen from the front. These two are GSS functions, like `noise()`.
+**Accepted limits**: sharp edges, so a fine pattern shimmers far away (no antialiasing: the derivatives are not available where the color is read). `dots()` waits: a grid of dots cut in 3D shows no dot where a flat face passes between two rows, depending on the size of the object. `voronoi()` and `gradient-map()` wait too.

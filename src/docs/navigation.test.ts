@@ -35,7 +35,7 @@ describe("documentation navigation", () => {
     const anchorsOf = (id: string) => DOC_GROUPS.find((g) => g.id === id)!.anchors;
     expect(anchorsOf("colors")).toEqual(expect.arrayContaining(["color", "background", "floor"]));
     expect(anchorsOf("color-functions")).toEqual(expect.arrayContaining(["fn-rgb", "fn-oklab-oklch", "fn-color-mix", "fn-currentcolor"]));
-    expect(anchorsOf("gradients")).toEqual(["fn-gradients", "fn-noise", "fn-displace"]);
+    expect(anchorsOf("gradients")).toEqual(["fn-gradients", "fn-noise", "fn-checker", "fn-stripes", "fn-displace"]);
     expect(DOC_GROUPS.find((g) => g.id === "values")!.anchors).toContain("fn-calc");
     expect(anchorsOf("color-functions")).not.toContain("fn-calc");
   });

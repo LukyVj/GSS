@@ -2462,6 +2462,63 @@ export const FUNCTIONS: FunctionDef[] = [
     ],
   },
   {
+    name: "checker()",
+    anchor: "fn-checker",
+    since: "0.0.6",
+    covers: ["checker"],
+    computed: "on the GPU, at each pixel",
+    syntax: "checker(<number> [at <number> <number> <number>]?, <color>, <color>)",
+    description:
+      "A checkerboard, wherever a gradient goes: the `color` of an object, the color of a material, the `background`, the `floor`. Like `noise()`, it is cut in the object's own space: a grid of cubes, one color and then the other.",
+    valuesTitle: "Arguments",
+    values: [
+      ["<number>", "The scale: how many cells fit in one unit."],
+      ["at <x> <y> <z>", "Moves the grid."],
+      ["<color>, <color>", "The two colors of the cells."],
+    ],
+    details: "On an object, the grid is cut in its own space, like a block of stone carved out of a checkered material: the cells keep their size whatever the shape, and move and turn with the object. On the `floor`, it is read in the units of the scene; in the background, it follows the direction of the view. Like `noise()`, it can be animated into another `checker()`, its numbers can be set from JavaScript, and it can be the map of `displace()`. The edges of the cells are sharp: far away, a fine checkerboard shimmers.",
+    examples: [
+      {
+        name: "a checkered floor",
+        text: "One cell per unit of the scene.",
+        code: "@scene { sphere; } scene { floor: checker(1, #1a1d2b, #e8e6e1); } sphere { translate: 0 0.6 0; radius: 0.6; material: chrome; }",
+      },
+      {
+        name: "a checkered cube",
+        code: "@scene { cube; } cube { translate: 0 0.6 0; size: 1.2; rotate-y: 30deg; color: checker(2.5, #ff5a36, #f4f1ea); }",
+      },
+    ],
+  },
+  {
+    name: "stripes()",
+    anchor: "fn-stripes",
+    since: "0.0.6",
+    covers: ["stripes"],
+    computed: "on the GPU, at each pixel",
+    syntax: "stripes(<number> [x | y | z]? [at <number> <number> <number>]?, <color>, <color>)",
+    description:
+      "Bands of two colors across an axis, wherever a gradient goes. Like `checker()`, they are cut in the object's own space: across `y` by default, like the rings of a column.",
+    valuesTitle: "Arguments",
+    values: [
+      ["<number>", "The scale: how many pairs of bands fit in one unit."],
+      ["x, y, z", "The axis the bands follow one another along: `y` by default, horizontal bands."],
+      ["at <x> <y> <z>", "Moves the bands: animated, they scroll."],
+      ["<color>, <color>", "The two colors, each half of a pair."],
+    ],
+    details: "For bands seen from the front only, at any angle, `repeating-linear-gradient()` is the CSS way; `stripes()` goes all around the object, in its own space. Like `noise()`, it can be animated into another `stripes()` of the same axis, its numbers can be set from JavaScript, and it can be the map of `displace()`. The edges are sharp.",
+    examples: [
+      {
+        name: "a striped column",
+        code: "@scene { cylinder; } cylinder { translate: 0 0.8 0; radius: 0.4; height: 1.6; color: stripes(3, #ff5a36, #f4f1ea); }",
+      },
+      {
+        name: "bands that scroll",
+        text: "`at` animated: the bands move up the capsule.",
+        code: "@scene { capsule; } capsule { translate: 0 0.8 0; radius: 0.4; height: 1.6; color: stripes(4, #3a7bff, #e8e6e1); animation: rise 2s linear infinite; } @keyframes rise { to { color: stripes(4 at 0 -0.25 0, #3a7bff, #e8e6e1); } }",
+      },
+    ],
+  },
+  {
     name: "displace()",
     anchor: "fn-displace",
     since: "0.0.4",
