@@ -167,6 +167,35 @@ export const SHAPES: Record<
       radius: known(div(height, 2)), // the tip of a cap
     };
   },
+  // A pyramid on a base of size x by size z, size y high (decision 154): sized like a cube
+  pyramid: (styles) => {
+    const size = liveSize3(styles["size"]);
+    return {
+      code: `sdPyramid(q, vec3(${size.map(g).join(", ")}))`,
+      radius: known(hypot(...size.map((n) => div(n, 2)))), // a corner of the base, or the apex
+    };
+  },
+  octahedron: (styles) => {
+    const radius = liveNumber(styles["radius"], "radius", 0.5);
+    return { code: `sdOctahedron(q, ${g(radius)})`, radius: known(radius) };
+  },
+  // A hollow cylinder (decision 154): its wall, thickness thick, inside its radius
+  tube: (styles) => {
+    const radius = liveNumber(styles["radius"], "radius", 0.5);
+    const height = liveNumber(styles["height"], "height", 1);
+    let thickness = liveNumber(styles["thickness"], "thickness", 0.1);
+    if (typeof thickness === "number" && typeof radius === "number" && thickness > radius) {
+      throw errorAt(
+        styles["thickness"],
+        `tube thickness must be at most its radius (${glslFloat(radius)}), like: thickness: ${glslFloat(radius / 5)};`,
+      );
+    }
+    if (isLive(thickness) || isLive(radius)) thickness = `min(${g(thickness)}, ${g(radius)})`; // set from JS: a full cylinder at worst
+    return {
+      code: `sdTube(q, ${g(div(height, 2))}, ${g(radius)}, ${g(thickness)})`,
+      radius: known(hypot(radius, div(height, 2))), // the rim of an end
+    };
+  },
   // A tube along an SVG path (decision 35)
   path: (styles, context) => {
     const d = readD(styles["d"]);

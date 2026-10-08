@@ -14,7 +14,10 @@ export type Shape =
   | "capsule"
   | "plane"
   | "prism"
-  | "lathe";
+  | "lathe"
+  | "pyramid"
+  | "octahedron"
+  | "tube";
 
 export type Example = {
   name?: string; // its heading in the docs, and its name in the menu of the playground
@@ -767,11 +770,11 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "size",
-    appliesTo: ["cube", "plane"],
-    syntax: "<number>{1,3} (cube) | <number>{1,2} (plane: width depth)",
-    initial: "1 (cube), 1 (plane)",
+    appliesTo: ["cube", "plane", "pyramid"],
+    syntax: "<number>{1,3} (cube, pyramid) | <number>{1,2} (plane: width depth)",
+    initial: "1 (cube), 1 (plane), 1 (pyramid)",
     description:
-      "Sets the size of a cube along the x, y and z axes: one value makes a cube, three make a box. On a plane, it sets the width and the depth: one value makes a square.",
+      "Sets the size of a cube along the x, y and z axes: one value makes a cube, three make a box. On a pyramid, the width and the depth of its base, and its height in the middle. On a plane, it sets the width and the depth: one value makes a square.",
     examples: [
       {
         name: "a box",
@@ -800,12 +803,12 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "radius",
-    appliesTo: ["sphere", "torus", "cylinder", "cone", "capsule"],
+    appliesTo: ["sphere", "torus", "cylinder", "cone", "capsule", "octahedron", "tube"],
     syntax: "<number> | <number> <number> (cone: bottom top)",
     initial:
-      "0.5 (sphere), 1 (torus), 0.5 (cylinder), 0.5 0 (cone), 0.25 (capsule)",
+      "0.5 (sphere), 1 (torus), 0.5 (cylinder), 0.5 0 (cone), 0.25 (capsule), 0.5 (octahedron), 0.5 (tube)",
     description:
-      "Sets the radius of a sphere, a cylinder or a capsule, or that of a torus ring, measured to the center of its tube.",
+      "Sets the radius of a sphere, a cylinder or a capsule, or that of a torus ring, measured to the center of its tube. On an octahedron, from its center to each tip; on a tube, its outer radius.",
     details: "A cone takes a bottom and a top radius, like `border-radius` takes several values: the top one is 0 by default, a point, and a positive one cuts the top.",
     examples: [
       {
@@ -821,10 +824,10 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "thickness",
-    appliesTo: ["torus"],
+    appliesTo: ["torus", "tube"],
     syntax: "<number>",
-    initial: "0.28",
-    description: "Sets the radius of the tube of a torus.",
+    initial: "0.28 (torus), 0.1 (tube)",
+    description: "Sets the radius of the tube of a torus, or the thickness of the wall of a tube, inside its radius.",
     examples: [
       {
         name: "a thick ring",
@@ -834,7 +837,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "height",
-    appliesTo: ["cylinder", "cone", "capsule"],
+    appliesTo: ["cylinder", "cone", "capsule", "tube"],
     syntax: "<number>",
     initial: "1",
     description:
@@ -2087,6 +2090,53 @@ export const SHAPE_DOCS: ShapeDef[] = [
       {
         name: "a capsule on the floor",
         code: "@scene { capsule; } capsule { translate: 0 0.5 0; }",
+      },
+    ],
+  },
+  {
+    name: "pyramid",
+    since: "0.0.6",
+    description:
+      "A pyramid on a square base, pointing up, centered on its origin: a base of 1 by 1 and a height of 1 by default. `size` sets the width and the depth of its base, and its height, like the box of a cube.",
+    examples: [
+      {
+        name: "a pyramid on the floor",
+        code: "@scene { pyramid; } pyramid { translate: 0 0.5 0; rotate-y: 30deg; color: #e8c06a; }",
+      },
+      {
+        name: "a tall pyramid",
+        text: "`size: 1 2 1`: the same base, twice as high.",
+        code: "@scene { pyramid; } pyramid { translate: 0 1 0; size: 1 2 1; rotate-y: 20deg; }",
+      },
+    ],
+  },
+  {
+    name: "octahedron",
+    since: "0.0.6",
+    description:
+      "Eight triangles, two pyramids joined by their bases, like a die with eight faces: a `radius` of 0.5 by default, from its center to each tip.",
+    examples: [
+      {
+        name: "a turning crystal",
+        code: "@scene { octahedron; } octahedron { translate: 0 1 0; radius: 0.7; material: glass(#bfe8ff, 1.5); animation: turn 8s linear infinite; } @keyframes turn { to { rotate-y: 360deg; } }",
+      },
+    ],
+  },
+  {
+    name: "tube",
+    since: "0.0.6",
+    description:
+      "A hollow cylinder, a pipe, standing on the y axis and centered on its origin: an outer `radius` of 0.5, a `height` of 1 and a wall 0.1 `thickness` thick by default.",
+    details: "Not a `path`: a `path` draws a tube along any line, while `tube` is a straight pipe, open at both ends, whose wall has a thickness. The wall goes inside the radius, so the tube keeps its outer size when the wall gets thicker.",
+    examples: [
+      {
+        name: "a pipe",
+        code: "@scene { tube; } tube { translate: 0 0.5 0; rotate-x: 70deg; material: copper; }",
+      },
+      {
+        name: "a ring, from a short tube",
+        text: "`height: 0.2` and a thick wall make a flat ring.",
+        code: "@scene { tube; } tube { translate: 0 0.6 0; rotate-x: 80deg; radius: 0.6; height: 0.2; thickness: 0.25; color: #ff5a36; }",
       },
     ],
   },

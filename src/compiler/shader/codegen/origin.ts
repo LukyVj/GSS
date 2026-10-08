@@ -22,8 +22,10 @@ export function objectBox(instance: StyledInstance): Num[] {
   const styles = instance.styles;
   switch (instance.tag) {
     case "cube":
+    case "pyramid":
       return liveSize3(styles["size"]);
-    case "sphere": {
+    case "sphere":
+    case "octahedron": {
       const d = mul(2, liveNumber(styles["radius"], "radius", 0.5));
       return [d, d, d];
     }
@@ -35,6 +37,7 @@ export function objectBox(instance: StyledInstance): Num[] {
       return [width, mul(2, t), width];
     }
     case "cylinder":
+    case "tube":
     case "capsule": {
       const d = mul(2, liveNumber(styles["radius"], "radius", instance.tag === "capsule" ? 0.25 : 0.5));
       return [d, liveNumber(styles["height"], "height", 1), d];

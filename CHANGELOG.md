@@ -8,6 +8,7 @@ The 0.0.1 history was reconstructed from GitHub.
 
 ### Added
 
+- Three shapes: `pyramid`, on a square base and sized by `size` like a cube; `octahedron`, eight triangles, sized by `radius`; and `tube`, a hollow cylinder, with an outer `radius`, a `height` and the `thickness` of its wall.
 - `material: emissive()`: a surface that gives its own light, a lamp, a screen or a neon, from a strength of 0 to 4. With `bloom()` in the scene's `filter`, it glows.
 - `material: copper`, `silver`, `brass` and `aluminum`: four more metals, ready to use like `gold` and `chrome`.
 - `@paint` and `texture: paint(name)`: a texture drawn by a fragment shader, the way CSS `paint()` draws an image from code. The block of `@paint rings { … }` is GLSL, written as it is for the web: `out vec4 color;` or `gl_FragColor`, with `time`, `resolution` and `mouse` filled by GSS (`u_time`, `u_resolution`, `u_mouse` too). It is drawn into a 512 × 512 texture, again at every frame when it reads `time`, once otherwise, and the object shows it like an image. An error in its GLSL names the `@paint` and its line. A scene with `paint()` is drawn with WebGL2. The playground, the docs and the VS Code extension color the block as GLSL, and the formatter keeps it as written.
