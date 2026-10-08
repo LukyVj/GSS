@@ -41,6 +41,10 @@ New features go to the branch of the next release, not to `main`: `release/0.0.6
 - When the release is published, its branch is merged into `main` and tagged (see Publishing),
   and the branch of the next release starts from there.
 
+The release branch is deployed to staging.gss-lang.dev, behind a password: `middleware.js`
+asks for the `STAGING_PASSWORD` environment variable of the Vercel project (any user name),
+and stays closed while it is not set. Other hosts are not affected.
+
 ## Decisions
 
 The design decisions, and why they were made, are recorded in [`DECISIONS.md`](DECISIONS.md).
