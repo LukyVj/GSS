@@ -51,6 +51,8 @@ import { DIFFUSE, isLight, lightingCode, splitAmbient } from "./lights";
 import { readShadows } from "./shadows";
 import { ISOLINES, ISOLINES_CALL, withObjectsAlone } from "./view";
 import type { View } from "../../features/view";
+import { readShapeRendering } from "../../features/shape-rendering";
+import { precisionMarch } from "./shape-rendering";
 
 export { activeSlots, hoverSlots, sceneTriggers, type Trigger } from "./animation";
 export { shapeNames, shapeRadius } from "./shapes";
@@ -114,6 +116,7 @@ export function generateShader(
     floorStyle[0].value === "none"
   );
   const distanceView = view === "distance";
+  const geometricPrecision = readShapeRendering(sceneStyles) === "geometricPrecision";
   const nearest =
     hasFloor && !distanceView && instances.every(plainUnion) ? "min(res.x, p.y)" : "res.x";
 
@@ -281,8 +284,12 @@ export function generateShader(
   // A blend set from JS: how far it reaches is not known, nor the sphere of the scene
   const known = spheres.every((s): s is Sphere => s !== null) && spheres.length > 0 && !blends.some(isLive);
   const scene = known ? enclosing(spheres as Sphere[]) : null;
+  const sceneRadius = scene ? scene.radius + maxBlend + 0.01 : 0;
   const sceneSphereCode = scene
-    ? sceneMiss(scene.center, scene.radius + maxBlend + 0.01, hasFloor)
+    ? sceneMiss(scene.center, sceneRadius, hasFloor)
+    : "";
+  const precisionSceneSphereCode = scene
+    ? sceneMiss(scene.center, sceneRadius, hasFloor, true)
     : "";
   // The sun, the ambient light and the lights of @scene; null for the white sun of always
   // shadows (decision 115): through the holes of mask-image too
@@ -333,15 +340,34 @@ export function generateShader(
   const lit = lights
     ? TEMPLATE.replace(DIFFUSE, lights.diffuse).replace("const vec3 LIGHT_DIR = /*@LIGHT*/;", lights.definitions)
     : TEMPLATE;
-  // opacity (decision 116): the surface goes into a function, and main() draws each surface
-  // along the ray with it; the filters of an object go on its own color
+  // opacity (decision 116) and geometricPrecision put surface shading in a function:
+  // opacity calls it for each layer; a grazing silhouette calls it once for its coverage.
+  const surfaceInFunction = transparent.length > 0 || geometricPrecision;
   const layered =
     transparent.length > 0
       ? lit.replace(SURFACE, LAYERS).replace("void main() {", `${surfaceFunction(SURFACE)}void main() {`)
-      : lit;
-  const template = distanceView ? withObjectsAlone(layered) : layered;
+      : geometricPrecision
+        ? lit
+            .replace(SURFACE, "  vec3 col = shadeSurface(ro, rd, t, id);\n")
+            .replace("void main() {", `${surfaceFunction(SURFACE)}void main() {`)
+        : lit;
+  const rendered = geometricPrecision
+    ? layered.replace(
+        "\nvec3 calcNormal(vec3 p) {",
+        `\n${precisionMarch(precisionSceneSphereCode, masked.length > 0, transparent.length > 0)}\n\nvec3 calcNormal(vec3 p) {`,
+      )
+    : layered;
+  const template = distanceView ? withObjectsAlone(rendered) : rendered;
   const objectLine = "  if (t < MAX_DIST) col = objectFilter(id, col);\n";
-  const finalLines = transparent.length > 0 ? filterLines.replace(objectLine, "") : filterLines;
+  const finalLines = surfaceInFunction ? filterLines.replace(objectLine, "") : filterLines;
+  const edgeBlend = geometricPrecision
+    ? `  if (edgeCoverage > 0.0 && edgeT < t) {
+    vec3 edgePoint = ro + rd * edgeT;
+    vec3 edgeColor = shadeSurface(ro, rd, edgeT, edgeId);
+    col = mix(col, edgeColor, ${transparent.length > 0 ? "edgeCoverage * surfaceAlpha(edgeId, edgePoint)" : "edgeCoverage"});
+  }
+`
+    : "";
   const shader = (
     template.replace(
       "/*@EASINGS*/",
@@ -376,6 +402,12 @@ export function generateShader(
             : ""),
       )
       .replace("/*@MAP*/", map)
+      .replace(
+        "  vec2 hit = march(ro, rd);\n  float t = hit.x;\n  float id = hit.y;/*@PICK_OUTPUT*/",
+        geometricPrecision
+          ? "  PrecisionHit hit = marchPrecision(ro, rd);\n  float t = hit.t;\n  float id = hit.id;/*@PICK_OUTPUT*/\n  float edgeT = hit.edgeT;\n  float edgeId = hit.edgeId;\n  float edgeCoverage = hit.coverage;"
+          : "  vec2 hit = march(ro, rd);\n  float t = hit.x;\n  float id = hit.y;/*@PICK_OUTPUT*/",
+      )
       .replace("/*@TEXTURE_UNIFORMS*/", textures.uniforms)
       .replace(
         "/*@HOVER_UNIFORM*/",
@@ -499,8 +531,8 @@ uniform vec2 uPick;`
       )
       // Through the holes of mask-image (decision 113)
       .replace(MARCH_LOOP, masked.length > 0 ? MASKED_MARCH_LOOP : transparent.length > 0 ? SKIN_MARCH_LOOP : MARCH_LOOP)
-      .replace("/*@SURFACE_FILTER*/", transparent.length > 0 && filterLines.includes(objectLine) ? objectLine : "")
-      .replace("  outColor = vec4(col, 1.0);\n}", `${finalLines}${distanceView ? ISOLINES_CALL : ""}  outColor = vec4(col, ${alpha});\n}`)
+      .replace("/*@SURFACE_FILTER*/", surfaceInFunction && filterLines.includes(objectLine) ? objectLine : "")
+      .replace("  outColor = vec4(col, 1.0);\n}", `${edgeBlend}${finalLines}${distanceView ? ISOLINES_CALL : ""}  outColor = vec4(col, ${alpha});\n}`)
       // Reflections see the filters of the objects they meet
       .replace(
         /return (diffuse\(n, .*\));  \/\/ its color, lit/,

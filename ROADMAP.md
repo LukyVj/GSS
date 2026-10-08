@@ -261,7 +261,8 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 - [ ] Lost ray: when `march` runs out of its 100 steps without hitting anything or passing `MAX_DIST`, `main()` treats it as a hit (fixed for rays that pass by the sphere of the scene, decision 76; still there in scenes without one)
 - [x] Fade the floor into the background: the floor stops sharply at `MAX_DIST` ✅ a fog that ends before it hides the edge (decision 108)
 - [x] Soft shadows ✅ decision 115: `scene { shadows: none | hard | soft }`, off by default, from the sun and every light; still to come: a setting per light, a softness, shadows in reflections
-- [ ] Optional antialiasing (4× the cost)
+- [x] **Silhouette antialiasing** ✅ decision 149: `scene { shape-rendering: geometricPrecision; }` blends coverage only after the existing primary ray passes a subpixel near miss without hitting it, with no supersampling, extra ray, pass or backing-store memory
+- [ ] Make `geometricPrecision` free: it costs about 13-15 % of GPU time (macropad, DPR 2), up to 24 % on an M1. Find whether the cost is the tracking in the march loop or the second shading of an edge pixel; then shade once per pixel, or smooth from screen derivatives (`dFdx`/`dFdy` of `t` and `id`) at the end of `main()`
 - [ ] Measure the compile time of large scenes; if needed, loop in `calcNormal` so `map()` is copied only once
 
 ### Textures (after decision 59)
