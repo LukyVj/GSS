@@ -245,6 +245,26 @@
       .toc-group[data-current] .toc-group-count {
         color: var(--gss-signal);
       }
+      /* What the newest version brought: a signal dot on its group, the dot of the mark, so a
+         folded group says it holds something new; "new" after the page itself */
+      .toc-group-new {
+        flex: none;
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: var(--gss-signal);
+      }
+      .toc-new {
+        display: inline-block;
+        margin-left: 6px;
+        padding: 0 4px;
+        border: 1px solid rgb(255 90 54 / 0.45);
+        border-radius: var(--gss-radius-control);
+        font: 500 10px/14px var(--gss-font-code);
+        letter-spacing: 0.02em;
+        color: var(--gss-signal);
+        vertical-align: 1px;
+      }
       .toc-chevron {
         flex: none;
         fill: none;

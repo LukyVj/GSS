@@ -12,6 +12,9 @@ import { groupEntries, qualified } from "./navigation";
 import { ALGOLIA, SUGGESTIONS_INDEX } from "./search";
 import { CONCEPTS } from "./concepts";
 import { VERSION } from "../version";
+import { compareVersions, newestVersion } from "./news";
+
+export { compareVersions };
 import { placePreview } from "./search-preview";
 import { mountColumnResizers } from "./search-columns";
 import { trySearchExample } from "./search-try";
@@ -51,24 +54,12 @@ export function docEntries(): DocEntry[] {
   return docSections().flatMap((section) => section.entries);
 }
 
-// "0.0.10" comes after "0.0.9"
-export function compareVersions(a: string, b: string): number {
-  const [x, y] = [a, b].map((version) => version.split(".").map(Number));
-  for (let i = 0; i < Math.max(x.length, y.length); i++) {
-    const difference = (x[i] ?? 0) - (y[i] ?? 0);
-    if (difference) return difference;
-  }
-  return 0;
-}
 
 // The pages of the newest version that added pages. A page of a version not published yet
 // (newer than the package) waits: the docs describe it, "New in" names it once it is out.
 export function newestPages(entries: DocEntry[], published = VERSION): News | null {
-  const versions = entries.flatMap((entry) =>
-    entry.since && compareVersions(entry.since, published) <= 0 ? [entry.since] : [],
-  );
-  if (!versions.length) return null;
-  const version = versions.reduce((newest, other) => (compareVersions(other, newest) > 0 ? other : newest));
+  const version = newestVersion(entries.map((entry) => entry.since), published);
+  if (!version) return null;
   const pages = entries
     .filter((entry) => entry.since === version)
     .map(({ anchor, label, group }) => ({ anchor, label, group }));
