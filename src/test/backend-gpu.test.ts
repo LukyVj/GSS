@@ -809,38 +809,7 @@ it("public asynchronous mounting and custom elements select either backend", asy
   expect(result).toEqual({ mounted: "webgpu", first: "webgpu", second: "webgl" });
 }, 60000);
 
-it("the playground renders with WebGPU and displays WGSL", async () => {
-  await page.setViewportSize({ width: 1040, height: 700 });
-  await page.goto(`${server.resolvedUrls!.local[0]}playground.html?backend=webgpu`, { waitUntil: "domcontentloaded" });
-  await page.waitForFunction(() => document.querySelector("#stats")?.textContent?.includes("ok"));
-  await page.locator(".software-gate button").click(); // SwiftShader: drawn on a click (decision 137)
-  expect(await page.locator("#stats").innerText()).toContain("wgsl");
-  await page.locator(".perf-toggle").click();
-  await page.waitForFunction(() => {
-    const panel = document.querySelector(".perf-panel");
-    const rows = panel?.querySelectorAll("dd");
-    return rows?.length === 6 && rows[0].textContent !== "—" && rows[3].textContent?.includes("ms") && rows[2].textContent !== "waiting…";
-  });
-  expect(await page.locator(".perf-panel h2").textContent()).toContain("WebGPU");
-  expect(await page.locator(".perf-panel").innerText()).toContain("p95");
-  const timestamps = await page.evaluate(async () => (await navigator.gpu.requestAdapter())?.features.has("timestamp-query"));
-  if (timestamps) expect(await page.locator(".perf-panel dd").nth(2).innerText()).toContain("ms");
-  await page.locator('[data-tab="wgsl"]').click();
-  expect(await page.locator('[data-tab="wgsl"]').getAttribute("aria-selected")).toBe("true");
-  expect(await page.locator('[data-tab="gss"]').getAttribute("aria-selected")).toBe("false");
-  // CodeMirror renders only the visible lines; the fragment entry is below them.
-  expect(await page.locator("#glsl").innerText()).toContain("struct GssUniforms");
-  await page.screenshot({ path: "/private/tmp/gss-webgpu-playground.png" });
-  await page.locator("#backend").selectOption("webgl");
-  await page.waitForURL("**/playground.html?backend=webgl*");
-  await page.waitForFunction(() => document.querySelector("#stats")?.textContent?.includes("ok"));
-  await page.locator(".software-gate button").click();
-  expect(await page.locator("#stats").innerText()).toContain("glsl");
-  expect(await page.locator(".perf-panel h2").textContent()).toContain("WebGL2");
-}, 60000);
-
-
-// shape-rendering: geometricPrecision (#2): a sample contributes only after the next
+// shape-rendering: geometricPrecision (decision 149): a sample contributes only after the next
 // march step proves the primary ray passed it without hitting.
 describe("shape-rendering: geometricPrecision", () => {
   const single = (value: "auto" | "geometricPrecision") =>
@@ -895,6 +864,37 @@ describe("shape-rendering: geometricPrecision", () => {
     }
   }, 60000);
 });
+
+it("the playground renders with WebGPU and displays WGSL", async () => {
+  await page.setViewportSize({ width: 1040, height: 700 });
+  await page.goto(`${server.resolvedUrls!.local[0]}playground.html?backend=webgpu`, { waitUntil: "domcontentloaded" });
+  await page.waitForFunction(() => document.querySelector("#stats")?.textContent?.includes("ok"));
+  await page.locator(".software-gate button").click(); // SwiftShader: drawn on a click (decision 137)
+  expect(await page.locator("#stats").innerText()).toContain("wgsl");
+  await page.locator(".perf-toggle").click();
+  await page.waitForFunction(() => {
+    const panel = document.querySelector(".perf-panel");
+    const rows = panel?.querySelectorAll("dd");
+    return rows?.length === 6 && rows[0].textContent !== "—" && rows[3].textContent?.includes("ms") && rows[2].textContent !== "waiting…";
+  });
+  expect(await page.locator(".perf-panel h2").textContent()).toContain("WebGPU");
+  expect(await page.locator(".perf-panel").innerText()).toContain("p95");
+  const timestamps = await page.evaluate(async () => (await navigator.gpu.requestAdapter())?.features.has("timestamp-query"));
+  if (timestamps) expect(await page.locator(".perf-panel dd").nth(2).innerText()).toContain("ms");
+  await page.locator('[data-tab="wgsl"]').click();
+  expect(await page.locator('[data-tab="wgsl"]').getAttribute("aria-selected")).toBe("true");
+  expect(await page.locator('[data-tab="gss"]').getAttribute("aria-selected")).toBe("false");
+  // CodeMirror renders only the visible lines; the fragment entry is below them.
+  expect(await page.locator("#glsl").innerText()).toContain("struct GssUniforms");
+  await page.screenshot({ path: "/private/tmp/gss-webgpu-playground.png" });
+  await page.locator("#backend").selectOption("webgl");
+  await page.waitForURL("**/playground.html?backend=webgl*");
+  await page.waitForFunction(() => document.querySelector("#stats")?.textContent?.includes("ok"));
+  await page.locator(".software-gate button").click();
+  expect(await page.locator("#stats").innerText()).toContain("glsl");
+  expect(await page.locator(".perf-panel h2").textContent()).toContain("WebGL2");
+}, 60000);
+
 
 // view: distance (decision 131): the isolines of the distance to the objects, over the scene
 describe("view: distance draws the isolines over the scene, on both backends", () => {
