@@ -263,7 +263,8 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 - [x] Soft shadows ✅ decision 115: `scene { shadows: none | hard | soft }`, off by default, from the sun and every light; still to come: a setting per light, a softness, shadows in reflections
 - [x] **Silhouette antialiasing** ✅ decision 149: `scene { shape-rendering: geometricPrecision; }` blends coverage only after the existing primary ray passes a subpixel near miss without hitting it, with no supersampling, extra ray, pass or backing-store memory
 - [ ] Make `geometricPrecision` free: it costs about 13-15 % of GPU time (macropad, DPR 2), up to 24 % on an M1. Find whether the cost is the tracking in the march loop or the second shading of an edge pixel; then shade once per pixel, or smooth from screen derivatives (`dFdx`/`dFdy` of `t` and `id`) at the end of `main()`
-- [ ] Measure the compile time of large scenes; if needed, loop in `calcNormal` so `map()` is copied only once
+- [x] A WebGL2 scene links without blocking the page ✅ decision 150: `KHR_parallel_shader_compile`, the program asked once a frame; the scene before it, or the poster of `<gss-scene>`, stays until then
+- [ ] Measure the compile time of large scenes, on Windows above all (Direct3D); if needed, loop in `calcNormal` so `map()` is copied only once
 
 ### Textures (after decision 59)
 

@@ -40,7 +40,8 @@ export function createRenderer(
     ...view,
     load(source) {
       const compiled = compileScene(source, { view: chosen }); // GSS errors
-      view.show(compiled); // GLSL errors
+      // GLSL errors at once; a link error comes later, once the driver is done (decision 150)
+      view.show(compiled).catch((error) => console.error(error));
       return compiled;
     },
     setView(next) {

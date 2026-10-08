@@ -23,7 +23,10 @@ import { createDemand, movesWithTime } from "./demand";
 export type View = {
   // A compiled scene → on screen. Throws on a GLSL error, before touching the
   // current scene: if the new shader is invalid, the old scene stays visible.
-  show(compiled: CompiledScene): void;
+  // The program links without blocking the page where the browser can (decision 150):
+  // the promise settles once the scene is on screen, rejected if the driver cannot link it.
+  // Until then, the scene before it stays.
+  show(compiled: CompiledScene): Promise<void>;
   // Images drawn since the previous call, and over how many milliseconds (for "60 fps")
   sampleFrames(): { frames: number; ms: number };
   // Stops drawing (off screen) and starts again; the clock stops too. A scene too heavy for
@@ -105,6 +108,9 @@ export function createView(
   const probe = options.profile?.(gl); // undefined: no profiler, nothing happens
   // The images, kept for every scene this renderer will load
   const store = createTextureStore(gl);
+  // Links a program without blocking the page (decision 150). On Windows, the driver turns a
+  // large shader into Direct3D code for seconds: asked at once, LINK_STATUS waits for it.
+  const parallel = gl.getExtension("KHR_parallel_shader_compile");
 
   // :hover: the picking pass reads the id under the mouse without stopping the CPU
   // (picker.ts). The answer comes one or two frames later; until then, the last one holds.
@@ -138,8 +144,9 @@ export function createView(
     return shader;
   }
 
-  // A program: the giant triangle and a fragment shader
-  function link(fragSource: string): WebGLProgram {
+  // A program: the giant triangle and a fragment shader. A GLSL error throws at once; the
+  // link goes on in the driver, until linked() asks for its result
+  function startLink(fragSource: string): WebGLProgram {
     const vertex = compileShader(gl!.VERTEX_SHADER, VERTEX_SOURCE);
     const fragment = compileShader(gl!.FRAGMENT_SHADER, fragSource);
     const program = gl!.createProgram()!;
@@ -148,6 +155,11 @@ export function createView(
     gl!.linkProgram(program);
     gl!.deleteShader(vertex); // the program keeps what it needs
     gl!.deleteShader(fragment);
+    return program;
+  }
+
+  // Waits for the link if it is not done: throws, and frees the program, when it failed
+  function linked(program: WebGLProgram): WebGLProgram {
     if (!gl!.getProgramParameter(program, gl!.LINK_STATUS)) {
       const log = gl!.getProgramInfoLog(program);
       gl!.deleteProgram(program);
@@ -156,18 +168,19 @@ export function createView(
     return program;
   }
 
+  const link = (fragSource: string) => linked(startLink(fragSource));
+
   // filter: the passes after the scene, when it has some (decision 83)
   const post = createPost(gl, link);
 
   function createGpuScene(
-    fragSource: string,
+    program: WebGLProgram,
     files: string[],
     hover: number[][],
     active?: number[][],
     timelines?: Timeline[],
     moves = true,
   ): GpuScene {
-    const program = link(fragSource);
     return {
       program,
       moves,
@@ -425,17 +438,51 @@ export function createView(
   };
   document.addEventListener("visibilitychange", onVisible);
 
-  // One compiled scene (one version, with @media) on screen
-  function display(compiled: CompiledScene, resetCamera: boolean) {
+  // One compiled scene (one version, with @media) on screen, once its program is linked
+  let revision = 0; // the latest display(): a program still linking for an older one is dropped
+  let linking: WebGLProgram | null = null;
+  let destroyed = false;
+  function display(compiled: CompiledScene, resetCamera: boolean): Promise<void> {
     const start = performance.now();
+    const program = startLink(compiled.shader); // GLSL errors, at once
+    const ticket = ++revision;
+    if (linking) gl!.deleteProgram(linking);
+    linking = program;
+    if (!parallel) {
+      linking = null;
+      swap(compiled, resetCamera, program, start);
+      return Promise.resolve();
+    }
+    // Asked once a frame: the page goes on while the driver links (decision 150)
+    return new Promise((resolve, reject) => {
+      const wait = () => {
+        if (destroyed || ticket !== revision) return resolve(); // replaced: its program is freed
+        if (!gl!.getProgramParameter(program, parallel.COMPLETION_STATUS_KHR)) {
+          requestAnimationFrame(wait);
+          return;
+        }
+        linking = null;
+        try {
+          swap(compiled, resetCamera, program, start);
+          resolve();
+        } catch (error) {
+          reject(error);
+        }
+      };
+      wait();
+    });
+  }
+
+  // The linked program replaces the scene on screen
+  function swap(compiled: CompiledScene, resetCamera: boolean, program: WebGLProgram, start: number) {
     const next = createGpuScene(
-      compiled.shader,
+      linked(program), // link errors
       compiled.textures,
       compiled.hover,
       compiled.active,
       compiled.timelines,
       movesWithTime(compiled),
-    ); // GLSL errors
+    );
     try {
       post.set(compiled.passes); // GLSL errors of the passes
     } catch (error) {
@@ -462,19 +509,20 @@ export function createView(
     show(compiled) {
       // @media: the version for the screen now, then another one when it changes,
       // keeping the camera where the mouse left it
-      display(pickVariant(compiled, matchesNow), true); // GLSL errors
+      const linkedNow = display(pickVariant(compiled, matchesNow), true); // GLSL errors
       stopMedia();
       stopMedia = compiled.media
         ? watchMedia(compiled.media.queries, () => {
             const next = pickVariant(compiled, matchesNow);
             if (next === shown) return;
             try {
-              display(next, false);
+              display(next, false).catch((error) => console.error(error));
             } catch (error) {
               console.error(error);
             }
           })
         : () => {};
+      return linkedNow;
     },
     sampleFrames() {
       const now = performance.now();
@@ -513,7 +561,10 @@ export function createView(
       slider?.destroy();
       dprMenu?.destroy();
       playing = false;
+      destroyed = true;
       cancelAnimationFrame(frameId);
+      if (linking) gl.deleteProgram(linking);
+      linking = null;
       if (scene) gl.deleteProgram(scene.program);
       scene = null;
       post.destroy();
