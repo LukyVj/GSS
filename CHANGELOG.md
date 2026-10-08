@@ -8,7 +8,7 @@ The 0.0.1 history was reconstructed from GitHub.
 
 ### Added
 
-- `shape-rendering: geometricPrecision` on the scene smooths procedural silhouettes when the existing primary ray passes a subpixel near miss without hitting it. Exact hits still shade once. It is opt-in; `auto` keeps the previous rendering, and geometric precision adds no supersampling, second camera ray, post-processing pass or larger backing store.
+- `scene { shape-rendering: geometricPrecision; }` smooths the silhouettes of the objects: a pixel that the edge of an object only partly covers blends the object with what is behind it. It takes about 15 % more work from the graphics card for now, so it is off by default: `auto` draws the sharp edges of before, unchanged.
 - VS Code / Cursor extension: HTML snippets for both documented `<gss-scene>` forms, a scene loaded from a `.gss` file and an inline `<script type="text/gss">` scene.
 - GSS is open source on GitHub: [github.com/LukyVj/GSS](https://github.com/LukyVj/GSS). The site links to it from its top bars and footers, the docs at the top of Installation, and the package and the VS Code extension declare it, so npm and the extension registries link to the code and the issues.
 - Computers without a graphics card: the processor would draw a scene so slowly that the page could freeze, so the scene waits for a click. `<gss-scene>` shows its poster and a button, "Draw it anyway"; the site does the same on the home page, in the playground and in Try it, where the code still shows. `softwareRendering()`, from `gss-lang` and `gss-lang/runtime`, tells a page that uses `mount()`.

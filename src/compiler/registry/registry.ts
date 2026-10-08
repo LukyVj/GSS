@@ -1336,17 +1336,22 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "shape-rendering",
+    since: "0.0.6",
     appliesTo: "scene",
     syntax: "auto | geometricPrecision",
     initial: "auto",
     description:
-      "Controls the precision of object silhouettes without changing the pixel density of the render.",
+      "Smooths the silhouettes of the objects, without raising the pixel density of the render.",
     values: [
-      ["auto", "One ray per pixel, with the same sharp silhouette GSS has by default."],
-      ["geometricPrecision", "After the same ray passes a subpixel near miss without hitting it, blends that silhouette over the miss or a farther surface."],
+      ["auto", "The default: each pixel shows one surface, and silhouettes keep their steps."],
+      ["geometricPrecision", "A pixel that the edge of an object only partly covers blends the object with what is behind it: the silhouettes come out smooth."],
     ],
     details:
-      "This does not supersample, cast another camera ray, add a rendering pass or enlarge the backing store. A sample is kept only after the next march step proves the ray passed its local distance minimum without hitting it (or another surface became nearest); floor id 0 never contributes silhouette coverage. Exact-hit pixels shade exactly once.",
+      "Like `shape-rendering` in SVG, but on the scene only, with two values: `auto` keeps the sharp edges GSS has always drawn. The smoothing comes from the ray each pixel already casts, not from more rays or a bigger render. Only silhouettes are smoothed: the edges of a texture, of a shadow or of the floor keep their steps.",
+    note: {
+      title: "Heavier to draw, for now.",
+      text: "With `geometricPrecision`, the graphics card does about 15 % more work for the same scene, more on some heavy scenes. On a weak computer, the scene lowers its density sooner, and a scene already at the limit may stop and offer to draw it anyway. Keep `auto` on a heavy scene.",
+    },
     examples: [
       {
         name: "smooth silhouettes",
