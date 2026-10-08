@@ -11,6 +11,11 @@ import { readColor } from "./read";
 const MATERIAL_KEYWORDS: Record<string, string> = {
   gold: "metal(#d4af37, 0.2)",
   chrome: "metal(#ffffff, 0.05)",
+  // The metals of everyday objects (decision 152)
+  copper: "metal(#c8784a, 0.25)",
+  silver: "metal(#e3e4e6, 0.1)",
+  brass: "metal(#c9a24d, 0.2)",
+  aluminum: "metal(#c4c8cc, 0.35)",
   jelly: "jelly()",
   glass: "glass()",
   ice: "glass(#cfeaff, 1.31, frosted 0.25)",

@@ -163,7 +163,7 @@ export const PROPERTIES: PropertyDef[] = [
     name: "material",
     appliesTo: "object",
     syntax:
-      "matte([<color>]) | metal([<color>,] [<roughness>]) | jelly([<color>,] [<density>]) | gold | chrome | jelly | glass([<color>,] [<refraction-index>] [, [frosted | wavy | hammered | blurred] <frost>]) | glass | ice",
+      "matte([<color>]) | metal([<color>,] [<roughness>]) | jelly([<color>,] [<density>]) | gold | chrome | copper | silver | brass | aluminum | jelly | glass([<color>,] [<refraction-index>] [, [frosted | wavy | hammered | blurred] <frost>]) | glass | ice",
     initial: "matte()",
     description:
       "Sets how the surface of the object reacts to light. Without a color, a material uses the `color` property, like `currentColor` in CSS, so the color stays animatable. The color can also be a gradient: `metal(linear-gradient(#ffd27a, #ff5a36), 0.2)`.",
@@ -174,6 +174,7 @@ export const PROPERTIES: PropertyDef[] = [
       ["glass()", "See-through, bent by its refraction index, from 1 to 3 (1.5 by default: water is 1.33, diamond 2.4), then a frost from 0 to 1."],
       ["frosted, wavy, hammered, blurred", "The style of the frost: white patches (the default), big waves, small bumps, a soft blur."],
       ["gold, chrome", "`metal(#d4af37, 0.2)` and `metal(#ffffff, 0.05)`."],
+      ["copper, silver, brass, aluminum", "`metal(#c8784a, 0.25)`, `metal(#e3e4e6, 0.1)`, `metal(#c9a24d, 0.2)` and `metal(#c4c8cc, 0.35)`: the metals of everyday objects."],
       ["jelly, glass, ice", "`jelly()`, `glass()`, and `glass(#cfeaff, 1.31, frosted 0.25)`."],
     ],
     examples: [
@@ -186,6 +187,11 @@ export const PROPERTIES: PropertyDef[] = [
         name: "metal()",
         text: "`gold`, `chrome`, and a rougher `metal(0.7)` that takes the `color`.",
         code: "@scene { sphere#a; sphere#b; sphere#c; } #a { translate: 1.3 0.6 0; radius: 0.6; material: gold; } #b { translate: 0 0.6 0; radius: 0.6; material: chrome; } #c { translate: -1.3 0.6 0; radius: 0.6; color: #d4af37; material: metal(0.7); }",
+      },
+      {
+        name: "everyday metals",
+        text: "`copper`, `silver`, `brass` and `aluminum`, from left to right.",
+        code: "@scene { sphere#a; sphere#b; sphere#c; sphere#d; } sphere { radius: 0.45; } #a { translate: -1.5 0.5 0; material: copper; } #b { translate: -0.5 0.5 0; material: silver; } #c { translate: 0.5 0.5 0; material: brass; } #d { translate: 1.5 0.5 0; material: aluminum; }",
       },
       {
         name: "jelly()",

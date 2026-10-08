@@ -84,11 +84,25 @@ describe("material keywords", () => {
     );
   });
 
+  // The metals of everyday objects (decision 152): preset metal() colors and roughnesses
+  it.each([
+    ["copper", "metal(#c8784a, 0.25)"],
+    ["silver", "metal(#e3e4e6, 0.1)"],
+    ["brass", "metal(#c9a24d, 0.2)"],
+    ["aluminum", "metal(#c4c8cc, 0.35)"],
+  ])("%s is %s", (keyword, metal) => {
+    expect(materialOf(`sphere { material: ${keyword}; }`)).toBe(materialOf(`sphere { material: ${metal}; }`));
+  });
+
+  it("keeps silver a color where a color is expected", () => {
+    expect(materialOf("sphere { color: silver; }")).toBe(materialOf("sphere { color: #c0c0c0; }"));
+  });
+
   it("lists every material for an unknown keyword", () => {
     expect(() =>
       compileGSS("@scene { sphere; } sphere { material: wood; }"),
     ).toThrow(
-      'Unknown material "wood". Available: matte(), metal(), jelly(), glass(), gold, chrome, jelly, glass, ice',
+      'Unknown material "wood". Available: matte(), metal(), jelly(), glass(), gold, chrome, copper, silver, brass, aluminum, jelly, glass, ice',
     );
   });
 
