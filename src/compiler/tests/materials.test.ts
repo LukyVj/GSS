@@ -277,7 +277,7 @@ describe("material: glass() frost styles", () => {
   });
 });
 
-// emissive() (decision 153): a surface that gives its own light, on top of the light it gets
+// emissive() (decision 153): a surface that gives its own light: never darker than its color times its strength
 describe("material: emissive()", () => {
   it("writes the color and the strength", () => {
     expect(materialOf("sphere { material: emissive(#ff0000, 2); }")).toBe(
@@ -300,7 +300,7 @@ describe("material: emissive()", () => {
   it("adds its glow to the light in main(), and only when the scene uses it", () => {
     const glowing = compileGSS("@scene { sphere; } sphere { material: emissive(); }");
     expect(glowing).toContain("const int EMISSIVE = 4;");
-    expect(glowing).toContain("if (m.kind == EMISSIVE) col += m.color * m.density;");
+    expect(glowing).toContain("if (m.kind == EMISSIVE) col = max(col, m.color * m.density);");
     expect(compileGSS("@scene { sphere; }")).not.toContain("EMISSIVE");
   });
 

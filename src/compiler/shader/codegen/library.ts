@@ -177,5 +177,5 @@ export const SHADE_CALLS: Record<string, string> = {
   metal: "    if (m.kind == METAL) col = shadeMetal(p, n, rd, m);",
   jelly: "    if (m.kind == JELLY) col = shadeJelly(p, n, rd, m);",
   glass: "    if (m.kind == GLASS) col = shadeGlass(p, n, rd, m);",
-  emissive: "    if (m.kind == EMISSIVE) col += m.color * m.density;",
+  emissive: "    if (m.kind == EMISSIVE) col = max(col, m.color * m.density);",
 };

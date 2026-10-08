@@ -172,7 +172,7 @@ export const PROPERTIES: PropertyDef[] = [
       ["metal()", "Reflects the scene. Its roughness goes from 0, a mirror, to 1, brushed metal (0.2 by default)."],
       ["jelly()", "Lets the light through its thin parts, like a gummy candy. Its density goes from 0, clear, to 1, deep (0.5 by default)."],
       ["glass()", "See-through, bent by its refraction index, from 1 to 3 (1.5 by default: water is 1.33, diamond 2.4), then a frost from 0 to 1."],
-      ["emissive()", "Gives its own light, on top of the light it gets: a lamp, a screen, a neon. Its strength goes from 0, none, to 4 (1 by default). It does not light the objects around it; with `bloom()` in the `filter` of the scene, it glows."],
+      ["emissive()", "Gives its own light: a lamp, a screen, a neon. It is never darker than its color times its strength, from 0, none, to 4 (1 by default: its full color, even in the shade). It does not light the objects around it; with `bloom()` in the `filter` of the scene, it glows."],
       ["frosted, wavy, hammered, blurred", "The style of the frost: white patches (the default), big waves, small bumps, a soft blur."],
       ["gold, chrome", "`metal(#d4af37, 0.2)` and `metal(#ffffff, 0.05)`."],
       ["copper, silver, brass, aluminum", "`metal(#c8784a, 0.25)`, `metal(#e3e4e6, 0.1)`, `metal(#c9a24d, 0.2)` and `metal(#c4c8cc, 0.35)`: the metals of everyday objects."],
