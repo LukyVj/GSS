@@ -55,7 +55,8 @@ export function mount(
   options: MountOptions = {},
 ): GssScene {
   const view = createView(canvas, options);
-  try { view.show(compiled); }
+  // GLSL errors at once; a link error comes later, once the driver is done (decision 150)
+  try { view.show(compiled).catch((error) => console.error(error)); }
   catch (error) { view.destroy(); throw error; }
   return { ...observe(canvas, view), ...variables(view), update: next => view.show(next) };
 }
