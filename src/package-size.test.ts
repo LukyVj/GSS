@@ -7,7 +7,7 @@ import { PROPERTIES } from "./compiler/registry/registry";
 // What a page downloads from the npm package, gzipped (decision 147). Each budget leaves
 // room to grow a little: going past one is a choice to make, not a surprise.
 const BUDGETS = {
-  runtime: 14_000, // gss-lang/runtime: a scene compiled at build time
+  runtime: 14_500, // gss-lang/runtime: a scene compiled at build time (14_000 before cursor and animation-range, decisions 161 and 162)
   mount: 97_000, // gss-lang: compiles GSS text in the page
   embed: 99_000, // gss-lang/embed: <gss-scene>, from a CDN
 };

@@ -25,6 +25,8 @@ import {
 import { scenePaints, sceneTextures } from "./features/textures";
 import { readDpr, type Dpr } from "./features/dpr";
 import { readView, type View } from "./features/view";
+import { isDisplayed } from "./features/visibility";
+import { sceneCursors, type ObjectCursor } from "./features/cursor";
 import { readTransition, type Transition } from "./features/transition";
 import { buildPasses, FILTER_FUNCTIONS, objectFilters, readSceneSteps, type Pass } from "./features/filter";
 import { generateWGSL } from "./shader/wgsl";
@@ -76,6 +78,9 @@ export type CompiledScene = {
   // is the scene when the queries whose bit is set in mask match (bit 0: queries[0]).
   // The fields above are variants[0], the scene when none matches.
   media?: { queries: string[]; variants: CompiledScene[] };
+  // cursor (decision 161): the mouse pointer over each object that sets one, hovered and
+  // pressed. Absent when every object keeps auto.
+  cursors?: ObjectCursor[];
   // for each slot of uHover[] (hover, then active), how it glides to 1 (enter) and back to 0 (leave)
   transitions: { enter: Transition | null; leave: Transition | null }[];
   // The states that start an animation (decision 141): the slot, its index in
@@ -222,7 +227,8 @@ function compileStylesheet(
   const styled = resolved.flatMap((instance) => {
     // An object with an error is reported, and the others are still computed
     const computed = errors.run(() => computeInstance(instance));
-    return computed ? [computed] : [];
+    // display: none leaves it out of the scene (decision 160)
+    return computed && errors.run(() => isDisplayed(computed)) ? [computed] : [];
   });
   function computeInstance(instance: (typeof resolved)[number]) {
     // A registered variable has one value for the whole scene (decision 105)
@@ -330,6 +336,7 @@ function compileStylesheet(
     })),
   ]);
   const active = activeSlots(styled).map((instance) => instance.activeTriggers);
+  const cursors = errors.run(() => sceneCursors(drawn));
   const triggers = errors.run(() => sceneTriggers(styled));
   const timelines = errors.run(() =>
     sceneTimelines([computedScene, ...styled.flatMap((instance) => [...instance.groupStyles, instance.styles])]),
@@ -349,11 +356,12 @@ function compileStylesheet(
     shader: shader!,
     camera: camera!,
     dpr: dpr!,
-    objects: instances.filter((instance) => instance.tag !== "light").length,
+    objects: drawn.length,
     textures: textures!,
     ...(paints!.length > 0 ? { paints } : {}),
     hover: hoverSlots(styled).map((instance) => instance.hoverTriggers),
     ...(active.length > 0 ? { active } : {}),
+    ...(cursors!.length > 0 ? { cursors } : {}),
     ...(timelines!.length > 0 ? { timelines } : {}),
     transitions: transitions!,
     ...(triggers!.length > 0 ? { triggers } : {}),

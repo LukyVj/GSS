@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { pickPixel, decodeId, hoverValues, pointerValues, createPress } from "./hover";
+import { pickPixel, decodeId, hoverValues, pointerValues, createPress, cursorAt } from "./hover";
 
 // Step 4b of :hover, the part without the GPU: where the mouse is, which object
 // the picking pass found, and what goes in uHover[].
@@ -103,5 +103,26 @@ describe("createPress", () => {
     expect(press.id).toBe(0);
     press.picked(2);
     expect(press.id).toBe(0);
+  });
+});
+
+describe("cursorAt", () => {
+  const cursors = [
+    { id: 2, hover: "grab", active: "grabbing" },
+    { id: 3, hover: "auto", active: "pointer" },
+  ];
+
+  it("gives the cursor of the object under the pointer, and leaves the page's own elsewhere", () => {
+    expect(cursorAt(cursors, 2, 0)).toBe("grab");
+    expect(cursorAt(cursors, 1, 0)).toBe("");
+    expect(cursorAt(cursors, 0, 0)).toBe("");
+    expect(cursorAt(undefined, 2, 0)).toBe("");
+  });
+
+  it("gives the cursor of :active over the pressed object only, and auto as the page's", () => {
+    expect(cursorAt(cursors, 2, 2)).toBe("grabbing");
+    expect(cursorAt(cursors, 2, 3)).toBe("grab");
+    expect(cursorAt(cursors, 3, 0)).toBe("");
+    expect(cursorAt(cursors, 3, 3)).toBe("pointer");
   });
 });

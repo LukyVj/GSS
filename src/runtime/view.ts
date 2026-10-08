@@ -2,7 +2,7 @@ import type { CameraSettings } from "../compiler/features/camera";
 import type { CompiledScene } from "../compiler";
 import { createTextureStore, paintName, resolveImage } from "./textures";
 import { createPaints, PAINT_SIZE, type PaintSet } from "./paint";
-import { pickPixel, pointerValues, createPress } from "./hover";
+import { pickPixel, pointerValues, createPress, cursorAt } from "./hover";
 import { createPicker } from "./picker";
 import { createClock } from "./clock";
 import type { FrameProbe } from "../profiler/profiler";
@@ -369,7 +369,8 @@ export function createView(
         return;
       }
       // :hover: which object is under the mouse, then how far each slot has glided
-      const hovers = scene.hover.length + (scene.active?.length ?? 0) > 0;
+      // cursor (decision 161) needs the object under the mouse too
+      const hovers = scene.hover.length + (scene.active?.length ?? 0) > 0 || shown?.cursors !== undefined;
       const pixel = hovers ? pointerPixel() : null;
       let glides: Float32Array | null = null;
       let started: Float32Array | null = null; // uStart[]
@@ -383,6 +384,7 @@ export function createView(
           hovered = 0; // outside the canvas: nothing is hovered, at once
           pickWanted = false;
         }
+        if (shown?.cursors) canvas.style.cursor = cursorAt(shown.cursors, hovered, press.id);
         const pointed = pointerValues(scene.hover, scene.active, hovered, press.id);
         // A state that starts an animation holds until it ends (decision 141)
         const { targets, starts } = triggers.update(pointed, clock.seconds);
@@ -440,7 +442,7 @@ export function createView(
       // :hover: the object under the mouse in this frame, then uHover[] for every slot
       if (hovers) {
         if (pixel) requestPick(scene, pixel);
-        gl!.uniform1fv(scene.uHover, glides!);
+        if (glides!.length > 0) gl!.uniform1fv(scene.uHover, glides!);
         if (started) gl!.uniform1fv(scene.uStart, started);
       }
       if (post.active()) {
@@ -544,6 +546,7 @@ export function createView(
       scene.paints?.destroy();
     }
     scene = next;
+    if (shown?.cursors) canvas.style.cursor = ""; // the cursors belong to the new scene now
     shown = compiled;
     demand.forget(); // a new shader: its first frame is drawn
     properties.use(compiled.properties);

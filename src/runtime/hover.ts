@@ -74,3 +74,16 @@ export function createPress() {
     },
   };
 }
+
+// cursor (decision 161): the cursor of the object under the pointer, the one of :active when
+// that object is the pressed one; "" leaves the page's own cursor (auto, or nothing set)
+export function cursorAt(
+  cursors: { id: number; hover: string; active: string }[] | undefined,
+  hovered: number,
+  pressed: number,
+): string {
+  const found = cursors?.find((cursor) => cursor.id === hovered);
+  if (!found || hovered === 0) return "";
+  const cursor = hovered === pressed ? found.active : found.hover;
+  return cursor === "auto" ? "" : cursor;
+}

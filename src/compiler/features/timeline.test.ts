@@ -127,3 +127,56 @@ describe("animation-timeline in the shader", () => {
     expect(compileScene(formatGss(source)).shader).toBe(compileScene(source).shader);
   });
 });
+
+describe("animation-range: the part of the timeline the animation plays on, like CSS", () => {
+  const timelines = (rules: string) => compileScene(scene(rules)).timelines;
+  const edge = (name: string, offset: number, unit = "%") => ({ name, offset, unit });
+
+  it("keeps the timeline as it was with normal", () => {
+    expect(timelines("cube { animation: spin 1s; animation-timeline: view(); animation-range: normal; }")).toEqual([
+      { type: "view", axis: "block" },
+    ]);
+  });
+
+  it("reads a named range, alone or with its percentages", () => {
+    expect(timelines("cube { animation: spin 1s; animation-timeline: view(); animation-range: entry; }")).toEqual([
+      { type: "view", axis: "block", range: { start: edge("entry", 0), end: edge("entry", 100) } },
+    ]);
+    expect(timelines("cube { animation: spin 1s; animation-timeline: view(); animation-range: entry 10% exit 90%; }")).toEqual([
+      { type: "view", axis: "block", range: { start: edge("entry", 10), end: edge("exit", 90) } },
+    ]);
+    expect(timelines("cube { animation: spin 1s; animation-timeline: view(); animation-range: contain exit; }")).toEqual([
+      { type: "view", axis: "block", range: { start: edge("contain", 0), end: edge("exit", 100) } },
+    ]);
+  });
+
+  it("reads percentages and pixels of the whole timeline", () => {
+    expect(timelines("cube { animation: spin 1s; animation-timeline: scroll(); animation-range: 20% 80%; }")).toEqual([
+      { type: "scroll", scroller: "nearest", axis: "block", range: { start: edge("cover", 20), end: edge("cover", 80) } },
+    ]);
+    expect(timelines("cube { animation: spin 1s; animation-timeline: scroll(); animation-range: 100px; }")).toEqual([
+      { type: "scroll", scroller: "nearest", axis: "block", range: { start: edge("cover", 100, "px"), end: edge("cover", 100) } },
+    ]);
+  });
+
+  it("takes the longhands, which win over the shorthand like the other longhands", () => {
+    expect(
+      timelines("cube { animation: spin 1s; animation-timeline: view(); animation-range-start: entry 50%; animation-range: cover; animation-range-end: exit; }"),
+    ).toEqual([{ type: "view", axis: "block", range: { start: edge("entry", 50), end: edge("exit", 100) } }]);
+  });
+
+  it("gives a timeline with another range its own component", () => {
+    const compiled = compileScene(
+      scene("cube { animation: spin 1s; animation-timeline: view(); } sphere { animation: spin 1s; animation-timeline: view(); animation-range: entry; }"),
+    );
+    expect(compiled.timelines).toHaveLength(2);
+    expect(compiled.shader).toContain("uTimeline.y");
+  });
+
+  it("refuses a named range on scroll(), a wrong value, and a range without a timeline", () => {
+    expect(() => timelines("cube { animation: spin 1s; animation-timeline: scroll(); animation-range: entry; }")).toThrow(/scroll\(\) takes percentages/);
+    expect(() => timelines("cube { animation: spin 1s; animation-timeline: view(); animation-range: middle; }")).toThrow(/animation-range expects/);
+    expect(() => timelines("cube { animation: spin 1s; animation-timeline: view(); animation-range: entry 10% exit 90% cover; }")).toThrow(/animation-range expects/);
+    expect(() => timelines("cube { animation: spin 1s; animation-range: entry; }")).toThrow(/animation-timeline/);
+  });
+});

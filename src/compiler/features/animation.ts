@@ -5,7 +5,7 @@ import type { Styles } from "../cascade/resolve";
 import { findEasing, readEasing, type Easing } from "../values/easing";
 import { errorAt } from "../syntax/errors";
 import { clampComputed } from "../values/calc";
-import { readTimeline, type Timeline } from "./timeline";
+import { timelineOf, type Timeline } from "./timeline";
 
 export type Direction =
   "normal" | "reverse" | "alternate" | "alternate-reverse";
@@ -38,6 +38,9 @@ export const ANIMATION_LONGHANDS = [
   "animation-fill-mode",
   "animation-timing-function",
   "animation-timeline",
+  "animation-range",
+  "animation-range-start",
+  "animation-range-end",
 ];
 
 const SHORTHAND_ERROR =
@@ -200,8 +203,7 @@ export function readAnimation(styles: Styles): AnimationSpec | null {
       );
     spec.easing = read;
   }
-  const timeline = styles["animation-timeline"];
-  const read = timeline ? readTimeline(timeline) : null;
+  const read = timelineOf(styles); // with its animation-range (decision 162)
   if (read) spec.timeline = read;
   return spec;
 }
