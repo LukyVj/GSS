@@ -102,7 +102,7 @@ describe("material keywords", () => {
     expect(() =>
       compileGSS("@scene { sphere; } sphere { material: wood; }"),
     ).toThrow(
-      'Unknown material "wood". Available: matte(), metal(), jelly(), glass(), gold, chrome, copper, silver, brass, aluminum, jelly, glass, ice',
+      'Unknown material "wood". Available: matte(), metal(), jelly(), glass(), emissive(), gold, chrome, copper, silver, brass, aluminum, jelly, glass, ice',
     );
   });
 
@@ -276,3 +276,38 @@ describe("material: glass() frost styles", () => {
     );
   });
 });
+
+// emissive() (decision 153): a surface that gives its own light, on top of the light it gets
+describe("material: emissive()", () => {
+  it("writes the color and the strength", () => {
+    expect(materialOf("sphere { material: emissive(#ff0000, 2); }")).toBe(
+      "if (id == 1.0) return emissive(vec3(1.0, 0.0, 0.0), 2.0);  // sphere",
+    );
+  });
+
+  it("takes the color of color, and a strength of 1, by default", () => {
+    expect(materialOf("sphere { color: #00ff00; material: emissive(); }")).toBe(
+      "if (id == 1.0) return emissive(vec3(0.0, 1.0, 0.0), 1.0);  // sphere",
+    );
+  });
+
+  it("rejects a strength outside [0, 4]", () => {
+    expect(() => compileGSS("@scene { sphere; } sphere { material: emissive(5); }")).toThrow(
+      "emissive(): strength expects a number between 0 and 4",
+    );
+  });
+
+  it("adds its glow to the light in main(), and only when the scene uses it", () => {
+    const glowing = compileGSS("@scene { sphere; } sphere { material: emissive(); }");
+    expect(glowing).toContain("const int EMISSIVE = 4;");
+    expect(glowing).toContain("if (m.kind == EMISSIVE) col += m.color * m.density;");
+    expect(compileGSS("@scene { sphere; }")).not.toContain("EMISSIVE");
+  });
+
+  it("takes a named color as its first argument", () => {
+    expect(materialOf("sphere { material: emissive(red, 1); }")).toBe(
+      materialOf("sphere { material: emissive(#ff0000, 1); }"),
+    );
+  });
+});
+

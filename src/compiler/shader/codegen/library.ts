@@ -163,6 +163,13 @@ const int BLURRED = 3;
 Material glass(vec3 color, float ior, float frost, int frostStyle) {
   return Material(color, GLASS, frost, 0.0, ior, frostStyle);
 }`,
+
+  emissive: `const int EMISSIVE = 4;
+
+// A surface that gives its own light (decision 153): the strength goes in density
+Material emissive(vec3 color, float strength) {
+  return Material(color, EMISSIVE, 0.0, strength, 1.0, 0); // frostStyle: only glass reads it
+}`,
 };
 
 // The line of main() that lights each material
@@ -170,4 +177,5 @@ export const SHADE_CALLS: Record<string, string> = {
   metal: "    if (m.kind == METAL) col = shadeMetal(p, n, rd, m);",
   jelly: "    if (m.kind == JELLY) col = shadeJelly(p, n, rd, m);",
   glass: "    if (m.kind == GLASS) col = shadeGlass(p, n, rd, m);",
+  emissive: "    if (m.kind == EMISSIVE) col += m.color * m.density;",
 };

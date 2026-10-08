@@ -163,7 +163,7 @@ export const PROPERTIES: PropertyDef[] = [
     name: "material",
     appliesTo: "object",
     syntax:
-      "matte([<color>]) | metal([<color>,] [<roughness>]) | jelly([<color>,] [<density>]) | gold | chrome | copper | silver | brass | aluminum | jelly | glass([<color>,] [<refraction-index>] [, [frosted | wavy | hammered | blurred] <frost>]) | glass | ice",
+      "matte([<color>]) | metal([<color>,] [<roughness>]) | jelly([<color>,] [<density>]) | emissive([<color>,] [<strength>]) | gold | chrome | copper | silver | brass | aluminum | jelly | glass([<color>,] [<refraction-index>] [, [frosted | wavy | hammered | blurred] <frost>]) | glass | ice",
     initial: "matte()",
     description:
       "Sets how the surface of the object reacts to light. Without a color, a material uses the `color` property, like `currentColor` in CSS, so the color stays animatable. The color can also be a gradient: `metal(linear-gradient(#ffd27a, #ff5a36), 0.2)`.",
@@ -172,6 +172,7 @@ export const PROPERTIES: PropertyDef[] = [
       ["metal()", "Reflects the scene. Its roughness goes from 0, a mirror, to 1, brushed metal (0.2 by default)."],
       ["jelly()", "Lets the light through its thin parts, like a gummy candy. Its density goes from 0, clear, to 1, deep (0.5 by default)."],
       ["glass()", "See-through, bent by its refraction index, from 1 to 3 (1.5 by default: water is 1.33, diamond 2.4), then a frost from 0 to 1."],
+      ["emissive()", "Gives its own light, on top of the light it gets: a lamp, a screen, a neon. Its strength goes from 0, none, to 4 (1 by default). It does not light the objects around it; with `bloom()` in the `filter` of the scene, it glows."],
       ["frosted, wavy, hammered, blurred", "The style of the frost: white patches (the default), big waves, small bumps, a soft blur."],
       ["gold, chrome", "`metal(#d4af37, 0.2)` and `metal(#ffffff, 0.05)`."],
       ["copper, silver, brass, aluminum", "`metal(#c8784a, 0.25)`, `metal(#e3e4e6, 0.1)`, `metal(#c9a24d, 0.2)` and `metal(#c4c8cc, 0.35)`: the metals of everyday objects."],
@@ -197,6 +198,11 @@ export const PROPERTIES: PropertyDef[] = [
         name: "jelly()",
         text: "`jelly`, and a clearer `jelly(0.3)`.",
         code: "@scene { sphere; cube; } sphere { translate: 0.8 0.6 0; radius: 0.6; color: #ff5a36; material: jelly; } cube { translate: -0.8 0.5 0; rotate-y: -30deg; color: #3ad16b; material: jelly(0.3); }",
+      },
+      {
+        name: "emissive()",
+        text: "A glowing sphere and a dim one, with `bloom()` on the scene.",
+        code: "@scene { sphere#lamp; sphere#dim; } scene { background: #07080c; ambient: 0.25; filter: bloom(0.7, 10px); } #lamp { translate: -0.8 0.6 0; radius: 0.55; material: emissive(#ff5a36, 2); } #dim { translate: 0.8 0.6 0; radius: 0.55; material: emissive(#3a7bff, 0.5); }",
       },
       {
         name: "glass()",

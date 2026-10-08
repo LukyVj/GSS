@@ -28,6 +28,7 @@ function availableMaterials(): string {
     "metal()",
     "jelly()",
     "glass()",
+    "emissive()",
     ...Object.keys(MATERIAL_KEYWORDS),
   ].join(", ");
 }
@@ -150,7 +151,8 @@ export function readMaterial(value: Token[] | undefined, color: string): string 
     call.name !== "matte" &&
     call.name !== "metal" &&
     call.name !== "jelly" &&
-    call.name !== "glass"
+    call.name !== "glass" &&
+    call.name !== "emissive"
   ) {
     throw errorAt(
       value,
@@ -199,6 +201,14 @@ export function readMaterial(value: Token[] | undefined, color: string): string 
       { name: "density", min: 0, max: 1, fallback: 0.5 },
     ]);
     return `jelly(${ownColor}, ${setting(density[0])})`;
+  }
+
+  if (call.name === "emissive") {
+    // emissive (decision 153): what's left is the strength of its own light, 1 when missing
+    const strength = readSettings(args, "emissive", [
+      { name: "strength", min: 0, max: 4, fallback: 1 },
+    ]);
+    return `emissive(${ownColor}, ${setting(strength[0])})`;
   }
 
   if (call.name === "glass") {
