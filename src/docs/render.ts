@@ -215,7 +215,7 @@ type Section = {
   entries: { anchor: string; label: string; html: string; since?: string }[];
 };
 
-// fresh: the newest version that is out (news.ts); its pages say "new" in the contents, and
+// fresh: the newest version that is out (news.ts); its pages say "new in v0.0.5" in the contents, and
 // their group shows a dot, so a folded group says it holds one
 function renderToc(sections: Section[], fresh: string | null): string {
   const isNew = (entry: { since?: string }) => fresh !== null && entry.since === fresh;
@@ -234,7 +234,7 @@ function renderToc(sections: Section[], fresh: string | null): string {
         ${section.entries
           .map(
             (entry) =>
-              `<li><a href="#${escapeHtml(entry.anchor)}"><code>${escapeHtml(entry.label)}</code>${isNew(entry) ? '<span class="toc-new">new</span>' : ""}</a></li>`,
+              `<li><a href="#${escapeHtml(entry.anchor)}"><code>${escapeHtml(entry.label)}</code>${isNew(entry) ? `<span class="toc-new">new in v${escapeHtml(fresh!)}</span>` : ""}</a></li>`,
           )
           .join("\n")}
       </ul>

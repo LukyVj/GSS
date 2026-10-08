@@ -420,16 +420,16 @@ describe("the contents mark the new pages", () => {
     return html.slice(start, html.indexOf("</summary>", start));
   };
 
-  it("puts new after a page of the newest version that is out", () => {
+  it("puts new in v… after a page of the newest version that is out", () => {
     const html = nav("0.0.5");
-    expect(item(html, "view")).toContain('<span class="toc-new">new</span>');
+    expect(item(html, "view")).toContain('<span class="toc-new">new in v0.0.5</span>');
     expect(item(html, "color")).not.toContain("toc-new");
   });
 
   it("leaves a page of a version not out yet unmarked, like the search", () => {
     const html = nav("0.0.4");
     expect(item(html, "view")).not.toContain("toc-new");
-    expect(html).toContain('<span class="toc-new">new</span>'); // the pages of 0.0.4 are new then
+    expect(html).toContain('<span class="toc-new">new in v0.0.4</span>'); // the pages of 0.0.4 are new then
   });
 
   it("puts a dot on a group that holds a new page, folded or not", () => {
