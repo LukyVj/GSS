@@ -58,6 +58,19 @@ describe("highlightGss", () => {
   });
 });
 
+describe("the GLSL of a @paint", () => {
+  it("is colored as GLSL, not as GSS", () => {
+    const html = highlightGss("@paint fill {\n  // a 'quote'\n  uniform float time;\n  void main() { gl_FragColor = vec4(sin(time), 0.5, 0.0, 1.0); }\n}");
+    expect(kind(html, "@paint")).toBe("at-rule");
+    expect(kind(html, "// a 'quote'")).toBe("comment");
+    expect(kind(html, "uniform")).toBe("at-rule");
+    expect(kind(html, "float")).toBe("at-rule");
+    expect(kind(html, "sin")).toBe("function");
+    expect(kind(html, "0.5")).toBe("number");
+    expect(kind(html, "gl_FragColor")).toBe("variable");
+  });
+});
+
 describe("classifyGss", () => {
   it("never throws on unfinished code", () => {
     expect(() => classifyGss("cube { color: # ~ /* not closed")).not.toThrow();

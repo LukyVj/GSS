@@ -8,7 +8,7 @@ import { createTransitions } from "./transitions";
 import { createTriggers } from "./triggers";
 import { createScrollSlider, timelineValues } from "./timeline";
 import { matchesNow, pickVariant, watchMedia } from "./media";
-import { elementId, resolveImage } from "./textures";
+import { elementId, paintName, resolveImage } from "./textures";
 import { createProperties } from "./properties";
 import { createDemand, movesWithTime } from "./demand";
 
@@ -115,7 +115,8 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
     device.queue.writeTexture({ texture }, new Uint8Array(4), { bytesPerRow: 4 }, [1, 1]);
     // element(#id) (decision 101): WebGPU cannot copy an element yet; the transparent pixel
     // stays, so the object keeps its color (mountAsync draws such a scene with WebGL2)
-    if (elementId(file) !== null) {
+    // paint(name) too (decision 151): WebGPU cannot run its GLSL
+    if (elementId(file) !== null || paintName(file) !== null) {
       console.warn(`GSS: ${file} is drawn with WebGL2 only for now: with WebGPU, the object keeps its color`);
       textures.set(url, { texture, image: new Image() });
       return texture;

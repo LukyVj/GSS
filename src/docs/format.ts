@@ -54,7 +54,7 @@ export function formatGss(code: string): string {
     } else if (needBreak) {
       // A blank line when the source had one, or between two top-level blocks
       const blank =
-        !is("}") && (newlines >= 2 || (depth === 0 && previousIs("}")));
+        !is("}") && (newlines >= 2 || (depth === 0 && (previousIs("}") || previous.token.type === "GLSL")));
       out += blank ? "\n\n" : "\n";
       out += "  ".repeat(depth);
       needBreak = false;
@@ -83,6 +83,11 @@ export function formatGss(code: string): string {
     if (is("}")) blocks.pop();
     if (is(";") || is("}") || is("{")) headLength = 0;
     if (is(";") || is("}")) needBreak = true;
+    // The block of a @paint is GLSL, written as it is: it closes like a "}" (decision 151)
+    if (token.type === "GLSL") {
+      headLength = 0;
+      needBreak = true;
+    }
     if (is(",") && depth === 0) needBreak = true;
   });
 

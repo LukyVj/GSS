@@ -76,7 +76,7 @@ describe("texture: element(#id), an HTML element as a live texture", () => {
   it("says what is wrong", () => {
     expect(() => readTexture(tokenize("element(card)"))).toThrow("element() takes the id of an element of the page, like: element(#card)");
     expect(() => readTexture(tokenize("element(#a, #b)"))).toThrow("element() takes the id");
-    expect(() => readTexture(tokenize("dirt"))).toThrow('texture expects url("…") or element(#id)');
+    expect(() => readTexture(tokenize("dirt"))).toThrow('texture expects url("…"), element(#id) or paint(name)');
   });
 
   it("leaves its Shadertoy channel empty: the object keeps its color", async () => {

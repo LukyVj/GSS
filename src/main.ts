@@ -64,10 +64,12 @@ let html = await decodeHtml(location.hash);
 // The HTML lives inside the canvas: element(#id) draws it there (decision 101)
 const sceneCanvas = $<HTMLCanvasElement>("#scene");
 sceneCanvas.innerHTML = html;
-// element(#id) is drawn with WebGL2 for now: auto picks it for a scene that shows HTML
+// element(#id) and paint() are drawn with WebGL2 for now: auto picks it for such a scene
+// (decisions 101, 151)
 const showsHtml = (code: string) => /\belement\(/.test(code);
+const paints = (code: string) => /\bpaint\(/.test(code);
 const renderer = await createRendererAsync(sceneCanvas, {
-  backend: backend === "auto" && (html || showsHtml(start)) ? "webgl" : backend,
+  backend: backend === "auto" && (html || showsHtml(start) || paints(start)) ? "webgl" : backend,
   profile,
   profileWebGPU,
   scrollSlider: true, // the playground does not scroll: a slider stands in for scroll()
@@ -135,11 +137,12 @@ async function followUrl(code: string): Promise<void> {
 }
 editor.onCompile(followUrl);
 
-// element(#id) on WebGPU: the object keeps its color, so say how to see the element
+// element(#id) or paint() on WebGPU: the object keeps its color, so say how to see it
 const notice = $("#notice");
 editor.onCompile((code) => {
-  notice.hidden = !(renderer.backend === "webgpu" && showsHtml(code));
-  notice.textContent = "element() is drawn with WebGL2: choose WebGL2 in the backend menu";
+  const webglOnly = showsHtml(code) ? "element()" : paints(code) ? "paint()" : null;
+  notice.hidden = !(renderer.backend === "webgpu" && webglOnly);
+  notice.textContent = `${webglOnly} is drawn with WebGL2: choose WebGL2 in the backend menu`;
 });
 
 // ----- The HTML tab: the elements that element(#id) shows (decision 101) -----

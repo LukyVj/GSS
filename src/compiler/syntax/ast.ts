@@ -7,6 +7,15 @@ export type Stylesheet = {
   keyframes: Keyframes[]; // all the @keyframes blocks
   properties: PropertyRule[]; // the @property rules (decision 105)
   panels: PanelRule[]; // the @property-panel rules (decision 128)
+  paints: PaintRule[]; // the @paint rules (decision 151)
+};
+
+// @paint rings { …GLSL… }: a texture drawn by a fragment shader (decision 151)
+export type PaintRule = {
+  at: Token; // the @paint keyword (for its line)
+  name: Token; // the IDENT after @paint
+  code: Token; // the GLSL token: the block, as written
+  line?: number; // the line of its "{" in the file, set by the compiler (for the GLSL errors)
 };
 
 // @property-panel { display: open; }

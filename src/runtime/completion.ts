@@ -34,6 +34,11 @@ export function propertySuggestions(
       statement = [];
     } else if (token.type === "PUNCT" && token.value === ";") {
       statement = [];
+    } else if (token.type === "GLSL") {
+      // The block of a @paint: GLSL, no property here; closed, the next rule starts after it
+      const closed = end - start - 1 > token.value.length;
+      if (!closed) return null;
+      statement = [];
     } else {
       statement.push({ token, start, end });
     }
