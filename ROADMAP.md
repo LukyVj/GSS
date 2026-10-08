@@ -260,7 +260,8 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 - [x] Fade the floor into the background: the floor stops sharply at `MAX_DIST` ✅ a fog that ends before it hides the edge (decision 108)
 - [x] Soft shadows ✅ decision 115: `scene { shadows: none | hard | soft }`, off by default, from the sun and every light; still to come: a setting per light, a softness, shadows in reflections
 - [ ] Optional antialiasing (4× the cost)
-- [ ] Measure the compile time of large scenes; if needed, loop in `calcNormal` so `map()` is copied only once
+- [x] A WebGL2 scene links without blocking the page ✅ decision 150: `KHR_parallel_shader_compile`, the program asked once a frame; the scene before it, or the poster of `<gss-scene>`, stays until then
+- [ ] Measure the compile time of large scenes, on Windows above all (Direct3D); if needed, loop in `calcNormal` so `map()` is copied only once
 
 ### Textures (after decision 59)
 

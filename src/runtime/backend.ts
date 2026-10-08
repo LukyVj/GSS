@@ -24,5 +24,5 @@ export async function createViewAsync(canvas: HTMLCanvasElement, options: Backen
     }
   }
   const view = createView(canvas, options);
-  return { ...view, backend: "webgl", async show(scene) { view.show(scene); } };
+  return { ...view, backend: "webgl", async show(scene) { await view.show(scene); } };
 }

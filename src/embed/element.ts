@@ -1,4 +1,4 @@
-import { mount, mountAsync, type EmbeddedScene, type AsyncEmbeddedScene } from "./index";
+import { mountAsync, type EmbeddedScene, type AsyncEmbeddedScene } from "./index";
 import { readControls, sourceUrl } from "./options";
 import { softwareRendering } from "./runtime";
 import { HEAVY_NOTICE, SOFTWARE_NOTICE, SOFTWARE_PLAY } from "../runtime/software";
@@ -158,7 +158,9 @@ export class GssSceneElement extends HTMLElement {
       const backend = this.getAttribute("backend");
       if (backend !== null && !["auto", "webgl", "webgpu"].includes(backend))
         throw new Error('backend must be "auto", "webgl" or "webgpu"');
-      const scene = backend === null ? mount(canvas, code, options) : await mountAsync(canvas, code, { ...options, backend: backend as "auto" | "webgl" | "webgpu" });
+      // Without backend, WebGL2 as before; awaited, so the poster stays until the driver has
+      // linked the scene (decision 150)
+      const scene = await mountAsync(canvas, code, { ...options, backend: (backend ?? "webgl") as "auto" | "webgl" | "webgpu" });
       if (run !== this.#run) { scene.destroy(); return; }
       this.#scene = scene;
       this.#heavy = false; // a new scene: drawn until it is too heavy itself
