@@ -19,6 +19,9 @@
       "include": "#at-property"
     },
     {
+      "include": "#at-paint"
+    },
+    {
       "include": "#selector"
     },
     {
@@ -404,6 +407,102 @@
         },
         {
           "include": "#rule-block"
+        }
+      ]
+    },
+    "at-paint": {
+      "comment": "@paint name { …GLSL… }: a texture drawn by a fragment shader; the block is GLSL",
+      "begin": "(@)(paint)\\b\\s*(-?[a-zA-Z_][\\w-]*)?",
+      "beginCaptures": {
+        "1": {
+          "name": "punctuation.definition.keyword.gss"
+        },
+        "0": {
+          "name": "keyword.control.at-rule.paint.gss"
+        },
+        "3": {
+          "name": "entity.name.function.paint.gss"
+        }
+      },
+      "end": "(?<=\\})",
+      "patterns": [
+        {
+          "include": "#comment"
+        },
+        {
+          "begin": "\\{",
+          "end": "\\}",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.section.paint.begin.bracket.curly.gss"
+            }
+          },
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.section.paint.end.bracket.curly.gss"
+            }
+          },
+          "contentName": "meta.embedded.block.glsl",
+          "patterns": [
+            {
+              "include": "#glsl"
+            }
+          ]
+        }
+      ]
+    },
+    "glsl": {
+      "comment": "GLSL inside @paint: braces counted, comments, preprocessor, keywords, types, numbers, gl_ names, calls",
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.glsl",
+          "match": "//.*$"
+        },
+        {
+          "name": "comment.block.glsl",
+          "begin": "/\\*",
+          "end": "\\*/"
+        },
+        {
+          "begin": "\\{",
+          "end": "\\}",
+          "patterns": [
+            {
+              "include": "#glsl"
+            }
+          ]
+        },
+        {
+          "name": "keyword.control.directive.glsl",
+          "match": "^\\s*#\\s*\\w+"
+        },
+        {
+          "name": "storage.type.glsl",
+          "match": "\\b(void|bool|int|uint|float|[biu]?vec[234]|mat[234](x[234])?|sampler[23]D|samplerCube|struct)\\b"
+        },
+        {
+          "name": "storage.modifier.glsl",
+          "match": "\\b(uniform|in|out|inout|const|attribute|varying|precision|highp|mediump|lowp)\\b"
+        },
+        {
+          "name": "keyword.control.glsl",
+          "match": "\\b(if|else|for|while|do|return|break|continue|discard)\\b"
+        },
+        {
+          "name": "constant.language.glsl",
+          "match": "\\b(true|false)\\b"
+        },
+        {
+          "name": "constant.numeric.glsl",
+          "match": "\\b(\\d+\\.?\\d*|\\.\\d+)([eE][-+]?\\d+)?[fu]?\\b"
+        },
+        {
+          "name": "variable.language.glsl",
+          "match": "\\bgl_\\w+\\b"
+        },
+        {
+          "name": "entity.name.function.glsl",
+          "match": "\\b[A-Za-z_]\\w*(?=\\s*\\()"
         }
       ]
     }

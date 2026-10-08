@@ -27,6 +27,15 @@ export function classifyGss(code: string): Piece[] {
       return;
     }
 
+    // The block of a @paint: GLSL, colored as GLSL (decision 151)
+    if (token.type === "GLSL") {
+      const closed = end - start - 1 > token.value.length;
+      pieces.push({ start, end: start + 1, kind: "punct" });
+      pieces.push(...glslPieces(token.value, start + 1));
+      if (closed) pieces.push({ start: end - 1, end, kind: "punct" });
+      return;
+    }
+
     if (token.type === "DIMENSION") {
       const split = end - token.unit.length; // 70deg → "70" and "deg"
       pieces.push({ start, end: split, kind: "number" }, { start: split, end, kind: "unit" });
@@ -89,4 +98,36 @@ function kindOf(
 
 function span(kind: string, text: string): string {
   return `<span class="gss-${kind}">${escapeHtml(text)}</span>`;
+}
+
+// GLSL, with the meanings of the GLSL tab (glsl.ts): keywords and types in the at-rule color,
+// functions in the function color, gl_ names as variables. Sticky patterns, first match wins.
+const GLSL: [RegExp, string | null][] = [
+  [/\/\/[^\n]*/y, "comment"],
+  [/\/\*[\s\S]*?(?:\*\/|$)/y, "comment"],
+  [/#\s*\w+/y, "at-rule"],
+  [/(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?[fu]?\b/y, "number"],
+  [/(?:void|bool|int|uint|float|[biu]?vec[234]|mat[234](?:x[234])?|sampler[23]D|samplerCube|struct|uniform|in|out|inout|const|attribute|varying|precision|highp|mediump|lowp|if|else|for|while|do|return|break|continue|discard|true|false)\b/y, "at-rule"],
+  [/gl_\w+/y, "variable"],
+  [/[A-Za-z_]\w*(?=\s*\()/y, "function"],
+  [/[A-Za-z_]\w*/y, null],
+  [/\s+/y, null],
+];
+
+function glslPieces(code: string, offset: number): Piece[] {
+  const pieces: Piece[] = [];
+  let at = 0;
+  while (at < code.length) {
+    let length = 1;
+    for (const [pattern, kind] of GLSL) {
+      pattern.lastIndex = at;
+      const found = pattern.exec(code);
+      if (!found || found[0] === "") continue;
+      length = found[0].length;
+      if (kind) pieces.push({ start: offset + at, end: offset + at + length, kind });
+      break;
+    }
+    at += length;
+  }
+  return pieces;
 }

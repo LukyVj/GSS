@@ -9,6 +9,7 @@ export type Token =
   | { type: "DIMENSION"; value: number; unit: string } // 70deg, 24s
   | { type: "PERCENTAGE"; value: number } // 50%, 12.5%
   | { type: "STRING"; value: string } // "M0 0 L1 1", without the quotes
+  | { type: "GLSL"; value: string } // the block of a @paint, as written, without its braces (decision 151)
   // Never written: what var() gives for a variable registered with @property (decision 105).
   // value is its name, code the GLSL that reads it (uProperties[0].x)
   | { type: "EXPR"; value: string; code: string; syntax: PropertySyntax };
@@ -70,6 +71,39 @@ export function scan(
 
   // Returns the character at a position, or "" if we exceed the end
   const charAt = (index: number): string => source[index] ?? "";
+
+  // After @paint, the next "{" opens a block of GLSL, read as it is (decision 151)
+  let paintPending = false;
+
+  // The block of a @paint, from its "{" to the "}" that closes it. GLSL is not CSS: its
+  // // comments may hold a quote, so braces are counted outside the comments only
+  const readGlsl = (): void => {
+    let depth = 0;
+    let j = i;
+    while (j < source.length) {
+      if (source.startsWith("//", j)) {
+        const end = source.indexOf("\n", j);
+        j = end === -1 ? source.length : end;
+        continue;
+      }
+      if (source.startsWith("/*", j)) {
+        const end = source.indexOf("*/", j + 2);
+        j = end === -1 ? source.length : end + 2;
+        continue;
+      }
+      if (source[j] === "{") depth++;
+      if (source[j] === "}" && --depth === 0) break;
+      j++;
+    }
+    if (j >= source.length) {
+      fail(new GssError('@paint never closed: "}" missing', { start, end: source.length }));
+      i = source.length; // recovering: the block runs to the end
+      push({ type: "GLSL", value: source.slice(start + 1) });
+      return;
+    }
+    i = j + 1;
+    push({ type: "GLSL", value: source.slice(start + 1, j) });
+  };
 
   // Advance while reading name characters, and return the name read
   const readIdent = (): string => {
@@ -151,6 +185,7 @@ export function scan(
         continue;
       }
       push({ type: char === "@" ? "AT_KEYWORD" : "HASH", value: name });
+      if (char === "@") paintPending = name === "paint";
       continue;
     }
 
@@ -161,6 +196,12 @@ export function scan(
     }
 
     // 6. The punctuation
+    if (char === "{" && paintPending) {
+      paintPending = false;
+      readGlsl();
+      continue;
+    }
+    if (char === ";" || char === "}") paintPending = false;
     if (PUNCTUATION.includes(char)) {
       i++;
       push({ type: "PUNCT", value: char });

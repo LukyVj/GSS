@@ -409,7 +409,7 @@ export function parse(tokens: Token[], errors?: ErrorSink): Stylesheet {
   }
 
   // The whole file: a sequence of @scene and rules
-  const stylesheet: Stylesheet = { scene: [], rules: [], keyframes: [], properties: [], panels: [] };
+  const stylesheet: Stylesheet = { scene: [], rules: [], keyframes: [], properties: [], panels: [], paints: [] };
 
   // One @scene, @keyframes, @media or rule
   function parseStatement(): void {
@@ -431,6 +431,17 @@ export function parse(tokens: Token[], errors?: ErrorSink): Stylesheet {
         // @property --speed { syntax: "<number>"; … }: read in features/properties.ts
         const name = next();
         stylesheet.properties.push({ name, descriptors: parseDeclarationBlock() });
+      } else if (token.value === "paint") {
+        // @paint rings { …GLSL… }: the tokenizer read the block as it is (decision 151)
+        const name = peek();
+        if (!name || name.type !== "IDENT")
+          throw errorAt(name ?? token, "@paint takes a name, like: @paint rings { void main() { … } }");
+        next();
+        const code = peek();
+        if (!code || code.type !== "GLSL")
+          throw errorAt(code ?? name, `@paint ${name.value} takes a block of GLSL, like: @paint ${name.value} { void main() { … } }`);
+        next();
+        stylesheet.paints.push({ at: token, name, code });
       } else if (token.value === "property-panel") {
         // @property-panel { display: open; }: read in features/properties.ts (decision 128)
         if (!isPunct(peek(), "{"))

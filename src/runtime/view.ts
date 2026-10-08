@@ -1,6 +1,7 @@
 import type { CameraSettings } from "../compiler/features/camera";
 import type { CompiledScene } from "../compiler";
-import { createTextureStore, resolveImage } from "./textures";
+import { createTextureStore, paintName, resolveImage } from "./textures";
+import { createPaints, PAINT_SIZE, type PaintSet } from "./paint";
 import { pickPixel, pointerValues, createPress } from "./hover";
 import { createPicker } from "./picker";
 import { createClock } from "./clock";
@@ -94,6 +95,7 @@ type GpuScene = {
   uPick: WebGLUniformLocation | null;
   uProperties: WebGLUniformLocation | null; // @property (decision 105)
   moves: boolean; // the image changes with time alone (decision 134)
+  paints: PaintSet | null; // the textures its @paint draw (decision 151)
 };
 
 export function createView(
@@ -104,13 +106,16 @@ export function createView(
   // --- 1. Prepare WebGL ---
   const gl = canvas.getContext("webgl2");
   if (!gl) throw new Error("WebGL2 is not available in this browser");
-  gl.bindVertexArray(gl.createVertexArray());
+  const vertexArray = gl.createVertexArray();
+  gl.bindVertexArray(vertexArray);
   const probe = options.profile?.(gl); // undefined: no profiler, nothing happens
   // The images, kept for every scene this renderer will load
   const store = createTextureStore(gl);
   // Links a program without blocking the page (decision 150). On Windows, the driver turns a
   // large shader into Direct3D code for seconds: asked at once, LINK_STATUS waits for it.
   const parallel = gl.getExtension("KHR_parallel_shader_compile");
+  // texture: paint(name): each @paint draws into its own texture (decision 151)
+  const paints = createPaints(gl, () => gl.bindVertexArray(vertexArray));
 
   // :hover: the picking pass reads the id under the mouse without stopping the CPU
   // (picker.ts). The answer comes one or two frames later; until then, the last one holds.
@@ -175,6 +180,7 @@ export function createView(
 
   function createGpuScene(
     program: WebGLProgram,
+    paintSet: PaintSet | null,
     files: string[],
     hover: number[][],
     active?: number[][],
@@ -190,7 +196,11 @@ export function createView(
       uDist: gl!.getUniformLocation(program, "uDist"),
       timelines,
       uTimeline: gl!.getUniformLocation(program, "uTimeline"),
-      textures: files.map((file) => store.get(resolveImage(file, base))),
+      textures: files.map((file) => {
+        const name = paintName(file);
+        return (name !== null && paintSet?.texture(name)) || store.get(resolveImage(file, base));
+      }),
+      paints: paintSet,
       uTextures: files.map((_, i) =>
         gl!.getUniformLocation(program, `uTexture${i}`),
       ),
@@ -275,6 +285,20 @@ export function createView(
   canvas.addEventListener("pointerleave", () => {
     pointer = null; // nothing is hovered any more
   });
+
+  // mouse in a @paint: the last pointer over the canvas, in the pixels of its texture, from
+  // the bottom left like gl_FragCoord (decision 151)
+  let paintPointer: [number, number] = [0, 0];
+  function paintMouse(): [number, number] {
+    if (pointer) {
+      const box = canvas.getBoundingClientRect();
+      paintPointer = [
+        ((pointer.x - box.left) / Math.max(box.width, 1)) * PAINT_SIZE,
+        (1 - (pointer.y - box.top) / Math.max(box.height, 1)) * PAINT_SIZE,
+      ];
+    }
+    return paintPointer;
+  }
 
   // The pixel of the canvas under the mouse, or null when the mouse is outside it
   function pointerPixel(): [number, number] | null {
@@ -383,6 +407,7 @@ export function createView(
         ...(values ?? []),
         ...(timeline ?? []),
         ...(glides ?? []),
+        ...(scene.paints?.pointer ? paintMouse() : []), // a @paint that reads mouse
       ]);
       if (!changed && !measuring()) {
         if (pixel && pickWanted) {
@@ -391,6 +416,11 @@ export function createView(
         }
         frameId = requestAnimationFrame(frame);
         return;
+      }
+      // The textures of its @paint, before the scene samples them (decision 151)
+      if (scene.paints) {
+        scene.paints.draw(clock.seconds, paintMouse());
+        gl!.viewport(0, 0, canvas.width, canvas.height);
       }
       // We send the state to the shader
       gl!.useProgram(scene.program);
@@ -444,26 +474,37 @@ export function createView(
   let destroyed = false;
   function display(compiled: CompiledScene, resetCamera: boolean): Promise<void> {
     const start = performance.now();
-    const program = startLink(compiled.shader); // GLSL errors, at once
+    // The @paint first: small programs, their GLSL errors at once (decision 151)
+    const paintSet = compiled.paints ? paints.prepare(compiled.paints) : null;
+    let program: WebGLProgram;
+    try {
+      program = startLink(compiled.shader); // GLSL errors, at once
+    } catch (error) {
+      paintSet?.destroy();
+      throw error;
+    }
     const ticket = ++revision;
     if (linking) gl!.deleteProgram(linking);
     linking = program;
     if (!parallel) {
       linking = null;
-      swap(compiled, resetCamera, program, start);
+      swap(compiled, resetCamera, program, paintSet, start);
       return Promise.resolve();
     }
     // Asked once a frame: the page goes on while the driver links (decision 150)
     return new Promise((resolve, reject) => {
       const wait = () => {
-        if (destroyed || ticket !== revision) return resolve(); // replaced: its program is freed
+        if (destroyed || ticket !== revision) {
+          paintSet?.destroy(); // replaced: its program is freed, and its paints here
+          return resolve();
+        }
         if (!gl!.getProgramParameter(program, parallel.COMPLETION_STATUS_KHR)) {
           requestAnimationFrame(wait);
           return;
         }
         linking = null;
         try {
-          swap(compiled, resetCamera, program, start);
+          swap(compiled, resetCamera, program, paintSet, start);
           resolve();
         } catch (error) {
           reject(error);
@@ -474,23 +515,34 @@ export function createView(
   }
 
   // The linked program replaces the scene on screen
-  function swap(compiled: CompiledScene, resetCamera: boolean, program: WebGLProgram, start: number) {
-    const next = createGpuScene(
-      linked(program), // link errors
-      compiled.textures,
+  function swap(compiled: CompiledScene, resetCamera: boolean, program: WebGLProgram, paintSet: PaintSet | null, start: number) {
+    let next: GpuScene;
+    try {
+      next = createGpuScene(
+        linked(program), // link errors
+        paintSet,
+        compiled.textures,
       compiled.hover,
       compiled.active,
-      compiled.timelines,
-      movesWithTime(compiled),
-    );
+        compiled.timelines,
+        movesWithTime(compiled) || !!paintSet?.animated, // a @paint that reads time moves
+      );
+    } catch (error) {
+      paintSet?.destroy();
+      throw error;
+    }
     try {
       post.set(compiled.passes); // GLSL errors of the passes
     } catch (error) {
       gl!.deleteProgram(next.program);
+      paintSet?.destroy();
       throw error;
     }
     probe?.shaderBuilt(performance.now() - start);
-    if (scene) gl!.deleteProgram(scene.program);
+    if (scene) {
+      gl!.deleteProgram(scene.program);
+      scene.paints?.destroy();
+    }
     scene = next;
     shown = compiled;
     demand.forget(); // a new shader: its first frame is drawn
@@ -566,6 +618,8 @@ export function createView(
       if (linking) gl.deleteProgram(linking);
       linking = null;
       if (scene) gl.deleteProgram(scene.program);
+      scene?.paints?.destroy();
+      paints.destroy();
       scene = null;
       post.destroy();
       store.destroy();

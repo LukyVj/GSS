@@ -162,4 +162,18 @@ describe("formatGss with groups", () => {
 `,
     );
   });
+
+  it("keeps the GLSL of a @paint as it is written, and the blocks around it apart", () => {
+    const glsl = `{
+  // it's GLSL: { not GSS }
+  out vec4 color;
+  void main(){color=vec4(1.0);}
+}`;
+    expect(formatGss(`@paint fill ${glsl} @scene{cube;}`)).toBe(`@paint fill ${glsl}
+
+@scene {
+  cube;
+}
+`);
+  });
 });

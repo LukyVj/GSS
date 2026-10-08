@@ -101,7 +101,13 @@ const gssColors = ViewPlugin.fromClass(
 // How many blocks are open at a position ("{" not yet closed), comments aside
 function depthAt(code: string, position: number): number {
   let depth = 0;
-  for (const { token } of scan(code.slice(0, position), { recover: true })) {
+  for (const { token, start, end } of scan(code.slice(0, position), { recover: true })) {
+    // Inside the GLSL of a @paint (decision 151): its block and the braces open in it
+    if (token.type === "GLSL" && end - start - 1 <= token.value.length) {
+      const code = token.value.replace(/\/\/[^\n]*|\/\*[\s\S]*?(?:\*\/|$)/g, "");
+      depth += 1 + Math.max(0, (code.match(/\{/g) ?? []).length - (code.match(/\}/g) ?? []).length);
+      continue;
+    }
     if (token.type !== "PUNCT") continue;
     if (token.value === "{") depth++;
     if (token.value === "}") depth = Math.max(0, depth - 1);

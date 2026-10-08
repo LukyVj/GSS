@@ -196,7 +196,7 @@ describe("renderDocs", () => {
 
 // The JavaScript API is not in the registry: the reference links to its guide page
 describe("an at-rule's See also row", () => {
-  const html = renderDocs(PROPERTIES, AT_RULES, SELECTORS, SHAPE_DOCS);
+  const html = renderDocs(PROPERTIES, AT_RULES, SELECTORS, SHAPE_DOCS, FUNCTIONS);
 
   it("links @property to the page on setting variables from JavaScript", () => {
     const property = renderAtRule(AT_RULES.find((atRule) => atRule.name === "property")!);

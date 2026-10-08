@@ -102,4 +102,12 @@ describe("only the properties the rule can take", () => {
     expect(suggest("#g { sphere { ra| } }")!.names).toContain("radius");
     expect(suggest("scene { @media (max-width: 600px) { d| } }")!.names).toContain("dpr");
   });
+
+  it("offers nothing inside the GLSL of a @paint, and offers again in the rule after it", () => {
+    const paint = "@paint fill { out vec4 color; void main() { color = vec4(1.0); } }\n";
+    const inside = "@paint fill { out vec4 color; void main() { col";
+    expect(propertySuggestions(inside, inside.length)).toBeNull();
+    const after = `${paint}sphere { rad`;
+    expect(propertySuggestions(after, after.length)?.properties.map((p) => p.name)).toContain("radius");
+  });
 });

@@ -22,7 +22,7 @@ import {
   resolveNamedColors,
   MATERIAL_FUNCTIONS,
 } from "./values/colors";
-import { sceneTextures } from "./features/textures";
+import { scenePaints, sceneTextures } from "./features/textures";
 import { readDpr, type Dpr } from "./features/dpr";
 import { readView, type View } from "./features/view";
 import { readTransition, type Transition } from "./features/transition";
@@ -47,6 +47,9 @@ export type CompiledScene = {
   shader: string;
   // The WebGPU target; shader stays GLSL for existing integrations and Shadertoy.
   wgsl?: string;
+  // @paint (decision 151): the fragment shaders the textures paint(name) come from, as
+  // written, with the line of their "{" in the file. Absent when no object uses one.
+  paints?: { name: string; code: string; line: number }[];
   camera: CameraSettings;
   dpr: Dpr;
   objects: number; // instances drawn, for the status bar (decision 42)
@@ -107,6 +110,10 @@ function compileSource(source: string, view?: View): CompiledScene {
   const stylesheet = parse(tokens, errors);
   // An error in the text: what comes after would mostly report its consequences
   errors.throwIfAny();
+  // The line of the "{" of each @paint, where its GLSL starts: its errors point into the file
+  // (decision 151)
+  for (const paint of stylesheet.paints)
+    paint.line = source.slice(0, spanOf(paint.code)?.start ?? 0).split("\n").length;
   // light-dark() needs a version of the scene per color scheme, like this @media query
   const lightDark = tokens.some(
     (token, i) =>
@@ -307,6 +314,9 @@ function compileStylesheet(
   const dpr = errors.run(() => readDpr(computedScene));
   // After the cascade and var(): the texture an object really ends up with
   const textures = errors.run(() => sceneTextures(drawn));
+  // @paint (decision 151): the shaders of paint(name), the last one of a name wins like CSS
+  const defined = new Map(stylesheet.paints.map((paint) => [String(paint.name.value), { code: String(paint.code.value), line: paint.line ?? 1 }]));
+  const paints = errors.run(() => scenePaints(drawn, defined));
   // Like CSS: the transition of the state the object goes to
   // Pressing takes the transition of :active, releasing the one of the hovered state
   const transitions = errors.run(() => [
@@ -341,6 +351,7 @@ function compileStylesheet(
     dpr: dpr!,
     objects: instances.filter((instance) => instance.tag !== "light").length,
     textures: textures!,
+    ...(paints!.length > 0 ? { paints } : {}),
     hover: hoverSlots(styled).map((instance) => instance.hoverTriggers),
     ...(active.length > 0 ? { active } : {}),
     ...(timelines!.length > 0 ? { timelines } : {}),

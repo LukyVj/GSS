@@ -306,7 +306,7 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 - When to rename the `csl` folder and repo → `gss` (the npm package already ships as `gss-lang`).
 - Gamma correction: more natural light, but it changes the look of every existing scene.
 - Shadows on by default or not (cost: one more ray march per light and per pixel): off by default since decision 115, opt-in with `scene { shadows: soft; }`.
-- Author-written shaders: `@shader hologram { … }` with a GLSL body and its own parameters, used as `shader: hologram; --intensity: 1.5;` (an escape hatch, like Houdini's `paint()`). Powerful, but how to report errors in the GLSL, keep the Shadertoy export, and stay a language an LLM writes without mistakes?
+- [x] Author-written shaders, for textures ✅ decision 151: `@paint rings { …GLSL… }` and `texture: paint(rings)`, a fragment shader drawn into a 512 × 512 texture, WebGL2 only. Still to come: custom properties as uniforms (`--speed` → `uniform float speed`), a resolution per paint, a WGSL version for WebGPU. A shader for the surface itself (`@shader hologram`, used as `shader: hologram;`) stays under discussion: errors, the Shadertoy export, and a language an LLM writes without mistakes
 - Composing surface effects (a "textual shader graph"): to be split before deciding: deforming the shape with noise (a `displace` property, it changes the SDF and can slow the ray march), a `toon` material next to the others, and lighting effects (rim light, fresnel).
 
 ## Done recently
@@ -701,7 +701,7 @@ A score for how well a CSS notion carries over to GSS (a style language → an S
 | `scroll()` / `view()`                                                                                                                             |   1.0 | Roadmap (Essentials): `animation-timeline`                                                                                            |
 | `counter()` / `counters()` / `symbols()`                                                                                                          |  0.05 | Counters                                                                                                                              |
 | Gradients (`linear-` / `radial-` / `conic-` + repeating-\*)                                                                                       |   0.9 | Already in GSS: `linear-`, `radial-`, `conic-` and their `repeating-` forms, in `background`, `color` and materials (dec. 81, 82, 98) |
-| `image()` / `image-set()` / `cross-fade()` / `element()` / `paint()`                                                                              |   0.2 | CSS images; `element()` planned in `texture` (dec. 101)                                                                               |
+| `image()` / `image-set()` / `cross-fade()` / `element()` / `paint()`                                                                              |   0.2 | CSS images; `element()` in `texture` (dec. 101), `paint()` from a `@paint` shader (dec. 151) |
 | `-moz-image-rect()`                                                                                                                               |   0.0 | Vendor                                                                                                                                |
 | `fit-content()` / `minmax()` / `repeat()`                                                                                                         |   0.0 | Grid                                                                                                                                  |
 | Font variant fns (`stylistic`, `styleset`, …)                                                                                                     |   0.0 | Fonts                                                                                                                                 |
@@ -736,7 +736,7 @@ A score for how well a CSS notion carries over to GSS (a style language → an S
 | Fonts & text layout                                                  |  0.05 | Out of scope                                      |
 | Paged media / fragmentation                                          |   0.0 | Print                                             |
 | CSSOM / style sheets API                                             |   0.3 | Host runtime, not the core                        |
-| Houdini (`@property`, paint worklet)                                 |   0.5 | `@property` useful; paint not                     |
+| Houdini (`@property`, paint worklet)                                 |   0.5 | `@property` ✅; paint: `@paint` (dec. 151)        |
 | Anchor positioning                                                   |   0.2 | DOM layout                                        |
 | Environment variables                                                |   0.4 | `env()` host                                      |
 | Mixins / custom functions                                            |  0.55 | DX compile                                        |

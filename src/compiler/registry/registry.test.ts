@@ -90,11 +90,12 @@ describe("at-rules", () => {
     expect(new Set(names).size).toBe(names.length);
   });
 
-  it("documents @scene, @keyframes, @property, @property-panel and @media", () => {
+  it("documents @scene, @keyframes, @property, @property-panel, @paint and @media", () => {
     expect(AT_RULES.map((atRule) => atRule.name)).toEqual([
       "scene",
       "keyframes",
       "property",
+      "paint",
       "property-panel",
       "media",
     ]);

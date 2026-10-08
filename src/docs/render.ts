@@ -120,7 +120,7 @@ export function renderAtRule(atRule: AtRuleDef): string {
   return `
     <article class="property" id="at-${escapeHtml(atRule.name)}">
       <h3><code>@${escapeHtml(atRule.name)}</code></h3>
-      <p>${prose(atRule.description)}</p>
+      <p>${prose(atRule.description)}</p>${renderNote(atRule.note)}
       <dl>
         <dt>Syntax</dt>
         <dd><code class="gss syntax">${highlightSyntax(atRule.syntax)}</code></dd>${

@@ -56,6 +56,7 @@ export type AtRuleDef = Parts & Since & {
   description: string;
   examples: Example[];
   see?: { anchor: string; label: string }[]; // other pages of the docs, linked under the syntax
+  note?: Note;
 };
 
 // A shape that can be declared in @scene. Its own properties are not listed here:
@@ -221,13 +222,14 @@ export const PROPERTIES: PropertyDef[] = [
   {
     name: "texture",
     appliesTo: "object",
-    syntax: 'url("<file>") | element(<id>)',
+    syntax: 'url("<file>") | element(<id>) | paint(<name>)',
     initial: "none",
     description:
       "Projects an image onto the surface of the object: one image per face, the top, the bottom and the sides, whatever the size of the object. The image replaces the base color, and moves, turns and scales with the object.",
     values: [
       ["url(\"<file>\")", "An image file, read next to the `.gss` file, like `url()` in a stylesheet."],
       ["element(<id>)", "A live image of an HTML element of the page: see `element()`."],
+      ["paint(<name>)", "A texture drawn by a fragment shader: see `@paint`."],
       ["none", "No image: the default."],
     ],
     note: ELEMENT_NOTE,
@@ -1487,6 +1489,62 @@ export const AT_RULES: AtRuleDef[] = [
     ],
   },
   {
+    name: "paint",
+    since: "0.0.6",
+    syntax: "@paint <name> { <fragment shader> }",
+    description:
+      "A texture drawn by a fragment shader, for `texture: paint(<name>)`. The block is GLSL, the shader language of WebGL, written as it is for the web: an image that comes from code, like `paint()` in CSS.",
+    valuesTitle: "Uniforms",
+    values: [
+      ["time", "The time of the scene, in seconds, a `float`. `u_time` works too. A shader that reads it is drawn again at every frame; one that does not is drawn once."],
+      ["resolution", "The size of the texture in pixels, `vec2(512.0, 512.0)`. `u_resolution` works too."],
+      ["mouse", "The pointer over the scene, in the pixels of the texture, from its bottom left like `gl_FragCoord`. `u_mouse` works too."],
+    ],
+    details:
+      "The block is a whole fragment shader: its uniforms, its functions and its `main()`. Write `out vec4 color;` and set it, or set `gl_FragColor` as in WebGL1; GSS adds `#version 300 es` and a `precision` when the code has none. It is drawn into a texture of 512 by 512 pixels, which the object shows like an image, on each of its faces, with `texture-size` and `image-rendering`. Each `@paint` runs on its own: its names never meet the rest of the scene, and an error in its GLSL names the `@paint` and its line in the file. A scene with `paint()` is drawn with WebGL2.",
+    note: {
+      title: "GLSL, not CSS.",
+      text: "Everything else in GSS is CSS: `@paint` is a way out for the textures CSS cannot describe. Try the gradients and `noise()` first: they are lighter, and they work with WebGPU too.",
+    },
+    examples: [
+      {
+        name: "rings that flow",
+        text: "The shader reads `time`: it is drawn again at every frame, and the colors flow over the cube.",
+        code: `@paint rings {
+  uniform float time;
+  uniform vec2 resolution;
+  out vec4 color;
+
+  void main() {
+    vec2 uv = gl_FragCoord.xy / resolution;
+    color = vec4(0.5 + 0.5 * cos(time + uv.xyx * 6.0 + vec3(0.0, 2.0, 4.0)), 1.0);
+  }
+}
+@scene { cube; }
+cube { translate: 0 0.8 0; rotate-y: 30deg; texture: paint(rings); }`,
+      },
+      {
+        name: "a checkerboard, drawn once",
+        text: "Without `time`, the shader is drawn once, and the texture stays.",
+        code: `@paint checks {
+  out vec4 color;
+
+  void main() {
+    vec2 cell = floor(gl_FragCoord.xy / 64.0);
+    float on = mod(cell.x + cell.y, 2.0);
+    color = vec4(mix(vec3(0.12), vec3(0.95), on), 1.0);
+  }
+}
+@scene { sphere; }
+sphere { translate: 0 1 0; texture: paint(checks); }`,
+      },
+    ],
+    see: [
+      { anchor: "fn-paint", label: "paint()" },
+      { anchor: "texture", label: "texture" },
+    ],
+  },
+  {
     name: "property-panel",
     since: "0.0.5",
     syntax: "@property-panel { display: open | folded | none; }",
@@ -2392,6 +2450,35 @@ export const FUNCTIONS: FunctionDef[] = [
         text: "A card of HTML that sways on the front of a thin cube.",
         code: "@scene { cube; } scene { floor: none; camera-angle: -20deg 10deg; camera-target: 0 0.8 0; camera-distance: 3.2; ambient: 0.55; } cube { translate: 0 0.8 0; size: 1.6 1 0.06; corner-radius: 0.03; animation: sway 6s ease-in-out infinite alternate; } cube::face(front) { texture: element(#card); } @keyframes sway { to { rotate-y: 25deg; } }",
         html: "<article id=\"card\" style=\"\n  width: 320px; height: 200px; padding: 28px;\n  box-sizing: border-box; border-radius: 18px;\n  background: #f4f1ea; color: #1a1d2b;\n  font: 600 30px/1.2 system-ui, sans-serif;\">\n  Hello from <em style=\"color: #ff5a36;\">HTML</em>, on a 3D card\n</article>",
+      },
+    ],
+  },
+  {
+    name: "paint()",
+    anchor: "fn-paint",
+    since: "0.0.6",
+    covers: [],
+    syntax: "paint(<name>)",
+    computed: "on the GPU: once, or at every frame when its shader reads time",
+    description:
+      "The texture a `@paint` draws, for `texture`, like CSS `paint()`, whose image comes from code: `texture: paint(rings);`.",
+    details: "The name is that of a `@paint` of the scene. Several objects can show the same one: it is drawn once for all of them. A scene with `paint()` is drawn with WebGL2.",
+    examples: [
+      {
+        name: "two objects, one shader",
+        text: "The cube and the sphere show the same stripes, drawn once per frame.",
+        code: `@paint stripes {
+  uniform float time;
+  out vec4 color;
+
+  void main() {
+    float band = step(0.5, fract(gl_FragCoord.y / 64.0 - time * 0.5));
+    color = vec4(mix(vec3(1.0, 0.35, 0.21), vec3(0.98, 0.95, 0.9), band), 1.0);
+  }
+}
+@scene { cube; sphere; }
+cube { translate: -0.9 0.6 0; size: 1.1; texture: paint(stripes); }
+sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
       },
     ],
   },

@@ -59,7 +59,7 @@ export const ENTRY_ORDER: Record<string, number> = {
 export const DOC_GROUPS: NavGroup[] = [
   { id: "getting-started", title: "Getting started", category: "Start here", order: 0, anchors: ["why-gss", "first-scene"] },
   { id: "installation", title: "Installation", category: "Start here", order: 1, anchors: ["embedding", "install-package", "install-vite", "install-cdn", "set-variables", "editor-support"] },
-  { id: "at-rules", title: "At-rules", category: "Language", order: 10, anchors: ["at-scene", "at-media", "at-keyframes", "at-property", "at-property-panel"] },
+  { id: "at-rules", title: "At-rules", category: "Language", order: 10, anchors: ["at-scene", "at-media", "at-keyframes", "at-property", "at-property-panel", "at-paint"] },
   { id: "selectors", title: "Selectors", category: "Language", order: 11, anchors: ["selector-type", "selector-class", "selector-id", "selector-universal", "selector-list", "selector-nesting", "selector-important"] },
   { id: "combinators", title: "Combinators", category: "Language", order: 12, anchors: ["selector-descendant", "selector-child", "selector-adjacent", "selector-sibling"] },
   { id: "pseudo-classes", title: "Pseudo-classes", category: "Language", order: 13, anchors: ["selector-hover", "selector-active", "selector-has", "selector-not", "selector-nth-child", "selector-nth-of-type", "selector-first-child", "selector-face"] },
@@ -72,7 +72,7 @@ export const DOC_GROUPS: NavGroup[] = [
   { id: "color-functions", title: "Color functions", category: "Appearance", order: 31, anchors: ["fn-rgb", "fn-hsl", "fn-hwb", "fn-lab-lch", "fn-oklab-oklch", "fn-color", "fn-color-mix", "fn-light-dark", "fn-contrast-color", "fn-currentcolor"] },
   { id: "gradients", title: "Gradients and noise", category: "Appearance", order: 32, anchors: ["fn-gradients", "fn-noise", "fn-displace"] },
   { id: "materials", title: "Materials", category: "Appearance", order: 33, anchors: ["material"] },
-  { id: "textures", title: "Textures", category: "Appearance", order: 34, anchors: ["texture", "fn-element", "texture-size", "image-rendering"] },
+  { id: "textures", title: "Textures", category: "Appearance", order: 34, anchors: ["texture", "fn-element", "fn-paint", "texture-size", "image-rendering"] },
   { id: "filters", title: "Filters", category: "Appearance", order: 35, anchors: ["filter"] },
   { id: "masks", title: "Opacity and masks", category: "Appearance", order: 36, anchors: ["opacity", "mask-image", "mask-mode"] },
   { id: "transforms", title: "Transforms", category: "Motion", order: 40, anchors: ["translate", "rotate-x", "rotate-y", "rotate-z", "scale", "transform-origin", "offset-path", "offset-distance", "offset-rotate"] },

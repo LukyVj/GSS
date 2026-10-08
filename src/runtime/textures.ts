@@ -142,6 +142,19 @@ export function findElement(canvas: Element, id: string): Element | null {
   return null;
 }
 
+// texture: paint(rings) reaches the runtime as "paint(rings)": the name, or null (decision 151)
+export function paintName(source: string): string | null {
+  return /^paint\(([^()\s]+)\)$/.exec(source)?.[1] ?? null;
+}
+
+// Drawn with WebGL2 only for now: an element of the page (decision 101), or a @paint, whose
+// GLSL WebGPU cannot run (decision 151). mountAsync picks WebGL2 for such a scene.
+export function needsWebGL(scene: { textures: string[]; media?: { variants: { textures: string[] }[] } }): boolean {
+  return [scene, ...(scene.media?.variants ?? [])].some((version) =>
+    version.textures.some((file) => elementId(file) !== null || paintName(file) !== null),
+  );
+}
+
 // Does the scene, or one of its versions (@media), show an element of the page?
 export function usesElements(scene: { textures: string[]; media?: { variants: { textures: string[] }[] } }): boolean {
   return [scene, ...(scene.media?.variants ?? [])].some((version) => version.textures.some((file) => elementId(file) !== null));
@@ -150,5 +163,6 @@ export function usesElements(scene: { textures: string[]; media?: { variants: { 
 // Where an image of the scene lives: next to the .gss file, like url() in a stylesheet.
 // Without a base (the playground, the docs), the path stays as written.
 export function resolveImage(file: string, base?: string): string {
-  return base && elementId(file) === null ? new URL(file, base).href : file; // an element is no file
+  // an element or a @paint is no file
+  return base && elementId(file) === null && paintName(file) === null ? new URL(file, base).href : file;
 }
