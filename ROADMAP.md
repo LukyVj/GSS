@@ -28,7 +28,7 @@ What the language and the tools can do today. Each feature is detailed in the re
 | Units                | angles `deg` `rad` `turn` (always with a unit), durations `s` `ms`, `%`                                                                                                                                                                                                                                                                                                                                                                                               | 9, 17, 20                                  |
 | Modern CSS functions | commas or spaces: `metal(#d4af37, 0.2)`, `polygon(0 1, 1 0, -1 0)`                                                                                                                                                                                                                                                                                                                                                                                                    | 28                                         |
 
-### Shapes (11)
+### Shapes (14)
 
 | Shape                 | Own properties                                                                                                                     | Dec.   |
 | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ------ |
@@ -41,6 +41,9 @@ What the language and the tools can do today. Each feature is detailed in the re
 | `path`                | a tube along an SVG path: `d: path("M… C… A…")`, `stroke-width`, `view-box`                                                        | 35, 49 |
 | `prism`               | a filled contour given a depth: `d: polygon(…)` or `d: path(…)` (even-odd holes), `depth`, `view-box`                              | 41, 50 |
 | `lathe`               | a filled contour turned around the y axis: `d: polygon(…)` or `d: path(…)`, x = 0 is the axis, `view-box`                          | 130    |
+| `pyramid`             | `size` (base width, height, base depth), like `cube`                                                                               | 154    |
+| `octahedron`          | `radius`, center to tip                                                                                                            | 154    |
+| `tube`                | a hollow cylinder: `radius` (outer), `height`, `thickness` (the wall, inside the radius)                                           | 154    |
 | `group`               | draws nothing, holds the others                                                                                                    | 45     |
 | `light`               | a point of light, never drawn: `color`, `intensity`, placed like an object (translate, groups, animations, motion path); 8 at most | 110    |
 

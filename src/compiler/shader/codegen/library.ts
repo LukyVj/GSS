@@ -39,6 +39,52 @@ float sdCapsule(vec3 p, float h, float r) {
   p.y -= clamp(p.y, -h, h);
   return length(p) - r;
 }`,
+
+  sdPyramid: `// A pyramid on a base of s.x by s.z, s.y high, centered on its origin (decision 154):
+// Inigo Quilez's square pyramid, stretched. Stretched, it is never more than the true
+// distance, so the march never steps through it.
+float sdPyramid(vec3 p, vec3 s) {
+  float k = min(s.x, s.z);
+  float h = s.y / k;
+  float m2 = h * h + 0.25;
+  vec2 xz = abs(vec2(p.x / s.x, p.z / s.z));
+  if (xz.y > xz.x) {
+    xz = xz.yx;
+  }
+  xz = xz - vec2(0.5);
+  float y = (p.y + 0.5 * s.y) / k;
+  vec3 q = vec3(xz.y, h * y - 0.5 * xz.x, h * xz.x + 0.5 * y);
+  float e = max(-q.x, 0.0);
+  float t = clamp((q.y - 0.5 * xz.y) / (m2 + 0.25), 0.0, 1.0);
+  float a = m2 * (q.x + e) * (q.x + e) + q.y * q.y;
+  float b = m2 * (q.x + 0.5 * t) * (q.x + 0.5 * t) + (q.y - m2 * t) * (q.y - m2 * t);
+  float d2 = min(q.y, -q.x * m2 - q.y * 0.5) > 0.0 ? 0.0 : min(a, b);
+  return k * sqrt((d2 + q.z * q.z) / m2) * sign(max(q.z, -y));
+}`,
+
+  sdOctahedron: `// s = from the center to each tip (Inigo Quilez, exact)
+float sdOctahedron(vec3 p, float s) {
+  p = abs(p);
+  float m = p.x + p.y + p.z - s;
+  vec3 q = p;
+  if (3.0 * p.x < m) {
+    q = p;
+  } else if (3.0 * p.y < m) {
+    q = p.yzx;
+  } else if (3.0 * p.z < m) {
+    q = p.zxy;
+  } else {
+    return m * 0.57735027;
+  }
+  float k = clamp(0.5 * (q.z - q.y + s), 0.0, s);
+  return length(vec3(q.x, q.y - s + k, q.z - k));
+}`,
+
+  sdTube: `// A hollow cylinder: h = half the height, r = the outer radius, t = the thickness of its wall
+float sdTube(vec3 p, float h, float r, float t) {
+  vec2 d = vec2(abs(length(p.xz) - r + 0.5 * t) - 0.5 * t, abs(p.y) - h);
+  return min(max(d.x, d.y), 0.0) + length(max(d, 0.0));
+}`,
 };
 
 // The 2D helpers of path and prism. Only those the generated shapes call go in the shader.
@@ -163,6 +209,20 @@ const int BLURRED = 3;
 Material glass(vec3 color, float ior, float frost, int frostStyle) {
   return Material(color, GLASS, frost, 0.0, ior, frostStyle);
 }`,
+
+  emissive: `const int EMISSIVE = 4;
+
+// A surface that gives its own light (decision 153): the strength goes in density
+Material emissive(vec3 color, float strength) {
+  return Material(color, EMISSIVE, 0.0, strength, 1.0, 0); // frostStyle: only glass reads it
+}`,
+
+  iridescent: `const int IRIDESCENT = 5;
+
+// A thin film, like a soap bubble (decision 156): the strength goes in density
+Material iridescent(vec3 color, float strength) {
+  return Material(color, IRIDESCENT, 0.0, strength, 1.0, 0); // frostStyle: only glass reads it
+}`,
 };
 
 // The line of main() that lights each material
@@ -170,4 +230,6 @@ export const SHADE_CALLS: Record<string, string> = {
   metal: "    if (m.kind == METAL) col = shadeMetal(p, n, rd, m);",
   jelly: "    if (m.kind == JELLY) col = shadeJelly(p, n, rd, m);",
   glass: "    if (m.kind == GLASS) col = shadeGlass(p, n, rd, m);",
+  emissive: "    if (m.kind == EMISSIVE) col = max(col, m.color * m.density);",
+  iridescent: "    if (m.kind == IRIDESCENT) col = shadeIridescent(p, n, rd, m);",
 };

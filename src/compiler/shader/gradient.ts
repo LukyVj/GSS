@@ -23,6 +23,8 @@ export const GRADIENT_FUNCTIONS = [
   "conic-gradient",
   "repeating-conic-gradient",
   "noise",
+  "checker", // decision 155: noise()'s cousins, a pattern instead of a noise
+  "stripes",
   "displace", // decision 114: an image moved by a map, like feDisplacementMap
 ];
 
@@ -115,7 +117,17 @@ export type Gradient = {
   from: Num; // conic: the start angle, in turns
   stops: { color: string; at: Num }[];
   // noise() (decision 111): kind, octaves and seed cannot change; scale and offset can
-  noise?: { turbulence: boolean; scale: Num; octaves: number; seed: number; offset: [Num, Num, Num] };
+  noise?: {
+    turbulence: boolean;
+    scale: Num;
+    octaves: number;
+    seed: number;
+    offset: [Num, Num, Num];
+    // checker() and stripes() (decision 155): a pattern read like the noise, and the axis
+    // of the stripes (0: x, 1: y, 2: z)
+    pattern?: "checker" | "stripes";
+    axis?: number;
+  };
   // A layer of background or a mask-image (decisions 112, 113): its colors can be transparent,
   // and it gives a premultiplied vec4, like CSS mixes the stops of a gradient
   alpha?: boolean;
@@ -130,14 +142,18 @@ export function readGradient(value: Token[], alpha = false): Gradient {
   if (call.name === "displace") return readDisplace(call.args, value, alpha);
   const radial = call.name.includes("radial");
   const conic = call.name.includes("conic");
-  const noise = call.name === "noise";
+  const pattern = call.name === "checker" || call.name === "stripes" ? call.name : null;
+  const noise = call.name === "noise" || pattern !== null;
   const [first, ...rest] = call.args;
   // The first argument is the direction (or shape) unless it starts with a color
   const hasSetup = first && !isColor(first[0]);
   const setup = hasSetup ? first : [];
   const gradient: Gradient = { name: call.name, shape: "", direction: Math.PI, center: [0.5, 0.5], from: 0, stops: [] };
   // The setup first: its errors say more than those of the stops it leaves behind
-  if (noise) {
+  if (pattern) {
+    gradient.noise = readPattern(setup, value, pattern);
+    gradient.shape = `${pattern}, axis ${gradient.noise.axis}`;
+  } else if (noise) {
     gradient.noise = readNoise(setup, value);
     const { turbulence, octaves, seed } = gradient.noise;
     gradient.shape = `${turbulence ? "turbulence" : "fractal"}, ${octaves} octaves, seed ${seed}`;
@@ -346,7 +362,7 @@ function colorOf(token: Token, value: Token[], alpha = false): string {
 
 // red, #fff 20%, blue 40% 60%: a color, then 0, 1 or 2 positions, completed like CSS
 function readStops(args: Token[][], value: Token[], name: string, alpha = false): Stop[] {
-  const example = name === "noise" ? "noise(4, #1c1c24, #07070a)" : `${name}(#1c1c24, #07070a)`;
+  const example = ["noise", "checker", "stripes"].includes(name) ? `${name}(4, #1c1c24, #07070a)` : `${name}(#1c1c24, #07070a)`;
   const stops: Stop[] = [];
   for (const arg of args) {
     const [color, ...positions] = arg;
@@ -435,11 +451,38 @@ function readNoise(setup: Token[], value: Token[]): NonNullable<Gradient["noise"
   return noise;
 }
 
+// checker() and stripes() (decision 155): <scale> [x | y | z] [at <x> <y> <z>], like noise():
+// the scale is how many cells or bands fit in a unit, at moves the pattern
+function readPattern(setup: Token[], value: Token[], name: "checker" | "stripes"): NonNullable<Gradient["noise"]> {
+  const example =
+    name === "checker" ? "checker(4, #1a1d2b, #e8e6e1)" : "stripes(4 y, #ff5a36, #ffffff), the axis x, y or z";
+  const error = () => errorAt(value, `${name}() starts with a scale, then if needed${name === "stripes" ? " its axis and" : ""} at <x> <y> <z>, like: ${example}`);
+  const pattern: NonNullable<Gradient["noise"]> = { turbulence: false, scale: 1, octaves: 1, seed: 0, offset: [0, 0, 0], pattern: name, axis: 1 };
+  const number = (t: Token | undefined): Num | null =>
+    t?.type === "NUMBER" ? t.value : t?.type === "EXPR" && t.syntax === "number" ? t.code : null;
+  let i = 0;
+  const scale = number(setup[i++]);
+  if (scale === null || (typeof scale === "number" && scale <= 0)) throw error();
+  pattern.scale = typeof scale === "number" ? scale : `max(${scale}, 0.0001)`;
+  if (name === "stripes" && isWord(setup[i], "x", "y", "z")) pattern.axis = "xyz".indexOf((setup[i++] as { value: string }).value);
+  if (isWord(setup[i], "at")) {
+    const xyz = setup.slice(i + 1, i + 4).map(number);
+    if (xyz.length !== 3 || xyz.some((n) => n === null)) throw error();
+    pattern.offset = xyz as [Num, Num, Num];
+    i += 4;
+  }
+  if (i < setup.length) throw error();
+  return pattern;
+}
+
 // t from the noise at the point: 0 to 1, the colors placed on it like a gradient's
 function noiseT(gradient: Gradient, moves: (key: string) => boolean, get: (key: string) => string, point: string): string[] {
-  const { turbulence, octaves, seed, offset } = gradient.noise!;
+  const { turbulence, octaves, seed, offset, pattern, axis } = gradient.noise!;
   const still = !["ox", "oy", "oz"].some(moves) && offset.every((n) => n === 0);
   const at = still ? "vec3(0.0)" : `vec3(${get("ox")}, ${get("oy")}, ${get("oz")})`;
+  // checker() and stripes() (decision 155): 0 or 1, by cell or by band
+  if (pattern === "checker") return [`  float t = checkerPattern((${point} + ${at}) * ${get("scale")});`];
+  if (pattern === "stripes") return [`  float t = stripesPattern((${point} + ${at}) * ${get("scale")}, ${axis});`];
   // Another seed reads the noise far away, where it draws another pattern
   const shift = seed ? ` + vec3(${[37.1, 17.3, 51.9].map((k) => f(+(k * seed).toFixed(3))).join(", ")})` : "";
   return [`  float t = ${turbulence ? "turbulence" : "fractal"}Noise((${point} + ${at}) * ${get("scale")}${shift}, ${octaves});`];

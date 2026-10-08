@@ -57,4 +57,16 @@ float turbulenceNoise(vec3 p, int octaves) {
   }
   return clamp(2.0 * sum / sqrt(norm), 0.0, 1.0);
 }`,
+
+  checkerPattern: `// checker() (decision 155): 0 or 1, from one cube of the grid to the next
+float checkerPattern(vec3 p) {
+  vec3 c = floor(p);
+  return mod(c.x + c.y + c.z, 2.0);
+}`,
+
+  stripesPattern: `// stripes() (decision 155): 0 then 1 along an axis (0: x, 1: y, 2: z), half a unit each
+float stripesPattern(vec3 p, int axis) {
+  float v = axis == 0 ? p.x : (axis == 1 ? p.y : p.z);
+  return step(0.5, fract(v));
+}`,
 };

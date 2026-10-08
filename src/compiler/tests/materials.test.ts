@@ -84,11 +84,25 @@ describe("material keywords", () => {
     );
   });
 
+  // The metals of everyday objects (decision 152): preset metal() colors and roughnesses
+  it.each([
+    ["copper", "metal(#c8784a, 0.25)"],
+    ["silver", "metal(#e3e4e6, 0.1)"],
+    ["brass", "metal(#c9a24d, 0.2)"],
+    ["aluminum", "metal(#c4c8cc, 0.35)"],
+  ])("%s is %s", (keyword, metal) => {
+    expect(materialOf(`sphere { material: ${keyword}; }`)).toBe(materialOf(`sphere { material: ${metal}; }`));
+  });
+
+  it("keeps silver a color where a color is expected", () => {
+    expect(materialOf("sphere { color: silver; }")).toBe(materialOf("sphere { color: #c0c0c0; }"));
+  });
+
   it("lists every material for an unknown keyword", () => {
     expect(() =>
       compileGSS("@scene { sphere; } sphere { material: wood; }"),
     ).toThrow(
-      'Unknown material "wood". Available: matte(), metal(), jelly(), glass(), gold, chrome, jelly, glass, ice',
+      'Unknown material "wood". Available: matte(), metal(), jelly(), glass(), emissive(), iridescent(), gold, chrome, copper, silver, brass, aluminum, jelly, glass, ice, emissive, iridescent',
     );
   });
 
@@ -262,3 +276,64 @@ describe("material: glass() frost styles", () => {
     );
   });
 });
+
+// emissive() (decision 153): a surface that gives its own light: never darker than its color times its strength
+describe("material: emissive()", () => {
+  it("writes the color and the strength", () => {
+    expect(materialOf("sphere { material: emissive(#ff0000, 2); }")).toBe(
+      "if (id == 1.0) return emissive(vec3(1.0, 0.0, 0.0), 2.0);  // sphere",
+    );
+  });
+
+  it("takes the color of color, and a strength of 1, by default", () => {
+    expect(materialOf("sphere { color: #00ff00; material: emissive(); }")).toBe(
+      "if (id == 1.0) return emissive(vec3(0.0, 1.0, 0.0), 1.0);  // sphere",
+    );
+  });
+
+  it("rejects a strength outside [0, 4]", () => {
+    expect(() => compileGSS("@scene { sphere; } sphere { material: emissive(5); }")).toThrow(
+      "emissive(): strength expects a number between 0 and 4",
+    );
+  });
+
+  it("adds its glow to the light in main(), and only when the scene uses it", () => {
+    const glowing = compileGSS("@scene { sphere; } sphere { material: emissive(); }");
+    expect(glowing).toContain("const int EMISSIVE = 4;");
+    expect(glowing).toContain("if (m.kind == EMISSIVE) col = max(col, m.color * m.density);");
+    expect(compileGSS("@scene { sphere; }")).not.toContain("EMISSIVE");
+  });
+
+  it("takes a named color as its first argument", () => {
+    expect(materialOf("sphere { material: emissive(red, 1); }")).toBe(
+      materialOf("sphere { material: emissive(#ff0000, 1); }"),
+    );
+  });
+});
+
+// iridescent() (decision 156): a thin film whose colors turn with the angle of view
+describe("material: iridescent()", () => {
+  it("writes the color and the strength, 0.7 by default", () => {
+    expect(materialOf("sphere { material: iridescent(#202020, 0.5); }")).toBe(
+      "if (id == 1.0) return iridescent(vec3(0.125, 0.125, 0.125), 0.5);  // sphere",
+    );
+    expect(materialOf("sphere { color: #ffffff; material: iridescent(); }")).toBe(
+      "if (id == 1.0) return iridescent(vec3(1.0, 1.0, 1.0), 0.7);  // sphere",
+    );
+  });
+
+  it("rejects a strength outside [0, 1]", () => {
+    expect(() => compileGSS("@scene { sphere; } sphere { material: iridescent(2); }")).toThrow(
+      "iridescent(): strength expects a number between 0 and 1",
+    );
+  });
+
+  it("is lit by shadeIridescent, only in the scenes that use it", () => {
+    const shader = compileGSS("@scene { sphere; } sphere { material: iridescent(); }");
+    expect(shader).toContain("const int IRIDESCENT = 5;");
+    expect(shader).toContain("if (m.kind == IRIDESCENT) col = shadeIridescent(p, n, rd, m);");
+    expect(shader).toContain("vec3 shadeIridescent(vec3 p, vec3 n, vec3 rd, Material m)");
+    expect(compileGSS("@scene { sphere; }")).not.toContain("IRIDESCENT");
+  });
+});
+

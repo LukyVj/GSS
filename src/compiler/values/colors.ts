@@ -49,7 +49,7 @@ export const DARK_QUERY = "(prefers-color-scheme: dark)";
 // The properties whose whole value is a color
 const COLOR_PROPERTIES = ["color", "floor", "background"];
 // The materials whose first argument is a color: metal(tomato, 0.2)
-export const MATERIAL_FUNCTIONS = ["matte", "metal", "jelly", "glass"];
+export const MATERIAL_FUNCTIONS = ["matte", "metal", "jelly", "glass", "emissive", "iridescent"];
 
 // tomato → #ff6347, but only where a color is expected (decision 58):
 // material: gold stays the gold material, while color: gold is #ffd700.

@@ -1236,3 +1236,51 @@ Measured, gzipped (hero.gss, Oct. 6): `gss-lang/runtime` and its scene 16 → 12
 **Differences from CSS**: CSS `paint(name)` draws with a JavaScript worklet registered by `CSS.paintWorklet.addModule()`, on a 2D canvas, at the size of the box. In GSS the code is GLSL, written in the stylesheet itself, and draws a square of 512 pixels; `paint()` takes no arguments yet.
 **Why**: textures gradients and `noise()` cannot express, and every shader written for the web pastes in. Drawing into a texture keeps the cost fixed per frame whatever the scene does, keeps the shader's names away from GSS's own, and reuses everything textures already do. Inline code keeps a scene one file, for the playground and its share links.
 **Accepted limits**: not CSS: the docs say so in a note, and point to gradients and `noise()` first. The resolution is fixed at 512. No custom properties as uniforms yet. A heavy shader can make the scene too heavy, which then stops (decision 142). Shadertoy shaders need `mainImage` turned into `main()` by hand. In the playground, a scene that starts on WebGPU and then gets a `paint()` keeps its color until WebGL2 is chosen, as with `element()`.
+
+## 152. copper, silver, brass and aluminum: metal() presets, like gold and chrome
+
+**Decision** (Lucas's list for 0.0.6, Oct. 8): four more material keywords, each a `metal()` with its color and roughness: `copper` = `metal(#c8784a, 0.25)`, `silver` = `metal(#e3e4e6, 0.1)`, `brass` = `metal(#c9a24d, 0.2)`, `aluminum` = `metal(#c4c8cc, 0.35)`. Like `gold`, `silver` stays the CSS color `#c0c0c0` where a color is expected (`color: silver`), and is the metal in `material` (decision 58).
+**Why**: the metals of everyday objects, easy to guess for a person or an LLM, at no cost: a keyword is the `metal()` it stands for.
+**Accepted limits**: the colors are chosen by eye on the matte GSS lighting, not measured reflectances. `aluminium` (British spelling) is not accepted, like CSS keeps `color`, not `colour`.
+
+## 153. `emissive()`: a surface that gives its own light
+
+**Decision** (Lucas's list for 0.0.6, Oct. 8): `material: emissive([<color>,] [<strength>])`. The surface is lit like `matte()`, but never darker than its color times the strength: `col = max(col, m.color * m.density)`, the strength stored in the `density` field of `Material`, which no other use of this kind reads. The strength goes from 0 (the same as `matte()`) to 4, 1 by default, and can come from `@property` like the other settings. Without a color, `color` (like every material). A named color works as its first argument (`emissive(red, 2)`). Like the other materials, its GLSL is in the shader only when the scene uses it.
+**Why**: lamps, screens and neons, and the natural partner of `bloom()`, which makes the bright parts glow. It costs one addition per pixel.
+**Accepted limits**: it does not light the objects around it: GSS has no light from surfaces, only from the sun and the `light` elements; put a point light inside the object for that. In the reflections of a metal or glass, an emissive object looks matte (`trace()` lights what it hits with `diffuse()`). The canvas is 8 bits per channel: above 1, the channels that pass 1 clip, so a strength of 2 gives a lighter color rather than more light. Adding the glow on top of the light (the first version) clipped all three channels and turned an orange into a pale yellow: `max()` keeps the hue.
+
+## 154. `pyramid`, `octahedron` and `tube`
+
+**Decision** (Lucas's list for 0.0.6, Oct. 8): three shapes, centered on their origin like the others (decision 36), each with an exact distance function of Inigo Quilez's, written without assigning to a swizzle (`p.xz = …`), which the WGSL lowering does not take.
+- `pyramid`: a square base, pointing up, sized by `size` like a cube: `size: <base width> <height> <base depth>`, one value for all three. The unit pyramid of the distance function is stretched to the size, scaled by the smaller side of the base: stretched, the distance is never more than the true one, so the march stays safe (exact when the base is square and the height follows it). Bounding sphere: the half-diagonal of its box.
+- `octahedron`: `radius` from its center to each tip, 0.5 by default.
+- `tube`: a hollow cylinder, open at both ends: `radius` (outer, 0.5), `height` (1), and `thickness` (the wall, 0.1), the property of the tube of a torus. The wall goes inside the radius, so the outer size does not change; a `thickness` above the `radius` is an error, and one set from JS is held at the radius. Not a `path`, which draws a tube along any line: the docs of `tube` say so.
+Gradients and `transform-origin` read a pyramid like a cube, an octahedron like a sphere, and a tube like a cylinder.
+**Why**: common shapes, cheap distance functions, from Lucas's list; `lathe` (decision 130) already covers vases and bottles.
+**Accepted limits**: a pyramid has a square-based look: a rectangular base works, but its distance is only a lower bound, so the march takes a few more steps near it. No rounded edges on these three. `ellipsoid`, `hex-prism` and `text` wait.
+
+## 155. `checker()` and `stripes()`: patterns, like `noise()`
+
+**Decision** (Lucas's list for 0.0.6, Oct. 8, layer 1 of the texture shaders: named procedural textures, no GLSL): two image functions, wherever a gradient goes (`color`, a material's color, `background`, `floor`, the map of `displace()`), built on `noise()` (decision 111): a value at the point, 0 or 1, and the colors placed on it like the stops of a gradient.
+- `checker(<scale> [at x y z], <color>, <color>)`: a grid of cubes of 1 / scale, the parity of `floor(x) + floor(y) + floor(z)`.
+- `stripes(<scale> [x | y | z] [at x y z], <color>, <color>)`: bands along an axis, `y` by default, half of each color.
+They read the point in the object's own space, like `noise()`: the cells keep their size whatever the shape, there is no seam, and they move and turn with the object; on the floor, the units of the scene; in the background, the direction of the view. Internally they are a `noise` with a `pattern` and an `axis`, so they animate (into another of the same function and axis), take numbers from JS, and work in `displace()`, with no code of their own for that.
+**Changed from the plan**: the plan proposed triplanar `u`/`v`, like `texture`. In the object's space, like `noise()`, a pattern has no seams between the faces and works the same on a sphere; it is also what the other procedural image of GSS does.
+**Differences from CSS**: CSS has no `checker()` or `stripes()`; a CSS checkerboard is a `repeating-conic-gradient()` tiled with `background-size`, and CSS stripes a `repeating-linear-gradient()`, which GSS has, seen from the front. These two are GSS functions, like `noise()`.
+**Accepted limits**: sharp edges, so a fine pattern shimmers far away (no antialiasing: the derivatives are not available where the color is read). `dots()` waits: a grid of dots cut in 3D shows no dot where a flat face passes between two rows, depending on the size of the object. `voronoi()` and `gradient-map()` wait too.
+
+## 156. `iridescent()`: a thin film whose colors turn with the angle of view
+
+**Decision** (Lucas's list for 0.0.6, Oct. 8): `material: iridescent([<color>,] [<strength>])`, and the keyword `iridescent`; `emissive` became a keyword too (decision 153), like `jelly` and `glass`. The light a thin film reflects interferes with itself, so its color depends on the angle it is seen at: `shadeIridescent()` stands for that with a cosine palette of `1 - dot(-rd, n)`, lit like `matte()`, mixed over the object's own lit color by the strength (0 to 1, 0.7 by default), more at grazing angles (from 35 % of the strength seen from the front to all of it at the edge), plus a highlight of the sun. The strength is stored in `density`, like `emissive()`.
+**Why**: soap bubbles, oil on water, beetles, the back of a CD: a look that "creative coding" scenes ask for, at the cost of a few lines per pixel, only on the objects that use it.
+**Accepted limits**: not a physical thin film (no film thickness or index to set): one palette, the same for every object, tinted by its color. Like the other materials, its reflections see matte objects.
+
+## 157. `vignette()` and `chromatic-aberration()`: the effects of a lens, in `filter`
+
+**Decision** (Lucas's list for 0.0.6, Oct. 8, "grow `filter` with a couple more post effects"): two functions of `filter`, on the scene only.
+- `vignette(<amount>)`, 0 to 1, 0.5 by default (above 1 kept at 1, like the other amounts): a pixel filter, one line at the end of the scene's shader like `grain()`, no extra pass: `c *= 1 - amount * smoothstep(0.3, 1.0, distance from the center)`, the distance 1 at the corners.
+- `chromatic-aberration(<length>)`, in px, 2px by default (0 does nothing): one pass, like `blur()`, that reads red further out and blue further in, by the length at the corners and 0 at the center, so a lens seems to bend each color its own way. CSS pixels, like `blur()` (`uRatio`).
+On an object or a group, both are an error that says to put them on the scene: a lens sees the whole image.
+**Differences from CSS**: CSS `filter` has neither; like `bloom()` and `grain()`, they are GSS functions, named for what they imitate.
+**Why**: the two most asked "film" effects after bloom and grain, and cheap: a line, or one pass of three reads per pixel.
+**Accepted limits**: the vignette is round on a wide canvas only in its distance, not its shape (an ellipse that follows the canvas). The aberration reads straight lines from the center: no blur of the split colors, as a real lens would add.

@@ -325,11 +325,13 @@ export function gradientBox(instance: StyledInstance): { size: Num[]; at: string
   const styles = instance.styles;
   const front = (w: Num, h: Num) => ({ size: [w, h], at: "q.xy" });
   switch (instance.tag) {
-    case "cube": {
+    case "cube":
+    case "pyramid": {
       const [x, y] = liveSize3(styles["size"]);
       return front(x, y);
     }
-    case "sphere": {
+    case "sphere":
+    case "octahedron": {
       const d = mul(2, liveNumber(styles["radius"], "radius", 0.5));
       return front(d, d);
     }
@@ -339,6 +341,7 @@ export function gradientBox(instance: StyledInstance): { size: Num[]; at: string
       return front(mul(2, add(r, t)), mul(2, t));
     }
     case "cylinder":
+    case "tube":
     case "capsule":
       return front(
         mul(2, liveNumber(styles["radius"], "radius", instance.tag === "capsule" ? 0.25 : 0.5)),

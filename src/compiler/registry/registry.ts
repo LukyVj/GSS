@@ -14,7 +14,10 @@ export type Shape =
   | "capsule"
   | "plane"
   | "prism"
-  | "lathe";
+  | "lathe"
+  | "pyramid"
+  | "octahedron"
+  | "tube";
 
 export type Example = {
   name?: string; // its heading in the docs, and its name in the menu of the playground
@@ -163,7 +166,7 @@ export const PROPERTIES: PropertyDef[] = [
     name: "material",
     appliesTo: "object",
     syntax:
-      "matte([<color>]) | metal([<color>,] [<roughness>]) | jelly([<color>,] [<density>]) | gold | chrome | jelly | glass([<color>,] [<refraction-index>] [, [frosted | wavy | hammered | blurred] <frost>]) | glass | ice",
+      "matte([<color>]) | metal([<color>,] [<roughness>]) | jelly([<color>,] [<density>]) | emissive([<color>,] [<strength>]) | iridescent([<color>,] [<strength>]) | gold | chrome | copper | silver | brass | aluminum | jelly | glass([<color>,] [<refraction-index>] [, [frosted | wavy | hammered | blurred] <frost>]) | glass | ice | emissive | iridescent",
     initial: "matte()",
     description:
       "Sets how the surface of the object reacts to light. Without a color, a material uses the `color` property, like `currentColor` in CSS, so the color stays animatable. The color can also be a gradient: `metal(linear-gradient(#ffd27a, #ff5a36), 0.2)`.",
@@ -172,9 +175,13 @@ export const PROPERTIES: PropertyDef[] = [
       ["metal()", "Reflects the scene. Its roughness goes from 0, a mirror, to 1, brushed metal (0.2 by default)."],
       ["jelly()", "Lets the light through its thin parts, like a gummy candy. Its density goes from 0, clear, to 1, deep (0.5 by default)."],
       ["glass()", "See-through, bent by its refraction index, from 1 to 3 (1.5 by default: water is 1.33, diamond 2.4), then a frost from 0 to 1."],
+      ["emissive()", "Gives its own light: a lamp, a screen, a neon. It is never darker than its color times its strength, from 0, none, to 4 (1 by default: its full color, even in the shade). It does not light the objects around it; with `bloom()` in the `filter` of the scene, it glows."],
+      ["iridescent()", "A thin film, like a soap bubble or the back of a CD: its colors turn with the angle you see it at, most at the edges. Its strength goes from 0, none, to 1 (0.7 by default)."],
       ["frosted, wavy, hammered, blurred", "The style of the frost: white patches (the default), big waves, small bumps, a soft blur."],
       ["gold, chrome", "`metal(#d4af37, 0.2)` and `metal(#ffffff, 0.05)`."],
+      ["copper, silver, brass, aluminum", "`metal(#c8784a, 0.25)`, `metal(#e3e4e6, 0.1)`, `metal(#c9a24d, 0.2)` and `metal(#c4c8cc, 0.35)`: the metals of everyday objects."],
       ["jelly, glass, ice", "`jelly()`, `glass()`, and `glass(#cfeaff, 1.31, frosted 0.25)`."],
+      ["emissive, iridescent", "`emissive()` and `iridescent()`, with the color of `color`."],
     ],
     examples: [
       {
@@ -188,9 +195,24 @@ export const PROPERTIES: PropertyDef[] = [
         code: "@scene { sphere#a; sphere#b; sphere#c; } #a { translate: 1.3 0.6 0; radius: 0.6; material: gold; } #b { translate: 0 0.6 0; radius: 0.6; material: chrome; } #c { translate: -1.3 0.6 0; radius: 0.6; color: #d4af37; material: metal(0.7); }",
       },
       {
+        name: "everyday metals",
+        text: "`copper`, `silver`, `brass` and `aluminum`, from left to right.",
+        code: "@scene { sphere#a; sphere#b; sphere#c; sphere#d; } sphere { radius: 0.45; } #a { translate: -1.5 0.5 0; material: copper; } #b { translate: -0.5 0.5 0; material: silver; } #c { translate: 0.5 0.5 0; material: brass; } #d { translate: 1.5 0.5 0; material: aluminum; }",
+      },
+      {
         name: "jelly()",
         text: "`jelly`, and a clearer `jelly(0.3)`.",
         code: "@scene { sphere; cube; } sphere { translate: 0.8 0.6 0; radius: 0.6; color: #ff5a36; material: jelly; } cube { translate: -0.8 0.5 0; rotate-y: -30deg; color: #3ad16b; material: jelly(0.3); }",
+      },
+      {
+        name: "emissive()",
+        text: "A glowing sphere and a dim one, with `bloom()` on the scene.",
+        code: "@scene { sphere#lamp; sphere#dim; } scene { background: #07080c; ambient: 0.25; filter: bloom(0.7, 10px); } #lamp { translate: -0.8 0.6 0; radius: 0.55; material: emissive(#ff5a36, 2); } #dim { translate: 0.8 0.6 0; radius: 0.55; material: emissive(#3a7bff, 0.5); }",
+      },
+      {
+        name: "iridescent()",
+        text: "A dark sphere and a pale torus: their colors turn as they spin.",
+        code: "@scene { sphere; torus; } sphere { translate: -0.8 0.7 0; radius: 0.6; color: #15161c; material: iridescent(0.9); } torus { translate: 0.9 0.7 0; radius: 0.45; thickness: 0.18; rotate-x: 70deg; color: #f4f1ea; material: iridescent; animation: spin 6s linear infinite; } @keyframes spin { to { rotate-y: 360deg; } }",
       },
       {
         name: "glass()",
@@ -755,11 +777,11 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "size",
-    appliesTo: ["cube", "plane"],
-    syntax: "<number>{1,3} (cube) | <number>{1,2} (plane: width depth)",
-    initial: "1 (cube), 1 (plane)",
+    appliesTo: ["cube", "plane", "pyramid"],
+    syntax: "<number>{1,3} (cube, pyramid) | <number>{1,2} (plane: width depth)",
+    initial: "1 (cube), 1 (plane), 1 (pyramid)",
     description:
-      "Sets the size of a cube along the x, y and z axes: one value makes a cube, three make a box. On a plane, it sets the width and the depth: one value makes a square.",
+      "Sets the size of a cube along the x, y and z axes: one value makes a cube, three make a box. On a pyramid, the width and the depth of its base, and its height in the middle. On a plane, it sets the width and the depth: one value makes a square.",
     examples: [
       {
         name: "a box",
@@ -788,12 +810,12 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "radius",
-    appliesTo: ["sphere", "torus", "cylinder", "cone", "capsule"],
+    appliesTo: ["sphere", "torus", "cylinder", "cone", "capsule", "octahedron", "tube"],
     syntax: "<number> | <number> <number> (cone: bottom top)",
     initial:
-      "0.5 (sphere), 1 (torus), 0.5 (cylinder), 0.5 0 (cone), 0.25 (capsule)",
+      "0.5 (sphere), 1 (torus), 0.5 (cylinder), 0.5 0 (cone), 0.25 (capsule), 0.5 (octahedron), 0.5 (tube)",
     description:
-      "Sets the radius of a sphere, a cylinder or a capsule, or that of a torus ring, measured to the center of its tube.",
+      "Sets the radius of a sphere, a cylinder or a capsule, or that of a torus ring, measured to the center of its tube. On an octahedron, from its center to each tip; on a tube, its outer radius.",
     details: "A cone takes a bottom and a top radius, like `border-radius` takes several values: the top one is 0 by default, a point, and a positive one cuts the top.",
     examples: [
       {
@@ -809,10 +831,10 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "thickness",
-    appliesTo: ["torus"],
+    appliesTo: ["torus", "tube"],
     syntax: "<number>",
-    initial: "0.28",
-    description: "Sets the radius of the tube of a torus.",
+    initial: "0.28 (torus), 0.1 (tube)",
+    description: "Sets the radius of the tube of a torus, or the thickness of the wall of a tube, inside its radius.",
     examples: [
       {
         name: "a thick ring",
@@ -822,7 +844,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "height",
-    appliesTo: ["cylinder", "cone", "capsule"],
+    appliesTo: ["cylinder", "cone", "capsule", "tube"],
     syntax: "<number>",
     initial: "1",
     description:
@@ -1102,6 +1124,8 @@ export const PROPERTIES: PropertyDef[] = [
       ["grayscale(), sepia(), invert()", "From 0 to 1: how far it goes."],
       ["hue-rotate()", "An angle around the color wheel."],
       ["grain()", "A film grain that moves at every frame (0.1 by default)."],
+      ["vignette()", "Darker towards the corners, like an old lens: from 0 to 1 (0.5 by default). On the scene only."],
+      ["chromatic-aberration()", "Red and blue pulled apart towards the corners, like a cheap lens: a length in px at the corners (2px by default). On the scene only."],
       ["blur()", "A blur, by a length in px, like CSS."],
       ["bloom()", "Makes the bright parts glow: an amount (0.6 by default) and a radius in px (16px by default)."],
       ["opacity()", "Makes an object or a group transparent, multiplied with `opacity`. On the scene, it is an error: the scene stays opaque."],
@@ -1152,6 +1176,11 @@ export const PROPERTIES: PropertyDef[] = [
         name: "blur()",
         text: "The whole image, blurred by 3px.",
         code: "@scene { sphere; cube; } sphere { translate: 0.8 0.6 0; color: #ff5a36; } cube { translate: -0.8 0.5 0; color: #3a7bff; } scene { filter: blur(3px); }",
+      },
+      {
+        name: "vignette() and chromatic-aberration()",
+        text: "The effects of a lens, on the whole image: darker corners, colors that split at the edges.",
+        code: "@scene { torus; sphere; } scene { filter: vignette(0.6) chromatic-aberration(4px); } torus { translate: 0 0.8 0; radius: 0.8; thickness: 0.25; rotate-x: 60deg; color: #f4f1ea; } sphere { translate: 0 0.8 0; radius: 0.3; color: #ff5a36; }",
       },
       {
         name: "bloom()",
@@ -2079,6 +2108,53 @@ export const SHAPE_DOCS: ShapeDef[] = [
     ],
   },
   {
+    name: "pyramid",
+    since: "0.0.6",
+    description:
+      "A pyramid on a square base, pointing up, centered on its origin: a base of 1 by 1 and a height of 1 by default. `size` sets the width and the depth of its base, and its height, like the box of a cube.",
+    examples: [
+      {
+        name: "a pyramid on the floor",
+        code: "@scene { pyramid; } pyramid { translate: 0 0.5 0; rotate-y: 30deg; color: #e8c06a; }",
+      },
+      {
+        name: "a tall pyramid",
+        text: "`size: 1 2 1`: the same base, twice as high.",
+        code: "@scene { pyramid; } pyramid { translate: 0 1 0; size: 1 2 1; rotate-y: 20deg; }",
+      },
+    ],
+  },
+  {
+    name: "octahedron",
+    since: "0.0.6",
+    description:
+      "Eight triangles, two pyramids joined by their bases, like a die with eight faces: a `radius` of 0.5 by default, from its center to each tip.",
+    examples: [
+      {
+        name: "a turning crystal",
+        code: "@scene { octahedron; } octahedron { translate: 0 1 0; radius: 0.7; material: glass(#bfe8ff, 1.5); animation: turn 8s linear infinite; } @keyframes turn { to { rotate-y: 360deg; } }",
+      },
+    ],
+  },
+  {
+    name: "tube",
+    since: "0.0.6",
+    description:
+      "A hollow cylinder, a pipe, standing on the y axis and centered on its origin: an outer `radius` of 0.5, a `height` of 1 and a wall 0.1 `thickness` thick by default.",
+    details: "Not a `path`: a `path` draws a tube along any line, while `tube` is a straight pipe, open at both ends, whose wall has a thickness. The wall goes inside the radius, so the tube keeps its outer size when the wall gets thicker.",
+    examples: [
+      {
+        name: "a pipe",
+        code: "@scene { tube; } tube { translate: 0 0.5 0; rotate-x: 70deg; material: copper; }",
+      },
+      {
+        name: "a ring, from a short tube",
+        text: "`height: 0.2` and a thick wall make a flat ring.",
+        code: "@scene { tube; } tube { translate: 0 0.6 0; rotate-x: 80deg; radius: 0.6; height: 0.2; thickness: 0.25; color: #ff5a36; }",
+      },
+    ],
+  },
+  {
     name: "path",
     description:
       "A tube with round ends that follows an SVG path, given by `d`. `stroke-width` and `view-box` work like in SVG.",
@@ -2396,6 +2472,63 @@ export const FUNCTIONS: FunctionDef[] = [
         name: "noise() in a material",
         text: "A turbulence in the color of a metal.",
         code: "@scene { torus; } torus { translate: 0 0.6 0; rotate-x: 70deg; material: metal(noise(turbulence 6 3, #6b4a2b, #d4af37), 0.25); }",
+      },
+    ],
+  },
+  {
+    name: "checker()",
+    anchor: "fn-checker",
+    since: "0.0.6",
+    covers: ["checker"],
+    computed: "on the GPU, at each pixel",
+    syntax: "checker(<number> [at <number> <number> <number>]?, <color>, <color>)",
+    description:
+      "A checkerboard, wherever a gradient goes: the `color` of an object, the color of a material, the `background`, the `floor`. Like `noise()`, it is cut in the object's own space: a grid of cubes, one color and then the other.",
+    valuesTitle: "Arguments",
+    values: [
+      ["<number>", "The scale: how many cells fit in one unit."],
+      ["at <x> <y> <z>", "Moves the grid."],
+      ["<color>, <color>", "The two colors of the cells."],
+    ],
+    details: "On an object, the grid is cut in its own space, like a block of stone carved out of a checkered material: the cells keep their size whatever the shape, and move and turn with the object. On the `floor`, it is read in the units of the scene; in the background, it follows the direction of the view. Like `noise()`, it can be animated into another `checker()`, its numbers can be set from JavaScript, and it can be the map of `displace()`. The edges of the cells are sharp: far away, a fine checkerboard shimmers.",
+    examples: [
+      {
+        name: "a checkered floor",
+        text: "One cell per unit of the scene.",
+        code: "@scene { sphere; } scene { floor: checker(1, #1a1d2b, #e8e6e1); } sphere { translate: 0 0.6 0; radius: 0.6; material: chrome; }",
+      },
+      {
+        name: "a checkered cube",
+        code: "@scene { cube; } cube { translate: 0 0.6 0; size: 1.2; rotate-y: 30deg; color: checker(2.5, #ff5a36, #f4f1ea); }",
+      },
+    ],
+  },
+  {
+    name: "stripes()",
+    anchor: "fn-stripes",
+    since: "0.0.6",
+    covers: ["stripes"],
+    computed: "on the GPU, at each pixel",
+    syntax: "stripes(<number> [x | y | z]? [at <number> <number> <number>]?, <color>, <color>)",
+    description:
+      "Bands of two colors across an axis, wherever a gradient goes. Like `checker()`, they are cut in the object's own space: across `y` by default, like the rings of a column.",
+    valuesTitle: "Arguments",
+    values: [
+      ["<number>", "The scale: how many pairs of bands fit in one unit."],
+      ["x, y, z", "The axis the bands follow one another along: `y` by default, horizontal bands."],
+      ["at <x> <y> <z>", "Moves the bands: animated, they scroll."],
+      ["<color>, <color>", "The two colors, each half of a pair."],
+    ],
+    details: "For bands seen from the front only, at any angle, `repeating-linear-gradient()` is the CSS way; `stripes()` goes all around the object, in its own space. Like `noise()`, it can be animated into another `stripes()` of the same axis, its numbers can be set from JavaScript, and it can be the map of `displace()`. The edges are sharp.",
+    examples: [
+      {
+        name: "a striped column",
+        code: "@scene { cylinder; } cylinder { translate: 0 0.8 0; radius: 0.4; height: 1.6; color: stripes(3, #ff5a36, #f4f1ea); }",
+      },
+      {
+        name: "bands that scroll",
+        text: "`at` animated: the bands move up the capsule.",
+        code: "@scene { capsule; } capsule { translate: 0 0.8 0; radius: 0.4; height: 1.6; color: stripes(4, #3a7bff, #e8e6e1); animation: rise 2s linear infinite; } @keyframes rise { to { color: stripes(4 at 0 -0.25 0, #3a7bff, #e8e6e1); } }",
       },
     ],
   },
