@@ -595,6 +595,120 @@
         color: var(--gss-bone);
         font-variant-numeric: tabular-nums;
       }
+
+      /* ----- "Editor support": the marks of VS Code and Cursor in a pocket ----- */
+      .editor-pocket {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        margin: 0 0 28px;
+        padding: 32px 20px 20px;
+        border: 1px solid var(--gss-line);
+        background: var(--gss-surface);
+      }
+      .editor-pocket-button {
+        position: relative;
+        flex: none;
+        width: 96px;
+        height: 96px;
+        border: 1px solid var(--gss-isoline);
+        border-radius: var(--gss-radius-control);
+        background: var(--gss-void);
+        transition: border-color var(--gss-transition);
+      }
+      .editor-pocket-button:hover,
+      .editor-pocket-button:focus-visible {
+        border-color: var(--gss-signal);
+      }
+      .editor-pocket-button:focus-visible {
+        outline: 1px solid var(--gss-signal);
+        outline-offset: 3px;
+      }
+      /* The two marks, half in the pocket */
+      .editor-pocket-tile {
+        position: absolute;
+        top: 12px;
+        display: grid;
+        place-items: center;
+        width: 42px;
+        height: 42px;
+        border: 1px solid var(--gss-isoline);
+        border-radius: var(--gss-radius-control);
+        background: var(--gss-raised);
+        color: var(--gss-ash);
+        transition:
+          transform 260ms cubic-bezier(0.2, 0.9, 0.3, 1.25),
+          color var(--gss-transition);
+      }
+      .editor-pocket-vscode {
+        left: 5px;
+        transform: rotate(-6deg);
+      }
+      .editor-pocket-cursor {
+        right: 5px;
+        transform: rotate(5deg);
+      }
+      .editor-pocket-button:hover .editor-pocket-tile,
+      .editor-pocket-button:focus-visible .editor-pocket-tile {
+        color: var(--gss-bone);
+      }
+      .editor-pocket-button:hover .editor-pocket-vscode,
+      .editor-pocket-button:focus-visible .editor-pocket-vscode {
+        transform: translate(-8px, -30px) rotate(-14deg);
+      }
+      .editor-pocket-button:hover .editor-pocket-cursor,
+      .editor-pocket-button:focus-visible .editor-pocket-cursor {
+        transform: translate(8px, -22px) rotate(11deg);
+        transition-delay: 60ms;
+      }
+      /* The front of the pocket, over the lower half of the marks */
+      .editor-pocket-front {
+        position: absolute;
+        inset: 46px 0 0;
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        padding-bottom: 9px;
+        border-top: 1px solid var(--gss-isoline);
+        background: var(--gss-void);
+        font: 500 13px var(--gss-font-code);
+        color: var(--gss-dim);
+        transition: color var(--gss-transition);
+      }
+      .editor-pocket-button:hover .editor-pocket-front,
+      .editor-pocket-button:focus-visible .editor-pocket-front {
+        color: var(--gss-signal);
+      }
+      .editor-pocket-text {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        margin: 0;
+        color: var(--gss-ash);
+      }
+      .editor-pocket-text strong {
+        color: var(--gss-bone);
+        font-weight: 600;
+      }
+      @media (max-width: 520px) {
+        .editor-pocket {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .editor-pocket-tile {
+          transition: color var(--gss-transition);
+        }
+        .editor-pocket-button:hover .editor-pocket-vscode,
+        .editor-pocket-button:focus-visible .editor-pocket-vscode {
+          transform: rotate(-6deg);
+        }
+        .editor-pocket-button:hover .editor-pocket-cursor,
+        .editor-pocket-button:focus-visible .editor-pocket-cursor {
+          transform: rotate(5deg);
+        }
+      }
       /* Previous / next */
       .pager {
         display: flex;

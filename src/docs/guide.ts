@@ -207,11 +207,30 @@ const EXTENSION_ID = "lukyvj.gss-language";
 const MARKETPLACE_URL = `https://marketplace.visualstudio.com/items?itemName=${EXTENSION_ID}`;
 const OPEN_VSX_URL = "https://open-vsx.org/extension/lukyvj/gss-language";
 
+// The marks of the two editors, one colour (currentColor), drawn on a 24px grid
+const VSCODE_MARK = `<svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M23.15 2.587 18.21.21a1.494 1.494 0 0 0-1.705.29l-9.46 8.63-4.12-3.128a.999.999 0 0 0-1.276.057L.327 7.261A1 1 0 0 0 .326 8.74L3.899 12 .326 15.26a1 1 0 0 0 .001 1.479L1.65 17.94a.999.999 0 0 0 1.276.057l4.12-3.128 9.46 8.63a1.492 1.492 0 0 0 1.704.29l4.942-2.377A1.5 1.5 0 0 0 24 20.06V3.939a1.5 1.5 0 0 0-.85-1.352zm-5.146 14.861L10.826 12l7.178-5.448v10.896z"/></svg>`;
+const CURSOR_MARK = `<svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" opacity="0.3" d="M12 1.5 21.5 7v10L12 22.5 2.5 17V7z"/><path fill="currentColor" d="M2.5 7h19L12 22.5z"/></svg>`;
+
+// A square button that holds the marks of VS Code and Cursor like letters in an envelope:
+// half hidden at rest, they come out one after the other on hover
+const EDITOR_POCKET =
+  `<div class="editor-pocket">` +
+  `<a class="editor-pocket-button" href="${MARKETPLACE_URL}" aria-label="Install the GSS extension for VS Code and Cursor">` +
+  `<span class="editor-pocket-tile editor-pocket-vscode" aria-hidden="true">${VSCODE_MARK}</span>` +
+  `<span class="editor-pocket-tile editor-pocket-cursor" aria-hidden="true">${CURSOR_MARK}</span>` +
+  `<span class="editor-pocket-front" aria-hidden="true">.gss</span>` +
+  `</a>` +
+  `<p class="editor-pocket-text"><strong>For VS Code and Cursor</strong>` +
+  `<span>Highlighting, formatting and the <code>.gss</code> file icon.</span>` +
+  `<span><a href="${MARKETPLACE_URL}">VS Code Marketplace</a> · <a href="${OPEN_VSX_URL}">Open VSX</a> for Cursor, VSCodium and Windsurf</span></p>` +
+  `</div>`;
+
 INSTALLATION.push({
   anchor: "editor-support",
   label: "Editor support",
   paragraphs: [
     "The GSS extension colors and formats <code>.gss</code> files in VS Code and in the editors built on it, like Cursor, VSCodium and Windsurf. It is not needed to run a scene.",
+    EDITOR_POCKET,
     table([
       ["Highlighting", "Selectors, properties, values, colors, numbers and units, the at-rules, nested rules and <code>&amp;</code>."],
       ["Formatting", "<em>Format Document</em>, or saving the file, writes the code in the style of these docs: one shape per line in <code>@scene</code>, one declaration per line, two-space indentation, comments kept."],
