@@ -403,3 +403,39 @@ describe("the texts of the reference", () => {
     }
   });
 });
+
+// "new" in the contents: the pages of the newest version that is out, the same rule as the
+// "New in" of the search
+describe("the contents mark the new pages", () => {
+  const nav = (published: string) => {
+    const html = renderDocs(PROPERTIES, AT_RULES, SELECTORS, SHAPE_DOCS, FUNCTIONS, published);
+    return html.slice(html.indexOf('<nav class="toc-nav">'), html.indexOf("</nav>"));
+  };
+  const item = (html: string, anchor: string) => {
+    const start = html.indexOf(`<li><a href="#${anchor}">`);
+    return html.slice(start, html.indexOf("</li>", start));
+  };
+  const group = (html: string, id: string) => {
+    const start = html.indexOf(`data-group="${id}"`);
+    return html.slice(start, html.indexOf("</summary>", start));
+  };
+
+  it("puts new after a page of the newest version that is out", () => {
+    const html = nav("0.0.5");
+    expect(item(html, "view")).toContain('<span class="toc-new">new</span>');
+    expect(item(html, "color")).not.toContain("toc-new");
+  });
+
+  it("leaves a page of a version not out yet unmarked, like the search", () => {
+    const html = nav("0.0.4");
+    expect(item(html, "view")).not.toContain("toc-new");
+    expect(html).toContain('<span class="toc-new">new</span>'); // the pages of 0.0.4 are new then
+  });
+
+  it("puts a dot on a group that holds a new page, folded or not", () => {
+    const html = nav("0.0.5");
+    expect(group(html, "rendering")).toContain('class="toc-group-new"');
+    expect(group(html, "shapes")).toContain('class="toc-group-new"'); // lathe came in 0.0.5
+    expect(group(html, "textures")).not.toContain("toc-group-new");
+  });
+});

@@ -1,6 +1,6 @@
 // Editorial structure only: content remains in the registry. Lower order comes
 // first; entries with no override sort alphabetically. Anchors remain stable.
-export type NavEntry = { anchor: string; label: string; html: string; order?: number };
+export type NavEntry = { anchor: string; label: string; html: string; order?: number; since?: string };
 export type NavGroup = {
   id: string;
   title: string;

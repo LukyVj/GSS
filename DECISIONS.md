@@ -1284,3 +1284,10 @@ On an object or a group, both are an error that says to put them on the scene: a
 **Differences from CSS**: CSS `filter` has neither; like `bloom()` and `grain()`, they are GSS functions, named for what they imitate.
 **Why**: the two most asked "film" effects after bloom and grain, and cheap: a line, or one pass of three reads per pixel.
 **Accepted limits**: the vignette is round on a wide canvas only in its distance, not its shape (an ellipse that follows the canvas). The aberration reads straight lines from the center: no blur of the split colors, as a real lens would add.
+
+## 158. "new" in the contents of the docs
+
+**Decision** (Lucas, Oct. 8: "as soon as a feature or a property is added, a small (new) on its item in the nav of the docs"): the contents mark the pages of the newest version that is out: `new` after the name of the page, and a signal dot beside the count of its group, so a folded group says it holds one. The rule is the one of "New in" in the search (decision 129): the newest `since` of the docs that is not newer than the package. It moved, cut and pasted, into `src/docs/news.ts` (`compareVersions`, and `newestVersion()` drawn out of `newestPages()`), which both read, so the two never disagree. A page of a version not published yet is not marked: the docs describe it before it is out, and the release turns it "new". `renderDocs()` takes the published version as an argument (the package's by default), for the tests.
+The look follows DESIGN.md: `new` in JetBrains Mono 10px, signal, a 1px signal border at 45 %, radius 2px, like the signal-outline links of the docs; the dot is the dot of the mark, 5px. No new colour, no pill.
+**Why**: the reader of the docs sees at once what the last version brought, wherever it is in the reference.
+**Accepted limits**: only the newest version is marked; a page changed by a version (a new value of a property) is not, only a page that `since` names.
