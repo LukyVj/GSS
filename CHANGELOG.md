@@ -8,6 +8,7 @@ The 0.0.1 history was reconstructed from GitHub.
 
 ### Added
 
+- VS Code / Cursor extension: HTML snippets for both documented `<gss-scene>` forms, a scene loaded from a `.gss` file and an inline `<script type="text/gss">` scene.
 - GSS is open source on GitHub: [github.com/LukyVj/GSS](https://github.com/LukyVj/GSS). The site links to it from its top bars and footers, the docs at the top of Installation, and the package and the VS Code extension declare it, so npm and the extension registries link to the code and the issues.
 - Computers without a graphics card: the processor would draw a scene so slowly that the page could freeze, so the scene waits for a click. `<gss-scene>` shows its poster and a button, "Draw it anyway"; the site does the same on the home page, in the playground and in Try it, where the code still shows. `softwareRendering()`, from `gss-lang` and `gss-lang/runtime`, tells a page that uses `mount()`.
 - `<gss-scene poster="cover.jpg">`: an image shown until the scene draws, like the poster of a `<video>`.
