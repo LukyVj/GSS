@@ -1,0 +1,20 @@
+{
+  "GSS scene from file": {
+    "prefix": "gss-scene",
+    "body": [
+      "<gss-scene src=\"${1:scene.gss}\"></gss-scene>"
+    ],
+    "description": "Embed a GSS scene from a .gss file."
+  },
+  "GSS inline scene": {
+    "prefix": "gss-scene-inline",
+    "body": [
+      "<gss-scene>",
+      "  <script type=\"text/gss\">",
+      "    ${1:@scene { sphere; \\}}",
+      "  </script>",
+      "</gss-scene>"
+    ],
+    "description": "Embed an inline GSS scene."
+  }
+}

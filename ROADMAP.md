@@ -223,7 +223,7 @@ Next, on this page:
 - [ ] Captures of the registry examples show the light default floor: to revisit with the floor decision
 - [x] A license, then `npm publish` (and the `npm i gss-lang` / GitHub links on the home page)
 - [ ] Ctrl/Cmd + wheel to zoom an embedded scene, if the wheel that stops the page scroll gets in the way
-- [ ] `<gss-scene>` in the VS Code extension's HTML snippets
+- [x] `<gss-scene>` in the VS Code extension's HTML snippets ✅ decision 148
 
 ## Later
 
