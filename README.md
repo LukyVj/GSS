@@ -157,12 +157,17 @@ and a readable path toward the shader underneath. It is not meant to replace GLS
   `#g { cube { &:hover { color: white; } } }`.
 - **Shapes**: `cube`, `sphere`, `torus`, `cylinder`, `cone`, `capsule`, `plane`, `path` (a tube
   along an SVG path), `prism` (a `polygon()` or `path()` contour, extruded into a flat object)
-  and `lathe` (the same contour, turned around an axis into a round one: a vase, a bowl).
-- **Materials**: `matte()`, `metal()`, `jelly()`, `glass()` with refraction and frost, and the
-  shortcuts `gold`, `chrome`, `ice`; `opacity`, transparent colors and
+  and `lathe` (the same contour, turned around an axis into a round one: a vase, a bowl);
+  `pyramid`, `octahedron` and `tube` (a hollow cylinder, a pipe).
+- **Materials**: `matte()`, `metal()`, `jelly()`, `glass()` with refraction and frost,
+  `emissive()` (a surface that gives its own light: a lamp, a neon), `iridescent()` (a thin
+  film whose colors turn with the angle of view, like a soap bubble), and the shortcuts `gold`,
+  `chrome`, `copper`, `silver`, `brass`, `aluminum`, `ice`; `opacity`, transparent colors and
   `filter: opacity()`, the objects behind showing through.
 - **Textures**: `texture: url("dirt.png")` projected on each face, a different image per face
-  (the Minecraft grass block), `image-rendering: pixelated` and `texture-size` to repeat it.
+  (the Minecraft grass block), `image-rendering: pixelated` and `texture-size` to repeat it;
+  `texture: paint(rings)` draws a texture with a fragment shader written in a `@paint rings { … }`
+  block, in GLSL, for the patterns CSS cannot describe (WebGL2).
 - **Motion**: `@keyframes`, animation controls and easings (including `steps()`), computed on the GPU; `transition` for hover changes;
   scroll-driven animations with `animation-timeline: scroll()` and `view()`; a motion path with `offset-path`,
   and `transform-origin` to turn and scale around any point (a door on its hinge).
@@ -176,11 +181,11 @@ and a readable path toward the shader underneath. It is not meant to replace GLS
 - **Colors**: hex, `rgb()`, `hsl()`, `oklch()`, `color-mix()` and the other CSS color functions, the
   CSS named colors (`tomato`) and `currentColor`, with math and `var()` inside:
   `hsl(calc(sibling-index() * 45) 90% 60%)`.
-- **Gradients, noise and filters**: linear, radial and conic gradients on backgrounds and objects, animated with `@keyframes` and `:hover` (the scene animates its background); `noise()`, colors placed by a 3D noise (clouds, stone, marble); layers of background, with transparent colors and the blend modes of CSS (`background-blend-mode`); holes cut in objects by `mask-image`; images moved by a map with `displace()`, like SVG `feDisplacementMap`; color filters, blur, bloom and grain on scenes, objects and groups.
+- **Gradients, noise and filters**: linear, radial and conic gradients on backgrounds and objects, animated with `@keyframes` and `:hover` (the scene animates its background); `noise()`, colors placed by a 3D noise (clouds, stone, marble), and the patterns `checker()` and `stripes()`; layers of background, with transparent colors and the blend modes of CSS (`background-blend-mode`); holes cut in objects by `mask-image`; images moved by a map with `displace()`, like SVG `feDisplacementMap`; color filters, blur, bloom and grain on scenes, objects and groups, and the lens effects `vignette()` and `chromatic-aberration()` on the scene.
 - **Responsive scenes**: `@media`, `light-dark()` and conditional `if()` values.
 - **Generative values**: deterministic `random()`, inverse trigonometry, rounding, logarithms and `progress()`.
 - **The scene**: `floor`, `background`, a sun with its color (`light`), a colored `ambient` light, `fog`, soft or
-  hard `shadows` and an orbit camera. Lights are elements of the scene too: `@scene { light#bulb; }`, placed, animated and hovered like
+  hard `shadows`, an orbit camera, and `shape-rendering: geometricPrecision` for smooth silhouettes. Lights are elements of the scene too: `@scene { light#bulb; }`, placed, animated and hovered like
   an object, with `color` and `intensity`.
 
 Every property, shape, selector and function has its page in the
@@ -210,7 +215,10 @@ variables the page sets) and sends it as uniforms.
   and GPU time when the backend exposes timer queries. WebGPU uses optional `timestamp-query`;
   without it, GPU time is marked unavailable while the other measurements remain available.
 - **Reference**: [gss-lang.dev/docs](https://www.gss-lang.dev/docs), searchable, one live example
-  per entry.
+  per entry, each page with the version that added it.
+- **Editor support**: the GSS extension for VS Code, and the editors built on it (Cursor, VSCodium,
+  Windsurf): highlighting, formatting, the `.gss` file icon, and HTML snippets for `<gss-scene>`.
+  `code --install-extension lukyvj.gss-language`, or search for *GSS* in the Extensions view.
 - **Showcase**: [gss-lang.dev/showcase](https://www.gss-lang.dev/showcase), what you can make, for
   designers, creative coders and developers.
 
