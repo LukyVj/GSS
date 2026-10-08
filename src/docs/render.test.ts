@@ -24,6 +24,7 @@ import {
 
 const rotateX: PropertyDef = {
   name: "rotate-x",
+  since: "0.0.1",
   appliesTo: "object",
   syntax: "<angle>",
   initial: "0deg",
@@ -80,6 +81,7 @@ describe("renderProperty", () => {
 
 const keyframes: AtRuleDef = {
   name: "keyframes",
+  since: "0.0.1",
   syntax: "@keyframes <name> { <offset> { <declaration>* } }",
   description: "Defines the steps of an animation.",
   examples: [{ code: "@keyframes k { to { scale: 2; } }" }],
@@ -311,6 +313,7 @@ describe("an example with HTML", () => {
   it("shows the HTML beside the code, and gives it to Try it", () => {
     const html = renderProperty({
       name: "texture",
+      since: "0.0.1",
       appliesTo: "object",
       syntax: "element(<id>)",
       initial: "none",
@@ -333,6 +336,7 @@ describe("an example with HTML", () => {
 describe("the parts of a page", () => {
   const material: PropertyDef = {
     name: "material",
+    since: "0.0.1",
     appliesTo: "object",
     syntax: "matte() | metal()",
     initial: "matte()",
@@ -378,7 +382,7 @@ describe("the parts of a page", () => {
 
   it("titles the two light pages apart", () => {
     const sun = renderProperty(PROPERTIES.find((p) => p.name === "light")!);
-    expect(sun).toContain("<h3><code>light</code> <small>(sun)</small></h3>");
+    expect(sun).toContain("><code>light</code> <small>(sun)</small></h3>");
   });
 });
 
@@ -437,5 +441,22 @@ describe("the contents mark the new pages", () => {
     expect(group(html, "rendering")).toContain('class="toc-group-new"');
     expect(group(html, "shapes")).toContain('class="toc-group-new"'); // lathe came in 0.0.5
     expect(group(html, "textures")).not.toContain("toc-group-new");
+  });
+});
+
+// The version that added a page, beside its title (decision 159): an attribute that CSS shows,
+// so the title the search reads stays the name of the page
+describe("the version beside the title of a page", () => {
+  it("is on the title of every page of the docs", () => {
+    const html = renderDocs(PROPERTIES, AT_RULES, SELECTORS, SHAPE_DOCS, FUNCTIONS);
+    const pages = html.match(/<article class="(?:property|guide)"/g)!.length;
+    const dated = html.match(/<article class="(?:property|guide)" id="[^"]*">\s*<h3 data-since="\d+\.\d+\.\d+">/g)?.length;
+    expect(pages).toBeGreaterThan(100);
+    expect(dated).toBe(pages);
+  });
+
+  it("keeps the text of the title the name of the page", () => {
+    const html = renderProperty(rotateX);
+    expect(html).toContain('<h3 data-since="0.0.1"><code>rotate-x</code></h3>');
   });
 });

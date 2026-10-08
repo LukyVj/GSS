@@ -8,6 +8,7 @@ The 0.0.1 history was reconstructed from GitHub.
 
 ### Added
 
+- Docs: every page says the version that added it, beside its title: `since v0.0.3`.
 - Docs: the contents mark the pages of the latest version with `new in v0.0.5`, and their group with a dot, so a folded group says it holds something new.
 - GSS is open source on GitHub: [github.com/LukyVj/GSS](https://github.com/LukyVj/GSS). The site links to it from its top bars and footers, the docs at the top of Installation, and the package and the VS Code extension declare it, so npm and the extension registries link to the code and the issues.
 - Computers without a graphics card: the processor would draw a scene so slowly that the page could freeze, so the scene waits for a click. `<gss-scene>` shows its poster and a button, "Draw it anyway"; the site does the same on the home page, in the playground and in Try it, where the code still shows. `softwareRendering()`, from `gss-lang` and `gss-lang/runtime`, tells a page that uses `mount()`.

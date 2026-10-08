@@ -12,7 +12,7 @@ export type GuideEntry = {
   paragraphs: string[];
   example?: string; // shown with a "Try it" button, like the reference examples
   after?: string[]; // paragraphs under the example
-  since?: string; // the version that added the page, like the entries of the registry
+  since: string; // the version that added the page, like the entries of the registry
 };
 
 // Also checked by the tests: it must compile, on the CPU and on the GPU
@@ -29,6 +29,7 @@ export const GETTING_STARTED: GuideEntry[] = [
   {
     anchor: "why-gss",
     label: "Why GSS",
+    since: "0.0.1",
     paragraphs: [
       "Front-end developers already describe how things look with selectors, properties, the cascade and <code>@keyframes</code>. To go 3D, they meet GLSL, the language of the GPU: powerful, but written in distance functions, vectors and math, far from the way they think about design.",
       "GSS bridges that gap. If you can write CSS, you can already read GSS:",
@@ -45,6 +46,7 @@ export const GETTING_STARTED: GuideEntry[] = [
   {
     anchor: "first-scene",
     label: "Your first scene",
+    since: "0.0.1",
     paragraphs: [
       "A glass ball that floats above the floor. Press <em>Try it</em> to edit it live.",
     ],
@@ -62,6 +64,7 @@ export const INSTALLATION: GuideEntry[] = [
   {
     anchor: "embedding",
     label: "Embedding a scene",
+    since: "0.0.1",
     paragraphs: [
       `A GSS scene runs on any web page, in three ways. All three use the package <code>gss-lang@${VERSION}</code>.`,
       `GSS is open source, under the Apache-2.0 license: its code is on <a href="${REPOSITORY_URL}">GitHub</a>, where you can <a href="${REPOSITORY_URL}/issues">report a bug</a>. Questions, ideas, a scene to show: say hi on X, <a href="https://x.com/GSS_lang">@GSS_lang</a>.`,
@@ -88,6 +91,7 @@ INSTALLATION.push(
   {
     anchor: "install-package",
     label: "Package (npm)",
+    since: "0.0.2",
     paragraphs: [
       `Install <code>gss-lang@${VERSION}</code> in your application. The package holds the compiler, the renderer and the TypeScript declarations.`,
       `<pre><code class="sh">npm install gss-lang@${VERSION}</code></pre>`,
@@ -99,6 +103,7 @@ INSTALLATION.push(
   {
     anchor: "install-vite",
     label: "Vite plugin",
+    since: "0.0.2",
     paragraphs: [
       "The Vite plugin comes with the package. It compiles the <code>.gss</code> imports at build time, so the browser loads only the renderer and the compiled scene.",
       `<pre><code class="sh">npm install gss-lang@${VERSION}\nnpm install --save-dev vite</code></pre>`,
@@ -109,6 +114,7 @@ INSTALLATION.push(
   {
     anchor: "install-cdn",
     label: "CDN (no build step)",
+    since: "0.0.2",
     paragraphs: [
       `Load the standalone browser module of <code>v${VERSION}</code> from jsDelivr: no install, no bundler. The version is pinned, so an update never changes your scene unexpectedly.`,
       `<pre><code class="html">${highlightCode("html", EMBED_SNIPPETS[0].code)}</code></pre>`,
@@ -228,6 +234,7 @@ const EDITOR_POCKET =
 INSTALLATION.push({
   anchor: "editor-support",
   label: "Editor support",
+  since: "0.0.6", // the tag v0.0.5 was set after this page; the changelog has it in 0.0.6
   paragraphs: [
     "The GSS extension colors and formats <code>.gss</code> files in VS Code and in the editors built on it, like Cursor, VSCodium and Windsurf. It is not needed to run a scene.",
     EDITOR_POCKET,
