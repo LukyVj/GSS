@@ -40,9 +40,8 @@
         display: grid;
         /* the width of the editor: set by the separator (src/playground/splitter.ts) */
         grid-template-columns: var(--editor-width, clamp(280px, 40vw, 480px)) minmax(0, 1fr);
-        grid-template-rows: auto 52px minmax(0, 1fr) 32px;
+        grid-template-rows: 52px minmax(0, 1fr) 32px;
         grid-template-areas:
-          "banner banner"
           "top top"
           "editor scene"
           "status status";
@@ -50,10 +49,6 @@
       button,
       select {
         font: inherit;
-      }
-
-      .launch-banner {
-        grid-area: banner;
       }
 
       /* ----- The top bar: the mark, the tabs, the actions ----- */
@@ -290,12 +285,12 @@
       @media (max-width: 720px) {
         body {
           grid-template-columns: minmax(0, 1fr);
-          grid-template-rows: auto 52px minmax(0, 1fr) var(--editor-height, 45%) 32px;
-          grid-template-areas: "banner" "top" "scene" "editor" "status";
+          grid-template-rows: 52px minmax(0, 1fr) var(--editor-height, 45%) 32px;
+          grid-template-areas: "top" "scene" "editor" "status";
         }
         body.editor-collapsed {
           grid-template-columns: minmax(0, 1fr);
-          grid-template-rows: auto 52px minmax(0, 1fr) 12px 32px;
+          grid-template-rows: 52px minmax(0, 1fr) 12px 32px;
         }
         /* The separator lies between the scene, on top, and the editor */
         .splitter {
@@ -367,7 +362,7 @@
       /* A finger on a phone: 44px around the horizontal line (folded: the rail is the target) */
       @media (max-width: 720px) and (pointer: coarse) {
         body.editor-collapsed {
-          grid-template-rows: auto 52px minmax(0, 1fr) 28px 32px;
+          grid-template-rows: 52px minmax(0, 1fr) 28px 32px;
         }
         .splitter {
           width: auto;
@@ -391,13 +386,6 @@
     ></script>
   </head>
   <body>
-    <a
-      class="launch-banner"
-      href="https://www.producthunt.com/products/gss-gpu-style-sheets"
-      target="_blank"
-      rel="noopener noreferrer"
-      >GSS is live on Product Hunt today. Come say hi →</a
-    >
     <header class="topbar">
       <a class="mark" href="./" aria-label="GSS home"
         >{<span class="dot"></span>}</a
