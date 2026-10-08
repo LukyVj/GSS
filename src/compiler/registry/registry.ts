@@ -37,9 +37,10 @@ type Parts = {
 // A callout under the description: what a reader must know before trying it
 export type Note = { title: string; text: string };
 
-// The version that added the entry: "0.0.4". The search shows the entries of the newest
-// version when it opens (decision 125); an entry from before 0.0.4 has none.
-type Since = { since?: string };
+// The version that added the entry: "0.0.4". Every entry has one (decision 159): the docs
+// show it beside the title, and the search names the newest pages (decision 125). The
+// entries from before 0.0.4 were dated by the first tag holding them.
+type Since = { since: string };
 
 export type PropertyDef = Parts & Since & {
   name: string;
@@ -101,6 +102,7 @@ const ELEMENT_NOTE: Note = {
 export const PROPERTIES: PropertyDef[] = [
   {
     name: "translate",
+    since: "0.0.1",
     appliesTo: "object",
     animatable: true,
     syntax: "<number>{3}",
@@ -117,6 +119,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "color",
+    since: "0.0.1",
     appliesTo: "object",
     animatable: true,
     syntax: "<color> | <gradient>",
@@ -164,6 +167,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "material",
+    since: "0.0.1",
     appliesTo: "object",
     syntax:
       "matte([<color>]) | metal([<color>,] [<roughness>]) | jelly([<color>,] [<density>]) | emissive([<color>,] [<strength>]) | iridescent([<color>,] [<strength>]) | gold | chrome | copper | silver | brass | aluminum | jelly | glass([<color>,] [<refraction-index>] [, [frosted | wavy | hammered | blurred] <frost>]) | glass | ice | emissive | iridescent",
@@ -243,6 +247,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "texture",
+    since: "0.0.1",
     appliesTo: "object",
     syntax: 'url("<file>") | element(<id>) | paint(<name>)',
     initial: "none",
@@ -270,6 +275,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "image-rendering",
+    since: "0.0.1",
     appliesTo: "object",
     syntax: "auto | smooth | pixelated | crisp-edges",
     initial: "auto",
@@ -289,6 +295,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "texture-size",
+    since: "0.0.1",
     appliesTo: "object",
     syntax: "<number>",
     initial: "auto",
@@ -381,6 +388,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "rotate-x",
+    since: "0.0.1",
     appliesTo: "object",
     animatable: true,
     syntax: "<angle>",
@@ -396,6 +404,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "rotate-y",
+    since: "0.0.1",
     appliesTo: "object",
     animatable: true,
     syntax: "<angle>",
@@ -411,6 +420,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "rotate-z",
+    since: "0.0.1",
     appliesTo: "object",
     animatable: true,
     syntax: "<angle>",
@@ -426,6 +436,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "scale",
+    since: "0.0.1",
     appliesTo: "object",
     animatable: true,
     syntax: "<number>",
@@ -469,6 +480,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "operation",
+    since: "0.0.1",
     appliesTo: "object",
     syntax: "union | subtract | intersect",
     initial: "union",
@@ -488,6 +500,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "blend",
+    since: "0.0.1",
     appliesTo: "object",
     syntax: "<number>",
     initial: "0",
@@ -502,6 +515,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "transition",
+    since: "0.0.2",
     appliesTo: "object",
     syntax: "none | [all] <time> [<easing>] [<time>]",
     initial: "none",
@@ -527,6 +541,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "animation",
+    since: "0.0.1",
     appliesTo: "everywhere",
     syntax:
       "<keyframes-name> <time> [<easing>] [<time>] [<number> | infinite] [normal | reverse | alternate | alternate-reverse] [none | forwards | backwards | both]",
@@ -576,6 +591,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "animation-duration",
+    since: "0.0.2",
     appliesTo: "everywhere",
     syntax: "<time>",
     initial: "0s",
@@ -590,6 +606,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "animation-delay",
+    since: "0.0.2",
     appliesTo: "everywhere",
     syntax: "<time>",
     initial: "0s",
@@ -604,6 +621,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "animation-iteration-count",
+    since: "0.0.2",
     appliesTo: "everywhere",
     syntax: "<number> | infinite",
     initial: "infinite",
@@ -618,6 +636,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "animation-direction",
+    since: "0.0.2",
     appliesTo: "everywhere",
     syntax: "normal | reverse | alternate | alternate-reverse",
     initial: "normal",
@@ -638,6 +657,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "animation-fill-mode",
+    since: "0.0.2",
     appliesTo: "everywhere",
     syntax: "none | forwards | backwards | both",
     initial: "none",
@@ -659,6 +679,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "animation-timing-function",
+    since: "0.0.2",
     appliesTo: "everywhere",
     syntax: "<easing>",
     initial: "linear",
@@ -681,6 +702,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "animation-timeline",
+    since: "0.0.3",
     appliesTo: "everywhere",
     syntax:
       "auto | scroll([root | nearest] || [block | inline | x | y]) | view([block | inline | x | y])",
@@ -708,6 +730,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "offset-path",
+    since: "0.0.3",
     appliesTo: "object",
     syntax: "none | path(<string>) | ray(<angle>)",
     initial: "none",
@@ -734,6 +757,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "offset-distance",
+    since: "0.0.3",
     appliesTo: "object",
     animatable: true,
     syntax: "<number> | <percentage>",
@@ -756,6 +780,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "offset-rotate",
+    since: "0.0.3",
     appliesTo: "object",
     syntax: "[auto | reverse] || <angle>",
     initial: "auto",
@@ -777,6 +802,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "size",
+    since: "0.0.1",
     appliesTo: ["cube", "plane", "pyramid"],
     syntax: "<number>{1,3} (cube, pyramid) | <number>{1,2} (plane: width depth)",
     initial: "1 (cube), 1 (plane), 1 (pyramid)",
@@ -797,6 +823,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "corner-radius",
+    since: "0.0.1",
     appliesTo: ["cube"],
     syntax: "<number>",
     initial: "0.08",
@@ -810,6 +837,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "radius",
+    since: "0.0.1",
     appliesTo: ["sphere", "torus", "cylinder", "cone", "capsule", "octahedron", "tube"],
     syntax: "<number> | <number> <number> (cone: bottom top)",
     initial:
@@ -831,6 +859,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "thickness",
+    since: "0.0.1",
     appliesTo: ["torus", "tube"],
     syntax: "<number>",
     initial: "0.28 (torus), 0.1 (tube)",
@@ -844,6 +873,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "height",
+    since: "0.0.1",
     appliesTo: ["cylinder", "cone", "capsule", "tube"],
     syntax: "<number>",
     initial: "1",
@@ -868,6 +898,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "d",
+    since: "0.0.1",
     appliesTo: ["path", "prism", "lathe"],
     syntax: 'path("<svg path>") | polygon(<x> <y>, …) (prism, lathe)',
     initial: "none (required)",
@@ -908,6 +939,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "stroke-width",
+    since: "0.0.1",
     appliesTo: ["path"],
     syntax: "<number>",
     initial: "1",
@@ -922,6 +954,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "depth",
+    since: "0.0.1",
     appliesTo: ["prism"],
     syntax: "<number>",
     initial: "0.2",
@@ -936,6 +969,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "view-box",
+    since: "0.0.1",
     appliesTo: ["path", "prism", "lathe"],
     syntax: "<number>{4}",
     initial: "the box of the path itself",
@@ -952,6 +986,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "light",
+    since: "0.0.1",
     appliesTo: "scene",
     animatable: true,
     syntax: "none | <angle> <angle> [ <color> || <number> ]?",
@@ -1007,6 +1042,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "ambient",
+    since: "0.0.1",
     appliesTo: "scene",
     syntax: "<number> <color>?",
     initial: "0.1",
@@ -1021,6 +1057,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "camera-target",
+    since: "0.0.1",
     appliesTo: "scene",
     syntax: "<number>{3}",
     initial: "0 0.5 0",
@@ -1035,6 +1072,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "camera-distance",
+    since: "0.0.1",
     appliesTo: "scene",
     syntax: "<number>",
     initial: "8",
@@ -1049,6 +1087,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "camera-angle",
+    since: "0.0.1",
     appliesTo: "scene",
     syntax: "<angle> <angle>",
     initial: "0deg 22.9deg",
@@ -1063,6 +1102,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "camera-spin",
+    since: "0.0.1",
     appliesTo: "scene",
     syntax: "<time> | none",
     initial: "none",
@@ -1077,6 +1117,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "floor",
+    since: "0.0.1",
     appliesTo: "scene",
     syntax: "<color> | <gradient> | none",
     initial: "#e8e3db",
@@ -1113,6 +1154,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "filter",
+    since: "0.0.2",
     appliesTo: "everywhere",
     syntax: "none | <filter-function>+",
     initial: "none",
@@ -1211,6 +1253,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "background",
+    since: "0.0.1",
     appliesTo: "scene",
     animatable: true,
     syntax: "[ <gradient> , ]* [ <gradient> | <color> ]",
@@ -1339,6 +1382,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "dpr",
+    since: "0.0.2",
     appliesTo: "scene",
     syntax: "auto | max | <number>",
     initial: "auto",
@@ -1426,6 +1470,7 @@ export const PROPERTIES: PropertyDef[] = [
 export const AT_RULES: AtRuleDef[] = [
   {
     name: "scene",
+    since: "0.0.1",
     syntax:
       "@scene { <shape>[#<id>][.<class>]* [* <integer>][;] … group[#<id>][.<class>]* [* <integer>] { … } }",
     description:
@@ -1459,6 +1504,7 @@ export const AT_RULES: AtRuleDef[] = [
   },
   {
     name: "keyframes",
+    since: "0.0.1",
     syntax: "@keyframes <name> { <offset>[, <offset>]* { <declaration>* } … }",
     description:
       "Defines the steps of an animation, played by the `animation` property, like CSS.",
@@ -1604,6 +1650,7 @@ sphere { translate: 0 1 0; texture: paint(checks); }`,
   },
   {
     name: "media",
+    since: "0.0.2",
     syntax: "@media <media-query> { <rule> … }",
     description:
       "Applies rules only when the screen matches a media query, like CSS. When the screen changes, a window resized or the system switching to dark mode, the scene follows at once and the camera stays where it is.",
@@ -1640,6 +1687,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: "<shape>",
     anchor: "selector-type",
+    since: "0.0.1",
     specificity: "1",
     description:
       "A shape name targets every object of that shape: `cube` styles every cube, and `group` every group.",
@@ -1653,6 +1701,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: ".class",
     anchor: "selector-class",
+    since: "0.0.1",
     specificity: "100 per class",
     description:
       "Targets every object that has this class in `@scene`. An object can have several classes, and a selector can ask for several at once: `.a.b`.",
@@ -1666,6 +1715,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: "#id",
     anchor: "selector-id",
+    since: "0.0.1",
     specificity: "10000",
     description:
       "Targets the object with this id. A multiplied id is numbered: `torus#hero * 3` makes `hero-1`, `hero-2` and `hero-3`.",
@@ -1679,6 +1729,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: "*",
     anchor: "selector-universal",
+    since: "0.0.1",
     specificity: "0",
     description:
       "Targets every object, never the settings of the scene. Any other selector beats it, wherever it is written: use it for defaults.",
@@ -1693,6 +1744,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: "a, b",
     anchor: "selector-list",
+    since: "0.0.1",
     specificity: "Each selector keeps its own",
     description:
       "A selector list gives the same declarations to each selector it names, as if the rule were written once for each.",
@@ -1706,6 +1758,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: "a b",
     anchor: "selector-descendant",
+    since: "0.0.1",
     specificity: "The sum of its parts",
     description:
       "A space means \"inside\": `#letters cube` targets the cubes of the group `#letters`, at any depth.",
@@ -1721,6 +1774,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: "a > b",
     anchor: "selector-child",
+    since: "0.0.2",
     specificity: "The sum of its parts",
     description:
       "Targets direct children: `#g > cube` is the cubes right inside `#g`, not those of a nested group.",
@@ -1736,6 +1790,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: "a + b",
     anchor: "selector-adjacent",
+    since: "0.0.2",
     specificity: "The sum of its parts",
     description:
       "Targets the next sibling, with the same parent: `sphere + cube` is a cube declared right after a sphere, in `@scene` or in a group.",
@@ -1751,6 +1806,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: "a ~ b",
     anchor: "selector-sibling",
+    since: "0.0.2",
     specificity: "The sum of its parts",
     description:
       "Targets every later sibling, with the same parent: `sphere ~ cube` is every cube after a sphere, even with other objects between them.",
@@ -1795,6 +1851,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: "::face(), ::top, ::bottom",
     anchor: "selector-face",
+    since: "0.0.1",
     specificity: "1, like a tag, added to the rest",
     description:
       "A pseudo-element, like `::part()` in CSS: the rule styles one face of the object, not the object. A face takes `texture` only.",
@@ -1832,6 +1889,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: ":hover",
     anchor: "selector-hover",
+    since: "0.0.1",
     specificity: "100, like a class, added to the rest",
     description:
       "A pseudo-class, like CSS: the rule applies while the mouse is over the object. With `transition`, the change glides instead of jumping.",
@@ -1859,6 +1917,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: ":active",
     anchor: "selector-active",
+    since: "0.0.3",
     specificity: "100, like a class, added to the rest",
     description:
       "A pseudo-class, like CSS: the rule applies while the object is pressed, with the mouse button or a finger. Like CSS, it stays pressed until the button goes up, even if the pointer leaves it.",
@@ -1891,6 +1950,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: ":has()",
     anchor: "selector-has",
+    since: "0.0.2",
     specificity:
       "the most specific selector inside, added to the rest, like CSS",
     description:
@@ -1926,6 +1986,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: ":not()",
     anchor: "selector-not",
+    since: "0.0.3",
     specificity: "its most specific selector, added to the rest, like CSS",
     description:
       "A pseudo-class, like CSS: the object matches when none of the selectors in the parentheses does. `cube:not(.red)` is every cube without the class `red`.",
@@ -1954,6 +2015,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: ":nth-child(), :nth-last-child()",
     anchor: "selector-nth-child",
+    since: "0.0.3",
     specificity: "100, like a class, plus the most specific selector after of",
     description:
       "A pseudo-class, like CSS: the position of the object among its siblings, the objects of the same `@scene` block or group, counted from 1. `:nth-last-child()` counts from the end.",
@@ -1981,6 +2043,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: ":nth-of-type(), :nth-last-of-type()",
     anchor: "selector-nth-of-type",
+    since: "0.0.3",
     specificity: "100, like a class",
     description:
       "Like `:nth-child()`, counting only the siblings of the same shape: in `@scene { cube * 2; sphere; cube; }`, `cube:nth-of-type(3)` is the last cube, though it is the fourth child.",
@@ -1996,6 +2059,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: ":first-child, :last-child, :only-child",
     anchor: "selector-first-child",
+    since: "0.0.3",
     specificity: "100, like a class",
     description:
       "Shortcuts, like CSS: `:first-child` is `:nth-child(1)` and `:last-child` is `:nth-last-child(1)`. Each has an `-of-type` form that counts only the siblings of the same shape. They take no argument.",
@@ -2025,6 +2089,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: "!important",
     anchor: "selector-important",
+    since: "0.0.1",
     specificity: "Beats every declaration without it",
     description:
       "Written after a value, it makes the declaration win against every normal one, whatever their selectors. Between two `!important` declarations, specificity decides again.",
@@ -2043,6 +2108,7 @@ export const SELECTORS: SelectorDef[] = [
 export const SHAPE_DOCS: ShapeDef[] = [
   {
     name: "cube",
+    since: "0.0.1",
     description:
       "A box with slightly rounded edges, centered on its origin: 1 × 1 × 1 by default. `size` stretches it into any box, and `corner-radius` rounds its edges.",
     examples: [
@@ -2054,6 +2120,7 @@ export const SHAPE_DOCS: ShapeDef[] = [
   },
   {
     name: "sphere",
+    since: "0.0.1",
     description:
       "A ball centered on its origin, with a `radius` of 0.5 by default.",
     examples: [
@@ -2065,6 +2132,7 @@ export const SHAPE_DOCS: ShapeDef[] = [
   },
   {
     name: "torus",
+    since: "0.0.1",
     description:
       "A ring lying flat around the y axis: a `radius` of 1 to the center of its tube, and a tube of 0.28 by default, set by `thickness`.",
     examples: [
@@ -2076,6 +2144,7 @@ export const SHAPE_DOCS: ShapeDef[] = [
   },
   {
     name: "cylinder",
+    since: "0.0.1",
     description:
       "A cylinder standing on the y axis, centered on its origin: a `radius` of 0.5 and a `height` of 1 by default.",
     examples: [
@@ -2087,6 +2156,7 @@ export const SHAPE_DOCS: ShapeDef[] = [
   },
   {
     name: "cone",
+    since: "0.0.1",
     description:
       "A cone standing on the y axis, centered on its origin, pointing up: a `radius` of 0.5 and a `height` of 1 by default. A second radius cuts its top.",
     examples: [
@@ -2098,6 +2168,7 @@ export const SHAPE_DOCS: ShapeDef[] = [
   },
   {
     name: "capsule",
+    since: "0.0.1",
     description:
       "A cylinder with round ends, standing on the y axis and centered on its origin: a `radius` of 0.25 and a `height` of 1 by default, round ends included.",
     examples: [
@@ -2156,6 +2227,7 @@ export const SHAPE_DOCS: ShapeDef[] = [
   },
   {
     name: "path",
+    since: "0.0.1",
     description:
       "A tube with round ends that follows an SVG path, given by `d`. `stroke-width` and `view-box` work like in SVG.",
     examples: [
@@ -2167,6 +2239,7 @@ export const SHAPE_DOCS: ShapeDef[] = [
   },
   {
     name: "plane",
+    since: "0.0.1",
     description:
       "A thin, flat rectangle lying in the xz plane, centered on its origin: 1 × 1 by default. `size` sets its width and its depth, and `rotate-x: 90deg` stands it up, like a wall.",
     examples: [
@@ -2178,6 +2251,7 @@ export const SHAPE_DOCS: ShapeDef[] = [
   },
   {
     name: "prism",
+    since: "0.0.1",
     description:
       "A contour, filled, then given a `depth`: a flat object, like a star, a letter, an arrow, a logo. The contour is a `polygon()` or a `path()` (see `d`), and a contour inside another one is a hole.",
     details: "It stands in the xy plane, facing the camera, centered on its contours (or on its `view-box`), like a path. To make a round object of a contour, like a vase or a bowl, turn it with a `lathe` instead.",
@@ -2225,6 +2299,7 @@ export const SHAPE_DOCS: ShapeDef[] = [
   },
   {
     name: "group",
+    since: "0.0.1",
     description:
       "Not a shape: it holds objects and other groups, like `<g>` in SVG, and draws nothing itself. Its `translate`, rotations and `scale` apply to everything inside it, and the positions of its children become relative to it.",
     details: "Its other properties (`color`, `material`, `size`…) are not passed down to its children: to style them, use a descendant selector, like `#letters cube`.",
@@ -2317,6 +2392,7 @@ export const FUNCTIONS: FunctionDef[] = [
   {
     name: "cubic-bezier()",
     anchor: "fn-cubic-bezier",
+    since: "0.0.2",
     covers: ["cubic-bezier"],
     syntax: "cubic-bezier(<x1>, <y1>, <x2>, <y2>)",
     description:
@@ -2339,6 +2415,7 @@ export const FUNCTIONS: FunctionDef[] = [
   {
     name: "linear()",
     anchor: "fn-linear",
+    since: "0.0.2",
     covers: ["linear"],
     syntax: "linear(<number> [<percentage>{0,2}], …)",
     description:
@@ -2355,6 +2432,7 @@ export const FUNCTIONS: FunctionDef[] = [
   {
     name: "steps()",
     anchor: "fn-steps",
+    since: "0.0.2",
     covers: ["steps"],
     syntax:
       "steps(<integer>, [jump-start | jump-end | jump-none | jump-both | start | end]?) | step-start | step-end",
@@ -2384,6 +2462,7 @@ export const FUNCTIONS: FunctionDef[] = [
   {
     name: "<gradient>",
     anchor: "fn-gradients",
+    since: "0.0.2",
     computed: "on the GPU, at each pixel",
     covers: [
       "linear-gradient",
@@ -2618,6 +2697,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "rgb()",
     anchor: "fn-rgb",
+    since: "0.0.1",
     covers: ["rgb", "rgba"],
     syntax: "rgb(<red> <green> <blue>) | rgb(<red>, <green>, <blue>)",
     description:
@@ -2638,6 +2718,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "hsl()",
     anchor: "fn-hsl",
+    since: "0.0.1",
     covers: ["hsl", "hsla"],
     syntax: "hsl(<hue> <saturation> <lightness>)",
     description:
@@ -2658,6 +2739,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "hwb()",
     anchor: "fn-hwb",
+    since: "0.0.2",
     covers: ["hwb"],
     syntax: "hwb(<hue> <whiteness> <blackness>)",
     description:
@@ -2673,6 +2755,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "lab(), lch()",
     anchor: "fn-lab-lch",
+    since: "0.0.2",
     covers: ["lab", "lch"],
     syntax: "lab(<lightness> <a> <b>) | lch(<lightness> <chroma> <hue>)",
     description:
@@ -2699,6 +2782,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "oklab(), oklch()",
     anchor: "fn-oklab-oklch",
+    since: "0.0.2",
     covers: ["oklab", "oklch"],
     syntax: "oklab(<lightness> <a> <b>) | oklch(<lightness> <chroma> <hue>)",
     description:
@@ -2725,6 +2809,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "color()",
     anchor: "fn-color",
+    since: "0.0.2",
     covers: ["color"],
     syntax: "color(<space> <r> <g> <b>)",
     description:
@@ -2746,6 +2831,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "color-mix()",
     anchor: "fn-color-mix",
+    since: "0.0.2",
     covers: ["color-mix"],
     syntax:
       "color-mix(in <space> [shorter | longer hue]?, <color> <percentage>?, <color> <percentage>?)",
@@ -2771,6 +2857,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "light-dark()",
     anchor: "fn-light-dark",
+    since: "0.0.2",
     covers: ["light-dark"],
     syntax: "light-dark(<light color>, <dark color>)",
     description:
@@ -2785,6 +2872,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "contrast-color()",
     anchor: "fn-contrast-color",
+    since: "0.0.2",
     covers: ["contrast-color"],
     syntax: "contrast-color(<color>)",
     description:
@@ -2800,6 +2888,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "currentColor",
     anchor: "fn-currentcolor",
+    since: "0.0.3",
     covers: [],
     syntax: "currentColor",
     description:
@@ -2821,6 +2910,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "var()",
     anchor: "fn-var",
+    since: "0.0.1",
     covers: ["var"],
     syntax: "var(--<name>) | var(--<name>, <fallback>)",
     description:
@@ -2852,6 +2942,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "random()",
     anchor: "fn-random",
+    since: "0.0.2",
     covers: ["random"],
     syntax:
       "random([--<name> || element-shared | fixed <number>,]? <min>, <max>, <step>?)",
@@ -2882,6 +2973,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "if()",
     anchor: "fn-if",
+    since: "0.0.2",
     covers: ["if"],
     syntax: "if(<condition>: <value>; …; else: <value>)",
     description:
@@ -2911,6 +3003,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "calc()",
     anchor: "fn-calc",
+    since: "0.0.1",
     covers: ["calc"],
     syntax: "calc(<expression>)",
     description:
@@ -2927,6 +3020,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "sibling-index()",
     anchor: "fn-sibling-index",
+    since: "0.0.1",
     covers: ["sibling-index"],
     syntax: "sibling-index()",
     description:
@@ -2943,6 +3037,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "sibling-count()",
     anchor: "fn-sibling-count",
+    since: "0.0.1",
     covers: ["sibling-count"],
     syntax: "sibling-count()",
     description:
@@ -2957,6 +3052,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "sin(), cos(), tan()",
     anchor: "fn-trig",
+    since: "0.0.1",
     covers: ["sin", "cos", "tan"],
     syntax: "sin(<angle> | <number>)",
     description:
@@ -2987,6 +3083,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "min(), max(), clamp()",
     anchor: "fn-min-max-clamp",
+    since: "0.0.1",
     covers: ["min", "max", "clamp"],
     syntax: "min(<value>, …) | max(<value>, …) | clamp(<min>, <value>, <max>)",
     description:
@@ -3023,6 +3120,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "abs(), sqrt(), pow()",
     anchor: "fn-abs-sqrt-pow",
+    since: "0.0.1",
     covers: ["abs", "sqrt", "pow"],
     syntax: "abs(<value>) | sqrt(<number>) | pow(<number>, <number>)",
     description:
@@ -3053,6 +3151,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "asin(), acos(), atan(), atan2()",
     anchor: "fn-inverse-trig",
+    since: "0.0.2",
     covers: ["asin", "acos", "atan", "atan2"],
     syntax:
       "asin(<number>) | acos(<number>) | atan(<number>) | atan2(<y>, <x>)",
@@ -3089,6 +3188,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "sign(), round(), mod(), rem()",
     anchor: "fn-stepped",
+    since: "0.0.2",
     covers: ["sign", "round", "mod", "rem"],
     syntax:
       "sign(<value>) | round([nearest | up | down | to-zero,]? <value>, <step>?) | mod(<value>, <value>) | rem(<value>, <value>)",
@@ -3132,6 +3232,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "hypot(), log(), exp()",
     anchor: "fn-exponential",
+    since: "0.0.2",
     covers: ["hypot", "log", "exp"],
     syntax: "hypot(<value>, …) | log(<number>, <base>?) | exp(<number>)",
     description:
@@ -3168,6 +3269,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "progress()",
     anchor: "fn-progress",
+    since: "0.0.2",
     covers: ["progress"],
     syntax: "progress(<value>, <start>, <end>)",
     description:

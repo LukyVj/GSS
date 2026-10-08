@@ -57,9 +57,13 @@ function renderNote(note: Note | undefined): string {
 }
 
 // The title of a page; "light (sun)" when another entry has the same name
-function renderTitle(anchor: string, name: string): string {
+// The version that added a page, beside its title (decision 159): an attribute the CSS of the
+// docs shows, so the text of the title, what the search reads, stays the name of the page
+const dated = (since: string) => ` data-since="${escapeHtml(since)}"`;
+
+function renderTitle(anchor: string, name: string, since: string): string {
   const qualifier = QUALIFIERS[anchor];
-  return `<h3><code>${escapeHtml(name)}</code>${qualifier ? ` <small>(${escapeHtml(qualifier)})</small>` : ""}</h3>`;
+  return `<h3${dated(since)}><code>${escapeHtml(name)}</code>${qualifier ? ` <small>(${escapeHtml(qualifier)})</small>` : ""}</h3>`;
 }
 
 // Under the table of the entry: what each value does, then a paragraph, when the entry has them
@@ -97,7 +101,7 @@ export function renderProperty(property: PropertyDef): string {
 
   return `
     <article class="property" id="${escapeHtml(property.name)}">
-      ${renderTitle(property.name, property.name)}
+      ${renderTitle(property.name, property.name, property.since)}
       <p>${prose(property.description)}</p>${renderNote(property.note)}
       <dl>
         <dt>Syntax</dt>
@@ -121,7 +125,7 @@ export function renderAtRule(atRule: AtRuleDef): string {
     .join(", ");
   return `
     <article class="property" id="at-${escapeHtml(atRule.name)}">
-      <h3><code>@${escapeHtml(atRule.name)}</code></h3>
+      <h3${dated(atRule.since)}><code>@${escapeHtml(atRule.name)}</code></h3>
       <p>${prose(atRule.description)}</p>${renderNote(atRule.note)}
       <dl>
         <dt>Syntax</dt>
@@ -138,7 +142,7 @@ export function renderAtRule(atRule: AtRuleDef): string {
 export function renderSelector(selector: SelectorDef): string {
   return `
     <article class="property" id="${escapeHtml(selector.anchor)}">
-      <h3><code>${escapeHtml(selector.name)}</code></h3>
+      <h3${dated(selector.since)}><code>${escapeHtml(selector.name)}</code></h3>
       <p>${prose(selector.description)}</p>
       <dl>
         <dt>Specificity</dt>
@@ -152,7 +156,7 @@ export function renderSelector(selector: SelectorDef): string {
 export function renderFunction(fn: FunctionDef): string {
   return `
     <article class="property" id="${escapeHtml(fn.anchor)}">
-      <h3><code>${escapeHtml(fn.name)}</code></h3>
+      <h3${dated(fn.since)}><code>${escapeHtml(fn.name)}</code></h3>
       <p>${prose(fn.description)}</p>${renderNote(fn.note)}
       <dl>
         <dt>Syntax</dt>
@@ -197,7 +201,7 @@ export function renderShape(
         <dd><a href="#object-properties">geometry properties</a></dd>`;
   return `
     <article class="property" id="shape-${escapeHtml(shape.name)}">
-      ${renderTitle(`shape-${shape.name}`, shape.name)}
+      ${renderTitle(`shape-${shape.name}`, shape.name, shape.since)}
       <p>${prose(shape.description)}</p>
       <dl>
         ${propertyList}
@@ -302,7 +306,7 @@ function renderGuideEntry(entry: GuideEntry): string {
       .join("\n      ");
   return `
     <article class="guide" id="${escapeHtml(entry.anchor)}">
-      <h3>${escapeHtml(entry.label)}</h3>
+      <h3${dated(entry.since)}>${escapeHtml(entry.label)}</h3>
       ${paragraphs(entry.paragraphs)}
       ${entry.example ? renderExamples(entry.anchor, [{ code: entry.example }]) : ""}
       ${paragraphs(entry.after)}

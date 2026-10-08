@@ -498,6 +498,22 @@
         font-size: inherit;
         color: var(--gss-bone);
       }
+      /* The version that added the page, beside its title: an attribute, so the title the search
+         reads stays the name. The shape of the "new" of the contents, without the signal. */
+      .property h3[data-since]::after,
+      .guide h3[data-since]::after {
+        content: "since v" attr(data-since);
+        display: inline-block;
+        margin-left: 14px;
+        padding: 2px 6px;
+        border: 1px solid var(--gss-isoline);
+        border-radius: var(--gss-radius-control);
+        font: 400 12px/16px var(--gss-font-code);
+        letter-spacing: 0;
+        color: var(--gss-ash);
+        vertical-align: middle;
+        white-space: nowrap;
+      }
       /* "light (sun)": which of two entries of the same name this page is */
       .property h3 small {
         font-size: 0.42em;
