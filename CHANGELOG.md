@@ -23,6 +23,7 @@ The 0.0.1 history was reconstructed from GitHub.
 - Docs search: the columns on each side of the results can be widened or narrowed, by dragging the line between them or with the arrow keys, and the search keeps the widths for next time. Each column arranges itself for its width: the contents show the icon of each group once there is room, and a wide right column puts each drawing beside its text.
 - Docs search: "Try it" on the example of a preview. The search slides to the left and the example opens live beside it, code and render, to edit without leaving the results; "Close" brings the search back. On a screen too narrow for both, it opens the example in the playground, in a new tab.
 - Docs: "Editor support", at the end of Installation. The GSS extension for VS Code (highlighting, formatting, the `.gss` file icon) is on the Visual Studio Marketplace, and on Open VSX for Cursor, VSCodium and Windsurf: search for *GSS* in the Extensions view, or run `code --install-extension lukyvj.gss-language`.
+- Docs: "Editor support" opens on a square button that holds the marks of VS Code and Cursor like letters in a pocket; on hover they come out, one after the other. It leads to the extension, with a line on what it does and where Cursor installs it.
 
 ### Changed
 
