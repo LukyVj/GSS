@@ -19,6 +19,8 @@ const MATERIAL_KEYWORDS: Record<string, string> = {
   jelly: "jelly()",
   glass: "glass()",
   ice: "glass(#cfeaff, 1.31, frosted 0.25)",
+  emissive: "emissive()",
+  iridescent: "iridescent()",
 };
 
 // "matte(), metal(), jelly(), gold, chrome, jelly"
@@ -29,6 +31,7 @@ function availableMaterials(): string {
     "jelly()",
     "glass()",
     "emissive()",
+    "iridescent()",
     ...Object.keys(MATERIAL_KEYWORDS),
   ].join(", ");
 }
@@ -152,7 +155,8 @@ export function readMaterial(value: Token[] | undefined, color: string): string 
     call.name !== "metal" &&
     call.name !== "jelly" &&
     call.name !== "glass" &&
-    call.name !== "emissive"
+    call.name !== "emissive" &&
+    call.name !== "iridescent"
   ) {
     throw errorAt(
       value,
@@ -209,6 +213,14 @@ export function readMaterial(value: Token[] | undefined, color: string): string 
       { name: "strength", min: 0, max: 4, fallback: 1 },
     ]);
     return `emissive(${ownColor}, ${setting(strength[0])})`;
+  }
+
+  if (call.name === "iridescent") {
+    // iridescent (decision 156): what's left is how much of the film shows, 0.7 when missing
+    const strength = readSettings(args, "iridescent", [
+      { name: "strength", min: 0, max: 1, fallback: 0.7 },
+    ]);
+    return `iridescent(${ownColor}, ${setting(strength[0])})`;
   }
 
   if (call.name === "glass") {

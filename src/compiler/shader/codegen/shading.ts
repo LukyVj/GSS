@@ -187,4 +187,17 @@ vec3 shadeGlass(vec3 p, vec3 n, vec3 rd, Material m) {
   col += pow(max(dot(r, LIGHT_DIR), 0.0), 120.0);
   return col;
 }`,
+
+  shadeIridescent: `// iridescent() (decision 156): a thin film, like a soap bubble or the back of a CD. The
+// light it reflects interferes with itself, so its color turns with the angle the surface is
+// seen at: a cosine palette stands for that. The strength mixes the film over the lit color,
+// more at grazing angles, where a film shows most.
+vec3 shadeIridescent(vec3 p, vec3 n, vec3 rd, Material m) {
+  float c = clamp(dot(-rd, n), 0.0, 1.0); // 1 seen from the front, 0 grazing
+  vec3 film = 0.5 + 0.5 * cos(6.2831853 * (vec3(0.0, 0.33, 0.67) + 1.6 * (1.0 - c)));
+  float amount = m.density * (0.35 + 0.65 * (1.0 - c));
+  vec3 r = reflect(rd, n);
+  float shine = pow(max(dot(r, LIGHT_DIR), 0.0), 40.0) * 0.6;
+  return mix(diffuse(n, m.color), diffuse(n, film) + 0.15 * film, amount) + shine;
+}`,
 };

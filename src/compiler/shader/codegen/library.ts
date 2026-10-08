@@ -216,6 +216,13 @@ Material glass(vec3 color, float ior, float frost, int frostStyle) {
 Material emissive(vec3 color, float strength) {
   return Material(color, EMISSIVE, 0.0, strength, 1.0, 0); // frostStyle: only glass reads it
 }`,
+
+  iridescent: `const int IRIDESCENT = 5;
+
+// A thin film, like a soap bubble (decision 156): the strength goes in density
+Material iridescent(vec3 color, float strength) {
+  return Material(color, IRIDESCENT, 0.0, strength, 1.0, 0); // frostStyle: only glass reads it
+}`,
 };
 
 // The line of main() that lights each material
@@ -224,4 +231,5 @@ export const SHADE_CALLS: Record<string, string> = {
   jelly: "    if (m.kind == JELLY) col = shadeJelly(p, n, rd, m);",
   glass: "    if (m.kind == GLASS) col = shadeGlass(p, n, rd, m);",
   emissive: "    if (m.kind == EMISSIVE) col = max(col, m.color * m.density);",
+  iridescent: "    if (m.kind == IRIDESCENT) col = shadeIridescent(p, n, rd, m);",
 };
