@@ -338,6 +338,168 @@ export const PROPERTIES: PropertyDef[] = [
     ],
   },
   {
+    name: "display",
+    since: "0.0.6",
+    appliesTo: "object",
+    syntax: "none | block",
+    initial: "block",
+    description:
+      "`none` leaves the object out of the scene, like CSS: it is not drawn, casts no shadow and cannot be pointed at. On a group, every object inside it is left out; on a `light`, the light is off.",
+    details: "The object still counts among its siblings, like an element of the page with `display: none`: `:nth-child()` and `sibling-index()` see it. It is set when the scene compiles, so it changes with `@media`, not on `:hover` or in `@keyframes`: to hide an object for a moment, use `visibility`.",
+    examples: [
+      {
+        name: "fewer objects on a phone",
+        text: "On a narrow screen, the small spheres are left out.",
+        code: "@scene { torus; sphere.moon * 3; } torus { translate: 0 0.8 0; rotate-x: 70deg; radius: 0.7; thickness: 0.2; } .moon { radius: 0.18; translate: calc(sibling-index() * 0.6 - 1.2) 1.8 0; color: #ff5a36; } @media (max-width: 600px) { .moon { display: none; } }",
+      },
+      {
+        name: "every other one",
+        text: "`display: none` on every other cube: the others keep their places.",
+        code: "@scene { cube * 7; } cube { size: 0.4; translate: calc(sibling-index() * 0.6 - 2.4) 0.3 0; color: #3a7bff; } cube:nth-child(even) { display: none; }",
+      },
+    ],
+  },
+  {
+    name: "visibility",
+    since: "0.0.6",
+    appliesTo: "object",
+    animatable: true,
+    syntax: "visible | hidden | collapse",
+    initial: "visible",
+    description:
+      "`hidden` hides the object, like CSS: it is not drawn, casts no shadow, and the mouse goes through it. `collapse` is `hidden`, as in CSS outside tables.",
+    details: "Like CSS, it is inherited: a hidden group hides its objects, and an object inside it can be `visible` again. It changes on `:hover` and in `@keyframes`, at once, like CSS: between `visible` and `hidden`, the object is there for the whole way, and gone only at `hidden`. A hidden object cannot be hovered: hide another object, like `#button:hover #label`. A group's own visibility is read when the scene compiles.",
+    examples: [
+      {
+        name: "a light that blinks",
+        text: "The sphere is gone for the second half of each second.",
+        code: "@scene { sphere; } sphere { translate: 0 1 0; radius: 0.5; material: emissive(#ff5a36); animation: blink 1s step-end; } @keyframes blink { 50% { visibility: hidden; } }",
+      },
+      {
+        name: "shown under the mouse",
+        text: "Hovering the cube shows the sphere above it.",
+        code: "@scene { group#g { cube; sphere; } } #g { translate: 0 0.5 0; } sphere { translate: 0 1.2 0; radius: 0.3; color: #ff5a36; visibility: hidden; } #g:hover sphere { visibility: visible; }",
+      },
+      {
+        name: "one visible in a hidden group",
+        text: "The group is hidden, but its sphere says `visible`.",
+        code: "@scene { group#g { cube * 3; sphere; } } #g { visibility: hidden; translate: 0 0.6 0; } cube { size: 0.5; translate: calc(sibling-index() - 2) 0 0; } sphere { visibility: visible; radius: 0.4; color: #ff5a36; }",
+      },
+    ],
+  },
+  {
+    name: "cursor",
+    since: "0.0.6",
+    appliesTo: "object",
+    syntax: "auto | default | pointer | grab | grabbing | help | crosshair | move | not-allowed | zoom-in | zoom-out | …",
+    initial: "auto",
+    description:
+      "The mouse pointer over the object, like CSS: `pointer` says it can be clicked, `grab` that it can be held. It takes the keywords of CSS `cursor`.",
+    details: "Like CSS, it is inherited: a group gives its cursor to its objects. A `:hover` or `:active` rule can change it, like `cube:active { cursor: grabbing; }`, at once: a cursor does not glide. Over the background and the floor, the page keeps its own cursor. A hidden object has none, since the mouse goes through it.",
+    examples: [
+      {
+        name: "a button",
+        text: "The cube shows the hand of a link.",
+        code: "@scene { cube; } cube { translate: 0 0.5 0; color: #ff5a36; cursor: pointer; transition: 0.2s; } cube:active { scale: 0.9; }",
+      },
+      {
+        name: "grab and grabbing",
+        text: "An open hand over the sphere, closed while it is pressed.",
+        code: "@scene { sphere; } sphere { translate: 0 1 0; radius: 0.7; color: #3a7bff; cursor: grab; } sphere:active { cursor: grabbing; }",
+      },
+    ],
+  },
+  {
+    name: "outline",
+    since: "0.0.6",
+    appliesTo: "object",
+    animatable: true,
+    syntax: "<outline-width> || <outline-style> || <outline-color>",
+    initial: "medium none currentColor",
+    description:
+      "A line around the silhouette of the object, like CSS `outline`: a width, a style and a color, in any order. Like CSS, it needs a style: `outline: 0.03 solid #111;`.",
+    details: "The line is drawn outside the object, where the eye passes close to its edge, and over what is behind it: another object, the floor or the background. It takes no room, is never lit and cannot be pointed at, like CSS, but the fog covers it. Unlike CSS, its width is in the units of the scene, not in pixels: it gets thinner far from the camera, like the object. `outline-width`, `outline-style`, `outline-color` and `outline-offset` set one part each, and win over `outline` wherever they are written, like the other longhands of GSS. It changes on `:hover` and in `@keyframes`.",
+    examples: [
+      {
+        name: "a drawn look",
+        text: "Dark lines around matte shapes, like a drawing.",
+        code: "@scene { sphere; cube; torus; } * { outline: 0.03 solid #1a1a1a; } sphere { translate: -1.3 0.6 0; radius: 0.6; color: #ffd166; } cube { translate: 0 0.5 0; color: #ef476f; rotate-y: 30deg; } torus { translate: 1.4 0.6 0; rotate-x: 70deg; radius: 0.5; thickness: 0.18; color: #06d6a0; }",
+      },
+      {
+        name: "outlined under the mouse",
+        text: "Hovering the cube draws its outline, which glides in.",
+        code: "@scene { cube; } cube { translate: 0 0.6 0; color: #3a7bff; outline: 0 solid #ff5a36; transition: 0.25s; cursor: pointer; } cube:hover { outline-width: 0.06; }",
+      },
+    ],
+  },
+  {
+    name: "outline-width",
+    since: "0.0.6",
+    appliesTo: "object",
+    animatable: true,
+    syntax: "<number> | thin | medium | thick",
+    initial: "medium",
+    description:
+      "How wide the line of `outline` is, in the units of the scene, unlike CSS pixels: `thin` is 0.01, `medium` 0.02 and `thick` 0.04.",
+    examples: [
+      {
+        name: "a thick line",
+        text: "A wide white line around a sphere.",
+        code: "@scene { sphere; } scene { background: #14141c; } sphere { translate: 0 1 0; radius: 0.6; color: #ff5a36; outline-style: solid; outline-color: white; outline-width: 0.08; }",
+      },
+    ],
+  },
+  {
+    name: "outline-style",
+    since: "0.0.6",
+    appliesTo: "object",
+    syntax: "none | solid | auto",
+    initial: "none",
+    description:
+      "Whether the object has an `outline`, like CSS: `none`, the default, draws none, `solid` and `auto` a plain line. The other styles of CSS, like `dashed`, are not drawn yet. A `:hover` or `:active` rule can change it; `@keyframes` cannot.",
+    examples: [
+      {
+        name: "solid",
+        text: "The style alone draws a medium line of the object's own color.",
+        code: "@scene { cube; } cube { translate: 0 0.6 0; color: #3a7bff; outline-style: solid; outline-offset: 0.06; }",
+      },
+    ],
+  },
+  {
+    name: "outline-color",
+    since: "0.0.6",
+    appliesTo: "object",
+    animatable: true,
+    syntax: "<color>",
+    initial: "currentColor",
+    description:
+      "The color of the line of `outline`. Like CSS, it is the object's own `color` by default; a gradient gives the mean of its colors.",
+    examples: [
+      {
+        name: "a line that changes color",
+        text: "The outline goes from orange to blue and back.",
+        code: "@scene { torus; } torus { translate: 0 0.8 0; rotate-x: 70deg; radius: 0.6; thickness: 0.2; color: #f4f4f6; outline: 0.04 solid #ff5a36; animation: hue 3s ease-in-out alternate; } @keyframes hue { to { outline-color: #3a7bff; } }",
+      },
+    ],
+  },
+  {
+    name: "outline-offset",
+    since: "0.0.6",
+    appliesTo: "object",
+    animatable: true,
+    syntax: "<number>",
+    initial: "0",
+    description:
+      "The gap between the object and the line of `outline`, in the units of the scene, like CSS: the line starts this far from the surface.",
+    examples: [
+      {
+        name: "a halo",
+        text: "The line floats away from the sphere and back.",
+        code: "@scene { sphere; } sphere { translate: 0 1 0; radius: 0.5; color: #ffd166; outline: 0.02 solid #ffd166; animation: halo 2s ease-in-out alternate; } @keyframes halo { to { outline-offset: 0.25; } }",
+      },
+    ],
+  },
+  {
     name: "mask-image",
     since: "0.0.4",
     appliesTo: "object",
@@ -725,6 +887,69 @@ export const PROPERTIES: PropertyDef[] = [
         name: "rise into view",
         text: "The spheres rise as the scene comes into view; the second one goes up and back.",
         code: "@scene { sphere * 3; } sphere { --x: calc(2 - sibling-index()); radius: 0.35; translate: var(--x) 0.35 0; color: #3a7bff; animation: rise 1s ease-out; animation-timeline: view(); } sphere:nth-child(2) { animation-iteration-count: 2; animation-direction: alternate; } @keyframes rise { to { translate: var(--x) 1.6 0; color: #3ad16b; } }",
+      },
+    ],
+  },
+  {
+    name: "animation-range",
+    since: "0.0.6",
+    appliesTo: "everywhere",
+    syntax: "[ normal | <range-name> <percentage>? | <percentage> | <length> ]{1,2}",
+    initial: "normal",
+    description:
+      "The part of a scroll timeline the animation plays on, like CSS: `entry` while the scene comes into view, `exit` while it leaves, or percentages of the whole scroll. It goes with `animation-timeline`.",
+    values: [
+      ["normal", "The whole timeline, the default."],
+      ["cover", "From the moment the scene starts to enter its scroll container to the moment it has left: the whole of `view()`."],
+      ["contain", "While the scene is all inside its scroll container, or, when it is larger, while it fills it."],
+      ["entry", "While the scene comes in, from its first pixel to all of it. `entry-crossing`: while its start edge crosses its whole height."],
+      ["exit", "While the scene goes out, from its first pixel out to all of it. `exit-crossing`: from its end edge leaving to its start edge leaving."],
+      ["<percentage>", "A share of the named range before it, or of the whole timeline alone: `entry 50%`, `20% 80%`."],
+      ["<length>", "Pixels from the start of the named range before it, or of the whole timeline: `100px`."],
+    ],
+    details: "It takes a start, then an end: `entry 10% exit 90%`. A name alone is the whole of that range, `animation-range: entry`; a name alone at the end is its end, `contain exit`. `animation-range-start` and `animation-range-end` set one side each, and win over `animation-range` wherever they are written, like the other longhands of `animation`. Before the range the animation shows its first frame, past it its last. The named ranges belong to `view()`: `scroll()` takes percentages and pixels. Unlike CSS, which ignores it there, a range on an animation that plays in time is an error.",
+    examples: [
+      {
+        name: "rise while it comes in",
+        text: "The spheres rise while the scene enters the page, then stay up.",
+        code: "@scene { sphere * 3; } sphere { --x: calc(2 - sibling-index()); radius: 0.35; translate: var(--x) 0.35 0; color: #3a7bff; animation: rise 1s ease-out; animation-timeline: view(); animation-range: entry; } @keyframes rise { to { translate: var(--x) 1.6 0; color: #3ad16b; } }",
+      },
+      {
+        name: "the middle of the scroll",
+        text: "The cube turns between 25% and 75% of the scroll of the page, and holds before and after.",
+        code: "@scene { cube; } cube { translate: 0 0.6 0; corner-radius: 0.1; color: #ff5a36; animation: turn 1s linear; animation-timeline: scroll(); animation-range: 25% 75%; } @keyframes turn { to { rotate-y: -360deg; } }",
+      },
+    ],
+  },
+  {
+    name: "animation-range-start",
+    since: "0.0.6",
+    appliesTo: "everywhere",
+    syntax: "normal | <range-name> <percentage>? | <percentage> | <length>",
+    initial: "normal",
+    description:
+      "Where on the timeline the animation starts, like CSS: the first half of `animation-range`. A name alone is the start of that range.",
+    examples: [
+      {
+        name: "from the middle of the entry",
+        text: "The torus starts turning when half of the scene is in view.",
+        code: "@scene { torus; } torus { translate: 0 0.8 0; radius: 0.6; thickness: 0.2; color: #ff5a36; animation: tilt 1s; animation-timeline: view(); animation-range-start: entry 50%; } @keyframes tilt { to { rotate-x: 90deg; } }",
+      },
+    ],
+  },
+  {
+    name: "animation-range-end",
+    since: "0.0.6",
+    appliesTo: "everywhere",
+    syntax: "normal | <range-name> <percentage>? | <percentage> | <length>",
+    initial: "normal",
+    description:
+      "Where on the timeline the animation ends, like CSS: the second half of `animation-range`. A name alone is the end of that range.",
+    examples: [
+      {
+        name: "done once it is in",
+        text: "The cube grows until the scene is all in view.",
+        code: "@scene { cube; } cube { translate: 0 0.6 0; color: #3a7bff; scale: 0.3; animation: grow 1s ease-out; animation-timeline: view(); animation-range-end: entry; } @keyframes grow { to { scale: 1; } }",
       },
     ],
   },
@@ -2304,6 +2529,9 @@ export const SHAPE_DOCS: ShapeDef[] = [
       "Not a shape: it holds objects and other groups, like `<g>` in SVG, and draws nothing itself. Its `translate`, rotations and `scale` apply to everything inside it, and the positions of its children become relative to it.",
     details: "Its other properties (`color`, `material`, `size`…) are not passed down to its children: to style them, use a descendant selector, like `#letters cube`.",
     takes: [
+      "display",
+      "visibility",
+      "cursor",
       "filter",
       "translate",
       "rotate-x",
@@ -2319,6 +2547,9 @@ export const SHAPE_DOCS: ShapeDef[] = [
       "animation-fill-mode",
       "animation-timing-function",
       "animation-timeline",
+      "animation-range",
+      "animation-range-start",
+      "animation-range-end",
       "offset-path",
       "offset-distance",
       "offset-rotate",
@@ -2343,6 +2574,7 @@ export const SHAPE_DOCS: ShapeDef[] = [
       "Not a shape: a point of light, which draws nothing. Its `color` is the color of its light (white by default), and `intensity` how much light it gives, on top of the sun and the `ambient` light of the scene.",
     details: "It moves like an object: `translate`, the groups it is in, animations, `:hover` through its group, a motion path, and rotations around a `transform-origin`, in numbers, since a light has no size. Lights add up, 8 at most per scene. A light is never drawn, so it cannot be hovered or pressed: to see the bulb, put a shape at its place, and hover the shape, like `#lamp:hover light`. Without `shadows`, the light goes through the objects.",
     takes: [
+      "display",
       "color",
       "intensity",
       "translate",
@@ -2359,6 +2591,9 @@ export const SHAPE_DOCS: ShapeDef[] = [
       "animation-fill-mode",
       "animation-timing-function",
       "animation-timeline",
+      "animation-range",
+      "animation-range-start",
+      "animation-range-end",
       "offset-path",
       "offset-distance",
       "offset-rotate",

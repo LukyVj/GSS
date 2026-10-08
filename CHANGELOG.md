@@ -8,6 +8,11 @@ The 0.0.1 history was reconstructed from GitHub.
 
 ### Added
 
+- `outline`: a line around the silhouette of an object, like CSS: `outline: 0.03 solid #111;` for a drawn look, or an outline that appears on `:hover`. Its width and `outline-offset` are in the units of the scene, so the line gets thinner far away, like the object. Its color is the object's own by default, and width, color and offset can be animated.
+- `display: none` leaves an object, or a whole group, out of the scene, and turns a light off; with `@media`, a phone can draw fewer objects. It still counts for `:nth-child()`.
+- `visibility: hidden` hides an object: not drawn, no shadow, and the mouse goes through it. Like CSS, a group passes it to its objects, and it can change on `:hover` and in `@keyframes`, for a blinking light or an object shown by hovering another.
+- `cursor: pointer`, `grab`, `grabbing` and the other cursors of CSS: the mouse pointer over an object, also in `:hover` and `:active` rules (`cube:active { cursor: grabbing; }`).
+- `animation-range`, `animation-range-start` and `animation-range-end`: the part of a scroll timeline the animation plays on, like CSS: `animation-range: entry` plays while the scene comes into view, `entry 50% exit 50%` from half in to half out, and `25% 75%` on the middle of the scroll.
 - `filter: vignette()` and `chromatic-aberration()` on the scene: darker corners, and red and blue that split towards the edges, like a lens.
 - `material: iridescent()`: a thin film, like a soap bubble or the back of a CD, whose colors turn with the angle you see it at. `emissive` and `iridescent` also work as keywords, like `jelly` and `glass`.
 - `checker()` and `stripes()`: a checkerboard and bands of two colors, wherever a gradient goes (`color`, a material, `background`, `floor`). Like `noise()`, they are cut in the object's own space, with no seam, and can be animated: `stripes(4 at 0 -0.25 0, …)` in a `@keyframes` makes the bands scroll.

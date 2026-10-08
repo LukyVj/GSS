@@ -1,6 +1,6 @@
 // scroll() and view() at run time (decision 96): the progress of each timeline of the
 // scene, from the page, sent in uTimeline. Read every frame: no scroll listener to keep.
-import type { Timeline } from "../compiler/features/timeline";
+import type { Range, RangeEdge, Timeline } from "../compiler/features/timeline";
 
 const clamp01 = (value: number) => Math.min(Math.max(value, 0), 1);
 
@@ -19,6 +19,29 @@ export function viewProgress(
   portSize: number,
 ): number {
   return clamp01((portStart + portSize - start) / (portSize + size));
+}
+
+// animation-range (decision 162): the progress inside a part of the timeline, like CSS.
+// position: how far along the whole timeline, in pixels, out of length; subject: the size
+// of the scene, port: the size of its scroll container (view(); 0 for scroll()).
+export function rangeProgress(position: number, length: number, subject: number, port: number, range: Range): number {
+  const inside = Math.min(subject, port);
+  const outside = Math.max(subject, port);
+  const at = (edge: RangeEdge): number => {
+    const [from, to] = {
+      cover: [0, length],
+      contain: [inside, outside],
+      entry: [0, inside],
+      exit: [outside, length],
+      "entry-crossing": [0, subject],
+      "exit-crossing": [port, length],
+    }[edge.name];
+    return from + (edge.unit === "px" ? edge.offset : ((to - from) * edge.offset) / 100);
+  };
+  const start = at(range.start);
+  const end = at(range.end);
+  if (end <= start) return position >= end ? 1 : 0;
+  return clamp01((position - start) / (end - start));
 }
 
 // The closest ancestor that scrolls on this axis, or null for the page, like
@@ -47,7 +70,8 @@ export function findScroller(
 const isVertical = (timeline: Timeline) =>
   timeline.axis === "block" || timeline.axis === "y";
 
-function progressOf(timeline: Timeline, canvas: HTMLCanvasElement): number {
+function progressOf(timeline: Timeline, canvas: HTMLCanvasElement, override: number | null): number {
+  if (override !== null && !timeline.range) return override;
   const vertical = isVertical(timeline);
   const nearest =
     timeline.type === "view" || timeline.scroller === "nearest"
@@ -56,6 +80,11 @@ function progressOf(timeline: Timeline, canvas: HTMLCanvasElement): number {
   const root = document.scrollingElement ?? document.documentElement;
   if (timeline.type === "scroll") {
     const scroller = nearest ?? root;
+    if (timeline.range) {
+      const length = vertical ? scroller.scrollHeight - scroller.clientHeight : scroller.scrollWidth - scroller.clientWidth;
+      const position = override !== null ? override * length : vertical ? scroller.scrollTop : scroller.scrollLeft;
+      return rangeProgress(position, Math.max(length, 0), 0, 0, timeline.range);
+    }
     return vertical
       ? scrollProgress(scroller.scrollTop, scroller.scrollHeight, scroller.clientHeight)
       : scrollProgress(scroller.scrollLeft, scroller.scrollWidth, scroller.clientWidth);
@@ -64,6 +93,15 @@ function progressOf(timeline: Timeline, canvas: HTMLCanvasElement): number {
   const port = nearest
     ? nearest.getBoundingClientRect()
     : { top: 0, left: 0, height: window.innerHeight, width: window.innerWidth };
+  if (timeline.range) {
+    // The slider of the playground stands in for the place of the scene along the timeline
+    const [start, subject, portStart, portSize] = vertical
+      ? [box.top, box.height, port.top, port.height]
+      : [box.left, box.width, port.left, port.width];
+    const length = subject + portSize;
+    const position = override !== null ? override * length : portStart + portSize - start;
+    return rangeProgress(position, length, subject, portSize, timeline.range);
+  }
   return vertical
     ? viewProgress(box.top, box.height, port.top, port.height)
     : viewProgress(box.left, box.width, port.left, port.width);
@@ -77,7 +115,7 @@ export function timelineValues(
 ): Float32Array {
   const values = new Float32Array(4);
   timelines.forEach((timeline, i) => {
-    values[i] = override ?? progressOf(timeline, canvas);
+    values[i] = progressOf(timeline, canvas, override);
   });
   return values;
 }

@@ -47,7 +47,7 @@ export const COLOR_FUNCTIONS = [
 export type ColorScheme = "light" | "dark";
 export const DARK_QUERY = "(prefers-color-scheme: dark)";
 // The properties whose whole value is a color
-const COLOR_PROPERTIES = ["color", "floor", "background"];
+const COLOR_PROPERTIES = ["color", "floor", "background", "outline-color"];
 // The materials whose first argument is a color: metal(tomato, 0.2)
 export const MATERIAL_FUNCTIONS = ["matte", "metal", "jelly", "glass", "emissive", "iridescent"];
 
@@ -59,7 +59,7 @@ export function resolveNamedColors(property: string, value: Token[]): Token[] {
     return [named(value[0])];
   }
   // 2. fog: tomato 4 16 → the color among the distances
-  if (property === "fog") return value.map(named);
+  if (property === "fog" || property === "outline") return value.map(named);
   // 3. material: metal(tomato, 0.2) → the token right after "metal ("
   if (property === "material") {
     return value.map((token, i) =>

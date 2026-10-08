@@ -46,6 +46,11 @@ describe("registry", () => {
         "translate",
         "color",
         "opacity",
+        "visibility",
+        "outline",
+        "outline-width",
+        "outline-color",
+        "outline-offset",
         "mask-image",
         "rotate-x",
         "rotate-y",
@@ -64,9 +69,13 @@ describe("registry", () => {
     const NEEDS: Record<string, string> = {
       "offset-distance": "offset-path: ray(0deg);",
       "mask-image": "mask-image: linear-gradient(black, transparent);",
+      outline: "outline-style: solid;",
+      "outline-width": "outline-style: solid;",
+      "outline-color": "outline-style: solid;",
+      "outline-offset": "outline-style: solid;",
     };
     // A mask changes into another mask, not into none, its initial value
-    const FRAME: Record<string, string> = { "mask-image": "linear-gradient(black 20%, transparent)", opacity: "0.5" };
+    const FRAME: Record<string, string> = { "mask-image": "linear-gradient(black 20%, transparent)", opacity: "0.5", visibility: "hidden", outline: "0.1 solid red", "outline-width": "0.1", "outline-color": "red", "outline-offset": "0.1" };
 
     // If a property is marked animatable, the compiler must really animate it
     for (const property of animatable) {

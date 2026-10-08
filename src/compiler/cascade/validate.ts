@@ -46,9 +46,9 @@ function checkDeclaration(rule: Rule, declaration: Declaration): true {
     throw errorAt(declaration, `Unknown property "${declaration.property}"`);
   }
 
-  // transition is not animated, but :hover can set it, like CSS; an animation
+  // transition, cursor and outline-style are not animated, but :hover can set them, like CSS; an animation
   // in a :hover or :active rule starts when the state does (decision 141)
-  if (hover && !property.animatable && property.name !== "transition" && !startsAnimation(property.name)) {
+  if (hover && !property.animatable && !["transition", "cursor", "outline-style"].includes(property.name) && !startsAnimation(property.name)) {
     const animatable = PROPERTIES.filter((p) => p.animatable).map((p) => p.name);
     throw errorAt(
       declaration,

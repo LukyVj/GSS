@@ -53,6 +53,9 @@ import { ISOLINES, ISOLINES_CALL, withObjectsAlone } from "./view";
 import type { View } from "../../features/view";
 import { readShapeRendering } from "../../features/shape-rendering";
 import { precisionMarch } from "./shape-rendering";
+import { readVisibility, withInheritedVisibility } from "../../features/visibility";
+import { sceneCursors } from "../../features/cursor";
+import { objectOutline, outlineBlend, outlineFunctions, withOutlineBand, withOutlineFrames, withOutlineMarch, type Outlined } from "./outline";
 
 export { activeSlots, hoverSlots, sceneTriggers, type Trigger } from "./animation";
 export { shapeNames, shapeRadius } from "./shapes";
@@ -64,6 +67,12 @@ export function generateShader(
   properties = 0, // the variables registered with @property: uProperties[] (decision 105)
   view: View = "shaded", // distance: the isolines of the distance to the objects (decision 131)
 ): string {
+  // visibility is inherited from the groups, like CSS (decision 160)
+  everything = everything.map(withInheritedVisibility);
+  // outline (decision 163): the width and the color the shader reads, from the shorthand
+  // and the longhands, in the objects and in the frames
+  everything = everything.map(withOutlineBand);
+  keyframes = withOutlineFrames(keyframes);
   // scroll() and view(): one component of uTimeline each (decision 96)
   const timelines = sceneTimelines([
     sceneStyles,
@@ -80,6 +89,8 @@ export function generateShader(
   const instances = everything.filter((instance) => !isLight(instance));
   // uHover[]: the hover slots, then the :active ones (decision 95)
   const slots = [...hovers, ...actives];
+  // The picking pass: for :hover and :active, and for the cursor over an object (decision 161)
+  const picks = slots.length > 0 || sceneCursors(everything.filter((instance) => !isLight(instance))).length > 0;
   // uStart[]: when each state that starts an animation started it (decision 141)
   const triggers = sceneTriggers(everything);
   // The hover and pressed states of one object, or undefined when it has neither
@@ -135,14 +146,29 @@ export function generateShader(
   const skinTest = transparent.length > 0 ? "isSkin" : "hasHoles";
   const shadows = readShadows(sceneStyles["shadows"]);
 
-  const mapLines = instances.map((instance) => {
+  // visibility (decision 160): a hidden object is left out of map(); one that changes is
+  // there while its value is above hidden (0)
+  const visibilityOf = (instance: StyledInstance) =>
+    hoverValue(instance.styles, keyframes, "visibility", readVisibility, hoverOf(instance));
+  const mapped = instances.filter((instance) => visibilityOf(instance) !== "0.0");
+  // outline (decision 163): the objects that draw a line around their silhouette
+  const outlines = new Map<StyledInstance, Outlined>();
+  for (const instance of mapped) {
+    const outline = objectOutline(instance, keyframes, hoverOf(instance), hoisted);
+    if (outline) outlines.set(instance, outline);
+  }
+
+  const mapLines = mapped.map((instance) => {
     const shape = SHAPES[instance.tag];
     if (!shape) {
       throw new Error(
         `Unknown object: "${instance.tag}". Available: ${Object.keys(SHAPES).join(", ")}`,
       );
     }
-    const { code: shapeCode, radius: shapeRadius } = shape(instance.styles, context);
+    const { code: shapeCode, radius: ownRadius } = shape(instance.styles, context);
+    // An outline reaches past the surface: its bounding spheres grow with it
+    const outline = outlines.get(instance);
+    const shapeRadius = ownRadius === null || !outline ? ownRadius : outline.reach === null ? null : ownRadius + outline.reach;
     // A motion path takes the shape away from the object's origin (decision 97)
     const reach = offsetReach(instance.styles, keyframes, hoverOf(instance));
     const radius = shapeRadius === null || reach === null ? null : shapeRadius + reach;
@@ -170,7 +196,9 @@ export function generateShader(
     const operation = readOperation(instance.styles["operation"]);
     // A blend set from JS (decision 105) is always smooth, and never 0: it divides
     const blend = liveNumber(instance.styles["blend"], "blend", 0, true);
-    const distance = `${shapeCode} * ${scales.join(" * ")}`;
+    const measured = `${shapeCode} * ${scales.join(" * ")}`;
+    // An outlined object is measured once, for its line and for the scene
+    const distance = outline ? "dOutline" : measured;
     // A subtracted or intersected object cuts the others: it stays solid
     const skin = skins.has(instance) && operation === "opU";
     const shapeValue = `vec2(${skin ? `shell(${distance})` : distance}, ${glslFloat(instance.index)})`;
@@ -181,6 +209,10 @@ export function generateShader(
         : blend > 0
           ? `${SMOOTH[operation]}(res, ${shapeValue}, ${glslFloat(blend)})`
           : `${operation}(res, ${shapeValue})`;
+
+    const assign = outline
+      ? `{ float dOutline = ${measured}; res = ${combine}; outlineAt(dOutline, ${outline.offset}, ${outline.width}, ${glslFloat(instance.index)}); }`
+      : `res = ${combine};`;
 
     const groupLines = instance.groupStyles.flatMap((styles) =>
       transformLines(styles, keyframes, undefined, hoisted),
@@ -200,7 +232,7 @@ export function generateShader(
         `  q = p;`,
         ...groupLines,
         ...transformLines(instance.styles, keyframes, hover, hoisted, box),
-        ` res = ${combine};`,
+        ` ${assign}`,
       ].join("\n");
     }
 
@@ -229,7 +261,7 @@ export function generateShader(
       `    q /= ${ownScale};`,
       ...offsetLines(instance.styles, keyframes, hover, hoisted).map((line) => `  ${line}`),
       ...(origin ? [`    q += ${origin};`] : []),
-      `   res = ${combine};`,
+      `   ${assign}`,
       `  }`,
     ].join("\n");
   });
@@ -277,7 +309,12 @@ export function generateShader(
     .map(([code, name]) => code.replaceAll("NAME", name))
     .join("\n\n");
 
-  const map = boundedMap(instances, mapLines, spheres, plainUnion, nearest);
+  const shown = mapLines.map((code, i) => {
+    const visible = visibilityOf(mapped[i]);
+    if (visible === "1.0") return code;
+    return `  if (${hoist(hoisted, "float", visible)} > 0.0) {\n${code.replace(/^/gm, "  ")}\n  }`;
+  });
+  const map = boundedMap(mapped, shown, spheres, plainUnion, nearest);
   // A blend adds a fillet up to its distance around the objects it joins
   const blends = instances.map((i) => liveNumber(i.styles["blend"], "blend", 0, true));
   const maxBlend = Math.max(0, ...blends.filter((b): b is number => !isLive(b)));
@@ -368,6 +405,10 @@ export function generateShader(
   }
 `
     : "";
+  // outline (decision 163): the line the primary ray passed, kept before other rays march
+  const lines = [...outlines].map(([instance, outline]) => ({ instance, outline }));
+  const outlineCopy = lines.length > 0 ? "\n  float outlineT = lineT;\n  float outlineHit = lineId;" : "";
+  const lineBlend = lines.length > 0 ? outlineBlend(fog?.line) : "";
   const shader = (
     template.replace(
       "/*@EASINGS*/",
@@ -388,7 +429,8 @@ export function generateShader(
           used(MAP_HELPERS, map + animate),
         ) +
           (skins.size > 0 ? `\n\n${SHELL}` : "") +
-          (animate ? `\n\n${animate}` : ""),
+          (animate ? `\n\n${animate}` : "") +
+          (lines.length > 0 ? `\n\n${outlineFunctions(lines)}` : ""),
       )
       .replace(
         "/*@SHAPES*/",
@@ -405,30 +447,30 @@ export function generateShader(
       .replace(
         "  vec2 hit = march(ro, rd);\n  float t = hit.x;\n  float id = hit.y;/*@PICK_OUTPUT*/",
         geometricPrecision
-          ? "  PrecisionHit hit = marchPrecision(ro, rd);\n  float t = hit.t;\n  float id = hit.id;/*@PICK_OUTPUT*/\n  float edgeT = hit.edgeT;\n  float edgeId = hit.edgeId;\n  float edgeCoverage = hit.coverage;"
-          : "  vec2 hit = march(ro, rd);\n  float t = hit.x;\n  float id = hit.y;/*@PICK_OUTPUT*/",
+          ? `  PrecisionHit hit = marchPrecision(ro, rd);\n  float t = hit.t;\n  float id = hit.id;${outlineCopy}/*@PICK_OUTPUT*/\n  float edgeT = hit.edgeT;\n  float edgeId = hit.edgeId;\n  float edgeCoverage = hit.coverage;`
+          : `  vec2 hit = march(ro, rd);\n  float t = hit.x;\n  float id = hit.y;${outlineCopy}/*@PICK_OUTPUT*/`,
       )
       .replace("/*@TEXTURE_UNIFORMS*/", textures.uniforms)
       .replace(
         "/*@HOVER_UNIFORM*/",
         (timelines.length > 0
-          ? `uniform vec4 uTimeline; // scroll() and view(): the progress of each, 0 to 1${slots.length > 0 ? "\n" : ""}`
+          ? `uniform vec4 uTimeline; // scroll() and view(): the progress of each, 0 to 1${picks ? "\n" : ""}`
           : "") +
           (properties > 0
-            ? `uniform vec4 uProperties[${properties}]; // @property: the variables set from JS${slots.length > 0 ? "\n" : ""}`
+            ? `uniform vec4 uProperties[${properties}]; // @property: the variables set from JS${picks ? "\n" : ""}`
             : "") +
           (triggers.length > 0
             ? `uniform float uStart[${triggers.length}]; // when each state that starts an animation started it (seconds of iTime)\n`
             : "") +
-          (slots.length > 0
-            ? `uniform float uHover[${slots.length}]; // 0 at rest, 1 hovered
+          (picks
+            ? `uniform float uHover[${Math.max(slots.length, 1)}]; // 0 at rest, 1 hovered
 uniform bool uPicking; // true: draw the id of the object under uPick, not its color
 uniform vec2 uPick;`
             : ""),
       )
-      .replace("/*@PICK_PIXEL*/", slots.length > 0 ? PICK_PIXEL : "")
-      .replace("/*@PIXEL*/", slots.length > 0 ? "pixel" : "gl_FragCoord.xy")
-      .replace("/*@PICK_OUTPUT*/", slots.length > 0 ? PICK_OUTPUT : "")
+      .replace("/*@PICK_PIXEL*/", picks ? PICK_PIXEL : "")
+      .replace("/*@PIXEL*/", picks ? "pixel" : "gl_FragCoord.xy")
+      .replace("/*@PICK_OUTPUT*/", picks ? PICK_OUTPUT : "")
       .replace(
         "/*@TEXTURES*/",
         section(
@@ -532,7 +574,7 @@ uniform vec2 uPick;`
       // Through the holes of mask-image (decision 113)
       .replace(MARCH_LOOP, masked.length > 0 ? MASKED_MARCH_LOOP : transparent.length > 0 ? SKIN_MARCH_LOOP : MARCH_LOOP)
       .replace("/*@SURFACE_FILTER*/", surfaceInFunction && filterLines.includes(objectLine) ? objectLine : "")
-      .replace("  outColor = vec4(col, 1.0);\n}", `${edgeBlend}${finalLines}${distanceView ? ISOLINES_CALL : ""}  outColor = vec4(col, ${alpha});\n}`)
+      .replace("  outColor = vec4(col, 1.0);\n}", `${edgeBlend}${lineBlend}${finalLines}${distanceView ? ISOLINES_CALL : ""}  outColor = vec4(col, ${alpha});\n}`)
       // Reflections see the filters of the objects they meet
       .replace(
         /return (diffuse\(n, .*\));  \/\/ its color, lit/,
@@ -546,8 +588,20 @@ uniform vec2 uPick;`
       // The parts left out leave blank lines behind: never more than one in a row
       .replace(/\n[ \t]*\n(?:[ \t]*\n)+/g, "\n\n")
   );
+  // outline (decision 163): map() measures the outlined objects from nothing, and the primary
+  // ray keeps the line it passed
+  const outlined =
+    lines.length > 0
+      ? withOutlineMarch(
+          shader.replace(
+            "  vec2 res = vec2(1e10, 0.0); // nothing yet\n",
+            "  vec2 res = vec2(1e10, 0.0); // nothing yet\n  outlineM = 1e10;\n  outlineId = 0.0;\n",
+          ),
+          geometricPrecision ? "PrecisionHit marchPrecision(vec3 ro, vec3 rd) {" : "vec2 march(vec3 ro, vec3 rd) {",
+        )
+      : shader;
   // The normals of a scene with holes (decision 113)
-  const turned = skins.size > 0 ? holeNormals(shader) : shader;
+  const turned = skins.size > 0 ? holeNormals(outlined) : outlined;
   // Every light in the highlights of the materials too
   return lights ? lights.rewrite(turned) : turned;
 }
