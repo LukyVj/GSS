@@ -1,0 +1,140 @@
+/*
+ * LE CHONK
+ * The pixel "4" of Mistral AI, in a museum. Click it: it tips over to the left
+ * until the end of its bar meets the floor, then falls on its back.
+ *
+ */
+
+@scene {
+  prism#four;
+}
+
+scene {
+  shadows: soft;
+  ambient: 0.45;
+  light: 10deg 55deg;
+  floor: #c9c6c1;
+  background: linear-gradient(#6b625a, #2b2622);
+  camera-target: 0 1.55 -0.5;
+  camera-distance: 8.2;
+  camera-angle: 0deg 15deg;
+}
+
+#four {
+  /* 18 cells of 0.19 a side: the leg, the bar that passes the leg by 3 cells,
+     the staircase up to the top, the cut top corner, and the stepped hole */
+  d: path("M-1.71 0.95 L0.38 0.95 L0.38 1.71 L1.14 1.71 L1.14 0.95 L1.71 0.95 L1.71 0.19 L1.14 0.19 L1.14 -1.52 L0.95 -1.52 L0.95 -1.71 L0 -1.71 L0 -1.52 L-0.19 -1.52 L-0.19 -1.33 L-0.38 -1.33 L-0.38 -1.14 L-0.57 -1.14 L-0.57 -0.95 L-0.76 -0.95 L-0.76 -0.57 L-0.95 -0.57 L-0.95 -0.38 L-1.14 -0.38 L-1.14 -0.19 L-1.33 -0.19 L-1.33 0 L-1.52 0 L-1.52 0.19 L-1.71 0.19 Z M-0.57 0.19 L0.38 0.19 L0.38 -0.95 L0.19 -0.95 L0.19 -0.57 L0 -0.57 L0 -0.38 L-0.19 -0.38 L-0.19 -0.19 L-0.38 -0.19 L-0.38 0 L-0.57 0 Z");
+  depth: 0.76;
+  translate: 0 1.71 0;
+  color: #ef6010;
+  texture: url("/textures/mistral-tiles.svg");
+  texture-size: 3.42;
+  image-rendering: pixelated;
+}
+
+/* A press starts the fall; it plays to its end, and the last frame stays */
+#four:active {
+  animation: fall 3.7s forwards;
+}
+
+/* Around the back bottom left corner of the leg: first to the left, slowly,
+   faster and faster, until the end of the bar lands; then on its back, with
+   one small rebound. Each frame turns the 4 and moves it so that this corner
+   stays where it is. */
+@keyframes fall {
+  0% { rotate-z: -0deg; rotate-x: 0deg; translate: 0 1.71 0; }
+  1.081% { rotate-z: -0.038deg; rotate-x: 0deg; translate: -0.001 1.71 0; }
+  2.162% { rotate-z: -0.15deg; rotate-x: 0deg; translate: -0.004 1.709 0; }
+  3.243% { rotate-z: -0.338deg; rotate-x: 0deg; translate: -0.01 1.708 0; }
+  4.324% { rotate-z: -0.601deg; rotate-x: 0deg; translate: -0.018 1.706 0; }
+  5.405% { rotate-z: -0.939deg; rotate-x: 0deg; translate: -0.028 1.704 0; }
+  6.486% { rotate-z: -1.352deg; rotate-x: 0deg; translate: -0.04 1.701 0; }
+  7.568% { rotate-z: -1.84deg; rotate-x: 0deg; translate: -0.055 1.697 0; }
+  8.649% { rotate-z: -1.681deg; rotate-x: 0deg; translate: -0.05 1.698 0; }
+  9.73% { rotate-z: -1.926deg; rotate-x: 0deg; translate: -0.057 1.696 0; }
+  10.811% { rotate-z: -2.153deg; rotate-x: 0deg; translate: -0.064 1.695 0; }
+  11.892% { rotate-z: -2.365deg; rotate-x: 0deg; translate: -0.07 1.693 0; }
+  12.973% { rotate-z: -2.563deg; rotate-x: 0deg; translate: -0.076 1.691 0; }
+  14.054% { rotate-z: -2.746deg; rotate-x: 0deg; translate: -0.081 1.69 0; }
+  15.135% { rotate-z: -2.917deg; rotate-x: 0deg; translate: -0.087 1.688 0; }
+  16.216% { rotate-z: -3.077deg; rotate-x: 0deg; translate: -0.091 1.687 0; }
+  17.297% { rotate-z: -3.225deg; rotate-x: 0deg; translate: -0.096 1.686 0; }
+  18.378% { rotate-z: -3.364deg; rotate-x: 0deg; translate: -0.1 1.685 0; }
+  19.459% { rotate-z: -3.494deg; rotate-x: 0deg; translate: -0.103 1.684 0; }
+  20.541% { rotate-z: -3.615deg; rotate-x: 0deg; translate: -0.107 1.683 0; }
+  21.622% { rotate-z: -3.73deg; rotate-x: 0deg; translate: -0.11 1.682 0; }
+  22.703% { rotate-z: -3.839deg; rotate-x: 0deg; translate: -0.114 1.681 0; }
+  23.784% { rotate-z: -3.943deg; rotate-x: 0deg; translate: -0.117 1.68 0; }
+  24.865% { rotate-z: -4.042deg; rotate-x: 0deg; translate: -0.12 1.679 0; }
+  25.946% { rotate-z: -4.138deg; rotate-x: 0deg; translate: -0.122 1.678 0; }
+  27.027% { rotate-z: -4.232deg; rotate-x: 0deg; translate: -0.125 1.677 0; }
+  28.108% { rotate-z: -4.325deg; rotate-x: 0deg; translate: -0.128 1.676 0; }
+  29.189% { rotate-z: -4.418deg; rotate-x: 0deg; translate: -0.131 1.676 0; }
+  30.27% { rotate-z: -4.511deg; rotate-x: 0deg; translate: -0.133 1.675 0; }
+  31.351% { rotate-z: -4.606deg; rotate-x: 0deg; translate: -0.136 1.674 0; }
+  32.432% { rotate-z: -4.703deg; rotate-x: 0deg; translate: -0.139 1.673 0; }
+  33.514% { rotate-z: -4.803deg; rotate-x: 0deg; translate: -0.142 1.672 0; }
+  34.595% { rotate-z: -4.909deg; rotate-x: 0deg; translate: -0.145 1.671 0; }
+  35.676% { rotate-z: -5.019deg; rotate-x: 0deg; translate: -0.148 1.67 0; }
+  36.757% { rotate-z: -5.136deg; rotate-x: 0deg; translate: -0.152 1.669 0; }
+  37.838% { rotate-z: -5.26deg; rotate-x: 0deg; translate: -0.155 1.668 0; }
+  38.919% { rotate-z: -5.392deg; rotate-x: 0deg; translate: -0.159 1.667 0; }
+  40% { rotate-z: -5.534deg; rotate-x: 0deg; translate: -0.163 1.665 0; }
+  41.081% { rotate-z: -5.686deg; rotate-x: 0deg; translate: -0.168 1.664 0; }
+  42.162% { rotate-z: -5.849deg; rotate-x: 0deg; translate: -0.172 1.662 0; }
+  43.243% { rotate-z: -6.023deg; rotate-x: 0deg; translate: -0.177 1.661 0; }
+  44.324% { rotate-z: -6.211deg; rotate-x: 0deg; translate: -0.183 1.659 0; }
+  45.405% { rotate-z: -6.413deg; rotate-x: 0deg; translate: -0.189 1.657 0; }
+  46.486% { rotate-z: -6.63deg; rotate-x: 0deg; translate: -0.195 1.655 0; }
+  47.568% { rotate-z: -6.863deg; rotate-x: 0deg; translate: -0.202 1.652 0; }
+  48.649% { rotate-z: -7.112deg; rotate-x: 0deg; translate: -0.209 1.65 0; }
+  49.73% { rotate-z: -7.379deg; rotate-x: 0deg; translate: -0.216 1.647 0; }
+  50.811% { rotate-z: -7.665deg; rotate-x: 0deg; translate: -0.225 1.644 0; }
+  51.892% { rotate-z: -7.971deg; rotate-x: 0deg; translate: -0.233 1.641 0; }
+  52.973% { rotate-z: -8.297deg; rotate-x: 0deg; translate: -0.243 1.637 0; }
+  54.054% { rotate-z: -8.645deg; rotate-x: 0deg; translate: -0.253 1.633 0; }
+  55.135% { rotate-z: -9.015deg; rotate-x: 0deg; translate: -0.263 1.629 0; }
+  56.216% { rotate-z: -9.409deg; rotate-x: 0deg; translate: -0.274 1.625 0; }
+  57.297% { rotate-z: -9.827deg; rotate-x: 0deg; translate: -0.286 1.62 0; }
+  58.378% { rotate-z: -10.271deg; rotate-x: 0deg; translate: -0.299 1.615 0; }
+  59.459% { rotate-z: -10.741deg; rotate-x: 0deg; translate: -0.312 1.609 0; }
+  60.541% { rotate-z: -11.238deg; rotate-x: 0deg; translate: -0.326 1.603 0; }
+  61.622% { rotate-z: -11.763deg; rotate-x: 0deg; translate: -0.341 1.597 0; }
+  62.703% { rotate-z: -12.318deg; rotate-x: 0deg; translate: -0.356 1.59 0; }
+  63.784% { rotate-z: -12.903deg; rotate-x: 0deg; translate: -0.372 1.582 0; }
+  64.865% { rotate-z: -13.519deg; rotate-x: 0deg; translate: -0.389 1.574 0; }
+  65.946% { rotate-z: -14.167deg; rotate-x: 0deg; translate: -0.407 1.565 0; }
+  67.027% { rotate-z: -14.848deg; rotate-x: 0deg; translate: -0.426 1.556 0; }
+  68.108% { rotate-z: -15.563deg; rotate-x: 0deg; translate: -0.445 1.545 0; }
+  69.189% { rotate-z: -16.312deg; rotate-x: 0deg; translate: -0.465 1.534 0; }
+  70.27% { rotate-z: -17.098deg; rotate-x: 0deg; translate: -0.486 1.523 0; }
+  71.351% { rotate-z: -17.921deg; rotate-x: 0deg; translate: -0.508 1.51 0; }
+  72.432% { rotate-z: -19.983deg; rotate-x: 0deg; translate: -0.562 1.477 0; }
+  73.514% { rotate-z: -19.983deg; rotate-x: 0deg; translate: -0.562 1.477 0; }
+  74.595% { rotate-z: -19.983deg; rotate-x: 0deg; translate: -0.562 1.477 0; }
+  75.676% { rotate-z: -19.983deg; rotate-x: 0deg; translate: -0.562 1.477 0; }
+  76.757% { rotate-z: -19.983deg; rotate-x: 0deg; translate: -0.562 1.477 0; }
+  77.838% { rotate-z: -19.983deg; rotate-x: 1.486deg; translate: -0.562 1.487 -0.038; }
+  78.919% { rotate-z: -19.983deg; rotate-x: 4.504deg; translate: -0.562 1.502 -0.117; }
+  80% { rotate-z: -19.983deg; rotate-x: 8.616deg; translate: -0.562 1.517 -0.226; }
+  81.081% { rotate-z: -19.983deg; rotate-x: 13.653deg; translate: -0.562 1.525 -0.359; }
+  82.162% { rotate-z: -19.983deg; rotate-x: 19.511deg; translate: -0.562 1.519 -0.515; }
+  83.243% { rotate-z: -19.983deg; rotate-x: 26.12deg; translate: -0.562 1.494 -0.689; }
+  84.324% { rotate-z: -19.983deg; rotate-x: 33.426deg; translate: -0.562 1.442 -0.877; }
+  85.405% { rotate-z: -19.983deg; rotate-x: 41.388deg; translate: -0.562 1.359 -1.072; }
+  86.486% { rotate-z: -19.983deg; rotate-x: 49.971deg; translate: -0.562 1.241 -1.267; }
+  87.568% { rotate-z: -19.983deg; rotate-x: 59.147deg; translate: -0.562 1.084 -1.453; }
+  88.649% { rotate-z: -19.983deg; rotate-x: 68.891deg; translate: -0.562 0.887 -1.621; }
+  89.73% { rotate-z: -19.983deg; rotate-x: 79.181deg; translate: -0.562 0.651 -1.76; }
+  90.811% { rotate-z: -19.983deg; rotate-x: 90deg; translate: -0.562 0.38 -1.857; }
+  91.892% { rotate-z: -19.983deg; rotate-x: 88.096deg; translate: -0.562 0.429 -1.844; }
+  92.973% { rotate-z: -19.983deg; rotate-x: 87.038deg; translate: -0.562 0.456 -1.836; }
+  94.054% { rotate-z: -19.983deg; rotate-x: 86.826deg; translate: -0.562 0.461 -1.834; }
+  95.135% { rotate-z: -19.983deg; rotate-x: 87.461deg; translate: -0.562 0.445 -1.839; }
+  96.216% { rotate-z: -19.983deg; rotate-x: 88.942deg; translate: -0.562 0.407 -1.85; }
+  96.757% { rotate-z: -19.983deg; rotate-x: 90deg; translate: -0.562 0.38 -1.857; }
+  97.297% { rotate-z: -19.983deg; rotate-x: 90deg; translate: -0.562 0.38 -1.857; }
+  98.378% { rotate-z: -19.983deg; rotate-x: 90deg; translate: -0.562 0.38 -1.857; }
+  99.459% { rotate-z: -19.983deg; rotate-x: 90deg; translate: -0.562 0.38 -1.857; }
+  100% { rotate-z: -19.983deg; rotate-x: 90deg; translate: -0.562 0.38 -1.857; }
+}

@@ -1,5 +1,6 @@
 import { mountAsync, type AsyncEmbeddedScene } from "../embed";
 import { encodeCode } from "../runtime/share";
+import { renderGate } from "../runtime/software-gate";
 import { STUDIES, type Study } from "./content";
 
 // The studies viewer that opens the showcase (decision 119): one study at a time, on one
@@ -15,6 +16,7 @@ const statusbar = byId("study-statusbar");
 const edit = byId<HTMLAnchorElement>("study-edit");
 const reference = byId<HTMLAnchorElement>("study-reference");
 let scene: AsyncEmbeddedScene | undefined;
+let closeGate = () => {}; // the notice over the canvas, when the study waits for a click
 let shown = STUDIES[0];
 let revision = 0;
 
@@ -39,6 +41,8 @@ async function select(study: Study) {
   status.textContent = "preparing the study…";
   scene?.destroy();
   scene = undefined;
+  closeGate();
+  closeGate = () => {};
   const oldCanvas = lab.querySelector("canvas")!;
   const canvas = oldCanvas.cloneNode(false) as HTMLCanvasElement;
   oldCanvas.replaceWith(canvas);
@@ -51,6 +55,7 @@ async function select(study: Study) {
     const mounted = await mountAsync(canvas, study.scene, { backend: webgl ? "webgl" : "auto", scrollSlider: true });
     if (current !== revision) { mounted.destroy(); return; }
     scene = mounted;
+    closeGate = renderGate(canvas, mounted); // without a GPU, or too heavy: drawn on a click (decisions 137, 142)
     status.textContent = `gss · ${mounted.backend}`;
     statusbar.classList.add("ready");
   } catch (error) {

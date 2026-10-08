@@ -209,14 +209,16 @@ export function createLogoReveal(
   );
   reveal.observe(root);
 
-  return {
-    setValue,
-    destroy() {
-      events.abort();
-      reveal.disconnect();
-      if (intro !== null) cancelAnimationFrame(intro);
-      scene.destroy();
-      root.replaceWith(svg);
-    },
-  };
+  function destroy(): void {
+    events.abort();
+    reveal.disconnect();
+    if (intro !== null) cancelAnimationFrame(intro);
+    scene.destroy();
+    root.replaceWith(svg);
+  }
+
+  // Too heavy for this computer (decision 142): the SVG stays alone, as without a GPU
+  root.querySelector("canvas")!.addEventListener("gss-too-heavy", destroy, options);
+
+  return { setValue, destroy };
 }

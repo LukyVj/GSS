@@ -1,14 +1,21 @@
-// What the search shows around its list (decisions 125, 126). Before a word is typed, the middle
-// says where to start, the pages the newest version added and the searches people make the
-// most; around it, two columns stay while the reader searches: the contents of the docs on
-// the left, and four ideas of GSS, drawn small, on the right. DocSearch has no option for
-// any of it: the panels go into its modal, around its list.
+// What the search shows around its list (decisions 125, 126, 144 to 146). Before a word is
+// typed, the middle says where to start, the pages the newest version added and the searches
+// people make the most; around it, two columns stay while the reader searches: the contents of
+// the docs on the left, and four ideas of GSS, drawn small, on the right, where the selected
+// result shows its page while a word is typed (search-preview.ts). The reader sets the width
+// of the two columns (search-columns.ts) and tries the example of a preview beside the search
+// (search-try.ts). DocSearch has no option for any of it: the panels go into its modal, around
+// its list.
 import { PROPERTIES, AT_RULES, SELECTORS, SHAPE_DOCS, FUNCTIONS } from "../compiler/registry/registry";
 import { GETTING_STARTED, INSTALLATION } from "./guide";
 import { groupEntries, qualified } from "./navigation";
 import { ALGOLIA, SUGGESTIONS_INDEX } from "./search";
 import { CONCEPTS } from "./concepts";
 import { VERSION } from "../version";
+import { placePreview } from "./search-preview";
+import { mountColumnResizers } from "./search-columns";
+import { trySearchExample } from "./search-try";
+import { navIcon } from "./nav-icons";
 
 export type DocEntry = { anchor: string; label: string; group: string; since?: string };
 export type DocSection = { id: string; title: string; category: string; entries: DocEntry[] };
@@ -213,9 +220,9 @@ export function renderContents(sections: DocSection[], onDocs: boolean): HTMLEle
   column.setAttribute("aria-label", "Contents of the docs");
   sections.forEach((group, i) => {
     if (group.category !== sections[i - 1]?.category) column.append(element("div", "gss-search-start-title", group.category));
-    column.append(
-      link("gss-search-contents-link", docs(group.entries[0].anchor), element("span", "gss-search-contents-label", group.title), element("span", "gss-search-count", String(group.entries.length))),
-    );
+    const a = link("gss-search-contents-link", docs(group.entries[0].anchor), element("span", "gss-search-contents-label", group.title), element("span", "gss-search-count", String(group.entries.length)));
+    a.insertAdjacentHTML("afterbegin", navIcon(group.id, "gss-search-contents-icon")); // shown when the column is wide enough
+    column.append(a);
   });
   return column;
 }
@@ -273,14 +280,21 @@ export function mountStartScreen(docsearch: { close(): void }): void {
       center: renderStartScreen({ news, popular: [], onDocs }),
       concepts: renderConcepts(onDocs),
     };
-    const place = () => placeStartScreen(modal, panels);
+    mountColumnResizers(modal); // the reader widens or narrows the columns
+    const place = () => {
+      placeStartScreen(modal, panels);
+      placePreview(modal, panels.concepts, docsHref(onDocs)); // the selected result, on the right
+    };
     place();
-    new MutationObserver(place).observe(modal, { childList: true, subtree: true });
+    // DocSearch marks the selected result with aria-selected, as the pointer or the arrows move
+    new MutationObserver(place).observe(modal, { childList: true, subtree: true, attributes: true, attributeFilter: ["aria-selected"] });
     modal.addEventListener("input", place);
     modal.addEventListener("click", (event) => {
       const target = event.target as Element;
       const query = target.closest<HTMLElement>(".gss-search-start [data-query]")?.dataset.query;
       if (query) return search(modal, query);
+      const example = target.closest<HTMLButtonElement>(".gss-search-preview .gss-search-try");
+      if (example) return void trySearchExample(modal, example.dataset.example ?? "", example.dataset.html ?? "");
       const a = target.closest<HTMLAnchorElement>(".gss-search-start a, .gss-search-contents a, .gss-search-concepts a");
       if (!a || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
       // DocSearch puts the page back where it was when it closes: close it, then go

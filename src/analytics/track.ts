@@ -1,6 +1,6 @@
 // Every analytics event goes through here: if we change tools, only this file moves.
 
-type EventName = "playground-share" | "playground-example" | "docs-try-it";
+type EventName = "playground-share" | "playground-share-x" | "playground-example" | "docs-try-it";
 
 type EventData = Record<string, string | number>;
 

@@ -11,7 +11,7 @@ beforeAll(async () => {
   server = await createServer({ configFile: false, server: { host: "127.0.0.1", port: 0 }, logLevel: "error", plugins: [{
     name: "software-test-page",
     configureServer(server) {
-      server.middlewares.use("/__software", (_req, res) => { res.setHeader("Content-Type", "text/html"); res.end('<html><body style="margin:0"><script type="module">import { softwareRendering } from "/src/embed/runtime.ts"; import { softwareGate } from "/src/runtime/software-gate.ts"; import "/src/embed/element.ts"; window.__softwareRendering = softwareRendering; window.__softwareGate = softwareGate;</script></body></html>'); });
+      server.middlewares.use("/__software", (_req, res) => { res.setHeader("Content-Type", "text/html"); res.end('<html><body style="margin:0"><script type="module">import { softwareRendering } from "/src/embed/runtime.ts"; import { renderGate } from "/src/runtime/software-gate.ts"; import "/src/embed/element.ts"; window.__softwareRendering = softwareRendering; window.__renderGate = renderGate;</script></body></html>'); });
     },
   }] });
   await server.listen();
@@ -62,7 +62,7 @@ describe("a machine without a GPU", () => {
       await new Promise(resolve => document.querySelector("link")!.addEventListener("load", resolve, { once: true }));
       const canvas = document.querySelector("canvas")!;
       const calls: string[] = [];
-      (window as any).__softwareGate(canvas, { pause: () => calls.push("pause"), play: () => calls.push("play") });
+      (window as any).__renderGate(canvas, { pause: () => calls.push("pause"), play: () => calls.push("play") });
       const gate = document.querySelector<HTMLElement>(".software-gate")!;
       const box = (element: Element) => { const r = element.getBoundingClientRect(); return [r.x, r.y, r.width, r.height]; };
       const before = { calls: [...calls], over: JSON.stringify(box(gate)) === JSON.stringify(box(canvas)) };

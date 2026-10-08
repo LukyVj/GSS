@@ -4,7 +4,8 @@ import docsearch from "@docsearch/js/docsearch";
 import "@docsearch/css/dist/style.css";
 import "../styles/docsearch.css"; // after @docsearch/css: our values win
 import "../styles/search-start.css"; // the columns around the list, after docsearch.css
-import { ALGOLIA, localUrl } from "./search";
+import "../styles/gss-code.css"; // the code of the preview of a result, on every page
+import { ALGOLIA, escapeHighlights, localUrl } from "./search";
 import { mountStartScreen } from "./start-screen";
 
 // Puts the search button in the element of the page, if the page has one
@@ -16,7 +17,7 @@ export function mountSearch(selector = "#docsearch"): void {
     placeholder: "Search the docs",
     insights: true,
     transformItems: (items) =>
-      items.map((item) => ({ ...item, url: localUrl(item.url) })),
+      items.map((item) => escapeHighlights({ ...item, url: localUrl(item.url) })), // a <tag> of the docs stays text
   });
   mountStartScreen(search); // what the search shows before a word is typed
 }

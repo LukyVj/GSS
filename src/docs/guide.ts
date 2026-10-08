@@ -64,7 +64,7 @@ export const INSTALLATION: GuideEntry[] = [
     label: "Embedding a scene",
     paragraphs: [
       `A GSS scene runs on any web page, in three ways. All three use the package <code>gss-lang@${VERSION}</code>.`,
-      `GSS is open source, under the Apache-2.0 license: its code is on <a href="${REPOSITORY_URL}">GitHub</a>, where you can <a href="${REPOSITORY_URL}/issues">report a bug</a>.`,
+      `GSS is open source, under the Apache-2.0 license: its code is on <a href="${REPOSITORY_URL}">GitHub</a>, where you can <a href="${REPOSITORY_URL}/issues">report a bug</a>. Questions, ideas, a scene to show: say hi on X, <a href="https://x.com/GSS_lang">@GSS_lang</a>.`,
       table([
         ['<a href="#install-cdn">A tag</a>', "No build step: load <code>embed.js</code> once, then write <code>&lt;gss-scene&gt;</code>."],
         ['<a href="#install-package">A function</a>', "<code>mount(canvas, source)</code> from <code>gss-lang</code> compiles the scene in the page."],
@@ -110,11 +110,12 @@ INSTALLATION.push(
     anchor: "install-cdn",
     label: "CDN (no build step)",
     paragraphs: [
-      `Load the standalone browser module of <code>v${VERSION}</code> from jsDelivr: no install, no bundler. The version is pinned, so an update never changes your scene unexpectedly.`,
+      `Load the browser module of <code>v${VERSION}</code> from jsDelivr: no install, no bundler. The version is pinned, so an update never changes your scene unexpectedly.`,
       `<pre><code class="html">${highlightCode("html", EMBED_SNIPPETS[0].code)}</code></pre>`,
       `The script defines <code>&lt;gss-scene&gt;</code>. Point its <code>src</code> to a <code>.gss</code> file, or write the GSS inline, as above. Serve the page over HTTP(S). The module: <a href="${CDN_URL}">${CDN_URL}</a>.`,
       'To drive the scene from a script, see <a href="#set-variables">Set variables from JavaScript</a>.',
       '<code>poster="cover.jpg"</code> shows an image until the scene draws, like the poster of a <code>&lt;video&gt;</code>. On a computer without a graphics card, the processor would draw the scene, slowly enough to freeze the page: <code>&lt;gss-scene&gt;</code> then shows its poster and a button, and draws the scene only when the reader asks. With <code>mount()</code>, <code>softwareRendering()</code>, from <code>gss-lang</code> or <code>gss-lang/runtime</code>, returns <code>true</code> on such a computer, to do the same.',
+      'A scene starts at a density of 0.5, then climbs to its <code>dpr</code> while the frames keep up: a weak graphics card never draws a heavy scene at full density at once. When the scene is still far too slow at 0.5, it stops: <code>&lt;gss-scene&gt;</code> shows a button that draws it anyway, and <code>mount()</code> fires a <code>gss-too-heavy</code> event on the canvas, where <code>scene.play()</code> draws it anyway. <code>mount(canvas, scene, { adaptDpr: false })</code> keeps the <code>dpr</code> as written and never stops, for a capture or a benchmark.',
     ],
   },
 );

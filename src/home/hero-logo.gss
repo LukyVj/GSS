@@ -44,7 +44,7 @@ path {
   stroke-width: 18;
   scale: 0.0066667;
   color: #e8e6e1;
-  material: chrome;
+  material: matte();
 }
 
 #brace-left {
@@ -69,7 +69,15 @@ path {
   }
 }
 
-#ring-1, #ring-2, #ring-3, #ring-4, #ring-5, #ring-6, #ring-7, #ring-8, #ring-9 {
+#ring-1,
+#ring-2,
+#ring-3,
+#ring-4,
+#ring-5,
+#ring-6,
+#ring-7,
+#ring-8,
+#ring-9 {
   --i: sibling-index();
   --t: calc((var(--i) - 1) / 8);
   thickness: calc(0.032 - var(--t) * 0.018);
@@ -90,6 +98,11 @@ path {
 #dot:hover {
   scale: 1.35;
   color: #ff7a5c;
+}
+
+#dot,
+path {
+  translate: 0 0 .3;
 }
 
 @keyframes pulse {

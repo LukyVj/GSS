@@ -57,6 +57,20 @@ describe("the icons of the docs sidebar", () => {
     expect(root.querySelector(".toc-icon")!.getAttribute("data-icon")).toBe("getting-started");
   });
 
+  it("lays a glint over the strokes of an icon, in the docs nav only", () => {
+    const root = document.createElement("div");
+    root.innerHTML = navIcon("colors", "toc-icon", true);
+    const svg = root.querySelector("svg")!;
+    const mask = svg.querySelector("mask#nav-glint-colors")!;
+    expect(mask.querySelector(".glint-band")!.getAttribute("fill")).toBe("url(#nav-glint-colors-band)");
+    expect(svg.querySelector("linearGradient#nav-glint-colors-band")).not.toBeNull();
+    expect(navIcon("colors", "toc-icon", true)).toContain(`<g class="glint" mask="url(#nav-glint-colors)">${NAV_ICONS.colors}</g>`);
+    expect(navIcon("colors")).not.toContain("glint");
+    const docs = document.createElement("div");
+    docs.innerHTML = renderDocs(PROPERTIES, AT_RULES, SELECTORS, SHAPE_DOCS, FUNCTIONS);
+    expect(docs.querySelector(".toc-icon g.glint")).not.toBeNull();
+  });
+
   it("gives nothing for a group without an icon", () => {
     expect(navIcon("other-reference")).toBe("");
   });

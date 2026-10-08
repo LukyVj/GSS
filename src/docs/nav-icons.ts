@@ -45,11 +45,21 @@ const DRAWING =
 
 // In a page, beside the title that says the same thing: hidden from screen readers.
 // A group without an icon gets nothing.
-export function navIcon(id: string, className = "toc-icon"): string {
+// With a glint, a copy of the drawing lies over it, seen only through a band of a mask that
+// the page sweeps across the icon (.glint-band): the glint lights the strokes and nothing else,
+// and the copy plays the motion of the icon too, since its parts have the same classes.
+export function navIcon(id: string, className = "toc-icon", glint = false): string {
   const body = NAV_ICONS[id];
-  return body
-    ? `<svg class="${className}" data-icon="${id}" ${DRAWING} aria-hidden="true" focusable="false">${body}</svg>`
+  if (!body) return "";
+  const mask = `nav-glint-${id}`;
+  const over = glint
+    ? `<defs><linearGradient id="${mask}-band" x1="0" y1="0" x2="1" y2="1">` +
+      `<stop offset=".4" stop-color="#000"/><stop offset=".47" stop-color="#fff"/><stop offset=".53" stop-color="#fff"/><stop offset=".6" stop-color="#000"/></linearGradient>` +
+      `<mask id="${mask}" maskUnits="userSpaceOnUse" x="-2" y="-2" width="20" height="20">` +
+      `<rect class="glint-band" x="-2" y="-2" width="20" height="20" fill="url(#${mask}-band)"/></mask></defs>` +
+      `<g class="glint" mask="url(#${mask})">${body}</g>`
     : "";
+  return `<svg class="${className}" data-icon="${id}" ${DRAWING} aria-hidden="true" focusable="false">${body}${over}</svg>`;
 }
 
 // The icon as a file of its own

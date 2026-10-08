@@ -19,3 +19,31 @@ export function localUrl(url: string): string {
   const { pathname, hash } = new URL(url);
   return `${pathname}${hash}`;
 }
+
+// Algolia gives the words it found between <mark> tags, and the rest of the text as it is:
+// the chapter "From <gss-scene>" came back as a real <gss-scene>, which DocSearch drew in the
+// list. A < or > of the text becomes text again; the marks stay.
+export function escapeHighlight(value: string): string {
+  return value
+    .split(/(<\/?mark>)/)
+    .map((part, i) => (i % 2 ? part : part.replaceAll("<", "&lt;").replaceAll(">", "&gt;")))
+    .join("");
+}
+
+// Every { value } under the highlights and the snippets of a result, at any depth
+function escapeValues(node: unknown): unknown {
+  if (Array.isArray(node)) return node.map(escapeValues);
+  if (!node || typeof node !== "object") return node;
+  return Object.fromEntries(
+    Object.entries(node).map(([key, child]) => [key, key === "value" && typeof child === "string" ? escapeHighlight(child) : escapeValues(child)]),
+  );
+}
+
+export function escapeHighlights<T extends object>(item: T): T {
+  const { _highlightResult, _snippetResult } = item as { _highlightResult?: unknown; _snippetResult?: unknown };
+  return {
+    ...item,
+    ...(_highlightResult ? { _highlightResult: escapeValues(_highlightResult) } : {}),
+    ...(_snippetResult ? { _snippetResult: escapeValues(_snippetResult) } : {}),
+  };
+}

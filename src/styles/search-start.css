@@ -2,7 +2,9 @@
    left, the start screen in the middle while nothing is typed, four ideas drawn small on the
    right. Three columns divided by hairlines, like the docs (DESIGN.md § 7); two without the
    contents under 1024px; on a phone, DocSearch is full screen and the ideas come last in the
-   middle. Imported after docsearch.css. */
+   middle. The reader sets the width of the two columns (search-columns.ts): the grid reads
+   --gss-search-contents and --gss-search-concepts, and each column lays itself out by its own
+   width with container queries. Imported after docsearch.css. */
 
 /* ----- The modal, in columns (DocSearch is full screen up to 768px) ----- */
 @media (width > 768px) {
@@ -11,7 +13,7 @@
     width: 100%;
     max-width: min(960px, calc(100vw - 48px));
     height: min(680px, calc(100dvh - 120px));
-    grid-template-columns: minmax(0, 1fr) 280px;
+    grid-template-columns: minmax(0, 1fr) var(--gss-search-concepts, 280px);
     grid-template-rows: auto minmax(0, 1fr) auto;
     grid-template-areas:
       "bar bar"
@@ -23,9 +25,9 @@
     min-width: 0;
     min-height: 0;
   }
+  /* Its line is the one of the form of DocSearch: one hairline, not two */
   .DocSearch-Modal > .DocSearch-SearchBar {
     grid-area: bar;
-    border-bottom: 1px solid var(--gss-line);
   }
   .DocSearch-Modal > .DocSearch-Footer {
     grid-area: footer;
@@ -45,7 +47,7 @@
 @media (width >= 1024px) {
   .DocSearch-Modal {
     max-width: min(1120px, calc(100vw - 64px));
-    grid-template-columns: 232px minmax(0, 1fr) 300px;
+    grid-template-columns: var(--gss-search-contents, 232px) minmax(0, 1fr) var(--gss-search-concepts, 300px);
     grid-template-areas:
       "bar bar bar"
       "contents main concepts"
@@ -61,6 +63,105 @@
   .gss-search-concepts {
     display: none;
   }
+}
+
+/* ----- The handles: on the hairline beside each column, signal while held ----- */
+.gss-search-resizer {
+  display: none;
+}
+@media (width > 768px) {
+  .DocSearch-Modal > .gss-search-resizer[data-column="concepts"] {
+    display: block;
+    grid-area: concepts;
+    justify-self: start;
+    margin-left: -4px; /* centred on the 1px border at the left of the column */
+  }
+}
+@media (width >= 1024px) {
+  .DocSearch-Modal > .gss-search-resizer[data-column="contents"] {
+    display: block;
+    grid-area: contents;
+    justify-self: end;
+    margin-right: -4px; /* centred on the 1px border at the right of the column */
+  }
+}
+.DocSearch-Modal > .gss-search-resizer {
+  position: relative;
+  z-index: 1;
+  width: 9px;
+  cursor: col-resize;
+  touch-action: none;
+}
+.gss-search-resizer::after {
+  content: "";
+  position: absolute;
+  inset: 0 4px;
+  background: transparent;
+  transition: background-color var(--gss-transition);
+}
+.gss-search-resizer:hover::after,
+.gss-search-resizer:focus-visible::after,
+.gss-search-resizer--active::after {
+  background: var(--grip-lit);
+}
+/* The grip: a small pill with two upright strokes, halfway down the hairline, that says the
+   line can be taken. Dim at rest, lit with the line, in the same washed-out signal, the strokes a little more; in full
+   signal while it is held or moved with the arrows. Laid on whole pixels, centred on the
+   line: the handle is 9px wide, the line its fifth pixel, the pill 11px from -1px. The strokes
+   are 3px apart, half a pixel thick on a dense screen. */
+.gss-search-resizer {
+  --grip-lit: color-mix(in srgb, var(--gss-signal) 25%, transparent); /* washed out, the line and the grip alike */
+  --grip-lit-stroke: color-mix(in srgb, var(--gss-signal) 35%, transparent); /* the strokes, a little more */
+  --grip-stroke: var(--gss-dim);
+  --grip-width: 1px;
+  --grip-x: 2px;
+}
+.gss-search-resizer::before {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  top: round(50% - 13px, 1px);
+  left: -1px;
+  width: 11px;
+  height: 26px;
+  box-sizing: border-box;
+  border: 1px solid var(--gss-isoline);
+  border-radius: 3px;
+  background:
+    linear-gradient(var(--grip-stroke), var(--grip-stroke)) var(--grip-x) 50% / var(--grip-width) 10px no-repeat,
+    linear-gradient(var(--grip-stroke), var(--grip-stroke)) calc(var(--grip-x) + 4px) 50% / var(--grip-width) 10px no-repeat,
+    var(--gss-surface);
+  transition: border-color var(--gss-transition);
+}
+@media (resolution >= 2dppx) {
+  .gss-search-resizer {
+    --grip-width: 0.5px;
+    --grip-x: 2.25px;
+  }
+}
+.gss-search-resizer:hover,
+.gss-search-resizer:focus-visible,
+.gss-search-resizer--active {
+  --grip-stroke: var(--grip-lit-stroke);
+}
+.gss-search-resizer:hover::before,
+.gss-search-resizer:focus-visible::before,
+.gss-search-resizer--active::before {
+  border-color: var(--grip-lit);
+}
+/* The handle in use, held or moved with the arrows: signal in full */
+.gss-search-resizer--active,
+.gss-search-resizer:focus-visible {
+  --grip-lit: var(--gss-signal);
+  --grip-lit-stroke: var(--gss-signal);
+}
+.gss-search-resizer:focus-visible {
+  outline: none;
+}
+.gss-search-resizing,
+.gss-search-resizing * {
+  cursor: col-resize;
+  user-select: none;
 }
 
 /* ----- What every column shares: eyebrows, counts, scrolling ----- */
@@ -102,6 +203,7 @@
 
 /* ----- Left: the contents, like the nav of the docs ----- */
 .gss-search-contents {
+  container: gss-search-contents / inline-size;
   box-sizing: border-box;
   padding: 0 12px 16px;
   border-right: 1px solid var(--gss-line);
@@ -112,7 +214,6 @@
 .gss-search-contents-link {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 8px;
   min-height: 28px;
   padding: 0 10px 0 8px;
@@ -125,9 +226,27 @@
   background: var(--gss-raised);
   color: var(--gss-bone);
 }
+.gss-search-contents-label {
+  flex: 1;
+  min-width: 0;
+}
+/* The icon of each group, like the sidebar of the docs, once the column has room for it */
+.gss-search-contents-icon {
+  display: none;
+  flex: none;
+}
+@container gss-search-contents (width >= 248px) {
+  .gss-search-contents-icon {
+    display: block;
+  }
+  .gss-search-contents-link {
+    gap: 10px;
+  }
+}
 
 /* ----- Middle: the start screen ----- */
 .gss-search-start {
+  container: gss-search-start / inline-size;
   box-sizing: border-box;
   padding-bottom: 24px;
 }
@@ -179,6 +298,16 @@
   font: 13px/1.45 var(--gss-font-body);
   color: var(--gss-ash);
 }
+/* Too narrow for three cells: one under the other */
+@container gss-search-start (width < 520px) {
+  .gss-search-start-pages {
+    grid-template-columns: 1fr;
+  }
+  .gss-search-start-page + .gss-search-start-page {
+    border-left: 0;
+    border-top: 1px solid var(--gss-line);
+  }
+}
 .gss-search-start-site {
   display: flex;
   flex-wrap: wrap;
@@ -200,6 +329,11 @@
   column-gap: 24px;
 }
 /* A group that does not fit goes to a second line, which the row hides */
+@container gss-search-start (width < 440px) {
+  .gss-search-start-list {
+    grid-template-columns: 1fr;
+  }
+}
 .gss-search-start-item {
   --row: 32px;
   display: flex;
@@ -257,6 +391,7 @@
 
 /* ----- Right: how GSS works ----- */
 .gss-search-concepts {
+  container: gss-search-side / inline-size;
   box-sizing: border-box;
   padding: 0 20px 16px;
   border-left: 1px solid var(--gss-line);
@@ -297,6 +432,87 @@
 }
 .gss-concept-link:hover {
   color: var(--gss-signal-hover);
+}
+/* A wide column: each drawing beside its text */
+@container gss-search-side (width >= 360px) {
+  .gss-concept {
+    display: grid;
+    grid-template-columns: minmax(0, 9fr) minmax(0, 10fr);
+    grid-template-rows: auto auto 1fr;
+    column-gap: 16px;
+    align-items: start;
+  }
+  .gss-concept-figure {
+    grid-row: 1 / 4;
+  }
+  .gss-concept-title {
+    margin-top: 0;
+  }
+}
+
+/* ----- Right, while a word is typed: the page of the selected result (search-preview.ts) ----- */
+.gss-search-concepts[data-preview] > :not(.gss-search-preview) {
+  display: none;
+}
+.gss-search-preview {
+  padding-bottom: 8px;
+}
+.gss-search-preview-title {
+  margin: 0;
+  font: 500 15px/1.3 var(--gss-font-code);
+  color: var(--gss-bone);
+}
+.gss-search-preview-text {
+  margin: 8px 0 0;
+  font: 13px/1.5 var(--gss-font-body);
+  color: var(--gss-ash);
+}
+.gss-search-preview-text code {
+  font: 12px var(--gss-font-code);
+}
+.gss-search-preview-syntax {
+  display: block;
+  margin-top: 12px;
+  padding: 8px 10px;
+  border: 1px solid var(--gss-line);
+  font: 12px/1.5 var(--gss-font-code);
+  overflow-wrap: anywhere;
+}
+.gss-search-preview-example {
+  margin-top: 16px;
+  font: 11px/16px var(--gss-font-code);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gss-dim);
+}
+/* The code on void, like a render; long lines scroll, never the column */
+.gss-search-preview-code {
+  margin: 8px 0 0;
+  padding: 10px 12px;
+  border: 1px solid var(--gss-line);
+  background: var(--gss-void);
+  font: 12px/1.55 var(--gss-font-code);
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--gss-isoline) transparent;
+}
+.gss-search-preview-example + .gss-search-preview-code {
+  margin-top: 6px;
+}
+.gss-search-preview-more {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  margin-top: 12px;
+}
+.gss-search-preview-subset {
+  font: 12px var(--gss-font-body);
+  color: var(--gss-dim);
+}
+.gss-search-preview .gss-concept-link {
+  margin-top: 0;
+  white-space: nowrap;
 }
 
 /* The drawings: hairlines, code in its syntax colours (DESIGN.md: .gss-dark), the one dot in signal */
@@ -369,16 +585,6 @@
     min-height: 0;
     padding-inline: 16px;
   }
-  .gss-search-start-pages {
-    grid-template-columns: 1fr;
-  }
-  .gss-search-start-page + .gss-search-start-page {
-    border-left: 0;
-    border-top: 1px solid var(--gss-line);
-  }
-  .gss-search-start-list {
-    grid-template-columns: 1fr;
-  }
   .gss-search-start-concepts {
     display: grid;
     gap: 20px;
@@ -401,5 +607,123 @@
     display: inline-flex;
     align-items: center;
     min-height: 44px;
+  }
+}
+
+/* ----- Try it: the example of the preview, live beside the search (search-try.ts) ----- */
+.gss-search-preview-example-box {
+  position: relative;
+}
+/* Signal, filled: the one action of the preview */
+.gss-search-try {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  height: 28px;
+  padding: 0 12px;
+  border: 1px solid var(--gss-signal);
+  border-radius: var(--gss-radius-control);
+  background: var(--gss-signal);
+  color: var(--gss-void);
+  font: 500 12px var(--gss-font-code);
+  text-transform: lowercase;
+  cursor: pointer;
+  transition:
+    background-color var(--gss-transition),
+    border-color var(--gss-transition);
+}
+.gss-search-try:hover {
+  border-color: var(--gss-signal-hover);
+  background: var(--gss-signal-hover);
+}
+.gss-search-try:focus-visible {
+  outline: 1px solid var(--gss-bone);
+  outline-offset: 2px;
+}
+@media (pointer: coarse) {
+  .gss-search-try {
+    height: 44px;
+  }
+}
+
+/* The search, slid to the left: its width and its place come from search-try.ts */
+.DocSearch-Container[data-gss-try] > .DocSearch-Modal {
+  width: var(--gss-try-modal);
+  max-width: none;
+  margin-left: var(--gss-try-left);
+  margin-right: 0;
+}
+/* The playground, 16px to its right, as tall as the search */
+.playground.gss-search-try-panel {
+  container: gss-search-try / inline-size;
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  margin: 0;
+  box-shadow: 0 24px 64px rgb(0 0 0 / 0.5);
+}
+.gss-search-try-panel .playground-bar {
+  flex: none;
+  padding-right: 8px;
+}
+.gss-search-try-close {
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--gss-isoline);
+  border-radius: var(--gss-radius-control);
+  background: none;
+  font: 12px var(--gss-font-code);
+  color: var(--gss-ash);
+  text-transform: lowercase;
+  cursor: pointer;
+  transition:
+    color var(--gss-transition),
+    border-color var(--gss-transition);
+}
+.gss-search-try-close:hover {
+  border-color: var(--gss-dim);
+  color: var(--gss-bone);
+}
+/* Narrow: the render on top, the code under it */
+.gss-search-try-panel .playground-body {
+  flex: 1;
+  min-height: 0;
+  height: auto;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) minmax(0, 0.8fr);
+}
+.gss-search-try-panel .code-host {
+  grid-row: 2;
+  grid-column: 1;
+  border-right: 0;
+  border-top: 1px solid var(--gss-line);
+}
+.gss-search-try-panel .playground-body canvas,
+.gss-search-try-panel .playground-body .vars-panel,
+.gss-search-try-panel .playground-body .view-chips {
+  grid-row: 1;
+  grid-column: 1;
+}
+@container gss-search-try (width < 560px) {
+  .gss-search-try-panel .hint {
+    display: none;
+  }
+}
+/* Wide: the code and the render side by side, like Try it in the docs */
+@container gss-search-try (width >= 700px) {
+  .gss-search-try-panel .playground-body {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+  }
+  .gss-search-try-panel .code-host {
+    grid-row: 1;
+    border-top: 0;
+    border-right: 1px solid var(--gss-line);
+  }
+  .gss-search-try-panel .playground-body canvas,
+  .gss-search-try-panel .playground-body .vars-panel,
+  .gss-search-try-panel .playground-body .view-chips {
+    grid-column: 2;
   }
 }

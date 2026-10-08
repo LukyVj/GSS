@@ -54,11 +54,12 @@ body.gss-dark {
   }
   .topbar nav {
     display: flex;
-    gap: 20px;
+    gap: clamp(12px, 2.2vw, 20px); /* the gaps give way first, then the labels, then the rows */
     align-items: center;
   }
   .topbar nav a {
     color: var(--gss-ash);
+    white-space: nowrap; /* a link never breaks: the bar rearranges instead */
     transition: color var(--gss-transition);
   }
   .topbar nav a:hover {
@@ -93,20 +94,24 @@ body.gss-dark {
     background: var(--gss-signal);
   }
 
-  /* The link to the repository: the GitHub mark, then "github" in the
-     wide bars, the mark alone in the tight ones (.github.alone) */
-  .github {
+  /* The links to the repository and to the X account: the GitHub mark, then
+     "github"; the X mark, then "@GSS_lang", in the wide bars; the mark alone
+     in the tight ones (.alone) */
+  .github,
+  .x {
     display: inline-flex;
     align-items: center;
     gap: 6px;
   }
-  .github svg {
+  .github svg,
+  .x svg {
     width: 14px;
     height: 14px;
     flex: none;
     fill: currentColor;
   }
-  .topbar .github.alone {
+  .topbar .github.alone,
+  .topbar .x.alone {
     flex: none;
     justify-content: center;
     width: var(--gss-control-height);
@@ -114,12 +119,35 @@ body.gss-dark {
     color: var(--gss-ash);
     transition: color var(--gss-transition);
   }
-  .topbar .github.alone:hover {
+  .topbar .github.alone:hover,
+  .topbar .x.alone:hover {
     color: var(--gss-bone);
   }
   .topbar .github.alone svg {
     width: 16px;
     height: 16px;
+  }
+  .topbar .x.alone svg {
+    width: 15px;
+    height: 15px;
+  }
+  /* The bar shrinks in steps. Under 800px the GitHub and X links keep their
+     mark and lose their text: a mark reads at a glance, and the nav keeps its
+     words. On a phone the bar tightens to 16px at the sides. */
+  @media (max-width: 800px) {
+    .topbar .github span,
+    .topbar .x span {
+      display: none;
+    }
+  }
+  @media (max-width: 640px) {
+    .topbar {
+      padding: 0 16px;
+      gap: 10px;
+    }
+    .topbar nav {
+      gap: 14px;
+    }
   }
 
   /* ----- Buttons: secondary by default, .primary for the one main action ----- */

@@ -2,12 +2,14 @@ import "./styles/gss-code.css";
 import { EditorState } from "@codemirror/state";
 import { EditorView, lineNumbers } from "@codemirror/view";
 import { createRendererAsync } from "./runtime/renderer";
-import { softwareGate } from "./runtime/software-gate";
+import { renderGate } from "./runtime/software-gate";
 import type { Backend } from "./runtime/backend";
 import { connectEditor, theme } from "./runtime/editor";
 import { glslLanguage } from "./runtime/glsl";
 import { htmlLanguage } from "./runtime/html-language";
 import { encodeCode, decodeCode, decodeHtml } from "./runtime/share";
+import { postOnXUrl } from "./playground/post-on-x";
+import { track } from "./analytics/track";
 import { compileGSS, compileScene } from "./compiler";
 import { toShadertoy } from "./compiler/shader/shadertoy";
 import { EXAMPLES, renderExampleOptions } from "./playground/examples";
@@ -76,8 +78,9 @@ const renderer = await createRendererAsync(sceneCanvas, {
   $("#error").hidden = false;
   throw error;
 });
-// Without a GPU, nothing is drawn before the reader's click (decision 137)
-softwareGate(sceneCanvas, renderer);
+// Without a GPU, nothing is drawn before the reader's click (decision 137); too heavy, the
+// scene stops and waits for one too (decision 142)
+renderGate(sceneCanvas, renderer);
 mountPanel($(".statusbar"));
 backendSelect.title = `Rendering with ${renderer.backend === "webgpu" ? "WebGPU" : "WebGL2"}`;
 $<HTMLCanvasElement>("#scene").addEventListener("gss-error", (event) => {
@@ -172,12 +175,24 @@ window.addEventListener("hashchange", async () => {
 });
 
 const shareButton = $<HTMLButtonElement>("#share");
+const postOnX = $<HTMLAnchorElement>("#post-on-x");
+let hidePostOnX = 0;
 shareButton.addEventListener("click", async () => {
   history.replaceState(null, "", await encodeCode(editor.getCode(), html));
-  await navigator.clipboard.writeText(location.href);
-  shareButton.textContent = "link copied";
+  try {
+    await navigator.clipboard.writeText(location.href);
+    shareButton.textContent = "link copied";
+  } catch {
+    shareButton.textContent = "link in the address bar"; // the clipboard was refused
+  }
   setTimeout(() => (shareButton.textContent = "share"), 2000);
+  // The link is in the clipboard (or in the address bar); the status bar offers to post it on X, for a while
+  postOnX.href = postOnXUrl(location.href);
+  postOnX.hidden = false;
+  clearTimeout(hidePostOnX);
+  hidePostOnX = window.setTimeout(() => (postOnX.hidden = true), 15000);
 });
+postOnX.addEventListener("click", () => track("playground-share-x"));
 
 // ----- The examples menu -----
 

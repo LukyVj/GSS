@@ -40,6 +40,10 @@ export function toShadertoy({ shader, camera, properties }: CompiledScene): stri
       const zeros = Array(Number(n)).fill("0.0").join(", ");
       return `const float uHover[${n}] = float[${n}](${zeros}); // :hover needs the GSS runtime\n`;
     })
+    .replace(/^uniform float uStart\[(\d+)\];.*\n/m, (_, n) => {
+      const zeros = Array(Number(n)).fill("0.0").join(", ");
+      return `const float uStart[${n}] = float[${n}](${zeros}); // a state starts an animation with the GSS runtime\n`;
+    })
     .replace(/^uniform vec4 uTimeline;.*\n/m, "const vec4 uTimeline = vec4(0.0); // scroll() needs the GSS runtime: the start\n")
     // @property (decision 105): the variables keep their initial values
     .replace(/^uniform vec4 uProperties\[(\d+)\];.*\n/m, (_, n) => {

@@ -2,7 +2,7 @@ import { tokenize } from "./syntax/tokenizer";
 import { parse } from "./syntax/parser";
 import { expandScene } from "./cascade/expand";
 import { resolveStyles, resolveSceneStyles, FACES, type Face } from "./cascade/resolve";
-import { activeSlots, generateShader, hoverSlots } from "./shader/codegen";
+import { activeSlots, generateShader, hoverSlots, sceneTriggers, type Trigger } from "./shader/codegen";
 import { validateProperties, validateKeyframes } from "./cascade/validate";
 import { readCamera, type CameraSettings } from "./features/camera";
 import { resolveMath, type CalcContext } from "./values/calc";
@@ -14,7 +14,7 @@ import { resolveVars, usesVariables, hasVar, type Variables } from "./cascade/va
 import { mediaQueriesOf, resolveIf } from "./values/conditionals";
 import { refuseInColor, resolveCurrentColor } from "./values/current-color";
 import { sceneTimelines, type Timeline } from "./features/timeline";
-import { PROPERTIES } from "./registry/registry";
+import { PROPERTIES } from "./registry/core";
 import {
   type ColorScheme,
   DARK_QUERY,
@@ -40,6 +40,7 @@ import {
 
 // view: replaces the view of the scene in the shader, like the chips of the playground (decision 131)
 export type CompileOptions = { target?: "glsl" | "dual"; view?: View };
+export type { Trigger };
 
 // Everything the runtime needs to display a scene
 export type CompiledScene = {
@@ -74,6 +75,10 @@ export type CompiledScene = {
   media?: { queries: string[]; variants: CompiledScene[] };
   // for each slot of uHover[] (hover, then active), how it glides to 1 (enter) and back to 0 (leave)
   transitions: { enter: Transition | null; leave: Transition | null }[];
+  // The states that start an animation (decision 141): the slot, its index in
+  // uStart[], and how long the state holds in seconds (null: until the next start).
+  // Absent when no state starts one.
+  triggers?: Trigger[];
 };
 
 // The most @media queries a scene can use: 2^4 = 16 versions of it are compiled
@@ -315,6 +320,7 @@ function compileStylesheet(
     })),
   ]);
   const active = activeSlots(styled).map((instance) => instance.activeTriggers);
+  const triggers = errors.run(() => sceneTriggers(styled));
   const timelines = errors.run(() =>
     sceneTimelines([computedScene, ...styled.flatMap((instance) => [...instance.groupStyles, instance.styles])]),
   );
@@ -323,7 +329,7 @@ function compileStylesheet(
     ...(passes!.length > 0
       ? {
           passes: passes!.map((pass) =>
-            withProperties(pass, registered.length, hoverSlots(styled).length + active.length, timelines!.length > 0),
+            withProperties(pass, registered.length, hoverSlots(styled).length + active.length, timelines!.length > 0, triggers!.length),
           ),
         }
       : {}),
@@ -339,6 +345,7 @@ function compileStylesheet(
     ...(active.length > 0 ? { active } : {}),
     ...(timelines!.length > 0 ? { timelines } : {}),
     transitions: transitions!,
+    ...(triggers!.length > 0 ? { triggers } : {}),
   };
 }
 
@@ -367,9 +374,10 @@ function checkedShader(
 // A pass of filter that reads a variable set from JS declares the uniforms of the scene
 // before it, in the same order: its WGSL then reads them where the scene writes them, in
 // the buffer they share (decision 105). The other passes stay as they were.
-function withProperties(pass: Pass, properties: number, slots: number, timeline: boolean): Pass {
+function withProperties(pass: Pass, properties: number, slots: number, timeline: boolean, starts: number): Pass {
   if (!pass.shader.includes("uProperties")) return pass;
   const uniforms = [
+    ...(starts > 0 ? [`uniform float uStart[${starts}];`] : []),
     ...(slots > 0 ? [`uniform float uHover[${slots}];`] : []),
     ...(timeline ? ["uniform vec4 uTimeline;"] : []),
     `uniform vec4 uProperties[${properties}]; // @property: the variables set from JS`,

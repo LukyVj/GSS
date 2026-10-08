@@ -1,4 +1,4 @@
-import type { Density, DensityChoice } from "./dpr";
+import { createDensity, type Density, type DensityChoice } from "./dpr";
 
 // The dpr picker of the docs and the playground (decision 120): a small menu at the top
 // right of the render, a signal outline (styles/site.css, .gss-dpr). "auto" shows the
@@ -6,6 +6,13 @@ import type { Density, DensityChoice } from "./dpr";
 
 const KEY = "gss-dpr";
 const RATIOS = [0.5, 1, 1.5, 2];
+
+// The density of a view (decision 142): the viewer's choice with the menu, auto without it;
+// none when the page asked for the scene's dpr as written (adaptDpr: false)
+export function viewDensity(options: { dprPicker?: boolean; adaptDpr?: boolean }): Density | null {
+  if (options.dprPicker) return createDensity(savedDpr());
+  return options.adaptDpr === false ? null : createDensity("auto");
+}
 
 // The viewer's last choice, auto when there is none (or storage is off)
 export function savedDpr(): DensityChoice {

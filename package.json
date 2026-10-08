@@ -53,7 +53,7 @@
     "format": "node scripts/format-gss.mjs",
     "format:check": "node scripts/format-gss.mjs --check",
     "generate-vscode-extension": "cd editors/vscode && npm install && npm run package",
-    "build:lib": "vite build -c vite.lib.config.ts && vite build -c vite.embed.config.ts --outDir lib && tsc -p tsconfig.lib.json",
+    "build:lib": "vite build -c vite.lib.config.ts && tsc -p tsconfig.lib.json",
     "captures": "node scripts/capture-showcase.mjs",
     "docsearch:extractor": "node scripts/docsearch-extractor.mjs",
     "bench": "node scripts/bench.mjs run",

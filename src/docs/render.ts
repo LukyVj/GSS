@@ -219,7 +219,7 @@ function renderToc(sections: Section[]): string {
       ${section.category !== sections[i - 1]?.category ? `<h3 class="toc-category">${escapeHtml(section.category ?? "Reference")}</h3>` : ""}
       <details class="toc-group" data-group="${escapeHtml(section.id)}"${section.id === "getting-started" ? " open" : ""}>
         <summary>
-          ${navIcon(section.id)}<span class="toc-group-title">${escapeHtml(section.title)}</span>
+          ${navIcon(section.id, "toc-icon", true)}<span class="toc-group-title">${escapeHtml(section.title)}</span>
           <span class="toc-group-count" aria-hidden="true">${section.entries.length}</span>
           <svg class="toc-chevron" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><path d="m6 4 4 4-4 4" /></svg>
         </summary>

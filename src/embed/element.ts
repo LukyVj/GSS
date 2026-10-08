@@ -1,7 +1,7 @@
 import { mount, mountAsync, type EmbeddedScene, type AsyncEmbeddedScene } from "./index";
 import { readControls, sourceUrl } from "./options";
 import { softwareRendering } from "./runtime";
-import { SOFTWARE_NOTICE, SOFTWARE_PLAY } from "../runtime/software";
+import { HEAVY_NOTICE, SOFTWARE_NOTICE, SOFTWARE_PLAY } from "../runtime/software";
 
 // <gss-scene>: a GSS scene in any page, without a build step (decision 63).
 //
@@ -11,7 +11,9 @@ import { SOFTWARE_NOTICE, SOFTWARE_PLAY } from "../runtime/software";
 //   <gss-scene src="logo.gss" poster="logo.jpg"></gss-scene>
 //
 // poster: an image shown until the scene draws, like the poster of a <video>. On a machine
-// without a GPU, the scene waits for a click on a button, over its poster (decision 137).
+// without a GPU, the scene waits for a click on a button, over its poster (decision 137). With
+// a GPU too slow for the scene, it stops after a second or two, and the same button draws it
+// anyway (decision 142).
 //
 // Its other HTML children are shown inside the canvas by a <slot>, laid out but not painted,
 // for texture: element(#id) (decision 101): they keep the styles of the page.
@@ -49,6 +51,7 @@ export class GssSceneElement extends HTMLElement {
   #poster: HTMLImageElement;
   #gate: HTMLDivElement;
   #allowed = false; // without a GPU: the reader asked for the scene anyway
+  #heavy = false; // the scene stopped, too heavy for the computer: the button plays it
   #scene: EmbeddedScene | AsyncEmbeddedScene | null = null;
   #waiting: IntersectionObserver | null = null;
   #started = false;
@@ -66,8 +69,13 @@ export class GssSceneElement extends HTMLElement {
     this.#poster = root.querySelector("img")!;
     this.#gate = root.querySelector(".gate")!;
     this.#gate.querySelector("button")!.addEventListener("click", () => {
-      this.#allowed = true;
       this.#gate.hidden = true;
+      if (this.#heavy) {
+        this.#heavy = false;
+        this.#scene?.play(); // never stopped again
+        return;
+      }
+      this.#allowed = true;
       void this.#start();
     });
   }
@@ -114,6 +122,7 @@ export class GssSceneElement extends HTMLElement {
     this.#started = true;
     const run = ++this.#run;
     if (!this.#allowed && softwareRendering()) {
+      this.#gate.querySelector("p")!.textContent = SOFTWARE_NOTICE;
       this.#gate.hidden = false;
       return;
     }
@@ -133,6 +142,15 @@ export class GssSceneElement extends HTMLElement {
         this.#error.hidden = false;
         this.dispatchEvent(new CustomEvent("error", { detail: message }));
       });
+      // Too heavy for the computer: the view stopped (decision 142). Without a GPU, the reader
+      // already chose to wait: it goes on.
+      canvas.addEventListener("gss-too-heavy", () => {
+        if (canvas !== this.#canvas) return;
+        if (this.#allowed) return void this.#scene?.play();
+        this.#heavy = true;
+        this.#gate.querySelector("p")!.textContent = HEAVY_NOTICE;
+        this.#gate.hidden = false;
+      });
       const options = {
         base,
         controls: readControls(this.getAttribute("controls")),
@@ -143,6 +161,8 @@ export class GssSceneElement extends HTMLElement {
       const scene = backend === null ? mount(canvas, code, options) : await mountAsync(canvas, code, { ...options, backend: backend as "auto" | "webgl" | "webgpu" });
       if (run !== this.#run) { scene.destroy(); return; }
       this.#scene = scene;
+      this.#heavy = false; // a new scene: drawn until it is too heavy itself
+      this.#gate.hidden = true;
       this.#error.hidden = true;
       this.#showPoster(false);
       this.dispatchEvent(new Event("load"));
