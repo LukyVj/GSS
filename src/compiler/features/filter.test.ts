@@ -114,3 +114,35 @@ describe("filter on objects and groups (decision 84)", () => {
     ).toThrow("not both");
   });
 });
+
+// vignette() and chromatic-aberration() (decision 157): two effects of a camera lens
+describe("filter: vignette() and chromatic-aberration()", () => {
+  it("darkens the corners with vignette(), in the scene's shader, 0.5 by default", () => {
+    const scene = sceneWith("vignette()");
+    expect(scene.passes).toBeUndefined();
+    expect(scene.shader).toContain(
+      "c = c * (1.0 - 0.5 * smoothstep(0.3, 1.0, length(gl_FragCoord.xy / iResolution.xy - 0.5) * 1.4142));",
+    );
+    expect(sceneWith("vignette(0.8)").shader).toContain("(1.0 - 0.8 * smoothstep(");
+    expect(() => sceneWith("vignette(2)")).not.toThrow(); // kept at 1, like the other amounts
+  });
+
+  it("splits red and blue with chromatic-aberration(), in a pass, 2px at the corners by default", () => {
+    const scene = sceneWith("chromatic-aberration()");
+    expect(scene.passes).toHaveLength(1);
+    const pass = scene.passes![0].shader;
+    expect(pass).toContain("vec2 shift = (uv - 0.5) * 1.4142 * 2.0 * uRatio / iResolution.xy;");
+    expect(pass).toContain("vec3 c = vec3(texture(uInput0, uv + shift).r, here0.g, texture(uInput0, uv - shift).b);");
+    expect(sceneWith("chromatic-aberration(4px)").passes![0].shader).toContain("* 4.0 * uRatio");
+    expect(sceneWith("chromatic-aberration(0)").passes).toBeUndefined();
+  });
+
+  it("go on the scene only, like a lens", () => {
+    expect(() => compileScene("@scene { sphere } sphere { filter: vignette(); }")).toThrow(
+      "vignette() goes on the scene, like the lens of a camera: scene { filter: vignette(0.5); }",
+    );
+    expect(() => compileScene("@scene { sphere } sphere { filter: chromatic-aberration(); }")).toThrow(
+      "chromatic-aberration() goes on the scene",
+    );
+  });
+});

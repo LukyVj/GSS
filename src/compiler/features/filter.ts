@@ -27,6 +27,8 @@ export const FILTER_FUNCTIONS = [
   "invert",
   "saturate",
   "sepia",
+  "vignette", // decision 157: the effects of a lens, on the scene only
+  "chromatic-aberration",
 ];
 
 const EXAMPLE = "filter: contrast(1.1) saturate(1.2) bloom(0.6);";
@@ -50,10 +52,11 @@ float grain(vec2 pixel, float time) {
 }`;
 
 export type Step =
-  | { kind: "pixel"; line: string }
+  | { kind: "pixel"; line: string; lens?: true } // lens: vignette(), the scene only (decision 157)
   | { kind: "opacity"; amount: Num } // decision 117: the object covers less of what is behind it
   | { kind: "blur"; sigma: Num }
-  | { kind: "bloom"; amount: Num; sigma: Num };
+  | { kind: "bloom"; amount: Num; sigma: Num }
+  | { kind: "aberration"; length: Num }; // chromatic-aberration() (decision 157), the scene only
 
 // filter: a list of functions, or none
 export function readSteps(value: Token[]): Step[] {
@@ -105,7 +108,7 @@ function readStep(name: string, call: Token[]): Step | null {
     if (token.type === "EXPR" && token.syntax === "length") return `max(${token.code}, 0.0)`; // set from JS (decision 105)
     if (token.type === "NUMBER" && token.value === 0) return 0;
     if (token.type !== "DIMENSION" || token.unit !== "px" || token.value < 0)
-      throw errorAt(call, `${name}() expects a length in px, like: ${name === "bloom" ? "bloom(0.6, 16px)" : "blur(4px)"}`);
+      throw errorAt(call, `${name}() expects a length in px, like: ${name === "bloom" ? "bloom(0.6, 16px)" : `${name}(4px)`}`);
     return token.value;
   };
   const one = (n: Num) => {
@@ -129,6 +132,18 @@ function readStep(name: string, call: Token[]): Step | null {
       return { kind: "pixel", line: `c = ${clamp01(`(c - 0.5) * ${f(one(amount(first, 1)))} + 0.5`)};` };
     case "invert":
       return { kind: "pixel", line: `c = mix(c, 1.0 - c, ${f(one(amount(first, 1, 1)))});` };
+    // vignette() (decision 157): darker towards the corners, from 0.3 of the way from the center
+    case "vignette":
+      return {
+        kind: "pixel",
+        lens: true,
+        line: `c = c * (1.0 - ${f(one(amount(first, 0.5, 1)))} * smoothstep(0.3, 1.0, length(gl_FragCoord.xy / iResolution.xy - 0.5) * 1.4142));`,
+      };
+    // chromatic-aberration() (decision 157): red and blue pulled apart, by length at the corners
+    case "chromatic-aberration": {
+      const shift = one(length(first, 2));
+      return isLive(shift) || shift > 0 ? { kind: "aberration", length: shift } : null; // 0: nothing to do
+    }
     case "grain":
       return { kind: "pixel", line: `c = ${clamp01(`c + (grain(gl_FragCoord.xy, iTime) - 0.5) * ${f(one(amount(first, 0.1)))}`)};` };
     case "saturate": {
@@ -294,6 +309,7 @@ export function buildPasses(layers: Layer[], sceneSteps: Step[]): { sceneLines: 
   for (const { layer, steps } of layers) {
     for (const step of steps) {
       if (step.kind === "pixel" || step.kind === "opacity") continue; // done in the scene's shader, on its own pixels
+      if (step.kind === "aberration") continue; // never on objects: objectSteps() refuses it
       if (step.kind === "blur") {
         // The layer, blurred: its color (premultiplied) and how much of it covers each pixel
         const across = add(blurCode(step.sigma, "vec2(1.0, 0.0)", "vec4(s.rgb, 1.0)", layer), [current]);
@@ -335,6 +351,18 @@ export function buildPasses(layers: Layer[], sceneSteps: Step[]): { sceneLines: 
     if (step.kind === "blur") {
       const across = add(blurCode(step.sigma, "vec2(1.0, 0.0)", "s"), [current]);
       current = add(blurCode(step.sigma, "vec2(0.0, 1.0)", "s"), [across]);
+    } else if (step.kind === "aberration") {
+      // chromatic-aberration() (decision 157): red read further out, blue further in, more
+      // and more towards the corners, like a lens that bends each color its own way
+      current = add(
+        [
+          ...KEEP,
+          `  vec2 shift = (uv - 0.5) * 1.4142 * ${f(step.length)} * uRatio / iResolution.xy;`,
+          "  vec3 c = vec3(texture(uInput0, uv + shift).r, here0.g, texture(uInput0, uv - shift).b);",
+          "  float a = here0.a;",
+        ],
+        [current],
+      );
     } else {
       // bloom(): the bright parts, blurred, added back on top of the image
       const across = add(blurCode(step.sigma, "vec2(1.0, 0.0)", BRIGHT), [current]);
@@ -366,6 +394,17 @@ export function readSceneSteps(value: Token[]): Step[] {
 
 // ----- Filters on objects and groups (decision 84) -----
 
+// The filter of an object or a group: not the effects of a lens, which go on the scene
+// (decision 157)
+function objectSteps(value: Token[]): Step[] {
+  const steps = readSteps(value);
+  if (steps.some((step) => step.kind === "pixel" && step.lens))
+    throw errorAt(value, "vignette() goes on the scene, like the lens of a camera: scene { filter: vignette(0.5); }");
+  if (steps.some((step) => step.kind === "aberration"))
+    throw errorAt(value, "chromatic-aberration() goes on the scene, like the lens of a camera: scene { filter: chromatic-aberration(2px); }");
+  return steps;
+}
+
 // What the objects of the scene need: the pixel filters of each object (its own, then those
 // of its groups from the inside out, like CSS applies a child's filter before its parent's),
 // and the layers: an object, or a group, with a blur() or a bloom() is a layer, whose pixels
@@ -388,13 +427,13 @@ export function objectFilters(
   const spread = (steps: Step[]) => steps.some((s) => s.kind === "blur" || s.kind === "bloom");
 
   for (const instance of instances) {
-    const own = instance.styles["filter"] ? readSteps(instance.styles["filter"]) : [];
+    const own = instance.styles["filter"] ? objectSteps(instance.styles["filter"]) : [];
     // The groups from the inside out
     const groups = instance.groupStyles
       .map((styles, g) => ({ styles, g }))
       .reverse()
       .map(({ styles, g }) => ({
-        steps: styles["filter"] ? readSteps(styles["filter"]) : [],
+        steps: styles["filter"] ? objectSteps(styles["filter"]) : [],
         key: instance.groups
           .slice(0, g + 1)
           .map((n) => `${n.tag}#${n.id ?? ""}:${n.siblingIndex}`)

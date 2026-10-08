@@ -8,6 +8,7 @@ The 0.0.1 history was reconstructed from GitHub.
 
 ### Added
 
+- `filter: vignette()` and `chromatic-aberration()` on the scene: darker corners, and red and blue that split towards the edges, like a lens.
 - `material: iridescent()`: a thin film, like a soap bubble or the back of a CD, whose colors turn with the angle you see it at. `emissive` and `iridescent` also work as keywords, like `jelly` and `glass`.
 - `checker()` and `stripes()`: a checkerboard and bands of two colors, wherever a gradient goes (`color`, a material, `background`, `floor`). Like `noise()`, they are cut in the object's own space, with no seam, and can be animated: `stripes(4 at 0 -0.25 0, …)` in a `@keyframes` makes the bands scroll.
 - Three shapes: `pyramid`, on a square base and sized by `size` like a cube; `octahedron`, eight triangles, sized by `radius`; and `tube`, a hollow cylinder, with an outer `radius`, a `height` and the `thickness` of its wall.

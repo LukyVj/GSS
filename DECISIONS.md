@@ -1274,3 +1274,13 @@ They read the point in the object's own space, like `noise()`: the cells keep th
 **Decision** (Lucas's list for 0.0.6, Oct. 8): `material: iridescent([<color>,] [<strength>])`, and the keyword `iridescent`; `emissive` became a keyword too (decision 153), like `jelly` and `glass`. The light a thin film reflects interferes with itself, so its color depends on the angle it is seen at: `shadeIridescent()` stands for that with a cosine palette of `1 - dot(-rd, n)`, lit like `matte()`, mixed over the object's own lit color by the strength (0 to 1, 0.7 by default), more at grazing angles (from 35 % of the strength seen from the front to all of it at the edge), plus a highlight of the sun. The strength is stored in `density`, like `emissive()`.
 **Why**: soap bubbles, oil on water, beetles, the back of a CD: a look that "creative coding" scenes ask for, at the cost of a few lines per pixel, only on the objects that use it.
 **Accepted limits**: not a physical thin film (no film thickness or index to set): one palette, the same for every object, tinted by its color. Like the other materials, its reflections see matte objects.
+
+## 157. `vignette()` and `chromatic-aberration()`: the effects of a lens, in `filter`
+
+**Decision** (Lucas's list for 0.0.6, Oct. 8, "grow `filter` with a couple more post effects"): two functions of `filter`, on the scene only.
+- `vignette(<amount>)`, 0 to 1, 0.5 by default (above 1 kept at 1, like the other amounts): a pixel filter, one line at the end of the scene's shader like `grain()`, no extra pass: `c *= 1 - amount * smoothstep(0.3, 1.0, distance from the center)`, the distance 1 at the corners.
+- `chromatic-aberration(<length>)`, in px, 2px by default (0 does nothing): one pass, like `blur()`, that reads red further out and blue further in, by the length at the corners and 0 at the center, so a lens seems to bend each color its own way. CSS pixels, like `blur()` (`uRatio`).
+On an object or a group, both are an error that says to put them on the scene: a lens sees the whole image.
+**Differences from CSS**: CSS `filter` has neither; like `bloom()` and `grain()`, they are GSS functions, named for what they imitate.
+**Why**: the two most asked "film" effects after bloom and grain, and cheap: a line, or one pass of three reads per pixel.
+**Accepted limits**: the vignette is round on a wide canvas only in its distance, not its shape (an ellipse that follows the canvas). The aberration reads straight lines from the center: no blur of the split colors, as a real lens would add.

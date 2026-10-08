@@ -1124,6 +1124,8 @@ export const PROPERTIES: PropertyDef[] = [
       ["grayscale(), sepia(), invert()", "From 0 to 1: how far it goes."],
       ["hue-rotate()", "An angle around the color wheel."],
       ["grain()", "A film grain that moves at every frame (0.1 by default)."],
+      ["vignette()", "Darker towards the corners, like an old lens: from 0 to 1 (0.5 by default). On the scene only."],
+      ["chromatic-aberration()", "Red and blue pulled apart towards the corners, like a cheap lens: a length in px at the corners (2px by default). On the scene only."],
       ["blur()", "A blur, by a length in px, like CSS."],
       ["bloom()", "Makes the bright parts glow: an amount (0.6 by default) and a radius in px (16px by default)."],
       ["opacity()", "Makes an object or a group transparent, multiplied with `opacity`. On the scene, it is an error: the scene stays opaque."],
@@ -1174,6 +1176,11 @@ export const PROPERTIES: PropertyDef[] = [
         name: "blur()",
         text: "The whole image, blurred by 3px.",
         code: "@scene { sphere; cube; } sphere { translate: 0.8 0.6 0; color: #ff5a36; } cube { translate: -0.8 0.5 0; color: #3a7bff; } scene { filter: blur(3px); }",
+      },
+      {
+        name: "vignette() and chromatic-aberration()",
+        text: "The effects of a lens, on the whole image: darker corners, colors that split at the edges.",
+        code: "@scene { torus; sphere; } scene { filter: vignette(0.6) chromatic-aberration(4px); } torus { translate: 0 0.8 0; radius: 0.8; thickness: 0.25; rotate-x: 60deg; color: #f4f1ea; } sphere { translate: 0 0.8 0; radius: 0.3; color: #ff5a36; }",
       },
       {
         name: "bloom()",
