@@ -68,7 +68,7 @@ export const DOC_GROUPS: NavGroup[] = [
   { id: "shapes", title: "Shapes and groups", category: "Structure", order: 20, anchors: ["shape-cube", "shape-sphere", "shape-torus", "shape-cylinder", "shape-cone", "shape-capsule", "shape-plane", "shape-path", "shape-prism", "shape-lathe", "shape-pyramid", "shape-octahedron", "shape-tube", "shape-group"] },
   { id: "object-properties", title: "Geometry", category: "Structure", order: 21, anchors: ["size", "radius", "height", "depth", "thickness", "corner-radius", "d", "view-box", "stroke-width"] },
   { id: "combinations", title: "Combinations", category: "Structure", order: 22, anchors: ["operation", "blend"] },
-  { id: "colors", title: "Colors", category: "Appearance", order: 30, anchors: ["color", "background", "background-blend-mode", "floor"] },
+  { id: "colors", title: "Colors", category: "Appearance", order: 30, anchors: ["color", "background", "background-blend-mode", "mix-blend-mode", "floor"] },
   { id: "color-functions", title: "Color functions", category: "Appearance", order: 31, anchors: ["fn-rgb", "fn-hsl", "fn-hwb", "fn-lab-lch", "fn-oklab-oklch", "fn-color", "fn-color-mix", "fn-light-dark", "fn-contrast-color", "fn-currentcolor"] },
   { id: "gradients", title: "Gradients and noise", category: "Appearance", order: 32, anchors: ["fn-gradients", "fn-noise", "fn-checker", "fn-stripes", "fn-displace"] },
   { id: "materials", title: "Materials", category: "Appearance", order: 33, anchors: ["material"] },

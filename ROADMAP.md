@@ -58,13 +58,14 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 | Look         | `color`, `material`                                                                                                                                                                                                                                 | 26                              |
 | Textures     | `texture: url("…")`, `element(#id)` (a live HTML element, a `<canvas>` inside it captured too, dec. 101, 168) or `paint(name)` (a GLSL fragment shader of a `@paint`, WebGL2, dec. 151), `image-rendering: pixelated`, `texture-size`                                                                                                                                 | 59                              |
 | Opacity      | `opacity: <number> \| <percentage>`, a transparent `color` or gradient, `filter: opacity()`: the surfaces behind showing through, on groups multiplied into each object                                                                             | 116, 117                        |
+| Blend modes  | `mix-blend-mode`: the 16 modes of `background-blend-mode` and `plus-lighter`, the color of an object blended with what is behind it along the ray (objects, floor, background), each object seen once; with `opacity`; on groups into each object; discrete on `:hover` and in `@keyframes` | 173 |
 | Masks        | `mask-image: <gradient> \| noise()` cuts sharp holes where the image is transparent, `mask-mode: alpha \| luminance`                                                                                                                                | 113                             |
 | Visibility   | `display: none` (left out when the scene compiles, still counted by `:nth-child()`, follows `@media`), `visibility: visible \| hidden \| collapse` (inherited, on `:hover` and in `@keyframes`) | 160, 167 |
 | Outline      | `outline: <width> <style> <color>`, `outline-width`, `-style` (every style of CSS), `-color`, `-offset`: a line around the silhouette, in units of the scene, animatable | 163, 164 |
 | Cursor       | `cursor: pointer \| grab \| …`, the keywords of CSS, inherited, set by `:hover` and `:active` rules | 161 |
 | Patterns     | `checker(<scale> [at x y z], a, b)`, `stripes(<scale> [x \| y \| z] [at …], a, b)`: like `noise()`, in the object's space, wherever a gradient goes (dec. 155) |                                                                              
 | Combinations | `operation: union \| subtract \| intersect`, `blend` (smooth union)                                                                                                                                                                                 | 18, 19                          |
-| Animation    | `animation`; animatable: `translate`, `rotate-*`, `scale`, `transform-origin`, `color` (a gradient too), `mask-image`, `offset-distance`, the `intensity` of a light (also what `:hover` can change); on the scene, `background`, `fog` and `light` | 24, 62, 102, 103, 107, 108, 110 |
+| Animation    | `animation`; animatable: `translate`, `rotate-*`, `scale`, `transform-origin`, `color` (a gradient too), `mask-image`, `mix-blend-mode` (discrete), `offset-distance`, the `intensity` of a light (also what `:hover` can change); on the scene, `background`, `fog` and `light` | 24, 62, 102, 103, 107, 108, 110 |
 | Transition   | `transition: 0.3s ease-out`, one per object; easings: keywords, `cubic-bezier()`, `linear()`                                                                                                                                                        | 68                              |
 
 ### Materials
@@ -145,6 +146,7 @@ On `release/0.0.7`. Decisions from 169.
 
 - [x] `geometricPrecision` fixed in 0.0.7, not patched into 0.0.6 in silence (169): no more ghosts around a small `path`, `prism` or `lathe`; as smooth on a 4K canvas as on a small one.
 - [x] `outline` on a small `path`, `prism` or `lathe` drew the box of its shape: fixed in 0.0.7 too (170).
+- [x] `mix-blend-mode` on objects (173): the modes of `background-blend-mode` and `plus-lighter`, over what is behind each object along the ray; no `isolation` yet.
 
 ## Release 0.0.6 (published Oct. 9)
 
@@ -349,6 +351,7 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 
 ## Done recently
 
+- `mix-blend-mode` on objects (decision 173, Oct. 9): an object blends its lit color with what is behind it along the ray, the objects, the floor and the background, with the blend functions of `background-blend-mode` and `plus-lighter`; seen once (never with its own back face), with `opacity`, on groups into each object, discrete on `:hover` and in `@keyframes`. No `isolation` yet. Costs nothing to a scene without it; +24 % with the sun of the Orrery screened, +33 % for the three spheres of the docs, × 2.7 with every key of the macro pad multiplied
 - The archive of the showcase (decision 172, Oct. 9): every scene of the page, the studies included, newest first, as a grid or a list; a capture, a name, what it is, the version it came with, and the features it uses, read from its code (`featuresOf()`) and linked to the docs
 - The studies of the showcase wait for play (decision 171, Oct. 9): a poster captured at the size of the viewer and a round play button in `signal`; a study chosen in the list draws at once. `npm run captures` also writes the posters of the studies, on the graphics card of the computer
 - The renders of the site sleep off screen (decision 143, Oct. 6): the live demo of the home page and the Try it of the docs, like `mount()`; its logic moves to `sleepOffscreen()` (`runtime/offscreen.ts`)
@@ -493,9 +496,9 @@ A score for how well a CSS notion carries over to GSS (a style language → an S
 | `color-scheme`                               |   0.4 | UI chrome                           |
 | `print-color-adjust` / `forced-color-adjust` |   0.1 | Print / a11y UA                     |
 | `dynamic-range-limit`                        |   0.2 | HDR display                         |
-| `mix-blend-mode`                             |   0.5 | Post-process / limited SDF blending |
+| `mix-blend-mode`                             |   1.0 | Already in GSS (dec. 173)           |
 | `background-blend-mode`                      |   0.3 | 2D layers                           |
-| `isolation`                                  |   0.3 | Stacking context                    |
+| `isolation`                                  |   0.3 | Stacking context; not yet (dec. 173) |
 
 #### Backgrounds & borders (surface / decoration)
 

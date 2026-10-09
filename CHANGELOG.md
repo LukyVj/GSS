@@ -8,6 +8,7 @@ The 0.0.1 history was reconstructed from GitHub.
 
 ### Added
 
+- `mix-blend-mode` on objects, like CSS: an object blends its color with what is behind it, the objects behind it, the floor and the background. `sphere { mix-blend-mode: multiply; }` tints what shows through the sphere; three spheres with `screen` add up to white where they meet. Every mode of `background-blend-mode`, and `plus-lighter`. It works with `opacity`, on a group (each of its objects takes the mode), on `:hover` and in `@keyframes`, where it changes from one mode to the other halfway through, like CSS.
 - Showcase: an archive of every scene of the page, the studies included, in place of the inspiration grid. Each scene has its capture, its name, what it is, a badge of the version of GSS it came with, and the features it uses, each linked to its page of the docs. Newest first, as a grid of cards or as a list; the page remembers the choice.
 
 ### Changed

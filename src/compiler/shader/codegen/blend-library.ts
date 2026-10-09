@@ -1,7 +1,7 @@
-// background-blend-mode (decision 112): the blend modes of CSS (Compositing and Blending 1),
-// in the order GLSL needs, each one after those it calls. b is the color below (the
-// backdrop), s the color of the layer (the source). Only the modes a scene uses go in the
-// shader, like the other tables (decision 53).
+// background-blend-mode (decision 112) and mix-blend-mode (decision 173): the blend modes of
+// CSS (Compositing and Blending 1), in the order GLSL needs, each one after those it calls.
+// b is the color below (the backdrop), s the color of the layer or of the object (the
+// source). Only the modes a scene uses go in the shader, like the other tables (decision 53).
 export const BLEND_LIBRARY: Record<string, string> = {
   unpremultiply: `// A premultiplied color, back to its own color (black when it is fully transparent)
 vec3 unpremultiply(vec4 c) {
