@@ -119,11 +119,13 @@ float extrude(float d, float z, float h) {
 // The easings of the @keyframes that need a function: only those the scene uses
 export const EASINGS: Record<string, string> = {
   cubicBezier: `// cubic-bezier(): the progress at the moment x, for the handles h = (x1, y1, x2, y2).
-// x(s) only goes up, so a bisection finds s, then y(s) is the progress.
+// x(s) only goes up, so a bisection finds s, then y(s) is the progress. The bisection stops
+// just short of the ends: they are given exactly, 0 at 0 and 1 at 1, like CSS.
 float bezierAt(float s, float a, float b) {
   return (((1.0 + 3.0 * a - 3.0 * b) * s + (3.0 * b - 6.0 * a)) * s + 3.0 * a) * s;
 }
 float cubicBezier(float x, vec4 h) {
+  if (x <= 0.0 || x >= 1.0) return x;
   float low = 0.0, high = 1.0;
   for (int i = 0; i < 16; i++) {
     float s = 0.5 * (low + high);

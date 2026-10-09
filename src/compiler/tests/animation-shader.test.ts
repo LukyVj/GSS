@@ -49,6 +49,36 @@ describe("animation controls in the shader", () => {
     expect(shaderOf("move 2s 1s 2 both")).not.toContain("((iTime");
   });
 
+  it("ends exactly on the last keyframe, like CSS: the last segment is measured from the end", () => {
+    // (1.0 - 0.99) / 0.01 is a little under 1 in floats: an animation that ended on
+    // visibility: hidden left the object visible, and step-end missed its last step
+    const ending = (animation: string) =>
+      compileScene(
+        `@scene { sphere; } sphere { animation: ${animation}; } @keyframes k { 0% { visibility: visible; } 99% { visibility: visible; } 100% { visibility: hidden; } }`,
+      ).shader;
+    expect(ending("k 1s 1 both")).toContain(
+      "clamp(1.0 - (1.0 - playhead(iTime, 1.0, 1.0, 0)) / 0.01, 0.0, 1.0)",
+    );
+    // The other segments do not change
+    expect(ending("k 1s 1 both")).toContain(
+      "clamp((playhead(iTime, 1.0, 1.0, 0) - 0.0) / 0.99, 0.0, 1.0)",
+    );
+    // A loop never stays on its end: its shader is the one GSS always wrote
+    expect(ending("k 1s")).toContain("clamp((fract(iTime / 1.0) - 0.99) / 0.01, 0.0, 1.0)");
+    expect(ending("k 1s")).not.toContain("1.0 - (1.0 - ");
+    expect(ending("k 1s -0.5s")).not.toContain("1.0 - (1.0 - ");
+    // A first iteration played backwards stays on its end during a delay that holds it
+    expect(ending("k 1s 2s reverse backwards")).toContain("clamp(1.0 - (1.0 - playhead(iTime - 2.0, ");
+    // The same at the end of a scroll, and of an animation a state starts
+    const keyframes = "@keyframes k { 99% { scale: 1; } to { scale: 2; } }";
+    expect(
+      compileScene(`@scene { sphere; } sphere { animation: k 1s; animation-timeline: scroll(); } ${keyframes}`).shader,
+    ).toContain("clamp(1.0 - (1.0 - uTimeline.x) / 0.01, 0.0, 1.0)");
+    expect(
+      compileScene(`@scene { sphere; } sphere:hover { animation: k 1s; } ${keyframes}`).shader,
+    ).toContain("clamp(1.0 - (1.0 - playhead((iTime - uStart[0]), 1.0, 1.0, 0)) / 0.01, 0.0, 1.0)");
+  });
+
   it("reads the longhands", () => {
     expect(
       shaderOf(

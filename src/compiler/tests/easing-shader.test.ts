@@ -79,6 +79,12 @@ describe("easings in @keyframes", () => {
     expect(blink("ease-out")).not.toContain("* step(0.5, ");
   });
 
+  it("gives exactly 0 and 1 at the ends of cubic-bezier(), like CSS", () => {
+    // The search for the curve stops close to its ends, not on them: a segment of
+    // visibility that had not started yet showed a hidden object
+    expect(shaderOf("2s ease")).toContain("if (x <= 0.0 || x >= 1.0) return x;");
+  });
+
   it("rejects two easings", () => {
     expect(() => shaderOf("2s ease-in linear")).toThrow("only one easing");
   });

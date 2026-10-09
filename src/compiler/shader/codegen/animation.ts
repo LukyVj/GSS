@@ -99,11 +99,13 @@ const DIRECTION_NUMBERS = {
 const FOREVER = 1e9;
 
 // How the shader plays an animation: the progress (0 to 1) in the current iteration,
-// and when the animation shows at all (null: always). Without a delay, a count or a
-// direction other than alternate, the expressions are the ones GSS always wrote.
+// when the animation shows at all (null: always), and whether the progress can stay on 1
+// (the end of the animation or of a timeline). Without a delay, a count or a direction
+// other than alternate, the expressions are the ones GSS always wrote.
 function playback(spec: AnimationSpec, clock: string): {
   progress: string;
   active: string | null;
+  ends: boolean;
 } {
   const { duration, delay, iterations, direction, fill } = spec;
   // scroll(), view(): the progress of the timeline is the whole animation, like CSS.
@@ -111,19 +113,20 @@ function playback(spec: AnimationSpec, clock: string): {
   if (spec.timeline) {
     const at = timelineCode(spec.timeline, timelines);
     const n = iterations === Infinity ? 1 : iterations;
-    if (n === 1 && direction === "normal") return { progress: at, active: null };
-    if (n === 1 && direction === "reverse") return { progress: `(1.0 - ${at})`, active: null };
+    if (n === 1 && direction === "normal") return { progress: at, active: null, ends: true };
+    if (n === 1 && direction === "reverse") return { progress: `(1.0 - ${at})`, active: null, ends: true };
     return {
       progress: `playhead(${at} * ${glslFloat(n)}, 1.0, ${glslFloat(n)}, ${DIRECTION_NUMBERS[direction]})`,
       active: null,
+      ends: true,
     };
   }
   const plain = delay === 0 && iterations === Infinity;
   const time = `${clock} / ${glslFloat(duration)}`;
   if (plain && direction === "normal")
-    return { progress: `fract(${time})`, active: null }; // 0 → 1, 0 → 1 …
+    return { progress: `fract(${time})`, active: null, ends: false }; // 0 → 1, 0 → 1 …
   if (plain && direction === "alternate")
-    return { progress: `(1.0 - abs(mod(${time}, 2.0) - 1.0))`, active: null }; // 0 → 1 → 0 …
+    return { progress: `(1.0 - abs(mod(${time}, 2.0) - 1.0))`, active: null, ends: false }; // 0 → 1 → 0 …
 
   const t =
     delay === 0
@@ -143,9 +146,13 @@ function playback(spec: AnimationSpec, clock: string): {
   if (!holdsBefore) conditions.push(`${clock} >= ${glslFloat(delay)}`);
   if (!holdsAfter)
     conditions.push(`${clock} < ${glslFloat(round(delay + iterations * duration))}`);
+  // The progress stays on 1 after the last iteration, or during a delay that holds a first
+  // iteration played backwards: never in a loop
+  const backwards = direction === "reverse" || direction === "alternate-reverse";
   return {
     progress,
     active: conditions.length > 0 ? conditions.join(" && ") : null,
+    ends: iterations !== Infinity || (delay > 0 && holdsBefore && backwards),
   };
 }
 
@@ -245,12 +252,19 @@ export function animatedValue(
     .sort((a, b) => a.offset - b.offset);
 
   // Chain of mix: each segment takes over when the previous one is done
-  const { progress, active } = playback(animation, clock);
+  const { progress, active, ends } = playback(animation, clock);
   let result = stops[0].value;
   for (let i = 1; i < stops.length; i++) {
     const start = stops[i - 1].offset;
     const length = round(stops[i].offset - start);
-    const local = `clamp((${progress} - ${glslFloat(start)}) / ${glslFloat(length)}, 0.0, 1.0)`;
+    // The last segment of an animation that ends is measured from the end, so the end is
+    // the last keyframe exactly, like CSS: in floats, (1.0 - 0.99) / 0.01 stops a little
+    // short of 1, which left visible an object hidden at 100%, and missed the last step.
+    // (p - 0.0) / 1.0, the whole animation, is already exact.
+    const local =
+      ends && i === stops.length - 1 && start > 0
+        ? `clamp(1.0 - (1.0 - ${progress}) / ${glslFloat(length)}, 0.0, 1.0)`
+        : `clamp((${progress} - ${glslFloat(start)}) / ${glslFloat(length)}, 0.0, 1.0)`;
     let weight = easingCode(animation.easing, local);
     // Before its segment starts, local is 0: an easing that is not 0 there (steps() with
     // jump-start, linear(0.5, 1)…) must wait for its segment, or it covers the ones before
