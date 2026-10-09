@@ -139,11 +139,17 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 | Profiler                   | a panel over the playground scene, public, closed by default and lazy (nothing measured before it opens), `perf` button or Alt+P (remembered), WebGL2 and WebGPU (timestamp queries when available): fps, frame, GPU and CPU time, real pixels, shader build time; over budget in signal                                                                                                                                                                  | 64, 87, 91                      |
 | Bench                      | `npm run bench:compare -- main --dpr 2`: another commit against the working tree, 3 alternating rounds, images compared pixel by pixel, report in `bench-results/compare.md`                                                                                                                                                                                                                                                                              | 64                              |
 
+## Release 0.0.7
+
+On `release/0.0.7`. Decisions from 169.
+
+- [x] `geometricPrecision` fixed in 0.0.7, not patched into 0.0.6 in silence (169): no more ghosts around a small `path`, `prism` or `lathe`; as smooth on a 4K canvas as on a small one.
+
 ## Release 0.0.6 (published Oct. 9)
 
 On `release/0.0.6`, deployed to staging. Decisions 141 to 159.
 
-- [x] Language: `display: none` and `visibility` (160), `cursor` (161), `animation-range` (162), `outline` in units of the scene (163); an animation started by `:hover` or `:active` plays to its end (141); `shape-rendering: geometricPrecision` (149, Michael Silva's #7; on large canvases, without ghosts around paths: 169); `@paint` and `texture: paint(name)` (151, issue #10); the materials `copper`, `silver`, `brass`, `aluminum` (152), `emissive()` (153), `iridescent()` (156); the shapes `pyramid`, `octahedron`, `tube` (154); `checker()` and `stripes()` (155); `vignette()` and `chromatic-aberration()` (157).
+- [x] Language: `display: none` and `visibility` (160), `cursor` (161), `animation-range` (162), `outline` in units of the scene (163); an animation started by `:hover` or `:active` plays to its end (141); `shape-rendering: geometricPrecision` (149, Michael Silva's #7); `@paint` and `texture: paint(name)` (151, issue #10); the materials `copper`, `silver`, `brass`, `aluminum` (152), `emissive()` (153), `iridescent()` (156); the shapes `pyramid`, `octahedron`, `tube` (154); `checker()` and `stripes()` (155); `vignette()` and `chromatic-aberration()` (157).
 - [x] Runtime: the density starts light and adapts everywhere, a scene too heavy stops (142); renders sleep off screen (143); WebGL2 compiles without blocking the page (150, also on `main`); `poster`, and computers without a GPU.
 - [x] Package: 263 → 114 kB, `embed.js` shares its files (147).
 - [x] Tools: HTML snippets in the VS Code extension (148, Michael Silva's #6); the docs search (144–146); `new in v…` in the contents (158) and `since v…` beside every title (159).
