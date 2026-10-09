@@ -12,6 +12,10 @@ export function classifyGss(code: string): Piece[] {
   const pieces: Piece[] = [];
   let depth = 0;
   let inValue = false; // between the ":" and the ";" of a declaration
+  // The parentheses after @mixin --name or @apply --name: parameters and values, colored as
+  // values (decision 174). 0 outside them.
+  let mixinHead = false;
+  let args = 0;
 
   parts.forEach((part, index) => {
     const { token, start, end } = part;
@@ -19,6 +23,10 @@ export function classifyGss(code: string): Piece[] {
     const nextIs = (p: string) => next?.type === "PUNCT" && next.value === p;
 
     if (token.type === "PUNCT") {
+      if (token.value === "(" && args > 0) args++;
+      else if (token.value === "(" && mixinHead && parts[index - 1]?.token.type === "IDENT") args = 1;
+      if (token.value === ")" && args > 0) args--;
+      if (token.value === "{" || token.value === "}" || token.value === ";") mixinHead = false;
       if (token.value === "{") depth++;
       if (token.value === "}") depth = Math.max(0, depth - 1);
       if (token.value === "{" || token.value === "}" || token.value === ";") inValue = false;
@@ -26,6 +34,7 @@ export function classifyGss(code: string): Piece[] {
       pieces.push({ start, end, kind: "punct" });
       return;
     }
+    if (token.type === "AT_KEYWORD") mixinHead = token.value === "mixin" || token.value === "apply";
 
     // The block of a @paint: GLSL, colored as GLSL (decision 151)
     if (token.type === "GLSL") {
@@ -42,7 +51,7 @@ export function classifyGss(code: string): Piece[] {
       return;
     }
 
-    pieces.push({ start, end, kind: kindOf(part, depth, inValue, nextIs) });
+    pieces.push({ start, end, kind: kindOf(part, depth, inValue || args > 0, nextIs) });
   });
 
   return pieces;

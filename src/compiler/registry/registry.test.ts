@@ -99,7 +99,7 @@ describe("at-rules", () => {
     expect(new Set(names).size).toBe(names.length);
   });
 
-  it("documents @scene, @keyframes, @property, @property-panel, @paint and @media", () => {
+  it("documents @scene, @keyframes, @property, @property-panel, @paint, @media, @mixin and @apply", () => {
     expect(AT_RULES.map((atRule) => atRule.name)).toEqual([
       "scene",
       "keyframes",
@@ -107,6 +107,8 @@ describe("at-rules", () => {
       "paint",
       "property-panel",
       "media",
+      "mixin",
+      "apply",
     ]);
   });
 

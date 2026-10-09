@@ -12,6 +12,10 @@ export function formatGss(code: string): string {
   let startsWithScene = false; // does the current rule head start with @scene?
   let headLength = 0; // how many tokens the current head has, comments aside
   let afterColon = false; // the previous token was the ":" of a declaration
+  // The parameters of a @mixin (decision 174): "--size: 1" reads like a declaration, and
+  // their commas stay on the line. parens: how deep in its parentheses, 0 outside.
+  let mixinHead = false;
+  let parens = 0;
 
   parts.forEach(({ token, start, end }, index) => {
     const previous = parts[index - 1];
@@ -22,12 +26,14 @@ export function formatGss(code: string): string {
     const previousIs = (p: string) =>
       previous?.token.type === "PUNCT" && previous.token.value === p;
 
-    // A ":" right after a name, in a block that holds declarations
+    // A ":" right after a name, in a block that holds declarations, or after a parameter
+    // of a @mixin (and its type: --tint <color>: red)
     const isDeclarationColon =
       is(":") &&
-      previous?.token.type === "IDENT" &&
-      blocks.length > 0 &&
-      blocks[blocks.length - 1] !== "scene";
+      ((mixinHead && parens === 1) ||
+        (previous?.token.type === "IDENT" &&
+          blocks.length > 0 &&
+          blocks[blocks.length - 1] !== "scene"));
 
     // A "}" goes back one level, and always starts its own line
     if (is("}")) {
@@ -68,11 +74,16 @@ export function formatGss(code: string): string {
 
     if (token.type !== "COMMENT") {
       afterColon = isDeclarationColon;
-      if (headLength === 0)
+      if (headLength === 0) {
         startsWithScene =
           token.type === "AT_KEYWORD" && token.value === "scene";
+        mixinHead = token.type === "AT_KEYWORD" && token.value === "mixin";
+        parens = 0;
+      }
       headLength++;
     }
+    if (is("(")) parens++;
+    if (is(")")) parens = Math.max(0, parens - 1);
 
     if (is("{")) {
       depth++;
@@ -88,7 +99,7 @@ export function formatGss(code: string): string {
       headLength = 0;
       needBreak = true;
     }
-    if (is(",") && depth === 0) needBreak = true;
+    if (is(",") && depth === 0 && !(mixinHead && parens > 0)) needBreak = true;
   });
 
   return out.trim() + "\n";

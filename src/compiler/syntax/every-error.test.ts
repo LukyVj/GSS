@@ -78,6 +78,12 @@ describe("errors in the text: every one of them", () => {
     ]);
   });
 
+  it("an unknown mixin, a mixin applied with too many values, and a broken declaration after them", () => {
+    expect(
+      pointed("@mixin --m(--a) { size: var(--a); } @scene { cube; } cube { @apply --nope; @apply --m(1, 2); color red; }"),
+    ).toEqual(["--nope", "2", "red"]);
+  });
+
   it("a block never closed: one error, at its {", () => {
     expect(pointed("@scene { cube; } cube { color: red;")).toEqual(["{"]);
   });

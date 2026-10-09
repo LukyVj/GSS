@@ -8,6 +8,7 @@ The 0.0.1 history was reconstructed from GitHub.
 
 ### Added
 
+- Mixins, like CSS: `@mixin --name { … }` names a block of declarations and rules, and `@apply --name;` puts it in any rule — an object, `:hover`, a nested rule, a `@media`, even a frame of `@keyframes`. A mixin takes parameters with defaults, read with `var()` (`@mixin --ball(--size: 0.4) { radius: var(--size); }`, then `@apply --ball(0.7);`), and `@contents` places the block given to `@apply`, inside a `@media` for example. Close to the `@mixin` and `@include` of Sass, written the way CSS writes it. The scene compiles as if the mixin were written out in each rule, and a mistake (an unknown mixin, a value too many, a mixin that applies itself) is an error that points at it.
 - Showcase: an archive of every scene of the page, the studies included, in place of the inspiration grid. Each scene has its capture, its name, what it is, a badge of the version of GSS it came with, and the features it uses, each linked to its page of the docs. Newest first, as a grid of cards or as a list; the page remembers the choice.
 
 ### Changed

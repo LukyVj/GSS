@@ -50,6 +50,21 @@ describe("highlightGss", () => {
     expect(kind(html, "var")).toBe("function");
   });
 
+  it("colors @mixin, @apply and @contents as at-rules, and the values they take as values", () => {
+    const html = highlightGss(
+      "@mixin --ball(--size: 0.4, --tint <color>: tomato) { radius: var(--size); @contents; } sphere { @apply --ball(0.6, #ff5a36) { color: gold; } }",
+    );
+    expect(kind(html, "@mixin")).toBe("at-rule");
+    expect(kind(html, "@apply")).toBe("at-rule");
+    expect(kind(html, "@contents")).toBe("at-rule");
+    expect(kind(html, "--ball")).toBe("variable");
+    expect(kind(html, "--tint")).toBe("variable");
+    expect(kind(html, "tomato")).toBe("keyword");
+    expect(kind(html, "#ff5a36")).toBe("color");
+    expect(kind(html, "radius")).toBe("property");
+    expect(kind(html, "gold")).toBe("keyword");
+  });
+
   it("colors the frames of @keyframes as selectors", () => {
     const html = highlightGss("@keyframes k { from { scale: 1; } 50% { scale: 2; } }");
     expect(kind(html, "from")).toBe("selector");

@@ -22,6 +22,15 @@
       "include": "#at-paint"
     },
     {
+      "include": "#at-mixin"
+    },
+    {
+      "include": "#at-apply"
+    },
+    {
+      "include": "#at-contents"
+    },
+    {
       "include": "#selector"
     },
     {
@@ -195,6 +204,142 @@
         }
       ]
     },
+    "at-mixin": {
+      "comment": "@mixin --name(--size: 1, --tint <color>: red) { … }: a block that @apply puts in a rule",
+      "begin": "(@)(mixin)(?![\\w-])\\s*(--[\\w-]+)?",
+      "beginCaptures": {
+        "0": {
+          "name": "keyword.control.at-rule.mixin.gss"
+        },
+        "1": {
+          "name": "punctuation.definition.keyword.gss"
+        },
+        "3": {
+          "name": "entity.name.function.mixin.gss"
+        }
+      },
+      "end": "(?<=\\})",
+      "patterns": [
+        {
+          "include": "#comment"
+        },
+        {
+          "include": "#mixin-parameters"
+        },
+        {
+          "include": "#rule-block"
+        }
+      ]
+    },
+    "mixin-parameters": {
+      "comment": "(--size, --tint <color>: red): the parameters of a @mixin, each with a type and a default",
+      "begin": "\\(",
+      "end": "\\)",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.section.parameters.begin.bracket.round.gss"
+        }
+      },
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.section.parameters.end.bracket.round.gss"
+        }
+      },
+      "patterns": [
+        {
+          "include": "#comment"
+        },
+        {
+          "match": "(?<![\\w-])--[\\w-]+(?=\\s*(?:[:,)<*]|$))",
+          "name": "variable.parameter.gss"
+        },
+        {
+          "match": "<[\\w-]+>|\\*",
+          "name": "storage.type.gss"
+        },
+        {
+          "match": ":",
+          "name": "punctuation.separator.key-value.gss"
+        },
+        {
+          "include": "#value"
+        }
+      ]
+    },
+    "at-apply": {
+      "comment": "@apply --name(values) { block };: puts a @mixin in the rule",
+      "begin": "(@)(apply)(?![\\w-])\\s*(--[\\w-]+)?",
+      "beginCaptures": {
+        "0": {
+          "name": "keyword.control.at-rule.apply.gss"
+        },
+        "1": {
+          "name": "punctuation.definition.keyword.gss"
+        },
+        "3": {
+          "name": "entity.name.function.mixin.gss"
+        }
+      },
+      "end": "(;)|(?<=\\})|(?=\\})",
+      "endCaptures": {
+        "1": {
+          "name": "punctuation.terminator.rule.gss"
+        }
+      },
+      "patterns": [
+        {
+          "include": "#comment"
+        },
+        {
+          "begin": "\\(",
+          "end": "\\)",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.section.function.begin.bracket.round.gss"
+            }
+          },
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.section.function.end.bracket.round.gss"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#value"
+            }
+          ]
+        },
+        {
+          "include": "#rule-block"
+        }
+      ]
+    },
+    "at-contents": {
+      "comment": "@contents; or @contents { fallback } in a @mixin: where the block of @apply goes",
+      "begin": "(@)(contents)(?![\\w-])",
+      "beginCaptures": {
+        "0": {
+          "name": "keyword.control.at-rule.contents.gss"
+        },
+        "1": {
+          "name": "punctuation.definition.keyword.gss"
+        }
+      },
+      "end": "(;)|(?<=\\})|(?=\\})",
+      "endCaptures": {
+        "1": {
+          "name": "punctuation.terminator.rule.gss"
+        }
+      },
+      "patterns": [
+        {
+          "include": "#comment"
+        },
+        {
+          "include": "#rule-block"
+        }
+      ]
+    },
     "selector": {
       "patterns": [
         {
@@ -270,6 +415,12 @@
       "patterns": [
         {
           "include": "#comment"
+        },
+        {
+          "include": "#at-apply"
+        },
+        {
+          "include": "#at-contents"
         },
         {
           "include": "#nested-rule"

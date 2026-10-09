@@ -1954,6 +1954,112 @@ sphere { translate: 0 1 0; texture: paint(checks); }`,
       },
     ],
   },
+  {
+    name: "mixin",
+    since: "0.0.7",
+    syntax: "@mixin --<name>[(--<parameter> [<type>] [: <default>], …)] { <declaration> … <rule> … [@contents;] }",
+    description:
+      "Names a block of declarations and rules, written once and put into any rule with `@apply`, like the mixins of CSS. Its parameters are read with `var()`, and each can have a default. The scene compiles as if the block were written in each rule that applies it.",
+    valuesTitle: "Parts",
+    values: [
+      ["--<name>", "Starts with `--`, like a variable: `@mixin --card { … }`."],
+      ["(--size, --tint: #ff5a36)", "The parameters, given by `@apply` in order and read with `var(--size)` inside. After `:`, the default for a value left out. A type, like `--size <number>`, is read as in CSS; the property that gets the value checks it."],
+      ["{ … }", "Declarations, rules nested with `&`, `@media`, and other `@apply`."],
+      ["@contents", "Where the block given to `@apply` goes. `@contents { … }` holds what goes there when `@apply` gives none."],
+    ],
+    details:
+      "A mixin goes outside the rules, before or after the rules that apply it; with two of the same name, the last one wins, like CSS. A parameter hides a variable of the same name, and cannot be declared inside the mixin. The block given to `@apply` does not see the parameters: it belongs to the rule that applies the mixin. For Sass users: a mixin is named with `--`, applied with `@apply` rather than `@include`, its parameters are read with `var()` rather than `$`, and its block is `@contents` rather than `@content`.",
+    examples: [
+      {
+        name: "a mixin, and the rules it saves",
+        text: "Both cubes take the two declarations of `--polished`: the scene is the same as with them written in each rule.",
+        code: `@mixin --polished {
+  material: metal(0.15);
+  corner-radius: 0.12;
+}
+@scene { cube#a; cube#b; }
+#a { translate: -0.9 0.5 0; color: #ff5a36; @apply --polished; }
+#b { translate: 0.9 0.5 0; color: #3a7bff; @apply --polished; }`,
+      },
+      {
+        name: "parameters and their defaults",
+        text: "`--ball` reads `--x`, `--size` and `--tint` with `var()`; a value left out takes its default.",
+        code: `@mixin --ball(--x, --size: 0.4, --tint: #3a7bff) {
+  translate: var(--x) var(--size) 0;
+  radius: var(--size);
+  color: var(--tint);
+}
+@scene { sphere#a; sphere#b; }
+#a { @apply --ball(-1); }
+#b { @apply --ball(0.8, 0.7, #ff5a36); }`,
+      },
+      {
+        name: "nested rules",
+        text: "A mixin holds rules too: its `&:hover` becomes `#a:hover`, then `#b:hover`.",
+        code: `@mixin --lively {
+  transition: 0.3s;
+  &:hover { scale: 1.2; color: #ff5a36; }
+}
+@scene { cube#a; cube#b; }
+#a { translate: -0.9 0.5 0; @apply --lively; }
+#b { translate: 0.9 0.5 0; @apply --lively; }`,
+      },
+      {
+        name: "@contents",
+        text: "`--on-small-screens` holds the `@media`, and each rule gives the block to put inside it. Make the render narrower to see it.",
+        code: `@mixin --on-small-screens {
+  @media (max-width: 600px) { @contents; }
+}
+@scene { sphere; }
+sphere {
+  translate: 0 1 0;
+  color: #3a7bff;
+  @apply --on-small-screens { color: #ff5a36; radius: 0.6; }
+}`,
+      },
+    ],
+    see: [
+      { anchor: "at-apply", label: "@apply" },
+      { anchor: "fn-var", label: "var()" },
+    ],
+  },
+  {
+    name: "apply",
+    since: "0.0.7",
+    syntax: "@apply --<name>[(<value>, …)] [{ <declaration> … }];",
+    description:
+      "Puts the declarations and rules of a `@mixin` in the rule where it is written, like CSS. Values in parentheses go to the parameters of the mixin, in order; a block goes where the mixin writes `@contents`.",
+    valuesTitle: "Forms",
+    values: [
+      ["@apply --card;", "No values: each parameter takes its default. `@apply --card();` is the same."],
+      ["@apply --card(0.7, #ff5a36);", "One value per parameter, in order; those left out take their default. A value with a comma of its own goes between braces: `{color 1s, scale 2s}`."],
+      ["@apply --card { … }", "A block for the `@contents` of the mixin, with or without values before it."],
+    ],
+    details:
+      "`@apply` goes in any rule: an object, a group, the scene, a `:hover` or `:active` rule, a nested rule, a `@media`, and a frame of `@keyframes` when the mixin holds declarations only. The mixin takes the place of `@apply` in the cascade: a declaration written after it in the same rule wins, one written before loses. An unknown mixin, more values than parameters, a parameter with no value and no default, or a mixin that applies itself is an error that points at it.",
+    examples: [
+      {
+        name: "where it stands in the rule",
+        text: "The mixin takes the place of `@apply`: in `#a`, its `color` comes after the blue one and wins; in `#b`, the blue one comes after it and wins.",
+        code: `@mixin --warm { color: #ff5a36; }
+@scene { cube#a; cube#b; }
+#a { translate: -0.9 0.5 0; color: #3a7bff; @apply --warm; }
+#b { translate: 0.9 0.5 0; @apply --warm; color: #3a7bff; }`,
+      },
+      {
+        name: "in a frame of @keyframes",
+        text: "`--pose` gives a height and a size, at rest and at the end of the hop.",
+        code: `@mixin --pose(--h, --s) { translate: 0 var(--h) 0; scale: var(--s); }
+@scene { cube; }
+cube { color: #ff5a36; @apply --pose(0.5, 1); animation: hop 1.2s ease-in-out alternate; }
+@keyframes hop { to { @apply --pose(1.6, 1.3); } }`,
+      },
+    ],
+    see: [
+      { anchor: "at-mixin", label: "@mixin" },
+      { anchor: "selector-nesting", label: "& (nesting)" },
+    ],
+  },
 ];
 
 export const SELECTORS: SelectorDef[] = [

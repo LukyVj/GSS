@@ -135,6 +135,20 @@ describe("formatGss with comments", () => {
   });
 });
 
+describe("formatGss with mixins", () => {
+  it("keeps the parameters of @mixin on one line, with one space after each colon", () => {
+    expect(formatGss("@mixin --ball(--x, --size:0.4,  --tint <color> :#3a7bff){radius:var(--size);@contents;}")).toBe(
+      "@mixin --ball(--x, --size: 0.4, --tint <color>: #3a7bff) {\n  radius: var(--size);\n  @contents;\n}\n",
+    );
+  });
+
+  it("puts @apply on its own line, and its block like a rule", () => {
+    expect(formatGss("@mixin --m{size:1;} cube{color:red;@apply --ball(0.6,  #ff5a36);@apply --small{color:red;}}")).toBe(
+      "@mixin --m {\n  size: 1;\n}\n\ncube {\n  color: red;\n  @apply --ball(0.6, #ff5a36);\n  @apply --small {\n    color: red;\n  }\n}\n",
+    );
+  });
+});
+
 describe("formatGss with groups", () => {
   it("puts one element per line, with or without ;", () => {
     expect(
