@@ -1,9 +1,10 @@
 /* Lighthouse: scroll to build it, then to light it.
- * Four animations share one scroll() timeline, each on its own part of it
- * with animation-range: the tower rises from the sea (0% to 35%), the
- * lantern comes down (35% to 60%), then the roof (60% to 78%), and night
- * falls as the lamp lights (78% to 100%). In the playground, the slider
- * over the render stands in for the scroll.
+ * Four animations follow the scene across the page with view(), each on
+ * its own part of it with animation-range: the tower rises from the sea
+ * (cover 0% to cover 35%), the lantern comes down (35% to 60%), then the
+ * roof (60% to 78%), and night falls as the lamp lights (78% to 100%).
+ * In the playground, drag the slider over the render: it stands in for
+ * the scroll of the page.
  * The tower is a cylinder painted with stripes(), the railing a tube, the
  * lamp an emissive() octahedron; its beams turn in a group that plays in
  * time, and wait for the lamp with visibility.
@@ -49,8 +50,8 @@ scene {
   camera-target: 0 2.7 0;
   filter: bloom(0.45, 14px) vignette(0.5);
   animation: nightfall 1s linear;
-  animation-timeline: scroll();
-  animation-range: 78% 100%;
+  animation-timeline: view();
+  animation-range: cover 78% cover 100%;
 }
 
 /* the island */
@@ -72,8 +73,8 @@ scene {
 
 #tower {
   animation: rise 1s cubic-bezier(0.2, 0.8, 0.3, 1);
-  animation-timeline: scroll();
-  animation-range: 0% 35%;
+  animation-timeline: view();
+  animation-range: cover 0% cover 35%;
 }
 
 #plinth {
@@ -94,8 +95,8 @@ scene {
 
 #lantern {
   animation: land 1s cubic-bezier(0.3, 1.3, 0.5, 1);
-  animation-timeline: scroll();
-  animation-range: 35% 60%;
+  animation-timeline: view();
+  animation-range: cover 35% cover 60%;
 }
 
 #deck {
@@ -127,16 +128,16 @@ scene {
   color: #3a3428;
   material: emissive(2.5);
   animation: kindle 1s ease-in;
-  animation-timeline: scroll();
-  animation-range: 78% 100%;
+  animation-timeline: view();
+  animation-range: cover 78% cover 100%;
 }
 
 /* then the roof */
 
 #roof {
   animation: cap 1s cubic-bezier(0.3, 1.4, 0.5, 1);
-  animation-timeline: scroll();
-  animation-range: 60% 78%;
+  animation-timeline: view();
+  animation-range: cover 60% cover 78%;
 }
 
 #cap {
@@ -169,8 +170,8 @@ scene {
   opacity: 0.11;
   visibility: hidden;
   animation: beam 1s;
-  animation-timeline: scroll();
-  animation-range: 78% 100%;
+  animation-timeline: view();
+  animation-range: cover 78% cover 100%;
 }
 
 .beam:nth-child(2) {
@@ -183,8 +184,8 @@ scene {
   color: #ffd98a;
   intensity: 0;
   animation: glow 1s ease-in;
-  animation-timeline: scroll();
-  animation-range: 78% 100%;
+  animation-timeline: view();
+  animation-range: cover 78% cover 100%;
 }
 
 /* a boat goes round the island, in time */
