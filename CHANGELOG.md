@@ -4,7 +4,7 @@ Notable changes to GSS, grouped by release. Features developed across several co
 
 The 0.0.1 history was reconstructed from GitHub.
 
-## Unreleased
+## [0.0.6] — 2026-10-09
 
 ### Added
 
