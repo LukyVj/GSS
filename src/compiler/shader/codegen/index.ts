@@ -55,7 +55,7 @@ import { readShapeRendering } from "../../features/shape-rendering";
 import { EXACT_DISTANCE, exactShapes, precisionMarch } from "./shape-rendering";
 import { readVisibility, withInheritedVisibility } from "../../features/visibility";
 import { sceneCursors } from "../../features/cursor";
-import { objectOutline, outlineBlend, outlineFunctions, withOutlineBand, withOutlineFrames, withOutlineMarch, type Outlined } from "./outline";
+import { BOXED, objectOutline, outlineBlend, outlineFarCode, outlineFunctions, withOutlineBand, withOutlineFrames, withOutlineMarch, withOutlineShapes, type Outlined } from "./outline";
 
 export { activeSlots, hoverSlots, sceneTriggers, type Trigger } from "./animation";
 export { shapeNames, shapeRadius } from "./shapes";
@@ -222,8 +222,10 @@ export function generateShader(
           ? `${SMOOTH[operation]}(res, ${shapeValue}, ${glslFloat(blend)})`
           : `${operation}(res, ${shapeValue})`;
 
+    // A path, a prism or a lathe measures its shape, not its box, as far as its line reaches
+    const far = outline && BOXED.has(instance.tag) ? outlineFarCode(outline, scales) : null;
     const assign = outline
-      ? `{ float dOutline = ${measured}; res = ${combine}; outlineAt(dOutline, ${outline.offset}, ${outline.width}, ${glslFloat(instance.index)}); }`
+      ? `{ ${far ? `outlineFar = ${far}; ` : ""}float dOutline = ${measured}; ${far ? "outlineFar = 0.0; " : ""}res = ${combine}; outlineAt(dOutline, ${outline.offset}, ${outline.width}, ${glslFloat(instance.index)}); }`
       : `res = ${combine};`;
 
     const groupLines = instance.groupStyles.flatMap((styles) =>
@@ -324,7 +326,7 @@ export function generateShader(
   // geometricPrecision measures a near miss again without the shortcut of a path, a prism or
   // a lathe (the distance to its box): auto keeps the functions as they are
   const exact = geometricPrecision ? exactShapes(written) : { functions: written, shortcuts: false };
-  const functions = exact.functions;
+  const functions = [...outlines.keys()].some((instance) => BOXED.has(instance.tag)) ? withOutlineShapes(exact.functions) : exact.functions;
 
   const shown = mapLines.map((code, i) => {
     const visible = visibilityOf(mapped[i]);

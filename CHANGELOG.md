@@ -10,6 +10,7 @@ The 0.0.1 history was reconstructed from GitHub.
 
 - `shape-rendering: geometricPrecision` around a `path`, a `prism` or a `lathe` drawn small: grey lines, rings and a faint rectangle no longer fill the box around the shape. Only its silhouette is smoothed, like any other object.
 - `shape-rendering: geometricPrecision` on a large canvas (a 4K screen, or a Retina screen at `dpr: 2`): silhouettes are smoothed as much as on a small one, where they stayed sharp. An object can look up to a quarter of a pixel larger than with `auto`, and a scene with many edges takes a little more work at that size.
+- `outline` on a `path`, a `prism` or a `lathe` drawn small follows its shape: it drew the whole rectangle around it, in lines, rings and a filled area.
 
 ## [0.0.6] — 2026-10-09
 
