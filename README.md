@@ -56,7 +56,7 @@ fragment shaders: signed distance fields, raymarched in WebGL2 or WebGPU. No Thr
 
 ## Install
 
-Three ways to put a scene on a page, using `gss-lang@0.0.5`.
+Three ways to put a scene on a page, using `gss-lang@0.0.6`.
 
 The [installation guide](https://www.gss-lang.dev/docs#installation) covers npm, Vite and CDN setup.
 
@@ -64,7 +64,7 @@ The [installation guide](https://www.gss-lang.dev/docs#installation) covers npm,
 write the scene inside it:
 
 ```html
-<script type="module" src="https://cdn.jsdelivr.net/npm/gss-lang@0.0.5/lib/embed.js"></script>
+<script type="module" src="https://cdn.jsdelivr.net/npm/gss-lang@0.0.6/lib/embed.js"></script>
 
 <gss-scene src="logo.gss"></gss-scene>
 <gss-scene controls="none">
@@ -75,7 +75,7 @@ write the scene inside it:
 **A function, with any bundler.** The compiler runs in the page:
 
 ```sh
-npm install gss-lang@0.0.5
+npm install gss-lang@0.0.6
 ```
 
 ```js
@@ -86,7 +86,7 @@ scene.update(otherSource);
 scene.destroy();
 ```
 
-**Compiled at build time, with Vite.** The plugin is included in `gss-lang@0.0.5`; no separate plugin package is needed. The page ships a small runtime and the shader, not the
+**Compiled at build time, with Vite.** The plugin is included in `gss-lang@0.0.6`; no separate plugin package is needed. The page ships a small runtime and the shader, not the
 compiler:
 
 ```js
@@ -224,7 +224,7 @@ variables the page sets) and sends it as uniforms.
 
 ## Status
 
-Version 0.0.5: early, and moving fast. The syntax may still change between versions.
+Version 0.0.6: early, and moving fast. The syntax may still change between versions.
 
 See the [changelog](https://github.com/LukyVj/GSS/blob/main/CHANGELOG.md) for release history and unreleased changes.
 
