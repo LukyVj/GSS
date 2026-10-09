@@ -1836,7 +1836,7 @@ export const AT_RULES: AtRuleDef[] = [
     since: "0.0.6",
     syntax: "@paint <name> { <fragment shader> }",
     description:
-      "A texture drawn by a fragment shader, for `texture: paint(<name>)`. The block is GLSL, the shader language of WebGL, written as it is for the web: an image that comes from code, like `paint()` in CSS.",
+      "A texture drawn by a fragment shader, for `texture: paint(<name>)`: an image that comes from code, like `paint()` in CSS. The block is GLSL, the shader language of WebGL, written as it is for the web. WebGL2 only, for now: with WebGPU, the object keeps its color.",
     valuesTitle: "Uniforms",
     values: [
       ["time", "The time of the scene, in seconds, a `float`. `u_time` works too. A shader that reads it is drawn again at every frame; one that does not is drawn once."],
@@ -1844,10 +1844,10 @@ export const AT_RULES: AtRuleDef[] = [
       ["mouse", "The pointer over the scene, in the pixels of the texture, from its bottom left like `gl_FragCoord`. `u_mouse` works too."],
     ],
     details:
-      "The block is a whole fragment shader: its uniforms, its functions and its `main()`. Write `out vec4 color;` and set it, or set `gl_FragColor` as in WebGL1; GSS adds `#version 300 es` and a `precision` when the code has none. It is drawn into a texture of 512 by 512 pixels, which the object shows like an image, on each of its faces, with `texture-size` and `image-rendering`. Each `@paint` runs on its own: its names never meet the rest of the scene, and an error in its GLSL names the `@paint` and its line in the file. A scene with `paint()` is drawn with WebGL2.",
+      "The block is a whole fragment shader: its uniforms, its functions and its `main()`. Write `out vec4 color;` and set it, or set `gl_FragColor` as in WebGL1; GSS adds `#version 300 es` and a `precision` when the code has none. It is drawn into a texture of 512 by 512 pixels, which the object shows like an image, on each of its faces, with `texture-size` and `image-rendering`. Each `@paint` runs on its own: its names never meet the rest of the scene, and an error in its GLSL names the `@paint` and its line in the file. A scene with `paint()` is drawn with WebGL2: `<gss-scene>`, `mountAsync()` and the playground pick it by themselves in `auto`; with WebGPU chosen, the object shows its `color` instead, and the console says why.",
     note: {
-      title: "GLSL, not CSS.",
-      text: "Everything else in GSS is CSS: `@paint` is a way out for the textures CSS cannot describe. Try the gradients and `noise()` first: they are lighter, and they work with WebGPU too.",
+      title: "WebGL2 only, for now. GLSL, not CSS.",
+      text: "The GLSL of a `@paint` runs on WebGL2, not on WebGPU, which reads another shader language: a scene with `paint()` is drawn with WebGL2. And everything else in GSS is CSS: `@paint` is a way out for the textures CSS cannot describe. Try the gradients, `noise()`, `checker()` and `stripes()` first: they are lighter, and they work with WebGPU too.",
     },
     examples: [
       {
@@ -2951,8 +2951,8 @@ export const FUNCTIONS: FunctionDef[] = [
     syntax: "paint(<name>)",
     computed: "on the GPU: once, or at every frame when its shader reads time",
     description:
-      "The texture a `@paint` draws, for `texture`, like CSS `paint()`, whose image comes from code: `texture: paint(rings);`.",
-    details: "The name is that of a `@paint` of the scene. Several objects can show the same one: it is drawn once for all of them. A scene with `paint()` is drawn with WebGL2.",
+      "The texture a `@paint` draws, for `texture`, like CSS `paint()`, whose image comes from code: `texture: paint(rings);`. WebGL2 only, for now.",
+    details: "The name is that of a `@paint` of the scene. Several objects can show the same one: it is drawn once for all of them. A scene with `paint()` is drawn with WebGL2, which `<gss-scene>`, `mountAsync()` and the playground pick by themselves; with WebGPU chosen, the object shows its `color` instead.",
     examples: [
       {
         name: "two objects, one shader",

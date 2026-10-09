@@ -167,7 +167,7 @@ and a readable path toward the shader underneath. It is not meant to replace GLS
 - **Textures**: `texture: url("dirt.png")` projected on each face, a different image per face
   (the Minecraft grass block), `image-rendering: pixelated` and `texture-size` to repeat it;
   `texture: paint(rings)` draws a texture with a fragment shader written in a `@paint rings { … }`
-  block, in GLSL, for the patterns CSS cannot describe (WebGL2).
+  block, in GLSL, for the patterns CSS cannot describe (**WebGL2 only, for now**: the GLSL is not translated for WebGPU).
 - **Motion**: `@keyframes`, animation controls and easings (including `steps()`), computed on the GPU; `transition` for hover changes;
   scroll-driven animations with `animation-timeline: scroll()` and `view()`; a motion path with `offset-path`,
   and `transform-origin` to turn and scale around any point (a door on its hinge).
