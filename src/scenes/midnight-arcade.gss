@@ -5,7 +5,8 @@
  * E of the sign flickers with visibility in @keyframes. The lens adds
  * vignette() and chromatic-aberration().
  * Click a coin: it drops into its slot, an animation started by :active that
- * plays to its end. Press START, grab a joystick.
+ * plays to its end. Press START, grab a joystick: with controls: none, they
+ * hold the mouse, and the camera stays still.
  * Make the render narrower than 600px: the right cabinet and its light take
  * display: none.
  * Both screens are drawn with WebGL2: pick it in the backend menu if the
@@ -233,6 +234,7 @@ scene {
   translate: calc(sibling-index() * 0.17 - 0.06) 0.05 0.04;
   material: emissive(1.4);
   cursor: pointer;
+  controls: none;
   transition: 0.08s;
 }
 
@@ -255,6 +257,7 @@ scene {
 .stick {
   translate: -0.3 0.05 0.02;
   cursor: grab;
+  controls: none;
 }
 
 .shaft {
@@ -309,6 +312,7 @@ scene {
   translate: 0 0.9 0.6;
   rotate-x: 90deg;
   cursor: pointer;
+  controls: none;
   animation: hover-coin 2.4s ease-in-out infinite alternate;
 }
 

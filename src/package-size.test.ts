@@ -8,8 +8,8 @@ import { PROPERTIES } from "./compiler/registry/registry";
 // room to grow a little: going past one is a choice to make, not a surprise.
 const BUDGETS = {
   runtime: 14_500, // gss-lang/runtime: a scene compiled at build time (14_000 before cursor and animation-range, decisions 161 and 162)
-  mount: 98_000, // gss-lang: compiles GSS text in the page (97_000 before the styles of outline-style)
-  embed: 100_000, // gss-lang/embed: <gss-scene>, from a CDN (99_000 before the styles of outline-style)
+  mount: 99_000, // gss-lang: compiles GSS text in the page (97_000 before the styles of outline-style, 98_000 before controls, decision 176)
+  embed: 101_000, // gss-lang/embed: <gss-scene>, from a CDN (99_000 before the styles of outline-style, 100_000 before controls)
 };
 
 type Chunk = Rolldown.OutputChunk;

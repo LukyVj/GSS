@@ -27,6 +27,7 @@ import { readDpr, type Dpr } from "./features/dpr";
 import { readView, type View } from "./features/view";
 import { isDisplayed } from "./features/visibility";
 import { sceneCursors, type ObjectCursor } from "./features/cursor";
+import { sceneControls, type SceneControls } from "./features/controls";
 import { readTransition, type Transition } from "./features/transition";
 import { buildPasses, FILTER_FUNCTIONS, objectFilters, readSceneSteps, type Pass } from "./features/filter";
 import { generateWGSL } from "./shader/wgsl";
@@ -81,6 +82,9 @@ export type CompiledScene = {
   // cursor (decision 161): the mouse pointer over each object that sets one, hovered and
   // pressed. Absent when every object keeps auto.
   cursors?: ObjectCursor[];
+  // controls (decision 176): the gestures that move the camera, and the objects over which
+  // some cannot start. Absent when the scene takes both and no object refuses one.
+  controls?: SceneControls;
   // for each slot of uHover[] (hover, then active), how it glides to 1 (enter) and back to 0 (leave)
   transitions: { enter: Transition | null; leave: Transition | null }[];
   // The states that start an animation (decision 141): the slot, its index in
@@ -337,6 +341,7 @@ function compileStylesheet(
   ]);
   const active = activeSlots(styled).map((instance) => instance.activeTriggers);
   const cursors = errors.run(() => sceneCursors(drawn));
+  const controls = errors.run(() => sceneControls(computedScene, drawn));
   const triggers = errors.run(() => sceneTriggers(styled));
   const timelines = errors.run(() =>
     sceneTimelines([computedScene, ...styled.flatMap((instance) => [...instance.groupStyles, instance.styles])]),
@@ -362,6 +367,7 @@ function compileStylesheet(
     hover: hoverSlots(styled).map((instance) => instance.hoverTriggers),
     ...(active.length > 0 ? { active } : {}),
     ...(cursors!.length > 0 ? { cursors } : {}),
+    ...(controls ? { controls } : {}),
     ...(timelines!.length > 0 ? { timelines } : {}),
     transitions: transitions!,
     ...(triggers!.length > 0 ? { triggers } : {}),

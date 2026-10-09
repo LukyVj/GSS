@@ -55,6 +55,7 @@ import { readShapeRendering } from "../../features/shape-rendering";
 import { EXACT_DISTANCE, exactShapes, precisionMarch } from "./shape-rendering";
 import { readVisibility, withInheritedVisibility } from "../../features/visibility";
 import { sceneCursors } from "../../features/cursor";
+import { sceneControls } from "../../features/controls";
 import { BOXED, objectOutline, outlineBlend, outlineFarCode, outlineFunctions, withOutlineBand, withOutlineFrames, withOutlineMarch, withOutlineShapes, type Outlined } from "./outline";
 
 export { activeSlots, hoverSlots, sceneTriggers, type Trigger } from "./animation";
@@ -89,8 +90,9 @@ export function generateShader(
   const instances = everything.filter((instance) => !isLight(instance));
   // uHover[]: the hover slots, then the :active ones (decision 95)
   const slots = [...hovers, ...actives];
-  // The picking pass: for :hover and :active, and for the cursor over an object (decision 161)
-  const picks = slots.length > 0 || sceneCursors(everything.filter((instance) => !isLight(instance))).length > 0;
+  // The picking pass: for :hover and :active, for the cursor over an object (decision 161), and
+  // for the objects over which a gesture cannot move the camera (decision 176)
+  const picks = slots.length > 0 || sceneCursors(instances).length > 0 || sceneControls({}, instances)?.objects !== undefined;
   // uStart[]: when each state that starts an animation started it (decision 141)
   const triggers = sceneTriggers(everything);
   // The hover and pressed states of one object, or undefined when it has neither
