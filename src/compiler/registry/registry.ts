@@ -343,6 +343,50 @@ export const PROPERTIES: PropertyDef[] = [
     ],
   },
   {
+    name: "mix-blend-mode",
+    since: "0.0.7",
+    appliesTo: "object",
+    animatable: true,
+    syntax: "<blend-mode> | plus-lighter",
+    initial: "normal",
+    description:
+      "How the color of the object blends with what is behind it, like CSS: the objects behind it, the floor and the background. It takes the modes of `background-blend-mode`, and `plus-lighter`, which adds the colors. `normal`, the default, covers what is behind.",
+    valuesTitle: "Modes",
+    values: [
+      ["normal", "Covers what is behind: the default."],
+      ["multiply, screen", "Darkens, where white changes nothing; lightens, where black changes nothing."],
+      ["overlay, soft-light, hard-light", "More contrast: multiplies the darks, screens the lights."],
+      ["darken, lighten", "The darker or the lighter of the two colors."],
+      ["color-dodge, color-burn", "Brightens or darkens what is behind, by the color of the object."],
+      ["difference, exclusion", "The difference of the two colors; softer with `exclusion`."],
+      ["hue, saturation, color, luminosity", "One part of the color of the object, over the rest of the color behind it."],
+      ["plus-lighter", "Adds the two colors, up to white."],
+    ],
+    details: "The eye sees through a blended object to what is behind it, like through a transparent one, and the color of the object, lit, blends with the color behind it. An object never blends with itself: it shows its nearest surface, over what is behind the whole object. Its `opacity` still applies: at 50%, half of the blend shows. On a group, the mode goes into each of its objects that has none of its own, so they blend with each other too, where CSS first draws the group as one picture; there is no `isolation`. It changes on `:hover` and in `@keyframes` from one mode to the other halfway through, like a discrete property of CSS. The reflections show a blended object with its own color, and the eye sees six surfaces behind one another at most.",
+    examples: [
+      {
+        name: "three lights, screened",
+        text: "A red, a green and a blue sphere over black: where they meet, `screen` adds them up to white.",
+        code: "@scene { sphere#r; sphere#g; sphere#b; } scene { floor: none; background: #000000; ambient: 0.85; } sphere { radius: 0.75; mix-blend-mode: screen; } #r { translate: 0 1.45 0; color: #ff0000; } #g { translate: -0.45 0.75 0.2; color: #00ff00; } #b { translate: 0.45 0.75 0.4; color: #0000ff; }",
+      },
+      {
+        name: "multiply over the floor",
+        text: "A sphere multiplied over a checkered floor and a cube: the squares and the cube show through it, tinted.",
+        code: "@scene { sphere; cube; } scene { floor: checker(0.5, #f4f1ea, #2a2a3a); } sphere { translate: 0 0.9 0.6; radius: 0.9; color: #ffcc33; mix-blend-mode: multiply; } cube { translate: 0.6 0.5 -0.8; size: 1; color: #3a7bff; }",
+      },
+      {
+        name: "difference on :hover",
+        text: "The white cube turns into the negative of the gradient behind it under the mouse.",
+        code: "@scene { cube; } scene { floor: none; background: linear-gradient(90deg, #ff5a36, #3a7bff); } cube { translate: 0 0.5 0; size: 1.4; color: #ffffff; rotate-y: 30deg; transition: 0.3s; } cube:hover { mix-blend-mode: difference; }",
+      },
+      {
+        name: "on a group",
+        text: "The mode of the group goes into each of its cubes: `difference` turns the stripes behind them inside out.",
+        code: "@scene { group#bars { cube * 3; } } scene { floor: none; ambient: 0.7; camera-distance: 4; background: repeating-linear-gradient(45deg, #ffcc33 0% 5%, #2a2a3a 5% 10%); } #bars { translate: 0 0.5 0; rotate-y: 20deg; mix-blend-mode: difference; } cube { size: 0.6 1.6 0.6; corner-radius: 0.08; translate: calc(sibling-index() * 0.9 - 1.8) 0 0; color: #ffffff; }",
+      },
+    ],
+  },
+  {
     name: "display",
     since: "0.0.6",
     appliesTo: "object",
@@ -2580,6 +2624,7 @@ export const SHAPE_DOCS: ShapeDef[] = [
       "display",
       "visibility",
       "cursor",
+      "mix-blend-mode",
       "filter",
       "translate",
       "rotate-x",

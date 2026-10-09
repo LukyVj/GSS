@@ -15,6 +15,7 @@
 //   gradients.ts   gradients in the background and on objects (decisions 81, 82), animated (102, 103)
 //   filters.ts     filter on the scene and on objects (decisions 83, 84)
 //   view.ts        view: distance, the isolines of the distance field (decision 131)
+//   mix-blend-mode.ts  mix-blend-mode, objects blended with what is behind them (decision 173)
 import type { Keyframes } from "../../syntax/ast";
 import type { StyledInstance, Styles } from "../../cascade/resolve";
 import { errorAt } from "../../syntax/errors";
@@ -26,6 +27,7 @@ import { SHADING } from "./shading";
 import { MARCH_LOOP, PICK_OUTPUT, PICK_PIXEL, SURFACE, TEMPLATE } from "./template";
 import { MASKED_MARCH_LOOP, SHELL, SKIN_MARCH_LOOP, holeNormal, holeNormals, maskCode, objectMask, skinFunction, type Masked } from "./masks";
 import { LAYERS, PAST_SURFACE, alphaFunction, colorFunction, objectAlpha, surfaceFunction, type Transparent } from "./transparency";
+import { BLENDED_LAYERS, blendFunctions, objectBlend, withInheritedBlendMode, type Blended } from "./mix-blend-mode";
 import { readColor, readLight, readScale, readSurfaceColor, readTranslate } from "./read";
 import { readOperation, SMOOTH } from "./operations";
 import { BOUNDED, SHAPES, type ShapeContext } from "./shapes";
@@ -69,6 +71,8 @@ export function generateShader(
 ): string {
   // visibility is inherited from the groups, like CSS (decision 160)
   everything = everything.map(withInheritedVisibility);
+  // mix-blend-mode on a group goes into each of its objects (decision 173)
+  everything = everything.map(withInheritedBlendMode);
   // outline (decision 163): the width and the color the shader reads, from the shorthand
   // and the longhands, in the objects and in the frames
   everything = everything.map(withOutlineBand);
@@ -141,9 +145,17 @@ export function generateShader(
   const transparent = instances
     .map((instance) => ({ instance, alpha: objectAlpha(instance, keyframes, hoverOf(instance), paints.has(instance)) }))
     .filter((item): item is Transparent => item.alpha !== null);
-  const skins = new Set([...masked.map(({ instance }) => instance), ...transparent.map(({ instance }) => instance)]);
-  // Which objects are skins: those with holes, or those and the transparent ones
-  const skinTest = transparent.length > 0 ? "isSkin" : "hasHoles";
+  // mix-blend-mode (decision 173): the objects that blend with what is behind them, skins too
+  const blended = instances
+    .map((instance) => objectBlend(instance, keyframes, hoverOf(instance)))
+    .filter((item): item is Blended => item !== null);
+  // The surfaces along the ray, each over what is behind it: opacity, and the blend modes
+  const stacked = transparent.length > 0 || blended.length > 0;
+  // The objects the light goes through (shadows): those with holes and the transparent ones
+  const seeThrough = new Set([...masked.map(({ instance }) => instance), ...transparent.map(({ instance }) => instance)]);
+  const skins = new Set([...seeThrough, ...blended.map(({ instance }) => instance)]);
+  // Which objects are skins: those with holes, or those, the transparent and the blended ones
+  const skinTest = stacked ? "isSkin" : "hasHoles";
   const shadows = readShadows(sceneStyles["shadows"]);
 
   // visibility (decision 160): a hidden object is left out of map(); one that changes is
@@ -356,7 +368,13 @@ export function generateShader(
     hoverOf,
     hoisted,
     { level: ambientCode ?? glslFloat(ambient), color: ambientParts.color },
-    { mode: shadows, holes: masked.length > 0, transparent: transparent.length > 0 },
+    {
+      mode: shadows,
+      holes: masked.length > 0,
+      transparent: transparent.length > 0,
+      // An opaque blended object is a skin, but the light does not go through it: it keeps its penumbra
+      ...(blended.length > 0 && transparent.length > 0 && shadows === "soft" ? { seeThrough: "seeThrough" } : {}),
+    },
   );
   const animate = animateCode(hoisted, lights?.positions ?? "");
   const textures = textureCode(instances, keyframes, hoverOf);
@@ -372,16 +390,19 @@ export function generateShader(
   // mask-image (decision 113): how much of the surface of each object with holes is there
   const masks = maskCode(masked, new Set([...textured, ...painted.map(({ instance }) => instance)]), keyframes, hoverOf, transparent.length === 0);
   // opacity (decision 116): how much each surface covers, the color the light takes through it
-  // (shadows), the skins, and the way past a surface
-  const transparency =
-    transparent.length > 0
-      ? [
-          alphaFunction(transparent),
-          ...(shadows ? [colorFunction(painted.length > 0)] : []),
-          skinFunction("isSkin", [...skins]),
-          PAST_SURFACE,
-        ].join("\n\n")
-      : "";
+  // (shadows), the skins, and the way past a surface; mix-blend-mode (decision 173): the mode of
+  // each object, and how a surface goes over what is behind it
+  const blending = blended.length > 0 ? blendFunctions(blended) : "";
+  const transparency = stacked
+    ? [
+        alphaFunction(transparent),
+        ...(shadows && transparent.length > 0 ? [colorFunction(painted.length > 0)] : []),
+        skinFunction("isSkin", [...skins]),
+        ...(blended.length > 0 && transparent.length > 0 && shadows === "soft" ? [skinFunction("seeThrough", [...seeThrough])] : []),
+        PAST_SURFACE,
+        ...(blending ? [blending] : []),
+      ].join("\n\n")
+    : "";
   // A color is a constant; a gradient a function of the pixel (decision 81); either one
   // can follow an animation of the scene (decision 103)
   const background = backgroundCode(sceneStyles, keyframes);
@@ -398,10 +419,10 @@ export function generateShader(
     : TEMPLATE;
   // opacity (decision 116) and geometricPrecision put surface shading in a function:
   // opacity calls it for each layer; a grazing silhouette calls it once for its coverage.
-  const surfaceInFunction = transparent.length > 0 || geometricPrecision;
+  const surfaceInFunction = stacked || geometricPrecision;
   const layered =
-    transparent.length > 0
-      ? lit.replace(SURFACE, LAYERS).replace("void main() {", `${surfaceFunction(SURFACE)}void main() {`)
+    stacked
+      ? lit.replace(SURFACE, blended.length > 0 ? BLENDED_LAYERS : LAYERS).replace("void main() {", `${surfaceFunction(SURFACE)}void main() {`)
       : geometricPrecision
         ? lit
             .replace(SURFACE, "  vec3 col = shadeSurface(ro, rd, t, id);\n")
@@ -410,7 +431,7 @@ export function generateShader(
   const rendered = geometricPrecision
     ? layered.replace(
         "\nvec3 calcNormal(vec3 p) {",
-        `\n${precisionMarch(precisionSceneSphereCode, masked.length > 0, transparent.length > 0, exact.shortcuts)}\n\nvec3 calcNormal(vec3 p) {`,
+        `\n${precisionMarch(precisionSceneSphereCode, masked.length > 0, stacked, exact.shortcuts)}\n\nvec3 calcNormal(vec3 p) {`,
       )
     : layered;
   const template = distanceView ? withObjectsAlone(rendered) : rendered;
@@ -420,7 +441,11 @@ export function generateShader(
     ? `  if (edgeCoverage > 0.0 && edgeT < t) {
     vec3 edgePoint = ro + rd * edgeT;
     vec3 edgeColor = shadeSurface(ro, rd, edgeT, edgeId);
-    col = mix(col, edgeColor, ${transparent.length > 0 ? "edgeCoverage * surfaceAlpha(edgeId, edgePoint)" : "edgeCoverage"});
+    col = ${
+      blended.length > 0
+        ? "blendOver(blendMode(edgeId), col, edgeColor, edgeCoverage * surfaceAlpha(edgeId, edgePoint))"
+        : `mix(col, edgeColor, ${transparent.length > 0 ? "edgeCoverage * surfaceAlpha(edgeId, edgePoint)" : "edgeCoverage"})`
+    };
   }
 `
     : "";
@@ -439,7 +464,7 @@ export function generateShader(
         "// The easings of the animations: only those the scene uses",
         used(
           EASINGS,
-          [map, animate, textures.functions, gradients.functions, masks, textures.call, materials, background].join("\n"),
+          [map, animate, textures.functions, gradients.functions, masks, textures.call, materials, background, blending].join("\n"),
         ),
       ),
     )
@@ -524,8 +549,11 @@ uniform vec2 uPick;`
           ),
           // noise() (decision 111): in the background and on the objects it paints
           section("// The noise of noise(): only what the scene uses", used(NOISE_LIBRARY, [background, gradients.functions, masks].join("\n"))),
-          // background-blend-mode (decision 112): only the modes of the layers
-          section("// The blend modes of the background: only those its layers use", used(BLEND_LIBRARY, background)),
+          // background-blend-mode (decision 112): only the modes of the layers; mix-blend-mode
+          // (decision 173): and those of the objects
+          blending
+            ? section("// The blend modes of the background and of the objects: only those they use", used(BLEND_LIBRARY, `${background}\n${blending}`))
+            : section("// The blend modes of the background: only those its layers use", used(BLEND_LIBRARY, background)),
         ]
           .filter(Boolean)
           .join("\n\n"),
@@ -595,7 +623,7 @@ uniform vec2 uPick;`
         `vec2 march(vec3 ro, vec3 rd) {\n${sceneSphereCode}`,
       )
       // Through the holes of mask-image (decision 113)
-      .replace(MARCH_LOOP, masked.length > 0 ? MASKED_MARCH_LOOP : transparent.length > 0 ? SKIN_MARCH_LOOP : MARCH_LOOP)
+      .replace(MARCH_LOOP, masked.length > 0 ? MASKED_MARCH_LOOP : stacked ? SKIN_MARCH_LOOP : MARCH_LOOP)
       .replace("/*@SURFACE_FILTER*/", surfaceInFunction && filterLines.includes(objectLine) ? objectLine : "")
       .replace("  outColor = vec4(col, 1.0);\n}", `${edgeBlend}${lineBlend}${finalLines}${distanceView ? ISOLINES_CALL : ""}  outColor = vec4(col, ${alpha});\n}`)
       // Reflections see the filters of the objects they meet
