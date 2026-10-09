@@ -75,6 +75,24 @@ export function highlightJs(code: string): string {
   return highlightWith(JS, code);
 }
 
+// A shell, enough for the install lines of the site: the command in the keyword color
+// of JavaScript, the flags as keywords, a package and its version like a string and a number
+const SHELL: Rule[] = [
+  [/\s+/y, null],
+  [/(?<=^|\s)#[^\n]*/y, "comment"],
+  [/(?<=(?:^|\n)[ \t]*)[A-Za-z_][\w.-]*/y, "at-rule"], // npm, npx, code
+  [/(?<=^|\s)--?[A-Za-z][\w-]*/y, "keyword"], // --save-dev
+  [/"[^"\n]*"|'[^'\n]*'/y, "string"],
+  [/(?:@[\w.-]+\/)?[\w.-]+(?=@\w)/y, "string"], // gss-lang in gss-lang@0.0.6
+  [/@/y, "punct"],
+  [/(?<=@)[\w.^~-]+/y, "number"], // its version
+  [/[^\s"'#@]+/y, null],
+];
+
+export function highlightShell(code: string): string {
+  return highlightWith(SHELL, code);
+}
+
 // HTML, enough for the snippets of the docs. A <script type="text/gss"> holds GSS:
 // it is colored by highlightGss.
 export function highlightHtml(code: string): string {
@@ -135,9 +153,10 @@ export function highlightHtml(code: string): string {
 }
 
 export function highlightCode(
-  lang: "gss" | "html" | "js",
+  lang: "gss" | "html" | "js" | "sh",
   code: string,
 ): string {
   if (lang === "gss") return highlightGss(code);
+  if (lang === "sh") return highlightShell(code);
   return lang === "html" ? highlightHtml(code) : highlightJs(code);
 }

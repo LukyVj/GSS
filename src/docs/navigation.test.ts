@@ -85,6 +85,6 @@ describe("documentation navigation", () => {
     expect(installation.indexOf('id="editor-support"')).toBeGreaterThan(installation.indexOf('id="set-variables"'));
     expect(editor).toContain("https://marketplace.visualstudio.com/items?itemName=lukyvj.gss-language");
     expect(editor).toContain("https://open-vsx.org/extension/lukyvj/gss-language");
-    expect(editor).toContain("code --install-extension lukyvj.gss-language");
+    expect(editor.replace(/<[^>]+>/g, "")).toContain("code --install-extension lukyvj.gss-language"); // colored
   });
 });

@@ -94,7 +94,7 @@ INSTALLATION.push(
     since: "0.0.2",
     paragraphs: [
       `Install <code>gss-lang@${VERSION}</code> in your application. The package holds the compiler, the renderer and the TypeScript declarations.`,
-      `<pre><code class="sh">npm install gss-lang@${VERSION}</code></pre>`,
+      `<pre><code class="sh">${highlightCode("sh", `npm install gss-lang@${VERSION}`)}</code></pre>`,
       `<pre><code class="js">${highlightCode("js", EMBED_SNIPPETS[1].code)}</code></pre>`,
       "<code>mount()</code> takes a canvas that is already in the page, and returns the scene: <code>scene.update(source)</code> replaces it, <code>scene.destroy()</code> removes it.",
       'A variable the scene registers with <code>@property</code> can be set from the page without compiling again, like a CSS custom property: <code>scene.setProperty("--lift", "2")</code>. See <a href="#set-variables">Set variables from JavaScript</a>.',
@@ -106,7 +106,7 @@ INSTALLATION.push(
     since: "0.0.2",
     paragraphs: [
       "The Vite plugin comes with the package. It compiles the <code>.gss</code> imports at build time, so the browser loads only the renderer and the compiled scene.",
-      `<pre><code class="sh">npm install gss-lang@${VERSION}\nnpm install --save-dev vite</code></pre>`,
+      `<pre><code class="sh">${highlightCode("sh", `npm install gss-lang@${VERSION}\nnpm install --save-dev vite`)}</code></pre>`,
       `<pre><code class="js">${highlightCode("js", EMBED_SNIPPETS[2].code)}</code></pre>`,
       'With TypeScript, add <code>"gss-lang/client"</code> to <code>compilerOptions.types</code> in <code>tsconfig.json</code>: a <code>.gss</code> import then has a type. Draw the compiled scene with <code>mount()</code> from <code>gss-lang/runtime</code>.',
     ],
@@ -245,7 +245,7 @@ INSTALLATION.push({
     ]),
     "<h4>Install</h4>",
     `In VS Code, open the Extensions view (<code>Ctrl+Shift+X</code>, or <code>Cmd+Shift+X</code> on a Mac), search for <em>GSS</em> and install <em>GSS — GPU Style Sheets</em>. Or install it from the <a href="${MARKETPLACE_URL}">Visual Studio Marketplace</a>, or from the command line:`,
-    `<pre><code class="sh">code --install-extension ${EXTENSION_ID}</code></pre>`,
+    `<pre><code class="sh">${highlightCode("sh", `code --install-extension ${EXTENSION_ID}`)}</code></pre>`,
     `Cursor, VSCodium and Windsurf install their extensions from <a href="${OPEN_VSX_URL}">Open VSX</a>: search for <em>GSS</em> in their Extensions view.`,
     "<h4>Format on save</h4>",
     "Formatting on save is on by default for <code>.gss</code> files. To turn it off, add this to your <code>settings.json</code>:",
