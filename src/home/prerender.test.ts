@@ -16,4 +16,19 @@ describe("prerenderHomeHtml", () => {
     expect(html).toContain(`id="count-properties">${PROPERTIES.length}`);
     expect(html).toContain(`id="count-selectors">${SELECTORS.length}`);
   });
+
+  // The three install snippets: a shell line, a JS import, an HTML tag (written escaped)
+  it("highlights the install snippets by their language", () => {
+    const html = prerenderHomeHtml(`
+      <pre><code data-lang="sh">npm install gss-lang@0.0.6</code></pre>
+      <pre><code data-lang="js">import gss from "gss-lang/vite";</code></pre>
+      <pre><code data-lang="html">&lt;script type="module" src="embed.js"&gt;&lt;/script&gt;</code></pre>
+    `);
+    expect(html).toContain('<code data-lang="sh" class="gss"><span class="gss-at-rule">npm</span> install');
+    expect(html).toContain('<code data-lang="js" class="gss"><span class="gss-at-rule">import</span>');
+    expect(html).toContain(
+      '<code data-lang="html" class="gss"><span class="gss-punct">&lt;</span><span class="gss-selector">script</span>',
+    );
+    expect(html).not.toContain("&amp;lt;");
+  });
 });

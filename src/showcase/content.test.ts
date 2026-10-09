@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { USE_CASES, INSPIRATION, EMBED_SNIPPETS, STUDIES } from "./content";
+import { ARCHIVE } from "./archive";
+import { compareVersions } from "../docs/news";
+import { VERSION } from "../version";
 import { compileScene } from "../compiler";
 import {
   PROPERTIES,
@@ -55,8 +58,8 @@ describe("the showcase", () => {
   it("links each study on its own, apart from the other ids of the page", () => {
     const keys = STUDIES.map((study) => study.key);
     const taken = new Set([
-      ...["studies", "designers", "creative-coders", "developers", "embed", "inspiration"],
-      ...["ways", "gallery", "lab"],
+      ...["studies", "designers", "creative-coders", "developers", "embed", "archive"],
+      ...["ways", "lab", "scenes"],
       ...USE_CASES.map((useCase) => useCase.slug),
     ]);
     expect(new Set(keys).size).toBe(keys.length);
@@ -75,6 +78,30 @@ describe("the showcase", () => {
       expect(study.hint).toMatch(/slider/);
     },
   );
+
+  // Decision 172: the archive holds every scene of the page, each once, newest first
+  it("archives every study and every inspiration scene, once each", () => {
+    const slugs = ARCHIVE.map((entry) => entry.slug);
+    expect(new Set(slugs).size).toBe(slugs.length);
+    expect([...slugs].sort()).toEqual([...STUDIES.map((s) => s.key), ...INSPIRATION.map((e) => e.slug)].sort());
+  });
+
+  it("names and describes every scene, with the version it came with", () => {
+    const next = VERSION.replace(/\d+$/, (patch) => String(Number(patch) + 1));
+    for (const entry of ARCHIVE) {
+      expect(entry.name.trim(), entry.slug).not.toBe("");
+      expect(entry.name, entry.slug).not.toMatch(/\n/);
+      expect(entry.description.length, entry.slug).toBeGreaterThan(20);
+      expect(entry.since, entry.slug).toMatch(/^\d+\.\d+\.\d+$/);
+      expect(compareVersions(entry.since, next), entry.slug).toBeLessThanOrEqual(0);
+    }
+  });
+
+  it("puts the newest version first", () => {
+    for (let i = 1; i < ARCHIVE.length; i++) {
+      expect(compareVersions(ARCHIVE[i - 1].since, ARCHIVE[i].since)).toBeGreaterThanOrEqual(0);
+    }
+  });
 
   it("shows the three ways to embed", () => {
     expect(EMBED_SNIPPETS.map((s) => s.code).join("\n")).toMatch(

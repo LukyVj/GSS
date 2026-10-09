@@ -29,7 +29,7 @@
     <link rel="stylesheet" href="/src/styles/site.css" />
     <style>
       /* The showcase (decisions 63, 119): the studies, use cases by audience, the three
-         ways to embed, the inspiration grid. Built on <gss-scene>: the site uses its own embed.
+         ways to embed, the archive (decision 172). Built on <gss-scene>: the site uses its own embed.
          The look comes from DESIGN.md; the values from src/styles/tokens.css. */
       main {
         box-sizing: border-box;
@@ -252,6 +252,55 @@
         height: calc(100% - 32px);
         touch-action: none;
       }
+      /* Until the reader presses play (decision 171): the capture of the study, and a
+         round play button, the signal dot of the mark. It stays over the canvas until
+         the study draws. */
+      .viewport .poster {
+        position: absolute;
+        inset: 0 0 32px;
+        width: 100%;
+        height: calc(100% - 32px);
+        object-fit: cover;
+        pointer-events: none;
+      }
+      .viewport .play {
+        position: absolute;
+        top: calc(50% - 16px);
+        left: 50%;
+        translate: -50% -50%;
+        display: grid;
+        place-items: center;
+        width: 104px;
+        height: 104px;
+        padding: 0;
+        border: 0;
+        border-radius: 50%;
+        background: var(--gss-signal);
+        color: var(--gss-void);
+        cursor: pointer;
+        box-shadow: 0 16px 48px rgb(0 0 0 / 0.5);
+        transition:
+          scale var(--gss-transition),
+          background-color var(--gss-transition);
+      }
+      .viewport .play:hover {
+        scale: 1.06;
+        background: var(--gss-signal-hover);
+      }
+      .viewport .play:focus-visible {
+        outline: 2px solid var(--gss-bone);
+        outline-offset: 4px;
+      }
+      .viewport .play svg {
+        width: 44px;
+        height: 44px;
+        margin-left: 4px; /* the triangle's weight, centred */
+        fill: currentColor;
+      }
+      .viewport .poster[hidden],
+      .viewport .play[hidden] {
+        display: none;
+      }
       .statusbar {
         position: absolute;
         inset: auto 0 0;
@@ -381,37 +430,83 @@
         color: var(--gss-bone);
       }
 
-      /* ----- Inspiration: captures that open the playground ----- */
-      .gallery {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-      }
-      .shot {
+      /* ----- Archive (decision 172): every scene of the page, newest first, as a grid
+         of cards or a list. Its capture, its version, what it is, what it uses. ----- */
+      .archive .toolbar {
         display: flex;
-        flex-direction: column;
-        background: var(--gss-void);
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px 24px;
+        margin-bottom: 16px;
+      }
+      .archive .count {
+        margin: 0;
+        font: 12px var(--gss-font-code);
+        color: var(--gss-dim);
+      }
+      /* The segmented control of DESIGN.md: a raised track, the active one on isoline */
+      .views {
+        display: flex;
+        gap: 2px;
+        padding: 3px;
+        background: var(--gss-raised);
+        border-radius: var(--gss-radius-control);
+      }
+      .views button {
+        min-height: 28px;
+        padding: 0 14px;
+        border: 0;
+        border-radius: var(--gss-radius-control);
+        background: transparent;
+        color: var(--gss-dim);
+        font: 12px var(--gss-font-code);
+        cursor: pointer;
+        transition:
+          color var(--gss-transition),
+          background-color var(--gss-transition);
+      }
+      .views button:hover {
         color: var(--gss-bone);
+      }
+      .views button[aria-pressed="true"] {
+        background: var(--gss-isoline);
+        color: var(--gss-bone);
+      }
+      .entries {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 1px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        background: var(--gss-line);
+        border: 1px solid var(--gss-line);
+      }
+      .entry {
+        display: grid;
+        grid-template-rows: auto 1fr auto;
         min-width: 0;
+        background: var(--gss-void);
       }
-      .shot:hover {
-        color: var(--gss-bone);
-      }
-      .shot .art {
+      .entry .art {
+        display: block;
         aspect-ratio: 4 / 3;
-        background: var(--gss-surface);
         overflow: hidden;
+        background: var(--gss-surface);
       }
-      .shot img {
+      .entry img {
         display: block;
         width: 100%;
         height: 100%;
         object-fit: cover;
         transition: transform var(--gss-transition);
       }
-      .shot:hover img {
+      .entry:hover img {
         transform: scale(1.03);
       }
       /* No capture yet: the first lines of the code instead */
-      .shot .art pre {
+      .entry .art pre {
         margin: 0;
         padding: 14px 16px;
         height: 100%;
@@ -420,27 +515,119 @@
         overflow: hidden;
         color: var(--gss-dim);
       }
-      .shot footer {
+      .entry .text {
         display: flex;
+        flex-direction: column;
+        gap: 8px;
+        min-width: 0;
+        padding: 16px 16px 18px;
+      }
+      .entry .name {
+        color: var(--gss-bone);
+      }
+      .entry h3 {
+        margin: 0;
+        font: 600 16px / 1.3 var(--gss-font-display);
+        letter-spacing: -0.02em;
+        transition: color var(--gss-transition);
+      }
+      .entry .name:hover h3 {
+        color: var(--gss-signal);
+      }
+      .entry .description {
+        margin: 0;
+        color: var(--gss-ash);
+        font-size: 14px;
+        line-height: 1.5;
+      }
+      /* The features it uses: chips, each a page of the docs */
+      .uses {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin: 4px 0 0;
+        padding: 0;
+        list-style: none;
+      }
+      .uses a,
+      .uses .more {
+        display: block;
+        padding: 2px 7px;
+        border: 1px solid var(--gss-line);
+        color: var(--gss-ash);
+        font: 11px / 16px var(--gss-font-code);
+        transition:
+          color var(--gss-transition),
+          border-color var(--gss-transition);
+      }
+      .uses code {
+        font: inherit;
+        color: inherit;
+      }
+      .uses a:hover {
+        border-color: var(--gss-isoline);
+        color: var(--gss-bone);
+      }
+      .uses .more {
+        border-style: dashed;
+        color: var(--gss-dim);
+      }
+      /* A card shows its first six; the list shows them all */
+      .archive[data-view="grid"] .uses li:nth-child(n + 7):not(.more),
+      .archive[data-view="list"] .uses .more {
+        display: none;
+      }
+      .entry .meta {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
         gap: 12px;
-        padding: 12px 16px;
+        margin: 0;
+        padding: 10px 16px;
         border-top: 1px solid var(--gss-line);
         font: 12px var(--gss-font-code);
+      }
+      /* The version it came with, like "since" in the docs; the newest in signal */
+      .since {
+        padding: 1px 6px;
+        border: 1px solid var(--gss-isoline);
+        border-radius: var(--gss-radius-control);
         color: var(--gss-ash);
+        font: 11px / 16px var(--gss-font-code);
       }
-      .shot footer .name {
-        flex: 1;
-        min-width: 0;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+      .since.new {
+        border-color: var(--gss-signal);
+        color: var(--gss-signal);
       }
-      .shot footer .go {
+      .entry .go {
         color: var(--gss-dim);
         transition: color var(--gss-transition);
       }
-      .shot:hover footer .go {
+      .entry:hover .go {
         color: var(--gss-signal);
+      }
+
+      /* The list: a small capture, the words, then the version and the way in */
+      .archive[data-view="list"] .entries {
+        grid-template-columns: minmax(0, 1fr);
+      }
+      .archive[data-view="list"] .entry {
+        grid-template-columns: 200px minmax(0, 1fr) auto;
+        grid-template-rows: auto;
+      }
+      .archive[data-view="list"] .entry .art {
+        border-right: 1px solid var(--gss-line);
+      }
+      .archive[data-view="list"] .entry .text {
+        justify-content: center;
+        padding: 16px 24px;
+      }
+      .archive[data-view="list"] .entry .meta {
+        flex-direction: column;
+        align-items: flex-end;
+        justify-content: space-between;
+        padding: 16px;
+        border-top: 0;
       }
 
       .site-footer {
@@ -523,7 +710,7 @@
         .ways {
           grid-template-columns: 1fr;
         }
-        .gallery {
+        .entries {
           grid-template-columns: repeat(2, minmax(0, 1fr));
         }
       }
@@ -538,8 +725,34 @@
         .study {
           padding: 24px 16px;
         }
-        .gallery {
-          grid-template-columns: 1fr;
+        .viewport .play {
+          width: 80px;
+          height: 80px;
+        }
+        .viewport .play svg {
+          width: 34px;
+          height: 34px;
+        }
+        .entries {
+          grid-template-columns: minmax(0, 1fr);
+        }
+        /* On a phone, the list keeps its capture small; the version goes under the words */
+        .archive[data-view="list"] .entry {
+          grid-template-columns: 112px minmax(0, 1fr);
+          grid-template-rows: auto auto;
+        }
+        .archive[data-view="list"] .entry .art {
+          grid-row: span 2;
+          align-self: start;
+          border-right: 0;
+        }
+        .archive[data-view="list"] .entry .text {
+          padding: 12px 16px 8px;
+        }
+        .archive[data-view="list"] .entry .meta {
+          flex-direction: row;
+          align-items: center;
+          padding: 0 16px 12px;
         }
         .site-footer {
           margin-top: 56px;
@@ -606,7 +819,7 @@
             <a href="#embed"><span class="n">05</span>on your site</a>
           </li>
           <li>
-            <a href="#inspiration"><span class="n">06</span>inspiration</a>
+            <a href="#archive"><span class="n">06</span>archive</a>
           </li>
         </ul>
       </div>
@@ -676,15 +889,17 @@
         </p>
       </section>
 
-      <section id="inspiration" aria-labelledby="inspiration-title">
+      <section id="archive" aria-labelledby="archive-title">
         <div class="head">
-          <h2 id="inspiration-title"><span class="n">06</span>Inspiration</h2>
+          <h2 id="archive-title"><span class="n">06</span>Archive</h2>
           <p>
-            Scenes to start from. Each one opens in the playground, where you
-            can change it and share it with a link.
+            Every scene of this page, newest first: what it is, the version of
+            GSS it came with, and what it uses. Each one opens in the
+            playground, where you can change it and share it with a link; a
+            study opens in the viewer above.
           </p>
         </div>
-        <div class="grid gallery" id="gallery"></div>
+        <div class="archive" id="scenes"></div>
       </section>
     </main>
 

@@ -1,14 +1,10 @@
 import { highlightCode } from "../docs/highlight-code";
 import { escapeHtml } from "../docs/escape";
 import { encodeCode } from "../runtime/share";
-import {
-  USE_CASES,
-  EMBED_SNIPPETS,
-  INSPIRATION,
-  STUDIES,
-  type UseCase,
-  type Inspiration,
-} from "./content";
+import { compareVersions } from "../docs/news";
+import { VERSION } from "../version";
+import { USE_CASES, EMBED_SNIPPETS, STUDIES, type UseCase } from "./content";
+import { ARCHIVE, type ArchiveEntry } from "./archive";
 
 // HTML of the showcase grids, built as strings so Vite can inject it at build time.
 
@@ -20,7 +16,8 @@ function scriptText(text: string): string {
   return text.replace(/<\/(script)/gi, "<\\/$1");
 }
 
-// The studies viewer: the first study and the list, ready before studies.ts mounts it
+// The studies viewer: the first study and the list, ready before studies.ts mounts it.
+// The viewer shows the poster of the study and a play button until the reader asks for it.
 export function renderLabHtml(playgroundHref: string): string {
   const [first] = STUDIES;
   const list = STUDIES.map(
@@ -44,9 +41,11 @@ export function renderLabHtml(playgroundHref: string): string {
   </article>
   <div class="viewport">
     <canvas aria-label="The study, rendered live with GSS"></canvas>
+    <img class="poster" id="study-poster" src="/showcase/${escapeHtml(first.key)}.jpg" alt="" />
+    <button type="button" class="play" id="study-play" aria-label="Play ${escapeHtml(first.name)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" /></svg></button>
     <div class="statusbar" id="study-statusbar">
       <span class="dot" aria-hidden="true"></span>
-      <span id="study-status" role="status">preparing the study…</span>
+      <span id="study-status" role="status">paused · press play</span>
       <span class="spacer"></span>
       <span id="study-hint">${escapeHtml(first.hint)}</span>
     </div>
@@ -81,15 +80,50 @@ export function renderWaysHtml(): string {
   ).join("");
 }
 
-export function renderShotHtml(entry: Inspiration, playgroundHref: string): string {
+// The archive (decision 172): every scene of the page, as a grid of cards or a list. Each
+// shows its capture (or the first lines of its code), the version it came with, what it is
+// and the features it uses; a card shows the first six. A study opens in the viewer above.
+const CARD_FEATURES = 6;
+
+function renderEntryHtml(entry: ArchiveEntry, href: string, newest: string | null): string {
   const preview = escapeHtml(entry.code.split("\n").slice(0, 14).join("\n"));
-  return `<a class="shot" href="${escapeHtml(playgroundHref)}">
-    <div class="art">
-      <img src="/showcase/${escapeHtml(entry.slug)}.jpg" alt="${escapeHtml(entry.title)}" loading="lazy" />
-      <pre class="fallback" hidden>${preview}</pre>
+  const link = entry.study
+    ? `href="#${escapeHtml(entry.study)}" data-open-study="${escapeHtml(entry.study)}"`
+    : `href="${escapeHtml(href)}"`;
+  const fresh = entry.since === newest;
+  const since = `<span class="since${fresh ? " new" : ""}" title="${fresh ? "New in" : "Since"} GSS ${escapeHtml(entry.since)}">v${escapeHtml(entry.since)}</span>`;
+  const features = entry.features
+    .map((feature) => `<li><a href="./docs.html#${escapeHtml(feature.anchor)}"><code>${escapeHtml(feature.label)}</code></a></li>`)
+    .join("");
+  const more = entry.features.length > CARD_FEATURES ? `<li class="more">+${entry.features.length - CARD_FEATURES}</li>` : "";
+  return `<li class="entry">
+      <a class="art" ${link} tabindex="-1" aria-hidden="true">
+        <img src="/showcase/${escapeHtml(entry.slug)}.jpg" alt="" loading="lazy" />
+        <pre class="fallback" hidden>${preview}</pre>
+      </a>
+      <div class="text">
+        <a class="name" ${link}><h3>${escapeHtml(entry.name)}</h3></a>
+        <p class="description">${escapeHtml(entry.description)}</p>
+        ${features ? `<ul class="uses" aria-label="Uses">${features}${more}</ul>` : ""}
+      </div>
+      <p class="meta">${since}<span class="go">${entry.study ? "study ↑" : "open ↗"}</span></p>
+    </li>`;
+}
+
+export function renderArchiveHtml(entries: { entry: ArchiveEntry; href: string }[], published = VERSION): string {
+  // The newest version with scenes that is out: theirs say "new"
+  const newest = entries
+    .map(({ entry }) => entry.since)
+    .filter((since) => compareVersions(since, published) <= 0)
+    .reduce<string | null>((top, since) => (top === null || compareVersions(since, top) > 0 ? since : top), null);
+  return `<div class="toolbar">
+      <p class="count">${entries.length} scenes, newest first</p>
+      <div class="views" role="group" aria-label="Show the archive as">
+        <button type="button" data-view="grid" aria-pressed="true">grid</button>
+        <button type="button" data-view="list" aria-pressed="false">list</button>
+      </div>
     </div>
-    <footer><span class="name">${escapeHtml(entry.title)}</span><span class="go">open ↗</span></footer>
-  </a>`;
+    <ol class="entries">${entries.map(({ entry, href }) => renderEntryHtml(entry, href, newest)).join("")}</ol>`;
 }
 
 export async function prerenderShowcaseHtml(html: string): Promise<string> {
@@ -129,18 +163,14 @@ export async function prerenderShowcaseHtml(html: string): Promise<string> {
     `<div class="grid ways" id="ways">${ways}</div>`,
   );
 
-  const gallery = (
-    await Promise.all(
-      INSPIRATION.map(async (entry) => renderShotHtml(entry, await playgroundOf(entry.code))),
-    )
-  ).join("");
-  if (!out.includes('<div class="grid gallery" id="gallery"></div>')) {
-    throw new Error('prerender showcase: missing #gallery');
-  }
-  out = out.replace(
-    '<div class="grid gallery" id="gallery"></div>',
-    `<div class="grid gallery" id="gallery">${gallery}</div>`,
+  const archive = renderArchiveHtml(
+    await Promise.all(ARCHIVE.map(async (entry) => ({ entry, href: await playgroundOf(entry.code) }))),
   );
+  const shell = '<div class="archive" id="scenes"></div>';
+  if (!out.includes(shell)) {
+    throw new Error("prerender showcase: missing #scenes");
+  }
+  out = out.replace(shell, `<div class="archive" id="scenes" data-view="grid">${archive}</div>`);
 
   return out;
 }

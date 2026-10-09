@@ -6,6 +6,15 @@ The 0.0.1 history was reconstructed from GitHub.
 
 ## Unreleased
 
+### Added
+
+- Showcase: an archive of every scene of the page, the studies included, in place of the inspiration grid. Each scene has its capture, its name, what it is, a badge of the version of GSS it came with, and the features it uses, each linked to its page of the docs. Newest first, as a grid of cards or as a list; the page remembers the choice.
+
+### Changed
+
+- Showcase: the studies wait for play. The viewer at the top of the page opens on a still image of the study and a large play button, so the page no longer draws its heaviest scene on arrival; choosing another study in the list draws it at once.
+- The install lines are colored like the rest of the code: the three of the home page (npm, the Vite plugin, the CDN) and the shell lines of the docs, the command, its flags and the version of the package.
+
 ### Fixed
 
 - `shape-rendering: geometricPrecision` around a `path`, a `prism` or a `lathe` drawn small: grey lines, rings and a faint rectangle no longer fill the box around the shape. Only its silhouette is smoothed, like any other object.
