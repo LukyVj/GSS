@@ -252,6 +252,55 @@
         height: calc(100% - 32px);
         touch-action: none;
       }
+      /* Until the reader presses play (decision 171): the capture of the study, and a
+         round play button, the signal dot of the mark. It stays over the canvas until
+         the study draws. */
+      .viewport .poster {
+        position: absolute;
+        inset: 0 0 32px;
+        width: 100%;
+        height: calc(100% - 32px);
+        object-fit: cover;
+        pointer-events: none;
+      }
+      .viewport .play {
+        position: absolute;
+        top: calc(50% - 16px);
+        left: 50%;
+        translate: -50% -50%;
+        display: grid;
+        place-items: center;
+        width: 104px;
+        height: 104px;
+        padding: 0;
+        border: 0;
+        border-radius: 50%;
+        background: var(--gss-signal);
+        color: var(--gss-void);
+        cursor: pointer;
+        box-shadow: 0 16px 48px rgb(0 0 0 / 0.5);
+        transition:
+          scale var(--gss-transition),
+          background-color var(--gss-transition);
+      }
+      .viewport .play:hover {
+        scale: 1.06;
+        background: var(--gss-signal-hover);
+      }
+      .viewport .play:focus-visible {
+        outline: 2px solid var(--gss-bone);
+        outline-offset: 4px;
+      }
+      .viewport .play svg {
+        width: 44px;
+        height: 44px;
+        margin-left: 4px; /* the triangle's weight, centred */
+        fill: currentColor;
+      }
+      .viewport .poster[hidden],
+      .viewport .play[hidden] {
+        display: none;
+      }
       .statusbar {
         position: absolute;
         inset: auto 0 0;
@@ -537,6 +586,14 @@
         .case .text,
         .study {
           padding: 24px 16px;
+        }
+        .viewport .play {
+          width: 80px;
+          height: 80px;
+        }
+        .viewport .play svg {
+          width: 34px;
+          height: 34px;
         }
         .gallery {
           grid-template-columns: 1fr;

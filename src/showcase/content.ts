@@ -299,6 +299,7 @@ export type Study = {
   scene: string;
   reference?: { href: string; label: string }; // the model it rebuilds
   webgl?: boolean; // mounts on WebGL, for a predictable start
+  capture?: number; // ms of the scene before its poster is taken (npm run captures), 3000 by default
 };
 
 export const STUDIES: Study[] = [
@@ -387,5 +388,6 @@ export const STUDIES: Study[] = [
     features: ["SVG glyphs", "sibling-index()", "animation-delay", "noise()"],
     hint: "watch the loop · hover the letters · drag to orbit",
     scene: release,
+    capture: 7000, // "gss." written, the braces closed
   },
 ];

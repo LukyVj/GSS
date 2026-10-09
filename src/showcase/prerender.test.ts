@@ -31,6 +31,8 @@ describe("prerenderShowcaseHtml", () => {
     expect(html).toContain('id="study-title">Glass\nCircuit.</h3>');
     expect(html).toContain('id="study-edit" href="./playground.html#code=');
     expect(html).toContain("<canvas");
+    expect(html).toContain('id="study-poster" src="/showcase/circuit.jpg"');
+    expect(html).toContain('id="study-play" aria-label="Play glass circuit"');
   });
 
   it("renders the three embed ways", () => {

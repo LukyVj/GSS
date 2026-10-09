@@ -20,7 +20,8 @@ function scriptText(text: string): string {
   return text.replace(/<\/(script)/gi, "<\\/$1");
 }
 
-// The studies viewer: the first study and the list, ready before studies.ts mounts it
+// The studies viewer: the first study and the list, ready before studies.ts mounts it.
+// The viewer shows the poster of the study and a play button until the reader asks for it.
 export function renderLabHtml(playgroundHref: string): string {
   const [first] = STUDIES;
   const list = STUDIES.map(
@@ -44,9 +45,11 @@ export function renderLabHtml(playgroundHref: string): string {
   </article>
   <div class="viewport">
     <canvas aria-label="The study, rendered live with GSS"></canvas>
+    <img class="poster" id="study-poster" src="/showcase/${escapeHtml(first.key)}.jpg" alt="" />
+    <button type="button" class="play" id="study-play" aria-label="Play ${escapeHtml(first.name)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" /></svg></button>
     <div class="statusbar" id="study-statusbar">
       <span class="dot" aria-hidden="true"></span>
-      <span id="study-status" role="status">preparing the study…</span>
+      <span id="study-status" role="status">paused · press play</span>
       <span class="spacer"></span>
       <span id="study-hint">${escapeHtml(first.hint)}</span>
     </div>
