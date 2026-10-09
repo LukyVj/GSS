@@ -1363,6 +1363,12 @@ The compiler of the package grew past its budget: `mount` goes from 97,000 to 98
 **Why**: `visibility` (decision 160) keeps an object in `map()` while its value is above 0, so any weight short of its end shows it: a last keyframe `hidden` after a `visible` one, held by `forwards` or `both`, left the object visible; with `ease` and the others of `cubic-bezier()`, a segment from `hidden` to `visible` showed the object before it started, for the whole of the hidden keyframes before it, and a reversed animation ending on `hidden` did too. `steps()` and `step-end` take the floor of the same number: an animation whose last segment started at 80% or 99% stopped on the step before the last one, for any property.
 **Accepted limits**: 12 shaders of the scenes and examples change (the fall of the Mistral 4, the examples with `cubic-bezier()`), their values by a millionth of a step or less. Only the ends a progress can stay on are exact: a keyframe between two others is only passed through.
 
+## 168. A canvas inside `element()`, captured as it draws
+
+**Decision** (Lucas, Oct. 9, after a playground test: a WebGL canvas inside the element, live on the cube): the docs say a `<canvas>` inside the element is captured with it, and a second `element()` example shows one — a one-line WebGL shader on the front face. Nothing changes in the runtime: the element is already drawn again at each paint of the scene (decision 101), so the example's scene animates, and every paint catches the canvas's newest frame. In the example's HTML, the script rides an `<img onerror>` attribute, because the playground and the docs insert the HTML with `innerHTML`, which runs no `<script>`; in a page, a plain `<script>` does the same. Its WebGL context takes `preserveDrawingBuffer: true`, so the buffer still holds the frame when the browser reads it.
+**Why**: `element()` already covers live content — a canvas is the clearest proof, and a shader inside a shader makes the point of the language.
+**Accepted limits**: a still scene keeps the canvas's last captured frame: nothing watches the canvas itself. The capture still needs HTML-in-Canvas (the note of `element()`).
+
 ## 169. `geometricPrecision`: hits and edges in pixels, the steps to pass a silhouette, shapes measured without their box
 
 **Decision** (Lucas, Oct. 9, before the release of 0.0.6: three problems found in `geometricPrecision`, decision 149):

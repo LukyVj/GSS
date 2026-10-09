@@ -2937,7 +2937,7 @@ export const FUNCTIONS: FunctionDef[] = [
     computed: "by the browser, each time the element changes",
     description:
       "A live image of an HTML element of the page, for `texture`, like CSS `element()`: a card, a form, a chart, any interface on a 3D surface. The browser draws the element with the CSS and the fonts of the page, and the object shows it again each time it changes.",
-    details: "Put the element inside the scene: inside `<gss-scene>`, next to its script, or inside the canvas given to `mount()`. It stays in the page, so screen readers still read it, but it is seen only on the object. One image covers each face, like any texture: give the element the proportions of the face, and use `::face(front)` for one face only. A scene with an element is drawn with WebGL2.",
+    details: "Put the element inside the scene: inside `<gss-scene>`, next to its script, or inside the canvas given to `mount()`. It stays in the page, so screen readers still read it, but it is seen only on the object. One image covers each face, like any texture: give the element the proportions of the face, and use `::face(front)` for one face only. A `<canvas>` inside the element is captured with it, frame after frame while the scene draws: a chart, a game, another shader. A scene with an element is drawn with WebGL2.",
     note: ELEMENT_NOTE,
     examples: [
       {
@@ -2945,6 +2945,16 @@ export const FUNCTIONS: FunctionDef[] = [
         text: "A card of HTML that sways on the front of a thin cube.",
         code: "@scene { cube; } scene { floor: none; camera-angle: -20deg 10deg; camera-target: 0 0.8 0; camera-distance: 3.2; ambient: 0.55; } cube { translate: 0 0.8 0; size: 1.6 1 0.06; corner-radius: 0.03; animation: sway 6s ease-in-out infinite alternate; } cube::face(front) { texture: element(#card); } @keyframes sway { to { rotate-y: 25deg; } }",
         html: "<article id=\"card\" style=\"\n  width: 320px; height: 200px; padding: 28px;\n  box-sizing: border-box; border-radius: 18px;\n  background: #f4f1ea; color: #1a1d2b;\n  font: 600 30px/1.2 system-ui, sans-serif;\">\n  Hello from <em style=\"color: #ff5a36;\">HTML</em>, on a 3D card\n</article>",
+      },
+      {
+        name: "a canvas, live",
+        text: "A `<canvas>` and its one-line WebGL shader inside the element: the face follows it, frame by frame. The script rides an `onerror` attribute, so it runs even where a page inserts the HTML with `innerHTML`, as the playground does; in a page of yours, a plain `<script>` works too.",
+        code: "@scene { cube; } scene { floor: none; background: radial-gradient(#1b1f3a, #0a0c18); camera-angle: -18deg 8deg; camera-target: 0 0.8 0; camera-distance: 3.4; ambient: 0.6; } cube { translate: 0 0.8 0; size: 1.92 1.2 0.06; corner-radius: 0.03; animation: sway 7s ease-in-out infinite alternate; } cube::face(front) { texture: element(#screen); } @keyframes sway { from { rotate-y: -18deg; } to { rotate-y: 18deg; } }",
+        html: `<div id="screen" style="position: relative; width: 480px; height: 300px; border-radius: 20px; overflow: hidden; background: #0a0c18; font: 600 13px/1 system-ui, sans-serif;">
+<canvas width="480" height="300" style="position: absolute; inset: 0;"></canvas>
+<span style="position: absolute; left: 16px; top: 14px; color: #fff; letter-spacing: .12em; text-transform: uppercase;">a shader, in a shader</span>
+<img src="data:," hidden onerror="this.remove();var c=this.parentNode.firstElementChild;var g=c.getContext('webgl',{preserveDrawingBuffer:true});function s(t,x){var h=g.createShader(t);g.shaderSource(h,x);g.compileShader(h);return h}var p=g.createProgram();g.attachShader(p,s(g.VERTEX_SHADER,'attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}'));g.attachShader(p,s(g.FRAGMENT_SHADER,'precision highp float;uniform float t;uniform vec2 r;void main(){vec2 u=(gl_FragCoord.xy-.5*r)/r.y;gl_FragColor=vec4(.5+.5*cos(t+10.*length(u)-vec3(0.,2.,4.)),1.);}'));g.linkProgram(p);g.useProgram(p);var b=g.createBuffer();g.bindBuffer(g.ARRAY_BUFFER,b);g.bufferData(g.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),g.STATIC_DRAW);var a=g.getAttribLocation(p,'p');g.enableVertexAttribArray(a);g.vertexAttribPointer(a,2,g.FLOAT,false,0,0);var T=g.getUniformLocation(p,'t'),R=g.getUniformLocation(p,'r');cancelAnimationFrame(window.__gssShader);(function f(ms){window.__gssShader=requestAnimationFrame(f);g.uniform1f(T,ms/1000);g.uniform2f(R,c.width,c.height);g.drawArrays(g.TRIANGLES,0,3)})(0)">
+</div>`,
       },
     ],
   },

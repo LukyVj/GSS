@@ -21,6 +21,12 @@ describe("playground examples", () => {
     expect(card?.html).toContain('id="card"');
   });
 
+  it("carry the canvas of the element() example that shows one (decision 168)", () => {
+    const canvas = EXAMPLES.find((example) => example.name === "element(): a canvas, live");
+    expect(canvas?.html).toContain("<canvas");
+    expect(canvas?.html).toContain("onerror"); // innerHTML runs no <script>: the shader starts from an attribute
+  });
+
   it("carry, for every element(#id) they show, an element with that id", () => {
     for (const example of EXAMPLES) {
       for (const [, id] of example.code.matchAll(/\belement\(#([\w-]+)\)/g)) {
