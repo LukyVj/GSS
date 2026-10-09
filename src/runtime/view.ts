@@ -13,7 +13,7 @@ import { createTransitions } from "./transitions";
 import { createTriggers } from "./triggers";
 import { createScrollSlider, timelineValues } from "./timeline";
 import type { Timeline } from "../compiler/features/timeline";
-import { pickVariant, watchMedia, matchesNow } from "./media";
+import { pickVariant, WINDOW_MEDIA, type MediaViewport } from "./media";
 import { createPost } from "./post";
 import { createProperties } from "./properties";
 import { createDemand, movesWithTime } from "./demand";
@@ -63,6 +63,11 @@ export type ViewOptions = {
   // for the computer stops (decision 142). false: always the scene's dpr, never stopped,
   // for a capture or a benchmark.
   adaptDpr?: boolean;
+  // Where @media reads its queries (decision 165): the window, like CSS (default), or, with
+  // elementMedia from media.ts, the canvas, like the result of CodePen: the playground and
+  // the docs, where the reader sizes the render, not the window. A function, so a page
+  // that does not use it never downloads it.
+  viewport?: (canvas: HTMLCanvasElement) => MediaViewport;
 };
 
 // The vertex shader: a giant triangle that covers the whole canvas.
@@ -131,6 +136,7 @@ export function createView(
   let reducedMotion = false; // freeze(): transitions jump, like the animations stop
   let shown: CompiledScene | null = null; // the version on screen (@media)
   let stopMedia = () => {}; // stops listening to the @media queries of the scene
+  const media = options.viewport?.(canvas) ?? WINDOW_MEDIA; // decision 165
   const properties = createProperties(); // @property: what the page set (decision 105)
   const demand = createDemand(); // render on demand (decision 134)
   let pickWanted = false; // the pointer moved since the last picking pass
@@ -564,11 +570,11 @@ export function createView(
     show(compiled) {
       // @media: the version for the screen now, then another one when it changes,
       // keeping the camera where the mouse left it
-      const linkedNow = display(pickVariant(compiled, matchesNow), true); // GLSL errors
+      const linkedNow = display(pickVariant(compiled, media.matches), true); // GLSL errors
       stopMedia();
       stopMedia = compiled.media
-        ? watchMedia(compiled.media.queries, () => {
-            const next = pickVariant(compiled, matchesNow);
+        ? media.watch(compiled.media.queries, () => {
+            const next = pickVariant(compiled, media.matches);
             if (next === shown) return;
             try {
               display(next, false).catch((error) => console.error(error));
@@ -610,6 +616,7 @@ export function createView(
     destroy() {
       probe?.destroy?.();
       stopMedia();
+      media.destroy();
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("pointerup", release);
       window.removeEventListener("pointercancel", release);

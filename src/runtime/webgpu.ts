@@ -7,7 +7,7 @@ import { pickPixel, pointerValues, createPress, decodeId, cursorAt } from "./hov
 import { createTransitions } from "./transitions";
 import { createTriggers } from "./triggers";
 import { createScrollSlider, timelineValues } from "./timeline";
-import { matchesNow, pickVariant, watchMedia } from "./media";
+import { pickVariant, WINDOW_MEDIA } from "./media";
 import { elementId, paintName, resolveImage } from "./textures";
 import { createProperties } from "./properties";
 import { createDemand, movesWithTime } from "./demand";
@@ -56,6 +56,7 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
   let scene: Scene | null = null;
   let root: CompiledScene | null = null;
   let stopMedia = () => {};
+  const media = options.viewport?.(canvas) ?? WINDOW_MEDIA; // decision 165
   let hovered = 0;
   const press = createPress(); // :active (decision 95)
   const slider = options.scrollSlider ? createScrollSlider(canvas) : null; // decision 96
@@ -339,12 +340,12 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
       if (destroyed) throw new Error("This GSS view has been destroyed");
       const previous = root;
       root = compiled;
-      try { await display(pickVariant(compiled, matchesNow), true); }
+      try { await display(pickVariant(compiled, media.matches), true); }
       catch (error) { if (root === compiled) root = previous; throw error; }
       if (destroyed || root !== compiled) return;
       stopMedia();
-      stopMedia = compiled.media ? watchMedia(compiled.media.queries, () => {
-        const variant = pickVariant(compiled, matchesNow);
+      stopMedia = compiled.media ? media.watch(compiled.media.queries, () => {
+        const variant = pickVariant(compiled, media.matches);
         if (variant === scene?.compiled) return;
         void display(variant, false).catch(error => canvas.dispatchEvent(new CustomEvent("gss-error", { detail: error })));
       }) : () => {};
@@ -367,7 +368,7 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
     destroy() {
       if (destroyed) return;
       destroyed = true; revision++; pickGeneration++; playing = false;
-      cancelAnimationFrame(frameId); stopMedia(); listeners.forEach(stop => stop());
+      cancelAnimationFrame(frameId); stopMedia(); media.destroy(); listeners.forEach(stop => stop());
       document.removeEventListener("visibilitychange", onVisible);
       probe?.destroy?.(); slider?.destroy(); dprMenu?.destroy();
       if (scene) release(scene); scene = null;
