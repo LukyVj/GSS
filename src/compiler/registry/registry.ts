@@ -1032,7 +1032,7 @@ export const PROPERTIES: PropertyDef[] = [
       ["<percentage>", "A share of the named range before it, or of the whole timeline alone: `entry 50%`, `20% 80%`."],
       ["<length>", "Pixels from the start of the named range before it, or of the whole timeline: `100px`."],
     ],
-    details: "It takes a start, then an end: `entry 10% exit 90%`. A name alone is the whole of that range, `animation-range: entry`; a name alone at the end is its end, `contain exit`. `animation-range-start` and `animation-range-end` set one side each, and win over `animation-range` wherever they are written, like the other longhands of `animation`. Before the range the animation shows its first frame, past it its last. The named ranges belong to `view()`: `scroll()` takes percentages and pixels. Unlike CSS, which ignores it there, a range on an animation that plays in time is an error.",
+    details: "It takes a start, then an end: `entry 10% exit 90%`. A name alone is the whole of that range, `animation-range: entry`; a name alone at the end is its end, `contain exit`. `animation-range-start` and `animation-range-end` set one side each, and win over `animation-range` wherever they are written, like the other longhands of `animation`. Before the range the animation shows its first frame, past it its last. The named ranges belong to `view()`: `scroll()` takes percentages and pixels. Unlike CSS, which ignores it there, a range on an animation that plays in time is an error. In the playground, which does not scroll, the slider over the render stands for one screen of scroll: `100px` is a hundred pixels of the height of the window.",
     examples: [
       {
         name: "rise while it comes in",

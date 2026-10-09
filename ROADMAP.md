@@ -150,6 +150,7 @@ On `release/0.0.7`. Decisions from 169.
 - [x] `outline` on a small `path`, `prism` or `lathe` drew the box of its shape: fixed in 0.0.7 too (170).
 - [x] `mix-blend-mode` on objects (173): the modes of `background-blend-mode` and `plus-lighter`, over what is behind each object along the ray; no `isolation` yet.
 - [x] `controls` on `scene` and on objects (176): the gestures that move the camera; the pieces of Back Rank and the buttons of Midnight Arcade hold still under a drag.
+- [x] The slider of the playground moves `scroll()` with `animation-range` (177): it stood at the end, the playground does not scroll.
 
 ## Release 0.0.6 (published Oct. 9)
 

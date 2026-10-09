@@ -21,6 +21,7 @@ The 0.0.1 history was reconstructed from GitHub.
 
 ### Fixed
 
+- In the playground, the slider over the render moves an animation of `scroll()` with `animation-range`: the playground does not scroll, so the animation stood at its end whatever the slider said. The example "the middle of the scroll" of `animation-range` turns again; in a page that scrolls, nothing changes.
 - `shape-rendering: geometricPrecision` around a `path`, a `prism` or a `lathe` drawn small: grey lines, rings and a faint rectangle no longer fill the box around the shape. Only its silhouette is smoothed, like any other object.
 - `shape-rendering: geometricPrecision` on a large canvas (a 4K screen, or a Retina screen at `dpr: 2`): silhouettes are smoothed as much as on a small one, where they stayed sharp. An object can look up to a quarter of a pixel larger than with `auto`, and a scene with many edges takes a little more work at that size.
 - `outline` on a `path`, a `prism` or a `lathe` drawn small follows its shape: it drew the whole rectangle around it, in lines, rings and a filled area.
