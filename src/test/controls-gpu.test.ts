@@ -59,11 +59,13 @@ const frames = (count: number) =>
 const snap = () => page.screenshot({ clip: { x: 0, y: 0, width: 300, height: 200 } });
 const moved = (before: Buffer, after: Buffer) => !before.equals(after);
 
-// The mouse rests over a point, then drags 60px to the right from there: did the camera turn?
-async function drag(x: number, y: number): Promise<boolean> {
+// The mouse rests over a point until the picking pass has answered (the canvas shows the
+// cursor of what is there), then drags 60px to the right from there: did the camera turn?
+async function drag(x: number, y: number, cursor = ""): Promise<boolean> {
   const before = await snap();
   await page.mouse.move(x, y);
-  await frames(10);
+  await page.waitForFunction((cursor) => (window as any).__canvas.style.cursor === cursor, cursor, { timeout: 10000 });
+  await frames(4);
   await page.mouse.down();
   await page.mouse.move(x + 60, y, { steps: 6 });
   await page.mouse.up();
@@ -105,8 +107,8 @@ for (const backend of ["webgl", "webgpu"] as const) {
     }, 60000);
 
     it("does not turn the camera from an object that says none, and does from the background", async () => {
-      await mount(`${STAGE} cube { controls: none; }`, backend);
-      expect(await drag(150, 100)).toBe(false); // starts on the cube
+      await mount(`${STAGE} cube { controls: none; cursor: pointer; }`, backend);
+      expect(await drag(150, 100, "pointer")).toBe(false); // starts on the cube
       expect(await drag(20, 20)).toBe(true); // starts on the background
     }, 60000);
   });
