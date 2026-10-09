@@ -327,7 +327,9 @@ describe("an example with HTML", () => {
   it("documents element() on its own page, with a live example", () => {
     const fn = FUNCTIONS.find((f) => f.name === "element()")!;
     expect(fn.anchor).toBe("fn-element");
-    expect(fn.examples.every((example) => example.html?.includes('id="card"'))).toBe(true);
+    expect(fn.examples.every((example) => example.html)).toBe(true);
+    expect(fn.examples[0].html).toContain('id="card"');
+    expect(fn.examples[1].html).toContain("<canvas"); // a live canvas inside the element (decision 168)
   });
 });
 
