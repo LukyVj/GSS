@@ -104,13 +104,26 @@ window.addEventListener("pageshow", (event) => { if (event.persisted) void selec
 // A link to a study (showcase#bloom) opens it, and brings the viewer into view: from the
 // page, it is drawn at once; the page opened by the link waits for play, like any other
 const studies = document.getElementById("studies")!;
-window.addEventListener("hashchange", () => {
-  const study = find(location.hash.slice(1));
-  if (!study) return;
+function open(study: Study) {
   studies.scrollIntoView();
   if (playing && study === shown) return; // already drawn
   choose(study);
+}
+window.addEventListener("hashchange", () => {
+  const study = find(location.hash.slice(1));
+  if (study) open(study);
 });
+// The studies of the archive (decision 172): a click opens the study even when the hash is
+// already its own, where the browser would not fire hashchange
+document.querySelectorAll<HTMLAnchorElement>("a[data-open-study]").forEach((link) =>
+  link.addEventListener("click", (event) => {
+    const study = find(link.dataset.openStudy ?? "");
+    if (!study) return;
+    event.preventDefault();
+    history.replaceState(null, "", `#${study.key}`);
+    open(study);
+  }),
+);
 const linked = find(location.hash.slice(1));
 if (linked) studies.scrollIntoView();
 void select(linked ?? STUDIES[0]);

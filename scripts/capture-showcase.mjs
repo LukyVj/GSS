@@ -1,5 +1,5 @@
 // npm run captures: renders every scene of the showcase and writes public/showcase/<slug>.jpg:
-// the inspiration grid (src/showcase/content.ts, INSPIRATION) at the size of a card, and
+// the scenes of the archive (src/showcase/content.ts, INSPIRATION) at the size of a card, and
 // the studies (STUDIES, by their key) at the size of the viewer, where they are the poster
 // shown until the reader presses play. Run it after adding a scene; the grid shows the
 // code of a scene without a capture.
