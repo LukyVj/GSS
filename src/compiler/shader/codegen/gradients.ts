@@ -411,11 +411,14 @@ export function gradientCode(
   const branches = painted.map((p) => branch(p, p.alpha ? "col.a > 0.0 ? col.rgb / col.a : col.rgb" : "col"));
   // The floor, after the objects like in map(): seen from above like a plane, and a noise()
   // read at its point, in the units of the scene
+  // checker() and stripes() switch at whole units: on the plane y = 0, a point hit a hair
+  // below it would fall in the cell under the floor, so they read it at y = 0 exactly
+  const pattern = floor && linesOf(floor).some((line) => /checkerPattern|stripesPattern/.test(line));
   if (floor)
     branches.push(
       [
         "  if (id == 0.0) {  // the floor",
-        "    vec3 q = p;",
+        pattern ? "    vec3 q = vec3(p.x, 0.0, p.z);" : "    vec3 q = p;",
         `    vec2 size = vec2(${glslFloat(FLOOR_SIZE)}, ${glslFloat(FLOOR_SIZE)});`,
         "    vec2 at = vec2(q.x, -q.z) + 0.5 * size;",
         ...linesOf(floor).map((line) => `  ${line}`),

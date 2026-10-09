@@ -70,3 +70,35 @@ describe("outline", () => {
     }, 60000);
   }
 });
+
+// The share of the ring of the line, 40 pixels from the center, that is red
+async function ring(source: string): Promise<number> {
+  return page.evaluate(async ({ compiled }) => {
+    const canvas = document.createElement("canvas");
+    canvas.style.cssText = "width:128px;height:96px;display:block";
+    document.body.append(canvas);
+    const probe = { frameStart() {}, drawStart() {}, drawEnd() {}, shaderBuilt() {} };
+    const scene = await (window as any).__mountAsync(canvas, compiled, { backend: "webgl", adaptDpr: false, profile: () => probe });
+    await new Promise((resolve) => { let left = 6; const tick = () => --left ? requestAnimationFrame(tick) : resolve(0); requestAnimationFrame(tick); });
+    const copy = document.createElement("canvas"); copy.width = canvas.width; copy.height = canvas.height;
+    const ctx = copy.getContext("2d")!; ctx.drawImage(canvas, 0, 0);
+    let red = 0;
+    const steps = 180;
+    for (let i = 0; i < steps; i++) {
+      const angle = (i / steps) * 2 * Math.PI;
+      const [r, , b] = ctx.getImageData(Math.round(64 + 40 * Math.cos(angle)), Math.round(48 + 40 * Math.sin(angle)), 1, 1).data;
+      if (r > 200 && b < 60) red++;
+    }
+    scene.destroy(); canvas.remove();
+    return red / steps;
+  }, { compiled: compileScene(source) });
+}
+
+describe("outline-style", () => {
+  it("draws the whole ring when solid, and about half of it in dashes when dashed", async () => {
+    expect(await ring(scene("outline: 0.15 solid #ff0000;"))).toBeGreaterThan(0.95);
+    const dashed = await ring(scene("outline: 0.15 dashed #ff0000;"));
+    expect(dashed).toBeGreaterThan(0.3);
+    expect(dashed).toBeLessThan(0.7);
+  }, 60000);
+});

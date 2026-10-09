@@ -58,9 +58,41 @@ describe("outline: a line around the silhouette of an object, in the units of th
     expect(compileScene("@scene { sphere; } sphere { outline: 0.05 solid red; }").wgsl).toContain("outlineColor");
   });
 
-  it("refuses the styles GSS does not draw, and a negative width", () => {
-    expect(() => scene("outline: 0.05 dashed red;")).toThrow(/solid/);
+  it("refuses a negative width, and too many values", () => {
     expect(() => scene("outline-width: -1; outline-style: solid;")).toThrow(/outline-width/);
     expect(() => scene("outline: 0.05 solid red 2;")).toThrow(/outline expects/);
+  });
+});
+
+describe("outline-style: the styles of CSS", () => {
+  const styleOf = (shader: string) => fn(shader, "float outlineStyle(float id) {");
+
+  it("keeps solid and auto plain, with no code for the styles", () => {
+    expect(scene("outline: 0.05 solid red;")).not.toContain("outlineStyle");
+    expect(scene("outline: 0.05 auto red;")).toBe(scene("outline: 0.05 solid red;"));
+  });
+
+  it("numbers each style for main(): dashed, dotted, double, groove, ridge, inset, outset", () => {
+    const styles = ["dashed", "dotted", "double", "groove", "ridge", "inset", "outset"];
+    styles.forEach((style, i) => {
+      const shader = scene(`outline: 0.05 ${style} red;`);
+      expect(styleOf(shader)).toContain(`if (id == 1.0) return ${i + 1}.0;`);
+      expect(shader).toContain("float outlineAcross = lineM;");
+    });
+  });
+
+  it("places dashes and dots by the angle around the object, as many as fit around it", () => {
+    const shader = scene("outline: 0.05 dashed red;");
+    expect(fn(shader, "vec4 outlineCenter(float id) {")).toContain("if (id == 1.0) return vec4(vec3(0.0, 1.0, 0.0), ");
+    expect(shader).toContain("atan(around.y, around.x)");
+  });
+
+  it("takes the style of :hover when the object has none at rest", () => {
+    expect(styleOf(scene("outline: 0 none red; transition: 0.2s;", "sphere:hover { outline: 0.05 dotted red; }"))).toContain("return 2.0;");
+  });
+
+  it("refuses what is not a style of CSS", () => {
+    expect(() => scene("outline: 0.05 wavy red;")).toThrow(/outline expects/);
+    expect(() => scene("outline-style: wavy;")).toThrow(/outline-style expects/);
   });
 });
