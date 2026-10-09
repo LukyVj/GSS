@@ -8,6 +8,7 @@ The 0.0.1 history was reconstructed from GitHub.
 
 ### Changed
 
+- Showcase: the studies wait for play. The viewer at the top of the page opens on a still image of the study and a large play button, so the page no longer draws its heaviest scene on arrival; choosing another study in the list draws it at once.
 - The install lines are colored like the rest of the code: the three of the home page (npm, the Vite plugin, the CDN) and the shell lines of the docs, the command, its flags and the version of the package.
 
 ## [0.0.6] — 2026-10-09
