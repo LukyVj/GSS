@@ -2,10 +2,12 @@ import { describe, it, expect } from "vitest";
 import {
   highlightJs,
   highlightHtml,
+  highlightShell,
   highlightSyntax,
   highlightCode,
 } from "./highlight-code";
 import { EMBED_SNIPPETS } from "../embed/snippets";
+import { INSTALLATION } from "./guide";
 import { PROPERTIES, AT_RULES, FUNCTIONS } from "../compiler/registry/registry";
 
 // The docs color more than GSS: the syntax lines of the reference, and the HTML and
@@ -100,7 +102,40 @@ describe("highlightHtml", () => {
   });
 });
 
+describe("highlightShell", () => {
+  it("colors the command, the flags, and the version of a package", () => {
+    const html = highlightShell("npm install gss-lang@0.0.6\nnpm install --save-dev vite");
+    expect(html).toContain('<span class="gss-at-rule">npm</span> install');
+    expect(html).toContain(
+      '<span class="gss-string">gss-lang</span><span class="gss-punct">@</span><span class="gss-number">0.0.6</span>',
+    );
+    expect(html).toContain('<span class="gss-keyword">--save-dev</span> vite');
+  });
+
+  it("colors a comment and a quoted argument", () => {
+    const html = highlightShell('code --install-extension lukyvj.gss-language # VS Code\necho "a b"');
+    expect(html).toContain('<span class="gss-at-rule">code</span>');
+    expect(html).toContain('<span class="gss-comment"># VS Code</span>');
+    expect(html).toContain('<span class="gss-at-rule">echo</span> <span class="gss-string">&quot;a b&quot;</span>');
+  });
+
+  it("colors every shell line of Installation", () => {
+    const blocks = INSTALLATION.flatMap((page) => page.paragraphs).filter((p) => p.includes('<code class="sh">'));
+    expect(blocks.length).toBeGreaterThanOrEqual(3);
+    for (const block of blocks) expect(block).toMatch(/<code class="sh"><span class="gss-at-rule">(npm|code)<\/span>/);
+  });
+
+  it("gives the code back, exactly", () => {
+    const code = "npm install gss-lang@0.0.6 # pinned\n  npx vite --port 5173";
+    expect(text(highlightShell(code))).toBe(code);
+  });
+});
+
 describe("highlightCode", () => {
+  it("reads sh as a shell", () => {
+    expect(highlightCode("sh", "npm install gss-lang")).toContain('<span class="gss-at-rule">npm</span>');
+  });
+
   it("gives back every embedding snippet, exactly", () => {
     for (const way of EMBED_SNIPPETS) {
       const html = highlightCode(way.lang, way.code);

@@ -4,6 +4,12 @@ Notable changes to GSS, grouped by release. Features developed across several co
 
 The 0.0.1 history was reconstructed from GitHub.
 
+## Unreleased
+
+### Changed
+
+- The install lines are colored like the rest of the code: the three of the home page (npm, the Vite plugin, the CDN) and the shell lines of the docs, the command, its flags and the version of the package.
+
 ## [0.0.6] — 2026-10-09
 
 ### Added
