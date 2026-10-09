@@ -144,7 +144,7 @@ const notice = $("#notice");
 editor.onCompile((code) => {
   const webglOnly = showsHtml(code) ? "element()" : paints(code) ? "paint()" : null;
   notice.hidden = !(renderer.backend === "webgpu" && webglOnly);
-  notice.textContent = `${webglOnly} is drawn with WebGL2: choose WebGL2 in the backend menu`;
+  notice.textContent = `${webglOnly} is WebGL2 only for now: choose WebGL2 in the backend menu`;
 });
 
 // ----- The HTML tab: the elements that element(#id) shows (decision 101) -----
