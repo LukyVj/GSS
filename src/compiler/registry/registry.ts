@@ -173,7 +173,7 @@ export const PROPERTIES: PropertyDef[] = [
       "matte([<color>]) | metal([<color>,] [<roughness>]) | jelly([<color>,] [<density>]) | emissive([<color>,] [<strength>]) | iridescent([<color>,] [<strength>]) | gold | chrome | copper | silver | brass | aluminum | jelly | glass([<color>,] [<refraction-index>] [, [frosted | wavy | hammered | blurred] <frost>]) | glass | ice | emissive | iridescent",
     initial: "matte()",
     description:
-      "Sets how the surface of the object reacts to light. Without a color, a material uses the `color` property, like `currentColor` in CSS, so the color stays animatable. The color can also be a gradient: `metal(linear-gradient(#ffd27a, #ff5a36), 0.2)`.",
+      "Sets how the surface of the object reacts to light. Without a color, a material uses the `color` property, like `currentColor` in CSS, so the color stays animatable; with its own, like `brass` or `metal(#3a7bff)`, it keeps it, even when `color` is a gradient. The color can also be a gradient: `metal(linear-gradient(#ffd27a, #ff5a36), 0.2)`.",
     values: [
       ["matte()", "Scatters the light only, like chalk: the default."],
       ["metal()", "Reflects the scene. Its roughness goes from 0, a mirror, to 1, brushed metal (0.2 by default)."],
@@ -202,6 +202,11 @@ export const PROPERTIES: PropertyDef[] = [
         name: "everyday metals",
         text: "`copper`, `silver`, `brass` and `aluminum`, from left to right.",
         code: "@scene { sphere#a; sphere#b; sphere#c; sphere#d; } sphere { radius: 0.45; } #a { translate: -1.5 0.5 0; material: copper; } #b { translate: -0.5 0.5 0; material: silver; } #c { translate: 0.5 0.5 0; material: brass; } #d { translate: 1.5 0.5 0; material: aluminum; }",
+      },
+      {
+        name: "its own color",
+        text: "`brass` keeps its color over the stripes of `color`; `metal(0.2)`, without a color of its own, takes them.",
+        code: "@scene { sphere#a; sphere#b; } sphere { radius: 0.6; color: stripes(3, #ff5a36, #f4f1ea); } #a { translate: -0.8 0.6 0; material: brass; } #b { translate: 0.8 0.6 0; material: metal(0.2); }",
       },
       {
         name: "jelly()",

@@ -21,6 +21,7 @@ import { glslFloat, label, type Hover } from "./glsl";
 import { BLEND_MODES } from "./blend-library";
 import { NAMED_COLORS } from "../../values/named-colors";
 import { readColor } from "./read";
+import { hasOwnColor } from "./materials";
 import { add, g, largest, liveFlatSize, liveNumber, liveRadii, liveSize3, mul, type Num } from "./live";
 import { shapeRadius } from "./shapes";
 import { spaceFunction } from "./transforms";
@@ -256,7 +257,8 @@ export function movingGradient(
 // ----- Gradients on objects (decision 82) -----
 
 // alpha: the gradient has transparent stops (decision 117): its lines give a premultiplied vec4
-export type Painted = { instance: StyledInstance; gradient: Gradient; moving: Map<string, string>; alpha?: boolean };
+// alphaOnly: the material has its own color, so only those stops show (decision 166)
+export type Painted = { instance: StyledInstance; gradient: Gradient; moving: Map<string, string>; alpha?: boolean; alphaOnly?: boolean };
 
 // Whether the color of an object is a gradient with transparent stops, at rest, in its
 // frames or on :hover (decision 117)
@@ -268,7 +270,8 @@ export function paintsTransparent(styles: Styles, keyframes: Keyframes[], hover:
 
 // The gradient an object is painted with, from its color or the first argument of its
 // material (which wins, like a material's own color), and its styles where that gradient
-// is replaced by its mean color: what getMaterial() and the reflections see.
+// is replaced by its mean color: what getMaterial() and the reflections see. A material
+// with its own color, like brass, is not painted by the gradient of color (decision 166).
 // A gradient in color can be animated and changed by :hover (decision 102).
 // transparent: the gradient has transparent stops (paintsTransparent(), decision 117)
 export function objectGradient(
@@ -314,8 +317,15 @@ export function objectGradient(
   }
   // Transparent stops make the object transparent where they are (decision 117)
   const alpha = transparent;
+  // A material with its own color, like brass, keeps it over a gradient as over a plain
+  // color (decision 166): only the transparent stops of the gradient show
+  const alphaOnly = hasOwnColor(material);
+  if (alphaOnly && !alpha) return { painted: null, styles };
   const { gradient, moving } = movingGradient(styles, keyframes, "color", hover, { alpha });
-  return { painted: { instance, gradient, moving, ...(alpha ? { alpha } : {}) }, styles: { ...styles, color: [hash(color)] } };
+  return {
+    painted: { instance, gradient, moving, ...(alpha ? { alpha } : {}), ...(alphaOnly ? { alphaOnly } : {}) },
+    styles: { ...styles, color: [hash(color)] },
+  };
 }
 
 // The rectangle a gradient covers: the object seen from the front, x right and y up
@@ -407,8 +417,11 @@ export function gradientCode(
     ].join("\n");
   };
   // A transparent gradient gives its color without its alpha, and paintAlpha() its alpha
-  // (decision 117): its stops are premultiplied
-  const branches = painted.map((p) => branch(p, p.alpha ? "col.a > 0.0 ? col.rgb / col.a : col.rgb" : "col"));
+  // (decision 117): its stops are premultiplied. Over a material with its own color, only
+  // its alpha (decision 166).
+  const branches = painted
+    .filter((p) => !p.alphaOnly)
+    .map((p) => branch(p, p.alpha ? "col.a > 0.0 ? col.rgb / col.a : col.rgb" : "col"));
   // The floor, after the objects like in map(): seen from above like a plane, and a noise()
   // read at its point, in the units of the scene
   // checker() and stripes() switch at whole units: on the plane y = 0, a point hit a hair

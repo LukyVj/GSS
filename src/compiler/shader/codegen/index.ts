@@ -284,8 +284,9 @@ export function generateShader(
     const { painted: gradient, styles } = objectGradient(instance, keyframes, hoverOf(instance), paints.has(instance));
     if (gradient) painted.push(gradient);
     instance = gradient ? { ...instance, styles } : instance;
-    // A gradient moves in gradientColor(): getMaterial() keeps the mean of its rest
-    const color = gradient
+    // A gradient moves in gradientColor(): getMaterial() keeps the mean of its rest.
+    // A material with its own color does not read color (decision 166)
+    const color = () => gradient
       ? readColor(instance.styles["color"])
       : hoverValue(instance.styles, keyframes, "color", readSurfaceColor, hoverOf(instance));
     const material = readMaterial(instance.styles["material"], color);

@@ -21,7 +21,7 @@ scene {
 }
 
 #sculpture { translate: 0 1.1 0; animation: turn 14s linear infinite; }
-#outer { radius: 1.65; thickness: 0.16; rotate-x: 70deg; color: displace(linear-gradient(0deg, #3c5ee8, #f05f9f), noise(3 3, #222, #ddd), 0.22); material: glass(#74a8ff, 1.45, frosted 0.08); mask-image: radial-gradient(circle at 50% 50%, transparent 24%, #ffffff 40%, transparent 73%); }
+#outer { radius: 1.65; thickness: 0.16; rotate-x: 70deg; color: displace(linear-gradient(0deg, #3c5ee8, #f05f9f), noise(3 3, #222, #ddd), 0.22); material: glass(1.45, frosted 0.08); mask-image: radial-gradient(circle at 50% 50%, transparent 24%, #ffffff 40%, transparent 73%); }
 #inside { radius: 0.62; color: noise(3 3, #ff7a55, #ffe08b 55%, #a65bff); material: jelly(0.45); transition: 0.3s ease-out; }
 #sculpture:hover #inside { scale: 1.25; color: noise(3 3, #fff4ee, #ffffff 55%, #f6efff); }
 #plate { --i: sibling-index(); size: 2.4 0.035 0.08; translate: 0 calc((var(--i) - 2) * 0.52) 0; rotate-z: calc((var(--i) - 2) * 18deg); color: #83a5ff; opacity: 0.7; material: metal(0.15); }

@@ -115,3 +115,56 @@ describe("gradients on objects (decision 82)", () => {
     ).toThrow("is painted with the gradient of its material: its color cannot change");
   });
 });
+
+describe("a material with its own color keeps it over a gradient in color (decision 166)", () => {
+  const sceneOf = (rule: string, more = "") => compileScene(`@scene { sphere } sphere { ${rule} } ${more}`).shader;
+  // The body of gradientColor(): a branch per object it paints
+  const paintOf = (shader: string) => {
+    const start = shader.indexOf("vec3 gradientColor(");
+    return start < 0 ? "" : shader.slice(start, shader.indexOf("\n}", start));
+  };
+  const IMAGES = [
+    "linear-gradient(#ff5a36, white)",
+    "radial-gradient(#ff5a36, white)",
+    "conic-gradient(#ff5a36, white)",
+    "stripes(3, #ff5a36, white)",
+    "checker(2.5, #ff5a36, white)",
+    "noise(3 4, #ff5a36, white)",
+  ];
+
+  it("keeps the color of a named metal, as over a plain color", () => {
+    for (const metal of ["gold", "chrome", "copper", "silver", "brass", "aluminum"])
+      for (const color of IMAGES)
+        expect(sceneOf(`material: ${metal}; color: ${color};`), `${metal}, ${color}`).toBe(sceneOf(`material: ${metal};`));
+  });
+
+  it("keeps the color written in the material", () => {
+    for (const material of ["matte(#3a7bff)", "metal(#3a7bff, 0.3)", "jelly(#3a7bff)", "glass(#3a7bff)", "ice", "emissive(#3a7bff, 2)", "iridescent(#3a7bff)"])
+      expect(sceneOf(`material: ${material}; color: stripes(3, #ff5a36, white);`), material).toBe(sceneOf(`material: ${material};`));
+  });
+
+  it("still paints a material without a color of its own", () => {
+    for (const material of ["matte()", "metal(0.2)", "jelly", "glass", "emissive", "iridescent"])
+      expect(paintOf(sceneOf(`material: ${material}; color: stripes(3, #ff5a36, white);`)), material).toContain("if (id == 1.0) {  // sphere");
+    expect(paintOf(sceneOf("color: stripes(3, #ff5a36, white);"))).toContain("if (id == 1.0) {  // sphere");
+  });
+
+  it("keeps the transparent stops of the gradient, as the alpha of a plain color", () => {
+    const shader = sceneOf("material: brass; color: linear-gradient(transparent, #ff5a36);");
+    expect(shader).toContain("return paintAlpha(id, p);  // sphere");
+    expect(shader).toContain("float paintAlpha(float id, vec3 p) {");
+    expect(paintOf(shader)).not.toContain("if (id == 1.0)");
+    expect(shader).toContain("if (id == 1.0) return metal(vec3(0.788, 0.635, 0.302), 0.2);  // sphere");
+  });
+
+  it("does not read a gradient that an animation or :hover changes", () => {
+    const animated = sceneOf(
+      "material: brass; color: linear-gradient(#ff5a36, white); animation: a 2s;",
+      "@keyframes a { to { color: linear-gradient(white, #ff5a36); } }",
+    );
+    expect(paintOf(animated)).not.toContain("if (id == 1.0)");
+    const hovered = sceneOf("material: brass; color: linear-gradient(#ff5a36, white);", "sphere:hover { color: linear-gradient(white, #ff5a36); }");
+    expect(paintOf(hovered)).not.toContain("if (id == 1.0)");
+    expect(hovered).toContain("if (id == 1.0) return metal(vec3(0.788, 0.635, 0.302), 0.2);  // sphere");
+  });
+});
