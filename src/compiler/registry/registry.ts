@@ -345,12 +345,17 @@ export const PROPERTIES: PropertyDef[] = [
     initial: "block",
     description:
       "`none` leaves the object out of the scene, like CSS: it is not drawn, casts no shadow and cannot be pointed at. On a group, every object inside it is left out; on a `light`, the light is off.",
-    details: "The object still counts among its siblings, like an element of the page with `display: none`: `:nth-child()` and `sibling-index()` see it. It is set when the scene compiles, so it changes with `@media`, not on `:hover` or in `@keyframes`: to hide an object for a moment, use `visibility`.",
+    details: "The object still counts among its siblings, like an element of the page with `display: none`: `:nth-child()` and `sibling-index()` see it. It is set when the scene compiles, so it changes with `@media`, not on `:hover` or in `@keyframes`: to hide an object for a moment, use `visibility`. Like CSS, `@media (max-width: …)` reads the width of the window, not the one of the scene.",
     examples: [
       {
-        name: "fewer objects on a phone",
-        text: "On a narrow screen, the small spheres are left out.",
-        code: "@scene { torus; sphere.moon * 3; } torus { translate: 0 0.8 0; rotate-x: 70deg; radius: 0.7; thickness: 0.2; } .moon { radius: 0.18; translate: calc(sibling-index() * 0.6 - 1.2) 1.8 0; color: #ff5a36; } @media (max-width: 600px) { .moon { display: none; } }",
+        name: "a whole group left out",
+        text: "The group of small spheres says `display: none`: only the torus is drawn. Remove the rule to see them.",
+        code: "@scene { torus; group#moons { sphere * 3; } } torus { translate: 0 0.8 0; rotate-x: 70deg; radius: 0.7; thickness: 0.2; } #moons { display: none; } #moons sphere { radius: 0.18; translate: calc(sibling-index() * 0.6 - 1.2) 1.8 0; color: #ff5a36; }",
+      },
+      {
+        name: "with @media",
+        text: "The small spheres show only on a screen wider than 900px: on a phone, the scene draws less. Narrow the window to see them go.",
+        code: "@scene { torus; sphere.moon * 3; } torus { translate: 0 0.8 0; rotate-x: 70deg; radius: 0.7; thickness: 0.2; } .moon { radius: 0.18; translate: calc(sibling-index() * 0.6 - 1.2) 1.8 0; color: #ff5a36; } @media (max-width: 900px) { .moon { display: none; } }",
       },
       {
         name: "every other one",
@@ -407,6 +412,21 @@ export const PROPERTIES: PropertyDef[] = [
         text: "An open hand over the sphere, closed while it is pressed.",
         code: "@scene { sphere; } sphere { translate: 0 1 0; radius: 0.7; color: #3a7bff; cursor: grab; } sphere:active { cursor: grabbing; }",
       },
+      {
+        name: "a cursor each",
+        text: "Hover each cube: pointer, help, crosshair, move, zoom-in and not-allowed.",
+        code: "@scene { cube * 6; } scene { camera-distance: 7; } cube { size: 0.7; translate: calc(sibling-index() * 1 - 3.5) 0.4 0; color: #3a7bff; } cube:nth-child(1) { cursor: pointer; } cube:nth-child(2) { cursor: help; } cube:nth-child(3) { cursor: crosshair; } cube:nth-child(4) { cursor: move; } cube:nth-child(5) { cursor: zoom-in; } cube:nth-child(6) { cursor: not-allowed; color: #6b6b78; }",
+      },
+      {
+        name: "a disabled button",
+        text: "The grey button says it cannot be pressed: `not-allowed`, and nothing happens; the orange one sinks.",
+        code: "@scene { cube#on; cube#off; } cube { size: 1 0.3 1; transition: 0.15s; } #on { translate: -0.8 0.15 0; color: #ff5a36; cursor: pointer; } #on:active { translate: -0.8 0.05 0; } #off { translate: 0.8 0.15 0; color: #6b6b78; cursor: not-allowed; }",
+      },
+      {
+        name: "from a group",
+        text: "The group gives `pointer` to its three spheres; the cone, outside it, keeps the page's cursor.",
+        code: "@scene { group#buttons { sphere * 3; } cone; } #buttons { cursor: pointer; } #buttons sphere { radius: 0.3; translate: calc(sibling-index() * 0.8 - 1.6) 0.3 0; color: #3ad16b; } cone { translate: 1.6 0.5 0; color: #6b6b78; }",
+      },
     ],
   },
   {
@@ -417,7 +437,7 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "<outline-width> || <outline-style> || <outline-color>",
     initial: "medium none currentColor",
     description:
-      "A line around the silhouette of the object, like CSS `outline`: a width, a style and a color, in any order. Like CSS, it needs a style: `outline: 0.03 solid #111;`.",
+      "A line around the silhouette of the object, like CSS `outline`: a width, a style and a color, in any order. Like CSS, it needs a style: `outline: 0.03 solid #111;`, or `dashed`, `dotted`, `double`…",
     details: "The line is drawn outside the object, where the eye passes close to its edge, and over what is behind it: another object, the floor or the background. It takes no room, is never lit and cannot be pointed at, like CSS, but the fog covers it. Unlike CSS, its width is in the units of the scene, not in pixels: it gets thinner far from the camera, like the object. `outline-width`, `outline-style`, `outline-color` and `outline-offset` set one part each, and win over `outline` wherever they are written, like the other longhands of GSS. It changes on `:hover` and in `@keyframes`.",
     examples: [
       {
@@ -453,11 +473,34 @@ export const PROPERTIES: PropertyDef[] = [
     name: "outline-style",
     since: "0.0.6",
     appliesTo: "object",
-    syntax: "none | solid | auto",
+    syntax: "none | auto | solid | dashed | dotted | double | groove | ridge | inset | outset",
     initial: "none",
     description:
-      "Whether the object has an `outline`, like CSS: `none`, the default, draws none, `solid` and `auto` a plain line. The other styles of CSS, like `dashed`, are not drawn yet. A `:hover` or `:active` rule can change it; `@keyframes` cannot.",
+      "How the line of `outline` is drawn, like CSS: `none`, the default, draws none; the others draw a line, plain, broken or shaded.",
+    values: [
+      ["none", "No line, the default: an `outline` needs a style."],
+      ["solid", "One plain line."],
+      ["auto", "In CSS, the browser draws its own line, the one of a focused field. GSS has no browser look of its own: `auto` draws `solid`."],
+      ["dashed", "Dashes three widths long, with gaps as long, all around the object."],
+      ["dotted", "Round dots, as wide as the line, one width apart."],
+      ["double", "Two thin lines, each a third of the width, with the third between them empty."],
+      ["groove", "Carved into the scene: the outer half darker at the top left, the inner half at the bottom right."],
+      ["ridge", "Raised out of the scene: `groove` the other way."],
+      ["inset", "The line darker at the top left, as if the object sat in a hollow."],
+      ["outset", "The line darker at the bottom right, as if the object stood out."],
+    ],
+    details: "Dashes and dots are placed around the object, by the angle seen from the camera, and as many as fit around its size: they close without a broken one. The shaded styles take the light from the top left of the screen, like the borders of CSS, at half the color on their dark side. A `:hover` or `:active` rule can change the style; `@keyframes` cannot. When the object has no style at rest, the one of `:hover`, then of `:active`, is drawn.",
     examples: [
+      {
+        name: "every style",
+        text: "Eight spheres, one style each, from left to right: solid, dashed, dotted, double, groove, ridge, inset and outset.",
+        code: "@scene { sphere * 8; } scene { background: #14141c; camera-distance: 9; } sphere { radius: 0.4; translate: calc(sibling-index() * 1.05 - 4.7) 0.5 0; color: #f4f4f6; outline: 0.08 solid #ff5a36; } sphere:nth-child(2) { outline-style: dashed; } sphere:nth-child(3) { outline-style: dotted; } sphere:nth-child(4) { outline-style: double; } sphere:nth-child(5) { outline-style: groove; } sphere:nth-child(6) { outline-style: ridge; } sphere:nth-child(7) { outline-style: inset; } sphere:nth-child(8) { outline-style: outset; }",
+      },
+      {
+        name: "dashes on hover",
+        text: "Hovering the cube draws a dashed line around it.",
+        code: "@scene { cube; } cube { translate: 0 0.6 0; color: #3a7bff; outline-style: dashed; outline-width: 0; outline-color: #ff5a36; transition: 0.25s; cursor: pointer; } cube:hover { outline-width: 0.05; outline-offset: 0.05; }",
+      },
       {
         name: "solid",
         text: "The style alone draws a medium line of the object's own color.",

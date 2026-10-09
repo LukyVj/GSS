@@ -193,6 +193,18 @@ export function generateShader(
       ),
     );
 
+    // outline-style (decision 164): the dashes and dots go around the object's place, as
+    // many as its size holds
+    if (outline) {
+      const sphere = spheres[spheres.length - 1];
+      outline.center =
+        instance.groupStyles.length === 0 || !sphere
+          ? hoist(hoisted, "vec3", hoverValue(instance.styles, keyframes, "translate", readTranslate, hover))
+          : vec3(sphere.center);
+      const scale = scales.reduce((product, value) => product * (Number.isFinite(Number(value)) ? Number(value) : 1), 1);
+      outline.size = (ownRadius ?? 1) * scale;
+    }
+
     const operation = readOperation(instance.styles["operation"]);
     // A blend set from JS (decision 105) is always smooth, and never 0: it divides
     const blend = liveNumber(instance.styles["blend"], "blend", 0, true);
@@ -407,8 +419,12 @@ export function generateShader(
     : "";
   // outline (decision 163): the line the primary ray passed, kept before other rays march
   const lines = [...outlines].map(([instance, outline]) => ({ instance, outline }));
-  const outlineCopy = lines.length > 0 ? "\n  float outlineT = lineT;\n  float outlineHit = lineId;" : "";
-  const lineBlend = lines.length > 0 ? outlineBlend(fog?.line) : "";
+  const styledLines = lines.some(({ outline }) => outline.style > 0);
+  const outlineCopy =
+    lines.length > 0
+      ? `\n  float outlineT = lineT;\n  float outlineHit = lineId;${styledLines ? "\n  float outlineAcross = lineM;" : ""}`
+      : "";
+  const lineBlend = lines.length > 0 ? outlineBlend(fog?.line, styledLines) : "";
   const shader = (
     template.replace(
       "/*@EASINGS*/",
@@ -598,6 +614,7 @@ uniform vec2 uPick;`
             "  vec2 res = vec2(1e10, 0.0); // nothing yet\n  outlineM = 1e10;\n  outlineId = 0.0;\n",
           ),
           geometricPrecision ? "PrecisionHit marchPrecision(vec3 ro, vec3 rd) {" : "vec2 march(vec3 ro, vec3 rd) {",
+          styledLines,
         )
       : shader;
   // The normals of a scene with holes (decision 113)

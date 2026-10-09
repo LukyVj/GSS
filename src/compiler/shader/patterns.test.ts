@@ -49,3 +49,16 @@ describe("checker() and stripes() go wherever a gradient goes", () => {
     expect(on("displace(linear-gradient(#000000, #ffffff), stripes(8, black, white), 0.1)")).toContain("stripesPattern(");
   });
 });
+
+describe("checker() and stripes() on the floor", () => {
+  // The floor is the plane y = 0: a point hit on it is a hair above or below, and floor(y)
+  // would flip from one pixel to the next
+  it("read the floor at y = 0 exactly, so its cells do not flicker", () => {
+    for (const image of ["checker(1, #1a1d2b, #e8e6e1)", "stripes(2 x, #000000, #ffffff)"])
+      expect(compileGSS(`@scene { sphere; } scene { floor: ${image}; }`)).toContain("vec3 q = vec3(p.x, 0.0, p.z);");
+  });
+
+  it("leave a noise() on the floor as it was", () => {
+    expect(compileGSS("@scene { sphere; } scene { floor: noise(3, #1a1d2b, #3a7bff); }")).toContain("    vec3 q = p;");
+  });
+});
