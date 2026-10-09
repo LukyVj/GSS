@@ -102,3 +102,56 @@ describe("outline-style", () => {
     expect(dashed).toBeLessThan(0.7);
   }, 60000);
 });
+
+// A brace drawn small (scale: 0.008) on a canvas of 480 × 270: a pixel is about 0.015 wide
+// there, the line of 0.01 less than one. Far from its segments, a path measures the distance to
+// their box: the line was drawn over that box, in lines, rings and a filled rectangle.
+const brace = (outline: string, rendering = "auto") =>
+  `@scene { path#brace; } scene { shape-rendering: ${rendering}; floor: none; background: #111111; camera-distance: 6; camera-angle: 0deg 0deg; camera-target: 0 0 0; dpr: 1; } #brace { view-box: 0 0 600 600; stroke-width: 18; scale: 0.008; translate: 0.6 0 0; color: #e8e6e1; ${outline} d: path("M170 140 C120 140 112 165 112 205 v55 c0 32 -16 40 -55 40 c39 0 55 8 55 40 v55 c0 40 8 65 58 65"); }`;
+
+// The pixels of a canvas of 480 × 270, as [r, g, b] by row
+async function image(source: string, backend: "webgl" | "webgpu"): Promise<number[][][]> {
+  return page.evaluate(async ({ compiled, backend }) => {
+    const canvas = document.createElement("canvas");
+    canvas.style.cssText = "width:480px;height:270px;display:block";
+    document.body.append(canvas);
+    const probe = { frameStart() {}, drawStart() {}, drawEnd() {}, shaderBuilt() {} };
+    const scene = await (window as any).__mountAsync(canvas, compiled, { backend, adaptDpr: false, profile: () => probe, profileWebGPU: () => probe });
+    await new Promise((resolve) => { let left = 6; const tick = () => --left ? requestAnimationFrame(tick) : resolve(0); requestAnimationFrame(tick); });
+    const copy = document.createElement("canvas"); copy.width = canvas.width; copy.height = canvas.height;
+    const ctx = copy.getContext("2d")!; ctx.drawImage(canvas, 0, 0);
+    const data = ctx.getImageData(0, 0, copy.width, copy.height).data;
+    const rows = Array.from({ length: copy.height }, (_, y) => Array.from({ length: copy.width }, (_, x) => [...data.slice((y * copy.width + x) * 4, (y * copy.width + x) * 4 + 3)]));
+    scene.destroy(); canvas.remove();
+    return rows;
+  }, { compiled: compileScene(source), backend });
+}
+
+describe("outline of a path drawn small", () => {
+  for (const [backend, rendering] of [["webgl", "auto"], ["webgpu", "auto"], ["webgl", "geometricPrecision"]] as const) {
+    it(`stays beside the path, not over its box, with ${backend === "webgl" ? "WebGL2" : "WebGPU"} and ${rendering}`, async () => {
+      const plain = await image(brace("", rendering), backend);
+      const lined = await image(brace("outline: 0.01 solid #ff0000;", rendering), backend);
+      // Every pixel but the background (#111111): the side of the tube in the shade is barely lighter
+      const isPath = (pixel: number[]) => pixel.some((value) => Math.abs(value - 17) > 2);
+      const isRed = ([r, g, b]: number[]) => r > 150 && g < 80 && b < 80;
+      // The red pixels farther than 2 pixels from every pixel of the path
+      const near = (x: number, y: number) => {
+        for (let dy = -2; dy <= 2; dy++)
+          for (let dx = -2; dx <= 2; dx++) if (plain[y + dy]?.[x + dx] && isPath(plain[y + dy][x + dx])) return true;
+        return false;
+      };
+      let stray = 0;
+      let red = 0;
+      lined.forEach((row, y) => row.forEach((pixel, x) => {
+        if (!isRed(pixel)) return;
+        red++;
+        if (!near(x, y)) stray++;
+      }));
+      // The path is there, and so is its line, only beside it
+      expect(plain.flat().filter(isPath).length).toBeGreaterThan(500);
+      expect(red).toBeGreaterThan(0);
+      expect(stray).toBe(0);
+    }, 120000);
+  }
+});

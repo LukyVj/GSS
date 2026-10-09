@@ -144,6 +144,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 On `release/0.0.7`. Decisions from 169.
 
 - [x] `geometricPrecision` fixed in 0.0.7, not patched into 0.0.6 in silence (169): no more ghosts around a small `path`, `prism` or `lathe`; as smooth on a 4K canvas as on a small one.
+- [x] `outline` on a small `path`, `prism` or `lathe` drew the box of its shape: fixed in 0.0.7 too (170).
 
 ## Release 0.0.6 (published Oct. 9)
 
