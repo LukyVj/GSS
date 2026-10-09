@@ -16,6 +16,7 @@ vi.mock("../embed", () => ({
 vi.mock("../runtime/software-gate", () => ({ renderGate: () => () => {} }));
 vi.mock("../runtime/share", () => ({ encodeCode: async () => "#code=x" }));
 
+const scrolled: string[] = []; // the elements brought into view
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 // Each import is a new page: the listeners of the previous one leave the window
@@ -32,8 +33,10 @@ async function open(hash = "") {
   vi.resetModules();
   mounted.calls.length = 0;
   history.replaceState(null, "", `/showcase.html${hash}`);
-  document.body.innerHTML = `<section id="studies"><div class="lab" id="lab">${renderLabHtml("./playground.html#code=x")}</div></section>`;
-  Element.prototype.scrollIntoView = () => {};
+  document.body.innerHTML = `<section id="studies"><div class="lab" id="lab">${renderLabHtml("./playground.html#code=x")}</div></section>
+    <div id="archive"><a href="#burger" data-open-study="burger">Tasty Burger</a></div>`;
+  scrolled.length = 0;
+  Element.prototype.scrollIntoView = function (this: Element) { scrolled.push(this.id); };
   await import("./studies");
   await settle();
 }
@@ -69,6 +72,24 @@ describe("the studies viewer", () => {
     await settle();
     expect(mounted.calls).toEqual([bloom.scene]);
     expect(play().hidden).toBe(true);
+  });
+
+  it("draws a study of the archive in the viewer, once", async () => {
+    await open();
+    const burger = STUDIES.find((study) => study.key === "burger")!;
+    const link = document.querySelector<HTMLAnchorElement>('[data-open-study="burger"]')!;
+    link.click();
+    await settle();
+    await settle();
+    expect(mounted.calls).toEqual([burger.scene]);
+    expect(document.querySelector('[data-study="burger"]')!.getAttribute("aria-pressed")).toBe("true");
+    expect(location.hash).toBe("#burger");
+    expect(scrolled).toContain("studies");
+    const before = scrolled.length;
+    link.click(); // already drawn, the same hash: the viewer only comes into view
+    await settle();
+    expect(mounted.calls).toHaveLength(1);
+    expect(scrolled.length).toBeGreaterThan(before);
   });
 
   it("opens a linked study on its poster, waiting for play too", async () => {

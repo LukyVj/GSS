@@ -160,9 +160,18 @@ export const USE_CASES: UseCase[] = [
   },
 ];
 
-// The inspiration grid: captures (public/showcase/<slug>.jpg, npm run captures)
-// that open the playground. It grows with every scene worth sharing.
-export type Inspiration = { slug: string; title: string; code: string };
+// The scenes of the archive, besides the studies (decision 172): captures
+// (public/showcase/<slug>.jpg, npm run captures) that open the playground. Each says what
+// it is, and the version of GSS it arrived with (its first commit, against the tags).
+// The features it uses are read from its code (features.ts). It grows with every scene
+// worth sharing.
+export type Inspiration = {
+  slug: string;
+  name: string;
+  description: string; // what it is, in a sentence or two
+  since: string; // the version of GSS it arrived with: "0.0.6"
+  code: string;
+};
 
 const example = (
   list: { name: string; examples: { code: string }[] }[],
@@ -175,113 +184,214 @@ const example = (
 };
 
 export const INSPIRATION: Inspiration[] = [
-  ...USE_CASES.map(({ slug, title, scene }) => ({ slug, title, code: scene })),
+  {
+    slug: "logo-3d",
+    name: "Logo in 3D",
+    description: "The d attribute of an SVG logo pasted into path(): its two braces become tubes around a glossy dot.",
+    since: "0.0.1",
+    code: logo3d,
+  },
+  {
+    slug: "icons",
+    name: "Icon set",
+    description: "Five shapes styled as one set. Two variables, an accent and a finish, theme them all, like the tokens of a design system.",
+    since: "0.0.1",
+    code: icons,
+  },
+  {
+    slug: "spiral",
+    name: "Spiral",
+    description: "36 beads from one rule: sibling-index() gives each its own angle, height and hue.",
+    since: "0.0.1",
+    code: spiral,
+  },
+  {
+    slug: "shadertoy",
+    name: "Gold ring",
+    description: "A gold ring tumbling around an orange core, ready to export as a Shadertoy shader.",
+    since: "0.0.1",
+    code: shadertoy,
+  },
+  {
+    slug: "hero",
+    name: "Hover hero",
+    description: "Seven pillars that answer the mouse: a page hero with :hover, compiled at build time.",
+    since: "0.0.1",
+    code: hero,
+  },
+  {
+    slug: "llm",
+    name: "Snowman",
+    description: "A snowman an LLM wrote from a one-line prompt, unedited.",
+    since: "0.0.1",
+    code: llm,
+  },
   {
     slug: "first-scene",
-    title: "A glass ball that floats",
+    name: "First scene",
+    description: "The scene of the first page of the docs: a glass ball that floats up and down.",
+    since: "0.0.1",
     code: formatGss(FIRST_SCENE),
   },
-  { slug: "logo", title: "The GSS logo, drawn in GSS", code: logo },
+  {
+    slug: "logo",
+    name: "The GSS logo",
+    description: "{ ● } drawn in GSS: both braces come from the same SVG, and the dot is a sphere.",
+    since: "0.0.1",
+    code: logo,
+  },
   {
     slug: "orrery",
-    title: "A fairground planetarium, every feature at once",
+    name: "L'Orrery",
+    description: "A fairground planetarium on a plinth of grass blocks: a sun, five planets, lamps, a mirror pool. Every feature at once.",
+    since: "0.0.2",
     code: orrery,
   },
-  { slug: "macropad", title: "A macro pad: keys that press", code: macropad },
-  { slug: "tidal", title: "Tidal, a breathing instrument", code: tidal },
+  {
+    slug: "macropad",
+    name: "Macro pad",
+    description: "A product hero in one stylesheet: keys that press, a knob and its level meter, an underglow that breathes.",
+    since: "0.0.2",
+    code: macropad,
+  },
+  {
+    slug: "tidal",
+    name: "Tidal",
+    description: "A breathing instrument: petals open and close around a rising pearl, and a marker laps once per breath.",
+    since: "0.0.2",
+    code: tidal,
+  },
   {
     slug: "every-feature",
-    title: "Every feature, one zone each",
+    name: "Every feature",
+    description: "One zone per feature: transforms, operations, animations, materials, shapes, paths and textures.",
+    since: "0.0.1",
     code: everything,
   },
   {
     slug: "materials",
-    title: "Gold, chrome and metal",
+    name: "Materials",
+    description: "Gold, chrome and metal side by side, from the docs of material.",
+    since: "0.0.1",
     code: example(PROPERTIES, "material", 1),
   },
   {
     slug: "grass-block",
-    title: "A grass block, face by face",
+    name: "Grass block",
+    description: "A block of earth with grass on top: its top face has a texture of its own, with ::top.",
+    since: "0.0.1",
     code: example(SELECTORS, "::face(), ::top, ::bottom", 1),
   },
   {
     slug: "hover-group",
-    title: "Hover a group",
+    name: "Hover a group",
+    description: "Three bars in a group: hover one, and all three turn orange and grow.",
+    since: "0.0.1",
     code: example(SELECTORS, ":hover", 1),
   },
   {
     slug: "ripple",
-    title: "Ripples, a grid of cells that ripple",
+    name: "Ripple pad",
+    description: "A grid of 25 cells: the one under the mouse rises, and :has() wakes the rim, the stem and the core.",
+    since: "0.0.2",
     code: ripple,
   },
   {
     slug: "proximity",
-    title: "Proximity falloff (1D steps)",
+    name: "Proximity",
+    description: "A row of fourteen cells: the one under the mouse grows most, its neighbours less and less.",
+    since: "0.0.2",
     code: proximity,
   },
   {
     slug: "watch",
-    title: "A watch, with a glass ball and a crown",
+    name: "Mechanical watch",
+    description: "A watch as a product shot: a steel case, a dial with its ticks, hands that turn in steps.",
+    since: "0.0.2",
     code: watch,
   },
   {
     slug: "orbit",
-    title: "An orbiting planet, with a glass ball and a crown",
+    name: "Orbit sequencer",
+    description: "Sixteen keys around a planet: hover a key and it pops out, its neighbours react and the inner orbit contracts.",
+    since: "0.0.2",
     code: orbit,
   },
   {
     slug: "perfume",
-    title: "A perfume bottle, with a glass ball and a crown",
+    name: "Sillage",
+    description: "A perfume configurator: hover a swatch to fill the glass bottle with another fragrance.",
+    since: "0.0.2",
     code: perfume,
   },
   {
     slug: "starorbit",
-    title: "A star orbiting a planet, with a glass ball and a crown",
+    name: "Star reactor",
+    description: "An extruded star in a golden collar, twelve fins and satellites on SVG tracks. Press the star: the whole crown opens.",
+    since: "0.0.3",
     code: starorbit,
   },
   {
     slug: "steve1",
-    title: "Minecraft Steve animation",
+    name: "Steve walks",
+    description: "A blocky character walking on a strip of grass blocks.",
+    since: "0.0.3",
     code: steve1,
   },
   {
     slug: "steve2",
-    title: "Minecraft Steve animation with responsive design",
+    name: "Steve's island",
+    description: "The walk on a wider island, with an oak and flowers, laid out again by @media on a narrow screen.",
+    since: "0.0.3",
     code: steve2,
   },
   {
     slug: "steve-house",
-    title: "Minecraft Steve house animation",
+    name: "Steve's house",
+    description: "A village on an island of grass blocks: a house, trees, a fence and a pond around the walking character.",
+    since: "0.0.3",
     code: steveHouse,
   },
   {
     slug: "steve-portal",
-    title: "Minecraft Steve portal animation",
+    name: "The portal",
+    description: "A floating island with a portal and a crystal carved by CSG. Hover the switch, press it: the circuit and the lamps light up.",
+    since: "0.0.3",
     code: stevePortal,
   },
   {
     slug: "grass",
-    title: "Some grass blades, blowing in the wind",
+    name: "Grass",
+    description: "64 tufts of blades, each a prism, blowing in the wind.",
+    since: "0.0.4",
     code: grass,
   },
   {
     slug: "teapot",
-    title: "The Utah teapot: hover lifts the lid, a click hits a speed bump",
+    name: "Utah teapot",
+    description: "A lathe body and lid, a cone spout, a path handle. Hover lifts the lid; a click sends the teapot over a speed bump.",
+    since: "0.0.6",
     code: teapot,
   },
   {
     slug: "mistral-four",
-    title: "Le Chonk: a pixel 4 that falls over when clicked",
+    name: "Le Chonk",
+    description: "A pixel 4, extruded from a staircase contour. A click tips it over to the left, then onto its back.",
+    since: "0.0.6",
     code: mistralFour,
   },
   {
     slug: "product-hunt",
-    title: "The Product Hunt mark, a coin under two sweeping lights",
+    name: "Product Hunt mark",
+    description: "An orange coin with the P of the flat logo pushed out of it, floating under two sweeping lights.",
+    since: "0.0.6",
     code: productHunt,
   },
   {
     slug: "sunlit-room",
-    title: "A room lit by one shaft of sun, after Maxime Heckel's global illumination study",
+    name: "Sunlit room",
+    description: "A room lit by one shaft of sun, after Maxime Heckel's global illumination study: an orange ball glows on the floor.",
+    since: "0.0.6",
     code: sunlitRoom,
   },
 ];
@@ -300,6 +410,7 @@ export type Study = {
   reference?: { href: string; label: string }; // the model it rebuilds
   webgl?: boolean; // mounts on WebGL, for a predictable start
   capture?: number; // ms of the scene before its poster is taken (npm run captures), 3000 by default
+  since: string; // the version of GSS it arrived with, for the archive (decision 172)
 };
 
 export const STUDIES: Study[] = [
@@ -312,6 +423,7 @@ export const STUDIES: Study[] = [
     features: ["offset-path", "offset-rotate", "glass", "animation-delay"],
     hint: "follow the train · drag to orbit",
     scene: circuit,
+    since: "0.0.5",
   },
   {
     key: "relic",
@@ -322,6 +434,7 @@ export const STUDIES: Study[] = [
     features: ["SVG prisms", "carved aperture", "bronze", "nested motion"],
     hint: "explore the layered silhouette · drag to orbit",
     scene: relic,
+    since: "0.0.5",
   },
   {
     key: "garden",
@@ -332,6 +445,7 @@ export const STUDIES: Study[] = [
     features: ["SVG sweets", "conic gradients", "jelly", ":has()"],
     hint: "hover, press, explore · drag to orbit",
     scene: garden,
+    since: "0.0.5",
   },
   {
     key: "bloom",
@@ -342,6 +456,7 @@ export const STUDIES: Study[] = [
     features: ["scroll()", "oklch()", ":hover", ":active"],
     hint: "drag the slider to unfold · hover a petal",
     scene: bloom,
+    since: "0.0.5",
   },
   {
     key: "character",
@@ -352,6 +467,7 @@ export const STUDIES: Study[] = [
     features: ["nested groups", "SVG facial contours", "rounded solids"],
     hint: "drag to orbit · hover the face",
     scene: character,
+    since: "0.0.5",
     reference: { href: "https://zzz.dog/modeling#modeling-tutorial", label: "original model: Zdog, by Dave DeSandro ↗" },
     webgl: true,
   },
@@ -364,6 +480,7 @@ export const STUDIES: Study[] = [
     features: ["hemisphere cut", "rounded volumes", "scroll()"],
     hint: "drag the slider to separate the layers",
     scene: burger,
+    since: "0.0.5",
     reference: { href: "https://zzz.dog/modeling#concepts-stroke-volume", label: "original model: Zdog, by Dave DeSandro ↗" },
     webgl: true,
   },
@@ -376,6 +493,7 @@ export const STUDIES: Study[] = [
     features: ["CSG cavities", "iris blades", "glass", "scroll()"],
     hint: "drag the slider to reveal the optical assembly",
     scene: camera,
+    since: "0.0.5",
     reference: { href: "https://imaging.nikon.com/imaging/information/chronicle/rhnc05f-e/", label: "exterior reference: Nikon ↗" },
     webgl: true,
   },
@@ -389,5 +507,6 @@ export const STUDIES: Study[] = [
     hint: "watch the loop · hover the letters · drag to orbit",
     scene: release,
     capture: 7000, // "gss." written, the braces closed
+    since: "0.0.5",
   },
 ];

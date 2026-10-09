@@ -342,6 +342,7 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 
 ## Done recently
 
+- The archive of the showcase (decision 172, Oct. 9): every scene of the page, the studies included, newest first, as a grid or a list; a capture, a name, what it is, the version it came with, and the features it uses, read from its code (`featuresOf()`) and linked to the docs
 - The studies of the showcase wait for play (decision 171, Oct. 9): a poster captured at the size of the viewer and a round play button in `signal`; a study chosen in the list draws at once. `npm run captures` also writes the posters of the studies, on the graphics card of the computer
 - The renders of the site sleep off screen (decision 143, Oct. 6): the live demo of the home page and the Try it of the docs, like `mount()`; its logic moves to `sleepOffscreen()` (`runtime/offscreen.ts`)
 - A scene starts light and stops when too heavy (decision 142, Oct. 6, after readers wrote that the home page froze their browser): every view starts at a density of 0.5 and climbs to its `dpr` in under a second while the frames keep up, then follows the frame rate (decision 120), in `mount()`, `<gss-scene>`, the home page and the showcase too; more than 1.5 s under 5 fps at 0.5 (or one frame of 3 s) stops it, with `gss-too-heavy` on the canvas and "Draw it anyway"; the hero falls back to its SVG. `adaptDpr: false` for the bench, the films and the pixel tests

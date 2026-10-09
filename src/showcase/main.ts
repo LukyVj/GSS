@@ -1,17 +1,11 @@
 import "../styles/gss-code.css";
 import "../embed/element"; // <gss-scene>: the site uses its own embed (decision 63)
 import "./studies"; // the studies viewer, at the top of the page (decision 119)
+import { connectArchiveView } from "./archive-view";
 
-// The studies, use cases, embed ways and the inspiration grid are prerendered
-// (src/showcase/prerender.ts). This script only registers <gss-scene> and
-// swaps a missing capture for the code preview.
+// The studies, use cases, embed ways and the archive are prerendered
+// (src/showcase/prerender.ts). This script registers <gss-scene>, runs the studies
+// viewer, and connects the grid / list switch of the archive (decision 172).
 
-for (const img of document.querySelectorAll<HTMLImageElement>("#gallery .shot img")) {
-  img.addEventListener("error", () => {
-    const art = img.parentElement;
-    if (!art) return;
-    const fallback = art.querySelector<HTMLElement>(".fallback");
-    img.remove();
-    if (fallback) fallback.hidden = false;
-  });
-}
+const archive = document.querySelector<HTMLElement>("#scenes");
+if (archive) connectArchiveView(archive);
