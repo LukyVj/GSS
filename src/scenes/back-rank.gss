@@ -4,8 +4,10 @@
  * is a prism cut from a polygon, the lost queen wears an iridescent pearl.
  * The black king is in check: its outline is double, red, and breathes
  * with outline-offset in @keyframes.
- * Hover a piece: a dashed or dotted outline. Grab one (cursor: grab, then
- * grabbing): it hops, an animation started by :active that plays to its end.
+ * Hover a piece: a dashed or dotted outline, and cursor: pointer. Click
+ * it: it hops, an animation started by :active that plays to its end.
+ * controls: none on the pieces and the clock: a drag that starts on them
+ * leaves the camera still; from the board, it turns it.
  * shape-rendering: geometricPrecision smooths every silhouette.
  */
 @scene {
@@ -71,7 +73,8 @@ scene {
 .knight,
 .king > * {
   translate: calc((var(--f) - 3.5) * 0.5) var(--y) calc((3.5 - var(--r)) * 0.5);
-  cursor: grab;
+  cursor: pointer;
+  controls: none;
 }
 
 .pawn:active,
@@ -79,7 +82,6 @@ scene {
 .bishop:active,
 .knight:active,
 .king:active > * {
-  cursor: grabbing;
   animation: hop 0.7s cubic-bezier(0.3, 0, 0.3, 1);
 }
 
@@ -249,6 +251,7 @@ scene {
   translate: var(--x) 0.46 0;
   material: brass;
   cursor: pointer;
+  controls: none;
 }
 
 #tap-white {

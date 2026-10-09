@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { pickPixel, decodeId, hoverValues, pointerValues, createPress, cursorAt } from "./hover";
+import { pickPixel, decodeId, hoverValues, pointerValues, createPress, cursorAt, controlsAllow } from "./hover";
 
 // Step 4b of :hover, the part without the GPU: where the mouse is, which object
 // the picking pass found, and what goes in uHover[].
@@ -124,5 +124,27 @@ describe("cursorAt", () => {
     expect(cursorAt(cursors, 2, 3)).toBe("grab");
     expect(cursorAt(cursors, 3, 0)).toBe("");
     expect(cursorAt(cursors, 3, 3)).toBe("pointer");
+  });
+});
+
+describe("controlsAllow (decision 176)", () => {
+  const pieces = { orbit: true, zoom: true, objects: [{ id: 2, orbit: false, zoom: true }] };
+
+  it("lets every gesture move the camera without controls in the scene", () => {
+    expect(controlsAllow(undefined, "orbit", 0)).toBe(true);
+    expect(controlsAllow(undefined, "zoom", 3)).toBe(true);
+  });
+
+  it("follows the scene, whatever is under the pointer", () => {
+    expect(controlsAllow({ orbit: false, zoom: true }, "orbit", 0)).toBe(false);
+    expect(controlsAllow({ orbit: false, zoom: true }, "zoom", 0)).toBe(true);
+    expect(controlsAllow({ orbit: false, zoom: false }, "zoom", 5)).toBe(false);
+  });
+
+  it("keeps a gesture from starting over an object that refuses it", () => {
+    expect(controlsAllow(pieces, "orbit", 2)).toBe(false);
+    expect(controlsAllow(pieces, "zoom", 2)).toBe(true);
+    expect(controlsAllow(pieces, "orbit", 1)).toBe(true); // another object
+    expect(controlsAllow(pieces, "orbit", 0)).toBe(true); // the floor or the background
   });
 });

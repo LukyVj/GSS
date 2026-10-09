@@ -479,6 +479,39 @@ export const PROPERTIES: PropertyDef[] = [
     ],
   },
   {
+    name: "controls",
+    since: "0.0.7",
+    appliesTo: "everywhere",
+    syntax: "auto | none | [ orbit || zoom ]",
+    initial: "auto",
+    description:
+      "The gestures that move the camera: `orbit`, a drag turns it around its target, and `zoom`, the wheel brings it closer. `none` keeps the camera where the GSS puts it, and the page scrolls over the scene. On an object, the gestures that cannot start over it.",
+    values: [
+      ["auto", "Both gestures, the default: a drag turns the camera, the wheel zooms."],
+      ["none", "Neither: the camera stays where the GSS puts it, and the wheel scrolls the page."],
+      ["orbit", "A drag turns the camera around its target."],
+      ["zoom", "The wheel brings the camera closer or takes it farther, from 3 to 15."],
+    ],
+    details: "CSS has no camera, so GSS has a property of its own for it. On `scene`, it says which gestures move the camera; on an object or a group, which ones can start over it: a button with `controls: none` is pressed without turning the camera, and a drag from the floor still turns it. A gesture moves the camera when the scene and the object under the pointer both take it. Like `cursor`, it is inherited from the groups; it follows `@media`, not `:hover`. On a page, `<gss-scene controls=\"none\">` and `mount(canvas, scene, { controls: false })` turn every gesture off, whatever the GSS says. `camera-spin` still turns the camera.",
+    examples: [
+      {
+        name: "a still camera",
+        text: "The camera stays where the GSS puts it: a drag does nothing, and the wheel scrolls the page.",
+        code: "@scene { torus; } scene { controls: none; camera-angle: 30deg 30deg; } torus { translate: 0 0.8 0; rotate-x: 60deg; radius: 0.6; thickness: 0.2; color: #ff5a36; }",
+      },
+      {
+        name: "turn, but no zoom",
+        text: "A drag turns the camera; the wheel scrolls the page.",
+        code: "@scene { cube; } scene { controls: orbit; } cube { translate: 0 0.5 0; rotate-y: 30deg; color: #3a7bff; }",
+      },
+      {
+        name: "a button that holds still",
+        text: "Press the orange button and drag: it sinks, and the camera stays. From the floor, a drag still turns it.",
+        code: "@scene { cube#base; cube#button; } #base { size: 1.6 0.2 1.6; translate: 0 0.1 0; color: #2a2a33; } #button { size: 1 0.3 1; translate: 0 0.35 0; color: #ff5a36; cursor: pointer; controls: none; transition: 0.15s; } #button:active { translate: 0 0.25 0; }",
+      },
+    ],
+  },
+  {
     name: "outline",
     since: "0.0.6",
     appliesTo: "object",

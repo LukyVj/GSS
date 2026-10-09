@@ -94,6 +94,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 | `shape-rendering`                                                 | `auto` (default) or `geometricPrecision`: silhouettes smoothed from the camera ray, opt-in, about 15 % more GPU time for now (dec. 149, 169)               |
 | `filter`                                                          | color filters, `blur()`, `bloom()`, `grain()`, and the lens effects `vignette()`, `chromatic-aberration()` on the scene only (dec. 83, 84, 157)       |
 | `camera-target`, `camera-distance`, `camera-angle`, `camera-spin` | camera (mouse orbit; automatic turn as a duration, `none` by default, dec. 54)                                                                       |
+| `controls`                                                        | the gestures that move the camera: `orbit` (a drag), `zoom` (the wheel), both by default, or `none`; on an object, the gestures that cannot start over it (dec. 176)|
 
 ### Rendering
 
@@ -148,6 +149,7 @@ On `release/0.0.7`. Decisions from 169.
 - [x] `geometricPrecision` fixed in 0.0.7, not patched into 0.0.6 in silence (169): no more ghosts around a small `path`, `prism` or `lathe`; as smooth on a 4K canvas as on a small one.
 - [x] `outline` on a small `path`, `prism` or `lathe` drew the box of its shape: fixed in 0.0.7 too (170).
 - [x] `mix-blend-mode` on objects (173): the modes of `background-blend-mode` and `plus-lighter`, over what is behind each object along the ray; no `isolation` yet.
+- [x] `controls` on `scene` and on objects (176): the gestures that move the camera; the pieces of Back Rank and the buttons of Midnight Arcade hold still under a drag.
 
 ## Release 0.0.6 (published Oct. 9)
 

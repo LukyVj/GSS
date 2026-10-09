@@ -81,7 +81,7 @@ export const DOC_GROUPS: NavGroup[] = [
   { id: "transforms", title: "Transforms", category: "Motion", order: 40, anchors: ["translate", "rotate-x", "rotate-y", "rotate-z", "scale", "transform-origin", "offset-path", "offset-distance", "offset-rotate"] },
   { id: "animations", title: "Animation and transitions", category: "Motion", order: 41, anchors: ["animation", "animation-duration", "animation-delay", "animation-iteration-count", "animation-direction", "animation-fill-mode", "animation-timing-function", "animation-timeline", "animation-range", "animation-range-start", "animation-range-end", "transition"] },
   { id: "easings", title: "Easings", category: "Motion", order: 42, anchors: ["fn-cubic-bezier", "fn-linear", "fn-steps"] },
-  { id: "camera", title: "Camera", category: "Scene", order: 50, anchors: ["camera-target", "camera-distance", "camera-angle", "camera-spin"] },
+  { id: "camera", title: "Camera", category: "Scene", order: 50, anchors: ["camera-target", "camera-distance", "camera-angle", "camera-spin", "controls"] },
   { id: "scene-properties", title: "Lighting and fog", category: "Scene", order: 51, anchors: ["light", "shape-light", "intensity", "ambient", "fog", "shadows"] },
   { id: "rendering", title: "Rendering", category: "Scene", order: 52, anchors: ["dpr", "shape-rendering", "view"] },
 ];
