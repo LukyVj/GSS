@@ -44,6 +44,16 @@ export function rangeProgress(position: number, length: number, subject: number,
   return clamp01((position - start) / (end - start));
 }
 
+// scroll() with animation-range: the progress inside the range, from the scroll of the page
+// (scrolled, in pixels, out of length), or from the slider of the playground (override). Where
+// the page cannot scroll, like the playground, the slider stands for one screen of scroll
+// (clientSize): with no length, every range was over (decision 177).
+export function scrollRangeProgress(scrolled: number, length: number, clientSize: number, override: number | null, range: Range): number {
+  const span = override !== null && length <= 0 ? clientSize : Math.max(length, 0);
+  const position = override !== null ? override * span : scrolled;
+  return rangeProgress(position, span, 0, 0, range);
+}
+
 // The closest ancestor that scrolls on this axis, or null for the page, like
 // scroll(nearest). Each frame, so a container that starts scrolling is found.
 export function findScroller(
@@ -82,8 +92,8 @@ function progressOf(timeline: Timeline, canvas: HTMLCanvasElement, override: num
     const scroller = nearest ?? root;
     if (timeline.range) {
       const length = vertical ? scroller.scrollHeight - scroller.clientHeight : scroller.scrollWidth - scroller.clientWidth;
-      const position = override !== null ? override * length : vertical ? scroller.scrollTop : scroller.scrollLeft;
-      return rangeProgress(position, Math.max(length, 0), 0, 0, timeline.range);
+      const scrolled = vertical ? scroller.scrollTop : scroller.scrollLeft;
+      return scrollRangeProgress(scrolled, length, vertical ? scroller.clientHeight : scroller.clientWidth, override, timeline.range);
     }
     return vertical
       ? scrollProgress(scroller.scrollTop, scroller.scrollHeight, scroller.clientHeight)
