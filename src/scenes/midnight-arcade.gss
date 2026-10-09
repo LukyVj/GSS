@@ -1,0 +1,421 @@
+/* Midnight Arcade: two cabinets after closing time.
+ * The left screen is a @paint, a GLSL shader drawn into a texture at every
+ * frame; the right one is a <canvas> of the html tab, a game of Pong,
+ * shown with element(). Neon is material: emissive() under bloom(), and the
+ * E of the sign flickers with visibility in @keyframes. The lens adds
+ * vignette() and chromatic-aberration().
+ * Click a coin: it drops into its slot, an animation started by :active that
+ * plays to its end. Press START, grab a joystick.
+ * Make the render narrower than 600px: the right cabinet and its light take
+ * display: none.
+ * Both screens are drawn with WebGL2: pick it in the backend menu if the
+ * playground shows a notice. The Pong needs HTML-in-Canvas, behind
+ * chrome://flags/#canvas-draw-element; without it, the screen only glows.
+ */
+@paint synthwave {
+  uniform float time;
+  uniform vec2 resolution;
+  out vec4 color;
+
+  void main() {
+    vec2 uv = gl_FragCoord.xy / resolution;
+    float horizon = 0.42;
+    vec3 col = mix(vec3(1.0, 0.36, 0.48), vec3(0.12, 0.03, 0.26), smoothstep(horizon, 1.0, uv.y));
+
+    // the sun, cut by bands that slide down into the sea
+    float disc = 1.0 - smoothstep(0.215, 0.222, length(uv - vec2(0.5, 0.6)));
+    float bands = min(step(0.35, fract(uv.y * 16.0 + time * 0.6)) + step(0.66, uv.y), 1.0);
+    vec3 sun = mix(vec3(1.0, 0.18, 0.55), vec3(1.0, 0.86, 0.3), smoothstep(0.42, 0.8, uv.y));
+    col = mix(col, sun, disc * bands);
+
+    // the grid, rushing towards the player
+    if (uv.y < horizon) {
+      float h = horizon - uv.y;
+      vec2 g = vec2((uv.x - 0.5) * 3.0 / h, 0.35 / h + time * 2.0);
+      vec2 f = 0.5 - abs(fract(g) - 0.5);
+      vec2 w = fwidth(g) * 1.3;
+      float line = max(1.0 - smoothstep(0.0, w.x, f.x), 1.0 - smoothstep(0.0, w.y, f.y));
+      col = mix(vec3(0.08, 0.02, 0.16), vec3(0.2, 0.95, 1.0), line * smoothstep(0.0, 0.12, h));
+      col += vec3(1.0, 0.3, 0.5) * 0.5 * (1.0 - smoothstep(0.0, 0.06, h));
+    }
+
+    // scanlines
+    col *= 0.78 + 0.22 * step(0.5, fract(gl_FragCoord.y / 4.0));
+    color = vec4(col, 1.0);
+  }
+}
+
+@scene {
+  cube#wall;
+  tube#ring;
+  group#sign {
+    path.letter#o;
+    path.letter#p;
+    path.letter#e;
+    path.letter#n;
+  }
+  group.cabinet#left {
+    cube.body;
+    cube.edge * 2;
+    cube.screen;
+    cube.marquee;
+    group.panel {
+      cube.deck;
+      cylinder.button#start;
+      cylinder.button#fire;
+      group.stick {
+        cylinder.shaft;
+        sphere.knob;
+      }
+    }
+    cube.door;
+    cube.slot;
+    cylinder.coin;
+  }
+  group.cabinet#right {
+    cube.body;
+    cube.edge * 2;
+    cube.screen;
+    cube.marquee;
+    group.panel {
+      cube.deck;
+      cylinder.button;
+      cylinder.button;
+      group.stick {
+        cylinder.shaft;
+        sphere.knob;
+      }
+    }
+    cube.door;
+    cube.slot;
+    cylinder.coin;
+  }
+  light#pink;
+  light#cyan;
+}
+
+scene {
+  background: linear-gradient(#05040b, #120a24);
+  floor: checker(1.2, #1f1838, #0d0a19);
+  light: -30deg 50deg #8a7dff 0.2;
+  ambient: 0.18 #6a5cff;
+  shadows: soft;
+  fog: 9 18;
+  camera-distance: 8.2;
+  camera-angle: 12deg 4deg;
+  camera-target: 0 2.3 0;
+  filter: bloom(0.85, 18px) vignette(0.6) chromatic-aberration(3px) grain(0.035);
+}
+
+/* the room */
+
+#wall {
+  size: 9 5 0.2;
+  translate: 0 2.5 -1.1;
+  color: stripes(3 y, #1a1430, #15102a);
+}
+
+#ring {
+  radius: 0.98;
+  height: 0.05;
+  thickness: 0.035;
+  translate: 0 3.7 -0.95;
+  rotate-x: 90deg;
+  material: emissive(#ff3fa4, 1.6);
+}
+
+#sign {
+  translate: 0 3.7 -0.85;
+}
+
+.letter {
+  stroke-width: 0.045;
+  material: emissive(#7ff6ff, 1.8);
+}
+
+#o {
+  translate: -0.69 0 0;
+  d: path("M0 -0.25 A0.16 0.25 0 1 1 0 0.25 A0.16 0.25 0 1 1 0 -0.25");
+}
+
+#p {
+  translate: -0.23 0 0;
+  d: path("M-0.14 0.25 V-0.25 H0.02 A0.13 0.125 0 0 1 0.02 0 H-0.14");
+}
+
+#e {
+  translate: 0.23 0 0;
+  d: path("M0.14 -0.25 H-0.14 V0.25 H0.14 M-0.14 0 H0.08");
+  animation: flicker 4s step-end infinite;
+}
+
+#n {
+  translate: 0.69 0 0;
+  d: path("M-0.14 0.25 V-0.25 L0.14 0.25 V-0.25");
+}
+
+/* the cabinets */
+
+#left {
+  translate: -0.8 0 0;
+  rotate-y: 8deg;
+}
+
+#right {
+  translate: 0.8 0 0;
+  rotate-y: -8deg;
+}
+
+.body {
+  size: 1.2 2.3 0.95;
+  corner-radius: 0.03;
+  translate: 0 1.15 0;
+  color: #1d1535;
+}
+
+.edge {
+  size: 0.03 2.3 0.03;
+  translate: calc(sibling-index() * 1.2 - 3) 1.15 0.475;
+}
+
+#left .edge {
+  material: emissive(#2fe0ff, 2);
+}
+
+#right .edge {
+  material: emissive(#ff3fa4, 2);
+}
+
+.screen {
+  size: 0.96 0.74 0.06;
+  translate: 0 1.6 0.47;
+  rotate-x: -10deg;
+  color: radial-gradient(#1d5560, #08141c);
+  material: emissive(1);
+}
+
+#left .screen::face(front) {
+  texture: paint(synthwave);
+}
+
+#right .screen::face(front) {
+  texture: element(#pong);
+}
+
+.marquee {
+  size: 1.2 0.34 0.36;
+  translate: 0 2.45 0.32;
+  corner-radius: 0.02;
+}
+
+#left .marquee {
+  material: emissive(linear-gradient(90deg, #ff2fa0, #ffb03a), 1.3);
+}
+
+#right .marquee {
+  material: emissive(linear-gradient(90deg, #2fe0ff, #8a5cff), 1.3);
+}
+
+.panel {
+  translate: 0 1.06 0.66;
+  rotate-x: 14deg;
+}
+
+.deck {
+  size: 1.2 0.1 0.42;
+  corner-radius: 0.02;
+  color: #2a1f4a;
+}
+
+.button {
+  radius: 0.055;
+  height: 0.06;
+  translate: calc(sibling-index() * 0.17 - 0.06) 0.05 0.04;
+  material: emissive(1.4);
+  cursor: pointer;
+  transition: 0.08s;
+}
+
+.button:nth-child(2) {
+  color: #ffd23a;
+}
+
+.button:nth-child(3) {
+  color: #ff3f5e;
+}
+
+.button:active {
+  translate: calc(sibling-index() * 0.17 - 0.06) 0.02 0.04;
+}
+
+#start:active {
+  animation: start 0.9s;
+}
+
+.stick {
+  translate: -0.3 0.05 0.02;
+  cursor: grab;
+}
+
+.shaft {
+  radius: 0.018;
+  height: 0.2;
+  translate: 0 0.1 0;
+  transform-origin: 0 -0.1 0;
+  material: aluminum;
+  transition: 0.35s cubic-bezier(0.3, 1.8, 0.5, 1);
+}
+
+.knob {
+  radius: 0.065;
+  translate: 0 0.22 0;
+  transition: 0.35s cubic-bezier(0.3, 1.8, 0.5, 1);
+}
+
+.stick:active .shaft {
+  cursor: grabbing;
+  rotate-z: 24deg;
+}
+
+.stick:active .knob {
+  cursor: grabbing;
+  translate: -0.09 0.2 0;
+}
+
+#left .knob {
+  material: emissive(#ff3fa4, 0.6);
+}
+
+#right .knob {
+  material: emissive(#2fe0ff, 0.6);
+}
+
+.door {
+  size: 0.42 0.5 0.03;
+  translate: 0 0.55 0.48;
+  corner-radius: 0.015;
+  material: aluminum;
+}
+
+.slot {
+  size: 0.025 0.12 0.04;
+  translate: 0 0.62 0.49;
+  material: emissive(#ff2a2a, 2.2);
+}
+
+.coin {
+  radius: 0.075;
+  height: 0.018;
+  translate: 0 0.9 0.6;
+  rotate-x: 90deg;
+  cursor: pointer;
+  animation: hover-coin 2.4s ease-in-out infinite alternate;
+}
+
+#left .coin {
+  material: emissive(#ffc640, 0.9);
+}
+
+#right .coin {
+  material: emissive(#ff9a5a, 0.9);
+}
+
+.coin:active {
+  animation: insert 1.4s ease-in;
+}
+
+#pink {
+  translate: -1.2 3.2 1.2;
+  color: #ff3fa4;
+  intensity: 2.2;
+}
+
+#cyan {
+  translate: 1.6 2.6 1.4;
+  color: #2fe0ff;
+  intensity: 2;
+}
+
+@keyframes flicker {
+  0% {
+    visibility: visible;
+  }
+  61% {
+    visibility: hidden;
+  }
+  63% {
+    visibility: visible;
+  }
+  66% {
+    visibility: hidden;
+  }
+  71% {
+    visibility: visible;
+  }
+  88% {
+    visibility: hidden;
+  }
+  89% {
+    visibility: visible;
+  }
+}
+
+@keyframes hover-coin {
+  to {
+    translate: 0 0.96 0.6;
+    rotate-y: 30deg;
+  }
+}
+
+@keyframes insert {
+  0% {
+    translate: 0 0.9 0.6;
+    rotate-y: 0deg;
+  }
+  45% {
+    translate: 0 0.62 0.6;
+    rotate-y: 0deg;
+  }
+  80% {
+    translate: 0 0.62 0.48;
+    visibility: visible;
+  }
+  81% {
+    visibility: hidden;
+  }
+  100% {
+    translate: 0 0.62 0.48;
+    visibility: hidden;
+  }
+}
+
+@keyframes start {
+  0%, 40%, 80% {
+    color: #ffd23a;
+  }
+  20%, 60% {
+    color: #ffffff;
+  }
+}
+
+@media (max-width: 600px) {
+  #right, #cyan {
+    display: none;
+  }
+  #ring {
+    translate: -0.8 3.7 -0.95;
+  }
+  #sign {
+    translate: -0.8 3.7 -0.85;
+  }
+  scene {
+    camera-target: -0.8 2.3 0;
+    camera-distance: 8.4;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #e, .coin {
+    animation: none;
+  }
+}

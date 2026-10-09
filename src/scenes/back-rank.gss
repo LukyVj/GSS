@@ -1,0 +1,303 @@
+/* Back Rank: a checkmate on the last row, in silver and copper.
+ * The board is checker(), the frame brass, the clock aluminum. Pawns are
+ * pyramids, rooks tubes, bishops octahedrons standing on a tip; the knight
+ * is a prism cut from a polygon, the lost queen wears an iridescent pearl.
+ * The black king is in check: its outline is double, red, and breathes
+ * with outline-offset in @keyframes.
+ * Hover a piece: a dashed or dotted outline. Grab one (cursor: grab, then
+ * grabbing): it hops, an animation started by :active that plays to its end.
+ * shape-rendering: geometricPrecision smooths every silhouette.
+ */
+@scene {
+  cube#frame;
+  cube#board;
+  pyramid.pawn.white * 3;
+  pyramid.pawn.black * 3;
+  tube.rook.white;
+  octahedron.bishop.white;
+  prism.knight.black;
+  group.king#white-king {
+    cylinder.body;
+    octahedron.crown;
+  }
+  group.king#black-king {
+    cylinder.body;
+    octahedron.crown;
+  }
+  group#taken {
+    cone.dress;
+    sphere.head;
+  }
+  group#clock {
+    cube.case;
+    cylinder.press#tap-white;
+    cylinder.press#tap-black;
+  }
+}
+
+scene {
+  background: radial-gradient(circle at 50% 30%, #3a2a24, #0e0a09 70%);
+  floor: radial-gradient(circle, #4a3326, #1a110c 18%, #0e0a09 40%);
+  light: -38deg 52deg #ffe2bf 1.15;
+  ambient: 0.35 #9fb6ff;
+  shadows: soft;
+  camera-distance: 6.6;
+  camera-angle: 24deg 38deg;
+  camera-target: 0.15 0.2 0.1;
+  shape-rendering: geometricPrecision;
+  filter: vignette(0.45);
+}
+
+/* the board: eight cells of 0.5 on each side, so checker(2) */
+
+#frame {
+  size: 4.36 0.12 4.36;
+  translate: 0 0.06 0;
+  corner-radius: 0.04;
+  material: brass;
+}
+
+#board {
+  size: 4 0.16 4;
+  translate: 0 0.1 0;
+  color: checker(2, #efe4cf, #3b2c26);
+}
+
+/* every piece is placed by its file (--f, 0 for a) and its rank (--r, 0 for 1) */
+
+.pawn,
+.rook,
+.bishop,
+.knight,
+.king > * {
+  translate: calc((var(--f) - 3.5) * 0.5) var(--y) calc((3.5 - var(--r)) * 0.5);
+  cursor: grab;
+}
+
+.pawn:active,
+.rook:active,
+.bishop:active,
+.knight:active,
+.king:active > * {
+  cursor: grabbing;
+  animation: hop 0.7s cubic-bezier(0.3, 0, 0.3, 1);
+}
+
+.white {
+  material: silver;
+}
+
+.black {
+  material: copper;
+}
+
+#white-king > * {
+  material: silver;
+}
+
+#black-king > * {
+  material: copper;
+}
+
+.white,
+#white-king > * {
+  outline: 0 dashed #ffd36a;
+  outline-offset: 0.03;
+  transition: 0.2s;
+}
+
+.black {
+  outline: 0 dotted #9fe3ff;
+  outline-offset: 0.03;
+  transition: 0.2s;
+}
+
+.white:hover,
+.black:hover,
+#white-king:hover > * {
+  outline-width: 0.025;
+}
+
+.pawn {
+  --y: 0.38;
+  size: 0.28 0.36 0.28;
+}
+
+.pawn.white:nth-child(3) {
+  --f: 5;
+  --r: 1;
+}
+
+.pawn.white:nth-child(4) {
+  --f: 6;
+  --r: 1;
+}
+
+.pawn.white:nth-child(5) {
+  --f: 7;
+  --r: 2;
+}
+
+.pawn.black:nth-child(6) {
+  --f: 5;
+  --r: 6;
+}
+
+.pawn.black:nth-child(7) {
+  --f: 6;
+  --r: 6;
+}
+
+.pawn.black:nth-child(8) {
+  --f: 7;
+  --r: 5;
+}
+
+.rook {
+  --f: 4;
+  --r: 7;
+  --y: 0.4;
+  radius: 0.16;
+  height: 0.4;
+  thickness: 0.06;
+}
+
+.bishop {
+  --f: 1;
+  --r: 2;
+  --y: 0.47;
+  radius: 0.28;
+  rotate-y: 45deg;
+}
+
+.knight {
+  --f: 2;
+  --r: 5;
+  --y: 0.5;
+  d: polygon(-0.18 0.25, 0.18 0.25, 0.16 0.05, 0.13 -0.12, 0.04 -0.25, -0.02 -0.17, -0.2 -0.06, -0.22 0.02, -0.12 0.06, -0.06 0.02, -0.14 0.25);
+  depth: 0.14;
+  scale: 1.3;
+  rotate-y: 15deg;
+}
+
+.king .body {
+  --y: 0.47;
+  radius: 0.15;
+  height: 0.54;
+}
+
+.king .crown {
+  --y: 0.86;
+  radius: 0.13;
+  rotate-y: 45deg;
+}
+
+#white-king > * {
+  --f: 6;
+  --r: 0;
+}
+
+#black-king > * {
+  --f: 6;
+  --r: 7;
+}
+
+/* check: a red double line that breathes */
+#black-king > * {
+  outline: 0.035 double #ff3b3b;
+  animation: check 1.6s ease-in-out infinite alternate;
+}
+
+/* the queen black lost, on the table */
+
+#taken {
+  translate: 2.7 0.18 -0.5;
+  rotate-z: 90deg;
+  rotate-y: -30deg;
+}
+
+.dress {
+  radius: 0.18;
+  height: 0.5;
+  material: copper;
+}
+
+.head {
+  radius: 0.12;
+  translate: 0 0.32 0;
+  color: #2a1a12;
+  material: iridescent;
+}
+
+/* the clock */
+
+#clock {
+  translate: -2.85 0 -0.6;
+  rotate-y: 80deg;
+}
+
+.case {
+  size: 1 0.42 0.34;
+  translate: 0 0.21 0;
+  corner-radius: 0.04;
+  material: aluminum;
+}
+
+.press {
+  radius: 0.07;
+  height: 0.08;
+  translate: var(--x) 0.46 0;
+  material: brass;
+  cursor: pointer;
+}
+
+#tap-white {
+  --x: -0.27;
+}
+
+#tap-black {
+  --x: 0.27;
+  translate: 0.27 0.43 0;
+}
+
+.press:active {
+  animation: tap 0.35s;
+}
+
+@keyframes hop {
+  0%, 100% {
+    translate: calc((var(--f) - 3.5) * 0.5) var(--y) calc((3.5 - var(--r)) * 0.5);
+  }
+  45% {
+    translate: calc((var(--f) - 3.5) * 0.5) calc(var(--y) + 0.45) calc((3.5 - var(--r)) * 0.5);
+  }
+}
+
+@keyframes check {
+  to {
+    outline-offset: 0.09;
+    outline-color: #ff8a5a;
+  }
+}
+
+@keyframes tap {
+  50% {
+    translate: var(--x) 0.42 0;
+  }
+}
+
+@media (max-width: 600px) {
+  #clock, #taken {
+    display: none;
+  }
+  scene {
+    camera-distance: 12.5;
+    camera-target: 0 0.2 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #black-king > * {
+    animation: none;
+  }
+}

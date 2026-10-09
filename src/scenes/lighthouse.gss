@@ -1,0 +1,285 @@
+/* Lighthouse: scroll to build it, then to light it.
+ * Four animations share one scroll() timeline, each on its own part of it
+ * with animation-range: the tower rises from the sea (0% to 35%), the
+ * lantern comes down (35% to 60%), then the roof (60% to 78%), and night
+ * falls as the lamp lights (78% to 100%). In the playground, the slider
+ * over the render stands in for the scroll.
+ * The tower is a cylinder painted with stripes(), the railing a tube, the
+ * lamp an emissive() octahedron; its beams turn in a group that plays in
+ * time, and wait for the lamp with visibility.
+ */
+@scene {
+  sphere#rock;
+  sphere#ledge;
+  group#tower {
+    cylinder#plinth;
+    cylinder#shaft;
+  }
+  group#lantern {
+    cylinder#deck;
+    tube#railing;
+    cylinder#glass;
+    octahedron#lamp;
+  }
+  group#roof {
+    cone#cap;
+    sphere#finial;
+  }
+  group#beams {
+    cone.beam * 2;
+  }
+  group#sea-lane {
+    group#boat {
+      capsule#hull;
+      prism#sail;
+    }
+  }
+  light#glow;
+}
+
+scene {
+  background: noise(520 1, #fff0 96.5%, #fff0 98%), linear-gradient(#2b1d4a, #c0587a 62%, #f6a66b);
+  floor: radial-gradient(circle, #1d4a5c, #0b2233 20%, #081624 50%);
+  light: 60deg 14deg #ffb88a 0.9;
+  ambient: 0.4 #8f8ad8;
+  shadows: soft;
+  fog: 14 30;
+  camera-distance: 10.2;
+  camera-angle: 28deg 9deg;
+  camera-target: 0 2.7 0;
+  filter: bloom(0.45, 14px) vignette(0.5);
+  animation: nightfall 1s linear;
+  animation-timeline: scroll();
+  animation-range: 78% 100%;
+}
+
+/* the island */
+
+#rock {
+  radius: 1.5;
+  translate: 0 -1.1 0;
+  color: noise(4 3, #2a2a30, #5a5450);
+}
+
+#ledge {
+  radius: 0.9;
+  translate: 1.1 -0.55 0.6;
+  blend: 0.4;
+  color: noise(4 3, #2a2a30, #5a5450);
+}
+
+/* the tower rises from the sea */
+
+#tower {
+  animation: rise 1s cubic-bezier(0.2, 0.8, 0.3, 1);
+  animation-timeline: scroll();
+  animation-range: 0% 35%;
+}
+
+#plinth {
+  radius: 0.66;
+  height: 0.5;
+  translate: 0 0.5 0;
+  color: #3b3a40;
+}
+
+#shaft {
+  radius: 0.5;
+  height: 2.9;
+  translate: 0 2.2 0;
+  color: stripes(1.3 y, #f2ede4, #c8322c);
+}
+
+/* the lantern comes down */
+
+#lantern {
+  animation: land 1s cubic-bezier(0.3, 1.3, 0.5, 1);
+  animation-timeline: scroll();
+  animation-range: 35% 60%;
+}
+
+#deck {
+  radius: 0.8;
+  height: 0.08;
+  translate: 0 3.69 0;
+  color: #2c2b30;
+}
+
+#railing {
+  radius: 0.78;
+  height: 0.24;
+  thickness: 0.03;
+  translate: 0 3.85 0;
+  material: aluminum;
+}
+
+#glass {
+  radius: 0.4;
+  height: 0.62;
+  translate: 0 4.04 0;
+  color: #bfe9ff;
+  opacity: 0.28;
+}
+
+#lamp {
+  radius: 0.2;
+  translate: 0 4.04 0;
+  color: #3a3428;
+  material: emissive(2.5);
+  animation: kindle 1s ease-in;
+  animation-timeline: scroll();
+  animation-range: 78% 100%;
+}
+
+/* then the roof */
+
+#roof {
+  animation: cap 1s cubic-bezier(0.3, 1.4, 0.5, 1);
+  animation-timeline: scroll();
+  animation-range: 60% 78%;
+}
+
+#cap {
+  radius: 0.52;
+  height: 0.5;
+  translate: 0 4.6 0;
+  material: metal(#3f8f7a, 0.4);
+}
+
+#finial {
+  radius: 0.07;
+  translate: 0 4.9 0;
+  material: brass;
+}
+
+/* the beams turn in time, and show once the lamp is lit */
+
+#beams {
+  translate: 0 4.04 0;
+  animation: sweep 7s linear infinite;
+}
+
+.beam {
+  radius: 0.7;
+  height: 7;
+  translate: 3.5 0 0;
+  rotate-z: 90deg;
+  color: #fff1b8;
+  material: emissive(1.2);
+  opacity: 0.11;
+  visibility: hidden;
+  animation: beam 1s;
+  animation-timeline: scroll();
+  animation-range: 78% 100%;
+}
+
+.beam:nth-child(2) {
+  translate: -3.5 0 0;
+  rotate-z: -90deg;
+}
+
+#glow {
+  translate: 0 4.04 0;
+  color: #ffd98a;
+  intensity: 0;
+  animation: glow 1s ease-in;
+  animation-timeline: scroll();
+  animation-range: 78% 100%;
+}
+
+/* a boat goes round the island, in time */
+
+#sea-lane {
+  animation: sail 40s linear infinite;
+}
+
+#boat {
+  translate: 3.4 0 0;
+}
+
+#hull {
+  radius: 0.12;
+  height: 0.7;
+  translate: 0 0.06 0;
+  rotate-x: 90deg;
+  color: #5b3524;
+}
+
+#sail {
+  d: polygon(0 -0.3, 0.2 0.25, -0.12 0.25);
+  depth: 0.02;
+  translate: 0 0.42 0.02;
+  rotate-y: 90deg;
+  color: #f2ede4;
+}
+
+@keyframes sail {
+  to {
+    rotate-y: -360deg;
+  }
+}
+
+@keyframes rise {
+  from {
+    translate: 0 -5 0;
+  }
+}
+
+@keyframes land {
+  from {
+    translate: 0 5 0;
+  }
+}
+
+@keyframes cap {
+  from {
+    translate: 0 4 0;
+    rotate-y: -180deg;
+  }
+}
+
+@keyframes kindle {
+  to {
+    color: #fff3c4;
+  }
+}
+
+@keyframes beam {
+  30% {
+    visibility: visible;
+  }
+  100% {
+    visibility: visible;
+  }
+}
+
+@keyframes glow {
+  to {
+    intensity: 1.6;
+  }
+}
+
+@keyframes sweep {
+  to {
+    rotate-y: 360deg;
+  }
+}
+
+@keyframes nightfall {
+  to {
+    background: noise(520 1, #fff0 96.5%, #fff 98%), linear-gradient(#03060f, #0e1c3a 62%, #24305a);
+    light: 60deg 14deg #8aa4ff 0.25;
+  }
+}
+
+@media (max-width: 600px) {
+  scene {
+    camera-distance: 13;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #beams, #sea-lane {
+    animation: none;
+  }
+}

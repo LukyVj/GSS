@@ -16,6 +16,11 @@ import noiseAtmosphereSource from "../scenes/noise-atmosphere.gss?raw";
 import maskDisplacementSource from "../scenes/mask-displacement.gss?raw";
 import elementCardSource from "../scenes/element-card.gss?raw";
 import elementCardHtml from "../scenes/element-card.html?raw";
+import arcadeSource from "../scenes/midnight-arcade.gss?raw";
+import arcadeHtml from "../scenes/midnight-arcade.html?raw";
+import backRankSource from "../scenes/back-rank.gss?raw";
+import lighthouseSource from "../scenes/lighthouse.gss?raw";
+import bubbleWorksSource from "../scenes/bubble-works.gss?raw";
 import { FIRST_SCENE } from "../docs/guide";
 import { formatGss } from "../docs/format";
 import {
@@ -56,12 +61,16 @@ export const EXAMPLES: Example[] = [
   { group: "Start here", name: "GSS logo", code: logoSource },
   { group: "Start here", name: "Test scene (every feature)", code: sceneSource },
   { group: "Start here", name: "L'Orrery (everything at once)", code: orrerySource },
-  // The newest features of the language, each scene with the HTML its element() shows
-  { group: "New features", name: "Astral Greenhouse (the ten latest features)", code: astralSource, html: astralHtml },
-  { group: "New features", name: "Property Control Room (@property and its panel)", code: propertyRoomSource },
-  { group: "New features", name: "Noise Atmosphere (noise() and fog)", code: noiseAtmosphereSource },
-  { group: "New features", name: "Mask & Displacement (mask-image and displace())", code: maskDisplacementSource },
-  { group: "New features", name: "HTML Card (element())", code: elementCardSource, html: elementCardHtml },
+  // The features of each release, the newest first, each scene with the HTML its element() shows
+  { group: "New in 0.0.6", name: "Midnight Arcade (@paint, element(), emissive, the lens)", code: arcadeSource, html: arcadeHtml },
+  { group: "New in 0.0.6", name: "Back Rank (outline, checker(), new shapes and metals)", code: backRankSource },
+  { group: "New in 0.0.6", name: "Lighthouse (animation-range: scroll to build it)", code: lighthouseSource },
+  { group: "New in 0.0.6", name: "Bubble Works (iridescent, outline styles, stripes())", code: bubbleWorksSource },
+  { group: "From 0.0.4 and 0.0.5", name: "Astral Greenhouse (ten features in one scene)", code: astralSource, html: astralHtml },
+  { group: "From 0.0.4 and 0.0.5", name: "Property Control Room (@property and its panel)", code: propertyRoomSource },
+  { group: "From 0.0.4 and 0.0.5", name: "Noise Atmosphere (noise() and fog)", code: noiseAtmosphereSource },
+  { group: "From 0.0.4 and 0.0.5", name: "Mask & Displacement (mask-image and displace())", code: maskDisplacementSource },
+  { group: "From 0.0.4 and 0.0.5", name: "HTML Card (element())", code: elementCardSource, html: elementCardHtml },
   // The studies of the showcase, in its order
   { group: "Studies", name: "Glass Circuit (motion paths)", code: circuitSource },
   { group: "Studies", name: "Soft Relic (smooth geometry)", code: relicSource },
