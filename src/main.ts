@@ -2,6 +2,7 @@ import "./styles/gss-code.css";
 import { EditorState } from "@codemirror/state";
 import { EditorView, lineNumbers } from "@codemirror/view";
 import { createRendererAsync } from "./runtime/renderer";
+import { elementMedia } from "./runtime/media";
 import { renderGate } from "./runtime/software-gate";
 import type { Backend } from "./runtime/backend";
 import { connectEditor, theme } from "./runtime/editor";
@@ -73,6 +74,7 @@ const renderer = await createRendererAsync(sceneCanvas, {
   profile,
   profileWebGPU,
   scrollSlider: true, // the playground does not scroll: a slider stands in for scroll()
+  viewport: elementMedia, // @media reads the size of the render, like the result of CodePen (decision 165)
   dprPicker: true, // a menu over the render: the dpr, auto follows the frame rate (decision 120)
 }).catch((error) => {
   $("#error").textContent =

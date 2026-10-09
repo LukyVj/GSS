@@ -345,7 +345,7 @@ export const PROPERTIES: PropertyDef[] = [
     initial: "block",
     description:
       "`none` leaves the object out of the scene, like CSS: it is not drawn, casts no shadow and cannot be pointed at. On a group, every object inside it is left out; on a `light`, the light is off.",
-    details: "The object still counts among its siblings, like an element of the page with `display: none`: `:nth-child()` and `sibling-index()` see it. It is set when the scene compiles, so it changes with `@media`, not on `:hover` or in `@keyframes`: to hide an object for a moment, use `visibility`. Like CSS, `@media (max-width: …)` reads the width of the window, not the one of the scene.",
+    details: "The object still counts among its siblings, like an element of the page with `display: none`: `:nth-child()` and `sibling-index()` see it. It is set when the scene compiles, so it changes with `@media`, not on `:hover` or in `@keyframes`: to hide an object for a moment, use `visibility`. Like CSS, `@media (max-width: …)` reads the width of the window on a page; in the playground and in Try it, the width of the render.",
     examples: [
       {
         name: "a whole group left out",
@@ -354,8 +354,8 @@ export const PROPERTIES: PropertyDef[] = [
       },
       {
         name: "with @media",
-        text: "The small spheres show only on a screen wider than 900px: on a phone, the scene draws less. Narrow the window to see them go.",
-        code: "@scene { torus; sphere.moon * 3; } torus { translate: 0 0.8 0; rotate-x: 70deg; radius: 0.7; thickness: 0.2; } .moon { radius: 0.18; translate: calc(sibling-index() * 0.6 - 1.2) 1.8 0; color: #ff5a36; } @media (max-width: 900px) { .moon { display: none; } }",
+        text: "The small spheres show only when the scene is wider than 400px: Try it is narrower, so they are left out; open it in the playground and drag the divider to see them come and go.",
+        code: "@scene { torus; sphere.moon * 3; } torus { translate: 0 0.8 0; rotate-x: 70deg; radius: 0.7; thickness: 0.2; } .moon { radius: 0.18; translate: calc(sibling-index() * 0.6 - 1.2) 1.8 0; color: #ff5a36; } @media (max-width: 400px) { .moon { display: none; } }",
       },
       {
         name: "every other one",
@@ -1930,7 +1930,7 @@ sphere { translate: 0 1 0; texture: paint(checks); }`,
       ["(prefers-reduced-motion)", "The visitor asks for less motion."],
       ["and, not, ,", "Combine queries, like CSS."],
     ],
-    details: "The browser reads the query, so any media query CSS knows works. Inside, the rules join the cascade where the `@media` is written, with their usual specificity. A scene can use up to 4 different queries, and `@media` holds rules only: `@scene` and `@keyframes` go outside it.",
+    details: "The browser reads the query, so any media query CSS knows works. Inside, the rules join the cascade where the `@media` is written, with their usual specificity. A scene can use up to 4 different queries, and `@media` holds rules only: `@scene` and `@keyframes` go outside it. On a page, the viewport is the window, like CSS. In the playground and in Try it, it is the render, like the result of CodePen: make the render narrower to see a `max-width` query apply.",
     examples: [
       {
         name: "a small screen",

@@ -9,6 +9,7 @@ The 0.0.1 history was reconstructed from GitHub.
 ### Added
 
 - `outline`: a line around the silhouette of an object, like CSS: `outline: 0.03 solid #111;` for a drawn look, or an outline that appears on `:hover`. Its width and `outline-offset` are in the units of the scene, so the line gets thinner far away, like the object. Every style of CSS: `solid`, `dashed`, `dotted`, `double`, `groove`, `ridge`, `inset` and `outset`. Its color is the object's own by default, and width, color and offset can be animated.
+- In the playground and in Try it, `@media` reads the size of the render, like the result of CodePen: make the render narrower to see a `max-width` query apply. On a page, it still reads the window, like CSS.
 - `display: none` leaves an object, or a whole group, out of the scene, and turns a light off; with `@media`, a phone can draw fewer objects. It still counts for `:nth-child()`.
 - `visibility: hidden` hides an object: not drawn, no shadow, and the mouse goes through it. Like CSS, a group passes it to its objects, and it can change on `:hover` and in `@keyframes`, for a blinking light or an object shown by hovering another.
 - `cursor: pointer`, `grab`, `grabbing` and the other cursors of CSS: the mouse pointer over an object, also in `:hover` and `:active` rules (`cube:active { cursor: grabbing; }`).

@@ -1,5 +1,6 @@
 import "../styles/playground-panel.css";
 import { createRenderer } from "../runtime/renderer";
+import { elementMedia } from "../runtime/media";
 import { renderGate } from "../runtime/software-gate";
 import { sleepOffscreen } from "../runtime/offscreen";
 import { connectEditor } from "../runtime/editor";
@@ -40,7 +41,8 @@ function createPanel(code: string, html: string): { panel: HTMLElement; start():
   function start(): () => void {
     const canvas = panel.querySelector("canvas")!;
     canvas.innerHTML = html; // laid out inside the canvas, drawn on the object (decision 101)
-    const renderer = createRenderer(canvas, { scrollSlider: true, dprPicker: true });
+    // @media reads the size of the render, like the result of CodePen (decision 165)
+    const renderer = createRenderer(canvas, { scrollSlider: true, dprPicker: true, viewport: elementMedia });
     const sleep = sleepOffscreen(canvas, renderer); // scrolled away: no frames, no GPU
     renderGate(canvas, sleep); // without a GPU, or too heavy: drawn on a click (decisions 137, 142)
     const editor = connectEditor(
