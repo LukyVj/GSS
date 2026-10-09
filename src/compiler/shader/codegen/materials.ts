@@ -121,12 +121,22 @@ function readSettings(
 // A setting in GLSL: a number, or the GLSL of a variable set from JS
 const setting = (n: number | string) => (typeof n === "string" ? n : glslFloat(n));
 
+// Whether a material has a color of its own, like brass or metal(#ff5a36): then the color
+// of the object does not paint it, even a gradient (decision 166)
+export function hasOwnColor(value: Token[] | undefined): boolean {
+  if (value?.length === 1 && value[0].type === "IDENT")
+    return Object.hasOwn(MATERIAL_KEYWORDS, value[0].value) && hasOwnColor(tokenize(MATERIAL_KEYWORDS[value[0].value]));
+  const first = value && readFunction(value)?.args[0];
+  // The same first arguments as step 4 of readMaterial()
+  return !!first && (first[0].type === "HASH" || (first.length === 1 && first[0].type === "EXPR" && first[0].syntax === "color"));
+}
+
 // Turns the material value into GLSL.
-// "color" is the object's GLSL color: a material without its own color uses it,
-// like currentColor in CSS.
-export function readMaterial(value: Token[] | undefined, color: string): string {
+// "color" gives the object's GLSL color: a material without its own color uses it,
+// like currentColor in CSS. It is only read then (decision 166).
+export function readMaterial(value: Token[] | undefined, color: () => string): string {
   // 1. Nothing written → matte, with the color of color
-  if (!value) return `matte(${color})`;
+  if (!value) return `matte(${color()})`;
 
   // 1b. A keyword: replace it with its function, then read that
   if (value.length === 1 && value[0].type === "IDENT") {
@@ -166,7 +176,7 @@ export function readMaterial(value: Token[] | undefined, color: string): string 
 
   // 4. The optional color comes first: if it's there, take it out of the list
   const args = [...call.args]; // a copy, so shift() does not touch call.args
-  let ownColor = color;
+  let ownColor: string;
   if (args.length > 0 && args[0][0].type === "HASH") {
     const hex = (args[0][0] as { value: string }).value;
     // The transparency of an object goes in its color or opacity (decision 117)
@@ -178,6 +188,8 @@ export function readMaterial(value: Token[] | undefined, color: string): string 
     ownColor = readColor(args.shift());
   } else if (args.length > 0 && args[0].length === 1 && args[0][0].type === "EXPR" && args[0][0].syntax === "color") {
     ownColor = (args.shift()![0] as { code: string }).code; // set from JS (decision 105)
+  } else {
+    ownColor = color();
   }
 
   // 5. matte: nothing may be left

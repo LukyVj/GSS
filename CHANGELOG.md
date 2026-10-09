@@ -55,6 +55,7 @@ The 0.0.1 history was reconstructed from GitHub.
 ### Fixed
 
 - An animation that stops on its end (a number of iterations with `forwards` or `both`, the end of a scroll timeline) holds exactly its last keyframe, like CSS. With `steps()` or `step-end`, an animation whose last keyframe came after one at 80% or 99% stopped one step short; an object hidden by its last keyframe stayed visible. With `ease` and the other `cubic-bezier()` easings, an object animated from `visibility: hidden` to `visible` no longer shows before the keyframe that shows it.
+- A material with a color of its own keeps it when `color` is a gradient or a pattern, as it does over a plain color: `brass` on a striped object is brass, and `metal(#3a7bff)` stays blue. `metal(0.2)` and the other materials without a color still take the gradient. The transparent stops of the gradient still show.
 - Docs search: a result whose title holds a tag, like the chapter "From <gss-scene>", shows the tag as text; it was drawn as a real element in the list.
 
 ## [0.0.5] — 2026-10-04

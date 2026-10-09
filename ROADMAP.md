@@ -72,7 +72,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 | Material | Syntax                                                                                              | Dec.       |
 | -------- | --------------------------------------------------------------------------------------------------- | ---------- |
 | Matte    | `matte([color])` (default)                                                                          | 27         |
-| Metal    | `metal([color,] [roughness])`; shortcuts `gold`, `chrome`, `copper`, `silver`, `brass`, `aluminum`| 27, 29, 152 |
+| Metal    | `metal([color,] [roughness])`; shortcuts `gold`, `chrome`, `copper`, `silver`, `brass`, `aluminum`| 27, 29, 152, 166 |
 | Jelly    | `jelly([color,] [density])`; shortcut `jelly`                                                       | 27         |
 | Glass    | `glass([tint,] [index] [, frosted \| wavy \| hammered \| blurred frost])`; shortcuts `glass`, `ice` | 27, 31, 32 |
 | Emissive | `emissive([color,] [strength])`, never darker than its color × strength; shortcut `emissive` | 153   |           

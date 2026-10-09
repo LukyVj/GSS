@@ -314,8 +314,8 @@ describe("a computed value out of its range is clamped to it, like CSS (decision
   it("clamps the numbers of GSS that have a range: blend, radius, frost, dpr", () => {
     expect(readNumber(at("calc(-1)"), "blend", 0, true)).toBe(0);
     expect(readRadii(at("calc(-1) 0.2"))).toEqual([0, 0.2]);
-    expect(readMaterial(at("glass(#ffffff, 1.5, calc(2))"), "vec3(1.0)")).toBe(
-      readMaterial(tokenize("glass(#ffffff, 1.5, 1)"), "vec3(1.0)"),
+    expect(readMaterial(at("glass(#ffffff, 1.5, calc(2))"), () => "vec3(1.0)")).toBe(
+      readMaterial(tokenize("glass(#ffffff, 1.5, 1)"), () => "vec3(1.0)"),
     );
     expect(readDpr({ dpr: at("calc(10)") })).toBe(4);
     expect(readDpr({ dpr: at("calc(0)") })).toBe(0.25);
