@@ -33,10 +33,10 @@ examples, each with a `name` and a one-sentence `text` (decision 121). Code goes
 
 ## Branches
 
-New features go to the branch of the next release, not to `main`: `release/0.0.6` for now.
+New features go to the branch of the next release, not to `main`: `release/0.0.7` for now.
 `main` holds the published version.
 
-- Branch from `release/0.0.6`, and open pull requests against it.
+- Branch from `release/0.0.7`, and open pull requests against it.
 - A fix for the published version goes to `main`, then `main` is merged into the release branch.
 - When the release is published, its branch is merged into `main` and tagged (see Publishing),
   and the branch of the next release starts from there.
