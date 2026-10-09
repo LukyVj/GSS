@@ -150,7 +150,8 @@ On `release/0.0.6`, deployed to staging. Decisions 141 to 159.
 - [x] Lucas's list for 0.0.6 (Oct. 8): metal keywords, `emissive`, `iridescent`, `pyramid`, `octahedron`, `tube`, named textures (`checker`, `stripes`), lens filters, shaders in textures (`@paint`, the raw layer first).
 - [ ] Set aside from that list, for later: `dots()` (a grid of dots cut in 3D can miss a flat face), `voronoi()`, `gradient-map()`, `expr()` textures, custom properties as `@paint` uniforms, `toon`, `velvet`, `car-paint`, `subsurface`, bump / normal maps, `ellipsoid`, `hex-prism`, `text`, a `geometricPrecision` that costs nothing (options A and B, after the 13–15 % measured), submissions from the playground to the showcase (Turnstile, a Vercel function, a queue Lucas moderates).
 - [x] Package and lockfile version set to 0.0.6, README too (Oct. 9, so staging shows "new in v0.0.6").
-- [ ] "Unreleased" in the changelog becomes 0.0.6.
+- [x] "Unreleased" in the changelog becomes 0.0.6 (Oct. 9).
+- [x] What was unreleased goes into 0.0.6: decisions 136 to 168 (`@paint` and `paint()`, `outline` and the styles of CSS, `display: none`, `visibility` and `cursor`, `checker()`, `stripes()` and four more metals, `emissive` and `iridescent()`, `pyramid`, `octahedron` and `tube`, `animation-range`, `vignette()` and `chromatic-aberration()`, `@media` in the render of the playground, the published VS Code extension, GitHub and the X account, software rendering behind a click and `poster`, a canvas inside `element()`).
 - [ ] `npm run build:lib`, `npm pack --dry-run`, the size budgets of `package-size.test.ts`; then `npm publish` (Lucas), the tag `v0.0.6`, `release/0.0.6` merged into `main`, and `release/0.0.7`.
 - [ ] After the release: staging on `release/0.0.7` in Vercel, a crawl of the docs in Algolia, the VS Code extension 0.5.0 (snippets, `@paint` coloring) on the Marketplace and Open VSX.
 
