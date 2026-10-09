@@ -827,11 +827,13 @@ describe("shape-rendering: geometricPrecision", () => {
         const smoothLight = smooth[i] + smooth[i + 1] + smooth[i + 2];
         if (autoLight > 24) {
           exactHits++;
+          // A hit is closer than a quarter of a pixel (decision 169): a ray that grazes the
+          // rim stops a little sooner, on a point of the sphere next to it
           expect(Math.max(
             Math.abs(smooth[i] - auto[i]),
             Math.abs(smooth[i + 1] - auto[i + 1]),
             Math.abs(smooth[i + 2] - auto[i + 2]),
-          )).toBeLessThanOrEqual(3);
+          )).toBeLessThanOrEqual(8);
         } else if (smoothLight > 8) {
           coveredMisses++;
         }
