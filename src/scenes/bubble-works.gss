@@ -1,0 +1,285 @@
+/* Bubble Works: a copper machine that blows soap bubbles.
+ * The bubbles are iridescent: their colors turn with the angle you see
+ * them at. The soap climbs the glass pipe as stripes() whose at moves in
+ * @keyframes. The four gauges wear the shaded styles of outline: groove,
+ * ridge, inset and outset, their brass bezel. The pilot lamp is emissive.
+ * Hover a bubble: a thin solid outline. Click it: it pops, an animation
+ * started by :active that plays to its end: visibility hides it for a while.
+ * Turn the wheel. shape-rendering: geometricPrecision keeps the bubbles round.
+ */
+@scene {
+  cylinder#tank;
+  sphere#dome;
+  tube.band * 2;
+  group#wheel {
+    torus#rim;
+    cube.spoke * 2;
+  }
+  sphere#pilot;
+  cylinder#manifold;
+  group.gauge * 4 {
+    cylinder.stem;
+    cylinder.dial;
+    cube.needle;
+  }
+  cylinder#pipe;
+  cylinder#soap;
+  tube#nozzle;
+  sphere.bubble * 7;
+}
+
+scene {
+  background: radial-gradient(circle at 60% 30%, #6a5240, #1c140f 72%);
+  floor: stripes(2.5 x, #3c2b20, #33251b);
+  light: -30deg 48deg #ffe4c4 1.1;
+  ambient: 0.4 #b4c8ff;
+  shadows: soft;
+  fog: 12 24;
+  camera-distance: 8;
+  camera-angle: 8deg 12deg;
+  camera-target: 0.3 2.25 0;
+  shape-rendering: geometricPrecision;
+  filter: vignette(0.4);
+}
+
+/* the tank */
+
+#tank {
+  radius: 0.7;
+  height: 1.6;
+  translate: -1.3 0.8 0;
+  material: copper;
+}
+
+#dome {
+  radius: 0.7;
+  translate: -1.3 1.6 0;
+  material: copper;
+}
+
+.band {
+  radius: 0.72;
+  height: 0.09;
+  thickness: 0.05;
+  translate: -1.3 calc(sibling-index() * 1 - 2.6) 0;
+  material: brass;
+}
+
+#wheel {
+  translate: -1.3 0.9 0.78;
+  cursor: grab;
+}
+
+#rim {
+  radius: 0.24;
+  thickness: 0.035;
+  rotate-x: 90deg;
+  material: brass;
+}
+
+.spoke {
+  size: 0.48 0.035 0.035;
+  --a: calc(sibling-index() * 90deg);
+  rotate-z: var(--a);
+  material: brass;
+}
+
+#wheel:active .spoke {
+  cursor: grabbing;
+  animation: turn 1.2s cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+#pilot {
+  radius: 0.07;
+  translate: -0.95 1.45 0.62;
+  color: #ff4d3a;
+  material: emissive;
+}
+
+/* the gauges, on the manifold */
+
+#manifold {
+  radius: 0.09;
+  height: 2.2;
+  translate: 0.4 0.95 0;
+  rotate-z: 90deg;
+  material: copper;
+}
+
+.gauge {
+  translate: calc(sibling-index() * 0.48 - 3.95) 0.95 0;
+}
+
+.stem {
+  radius: 0.03;
+  height: 0.3;
+  translate: 0 0.15 0;
+  material: brass;
+}
+
+.dial {
+  radius: 0.17;
+  height: 0.05;
+  translate: 0 0.47 0.02;
+  rotate-x: 90deg;
+  color: #f2ede4;
+  outline: 0.05 solid #c9a24d;
+}
+
+.gauge:nth-child(7) .dial {
+  outline-style: groove;
+}
+
+.gauge:nth-child(8) .dial {
+  outline-style: ridge;
+}
+
+.gauge:nth-child(9) .dial {
+  outline-style: inset;
+}
+
+.gauge:nth-child(10) .dial {
+  outline-style: outset;
+}
+
+.needle {
+  size: 0.018 0.15 0.01;
+  translate: 0 0.53 0.05;
+  transform-origin: 0 -0.06 0;
+  color: #b3261e;
+  rotate-z: 40deg;
+  animation: pressure 2.6s ease-in-out infinite alternate;
+}
+
+.gauge:nth-child(8) .needle {
+  animation-delay: -0.9s;
+}
+
+.gauge:nth-child(9) .needle {
+  animation-delay: -1.7s;
+}
+
+.gauge:nth-child(10) .needle {
+  animation-delay: -2.3s;
+}
+
+/* the pipe, and the soap climbing it */
+
+#pipe {
+  radius: 0.13;
+  height: 1.5;
+  translate: 1.6 1.7 0;
+  color: #d8f1ff;
+  opacity: 0.3;
+}
+
+#soap {
+  radius: 0.07;
+  height: 1.5;
+  translate: 1.6 1.7 0;
+  color: stripes(4 y, #8fd8ff, #ffb8e8);
+  animation: climb 1.5s linear infinite;
+}
+
+#nozzle {
+  radius: 0.16;
+  height: 0.16;
+  thickness: 0.05;
+  translate: 1.6 2.5 0;
+  material: brass;
+}
+
+/* the bubbles */
+
+.bubble {
+  --dx: calc(sin(sibling-index() * 2.4) * 1.1);
+  --dz: calc(cos(sibling-index() * 1.7) * 0.8);
+  radius: calc(0.2 + mod(sibling-index() * 0.37, 1) * 0.22);
+  color: #f6f8ff;
+  material: iridescent(0.95);
+  opacity: 0.4;
+  outline: 0 solid #ffffff;
+  cursor: pointer;
+  animation: rise 7s linear infinite;
+  animation-delay: calc(sibling-index() * -1s);
+}
+
+.bubble:hover {
+  outline-width: 0.015;
+}
+
+.bubble:active {
+  animation: pop 2.4s;
+  animation-delay: 0s;
+}
+
+@keyframes rise {
+  from {
+    translate: 1.6 2.65 0;
+    scale: 0.15;
+  }
+  12% {
+    scale: 1;
+  }
+  to {
+    translate: calc(1.6 + var(--dx)) 4.7 var(--dz);
+    scale: 1;
+  }
+}
+
+@keyframes pop {
+  from {
+    scale: 1;
+  }
+  9% {
+    scale: 1.35;
+    visibility: visible;
+  }
+  10% {
+    visibility: hidden;
+  }
+  to {
+    scale: 1.35;
+    visibility: hidden;
+  }
+}
+
+@keyframes climb {
+  from {
+    color: stripes(4 y, #8fd8ff, #ffb8e8);
+  }
+  to {
+    color: stripes(4 y at 0 0.25 0, #8fd8ff, #ffb8e8);
+  }
+}
+
+@keyframes pressure {
+  from {
+    rotate-z: 50deg;
+  }
+  to {
+    rotate-z: -35deg;
+  }
+}
+
+@keyframes turn {
+  to {
+    rotate-z: calc(var(--a) - 360deg);
+  }
+}
+
+@media (max-width: 600px) {
+  .gauge:nth-child(9), .gauge:nth-child(10) {
+    display: none;
+  }
+  scene {
+    camera-distance: 12;
+    camera-target: 0 2.3 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bubble, .needle, #soap {
+    animation: none;
+  }
+}

@@ -8,6 +8,7 @@ The 0.0.1 history was reconstructed from GitHub.
 
 ### Added
 
+- Playground: four scenes for the features of 0.0.6, in a group "New in 0.0.6" at the top of the examples. Midnight Arcade: two cabinets after closing time, one screen drawn by a `@paint` shader, the other a game of Pong in a `<canvas>` shown with `element()`, neon in `emissive()` under `bloom()`, a flickering sign, the lens of `vignette()` and `chromatic-aberration()`, coins that drop into their slot on a click. Back Rank: a checkmate on a `checker()` board, with pyramids, tubes and octahedrons in silver and copper, outlines on hover, and the king in check in a red `double` outline. Lighthouse: scroll to build it, then to light it, four parts of one scroll set by `animation-range`. Bubble Works: a copper machine that blows `iridescent` bubbles to pop, `stripes()` climbing a glass pipe, and gauges in the shaded styles of `outline`. The scenes of 0.0.4 and 0.0.5 move to a group of their own.
 - Showcase: an archive of every scene of the page, the studies included, in place of the inspiration grid. Each scene has its capture, its name, what it is, a badge of the version of GSS it came with, and the features it uses, each linked to its page of the docs. Newest first, as a grid of cards or as a list; the page remembers the choice.
 
 ### Changed
