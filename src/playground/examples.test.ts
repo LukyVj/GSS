@@ -35,12 +35,28 @@ describe("playground examples", () => {
     }
   });
 
-  it("show the newest features in a group of their own, between Start here and the studies", () => {
-    const names = EXAMPLES.filter((example) => example.group === "New features").map((example) => example.name);
-    expect(names).toContain("Astral Greenhouse (the ten latest features)");
-    expect(names).toContain("Property Control Room (@property and its panel)");
+  it("show the features of each release in a group of their own, the newest first, between Start here and the studies", () => {
+    const newest = EXAMPLES.filter((example) => example.group === "New in 0.0.6").map((example) => example.name);
+    expect(newest).toEqual([
+      "Midnight Arcade (@paint, element(), emissive, the lens)",
+      "Back Rank (outline, checker(), new shapes and metals)",
+      "Lighthouse (animation-range: scroll to build it)",
+      "Bubble Works (iridescent, outline styles, stripes())",
+    ]);
+    const before = EXAMPLES.filter((example) => example.group === "From 0.0.4 and 0.0.5").map((example) => example.name);
+    expect(before).toContain("Astral Greenhouse (ten features in one scene)");
+    expect(before).toContain("Property Control Room (@property and its panel)");
     const options = renderExampleOptions();
-    expect(options.indexOf('label="New features"')).toBeLessThan(options.indexOf('label="Studies"'));
+    expect(options.indexOf('label="Start here"')).toBeLessThan(options.indexOf('label="New in 0.0.6"'));
+    expect(options.indexOf('label="New in 0.0.6"')).toBeLessThan(options.indexOf('label="From 0.0.4 and 0.0.5"'));
+    expect(options.indexOf('label="From 0.0.4 and 0.0.5"')).toBeLessThan(options.indexOf('label="Studies"'));
+  });
+
+  it("carry the Pong of the arcade, a canvas element() shows", () => {
+    const arcade = EXAMPLES.find((example) => example.name.startsWith("Midnight Arcade"));
+    expect(arcade?.code).toContain("element(#pong)");
+    expect(arcade?.html).toContain('id="pong"');
+    expect(arcade?.html).toContain("<canvas");
   });
 
   it("start with the first scene", () => {
