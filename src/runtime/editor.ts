@@ -45,7 +45,7 @@ import { plainText } from "../docs/prose";
 import { scan } from "../compiler/syntax/tokenizer";
 import { GssError, GssErrors } from "../compiler/syntax/errors";
 import type { Stats } from "./status";
-import { propertySuggestions } from "./completion";
+import { mixinSuggestions, propertySuggestions } from "./completion";
 
 // Where the editor goes, the OK / Error badge (optional: the playground has a
 // status bar instead, fed by onStats), and the message of an error with no place
@@ -178,12 +178,20 @@ const errorLine = StateField.define<DecorationSet>({
   provide: (field) => EditorView.decorations.from(field),
 });
 
-// ----- Autocompletion of property names, from the registry (decision 89) -----
+// ----- Autocompletion of property names, from the registry (decision 89), and of mixins -----
 
 function gssCompletions(context: CompletionContext): CompletionResult | null {
   const word = context.matchBefore(/[\w-]*/);
   // Nothing typed: only when asked (Ctrl+Space), not after every { or ;
   if (!word || (word.from === word.to && !context.explicit)) return null;
+  // After @apply: the mixins of the file (decision 174)
+  const mixins = mixinSuggestions(context.state.doc.toString(), context.pos);
+  if (mixins)
+    return {
+      from: mixins.from,
+      options: mixins.names.map((name): Completion => ({ label: name, type: "function", detail: "@mixin" })),
+      validFor: /^[\w-]*$/,
+    };
   const found = propertySuggestions(context.state.doc.toString(), context.pos);
   if (!found) return null;
   return {

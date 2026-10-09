@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { propertySuggestions } from "./completion";
+import { mixinSuggestions, propertySuggestions } from "./completion";
 
 // Autocompletion of property names in the editor: the cursor is the "|"
 function suggest(text: string) {
@@ -109,5 +109,56 @@ describe("only the properties the rule can take", () => {
     expect(propertySuggestions(inside, inside.length)).toBeNull();
     const after = `${paint}sphere { rad`;
     expect(propertySuggestions(after, after.length)?.properties.map((p) => p.name)).toContain("radius");
+  });
+});
+
+describe("mixins", () => {
+  it("every property in the body of a @mixin, which any rule can apply, and in its nested blocks", () => {
+    const names = suggest("@mixin --m(--a: 1) { |}")!.names;
+    expect(names).toContain("translate");
+    expect(names).toContain("background");
+    expect(suggest("@mixin --m { &:hover { ra| } }")?.names).toContain("radius");
+    expect(suggest("@mixin --m { @media (max-width: 600px) { |} }")?.names).toContain("color");
+    expect(suggest("@mixin --m { @contents { |} }")?.names).toContain("color");
+  });
+
+  it("in the block of @apply: the properties of the rule, or of the frame", () => {
+    const names = suggest("sphere { @apply --m { |} }")!.names;
+    expect(names).toContain("radius");
+    expect(names).not.toContain("background");
+    const frame = suggest("@keyframes up { to { @apply --m { |} } }")!.names;
+    expect(frame).toContain("translate");
+    expect(frame).not.toContain("material");
+  });
+
+  it("never in the parameters of @mixin or the values of @apply", () => {
+    expect(suggest("@mixin --m(--a: re|) { }")).toBeNull();
+    expect(suggest("cube { @apply --m(re|); }")).toBeNull();
+  });
+});
+
+describe("the names of the mixins, after @apply", () => {
+  // The mixin names to offer at the "|"
+  function names(text: string) {
+    const pos = text.indexOf("|");
+    const found = mixinSuggestions(text.replace("|", ""), pos);
+    return found && { from: found.from, names: found.names };
+  }
+
+  it("every @mixin of the file, before or after, once each", () => {
+    const text = "@mixin --ball { } cube { @apply --b| } @mixin --card(--a) { } @mixin --ball { }";
+    expect(names(text)).toEqual({ from: text.indexOf("--b|"), names: ["--ball", "--card"] });
+  });
+
+  it("with nothing typed yet, or a dash", () => {
+    expect(names("@mixin --ball { } cube { @apply | }")?.names).toEqual(["--ball"]);
+    expect(names("@mixin --ball { } cube { @apply -| }")?.names).toEqual(["--ball"]);
+  });
+
+  it("only right after @apply", () => {
+    expect(names("@mixin --ball { } cube { @apply| }")).toBeNull();
+    expect(names("@mixin --ball { } cube { --b| }")).toBeNull();
+    expect(names("@mixin --ball { } cube { @apply --ball(--b|) }")).toBeNull();
+    expect(names("@mixin --ball { } cube { color: --b| }")).toBeNull();
   });
 });
