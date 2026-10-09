@@ -89,7 +89,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 | `shadows`                                                         | `none` (default), `hard` or `soft`: from the sun and every light (dec. 115)                                                                          |
 | `dpr`                                                             | pixel density of the render: `auto` (the screen, up to 2), `max`, a number (dec. 67)                                                                 |
 | `view`                                                            | `shaded` (default) or `distance`: the isolines of the distance to the objects over the scene; chips switch it in the playground and Try it (dec. 131) |
-| `shape-rendering`                                                 | `auto` (default) or `geometricPrecision`: silhouettes smoothed from the camera ray, opt-in, about 15 % more GPU time for now (dec. 149)               |
+| `shape-rendering`                                                 | `auto` (default) or `geometricPrecision`: silhouettes smoothed from the camera ray, opt-in, about 15 % more GPU time for now (dec. 149, 169)               |
 | `filter`                                                          | color filters, `blur()`, `bloom()`, `grain()`, and the lens effects `vignette()`, `chromatic-aberration()` on the scene only (dec. 83, 84, 157)       |
 | `camera-target`, `camera-distance`, `camera-angle`, `camera-spin` | camera (mouse orbit; automatic turn as a duration, `none` by default, dec. 54)                                                                       |
 
@@ -138,6 +138,12 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 | Tests                      | Vitest (CPU) + GPU compilation of every registry example (Chromium)                                                                                                                                                                                                                                                                                                                                                                                       | 12, 25                          |
 | Profiler                   | a panel over the playground scene, public, closed by default and lazy (nothing measured before it opens), `perf` button or Alt+P (remembered), WebGL2 and WebGPU (timestamp queries when available): fps, frame, GPU and CPU time, real pixels, shader build time; over budget in signal                                                                                                                                                                  | 64, 87, 91                      |
 | Bench                      | `npm run bench:compare -- main --dpr 2`: another commit against the working tree, 3 alternating rounds, images compared pixel by pixel, report in `bench-results/compare.md`                                                                                                                                                                                                                                                                              | 64                              |
+
+## Release 0.0.7
+
+On `release/0.0.7`. Decisions from 169.
+
+- [x] `geometricPrecision` fixed in 0.0.7, not patched into 0.0.6 in silence (169): no more ghosts around a small `path`, `prism` or `lathe`; as smooth on a 4K canvas as on a small one.
 
 ## Release 0.0.6 (published Oct. 9)
 
@@ -292,8 +298,8 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 - [ ] Lost ray: when `march` runs out of its 100 steps without hitting anything or passing `MAX_DIST`, `main()` treats it as a hit (fixed for rays that pass by the sphere of the scene, decision 76; still there in scenes without one)
 - [x] Fade the floor into the background: the floor stops sharply at `MAX_DIST` ✅ a fog that ends before it hides the edge (decision 108)
 - [x] Soft shadows ✅ decision 115: `scene { shadows: none | hard | soft }`, off by default, from the sun and every light; still to come: a setting per light, a softness, shadows in reflections
-- [x] **Silhouette antialiasing** ✅ decision 149: `scene { shape-rendering: geometricPrecision; }` blends coverage only after the existing primary ray passes a subpixel near miss without hitting it, with no supersampling, extra ray, pass or backing-store memory
-- [ ] Make `geometricPrecision` free: it costs about 13-15 % of GPU time (macropad, DPR 2), up to 24 % on an M1. Find whether the cost is the tracking in the march loop or the second shading of an edge pixel; then shade once per pixel, or smooth from screen derivatives (`dFdx`/`dFdy` of `t` and `id`) at the end of `main()`
+- [x] **Silhouette antialiasing** ✅ decision 149: `scene { shape-rendering: geometricPrecision; }` blends coverage only after the existing primary ray passes a subpixel near miss without hitting it, with no supersampling, extra ray, pass or backing-store memory; decision 169: a hit and the blended band measured in pixels, more steps for a ray near an object (as much blended at 3840 × 2160 as at 960 × 540), paths, prisms and lathes measured without their box near a ray (no more ghosts)
+- [ ] Make `geometricPrecision` free: it costs about 13-15 % of GPU time (macropad, DPR 2), up to 24 % on an M1, and decision 169 adds up to 16 % to its march at 3840 × 2160 (counted, to be timed). A step doubled while the ray moves away from an edge would save some of it. Find whether the cost is the tracking in the march loop or the second shading of an edge pixel; then shade once per pixel, or smooth from screen derivatives (`dFdx`/`dFdy` of `t` and `id`) at the end of `main()`
 - [x] A WebGL2 scene links without blocking the page ✅ decision 150: `KHR_parallel_shader_compile`, the program asked once a frame; the scene before it, or the poster of `<gss-scene>`, stays until then
 - [ ] Measure the compile time of large scenes, on Windows above all (Direct3D); if needed, loop in `calcNormal` so `map()` is copied only once
 

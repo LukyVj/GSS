@@ -52,7 +52,7 @@ import { readShadows } from "./shadows";
 import { ISOLINES, ISOLINES_CALL, withObjectsAlone } from "./view";
 import type { View } from "../../features/view";
 import { readShapeRendering } from "../../features/shape-rendering";
-import { precisionMarch } from "./shape-rendering";
+import { EXACT_DISTANCE, exactShapes, precisionMarch } from "./shape-rendering";
 import { readVisibility, withInheritedVisibility } from "../../features/visibility";
 import { sceneCursors } from "../../features/cursor";
 import { objectOutline, outlineBlend, outlineFunctions, withOutlineBand, withOutlineFrames, withOutlineMarch, type Outlined } from "./outline";
@@ -318,9 +318,13 @@ export function generateShader(
   const direct = round(1 - ambient);
 
   // The functions of the shapes, each with its own name
-  const functions = [...context.functions]
+  const written = [...context.functions]
     .map(([code, name]) => code.replaceAll("NAME", name))
     .join("\n\n");
+  // geometricPrecision measures a near miss again without the shortcut of a path, a prism or
+  // a lathe (the distance to its box): auto keeps the functions as they are
+  const exact = geometricPrecision ? exactShapes(written) : { functions: written, shortcuts: false };
+  const functions = exact.functions;
 
   const shown = mapLines.map((code, i) => {
     const visible = visibilityOf(mapped[i]);
@@ -404,7 +408,7 @@ export function generateShader(
   const rendered = geometricPrecision
     ? layered.replace(
         "\nvec3 calcNormal(vec3 p) {",
-        `\n${precisionMarch(precisionSceneSphereCode, masked.length > 0, transparent.length > 0)}\n\nvec3 calcNormal(vec3 p) {`,
+        `\n${precisionMarch(precisionSceneSphereCode, masked.length > 0, transparent.length > 0, exact.shortcuts)}\n\nvec3 calcNormal(vec3 p) {`,
       )
     : layered;
   const template = distanceView ? withObjectsAlone(rendered) : rendered;
@@ -451,7 +455,7 @@ export function generateShader(
       )
       .replace(
         "/*@SHAPES*/",
-        section("// Shapes written by GSS (path…)", functions) +
+        section("// Shapes written by GSS (path…)", exact.shortcuts ? `${EXACT_DISTANCE}\n\n${functions}` : functions) +
           (offsetFunctions.size > 0
             ? "\n\n" +
               section(

@@ -4,6 +4,13 @@ Notable changes to GSS, grouped by release. Features developed across several co
 
 The 0.0.1 history was reconstructed from GitHub.
 
+## Unreleased
+
+### Fixed
+
+- `shape-rendering: geometricPrecision` around a `path`, a `prism` or a `lathe` drawn small: grey lines, rings and a faint rectangle no longer fill the box around the shape. Only its silhouette is smoothed, like any other object.
+- `shape-rendering: geometricPrecision` on a large canvas (a 4K screen, or a Retina screen at `dpr: 2`): silhouettes are smoothed as much as on a small one, where they stayed sharp. An object can look up to a quarter of a pixel larger than with `auto`, and a scene with many edges takes a little more work at that size.
+
 ## [0.0.6] — 2026-10-09
 
 ### Added
