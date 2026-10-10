@@ -58,18 +58,24 @@ No Three.js, no meshes.
 }
 ```
 
+## Documentation
+
+- [Getting started](https://github.com/LukyVj/GSS/blob/main/docs/getting-started.md): why GSS, and your first scene.
+- [Installation](https://github.com/LukyVj/GSS/blob/main/docs/installation.md): a tag, npm or Vite; WebGPU, TypeScript and the editor.
+- [Every page](https://github.com/LukyVj/GSS/blob/main/docs/README.md): each at-rule, selector, shape, property and function, with examples.
+
+The same pages, with every example to edit live: [gss-lang.dev/docs](https://www.gss-lang.dev/docs).
+
 ## What it can do
 
-- **Selectors and the cascade**: classes, ids, combinators, `:hover`, `:has()`, `:nth-child()`, nesting.
-- **Shapes**: `cube`, `sphere`, `torus`, `cylinder`, `cone`, `capsule`, `path`, `prism`, `lathe` and more.
-- **Materials**: `matte()`, `metal()`, `glass()`, `jelly()`, `emissive()`, `iridescent()`, and textures.
-- **Motion**: `@keyframes`, `transition`, scroll-driven animations, `offset-path`.
-- **Values**: `calc()`, `var()`, `@property`, `random()` and the CSS color functions.
-- **Effects**: gradients, noise, masks, blur, bloom and grain.
-- **The scene**: floor, background, lights, fog, shadows and an orbit camera.
-- **Responsive**: `@media`, `light-dark()` and `if()`.
-
-Every property has its page in the [reference](https://www.gss-lang.dev/docs), with a live example.
+- **[Selectors and the cascade](https://github.com/LukyVj/GSS/blob/main/docs/selectors.md)**: classes, ids, combinators, `:hover`, `:has()`, `:nth-child()`, nesting.
+- **[Shapes](https://github.com/LukyVj/GSS/blob/main/docs/shapes.md)**: `cube`, `sphere`, `torus`, `cylinder`, `cone`, `capsule`, `path`, `prism`, `lathe` and more.
+- **[Materials](https://github.com/LukyVj/GSS/blob/main/docs/materials.md)**: `matte()`, `metal()`, `glass()`, `jelly()`, `emissive()`, `iridescent()`, and textures.
+- **[Motion](https://github.com/LukyVj/GSS/blob/main/docs/animations.md)**: `@keyframes`, `transition`, scroll-driven animations, `offset-path`.
+- **[Values](https://github.com/LukyVj/GSS/blob/main/docs/values.md)**: `calc()`, `var()`, `@property`, `random()` and the CSS color functions.
+- **[Effects](https://github.com/LukyVj/GSS/blob/main/docs/filters.md)**: gradients, noise, masks, blur, bloom and grain.
+- **[The scene](https://github.com/LukyVj/GSS/blob/main/docs/scene-properties.md)**: floor, background, lights, fog, shadows and an orbit camera.
+- **[Responsive](https://github.com/LukyVj/GSS/blob/main/docs/at-rules.md#at-media)**: `@media`, `light-dark()` and `if()`.
 
 ## Install
 
@@ -104,7 +110,7 @@ import logo from "./logo.gss";
 mount(canvas, logo);
 ```
 
-WebGPU and TypeScript: see the [installation guide](https://www.gss-lang.dev/docs#installation).
+WebGPU, TypeScript and the editor: see [Installation](https://github.com/LukyVj/GSS/blob/main/docs/installation.md).
 
 ## Tools
 

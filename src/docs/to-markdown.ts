@@ -35,6 +35,7 @@ function fenceLanguage(pre: HTMLElement): string {
   if (/\b(js|javascript)\b/.test(classes)) return "js";
   if (/\bts\b/.test(classes)) return "ts";
   if (/\bhtml\b/.test(classes)) return "html";
+  if (/\bsh\b/.test(classes)) return "sh";
   return "";
 }
 
@@ -61,15 +62,16 @@ function definitionList(dl: HTMLElement): string {
   return rows.join("\n");
 }
 
-function blockToMarkdown(el: HTMLElement): string {
+// depth: the level of the title of the entry (1 for a page of its own, 2 under the title of a section)
+function blockToMarkdown(el: HTMLElement, depth: number): string {
   const tag = el.tagName.toLowerCase();
   if (tag === "h3") {
     const title = (el.textContent ?? "").trim();
-    return title ? `# ${title}` : "";
+    return title ? `${"#".repeat(depth)} ${title}` : "";
   }
   if (tag === "h4") {
     const title = inlineMarkdown(el).trim();
-    return title ? `## ${title}` : "";
+    return title ? `${"#".repeat(depth + 1)} ${title}` : "";
   }
   if (tag === "p") return inlineMarkdown(el).trim();
   if (tag === "dl") return definitionList(el);
@@ -83,19 +85,19 @@ function blockToMarkdown(el: HTMLElement): string {
   if (tag === "div" || tag === "section") {
     return [...el.children]
       .filter((child) => ![...child.classList].some((name) => SKIP.has(name)))
-      .map((child) => blockToMarkdown(child as HTMLElement))
+      .map((child) => blockToMarkdown(child as HTMLElement, depth))
       .filter(Boolean)
       .join("\n\n");
   }
   return inlineMarkdown(el).trim();
 }
 
-export function articleToMarkdown(article: HTMLElement): string {
+export function articleToMarkdown(article: HTMLElement, depth = 1): string {
   const blocks: string[] = [];
   for (const child of article.children) {
     if (!(child instanceof HTMLElement)) continue;
     if ([...child.classList].some((name) => SKIP.has(name))) continue;
-    const md = blockToMarkdown(child);
+    const md = blockToMarkdown(child, depth);
     if (md) blocks.push(md);
   }
   return blocks.join("\n\n").trim() + "\n";

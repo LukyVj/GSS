@@ -22,6 +22,7 @@ npm run format     # format the .gss files (npm run format:check to only list th
 | `src/profiler/`, `src/bench/` | the performance panel of the playground (`perf` or Alt+P, closed by default) and the bench (dev only) |
 | `editors/vscode/` | the VS Code / Cursor extension; `src/test/vscode-grammar.test.ts` checks that its grammar starts every at-rule of the registry as itself |
 | `DESIGN.md` | the visual identity ("Distance field") |
+| `docs/` | the docs on GitHub: generated, never edited by hand (see Documentation navigation) |
 
 Every property, shape, selector and function is described once in the registry
 (`src/compiler/registry/registry.ts`): the reference and the tests of its examples are generated from it.
@@ -67,6 +68,10 @@ that no registered entry is missing or assigned twice. Installation guides live 
 JavaScript", the page of the JavaScript API: its live demo is wired by `src/docs/variables-demo.ts`.
 A registry entry links to such a page with `see` (a "See also" row; at-rules only for now).
 
+The docs on GitHub (`docs/*.md`, one page per section and an index) are generated from the same
+HTML by `src/docs/github-docs.ts`. After a change to the registry, the guide or the navigation,
+run `npm run docs:github`: `src/docs/github-docs.test.ts` fails while the pages are out of date.
+
 The docs search (Algolia DocSearch) is filled by the Algolia Crawler, which reads `/docs` with
 the `recordExtractor` of `src/docs/crawler.ts`. After changing it, run
 `npm run docsearch:extractor | pbcopy` and paste the function into the crawler editor, in place
@@ -82,7 +87,7 @@ beside the search (`src/docs/search-try.ts`), with the live panel of the docs (`
 
 ## Publishing
 
-1. Update `package.json` and the root package version in `package-lock.json` together. The site and installation snippets read that version through `src/version.ts`.
+1. Update `package.json` and the root package version in `package-lock.json` together. The site and installation snippets read that version through `src/version.ts`; `npm run docs:github` writes it into the docs on GitHub.
 2. Update the changelog, README, roadmap and decisions. Keep a prepared release marked as such until it is published.
 3. Run the complete tests (including WebGL), `npm run build`, `npm run build:lib`, and `npm pack --dry-run`. Check that `lib/embed.js` is in the package; `package-size.test.ts` holds each entry to its budget.
 4. Publish the npm package, then tag the release and deploy the site. Publish before deploying versioned CDN instructions: jsDelivr can only serve a version after npm has it.

@@ -30,6 +30,7 @@ gss-lang.dev; npm package: `gss-lang`.
   (GPU tests included: `src/test/gpu.test.ts`, Chromium), `npx tsc --noEmit -p .`, and `npm run build`.
 - Every feature goes into the **registry** (`src/compiler/registry/registry.ts`): the docs, the
   playground examples, the autocompletion and the example tests are generated from it.
+- After a change to the registry or the guide of the docs: `npm run docs:github` (the docs on GitHub, `docs/`).
 - Then update `ROADMAP.md`, `DECISIONS.md` and `CHANGELOG.md`.
 - A refactor of the code generator must leave every shader identical: compile every scene of
   `src/scenes/` and every registry example before and after, and compare.

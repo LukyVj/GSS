@@ -56,6 +56,7 @@
     "build:lib": "vite build -c vite.lib.config.ts && tsc -p tsconfig.lib.json",
     "captures": "node scripts/capture-showcase.mjs",
     "docsearch:extractor": "node scripts/docsearch-extractor.mjs",
+    "docs:github": "vitest run src/docs/github-docs.test.ts -u",
     "bench": "node scripts/bench.mjs run",
     "bench:compare": "node scripts/bench.mjs compare",
     "prepublishOnly": "npm run build:lib && npx vitest run --exclude '**/*gpu.test.ts'"
