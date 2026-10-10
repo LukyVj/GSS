@@ -26,6 +26,10 @@
 
 ---
 
+GSS (GPU Style Sheets) is a 3D language for people who already speak CSS. Declare shapes in a
+`@scene`, style them with selectors, and the compiler turns it all into one raymarched shader.
+No Three.js, no meshes.
+
 ```css
 @scene {
   torus#ring;
@@ -53,6 +57,19 @@
   to   { translate: 0 1.5 0; }
 }
 ```
+
+## What it can do
+
+- **Selectors and the cascade**: classes, ids, combinators, `:hover`, `:has()`, `:nth-child()`, nesting.
+- **Shapes**: `cube`, `sphere`, `torus`, `cylinder`, `cone`, `capsule`, `path`, `prism`, `lathe` and more.
+- **Materials**: `matte()`, `metal()`, `glass()`, `jelly()`, `emissive()`, `iridescent()`, and textures.
+- **Motion**: `@keyframes`, `transition`, scroll-driven animations, `offset-path`.
+- **Values**: `calc()`, `var()`, `@property`, `random()` and the CSS color functions.
+- **Effects**: gradients, noise, masks, blur, bloom and grain.
+- **The scene**: floor, background, lights, fog, shadows and an orbit camera.
+- **Responsive**: `@media`, `light-dark()` and `if()`.
+
+Every property has its page in the [reference](https://www.gss-lang.dev/docs), with a live example.
 
 ## Install
 
@@ -87,7 +104,13 @@ import logo from "./logo.gss";
 mount(canvas, logo);
 ```
 
-WebGPU, TypeScript and the editor extension: see the [installation guide](https://www.gss-lang.dev/docs#installation).
+WebGPU and TypeScript: see the [installation guide](https://www.gss-lang.dev/docs#installation).
+
+## Tools
+
+- **[Playground](https://www.gss-lang.dev/playground)**: a live editor, errors under their line, the generated GLSL and WGSL, export to Shadertoy.
+- **[Reference](https://www.gss-lang.dev/docs)**: searchable, one live example per entry.
+- **VS Code**: highlighting, formatting and snippets. `code --install-extension lukyvj.gss-language`
 
 ## Status
 
