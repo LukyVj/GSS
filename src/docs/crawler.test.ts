@@ -74,6 +74,10 @@ describe("the records of the docs search", () => {
     expect(records.map((record) => record.content).join(" ")).not.toContain("More details");
   });
 
+  it("read the names a figure draws, one word each", () => {
+    expect(byAnchor("selector-type")!.content).toContain("cube sphere torus");
+  });
+
   it("give each chapter of a guide its own record", () => {
     expect(byAnchor("embedding--from-a-script")).toMatchObject({
       type: "lvl2",

@@ -235,6 +235,20 @@ describe("renderShape", () => {
   });
 });
 
+// A drawing under the lead of a page (decision 180)
+describe("the figure of a page", () => {
+  it("comes under the lead of the page, before its table", () => {
+    const html = renderSelector(SELECTORS.find((selector) => selector.anchor === "selector-type")!);
+    const order = ["A shape name targets every object", '<figure class="figure"', "<dt>Specificity</dt>"];
+    expect(order.map((part) => html.indexOf(part))).toEqual(order.map((part) => html.indexOf(part)).sort((a, b) => a - b));
+    expect(html.indexOf(order[1])).toBeGreaterThan(0);
+  });
+
+  it("is on no page that does not ask for one", () => {
+    expect(renderSelector(SELECTORS.find((selector) => selector.anchor === "selector-universal")!)).not.toContain("<figure");
+  });
+});
+
 describe("renderSelector", () => {
   const universal = SELECTORS.find((selector) => selector.name === "*")!;
   const html = renderSelector(universal);

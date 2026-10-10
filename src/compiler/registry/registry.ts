@@ -33,7 +33,11 @@ type Parts = {
   valuesTitle?: string; // its heading, "Values" by default: "Descriptors", "Functions"…
   details?: string; // one short paragraph under it, 40 words at most: what a reader must know (decision 179)
   more?: string; // folded under it: the limits, the special cases, how it is drawn
+  figure?: Figure; // a drawing under the lead of the page (decision 180)
 };
+
+// The drawings of the docs, by name: the docs hold one for each (src/docs/figures.ts)
+export type Figure = "shapes"; // everything a scene can declare, as thin lines
 
 // A callout under the description: what a reader must know before trying it
 export type Note = { title: string; text: string };
@@ -2262,6 +2266,7 @@ export const SELECTORS: SelectorDef[] = [
     anchor: "selector-type",
     since: "0.0.1",
     specificity: "1",
+    figure: "shapes",
     description:
       "A shape name targets every object of that shape: `cube` styles every cube, and `group` every group.",
     examples: [

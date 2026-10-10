@@ -80,6 +80,12 @@ function blockToMarkdown(el: HTMLElement): string {
       .filter(Boolean)
       .join("\n\n");
   }
+  // A figure, in words: its label, then the names it draws
+  if (tag === "figure") {
+    const names = [...el.querySelectorAll("li")].map((item) => `\`${(item.textContent ?? "").trim()}\``);
+    const label = el.getAttribute("aria-label") ?? "";
+    return [label && `**${label}:**`, names.join(", ")].filter(Boolean).join(" ");
+  }
   if (tag === "dl") return definitionList(el);
   if (tag === "pre") return fencedCode(el);
   if (el.classList.contains("example")) {
