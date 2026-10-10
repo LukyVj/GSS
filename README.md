@@ -17,6 +17,10 @@ Selectors, the cascade and <code>@keyframes</code>, compiled into a single rayma
 </p>
 
 <p align="center">
+  <a href="https://www.npmjs.com/package/gss-lang"><img src="https://img.shields.io/npm/v/gss-lang" alt="npm version" /></a>
+</p>
+
+<p align="center">
   <a href="https://www.gss-lang.dev/playground"><img src="https://www.gss-lang.dev/marks/social-playground.png" alt="A GSS scene next to its render" width="720" /></a>
 </p>
 
