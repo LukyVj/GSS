@@ -691,7 +691,7 @@
         animation: figure-draw 900ms cubic-bezier(0.4, 0, 0.2, 1) both;
         animation-delay: calc(var(--i, 0) * 60ms);
       }
-      .figure :is(.hidden, .guide, .ground, .ghost, .mark, .mark-label, .tint, .glint, .tile, .rings, .caret, .edge, .bound, .chip) {
+      .figure :is(.hidden, .guide, .ground, .ghost, .mark, .mark-label, .tint, .glint, .tile, .rings, .caret, .edge, .bound, .chip, .jelly, .stipple) {
         animation: figure-appear 500ms ease-out both;
         animation-delay: calc(var(--i, 0) * 60ms + 450ms);
       }
@@ -824,6 +824,16 @@
         top: calc(50% - 39px);
         left: calc(50% - 32px);
         transform: rotate(calc(360deg / var(--n) * var(--i))) translateY(-72px) rotate(calc(-360deg / var(--n) * var(--i)));
+      }
+      /* jelly(): the ball in its color, see-through, and its shade as points */
+      .figure .jelly {
+        fill: var(--gss-signal);
+        fill-opacity: 0.25;
+        stroke: var(--gss-signal);
+      }
+      .figure .stipple {
+        stroke: var(--gss-signal);
+        stroke-width: 1.6;
       }
       /* A cube covered by a pattern hides its own back: the edges behind are not drawn */
       .figure .opaque .hidden {
