@@ -16,21 +16,72 @@ describe("the figures of the docs", () => {
     expect(renderFigure(undefined)).toBe("");
   });
 
+  // Every page that asks for a figure, with the name its figure knows it by
+  const pages = [
+    ...PROPERTIES.map((entry) => [entry.figure, entry.name] as const),
+    ...AT_RULES.map((entry) => [entry.figure, `at-${entry.name}`] as const),
+    ...SELECTORS.map((entry) => [entry.figure, entry.anchor] as const),
+    ...FUNCTIONS.map((entry) => [entry.figure, entry.anchor] as const),
+    ...SHAPE_DOCS.map((entry) => [entry.figure, entry.name] as const),
+    ...[...GETTING_STARTED, ...INSTALLATION].map((entry) => [entry.figure, entry.anchor] as const),
+  ].filter(([figure]) => figure);
+
+  it("draw something for every page that asks, with no number gone wrong", () => {
+    expect(pages.length).toBeGreaterThan(30);
+    for (const [figure, id] of pages) {
+      const html = renderFigure(figure, id);
+      expect(html, id).toContain("<path");
+      expect(html, id).not.toMatch(/NaN|undefined|Infinity/);
+    }
+  });
+
   it("are lines only, for the eye, under a label for a screen reader", () => {
-    for (const name of Object.keys(FIGURES) as (keyof typeof FIGURES)[]) {
-      const html = renderFigure(name, "cube");
-      expect(html, name).toMatch(/^\s*<figure class="figure" aria-label="[^"]+">/);
-      expect(html, name).not.toContain("fill=");
+    for (const [figure, id] of pages) {
+      const html = renderFigure(figure, id);
+      expect(html, id).toMatch(/^\s*<figure class="figure" aria-label="[^"]+">/);
+      expect(html, id).not.toContain("fill=");
       const drawings = html.match(/<svg [^>]*>/g) ?? [];
-      expect(drawings.length, name).toBeGreaterThan(0);
-      for (const drawing of drawings) expect(drawing, name).toContain('aria-hidden="true"');
+      expect(drawings.length, id).toBeGreaterThan(0);
+      for (const drawing of drawings) expect(drawing, id).toContain('aria-hidden="true"');
     }
   });
 
   it("are the same string each time: the page and its prerender agree", () => {
-    for (const name of Object.keys(FIGURES) as (keyof typeof FIGURES)[]) {
-      expect(renderFigure(name, "torus"), name).toBe(renderFigure(name, "torus"));
-    }
+    for (const [figure, id] of pages) expect(renderFigure(figure, id), id).toBe(renderFigure(figure, id));
+  });
+
+  describe("rotate", () => {
+    it("turns a cube around the axis of its property, drawn through it", () => {
+      for (const axis of ["x", "y", "z"]) {
+        const html = renderFigure("rotate", `rotate-${axis}`);
+        expect(html, axis).toContain(`data-spin="${axis}"`);
+        expect(html, axis).toMatch(/<path class="axis-behind" d="M[^"]+"\/>/); // the part inside the cube
+        expect(html, axis).toMatch(/<path class="axis-front" d="M[^"]+"\/>/);
+        expect(html, axis).toContain(`<code class="lit">rotate-${axis}: 0deg → 360deg;</code>`);
+      }
+    });
+  });
+
+  describe("easing", () => {
+    it("plays an easing its page writes, on the point and on the ball", () => {
+      for (const anchor of ["fn-cubic-bezier", "fn-linear", "fn-steps"]) {
+        const html = renderFigure("easing", anchor);
+        const [, css] = html.match(/animation-timing-function: ([^"]+?)"/)!;
+        const { description, examples } = FUNCTIONS.find((fn) => fn.anchor === anchor)!;
+        expect(`${description} ${examples.map((example) => example.code).join(" ")}`, anchor).toContain(css);
+        expect(html.split(`animation-timing-function: ${css}"`).length - 1, anchor).toBe(2);
+      }
+    });
+  });
+
+  describe("hover", () => {
+    it("shows one cube to hover, and two on the page of transition: one jumps, one glides", () => {
+      expect(renderFigure("hover", "selector-hover").split('class="tries').length - 1).toBe(1);
+      const transition = renderFigure("hover", "transition");
+      expect(transition.split('class="tries').length - 1).toBe(2);
+      expect(transition.split('class="tries glides').length - 1).toBe(1);
+      expect(renderFigure("hover", "selector-active")).toContain('class="tries glides presses"');
+    });
   });
 
   describe("shapes", () => {

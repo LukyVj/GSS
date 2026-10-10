@@ -1,6 +1,23 @@
 import { SHAPE_DOCS, type Figure, type ShapeDef } from "../compiler/registry/registry";
 import { escapeHtml } from "./escape";
-import { REST_VIEW, ball, box, draw, floor, measure, moved, place, shapeDrawing, together, type Frame, type Solid } from "./hairline";
+import {
+  AXIS_REACH,
+  REST_VIEW,
+  ball,
+  box,
+  draw,
+  floor,
+  measure,
+  moved,
+  place,
+  shapeDrawing,
+  spinDrawing,
+  together,
+  type Axis,
+  type Frame,
+  type Solid,
+  type Vec3,
+} from "./hairline";
 
 // The figures of the docs (decision 180): a drawing under the lead of a page, in thin lines,
 // for what a picture says faster than a paragraph. A page asks for one by its name, in the
@@ -126,12 +143,210 @@ function paint(): string {
       </ol>`;
 }
 
+// --- one drawing on a stage, and the code it plays under it
+
+const round = (n: number) => +n.toFixed(1);
+const text = (x: number, y: number, words: string, kind = "mark-label") => `<text class="${kind}" x="${round(x)}" y="${round(y)}">${escapeHtml(words)}</text>`;
+const stage = (frame: Frame, content: string, more = "") => `<div class="figure-stage">${svg(frame, content, more)}</div>`;
+// The declarations a figure plays, under it: each one lights up while the figure plays it
+const playing = (codes: string[]) =>
+  `<figcaption>${codes.map((code, i) => `<code style="--phase: ${i}">${escapeHtml(code)}</code>`).join("")}</figcaption>`;
+// How far on the screen a move in the scene goes, in the pixels of a frame
+const shift = (frame: Frame, by: Vec3) => {
+  const [from, to] = [place([0, 0, 0], frame, REST_VIEW), place(by, frame, REST_VIEW)];
+  return [round(to[0] - from[0]), round(to[1] - from[1])];
+};
+// The edges of a solid that moves as a whole: no line draws itself, and a sheet in the color
+// of the page hides what the solid passes over
+function body(solid: Solid, frame: Frame): string {
+  const { visible, hidden } = draw(solid, frame);
+  const points = solid.mesh.flat().map((p) => place(p, frame, REST_VIEW));
+  // The outline of the sheet: the hull of every point of the solid, on the screen
+  const sorted = [...points].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const turn = (o: number[], a: number[], b: number[]) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const half = (list: number[][]) => {
+    const kept: number[][] = [];
+    for (const p of list) {
+      while (kept.length > 1 && turn(kept[kept.length - 2], kept[kept.length - 1], p) <= 0) kept.pop();
+      kept.push(p);
+    }
+    return kept.slice(0, -1);
+  };
+  const hull = [...half(sorted), ...half([...sorted].reverse())];
+  return path("sheet", `M${hull.map((p) => `${round(p[0])} ${round(p[1])}`).join("L")}Z`) + path("hidden", hidden) + path("edge", visible);
+}
+
+// --- translate: a cube along x, then y, then z
+
+function translate(): string {
+  const frame: Frame = { width: 340, height: 230, scale: 60, x: 105, y: 150 };
+  const moves: [axis: string, by: Vec3, end: Vec3][] = [
+    ["x", [1.5, 0, 0], [2.1, 0, 0]],
+    ["y", [0, 1.1, 0], [0, 1.6, 0]],
+    ["z", [0, 0, 1.5], [0, 0, 2.05]],
+  ];
+  const origin = place([0, 0, 0], frame, REST_VIEW);
+  const axes = moves
+    .map(([axis, , end], i) => {
+      const tip = place(end, frame, REST_VIEW);
+      const [dx, dy] = [tip[0] - origin[0], tip[1] - origin[1]];
+      const length = Math.hypot(dx, dy);
+      return (
+        `<g class="phase" style="--phase: ${i}">` +
+        path("axis", `M${round(origin[0])} ${round(origin[1])}L${round(tip[0])} ${round(tip[1])}`) +
+        text(tip[0] + (dx / length) * 10, tip[1] + (dy / length) * 10, axis, "axis-label") +
+        `</g>`
+      );
+    })
+    .join("");
+  const cube = box(0.3, 0.3, 0.3);
+  const [[ax, ay], [bx, by], [cx, cy]] = moves.map(([, by]) => shift(frame, by));
+  const slides = `<g class="slides" style="--ax: ${ax}px; --ay: ${ay}px; --bx: ${bx}px; --by: ${by}px; --cx: ${cx}px; --cy: ${cy}px">${body(cube, frame)}</g>`;
+  return (
+    stage(frame, axes + path("ghost", draw(cube, frame).visible) + slides) +
+    playing(["translate: 1.5 0 0;", "translate: 0 1.1 0;", "translate: 0 0 1.5;"])
+  );
+}
+
+// --- scale: a cube that grows and shrinks around its center
+
+function scale(): string {
+  const frame: Frame = { width: 340, height: 220, scale: 78, x: 170, y: 114 };
+  const cube = box(0.5, 0.5, 0.5);
+  const grows = `<g class="grows" style="transform-origin: ${frame.x}px ${frame.y}px">${body(cube, frame)}</g>`;
+  return stage(frame, grows + path("ghost", draw(cube, frame).visible)) + `<figcaption class="beats">${["scale: 0.55;", "scale: 1.35;"].map((code) => `<code>${code}</code>`).join("")}</figcaption>`;
+}
+
+// --- rotate: a cube turning around the axis of its property
+
+function rotate(property: string): string {
+  const axis = property.slice(-1) as Axis; // rotate-x, rotate-y, rotate-z
+  const frame: Frame = { width: 340, height: 230, scale: 84, x: 170, y: 118 };
+  const { cube, axis: line } = spinDrawing(axis, 24, frame);
+  const end: Vec3 = [0, 0, 0];
+  end["xyz".indexOf(axis)] = AXIS_REACH;
+  const tip = place(end, frame, REST_VIEW);
+  const away = [tip[0] - frame.x, tip[1] - frame.y];
+  const length = Math.hypot(away[0], away[1]);
+  const drawing =
+    path("hidden", cube.hidden) +
+    path("line", cube.visible, ' pathLength="1"') +
+    path("axis-behind", line.hidden) +
+    path("axis-front", line.visible) +
+    text(tip[0] + (away[0] / length) * 10, tip[1] + (away[1] / length) * 10, axis, "axis-label lit");
+  return stage(frame, drawing, ` data-spin="${axis}" data-frame="${frame.scale} ${frame.x} ${frame.y}"`) + `<figcaption><code class="lit">${escapeHtml(property)}: 0deg → 360deg;</code></figcaption>`;
+}
+
+// --- keyframes: a ball between two frames, and the time that passes
+
+function keyframes(): string {
+  const frame: Frame = { width: 380, height: 190, scale: 1, x: 0, y: 0 };
+  const [x, low, high, r] = [70, 140, 56, 15];
+  // A ball in two strokes: its outline, and its equator, dashed behind
+  const sphere = (cy: number) =>
+    `<circle cx="${x}" cy="${cy}" r="${r}"/>` + path("guide", `M${x - r} ${cy}A${r} 5 0 0 0 ${x + r} ${cy}`) + path("hidden", `M${x - r} ${cy}A${r} 5 0 0 1 ${x + r} ${cy}`);
+  const [start, end, line] = [160, 340, 98];
+  const diamond = (at: number) => path("mark", `M${at} ${line - 5}L${at + 5} ${line}L${at} ${line + 5}L${at - 5} ${line}Z`);
+  const track =
+    path("guide", `M${start} ${line}H${end}`) +
+    diamond(start) +
+    diamond(end) +
+    text(start, line + 22, "from") +
+    text(end, line + 22, "to") +
+    text(start, line - 18, "0%") +
+    text(end, line - 18, "100%") +
+    `<g class="plays" style="--run: ${end - start}px">${path("tint", `M${start} ${line - 11}V${line + 11}`)}</g>`;
+  const balls =
+    `<circle class="ghost" cx="${x}" cy="${low}" r="${r}"/><circle class="ghost" cx="${x}" cy="${high}" r="${r}"/>` +
+    `<g class="tinted floats" style="--rise: ${high - low}px">${sphere(low)}</g>`;
+  return stage(frame, balls + track) + `<figcaption><code class="lit">animation: float 2s ease-in-out alternate;</code></figcaption>`;
+}
+
+// --- easing: the curve of an easing, a point that follows it, and a ball that moves by it
+
+const EASINGS: Record<string, { css: string; points?: [number, number][]; handles?: [number, number, number, number] }> = {
+  "fn-cubic-bezier": { css: "cubic-bezier(0.3, -0.4, 0.7, 1.4)", handles: [0.3, -0.4, 0.7, 1.4] },
+  "fn-linear": { css: "linear(0, 1 40%, 0.75 55%, 1 70%, 0.95 80%, 1)", points: [[0, 0], [0.4, 1], [0.55, 0.75], [0.7, 1], [0.8, 0.95], [1, 1]] },
+  "fn-steps": { css: "steps(4)", points: [[0, 0], [0.25, 0], [0.25, 0.25], [0.5, 0.25], [0.5, 0.5], [0.75, 0.5], [0.75, 0.75], [1, 0.75], [1, 1]] },
+  "animation-timing-function": { css: "cubic-bezier(0.42, 0, 0.58, 1)", handles: [0.42, 0, 0.58, 1] },
+};
+
+function easing(subject: string): string {
+  const { css, points, handles } = EASINGS[subject] ?? EASINGS["animation-timing-function"];
+  const frame: Frame = { width: 380, height: 236, scale: 1, x: 0, y: 0 };
+  const [left, bottom, size] = [56, 172, 120];
+  const at = (time: number, progress: number) => `${round(left + time * size)} ${round(bottom - progress * size)}`;
+  const curve = handles
+    ? `M${at(0, 0)}C${at(handles[0], handles[1])} ${at(handles[2], handles[3])} ${at(1, 1)}`
+    : `M${points!.map(([time, progress]) => at(time, progress)).join("L")}`;
+  const pulls = handles
+    ? path("guide", `M${at(0, 0)}L${at(handles[0], handles[1])}M${at(1, 1)}L${at(handles[2], handles[3])}`) +
+      [0, 2].map((i) => `<circle class="guide" cx="${at(handles[i], handles[i + 1]).split(" ")[0]}" cy="${at(handles[i], handles[i + 1]).split(" ")[1]}" r="2.5"/>`).join("")
+    : "";
+  const graph =
+    path("ground", `M${left} ${bottom - size}V${bottom}H${left + size}M${left} ${bottom - size}H${left + size}V${bottom}`) +
+    text(left + size / 2, bottom + 16, "time") +
+    text(left - 26, bottom - size / 2, "progress") +
+    pulls +
+    path("tint", curve) +
+    `<g class="eases-time" style="--run: ${size}px"><g class="eases" style="--rise: ${-size}px; animation-timing-function: ${css}"><circle class="dot" cx="${left}" cy="${bottom}" r="3.5"/></g></g>`;
+  // The same easing, on a ball that goes up
+  const x = 286;
+  const riser =
+    path("ghost", `M${x} ${bottom}V${bottom - size}`) +
+    `<circle class="ghost" cx="${x}" cy="${bottom}" r="12"/><circle class="ghost" cx="${x}" cy="${bottom - size}" r="12"/>` +
+    `<g class="eases" style="--rise: ${-size}px; animation-timing-function: ${css}"><circle class="tint" cx="${x}" cy="${bottom}" r="12"/></g>`;
+  return stage(frame, graph + riser) + `<figcaption><code class="lit">animation-timing-function: ${escapeHtml(css)};</code></figcaption>`;
+}
+
+// --- hover: a cube to hover and to press, on the pages of :hover, :active and transition
+
+function hover(subject: string): string {
+  const frame: Frame = { width: 380, height: 190, scale: 70, x: 190, y: 96 };
+  const cube = box(0.34, 0.34, 0.34);
+  // A cube that hears the pointer over its whole cell, with what to do written under it
+  const cell = (x: number, kind: string, hint: string) =>
+    `<g class="tries ${kind}"><rect class="hit" x="${x - 75}" y="12" width="150" height="166"/><g class="lifts">${body(cube, { ...frame, x })}</g>${text(x, 164, hint)}</g>`;
+  const cells: Record<string, string> = {
+    "selector-hover": cell(190, "", "hover"),
+    "selector-active": cell(190, "glides presses", "hover, then press"),
+    transition: cell(115, "", "no transition") + cell(265, "glides", "transition: 0.4s"),
+  };
+  const codes: Record<string, string> = {
+    "selector-hover": "cube:hover { translate: 0 0.25 0; color: #ff5a36; }",
+    "selector-active": "cube:active { translate: 0 -0.1 0; }",
+    transition: "cube { transition: 0.4s ease-out; }",
+  };
+  return stage(frame, cells[subject] ?? cells["selector-hover"]) + `<figcaption><code class="lit">${escapeHtml(codes[subject] ?? codes["selector-hover"])}</code></figcaption>`;
+}
+
+// --- offset-path: an object that travels along a line
+
+function offsetPath(): string {
+  const frame: Frame = { width: 380, height: 200, scale: 1, x: 0, y: 0 };
+  const line = "M44 150C110 20 200 220 336 60";
+  const drawing =
+    path("ghost", line) +
+    text(44, 172, "0%") +
+    text(336, 40, "100%") +
+    `<circle class="guide" cx="44" cy="150" r="2.5"/><circle class="guide" cx="336" cy="60" r="2.5"/>` +
+    `<g class="travels" style="offset-path: path('${line}')">${path("tint", "M-9 -7L9 0L-9 7Z")}</g>`;
+  return stage(frame, drawing) + `<figcaption class="beats" style="--beat: 3.6s">${["offset-distance: 0%;", "offset-distance: 100%;"].map((code) => `<code>${code}</code>`).join("")}</figcaption>`;
+}
+
 // The label says the figure to a screen reader, and to "copy page"
 export const FIGURES: Record<Figure, { label: string; art: (subject: string) => string }> = {
   shapes: { label: "What a scene can declare", art: shapes },
   shape: { label: "The shape, and the properties that size it", art: shape },
   "first-scene": { label: "The first scene, one declaration at a time", art: firstScene },
   paint: { label: "From the shader to the faces of the object", art: paint },
+  translate: { label: "A cube moved along x, then y, then z", art: translate },
+  scale: { label: "A cube that grows and shrinks around its center", art: scale },
+  rotate: { label: "A cube turning around the axis", art: rotate },
+  keyframes: { label: "A ball between its two frames, and the time that passes", art: keyframes },
+  easing: { label: "The curve of the easing, and a ball that moves by it", art: easing },
+  hover: { label: "A cube that answers the pointer", art: hover },
+  "offset-path": { label: "An object that travels along its path", art: offsetPath },
 };
 
 // A figure is drawn once: the page is rendered when the site is built, and again at each

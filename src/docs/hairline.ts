@@ -408,6 +408,34 @@ export const SHAPES: Record<ShapeDef["name"], (view: View) => Solid> = {
   },
 };
 
+// --- a solid turned in the scene, the way the rotations of GSS turn an object
+
+export type Axis = "x" | "y" | "z";
+
+// By an angle in degrees, like rotate-x, rotate-y and rotate-z: a positive angle turns the top
+// away from the viewer, the right side away from the viewer, or the object clockwise
+export function spun(solid: Solid, axis: Axis, degrees: number): Solid {
+  const [c, s] = [Math.cos((degrees * Math.PI) / 180), Math.sin((degrees * Math.PI) / 180)];
+  const turn = ([x, y, z]: Vec3): Vec3 =>
+    axis === "x" ? [x, y * c + z * s, -y * s + z * c] : axis === "y" ? [x * c + z * s, y, -x * s + z * c] : [x * c + y * s, -x * s + y * c, z];
+  return {
+    lines: solid.lines.map((line) => ({ ...line, points: line.points.map(turn) })),
+    mesh: solid.mesh.map((triangle) => triangle.map(turn) as Triangle),
+  };
+}
+
+const AXES: Record<Axis, Vec3> = { x: [1, 0, 0], y: [0, 1, 0], z: [0, 0, 1] };
+// How far an axis is drawn on each side of the origin, for a cube turning around it
+export const AXIS_REACH = 1.15;
+
+// A cube turned around an axis, and the axis: dashed where it goes through the cube
+export function spinDrawing(axis: Axis, degrees: number, frame: Frame, view: View = REST_VIEW): { cube: Drawing; axis: Drawing } {
+  const cube = spun(box(0.42, 0.42, 0.42), axis, degrees);
+  const [x, y, z] = AXES[axis].map((n) => n * AXIS_REACH);
+  const line: Line = { points: [[-x, -y, -z], [x, y, z]] };
+  return { cube: draw(cube, frame, view), axis: draw({ lines: [line], mesh: cube.mesh }, frame, view) };
+}
+
 // --- what a scene is made of, for the figures that show one
 
 // A sphere of any radius, with its equator

@@ -1,5 +1,5 @@
 import type { ShapeDef } from "../compiler/registry/registry";
-import { REST, shapeDrawing, viewAt, type Frame } from "./hairline";
+import { REST, shapeDrawing, spinDrawing, viewAt, type Axis, type Frame } from "./hairline";
 
 // The shapes of the figures turn (decision 181): a shape arrives turning when its page opens,
 // then follows the pointer over it, and goes back to rest. The page holds each shape as three
@@ -22,11 +22,25 @@ export function viewUnder(x: number, y: number): View {
   };
 }
 
-// Draws the shape of an SVG again, seen from another side
-export function turnTo(svg: SVGSVGElement, { azimuth, elevation }: View): void {
+// The frame of a drawing, as the page wrote it on its SVG
+function frameOf(svg: SVGSVGElement): Frame {
   const [scale, x, y] = (svg.dataset.frame ?? "").split(" ").map(Number);
   const { width, height } = svg.viewBox.baseVal;
-  const frame: Frame = { width, height, scale, x, y };
+  return { width, height, scale, x, y };
+}
+
+// Draws the cube of a rotation again, turned by an angle around its axis
+export function spinTo(svg: SVGSVGElement, degrees: number): void {
+  const { cube, axis } = spinDrawing(svg.dataset.spin as Axis, degrees, frameOf(svg));
+  svg.querySelector("path.hidden")?.setAttribute("d", cube.hidden);
+  svg.querySelector("path.line")?.setAttribute("d", cube.visible);
+  svg.querySelector("path.axis-behind")?.setAttribute("d", axis.hidden);
+  svg.querySelector("path.axis-front")?.setAttribute("d", axis.visible);
+}
+
+// Draws the shape of an SVG again, seen from another side
+export function turnTo(svg: SVGSVGElement, { azimuth, elevation }: View): void {
+  const frame = frameOf(svg);
   const measured = svg.dataset.measured !== undefined;
   const drawing = shapeDrawing(svg.dataset.turn as ShapeDef["name"], frame, viewAt(azimuth, elevation), measured);
   svg.querySelector("path.hidden")?.setAttribute("d", drawing.hidden + drawing.guideHidden);
@@ -44,6 +58,7 @@ export function turnTo(svg: SVGSVGElement, { azimuth, elevation }: View): void {
 export function enableFigures(root: HTMLElement): void {
   // Asked for less motion: the shapes stay as the page drew them
   if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  spin(root);
 
   type Turning = { svg: SVGSVGElement; now: View; goal: View; held: boolean };
   const turning: Turning[] = [...root.querySelectorAll<SVGSVGElement>("svg[data-turn]")].map((svg) => ({
@@ -100,4 +115,35 @@ export function enableFigures(root: HTMLElement): void {
     }
   });
   for (const { svg } of turning) if (svg.dataset.measured !== undefined) arrivals.observe(svg);
+}
+
+// On the page of a rotation, the cube turns around its axis for as long as it is on screen:
+// a turn in 8 seconds, from the angle the page drew it at
+const TURN = 8000;
+const DRAWN_AT = 24;
+
+function spin(root: HTMLElement): void {
+  const seen = new Map<SVGSVGElement, number>(); // each cube, and when it came on screen
+  let running = false;
+  const step = (now: number) => {
+    running = false;
+    for (const [svg, since] of seen) {
+      if (!since) seen.set(svg, now);
+      else spinTo(svg, DRAWN_AT + (((now - since) % TURN) / TURN) * 360);
+    }
+    wake();
+  };
+  const wake = () => {
+    if (running || !seen.size) return;
+    running = true;
+    requestAnimationFrame(step);
+  };
+  const watch = new IntersectionObserver((entries) => {
+    for (const { target, isIntersecting } of entries) {
+      if (isIntersecting) seen.set(target as SVGSVGElement, 0);
+      else seen.delete(target as SVGSVGElement);
+    }
+    wake();
+  });
+  for (const svg of root.querySelectorAll<SVGSVGElement>("svg[data-spin]")) watch.observe(svg);
 }

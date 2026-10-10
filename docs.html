@@ -600,12 +600,6 @@
       .figure .tinted .ground {
         stroke: var(--gss-dim);
       }
-      .figure .mark-label {
-        fill: var(--gss-ash);
-        font: 10px var(--gss-font-code);
-        text-anchor: middle;
-        dominant-baseline: middle;
-      }
       /* Cells: one drawing and its name, side by side. The shapes, the steps of a scene. */
       .figure-cells {
         display: grid;
@@ -692,7 +686,7 @@
         animation: figure-draw 900ms cubic-bezier(0.4, 0, 0.2, 1) both;
         animation-delay: calc(var(--i, 0) * 60ms);
       }
-      .figure :is(.hidden, .guide, .ground, .ghost, .mark, .mark-label, .tint, .glint, .tile, .rings, .caret) {
+      .figure :is(.hidden, .guide, .ground, .ghost, .mark, .mark-label, .tint, .glint, .tile, .rings, .caret, .edge) {
         animation: figure-appear 500ms ease-out both;
         animation-delay: calc(var(--i, 0) * 60ms + 450ms);
       }
@@ -746,6 +740,192 @@
       @keyframes figure-blink {
         50% {
           opacity: 0;
+        }
+      }
+      /* A drawing on its stage, and under it the code it plays: a declaration is in signal
+         while the drawing plays it */
+      .figure figcaption {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 4px 18px;
+        margin-top: 10px;
+      }
+      .figure figcaption code {
+        font: 11px/1.4 var(--gss-font-code);
+        color: var(--gss-dim);
+      }
+      .figure figcaption code.lit {
+        color: var(--gss-ash);
+      }
+      .figure text {
+        fill: var(--gss-ash);
+        font: 10px var(--gss-font-code);
+        text-anchor: middle;
+        dominant-baseline: middle;
+      }
+      .figure .axis {
+        stroke: currentColor;
+      }
+      .figure .axis-label {
+        fill: currentColor;
+      }
+      .figure .axis-label.lit {
+        fill: var(--gss-signal);
+      }
+      .figure .axis-front,
+      .figure .axis-behind,
+      .figure .tinted circle {
+        stroke: var(--gss-signal);
+      }
+      .figure .axis-behind {
+        stroke-dasharray: 1.5 3;
+        opacity: 0.75;
+      }
+      /* What moves as a whole hides what it passes over, with a sheet in the color of the page */
+      .figure .sheet {
+        fill: var(--gss-void);
+        stroke: none;
+      }
+      .figure .dot {
+        fill: var(--gss-signal);
+        stroke: none;
+      }
+      .figure .phase {
+        color: var(--gss-dim);
+      }
+      .figure .phase,
+      .figure figcaption code[style] {
+        animation: figure-phase 7.2s infinite;
+        animation-delay: calc(var(--phase) * 2.4s);
+      }
+      @keyframes figure-phase {
+        0%,
+        30% {
+          color: var(--gss-signal);
+        }
+        33.33%,
+        100% {
+          color: var(--gss-dim);
+        }
+      }
+      /* translate: along x, then y, then z, and back each time */
+      .figure .slides {
+        animation: figure-slide 7.2s ease-in-out infinite;
+      }
+      @keyframes figure-slide {
+        0%,
+        33.33%,
+        66.66%,
+        100% {
+          transform: translate(0, 0);
+        }
+        16.66% {
+          transform: translate(var(--ax), var(--ay));
+        }
+        50% {
+          transform: translate(var(--bx), var(--by));
+        }
+        83.33% {
+          transform: translate(var(--cx), var(--cy));
+        }
+      }
+      /* scale: around the center of the cube, its lines as thin at any size */
+      .figure .grows {
+        animation: figure-grow 1.8s ease-in-out infinite alternate;
+      }
+      .figure .grows path {
+        vector-effect: non-scaling-stroke;
+      }
+      @keyframes figure-grow {
+        from {
+          transform: scale(0.55);
+        }
+        to {
+          transform: scale(1.35);
+        }
+      }
+      /* Two declarations a drawing goes between: each in signal at its end of the way */
+      .figure .beats code {
+        animation: figure-beat var(--beat, 1.8s) ease-in-out infinite alternate;
+      }
+      .figure .beats code + code {
+        animation-direction: alternate-reverse;
+      }
+      @keyframes figure-beat {
+        from {
+          color: var(--gss-signal);
+        }
+        to {
+          color: var(--gss-dim);
+        }
+      }
+      /* @keyframes: the time runs at a constant speed, the ball eases */
+      .figure .plays {
+        animation: figure-run 2s linear infinite alternate;
+      }
+      @keyframes figure-run {
+        to {
+          transform: translateX(var(--run));
+        }
+      }
+      /* An easing: a point runs along the time while the easing lifts it, and a ball takes
+         the same lift. Then both rest, and start again. */
+      .figure .eases-time {
+        animation: figure-ease-run 2.8s linear infinite;
+      }
+      .figure .eases {
+        animation: figure-ease 2.8s infinite;
+      }
+      @keyframes figure-ease-run {
+        72%,
+        100% {
+          transform: translateX(var(--run));
+        }
+      }
+      @keyframes figure-ease {
+        72%,
+        100% {
+          transform: translateY(var(--rise));
+        }
+      }
+      /* :hover, :active, transition: the cube answers the pointer over its cell */
+      .figure .hit {
+        fill: transparent;
+        stroke: none;
+        pointer-events: all;
+        cursor: pointer;
+      }
+      .figure .tries .edge {
+        transition: none;
+      }
+      .figure .tries:hover .lifts {
+        transform: translateY(-16px);
+      }
+      .figure .tries:hover .edge {
+        stroke: var(--gss-signal);
+      }
+      .figure .glides .lifts {
+        transition: transform 0.4s ease-out;
+      }
+      .figure .glides .edge {
+        transition: stroke 0.4s ease-out;
+      }
+      .figure .presses:active .lifts {
+        transform: translateY(7px);
+        transition-duration: 0.12s;
+      }
+      /* offset-path: the object goes along the line, turned the way it goes */
+      .figure .travels {
+        offset-rotate: auto;
+        animation: figure-travel 3.6s ease-in-out infinite alternate;
+      }
+      @keyframes figure-travel {
+        from {
+          offset-distance: 0%;
+        }
+        to {
+          offset-distance: 100%;
         }
       }
       @media (prefers-reduced-motion: reduce) {

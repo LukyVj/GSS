@@ -41,7 +41,14 @@ export type Figure =
   | "shapes" // everything a scene can declare, as thin lines
   | "shape" // the shape of the page, with the properties that size it
   | "first-scene" // the scene of "Your first scene", one declaration at a time
-  | "paint"; // from the shader of @paint to the faces of an object
+  | "paint" // from the shader of @paint to the faces of an object
+  | "translate" // a cube moved along x, then y, then z
+  | "scale" // a cube that grows and shrinks
+  | "rotate" // a cube turning around the axis of the property
+  | "keyframes" // a ball between two frames, and the time that passes
+  | "easing" // the curve of an easing, and a ball that moves by it
+  | "hover" // a cube to hover and to press
+  | "offset-path"; // an object that travels along a line
 
 // A callout under the description: what a reader must know before trying it
 export type Note = { title: string; text: string };
@@ -111,6 +118,7 @@ const ELEMENT_NOTE: Note = {
 export const PROPERTIES: PropertyDef[] = [
   {
     name: "translate",
+    figure: "translate",
     since: "0.0.1",
     appliesTo: "object",
     animatable: true,
@@ -788,6 +796,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "rotate-x",
+    figure: "rotate",
     since: "0.0.1",
     appliesTo: "object",
     animatable: true,
@@ -804,6 +813,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "rotate-y",
+    figure: "rotate",
     since: "0.0.1",
     appliesTo: "object",
     animatable: true,
@@ -820,6 +830,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "rotate-z",
+    figure: "rotate",
     since: "0.0.1",
     appliesTo: "object",
     animatable: true,
@@ -836,6 +847,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "scale",
+    figure: "scale",
     since: "0.0.1",
     appliesTo: "object",
     animatable: true,
@@ -915,6 +927,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "transition",
+    figure: "hover",
     since: "0.0.2",
     appliesTo: "object",
     syntax: "none | [all] <time> [<easing>] [<time>]",
@@ -941,6 +954,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "animation",
+    figure: "keyframes",
     since: "0.0.1",
     appliesTo: "everywhere",
     syntax:
@@ -1080,6 +1094,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "animation-timing-function",
+    figure: "easing",
     since: "0.0.2",
     appliesTo: "everywhere",
     syntax: "<easing>",
@@ -1196,6 +1211,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "offset-path",
+    figure: "offset-path",
     since: "0.0.3",
     appliesTo: "object",
     syntax: "none | path(<string>) | ray(<angle>)",
@@ -1977,6 +1993,7 @@ export const AT_RULES: AtRuleDef[] = [
   },
   {
     name: "keyframes",
+    figure: "keyframes",
     since: "0.0.1",
     syntax: "@keyframes <name> { <offset>[, <offset>]* { <declaration>* } … }",
     description:
@@ -2475,6 +2492,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: ":hover",
     anchor: "selector-hover",
+    figure: "hover",
     since: "0.0.1",
     specificity: "100, like a class, added to the rest",
     description:
@@ -2504,6 +2522,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: ":active",
     anchor: "selector-active",
+    figure: "hover",
     since: "0.0.3",
     specificity: "100, like a class, added to the rest",
     description:
@@ -3011,6 +3030,7 @@ export const FUNCTIONS: FunctionDef[] = [
   {
     name: "cubic-bezier()",
     anchor: "fn-cubic-bezier",
+    figure: "easing",
     since: "0.0.2",
     covers: ["cubic-bezier"],
     syntax: "cubic-bezier(<x1>, <y1>, <x2>, <y2>)",
@@ -3034,6 +3054,7 @@ export const FUNCTIONS: FunctionDef[] = [
   {
     name: "linear()",
     anchor: "fn-linear",
+    figure: "easing",
     since: "0.0.2",
     covers: ["linear"],
     syntax: "linear(<number> [<percentage>{0,2}], …)",
@@ -3052,6 +3073,7 @@ export const FUNCTIONS: FunctionDef[] = [
   {
     name: "steps()",
     anchor: "fn-steps",
+    figure: "easing",
     since: "0.0.2",
     covers: ["steps"],
     syntax:

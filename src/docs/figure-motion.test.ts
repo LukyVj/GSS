@@ -51,3 +51,23 @@ describe("a shape that turns", () => {
     }
   });
 });
+
+// On the page of a rotation, the cube turns around its axis (decision 181)
+describe("a cube that spins", () => {
+  it("is drawn again at the angle asked, with its axis", async () => {
+    const { spinTo } = await import("./figure-motion");
+    const { spinDrawing } = await import("./hairline");
+    const holder = document.createElement("div");
+    holder.innerHTML = renderFigure("rotate", "rotate-y");
+    const svg = holder.querySelector<SVGSVGElement>("svg[data-spin]")!;
+    Object.defineProperty(svg, "viewBox", { value: { baseVal: { width: 340, height: 230 } } });
+    const drawn = svg.querySelector("path.line")!.getAttribute("d");
+    spinTo(svg, 70);
+    const { cube, axis } = spinDrawing("y", 70, { width: 340, height: 230, scale: 84, x: 170, y: 118 });
+    expect(svg.querySelector("path.line")!.getAttribute("d")).toBe(cube.visible);
+    expect(svg.querySelector("path.axis-front")!.getAttribute("d")).toBe(axis.visible);
+    expect(cube.visible).not.toBe(drawn);
+    spinTo(svg, 24);
+    expect(svg.querySelector("path.line")!.getAttribute("d")).toBe(drawn);
+  });
+});
