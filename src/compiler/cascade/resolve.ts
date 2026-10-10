@@ -679,11 +679,12 @@ export function resolveStyles(
         for (const declaration of rule.declarations) {
           if (
             selector.face !== undefined &&
-            declaration.property !== "texture"
+            declaration.property !== "texture" &&
+            declaration.property !== "content"
           ) {
             throw errorAt(
               declaration,
-              `${faceSelector(selector.face)} only takes texture, like: cube${faceSelector(selector.face)} { texture: url("${selector.face}.png"); }`,
+              `${faceSelector(selector.face)} only takes texture and content, like: cube${faceSelector(selector.face)} { texture: url("${selector.face}.png"); }`,
             );
           }
           if ((declaration.important ?? false) !== important) continue;

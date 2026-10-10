@@ -2,6 +2,7 @@ import type { Token } from "../syntax/tokenizer";
 import { FACES, type Face, type Styles } from "../cascade/resolve";
 import { readFunction } from "../values/values";
 import { errorAt } from "../syntax/errors";
+import { readContent, readFont, textSource } from "./content";
 
 const EXAMPLE = 'texture: url("dirt.png");';
 
@@ -39,8 +40,19 @@ export function sceneTextures(
   instances: { styles: Styles; faceStyles: Record<Face, Styles> }[],
 ): string[] {
   const files = new Set<string>(); // keeps the first order, ignores duplicates
+  const add = (source: string, value: Token[]) => {
+    files.add(source);
+    // Only the image just added can go over the limit
+    if (files.size > MAX_IMAGES) {
+      throw errorAt(
+        value,
+        `a scene can use at most ${MAX_IMAGES} images (WebGL2 guarantees 16 texture units)`,
+      );
+    }
+  };
   for (const instance of instances) {
     readRendering(instance.styles["image-rendering"]); // checked on every object, even without a texture
+    const font = readFont(instance.styles); // and so is its font, even without content
     // The object's own image first, then its faces
     const values = [
       instance.styles["texture"],
@@ -48,14 +60,12 @@ export function sceneTextures(
     ];
     for (const value of values) {
       if (!value) continue;
-      files.add(readTexture(value));
-      // Only the image just added can go over the limit
-      if (files.size > MAX_IMAGES) {
-        throw errorAt(
-          value,
-          `a scene can use at most ${MAX_IMAGES} images (WebGL2 guarantees 16 texture units)`,
-        );
-      }
+      add(readTexture(value), value);
+    }
+    // content: the text of the object, then of its faces, an image the runtime draws
+    for (const value of [instance.styles["content"], ...FACES.map((face) => instance.faceStyles[face]["content"])]) {
+      const text = readContent(value);
+      if (text !== null) add(textSource(text, font), value!);
     }
   }
   return [...files];

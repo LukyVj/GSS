@@ -7,9 +7,9 @@ import { PROPERTIES } from "./compiler/registry/registry";
 // What a page downloads from the npm package, gzipped (decision 147). Each budget leaves
 // room to grow a little: going past one is a choice to make, not a surprise.
 const BUDGETS = {
-  runtime: 14_500, // gss-lang/runtime: a scene compiled at build time (14_000 before cursor and animation-range, decisions 161 and 162)
-  mount: 102_000, // gss-lang: compiles GSS text in the page (97_000 before the styles of outline-style, 98_000 before mix-blend-mode and mixins, decisions 173 and 174)
-  embed: 104_000, // gss-lang/embed: <gss-scene>, from a CDN (99_000 before the styles of outline-style, 100_000 before mix-blend-mode and mixins)
+  runtime: 15_500, // gss-lang/runtime: a scene compiled at build time (14_000 before cursor and animation-range, decisions 161 and 162; 14_500 before the text of content, decision 178)
+  mount: 104_000, // gss-lang: compiles GSS text in the page (97_000 before the styles of outline-style, 98_000 before mix-blend-mode and mixins, decisions 173 and 174; 102_000 before content)
+  embed: 106_000, // gss-lang/embed: <gss-scene>, from a CDN (99_000 before the styles of outline-style, 100_000 before mix-blend-mode and mixins; 104_000 before content)
 };
 
 type Chunk = Rolldown.OutputChunk;

@@ -1,6 +1,7 @@
 import type { Plugin } from "vite";
 import { compileScene, type CompiledScene } from "../compiler";
 import { describeErrors } from "../compiler/syntax/errors";
+import { textOf } from "../runtime/text";
 
 // gss-lang/vite (decision 63): `import scene from "./logo.gss"` gives the compiled
 // scene. The compiler runs at build time; the page only ships the runtime and the shader:
@@ -16,8 +17,9 @@ export function isGssModule(id: string): boolean {
 }
 
 // "dirt.png" or "./dirt.png": next to the .gss file. "/textures/…", "https://…", "data:…": as written
+// The text of an object (content) is no file
 function isRelative(file: string): boolean {
-  return !file.startsWith("/") && !/^[a-z][a-z0-9+.-]*:/i.test(file);
+  return !file.startsWith("/") && !/^[a-z][a-z0-9+.-]*:/i.test(file) && textOf(file) === null;
 }
 
 // GSS text → the JavaScript module. Relative images go through new URL(…, import.meta.url),

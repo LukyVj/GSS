@@ -9,6 +9,7 @@ import { createTriggers } from "./triggers";
 import { createScrollSlider, timelineValues } from "./timeline";
 import { pickVariant, WINDOW_MEDIA } from "./media";
 import { elementId, paintName, resolveImage } from "./textures";
+import { drawText, textOf, whenFontArrives } from "./text";
 import { createProperties } from "./properties";
 import { createDemand, movesWithTime } from "./demand";
 
@@ -122,6 +123,22 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
       console.warn(`GSS: ${file} is drawn with WebGL2 only for now: with WebGPU, the object keeps its color`);
       textures.set(url, { texture, image: new Image() });
       return texture;
+    }
+    // content: the text of an object, drawn here; again when its font arrives
+    const label = textOf(file);
+    if (label) {
+      const text = { texture, image: new Image() };
+      textures.set(url, text);
+      const write = () => {
+        if (destroyed) return;
+        const source = drawText(label.text, label.font);
+        const next = device.createTexture({ size: [source.width, source.height], format: "rgba8unorm", usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT });
+        device.queue.copyExternalImageToTexture({ source, flipY: true }, { texture: next }, [source.width, source.height]);
+        text.texture.destroy(); text.texture = next; textureVersion++;
+      };
+      write();
+      whenFontArrives(label.text, label.font, write);
+      return text.texture;
     }
     const element = new Image();
     const entry = { texture, image: element };

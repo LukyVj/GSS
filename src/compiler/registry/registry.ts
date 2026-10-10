@@ -315,6 +315,101 @@ export const PROPERTIES: PropertyDef[] = [
     ],
   },
   {
+    name: "content",
+    since: "0.0.7",
+    appliesTo: "object",
+    syntax: "<string>+ | none",
+    initial: "none",
+    description:
+      "Writes a text on the surface of the object, the way `content` gives a text to a `::before` in CSS. The text is painted over the color, the gradient or the `texture` of the object: it moves, turns and takes the light with it, and goes behind what stands in front of it.",
+    values: [
+      ["<string>", 'The text, between quotes. Several strings side by side are joined: `"3D" " text"`.'],
+      ["var(--name)", "A variable that holds a string."],
+      ["none", "No text: the default. `normal` is the same."],
+    ],
+    details:
+      "The text is one line, in the middle of each face and as large as the face lets it be, without changing its proportions. A cube shows it on its six faces, read from left to right on each; `::face()` gives a face a text of its own, or `none`. A sphere shows it six times around itself. The text follows the size of a cube and of a sphere; on another shape it is written as on a cube of 1 around it. The font comes from `font-family`, `font-weight` and `font-style`, the color from `-webkit-text-fill-color`. Unlike CSS, `content` goes on the object itself, not on a `::before` or an `::after`, and it cannot change on `:hover` or in `@keyframes`. An emoji is drawn as a flat shape, in the color of the text.",
+    examples: [
+      {
+        name: "a sign",
+        text: "The word fits the front of the board, and each of its other faces.",
+        code: '@scene { cube; } scene { camera-angle: -20deg 12deg; } cube { translate: 0 0.8 0; size: 2.4 1 0.2; color: #1a1d2b; content: "hello"; font-weight: bold; }',
+      },
+      {
+        name: "a text per face",
+        text: "Each face of the die takes its own `content`.",
+        code: '@scene { cube; } scene { camera-angle: 35deg 30deg; } cube { translate: 0 0.6 0; color: #f4f1ea; corner-radius: 0.08; font-weight: bold; } cube::face(top) { content: "1"; } cube::face(front) { content: "2"; } cube::face(right) { content: "3"; } cube::face(left) { content: "4"; } cube::face(back) { content: "5"; } cube::face(bottom) { content: "6"; }',
+      },
+      {
+        name: "a variable",
+        text: "The text is a variable of the scene, read with `var()`.",
+        code: '@scene { sphere; } scene { --word: "GSS"; } sphere { translate: 0 0.8 0; radius: 0.8; color: #3a7bff; content: var(--word); font-family: Georgia, serif; font-style: italic; }',
+      },
+    ],
+  },
+  {
+    name: "font-family",
+    since: "0.0.7",
+    appliesTo: "object",
+    syntax: "[<family-name> | <generic-family>]#",
+    initial: "sans-serif",
+    description:
+      "The font of the text of `content`, like CSS: a list of fonts, and the first one the browser has draws the text.",
+    details:
+      "A font the page loads, with `@font-face` or a stylesheet of fonts, can be named: the text is drawn again when the font arrives. Unlike CSS, the font is not inherited: it is set on the object that has the text.",
+    examples: [
+      {
+        name: "a serif and a monospace",
+        code: '@scene { cube#a; cube#b; } scene { camera-distance: 5; } cube { size: 1.8 0.9 0.2; color: #f4f1ea; content: "Hello"; } #a { translate: -1 0.8 0; font-family: Georgia, "Times New Roman", serif; } #b { translate: 1 0.8 0; font-family: monospace; }',
+      },
+    ],
+  },
+  {
+    name: "font-weight",
+    since: "0.0.7",
+    appliesTo: "object",
+    syntax: "normal | bold | <number>",
+    initial: "normal",
+    description:
+      "How thick the letters of `content` are, like CSS: `normal` is 400, `bold` is 700, and a number goes from 1 to 1000 when the font has that weight.",
+    examples: [
+      {
+        name: "normal and bold",
+        code: '@scene { cube#a; cube#b; } scene { camera-distance: 5; } cube { size: 1.8 0.9 0.2; color: #1a1d2b; content: "Hello"; } #a { translate: -1 0.8 0; } #b { translate: 1 0.8 0; font-weight: bold; }',
+      },
+    ],
+  },
+  {
+    name: "font-style",
+    since: "0.0.7",
+    appliesTo: "object",
+    syntax: "normal | italic | oblique",
+    initial: "normal",
+    description: "Slants the letters of `content`, like CSS.",
+    examples: [
+      {
+        name: "italic",
+        code: '@scene { cube; } cube { translate: 0 0.8 0; size: 2.4 1 0.2; color: #f4f1ea; content: "Hello"; font-family: Georgia, serif; font-style: italic; }',
+      },
+    ],
+  },
+  {
+    name: "-webkit-text-fill-color",
+    since: "0.0.7",
+    appliesTo: "object",
+    syntax: "<color>",
+    initial: "black or white",
+    description:
+      "The color of the text of `content`, like CSS. Without one, the text is black on a light object and white on a dark one, so it stays readable when the color of the object changes.",
+    details: "In GSS, `color` is the color of the object: this property is the one that colors its text.",
+    examples: [
+      {
+        name: "orange on white",
+        code: '@scene { cube; } cube { translate: 0 0.8 0; size: 2.4 1 0.2; color: #f4f1ea; content: "hello"; font-weight: bold; -webkit-text-fill-color: #ff5a36; }',
+      },
+    ],
+  },
+  {
     name: "opacity",
     since: "0.0.4",
     appliesTo: "object",

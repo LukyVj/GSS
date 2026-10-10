@@ -28,6 +28,7 @@ export const NAV_ICONS: Record<string, string> = {
       .map(([x, y]) => `<circle cx="${x}" cy="${y}" r=".8" ${F}/>`).join(""),
   materials: `<circle cx="8" cy="8" r="6.25"/><g class="m"><ellipse cx="5.6" cy="5.4" rx="1.5" ry="1" transform="rotate(-40 5.6 5.4)" ${F}/></g><path class="n" d="M12.4 9.2a4.6 4.6 0 0 1-3.4 3.6"/>`,
   textures: `<path d="M2 6h4V2H3a1 1 0 0 0-1 1zM10 6h4V3a1 1 0 0 0-1-1h-3zM6 10h4V6H6zM2 10v3a1 1 0 0 0 1 1h3v-4zM10 10v4h3a1 1 0 0 0 1-1v-3z" ${SOFT}/><rect x="2" y="2" width="12" height="12" rx="1"/>`,
+  text: `<rect x="2" y="2" width="12" height="12" rx="1"/><path class="m" d="M5.25 5.5h5.5M8 5.5v5.25"/>`,
   filters: `<circle cx="8" cy="8" r="6.25"/><path class="m" d="M8 1.75a6.25 6.25 0 0 1 0 12.5z" ${F}/>`,
   masks: `<path class="m" d="M3.5 1.75h9c1 0 1.75.75 1.75 1.75v9c0 1-.75 1.75-1.75 1.75h-9c-1 0-1.75-.75-1.75-1.75v-9c0-1 .75-1.75 1.75-1.75zM8 3.75a4.25 4.25 0 1 0 0 8.5 4.25 4.25 0 1 0 0-8.5z" fill-rule="evenodd" ${SOFT}/><rect x="1.75" y="1.75" width="12.5" height="12.5" rx="1.75"/><circle class="n" cx="8" cy="8" r="4.25"/>`,
   // Motion
@@ -137,6 +138,8 @@ export const NAV_ICON_MOTION: Record<string, IconMotion[]> = {
   ],
   // The tile flips over
   textures: [{ frames: "to { transform: rotateY(180deg); }", ms: 500 }],
+  // The letter is stamped on the face
+  text: [{ part: ".m", frames: "40% { transform: scale(0.65); } 70% { transform: scale(1.12); }", ms: 450, style: AT(8, 8) }],
   // The filled half swings to the other side and back
   filters: [{ part: ".m", frames: "50% { transform: scaleX(-1); }", ms: 650, style: AT(8, 8) }],
   // The mask fades while its hole opens

@@ -1,3 +1,5 @@
+import { drawText, textOf, whenFontArrives } from "./text";
+
 // The images of the scenes, on the GPU: one texture per file, shared by every scene
 // the renderer loads, so typing in the playground does not download an image again.
 export type TextureStore = {
@@ -106,6 +108,27 @@ export function createTextureStore(gl: WebGL2RenderingContext): TextureStore {
         return texture;
       }
 
+      // content: the text of an object, drawn here; again when its font arrives
+      const label = textOf(file);
+      if (label) {
+        const write = () => {
+          if (!textures.has(file)) return; // the renderer was destroyed meanwhile
+          gl.bindTexture(gl.TEXTURE_2D, texture);
+          gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true); // like the images
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, drawText(label.text, label.font));
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+          // Smaller copies of the image: letters seen from far or from the side do not flicker
+          gl.generateMipmap(gl.TEXTURE_2D);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+          version++;
+        };
+        write();
+        whenFontArrives(label.text, label.font, write);
+        return texture;
+      }
+
       // The download, in the background
       const image = new Image();
       image.crossOrigin = "anonymous"; // an image from another site needs CORS to reach the GPU
@@ -163,6 +186,6 @@ export function usesElements(scene: { textures: string[]; media?: { variants: { 
 // Where an image of the scene lives: next to the .gss file, like url() in a stylesheet.
 // Without a base (the playground, the docs), the path stays as written.
 export function resolveImage(file: string, base?: string): string {
-  // an element or a @paint is no file
-  return base && elementId(file) === null && paintName(file) === null ? new URL(file, base).href : file;
+  // an element, a @paint or a text is no file
+  return base && elementId(file) === null && paintName(file) === null && textOf(file) === null ? new URL(file, base).href : file;
 }

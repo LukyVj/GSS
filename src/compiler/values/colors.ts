@@ -47,7 +47,7 @@ export const COLOR_FUNCTIONS = [
 export type ColorScheme = "light" | "dark";
 export const DARK_QUERY = "(prefers-color-scheme: dark)";
 // The properties whose whole value is a color
-const COLOR_PROPERTIES = ["color", "floor", "background", "outline-color"];
+const COLOR_PROPERTIES = ["color", "floor", "background", "outline-color", "-webkit-text-fill-color"];
 // The materials whose first argument is a color: metal(tomato, 0.2)
 export const MATERIAL_FUNCTIONS = ["matte", "metal", "jelly", "glass", "emissive", "iridescent"];
 

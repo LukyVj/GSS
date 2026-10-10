@@ -3,7 +3,9 @@ import type { Token } from "../../syntax/tokenizer";
 import type { Keyframes } from "../../syntax/ast";
 import { FACES, type Face, type StyledInstance } from "../../cascade/resolve";
 import { readRendering, readTexture, sceneTextures } from "../../features/textures";
+import { readContent, readFont, textSource, TEXT_COLOR } from "../../features/content";
 import { glslFloat, label, type Hover } from "./glsl";
+import { readColor } from "./read";
 import { g, liveNumber, liveSize3, mul, type Num } from "./live";
 import { spaceFunction } from "./transforms";
 
@@ -34,6 +36,34 @@ const FACE_OF = `int faceOf(vec3 n) {
   return n.z > 0.0 ? 3 : 4;                                // front, back
 }`;
 
+// The room a text has on each side of the object. A sphere is seen from six sides, each
+// one a sixth of it: the square that fits in a sixth is 1 / sqrt(3) of its diameter
+function textBox(instance: StyledInstance): Num[] {
+  const box = objectBox(instance);
+  return instance.tag === "sphere" ? box.map((side) => mul(0.577, side)) : box;
+}
+
+// content: the text of an object, drawn by the runtime in an image whose alpha is the ink.
+// The image keeps its proportions: it is as large as the face lets it be, in its middle,
+// and reads from left to right on every face (the top from the front, the bottom from under)
+const TEXT_LABEL = `vec3 textLabel(sampler2D image, vec3 q, vec3 n, vec3 box, vec3 color, vec3 ink) {
+  vec3 a = abs(n);
+  vec2 uv;
+  vec2 face;
+  if (a.y >= a.x && a.y >= a.z) { uv = vec2(q.x, -sign(n.y) * q.z); face = box.xz; }  // top and bottom
+  else if (a.x >= a.z) { uv = vec2(-sign(n.x) * q.z, q.y); face = box.zy; }           // left and right
+  else { uv = vec2(sign(n.z) * q.x, q.y); face = box.xy; }                            // front and back
+  vec2 size = vec2(textureSize(image, 0));                                            // the image in pixels
+  vec2 st = uv / (size * min(face.x / size.x, face.y / size.y)) + 0.5;
+  vec2 inside = step(vec2(0.0), st) * step(st, vec2(1.0));                            // nothing around the image
+  return mix(color, ink, texture(image, clamp(st, 0.0, 1.0)).a * inside.x * inside.y);
+}`;
+
+// The ink of a text without a color of its own: black on a light surface, white on a dark one
+const TEXT_INK = `vec3 textInk(vec3 color) {
+  return vec3(step(dot(color, vec3(0.2126, 0.7152, 0.0722)), 0.5));
+}`;
+
 // The number faceOf() gives each face
 const FACE_NUMBERS: Record<Face, number> = {
   top: 1,
@@ -52,7 +82,11 @@ function textureBox(instance: StyledInstance): Num[] {
     const size = liveNumber(imageSize, "texture-size", 1); // its error: "texture-size expects one positive number"
     return [size, size, size];
   }
+  return objectBox(instance);
+}
 
+// The full size of the object: what one image, or its text, covers
+function objectBox(instance: StyledInstance): Num[] {
   // A size set from JS (decision 105): the images follow it
   if (instance.tag === "cube") return liveSize3(instance.styles["size"]);
   if (instance.tag === "sphere") {
@@ -76,11 +110,7 @@ export function textureCode(
     .map((file, i) => `uniform sampler2D uTexture${i}; // ${file}`)
     .join("\n");
 
-  const textured = instances.filter(
-    (instance) =>
-      instance.styles["texture"] ||
-      FACES.some((face) => instance.faceStyles[face]["texture"]),
-  );
+  const textured = instances.filter((instance) => sceneTextures([instance]).length > 0);
 
   // The same moves as in map(): the groups from the outside in, then the object
   const spaces = textured.map((instance) => spaceFunction(instance, keyframes, hoverOf));
@@ -103,22 +133,58 @@ export function textureCode(
       image: imageOf(instance.faceStyles[face]["texture"]),
     })).filter((entry) => entry.image !== null);
 
-    // No face of its own: one line, like before
-    if (faces.length === 0) {
-      return `  if (id == ${id}) return ${read(side!, `${space}(p)`, `${space}(p + n * 0.01) - ${space}(p)`)};`;
+    // content: the text of the object, and of the faces that set their own (none: no text there)
+    const font = readFont(instance.styles);
+    const textOf = (value: Token[] | undefined): number | null => {
+      const text = readContent(value);
+      return text === null ? null : files.indexOf(textSource(text, font));
+    };
+    const sideText = textOf(instance.styles["content"]);
+    const faceTexts = FACES.filter((face) => instance.faceStyles[face]["content"]).map((face) => ({
+      face,
+      text: textOf(instance.faceStyles[face]["content"]),
+    }));
+
+    if (sideText === null && faceTexts.every((entry) => entry.text === null)) {
+      // No face of its own: one line, like before
+      if (faces.length === 0) {
+        return `  if (id == ${id}) return ${read(side!, `${space}(p)`, `${space}(p + n * 0.01) - ${space}(p)`)};`;
+      }
+      return [
+        `  if (id == ${id}) {  // ${label(instance)}`,
+        `    vec3 q = ${space}(p);`,
+        `    vec3 ln = ${space}(p + n * 0.01) - q; // the normal in the object's space`,
+        `    int face = faceOf(ln);`,
+        ...faces.map(
+          ({ face, image }) =>
+            `    if (face == ${FACE_NUMBERS[face]}) return ${read(image!, "q", "ln")}; // ${face}`,
+        ),
+        side !== null
+          ? `    return ${read(side, "q", "ln")};`
+          : "    return color;", // no side image: the color
+        "  }",
+      ].join("\n");
     }
+
+    // With a text: the image first, then the text over it
+    const ink = instance.styles[TEXT_COLOR] ? readColor(instance.styles[TEXT_COLOR]) : "textInk(color)";
+    const write = (text: number) =>
+      `textLabel(uTexture${text}, q, ln, vec3(${textBox(instance).map(g).join(", ")}), color, ${ink})`;
     return [
       `  if (id == ${id}) {  // ${label(instance)}`,
       `    vec3 q = ${space}(p);`,
       `    vec3 ln = ${space}(p + n * 0.01) - q; // the normal in the object's space`,
-      `    int face = faceOf(ln);`,
+      ...(faces.length > 0 || faceTexts.length > 0 ? [`    int face = faceOf(ln);`] : []),
       ...faces.map(
-        ({ face, image }) =>
-          `    if (face == ${FACE_NUMBERS[face]}) return ${read(image!, "q", "ln")}; // ${face}`,
+        ({ face, image }, i) =>
+          `    ${i > 0 ? "else " : ""}if (face == ${FACE_NUMBERS[face]}) color = ${read(image!, "q", "ln")}; // ${face}`,
       ),
-      side !== null
-        ? `    return ${read(side, "q", "ln")};`
-        : "    return color;", // no side image: the color
+      ...(side !== null ? [`    ${faces.length > 0 ? "else " : ""}color = ${read(side, "q", "ln")};`] : []),
+      ...faceTexts.map(
+        ({ face, text }) =>
+          `    if (face == ${FACE_NUMBERS[face]}) return ${text !== null ? write(text) : "color"}; // ${face}`,
+      ),
+      sideText !== null ? `    return ${write(sideText)};` : "    return color;",
       "  }",
     ].join("\n");
   });
@@ -134,7 +200,9 @@ export function textureCode(
     uniforms,
     functions: [
       ...spaces,
-      TRIPLANAR,
+      ...(branches.join("\n").includes("triplanar(") ? [TRIPLANAR] : []),
+      ...(branches.join("\n").includes("textLabel(") ? [TEXT_LABEL] : []),
+      ...(branches.join("\n").includes("textInk(") ? [TEXT_INK] : []),
       ...(branches.join("\n").includes("faceOf(") ? [FACE_OF] : []),
       textureColor,
     ].join("\n\n"),

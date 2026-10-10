@@ -76,6 +76,7 @@ export const DOC_GROUPS: NavGroup[] = [
   { id: "gradients", title: "Gradients and noise", category: "Appearance", order: 32, anchors: ["fn-gradients", "fn-noise", "fn-checker", "fn-stripes", "fn-displace"] },
   { id: "materials", title: "Materials", category: "Appearance", order: 33, anchors: ["material"] },
   { id: "textures", title: "Textures", category: "Appearance", order: 34, anchors: ["texture", "fn-element", "fn-paint", "texture-size", "image-rendering"] },
+  { id: "text", title: "Text", category: "Appearance", order: 34.5, anchors: ["content", "font-family", "font-weight", "font-style", "-webkit-text-fill-color"] },
   { id: "filters", title: "Filters", category: "Appearance", order: 35, anchors: ["filter"] },
   { id: "masks", title: "Visibility, opacity, outlines and masks", category: "Appearance", order: 36, anchors: ["display", "visibility", "opacity", "outline", "outline-width", "outline-style", "outline-color", "outline-offset", "mask-image", "mask-mode"] },
   { id: "transforms", title: "Transforms", category: "Motion", order: 40, anchors: ["translate", "rotate-x", "rotate-y", "rotate-z", "scale", "transform-origin", "offset-path", "offset-distance", "offset-rotate"] },
