@@ -109,7 +109,7 @@ export function renderProperty(property: PropertyDef): string {
   return `
     <article class="property" id="${escapeHtml(property.name)}">
       ${renderTitle(property.name, property.name, property.since)}
-      <p>${prose(property.description)}</p>${renderNote(property.note)}${renderFigure(property.figure)}
+      <p>${prose(property.description)}</p>${renderNote(property.note)}${renderFigure(property.figure, property.name)}
       <dl>
         <dt>Syntax</dt>
         <dd><code class="gss syntax">${highlightSyntax(property.syntax)}</code></dd>
@@ -133,7 +133,7 @@ export function renderAtRule(atRule: AtRuleDef): string {
   return `
     <article class="property" id="at-${escapeHtml(atRule.name)}">
       <h3${dated(atRule.since)}><code>@${escapeHtml(atRule.name)}</code></h3>
-      <p>${prose(atRule.description)}</p>${renderNote(atRule.note)}${renderFigure(atRule.figure)}
+      <p>${prose(atRule.description)}</p>${renderNote(atRule.note)}${renderFigure(atRule.figure, `at-${atRule.name}`)}
       <dl>
         <dt>Syntax</dt>
         <dd><code class="gss syntax">${highlightSyntax(atRule.syntax)}</code></dd>${
@@ -150,7 +150,7 @@ export function renderSelector(selector: SelectorDef): string {
   return `
     <article class="property" id="${escapeHtml(selector.anchor)}">
       <h3${dated(selector.since)}><code>${escapeHtml(selector.name)}</code></h3>
-      <p>${prose(selector.description)}</p>${renderFigure(selector.figure)}
+      <p>${prose(selector.description)}</p>${renderFigure(selector.figure, selector.anchor)}
       <dl>
         <dt>Specificity</dt>
         <dd>${prose(selector.specificity)}</dd>
@@ -164,7 +164,7 @@ export function renderFunction(fn: FunctionDef): string {
   return `
     <article class="property" id="${escapeHtml(fn.anchor)}">
       <h3${dated(fn.since)}><code>${escapeHtml(fn.name)}</code></h3>
-      <p>${prose(fn.description)}</p>${renderNote(fn.note)}${renderFigure(fn.figure)}
+      <p>${prose(fn.description)}</p>${renderNote(fn.note)}${renderFigure(fn.figure, fn.anchor)}
       <dl>
         <dt>Syntax</dt>
         <dd><code class="gss syntax">${highlightSyntax(fn.syntax)}</code></dd>
@@ -209,7 +209,7 @@ export function renderShape(
   return `
     <article class="property" id="shape-${escapeHtml(shape.name)}">
       ${renderTitle(`shape-${shape.name}`, shape.name, shape.since)}
-      <p>${prose(shape.description)}</p>${renderFigure(shape.figure)}
+      <p>${prose(shape.description)}</p>${renderFigure(shape.figure, shape.name)}
       <dl>
         ${propertyList}
       </dl>${renderValues(`shape-${shape.name}`, shape)}
@@ -315,7 +315,7 @@ function renderGuideEntry(entry: GuideEntry): string {
     <article class="guide" id="${escapeHtml(entry.anchor)}">
       <h3${dated(entry.since)}>${escapeHtml(entry.label)}</h3>
       ${paragraphs(entry.paragraphs)}
-      ${entry.example ? renderExamples(entry.anchor, [{ code: entry.example }]) : ""}
+      ${entry.example ? renderExamples(entry.anchor, [{ code: entry.example }]) : ""}${renderFigure(entry.figure, entry.anchor)}
       ${paragraphs(entry.after)}
     </article>`;
 }

@@ -81,12 +81,23 @@ The surface look of an object.
         <figure class="figure" aria-label="What a scene can declare">
           <ul class="figure-shapes">
             <li><a href="#shape-cube"><svg viewBox="0 0 120 120" aria-hidden="true"><path class="line" d="M1 1L2 2"/></svg><code>cube</code></a></li>
-            <li><a href="#shape-sphere"><svg viewBox="0 0 120 120" aria-hidden="true"></svg><code>sphere</code></a></li>
+            <li><a href="#shape-sphere"><svg viewBox="0 0 120 120" aria-hidden="true"><text class="mark-label">radius</text></svg><code>sphere</code></a></li>
           </ul>
         </figure>
       `),
     );
     expect(md).toBe("# <shape>\n\n**What a scene can declare:** `cube`, `sphere`\n");
+  });
+
+  it("says a single drawing by its measures, and nothing for a drawing without a word", () => {
+    const stage = (inside: string) =>
+      articleToMarkdown(
+        article(`<h3>cylinder</h3><figure class="figure" aria-label="The shape"><div class="figure-stage"><svg>${inside}</svg></div></figure>`),
+      );
+    expect(stage('<text class="mark-label">radius</text><text class="mark-label">height</text>')).toBe(
+      "# cylinder\n\n**The shape:** `radius`, `height`\n",
+    );
+    expect(stage('<path class="line" d="M1 1L2 2"/>')).toBe("# cylinder\n");
   });
 
   it("keeps inline markup in a guide page", () => {

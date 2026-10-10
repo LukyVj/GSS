@@ -37,7 +37,18 @@ type Parts = {
 };
 
 // The drawings of the docs, by name: the docs hold one for each (src/docs/figures.ts)
-export type Figure = "shapes"; // everything a scene can declare, as thin lines
+export type Figure =
+  | "shapes" // everything a scene can declare, as thin lines
+  | "shape" // the shape of the page, with the properties that size it
+  | "first-scene" // the scene of "Your first scene", one declaration at a time
+  | "paint" // from the shader of @paint to the faces of an object
+  | "translate" // a cube moved along x, then y, then z
+  | "scale" // a cube that grows and shrinks
+  | "rotate" // a cube turning around the axis of the property
+  | "keyframes" // a ball between two frames, and the time that passes
+  | "easing" // the curve of an easing, and a ball that moves by it
+  | "hover" // a cube to hover and to press
+  | "offset-path"; // an object that travels along a line
 
 // A callout under the description: what a reader must know before trying it
 export type Note = { title: string; text: string };
@@ -107,6 +118,7 @@ const ELEMENT_NOTE: Note = {
 export const PROPERTIES: PropertyDef[] = [
   {
     name: "translate",
+    figure: "translate",
     since: "0.0.1",
     appliesTo: "object",
     animatable: true,
@@ -784,6 +796,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "rotate-x",
+    figure: "rotate",
     since: "0.0.1",
     appliesTo: "object",
     animatable: true,
@@ -800,6 +813,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "rotate-y",
+    figure: "rotate",
     since: "0.0.1",
     appliesTo: "object",
     animatable: true,
@@ -816,6 +830,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "rotate-z",
+    figure: "rotate",
     since: "0.0.1",
     appliesTo: "object",
     animatable: true,
@@ -832,6 +847,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "scale",
+    figure: "scale",
     since: "0.0.1",
     appliesTo: "object",
     animatable: true,
@@ -911,6 +927,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "transition",
+    figure: "hover",
     since: "0.0.2",
     appliesTo: "object",
     syntax: "none | [all] <time> [<easing>] [<time>]",
@@ -937,6 +954,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "animation",
+    figure: "keyframes",
     since: "0.0.1",
     appliesTo: "everywhere",
     syntax:
@@ -1076,6 +1094,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "animation-timing-function",
+    figure: "easing",
     since: "0.0.2",
     appliesTo: "everywhere",
     syntax: "<easing>",
@@ -1192,6 +1211,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "offset-path",
+    figure: "offset-path",
     since: "0.0.3",
     appliesTo: "object",
     syntax: "none | path(<string>) | ray(<angle>)",
@@ -1973,6 +1993,7 @@ export const AT_RULES: AtRuleDef[] = [
   },
   {
     name: "keyframes",
+    figure: "keyframes",
     since: "0.0.1",
     syntax: "@keyframes <name> { <offset>[, <offset>]* { <declaration>* } … }",
     description:
@@ -2035,6 +2056,7 @@ export const AT_RULES: AtRuleDef[] = [
   },
   {
     name: "paint",
+    figure: "paint",
     since: "0.0.6",
     syntax: "@paint <name> { <fragment shader> }",
     description:
@@ -2470,6 +2492,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: ":hover",
     anchor: "selector-hover",
+    figure: "hover",
     since: "0.0.1",
     specificity: "100, like a class, added to the rest",
     description:
@@ -2499,6 +2522,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: ":active",
     anchor: "selector-active",
+    figure: "hover",
     since: "0.0.3",
     specificity: "100, like a class, added to the rest",
     description:
@@ -2693,6 +2717,7 @@ export const SELECTORS: SelectorDef[] = [
 export const SHAPE_DOCS: ShapeDef[] = [
   {
     name: "cube",
+    figure: "shape",
     since: "0.0.1",
     description:
       "A box with slightly rounded edges, centered on its origin: 1 × 1 × 1 by default. `size` stretches it into any box, and `corner-radius` rounds its edges.",
@@ -2705,6 +2730,7 @@ export const SHAPE_DOCS: ShapeDef[] = [
   },
   {
     name: "sphere",
+    figure: "shape",
     since: "0.0.1",
     description:
       "A ball centered on its origin, with a `radius` of 0.5 by default.",
@@ -2717,6 +2743,7 @@ export const SHAPE_DOCS: ShapeDef[] = [
   },
   {
     name: "torus",
+    figure: "shape",
     since: "0.0.1",
     description:
       "A ring lying flat around the y axis: a `radius` of 1 to the center of its tube, and a tube of 0.28 by default, set by `thickness`.",
@@ -2729,6 +2756,7 @@ export const SHAPE_DOCS: ShapeDef[] = [
   },
   {
     name: "cylinder",
+    figure: "shape",
     since: "0.0.1",
     description:
       "A cylinder standing on the y axis, centered on its origin: a `radius` of 0.5 and a `height` of 1 by default.",
@@ -2741,6 +2769,7 @@ export const SHAPE_DOCS: ShapeDef[] = [
   },
   {
     name: "cone",
+    figure: "shape",
     since: "0.0.1",
     description:
       "A cone standing on the y axis, centered on its origin, pointing up: a `radius` of 0.5 and a `height` of 1 by default. A second radius cuts its top.",
@@ -2753,6 +2782,7 @@ export const SHAPE_DOCS: ShapeDef[] = [
   },
   {
     name: "capsule",
+    figure: "shape",
     since: "0.0.1",
     description:
       "A cylinder with round ends, standing on the y axis and centered on its origin: a `radius` of 0.25 and a `height` of 1 by default, round ends included.",
@@ -2765,6 +2795,7 @@ export const SHAPE_DOCS: ShapeDef[] = [
   },
   {
     name: "pyramid",
+    figure: "shape",
     since: "0.0.6",
     description:
       "A pyramid on a square base, pointing up, centered on its origin: a base of 1 by 1 and a height of 1 by default. `size` sets the width and the depth of its base, and its height, like the box of a cube.",
@@ -2782,6 +2813,7 @@ export const SHAPE_DOCS: ShapeDef[] = [
   },
   {
     name: "octahedron",
+    figure: "shape",
     since: "0.0.6",
     description:
       "Eight triangles, two pyramids joined by their bases, like a die with eight faces: a `radius` of 0.5 by default, from its center to each tip.",
@@ -2794,6 +2826,7 @@ export const SHAPE_DOCS: ShapeDef[] = [
   },
   {
     name: "tube",
+    figure: "shape",
     since: "0.0.6",
     description:
       "A hollow cylinder, a pipe, standing on the y axis and centered on its origin: an outer `radius` of 0.5, a `height` of 1 and a wall 0.1 `thickness` thick by default.",
@@ -2813,6 +2846,7 @@ export const SHAPE_DOCS: ShapeDef[] = [
   },
   {
     name: "path",
+    figure: "shape",
     since: "0.0.1",
     description:
       "A tube with round ends that follows an SVG path, given by `d`. `stroke-width` and `view-box` work like in SVG.",
@@ -2825,6 +2859,7 @@ export const SHAPE_DOCS: ShapeDef[] = [
   },
   {
     name: "plane",
+    figure: "shape",
     since: "0.0.1",
     description:
       "A thin, flat rectangle lying in the xz plane, centered on its origin: 1 × 1 by default. `size` sets its width and its depth, and `rotate-x: 90deg` stands it up, like a wall.",
@@ -2837,6 +2872,7 @@ export const SHAPE_DOCS: ShapeDef[] = [
   },
   {
     name: "prism",
+    figure: "shape",
     since: "0.0.1",
     description:
       "A contour, filled, then given a `depth`: a flat object, like a star, a letter, an arrow, a logo. The contour is a `polygon()` or a `path()` (see `d`), and a contour inside another one is a hole.",
@@ -2856,6 +2892,7 @@ export const SHAPE_DOCS: ShapeDef[] = [
   },
   {
     name: "lathe",
+    figure: "shape",
     since: "0.0.5",
     description:
       "A contour, filled, then turned around the vertical axis, like clay on a potter's wheel: a vase, a bowl, a bottle, a chess piece. A `prism` pushes its contour straight back into a flat plate; a lathe turns it into an object that is round from every side. The contour is a `polygon()` or a `path()` (see `d`), drawn right of the axis x = 0.",
@@ -2886,6 +2923,7 @@ export const SHAPE_DOCS: ShapeDef[] = [
   },
   {
     name: "group",
+    figure: "shape",
     since: "0.0.1",
     description:
       "Not a shape: it holds objects and other groups, like `<g>` in SVG, and draws nothing itself. Its `translate`, rotations and `scale` apply to everything inside it, and the positions of its children become relative to it.",
@@ -2932,6 +2970,7 @@ export const SHAPE_DOCS: ShapeDef[] = [
   },
   {
     name: "light",
+    figure: "shape",
     since: "0.0.4",
     description:
       "Not a shape: a point of light, which draws nothing. Its `color` is the color of its light (white by default), and `intensity` how much light it gives, on top of the sun and the `ambient` light of the scene.",
@@ -2991,6 +3030,7 @@ export const FUNCTIONS: FunctionDef[] = [
   {
     name: "cubic-bezier()",
     anchor: "fn-cubic-bezier",
+    figure: "easing",
     since: "0.0.2",
     covers: ["cubic-bezier"],
     syntax: "cubic-bezier(<x1>, <y1>, <x2>, <y2>)",
@@ -3014,6 +3054,7 @@ export const FUNCTIONS: FunctionDef[] = [
   {
     name: "linear()",
     anchor: "fn-linear",
+    figure: "easing",
     since: "0.0.2",
     covers: ["linear"],
     syntax: "linear(<number> [<percentage>{0,2}], …)",
@@ -3032,6 +3073,7 @@ export const FUNCTIONS: FunctionDef[] = [
   {
     name: "steps()",
     anchor: "fn-steps",
+    figure: "easing",
     since: "0.0.2",
     covers: ["steps"],
     syntax:
