@@ -554,6 +554,129 @@
         color: var(--gss-bone);
         font-weight: 600;
       }
+      /* A figure under the lead of a page: thin lines and no fill, like a plan. What stands
+         behind a shape is dashed. */
+      .figure {
+        margin: 4px 0 28px;
+      }
+      .figure svg {
+        display: block;
+        overflow: visible;
+        fill: none;
+      }
+      .figure path {
+        stroke: var(--gss-bone);
+        stroke-width: 1;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        vector-effect: non-scaling-stroke;
+        transition: stroke var(--gss-transition);
+      }
+      .figure path.guide,
+      .figure path.hidden {
+        stroke: var(--gss-dim);
+      }
+      .figure path.hidden {
+        stroke-dasharray: 1.5 3;
+        opacity: 0.75;
+      }
+      /* Everything a scene can declare: one cell per name, a link to its page */
+      .figure-shapes {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        border-top: 1px solid var(--gss-line);
+        border-left: 1px solid var(--gss-line);
+      }
+      .figure-shapes li {
+        border-right: 1px solid var(--gss-line);
+        border-bottom: 1px solid var(--gss-line);
+      }
+      .figure-shapes a {
+        display: grid;
+        justify-items: center;
+        gap: 4px;
+        padding: 16px 8px 14px;
+        color: var(--gss-dim);
+        text-decoration: none;
+        transition: color var(--gss-transition), background var(--gss-transition);
+      }
+      .figure-shapes svg {
+        width: min(100%, 104px);
+        height: auto;
+        aspect-ratio: 1;
+      }
+      .figure-shapes code {
+        font: 12px var(--gss-font-code);
+        color: inherit;
+      }
+      .figure-shapes a:hover,
+      .figure-shapes a:focus-visible {
+        color: var(--gss-bone);
+        background: var(--gss-surface);
+        outline: none;
+      }
+      .figure-shapes a:hover path:not(.hidden, .guide),
+      .figure-shapes a:focus-visible path:not(.hidden, .guide) {
+        stroke: var(--gss-signal);
+      }
+      @media (max-width: 640px) {
+        .figure-shapes {
+          grid-template-columns: repeat(3, 1fr);
+        }
+      }
+      /* What a reader looks up once, folded under the paragraph of a page: a mono label
+         with a hairline chevron, closed until asked */
+      .more {
+        max-width: 65ch;
+        margin: -4px 0 24px;
+      }
+      .more > summary {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 4px 0;
+        font: 12px var(--gss-font-code);
+        color: var(--gss-dim);
+        cursor: pointer;
+        list-style: none;
+        transition: color var(--gss-transition);
+      }
+      .more > summary::-webkit-details-marker {
+        display: none;
+      }
+      .more > summary::before {
+        content: "";
+        width: 6px;
+        height: 6px;
+        border-right: 1px solid currentColor;
+        border-bottom: 1px solid currentColor;
+        transform: translateY(-1px) rotate(-45deg);
+        transition: transform var(--gss-transition);
+      }
+      .more[open] > summary::before {
+        transform: translateY(-2px) rotate(45deg);
+      }
+      .more > summary:hover,
+      .more[open] > summary {
+        color: var(--gss-bone);
+      }
+      .more > summary:focus-visible {
+        outline: 1px solid var(--gss-signal);
+        outline-offset: 4px;
+      }
+      .more > p {
+        margin: 10px 0 0;
+        padding-left: 14px;
+        border-left: 1px solid var(--gss-isoline);
+        font-size: 15px;
+        color: var(--gss-ash);
+      }
+      .more > p code {
+        color: var(--gss-bone);
+      }
       /* The chapters of a page (Values, a chapter of a guide) and the name of each example:
          Martian Mono speaks, like the titles; the sentence under it is prose */
       .property h4,

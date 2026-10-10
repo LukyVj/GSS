@@ -60,6 +60,35 @@ The surface look of an object.
 `);
   });
 
+  it("unfolds what a page folds: the text, without the label of the fold", () => {
+    const md = articleToMarkdown(
+      article(`
+        <h3><code>opacity</code></h3>
+        <p>A group does not fade as one picture.</p>
+        <details class="more">
+          <summary>More details</summary>
+          <p>The reflections show it <code>opaque</code>.</p>
+        </details>
+      `),
+    );
+    expect(md).toBe("# opacity\n\nA group does not fade as one picture.\n\nThe reflections show it `opaque`.\n");
+  });
+
+  it("says a figure in words: its label, then the names it draws", () => {
+    const md = articleToMarkdown(
+      article(`
+        <h3><code>&lt;shape&gt;</code></h3>
+        <figure class="figure" aria-label="What a scene can declare">
+          <ul class="figure-shapes">
+            <li><a href="#shape-cube"><svg viewBox="0 0 120 120" aria-hidden="true"><path class="line" d="M1 1L2 2"/></svg><code>cube</code></a></li>
+            <li><a href="#shape-sphere"><svg viewBox="0 0 120 120" aria-hidden="true"></svg><code>sphere</code></a></li>
+          </ul>
+        </figure>
+      `),
+    );
+    expect(md).toBe("# <shape>\n\n**What a scene can declare:** `cube`, `sphere`\n");
+  });
+
   it("keeps inline markup in a guide page", () => {
     const md = articleToMarkdown(
       article(`

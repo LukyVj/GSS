@@ -33,6 +33,8 @@ export const recordExtractor = ({ $, url }: { $: CheerioAPI; url: URL }): DocSea
   // and what the page script adds (breadcrumb, previous / next)
   $("#docs pre, #docs script, #docs button, #docs .variables-demo, #docs article > dl:not(.values)").remove();
   $("#docs .page-bar, #docs .pager").remove();
+  // What a page folds is read, not the label of the fold
+  $("#docs details.more > summary").remove();
   // The cells of a table, read apart: "matte() Scatters the light only"
   $("#docs dt, #docs dd, #docs li").append(" ");
 

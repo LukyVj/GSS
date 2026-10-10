@@ -235,6 +235,20 @@ describe("renderShape", () => {
   });
 });
 
+// A drawing under the lead of a page (decision 180)
+describe("the figure of a page", () => {
+  it("comes under the lead of the page, before its table", () => {
+    const html = renderSelector(SELECTORS.find((selector) => selector.anchor === "selector-type")!);
+    const order = ["A shape name targets every object", '<figure class="figure"', "<dt>Specificity</dt>"];
+    expect(order.map((part) => html.indexOf(part))).toEqual(order.map((part) => html.indexOf(part)).sort((a, b) => a - b));
+    expect(html.indexOf(order[1])).toBeGreaterThan(0);
+  });
+
+  it("is on no page that does not ask for one", () => {
+    expect(renderSelector(SELECTORS.find((selector) => selector.anchor === "selector-universal")!)).not.toContain("<figure");
+  });
+});
+
 describe("renderSelector", () => {
   const universal = SELECTORS.find((selector) => selector.name === "*")!;
   const html = renderSelector(universal);
@@ -367,6 +381,17 @@ describe("the parts of a page", () => {
     expect(html).toContain("<dd>Reflects the scene: <code>metal(0.2)</code>.</dd>");
     const order = ["<dt>Syntax</dt>", '<h4 id="material--values">Values</h4>', "<p>A material can take a gradient.</p>", 'class="example-part"'];
     expect(order.map((part) => html.indexOf(part))).toEqual(order.map((part) => html.indexOf(part)).sort((a, b) => a - b));
+  });
+
+  // What a reader looks up once, folded under the paragraph (decision 179)
+  it("folds what the entry keeps for later under the paragraph, closed", () => {
+    const folded = renderProperty({ ...material, more: "Reflections see the `color` too." });
+    expect(folded).toMatch(
+      /<p>A material can take a gradient.<\/p>\s*<details class="more">\s*<summary>More details<\/summary>\s*<p>Reflections see the <code><span class="gss-property">color<\/span><\/code> too.<\/p>\s*<\/details>/,
+    );
+    expect(folded.indexOf('<details class="more">')).toBeLessThan(folded.indexOf('class="example-part"'));
+    expect(folded).not.toContain("<details class=\"more\" open");
+    expect(html).not.toContain("<details");
   });
 
   it("names the heading of the table when the entry does", () => {

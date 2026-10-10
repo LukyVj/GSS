@@ -17,6 +17,8 @@ The 0.0.1 history was reconstructed from GitHub.
 
 ### Changed
 
+- Docs: the first figure. The page of the `<shape>` selector shows everything a scene can declare, the 13 shapes, a group and a light, as line drawings: each one is a link to its page. More figures will follow where a picture says it faster than a paragraph.
+- Docs: less to read on each page. The paragraph under the table of a page is now one or two sentences, what you need before writing the property; the limits, the special cases and how things are drawn are folded under "More details", one click away. 52 pages of the reference changed, and nothing they said is gone: "copy page" and the search still read the folded text. In the guides, "In the page" of Embedding a scene and the new "Slow computers" of the CDN page are tables, one line per thing to know.
 - Showcase: the studies wait for play. The viewer at the top of the page opens on a still image of the study and a large play button, so the page no longer draws its heaviest scene on arrival; choosing another study in the list draws it at once.
 - The install lines are colored like the rest of the code: the three of the home page (npm, the Vite plugin, the CDN) and the shell lines of the docs, the command, its flags and the version of the package.
 

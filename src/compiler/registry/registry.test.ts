@@ -139,10 +139,10 @@ describe("at-rules", () => {
 
   // The list a reader looks for: where a variable set from JavaScript can go
   it("@property names every property a variable set from JS can go in", () => {
-    // the page: its lead, and the paragraph under its table (decision 121)
-    const { description, details } = AT_RULES.find((atRule) => atRule.name === "property")!;
+    // the page: its lead, the paragraph under its table (decision 121) and what is folded under it
+    const { description, details, more } = AT_RULES.find((atRule) => atRule.name === "property")!;
     for (const property of LIVE_PROPERTIES) {
-      expect(`${description} ${details}`, property).toMatch(new RegExp(`(?<![\\w-])${property}(?![\\w-])`));
+      expect(`${description} ${details} ${more}`, property).toMatch(new RegExp(`(?<![\\w-])${property}(?![\\w-])`));
     }
   });
 
@@ -248,5 +248,21 @@ describe("functions", () => {
         });
       }
     }
+  });
+});
+
+// The paragraph under the table of a page is read at a glance. What a reader looks up once
+// (a limit, a special case, how it is drawn) goes in `more`, folded under it (decision 179).
+describe("the paragraph under the table of a page", () => {
+  const entries = [...PROPERTIES, ...AT_RULES, ...SELECTORS, ...SHAPE_DOCS, ...FUNCTIONS];
+  const words = (text: string) => text.trim().split(/\s+/).length;
+
+  it("is 40 words at most", () => {
+    const long = entries.filter((entry) => entry.details && words(entry.details) > 40);
+    expect(long.map((entry) => `${entry.name}: ${words(entry.details!)} words`)).toEqual([]);
+  });
+
+  it("comes before what is folded under it", () => {
+    expect(entries.filter((entry) => entry.more && !entry.details).map((entry) => entry.name)).toEqual([]);
   });
 });
