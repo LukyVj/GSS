@@ -3,6 +3,7 @@ import { encodeCode } from "../runtime/share";
 import { mountCopyPage } from "./copy-page";
 import { closePlayground } from "./playground";
 import { chapterAnchor, exampleAnchor } from "./anchors";
+import { followParts, type Follow } from "./toc-wave";
 
 // The docs show one entry at a time, like pages (design/reference/png/03-docs.png):
 // the contents on the left, the entry in the middle, "On this page" on the right.
@@ -101,6 +102,12 @@ export function enablePages(root: HTMLElement): void {
 
   const revealGroup = enableTocGroups(root);
   let shown: string | null = null;
+  // "On this page" follows the reader down the page (toc-wave.ts)
+  let follow: Follow | null = null;
+  const read = () => follow?.read();
+  window.addEventListener("scroll", read, { passive: true });
+  window.addEventListener("resize", read);
+  window.addEventListener("load", read);
 
   async function show(): Promise<void> {
     const { page, target } = resolvePage(location.hash, index);
@@ -163,14 +170,20 @@ export function enablePages(root: HTMLElement): void {
         list.append(item);
       }
       inner.replaceChildren(...(parts.length ? [title, list] : []));
+      follow = parts.length ? followParts(list, parts.map((part) => document.getElementById(part.id)!)) : null;
       const example = article.querySelector<HTMLButtonElement>(".example .try")?.dataset.example;
       if (example) inner.append(link(`./playground.html${await encodeCode(example)}`, "try it in the playground →", "to-playground"));
 
       document.title = `${titleOf(article)} — GSS`;
     }
 
-    if (target) document.getElementById(target)?.scrollIntoView();
-    else window.scrollTo(0, 0);
+    if (target) {
+      document.getElementById(target)?.scrollIntoView();
+      follow?.hold(target);
+    } else {
+      window.scrollTo(0, 0);
+      follow?.read();
+    }
   }
 
   window.addEventListener("hashchange", show);
