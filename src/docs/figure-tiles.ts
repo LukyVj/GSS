@@ -175,19 +175,18 @@ export function material(): string {
     path("guide bent", bars.map((bar) => bar.through).join("")) +
     `<circle class="edge" cx="${cx}" cy="${cy}" r="${round(r)}"/>` +
     `<g class="glows">${glint}</g>`;
-  // Jelly: the light goes into the ball, runs through it, and comes out on the far side
-  const [lx, ly] = [0.87, 0.5]; // the way the light goes: down, to the right
-  const beams = [-18, 0, 18].map((across) => {
-    const [ox, oy] = [cx - ly * across, cy + lx * across]; // the middle of the ray, in the ball
-    const reach = Math.sqrt(r * r - across * across);
-    const at = (along: number) => `${round(ox + lx * along)} ${round(oy + ly * along)}`;
-    return { before: `M${at(-reach - 22)}L${at(-reach - 3)}`, inside: `M${at(-reach)}L${at(reach)}` };
-  });
-  const jelly =
-    sphere +
-    path("tint", beams.map((beam) => beam.before).join("")) +
-    path("tint flows", beams.map((beam) => beam.inside).join("")) +
-    `<g class="glows">${path("glint", arc(-5, -8, 68))}</g>`;
+  // Jelly: the ball in its color, see-through, shaded with points. They are spread evenly over
+  // the ball, and fewer are kept where it faces the light, which comes from the upper left.
+  const [inside, count] = [r - 3, 300];
+  const toLight = [-0.48, -0.6, 0.64];
+  const stipple = Array.from({ length: count }, (_, i) => {
+    const [radius, angle] = [Math.sqrt((i + 0.5) / count), i * 2.39996];
+    const [x, y] = [radius * Math.cos(angle), radius * Math.sin(angle)];
+    const facing = Math.max(0, x * toLight[0] + y * toLight[1] + Math.sqrt(1 - x * x - y * y) * toLight[2]);
+    // a point is kept by its place in the list, not by chance: the same drawing each time
+    return (1 - facing) ** 1.7 > (i * 0.7548776662) % 1 ? `M${round(cx + x * inside)} ${round(cy + y * inside)}h0.01` : "";
+  }).join("");
+  const jelly = `<circle class="jelly" cx="${cx}" cy="${cy}" r="${round(r)}"/>` + path("stipple", stipple) + `<g class="glows">${glint}</g>`;
   return cells(
     "figure-steps",
     [

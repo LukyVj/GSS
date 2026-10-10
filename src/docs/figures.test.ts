@@ -275,9 +275,17 @@ describe("the figures of the docs", () => {
       expect(cell("glass")).toMatch(/<path class="guide bent" d="M[^"]*Q[^"]+"\/>/); // through it, curved
     });
 
-    it("lets the light run through the jelly, and out of it", () => {
-      expect(cell("jelly")).toMatch(/<path class="tint flows" d="M[^"]+"\/>/);
-      expect(cell("jelly")).toContain('class="glows"');
+    // Lucas, Oct. 11, on rays through the ball: "c'est pas trop ça". His idea: the ball in its
+    // color at 20 or 30% of opacity, shaded with small points.
+    it("fills the jelly with its color, see-through, and shades it with points: more of them away from the light", () => {
+      const [, cx, cy, r] = cell("jelly").match(/<circle class="jelly" cx="([\d.]+)" cy="([\d.]+)" r="([\d.]+)"\/>/)!.map(Number);
+      const points = [...cell("jelly").match(/<path class="stipple" d="([^"]+)"\/>/)![1].matchAll(/M([\d.]+) ([\d.]+)/g)].map(([, x, y]) => [+x - cx, +y - cy]);
+      expect(points.length).toBeGreaterThan(40);
+      for (const [x, y] of points) expect(Math.hypot(x, y)).toBeLessThan(r - 1);
+      // the light comes from the upper left
+      const lit = points.filter(([x, y]) => x + y < 0).length;
+      expect(points.length - lit).toBeGreaterThan(lit * 3);
+      expect(cell("jelly")).not.toContain("flows");
     });
   });
 
