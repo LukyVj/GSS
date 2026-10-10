@@ -58,12 +58,13 @@ export type Figure =
   | "calc" // a full turn divided, and the angle it gives
   | "lanes" // a longhand of animation: one point per value, to compare
   | "scroll-timeline" // a page that scrolls, and the animation where the scroll is
-  | "range" // the scene crossing the window, and the part the animation plays on
+  | "range" // the three parts of the way of a scene across the page, and the ones the animation plays on
   | "offset-distance" // three places on one path
-  | "offset-rotate" // along a path: turned by it, or not
+  | "offset-rotate" // two paths: an object turned by its path, one that keeps its angle
   | "tile" // what covers a surface: an image, a text, a pattern, a mask, a material
   | "color" // a color, written the way the page writes it
   | "scene" // the scene around the objects, and how an object shows in it
+  | "point-light" // a point of light that moves between two balls, and the side of each it lights
   | "flow"; // from one place to another: a file to the page, a variable to an object
 
 // A callout under the description: what a reader must know before trying it
@@ -3070,7 +3071,7 @@ export const SHAPE_DOCS: ShapeDef[] = [
   },
   {
     name: "light",
-    figure: "shape",
+    figure: "point-light",
     since: "0.0.4",
     description:
       "Not a shape: a point of light, which draws nothing. Its `color` is the color of its light (white by default), and `intensity` how much light it gives, on top of the sun and the `ambient` light of the scene.",

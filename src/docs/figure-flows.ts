@@ -1,5 +1,6 @@
-import { cells, lines, path, says, stage, text } from "./figure-kit";
-import { REST_VIEW, ball, box, floor, moved, type Frame } from "./hairline";
+import { escapeHtml } from "./escape";
+import { cells, hull, lines, path, round, says, stage, text } from "./figure-kit";
+import { REST_VIEW, ball, box, floor, moved, place, type Frame, type Vec3 } from "./hairline";
 
 // How things go from one place to another: from a file to the page, from a variable to an
 // object, from a mixin to the rules that apply it.
@@ -134,20 +135,106 @@ function media(): string {
   );
 }
 
-const rule = (x: number, y: number, width: number, strokes: Stroke[]) =>
-  `<rect class="guide" x="${x}" y="${y}" width="${width}" height="${16 + strokes.length * 11}" rx="4"/>` + code(strokes, x + 8, y + 14, 11);
+// --- @mixin and @apply: the code is written, a cube shows what it gives
 
-const mixin = () =>
-  flow([
-    ["@mixin --polished", rule(20, 40, 92, [[0, 50], [8, 56, true], [8, 40, true], [0, 8]])],
-    ["#a, #b", rule(20, 16, 92, [[0, 20], [8, 56, true], [8, 40, true], [0, 8]]) + rule(20, 74, 92, [[0, 20], [8, 56, true], [8, 40, true], [0, 8]])],
-  ]) + says("@mixin --polished { material: metal; color: #ccc; }");
+// A line of code, written: its words are the code of the page
+const written = (x: number, y: number, words: string, kind = "code") => `<text class="${kind}" x="${x}" y="${y}">${words}</text>`;
+const word = (words: string, kind = "", more = "") => (kind ? `<tspan class="${kind}"${more}>${escapeHtml(words)}</tspan>` : escapeHtml(words));
 
-const apply = () =>
-  flow([
-    ["what the rule says", rule(20, 36, 92, [[0, 20], [8, 64, true], [8, 34], [0, 8]])],
-    ["what the scene compiles", rule(20, 30, 92, [[0, 20], [8, 56, true], [8, 40, true], [8, 34], [0, 8]])],
-  ]) + says("#a { @apply --polished; translate: 0 1 0; }");
+// A cube with round corners, from where every figure rests. Its outline is the outline of the
+// cube inside it, pushed out by the radius; a line runs along the middle of each round edge,
+// the three behind dashed.
+function roundCube(frame: Frame, half: number, radius: number): string {
+  const inner = half - radius;
+  const reach = radius * frame.scale;
+  const at = (p: Vec3) => place(p, frame, REST_VIEW);
+  const point = (p: number[]) => `${round(p[0])} ${round(p[1])}`;
+  const signs = [-1, 1];
+  const corners = hull(signs.flatMap((x) => signs.flatMap((y) => signs.map((z) => at([x * inner, y * inner, z * inner])))));
+  const middle = [frame.x, frame.y];
+  const sides = corners.map((a, i) => {
+    const b = corners[(i + 1) % corners.length];
+    const length = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    let out = [(b[1] - a[1]) / length, -(b[0] - a[0]) / length];
+    if (out[0] * (a[0] - middle[0]) + out[1] * (a[1] - middle[1]) < 0) out = [-out[0], -out[1]];
+    return { from: [a[0] + out[0] * reach, a[1] + out[1] * reach], to: [b[0] + out[0] * reach, b[1] + out[1] * reach], along: [b[0] - a[0], b[1] - a[1]] };
+  });
+  // Which way the outline goes round, for the arcs of its corners
+  const [first, second] = sides;
+  const clockwise = first.along[0] * second.along[1] - first.along[1] * second.along[0] > 0 ? 1 : 0;
+  const outline = `M${point(sides[0].from)}${sides.map((side, i) => `L${point(side.to)}A${round(reach)} ${round(reach)} 0 0 ${clockwise} ${point(sides[(i + 1) % sides.length].from)}`).join("")}`;
+  // The three round edges that meet at a corner: the one nearest the eye, or the one behind
+  const { eye } = REST_VIEW;
+  const ridges = (toward: number) => {
+    const corner: Vec3 = [Math.sign(eye[0]) * toward, Math.sign(eye[1]) * toward, Math.sign(eye[2]) * toward];
+    const tip = at(corner.map((sign) => sign * (inner + radius / Math.sqrt(3))) as Vec3);
+    return [0, 1, 2]
+      .map((axis) => {
+        const push = corner.map((sign, i) => (i === axis ? 0 : (sign * radius) / Math.SQRT2));
+        const along = (sign: number) => corner.map((own, i) => (i === axis ? sign * own : own) * inner + push[i]) as Vec3;
+        const far = at(corner.map((own, i) => (i === axis ? -own : own) * inner) as Vec3);
+        // the far end of the line lands on the outline, at the corner it goes to
+        const end = at(along(-1));
+        const length = Math.hypot(end[0] - far[0], end[1] - far[1]) || 1;
+        const landed = [far[0] + ((end[0] - far[0]) / length) * reach, far[1] + ((end[1] - far[1]) / length) * reach];
+        return `M${point(tip)}L${point(at(along(1)))}L${point(landed)}`;
+      })
+      .join("");
+  };
+  return path("hidden", ridges(-1)) + path("line", outline + ridges(1), ' pathLength="1"');
+}
+
+// @mixin: a block written once, and the two rules that apply it: both cubes take its round
+// corners and its metal
+function mixin(): string {
+  const frame: Frame = { width: 400, height: 254, scale: 52, x: 0, y: 0 };
+  const block =
+    `<rect class="guide" x="100" y="16" width="200" height="88" rx="4"/>` +
+    written(114, 34, word("@mixin --polished {")) +
+    written(128, 52, word("material: metal(0.15);"), "code lit") +
+    written(128, 70, word("corner-radius: 0.12;"), "code lit") +
+    written(114, 88, word("}"));
+  const applied = (x: number, id: string, from: number) => {
+    const cube: Frame = { ...frame, x, y: 184 };
+    const turn = from < x ? 6 : -6;
+    const way = `M${from} 104V114Q${from} 120 ${from + turn} 120H${x - turn}Q${x} 120 ${x} 126V136`;
+    // The light on the metal: two strokes on the face in front
+    const shine = [
+      [-0.27, -0.02, -0.07, 0.28],
+      [-0.12, -0.02, 0.03, 0.205],
+    ]
+      .map(([x0, y0, x1, y1]) => `M${place([x0, y0, 0.5], cube, REST_VIEW).slice(0, 2).map(round).join(" ")}L${place([x1, y1, 0.5], cube, REST_VIEW).slice(0, 2).map(round).join(" ")}`)
+      .join("");
+    return (
+      path("mark", way) +
+      `<g class="travels rides" style="offset-path: path('${way}'); animation-duration: 2.4s"><circle class="dot" r="2.5"/></g>` +
+      `<g class="tinted">${roundCube(cube, 0.5, 0.12)}<g class="glows">${path("glint", shine)}</g></g>` +
+      written(x, 240, `${word(`#${id} { `)}${word("@apply --polished;", "lit")}${word(" }")}`, "code middle")
+    );
+  };
+  return stage(frame, block + applied(100, "a", 150) + applied(300, "b", 250));
+}
+
+// @apply: the mixin stands where @apply is written. Two rules of the page, read from left to
+// right: the color written last wins, and the cube takes it.
+function apply(): string {
+  const frame: Frame = { width: 400, height: 176, scale: 34, x: 0, y: 0 };
+  const [warm, blue] = ["#ff5a36", "#3a7bff"];
+  const row = (y: number, id: string, mixinLast: boolean) => {
+    const [own, applied] = [`color: ${blue};`, "@apply --warm;"];
+    const [first, last] = mixinLast ? [warm, blue].reverse() : [warm, blue];
+    const inked = (turn: string, lost: boolean) => word(own, `inked ${turn}${lost ? " struck" : ""}`, ` style="--c: ${blue}"`);
+    const rule = mixinLast
+      ? `${word(`#${id} { `)}${inked("first", true)} ${word(applied, "lit last")}${word(" }")}`
+      : `${word(`#${id} { `)}${word(applied, "lit first")} ${inked("last", false)}${word(" }")}`;
+    // Under @apply, what the mixin puts there: the words before it take their place, unseen
+    const before = mixinLast ? `#${id} { ${own} ` : `#${id} { `;
+    const put = `${word(before, "blank")}${word("└ ", "elbow")}${word(`color: ${warm};`, mixinLast ? "put last" : "put first struck")}`;
+    const cube: Frame = { ...frame, x: 348, y: y + 12 };
+    return written(20, y, rule) + written(20, y + 20, put, "under code") + `<g class="cascades" style="--first: ${first}; --last: ${last}">${lines(box(0.5, 0.5, 0.5), cube)}</g>`;
+  };
+  return stage(frame, row(42, "a", true) + path("ground", "M20 88H380") + row(122, "b", false)) + says(`@mixin --warm { color: ${warm}; }`);
+}
 
 // !important: the declaration that wins, whatever the selectors
 function important(): string {

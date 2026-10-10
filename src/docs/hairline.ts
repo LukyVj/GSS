@@ -7,8 +7,9 @@ import type { ShapeDef } from "../compiler/registry/registry";
 export type Vec3 = [number, number, number];
 type Triangle = [Vec3, Vec3, Vec3];
 // A guide is drawn fainter: an equator, not an edge. A line of the ground is not drawn at
-// all where something hides it.
-type Line = { points: Vec3[]; kind?: "guide" | "ground" };
+// all where something hides it. A bound is an edge of the box of a group: it draws nothing in
+// the scene, so it is dashed all the way, hides nothing, and is not drawn behind an object.
+type Line = { points: Vec3[]; kind?: "guide" | "ground" | "bound" };
 export type Solid = { lines: Line[]; mesh: Triangle[] };
 
 // The view: turned around the vertical axis, then tilted down. No perspective, like a plan.
@@ -236,7 +237,7 @@ function simplify(points: Vec3[], tolerance = 0.12): Vec3[] {
 
 // --- from a solid to SVG paths
 
-export type Drawing = { visible: string; hidden: string; guide: string; guideHidden: string; ground: string };
+export type Drawing = { visible: string; hidden: string; guide: string; guideHidden: string; ground: string; bound: string };
 
 const GRID = 3; // depth samples per unit of the drawing: fine enough for a line of 1px
 
@@ -282,7 +283,7 @@ export function draw(solid: Solid, frame: Frame, view: View = REST_VIEW): Drawin
     return least > depth + SLACK;
   };
 
-  const paths: Drawing & { buried: string } = { visible: "", hidden: "", guide: "", guideHidden: "", ground: "", buried: "" };
+  const paths: Drawing & { buried: string } = { visible: "", hidden: "", guide: "", guideHidden: "", ground: "", bound: "", buried: "" };
   const point = (p: Vec3) => `${+p[0].toFixed(1)} ${+p[1].toFixed(1)}`;
   for (const { points, kind } of solid.lines) {
     // Steps of about 1.5 units of the drawing along the line
@@ -308,7 +309,9 @@ export function draw(solid: Solid, frame: Frame, view: View = REST_VIEW): Drawin
       while (to + 1 < samples.length && flags[to] === flags[from]) to++;
       // a run ends on the first point of the next one: the two lines touch
       const key =
-        kind === "ground" ? (flags[from] ? "buried" : "ground") : kind === "guide" ? (flags[from] ? "guideHidden" : "guide") : flags[from] ? "hidden" : "visible";
+        kind === "ground" || kind === "bound"
+          ? flags[from] ? "buried" : kind
+          : kind === "guide" ? (flags[from] ? "guideHidden" : "guide") : flags[from] ? "hidden" : "visible";
       paths[key] += `M${simplify(samples.slice(from, to + 1)).map(point).join("L")}`;
       from = to;
     }
@@ -328,17 +331,20 @@ export const moved = (solid: Solid, by: Vec3): Solid => {
 };
 export const together = (...solids: Solid[]): Solid => ({ lines: solids.flatMap((solid) => solid.lines), mesh: solids.flatMap((solid) => solid.mesh) });
 
-// Rays around a point, flat on the screen: a light
-const rays = (view: View, count: number, from: number, to: number): Line[] =>
-  Array.from({ length: count }, (_, i) => {
-    const angle = (i / count) * 2 * Math.PI;
-    const at = (radius: number): Vec3 => [
-      (view.right[0] * Math.cos(angle) + view.up[0] * Math.sin(angle)) * radius,
-      (view.right[1] * Math.cos(angle) + view.up[1] * Math.sin(angle)) * radius,
-      (view.right[2] * Math.cos(angle) + view.up[2] * Math.sin(angle)) * radius,
-    ];
-    return { points: [at(from), at(to)] };
-  });
+// Rings around a point, flat on the screen: the light of a lamp, all around it. Not rays: a
+// circle with rays is a sun.
+const halo = (view: View, radii: number[]): Line[] =>
+  radii.map((radius) => ({
+    kind: "guide",
+    points: Array.from({ length: 49 }, (_, i): Vec3 => {
+      const angle = (i / 48) * 2 * Math.PI;
+      return [
+        (view.right[0] * Math.cos(angle) + view.up[0] * Math.sin(angle)) * radius,
+        (view.right[1] * Math.cos(angle) + view.up[1] * Math.sin(angle)) * radius,
+        (view.right[2] * Math.cos(angle) + view.up[2] * Math.sin(angle)) * radius,
+      ];
+    }),
+  }));
 
 // --- the shapes of GSS
 
@@ -349,6 +355,15 @@ export const box = (w: number, h: number, d: number) =>
     [corner(-w, -h, -d), corner(w, -h, -d), corner(w, h, -d), corner(-w, h, -d), corner(-w, -h, d), corner(w, -h, d), corner(w, h, d), corner(-w, h, d)],
     BOX_FACES,
   );
+
+// The box of a group: its edges, and no face. Not the three edges nearest the eye: they
+// would be drawn across the objects of the group.
+const bounds = (view: View, w: number, h: number, d: number): Solid => ({
+  lines: box(w, h, d)
+    .lines.filter(({ points: [a, b] }) => !a.every((at, axis) => at !== b[axis] || at * view.eye[axis] > 0))
+    .map((line) => ({ ...line, kind: "bound" as const })),
+  mesh: [],
+});
 
 const star: [number, number][] = Array.from({ length: 10 }, (_, i) => {
   const radius = i % 2 ? 0.26 : 0.62;
@@ -401,10 +416,12 @@ export const SHAPES: Record<ShapeDef["name"], (view: View) => Solid> = {
   plane: () => polyhedron([corner(-0.62, 0, -0.62), corner(0.62, 0, -0.62), corner(0.62, 0, 0.62), corner(-0.62, 0, 0.62)], [[0, 1, 2, 3]]),
   prism: () => extrusion(star, 0.28),
   lathe: (view) => revolution(view, vase()),
-  group: (view) => together(moved(box(0.3, 0.3, 0.3), [-0.24, -0.14, 0.12]), moved(revolution(view, [arc(0, 0, 0.36, 0, 180)], [[0.36, 0]]), [0.22, 0.1, -0.1])),
+  // Two objects that stand apart, in the box of the group: one that crosses the other reads as
+  // a blend
+  group: (view) => together(moved(box(0.21, 0.21, 0.21), [-0.36, -0.05, -0.12]), moved(ball(view, 0.26), [0.36, 0, 0.12]), bounds(view, 0.68, 0.32, 0.46)),
   light: (view) => {
-    const bulb = revolution(view, [arc(0, 0, 0.17, 0, 180)]);
-    return { lines: [...bulb.lines, ...rays(view, 8, 0.32, 0.56)], mesh: bulb.mesh };
+    const bulb = revolution(view, [arc(0, 0, 0.1, 0, 180)]);
+    return { lines: [...bulb.lines, ...halo(view, [0.3, 0.58])], mesh: bulb.mesh };
   },
 };
 
@@ -443,13 +460,13 @@ export function spinDrawing(axis: Axis, degrees: number, frame: Frame, view: Vie
 // A sphere of any radius, with its equator
 export const ball = (view: View, radius: number): Solid => revolution(view, [arc(0, 0, radius, 0, 180)], [[radius, 0]]);
 
-// The floor: a few lines each way, and a sheet that hides what is under it
-export function floor(half: number, step: number): Solid {
+// The floor: a few lines each way, and a sheet that hides what is under it. A square, or
+// less deep than it is wide.
+export function floor(half: number, step: number, depth = half): Solid {
   const lines: Line[] = [];
-  for (let at = -half; at <= half + 1e-9; at += step) {
-    lines.push({ points: [[at, 0, -half], [at, 0, half]], kind: "ground" }, { points: [[-half, 0, at], [half, 0, at]], kind: "ground" });
-  }
-  const [a, b, c, d]: Vec3[] = [[-half, 0, -half], [half, 0, -half], [half, 0, half], [-half, 0, half]];
+  for (let at = -half; at <= half + 1e-9; at += step) lines.push({ points: [[at, 0, -depth], [at, 0, depth]], kind: "ground" });
+  for (let at = -depth; at <= depth + 1e-9; at += step) lines.push({ points: [[-half, 0, at], [half, 0, at]], kind: "ground" });
+  const [a, b, c, d]: Vec3[] = [[-half, 0, -depth], [half, 0, -depth], [half, 0, depth], [-half, 0, depth]];
   return { lines, mesh: [[a, b, c], [a, c, d]] };
 }
 
@@ -504,7 +521,8 @@ const MARKS: Partial<Record<ShapeDef["name"], Mark[]>> = {
 
 export type Measure = { label: string; d: string; x: number; y: number };
 
-// A measure on the screen: its line, a tick at each end, and where its name goes
+// A measure on the screen: its line, a point at each end, and where its name goes. A point,
+// not a bar across the line: a bar reads as an edge of the shape.
 export function measure({ from, to, label }: Mark, frame: Frame, view: View = REST_VIEW): Measure {
   const round = (n: number) => +n.toFixed(1);
   const [a, b] = [place(from, frame, view), place(to, frame, view)];
@@ -514,10 +532,12 @@ export function measure({ from, to, label }: Mark, frame: Frame, view: View = RE
   const middle = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
   const outward = across[0] * (middle[0] - frame.x) + across[1] * (middle[1] - frame.y);
   if (outward < -0.5 || (Math.abs(outward) <= 0.5 && across[1] > 0)) across = [-across[0], -across[1]];
-  const tick = (p: Vec3) => `M${round(p[0] - across[0] * 3)} ${round(p[1] - across[1] * 3)}L${round(p[0] + across[0] * 3)} ${round(p[1] + across[1] * 3)}`;
+  // Two rings, one in the other: with a line of 1, a full point
+  const ring = (p: Vec3, r: number) => `M${round(p[0] - r)} ${round(p[1])}a${r} ${r} 0 1 0 ${r * 2} 0a${r} ${r} 0 1 0 ${-r * 2} 0`;
+  const end = (p: Vec3) => ring(p, 1.5) + ring(p, 0.5);
   return {
     label,
-    d: `M${round(a[0])} ${round(a[1])}L${round(b[0])} ${round(b[1])}${tick(a)}${tick(b)}`,
+    d: `M${round(a[0])} ${round(a[1])}L${round(b[0])} ${round(b[1])}${end(a)}${end(b)}`,
     x: round(middle[0] + across[0] * 11),
     y: round(middle[1] + across[1] * 11),
   };

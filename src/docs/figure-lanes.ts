@@ -1,4 +1,4 @@
-import { between, path, says, stage, text } from "./figure-kit";
+import { cells, path, says, stage, text } from "./figure-kit";
 import type { Frame } from "./hairline";
 
 // The longhands of animation as lanes: one point per lane, moved by the very value the lane
@@ -94,35 +94,53 @@ export function scrollTimeline(): string {
   return stage(frame, page + timeline) + says("animation-timeline: scroll();");
 }
 
-// animation-range and its two halves: the scene crosses the window, and the animation plays
-// on a part of the way
-const RANGES: Record<string, { code: string; kind: string; from: number; to: number }> = {
-  "animation-range": { code: "animation-range: entry;", kind: "range-entry", from: 0, to: 0.31 },
-  "animation-range-start": { code: "animation-range-start: contain;", kind: "range-from-contain", from: 0.31, to: 1 },
-  "animation-range-end": { code: "animation-range-end: contain;", kind: "range-to-contain", from: 0, to: 0.69 },
+// animation-range and its two halves. The way of view() has three parts: the scene comes into
+// the page, is all in it, goes out of it. Each part is drawn as the page with the scene at
+// that part; the ones the animation plays on are in signal, over the range, and the end of
+// the range the property sets is named in signal.
+const PARTS = ["entry", "contain", "exit"] as const;
+const RANGES: Record<string, { code: string; from: number; to: number; sets: ("start" | "end")[] }> = {
+  "animation-range": { code: "animation-range: entry;", from: 0, to: 1, sets: ["start", "end"] },
+  "animation-range-start": { code: "animation-range-start: contain;", from: 1, to: 3, sets: ["start"] },
+  "animation-range-end": { code: "animation-range-end: contain;", from: 0, to: 2, sets: ["end"] },
 };
 
 export function range(subject: string): string {
-  const { code, kind, from, to } = RANGES[subject];
-  const frame: Frame = { width: 380, height: 220, scale: 1, x: 0, y: 0 };
-  // The window, and the scene that comes in at the bottom and leaves at the top
-  const crossing =
-    `<rect class="edge" x="60" y="65" width="120" height="90"/>` +
-    text(120, 52, "the page", "lane-label middle") +
-    `<g class="crosses"><rect class="tint" x="85" y="155" width="70" height="40"/>${text(120, 175, "scene", "axis-label lit")}</g>`;
-  // The whole way of view(), with its three named parts, and the part the animation plays on
-  const [x, top, height] = [250, 30, 160];
-  const part = (name: string, a: number, b: number) =>
-    path("ground", `M${x - 6} ${top + a * height}h12`) + text(x + 34, top + ((a + b) / 2) * height, name, "lane-label middle");
+  const { code, from, to, sets } = RANGES[subject];
+  const frame: Frame = { width: 380, height: 212, scale: 1, x: 0, y: 0 };
+  const [left, width, top, page, scene] = [25, 110, 64, { width: 74, height: 56 }, { width: 44, height: 26 }];
+  const edge = (n: number) => left + n * width;
+  // Where the top of the scene is, from the top of the page: in the middle of each part, and
+  // how far it goes each way from there
+  const middles = [page.height - scene.height / 2, (page.height - scene.height) / 2, -scene.height / 2];
+  const sways = [scene.height / 2, (page.height - scene.height) / 2, scene.height / 2];
+  const parts = PARTS.map((name, n) => {
+    const played = n >= from && n < to;
+    const x = edge(n) + (width - page.width) / 2;
+    const inset = (page.width - scene.width) / 2;
+    const moving = (content: string) => `<g class="sways" style="--sway: ${sways[n]}px">${content}</g>`;
+    const box = (kind: string, ox: number, oy: number) => `<rect class="${kind}" x="${ox + inset}" y="${oy + middles[n]}" width="${scene.width}" height="${scene.height}"/>`;
+    return (
+      text(edge(n) + width / 2, top - 46, name, `lane-label middle${played ? " lit" : ""}`) +
+      // the scene where the page does not show it, then the part the page shows, cut at its edges
+      moving(box("ghost", x, top)) +
+      `<rect class="edge" x="${x}" y="${top}" width="${page.width}" height="${page.height}"/>` +
+      `<svg class="window" aria-hidden="true" x="${x}" y="${top}" width="${page.width}" height="${page.height}">${moving(box(played ? "tint" : "guide", 0, 0))}</svg>`
+    );
+  }).join("");
+  // The way, with the range on it and its two ends
+  const y = top + page.height + 36;
+  const end = (name: "start" | "end", x: number) =>
+    sets.includes(name)
+      ? `<circle class="dot" cx="${x}" cy="${y}" r="4.5"/>` + text(x, y + 20, name, "axis-label lit")
+      : `<circle class="guide hollow" cx="${x}" cy="${y}" r="3.5"/>` + text(x, y + 20, name, "lane-label middle");
   const way =
-    path("guide", `M${x} ${top}V${top + height}`) +
-    part("entry", 0, 0.31) +
-    part("contain", 0.31, 0.69) +
-    part("exit", 0.69, 1) +
-    path("ground", `M${x - 6} ${top + height}h12`) +
-    path("tint", `M${x - 10} ${top + from * height}V${top + to * height}`) +
-    `<g class="ranges ${kind}" style="--run: ${height}px"><circle class="dot" cx="${x}" cy="${top}" r="5"/></g>`;
-  return stage(frame, crossing + way) + says(code);
+    path("guide", `M${edge(0)} ${y}H${edge(3)}`) +
+    path("ground", [0, 1, 2, 3].map((n) => `M${edge(n)} ${y - 5}v10`).join("")) +
+    path("tint thick", `M${edge(from)} ${y}H${edge(to)}`) +
+    end("start", edge(from)) +
+    end("end", edge(to));
+  return stage(frame, parts + way) + says(code);
 }
 export const RANGE_PAGES = Object.keys(RANGES);
 
@@ -139,14 +157,16 @@ export function offsetDistance(): string {
   return stage(frame, path("ghost", line) + at.join("")) + says("offset-distance: 50%;");
 }
 
-// offset-rotate: the object turns the way the line goes, or keeps the angle it is given
+// offset-rotate: the object turns the way the line goes, or keeps the angle it is given. Each
+// on its own path: the object at five places of it, and once more, moving.
 export function offsetRotate(): string {
-  const frame: Frame = { width: 380, height: 200, scale: 1, x: 0, y: 0 };
-  const line = "M44 150C110 20 200 220 336 60";
-  const arrow = path("tint", "M-9 -7L9 0L-9 7Z");
-  const drawing =
-    path("ghost", line) +
-    `<g class="travels" style="offset-path: path('${line}')">${arrow}</g>` +
-    `<g class="travels fixed" style="offset-path: path('${line}')">${path("edge", "M-9 -7L9 0L-9 7Z")}</g>`;
-  return stage(frame, drawing) + between("offset-rotate: auto;", "offset-rotate: 0deg;", "3.6s");
+  const frame: Frame = { width: 190, height: 132, scale: 1, x: 0, y: 0 };
+  const line = "M22 92C52 4 82 4 96 64S140 124 168 38";
+  const arrow = "M-9 -7L9 0L-9 7Z";
+  const along = (fixed: boolean) => {
+    const turn = fixed ? " fixed" : "";
+    const places = [0, 25, 50, 75, 100].map((at) => `<g class="placed${turn}" style="offset-path: path('${line}'); offset-distance: ${at}%">${path("guide", arrow)}</g>`).join("");
+    return path("ghost", line) + places + `<g class="travels${turn}" style="offset-path: path('${line}')">${path("tint", arrow)}</g>`;
+  };
+  return cells("figure-steps", [["offset-rotate: auto;", along(false)], ["offset-rotate: 0deg;", along(true)]], frame);
 }

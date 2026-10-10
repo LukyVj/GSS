@@ -48,6 +48,7 @@ export function turnTo(svg: SVGSVGElement, { azimuth, elevation }: View): void {
   svg.querySelector("path.hidden")?.setAttribute("d", drawing.hidden + drawing.guideHidden);
   svg.querySelector("path.guide")?.setAttribute("d", drawing.guide);
   svg.querySelector("path.line")?.setAttribute("d", drawing.visible);
+  svg.querySelector("path.bound")?.setAttribute("d", drawing.bound);
   const lines = svg.querySelectorAll("path.mark");
   const labels = svg.querySelectorAll("text.mark-label");
   drawing.marks.forEach((mark, i) => {

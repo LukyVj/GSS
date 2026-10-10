@@ -14,20 +14,20 @@ export const svg = ({ width, height }: Frame, content: string, more = "") =>
 // The lines of a solid: what is behind first, so the lines in front cross over it. The lines
 // in front are the ones that draw themselves: their length counts as 1.
 export const lines = (solid: Solid, frame: Frame) => {
-  const { ground, hidden, guideHidden, guide, visible } = draw(solid, frame);
-  return (ground ? path("ground", ground) : "") + path("hidden", hidden + guideHidden) + path("guide", guide) + path("line", visible, ' pathLength="1"');
+  const { ground, hidden, guideHidden, guide, visible, bound } = draw(solid, frame);
+  return (ground ? path("ground", ground) : "") + path("hidden", hidden + guideHidden) + path("guide", guide) + (bound ? path("bound", bound) : "") + path("line", visible, ' pathLength="1"');
 };
 
 // A shape the page script can turn: it finds the shape and its frame here, and rewrites the
-// same three paths (and the measures, when the shape has them)
-export function shapeSvg(name: ShapeName, frame: Frame, measured: boolean | string = false): string {
-  const { hidden, guideHidden, guide, visible, marks } = shapeDrawing(name, frame, REST_VIEW, measured);
+// same three paths (and the measures, when the shape has them; the box of a group)
+export function shapeSvg(name: ShapeName, frame: Frame, measured: boolean | string = false, more = ""): string {
+  const { hidden, guideHidden, guide, visible, bound, marks } = shapeDrawing(name, frame, REST_VIEW, measured);
   const measures = marks
     .map(({ label, d, x, y }) => `${path("mark", d)}<text class="mark-label" x="${x}" y="${y}">${escapeHtml(label)}</text>`)
     .join("");
   return svg(
     frame,
-    path("hidden", hidden + guideHidden) + path("guide", guide) + path("line", visible, ' pathLength="1"') + measures,
+    path("hidden", hidden + guideHidden) + path("guide", guide) + (bound ? path("bound", bound) : "") + path("line", visible, ' pathLength="1"') + measures + more,
     ` data-turn="${escapeHtml(name)}" data-frame="${frame.scale} ${frame.x} ${frame.y}"${measured ? ` data-measured="${measured === true ? "" : escapeHtml(measured)}"` : ""}`,
   );
 }
@@ -49,8 +49,12 @@ export const shift = (frame: Frame, by: Vec3) => {
 // of the page hides what the solid passes over
 export function body(solid: Solid, frame: Frame): string {
   const { visible, hidden } = draw(solid, frame);
-  const points = solid.mesh.flat().map((p) => place(p, frame, REST_VIEW));
   // The outline of the sheet: the hull of every point of the solid, on the screen
+  const outline = hull(solid.mesh.flat().map((p) => place(p, frame, REST_VIEW)));
+  return path("sheet", `M${outline.map((p) => `${round(p[0])} ${round(p[1])}`).join("L")}Z`) + path("hidden", hidden) + path("edge", visible);
+}
+// The points around a set of points of the screen, in order
+export function hull(points: number[][]): number[][] {
   const sorted = [...points].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
   const turn = (o: number[], a: number[], b: number[]) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
   const half = (list: number[][]) => {
@@ -61,8 +65,7 @@ export function body(solid: Solid, frame: Frame): string {
     }
     return kept.slice(0, -1);
   };
-  const hull = [...half(sorted), ...half([...sorted].reverse())];
-  return path("sheet", `M${hull.map((p) => `${round(p[0])} ${round(p[1])}`).join("L")}Z`) + path("hidden", hidden) + path("edge", visible);
+  return [...half(sorted), ...half([...sorted].reverse())];
 }
 
 // The code a figure shows, under it
@@ -78,19 +81,21 @@ export const cells = (kind: string, items: [label: string, art: string][], frame
       </ol>`;
 
 // An image on the faces of a cube the eye sees: the square of the image, sheared onto each.
-// The image is drawn in a square of TILE units.
+// The image is drawn in a square of TILE units. A pattern cut in the cube, like a checkerboard,
+// is not the same image on each face: it gives one per face.
 export const TILE = 72;
 export type Face = "front" | "left" | "top";
-export function onCube(frame: Frame, art: string, faces: Face[] = ["front", "left", "top"], half = 0.5): string {
+export function onCube(frame: Frame, image: string | ((face: Face) => string), faces: Face[] = ["front", "left", "top"], half = 0.5): string {
+  const art = typeof image === "string" ? () => image : image;
   const corner = (x: number, y: number, z: number) => place([x * half * 2, y * half * 2, z * half * 2], frame, REST_VIEW);
-  const face = (origin: number[], across: number[], down: number[]) => {
+  const face = (name: Face, origin: number[], across: number[], down: number[]) => {
     const m = [across[0] - origin[0], across[1] - origin[1], down[0] - origin[0], down[1] - origin[1]].map((n) => +(n / TILE).toFixed(4));
-    return `<g class="face" transform="matrix(${m.join(" ")} ${round(origin[0])} ${round(origin[1])})">${art}</g>`;
+    return `<g class="face" transform="matrix(${m.join(" ")} ${round(origin[0])} ${round(origin[1])})">${art(name)}</g>`;
   };
   const sides: Record<Face, string> = {
-    front: face(corner(-0.5, 0.5, 0.5), corner(0.5, 0.5, 0.5), corner(-0.5, -0.5, 0.5)),
-    left: face(corner(-0.5, 0.5, -0.5), corner(-0.5, 0.5, 0.5), corner(-0.5, -0.5, -0.5)),
-    top: face(corner(-0.5, 0.5, -0.5), corner(0.5, 0.5, -0.5), corner(-0.5, 0.5, 0.5)),
+    front: face("front", corner(-0.5, 0.5, 0.5), corner(0.5, 0.5, 0.5), corner(-0.5, -0.5, 0.5)),
+    left: face("left", corner(-0.5, 0.5, -0.5), corner(-0.5, 0.5, 0.5), corner(-0.5, -0.5, -0.5)),
+    top: face("top", corner(-0.5, 0.5, -0.5), corner(0.5, 0.5, -0.5), corner(-0.5, 0.5, 0.5)),
   };
   return faces.map((name) => sides[name]).join("") + lines(box(half, half, half), frame);
 }

@@ -1,5 +1,5 @@
-import { between, cells, isolines, lines, path, playing, round, says, stage, text } from "./figure-kit";
-import { REST_VIEW, SHAPES, ball, box, floor, moved, place, spinDrawing, together, type Frame, type Vec3 } from "./hairline";
+import { between, body, cells, isolines, lines, path, playing, round, says, shapeSvg, shift, stage, svg, text } from "./figure-kit";
+import { REST_VIEW, ball, box, floor, moved, place, spinDrawing, together, type Frame, type Vec3 } from "./hairline";
 
 // The scene around the objects: its light, its floor, its fog, its camera; and what changes
 // how an object shows in it: its outline, its opacity, how it joins the others.
@@ -30,13 +30,53 @@ function light(): string {
   return stage(SCENE, scene + shadow + path("tint flows", rays)) + says("light: -45deg 54.7deg;");
 }
 
-function intensity(): string {
-  const bulb: Frame = { ...SCENE, scale: 70, x: 120, y: 104 };
-  const lit: Frame = { ...SCENE, scale: 74, x: 280, y: 112 };
+// --- a point light: a point, its light all around it, and the side of an object it reaches
+
+// The light that leaves a point: rings around it, fainter as they go, each in its turn
+const lamp = (x: number, y: number, reach: number) =>
+  Array.from({ length: reach }, (_, i) => `<g class="ripples" style="--i: ${i}"><circle class="tint" cx="${x}" cy="${y}" r="${12 + i * 12}" style="opacity: ${round(0.85 - i * 0.2)}"/></g>`).join("") +
+  `<circle class="dot" cx="${x}" cy="${y}" r="4"/>`;
+// The side of a ball a light reaches: arcs inside its outline, facing the light. The more
+// light, the more arcs.
+const reached = (cx: number, cy: number, r: number, toward: number, strength: number) =>
+  Array.from({ length: strength }, (_, k) => {
+    const [inner, half] = [r - 4 - k * 5, 54 - k * 12];
+    const at = (degrees: number) => `${round(cx + inner * Math.cos((degrees * PI) / 180))} ${round(cy + inner * Math.sin((degrees * PI) / 180))}`;
+    return `M${at(toward - half)}A${round(inner)} ${round(inner)} 0 0 1 ${at(toward + half)}`;
+  }).join("");
+const toward = (from: number[], to: number[]) => (Math.atan2(to[1] - from[1], to[0] - from[0]) * 180) / PI;
+
+// The light of the page of light: it goes from one ball to the other, and each ball is lit
+// the more the nearer the light is
+export function pointLight(): string {
+  const frame: Frame = { ...SCENE, height: 232, scale: 58, y: 162 };
+  const [radius, apart, height, reach] = [0.42, 1.5, 1.35, 0.8];
+  const balls: Vec3[] = [
+    [-apart, radius, 0],
+    [apart, radius, 0],
+  ];
+  const [lx, ly] = place([0, height, 0], frame, REST_VIEW);
+  const [sx, sy] = shift(frame, [reach, 0, 0]);
+  const lit = balls
+    .map((center, i) => {
+      const [cx, cy] = place(center, frame, REST_VIEW);
+      return `<g class="reached fades${i ? "" : " reverse"}" style="--beat: 3.6s">${path("tint", reached(cx, cy, radius * frame.scale, toward([cx, cy], [lx, ly]), 3))}</g>`;
+    })
+    .join("");
+  const scene = lines(together(floor(2.1, 0.7, 1.05), ...balls.map((center) => moved(ball(REST_VIEW, radius), center))), frame);
   return (
-    stage(SCENE, `<g class="tinted pulses" style="transform-origin: 120px 104px">${lines(SHAPES.light(REST_VIEW), bulb)}</g>` + lines(ball(REST_VIEW, 0.5), lit)) +
-    between("intensity: 0.5;", "intensity: 2;")
+    stage(frame, scene + lit + `<g class="sways-xy" style="--sx: ${sx}px; --sy: ${sy}px; --beat: 3.6s">${lamp(round(lx), round(ly), 4)}</g>`) +
+    between(`translate: ${-reach} ${height} 0;`, `translate: ${reach} ${height} 0;`, "3.6s")
   );
+}
+
+// intensity: the same light, stronger from one cell to the next
+function intensity(): string {
+  const frame: Frame = { ...CELL, scale: 60, x: 88, y: 88 };
+  const [lx, ly, r] = [36, 36, 0.5 * 60];
+  const lit = (reach: number, strength: number) =>
+    lines(ball(REST_VIEW, 0.5), frame) + path("tint reached", reached(frame.x, frame.y, r, toward([frame.x, frame.y], [lx, ly]), strength)) + lamp(lx, ly, reach);
+  return cells("figure-steps", [["intensity: 0.5;", lit(1, 1)], ["intensity: 1;", lit(2, 2)], ["intensity: 4;", lit(4, 3)]], CELL);
 }
 
 // The side the sun does not reach: dark with a low ambient light, clear with a high one
@@ -53,10 +93,25 @@ function ambient(): string {
   return stage(frame, lines(ball(REST_VIEW, 0.6), frame) + `<g class="dims">${path("edge", shade)}</g>`) + between("ambient: 0.1;", "ambient: 0.6;");
 }
 
+// shadows: the floor is in the light, and the shadow is where the light does not reach, dark.
+// A soft one fades toward its edge.
 function shadows(): string {
-  const scene = lines(together(floor(1.4, 0.7), sphereAt(1.1)), SCENE);
-  const cast = [0.42, 0.3, 0.18].map((radius) => route(SCENE, ringPoints([0.7, 0, -0.3], radius), true)).join("");
-  return stage(SCENE, scene + fade(path("edge", cast))) + between("shadows: none;", "shadows: soft;");
+  const frame: Frame = { ...CELL, scale: 30, x: 62, y: 96 };
+  const half = 1.4;
+  const ground = route(frame, [[-half, 0, -half], [half, 0, -half], [half, 0, half], [-half, 0, half]], true);
+  const shade = (radius: number, opacity = 1) =>
+    `<path class="shade" style="opacity: ${opacity}" d="${route(frame, ringPoints([0.75, 0, -0.35], radius), true)}"/>`;
+  const scene = (shadow: string) =>
+    `<path class="lit-floor" d="${ground}"/>` + shadow + lines(floor(half, 0.7), frame) + `<g class="floats" style="--rise: -5px">${body(sphereAt(1.15, 0.45), frame)}</g>`;
+  return cells(
+    "figure-steps",
+    [
+      ["shadows: none;", scene("")],
+      ["shadows: hard;", scene(shade(0.45))],
+      ["shadows: soft;", scene(shade(0.66, 0.3) + shade(0.52, 0.55) + shade(0.38))],
+    ],
+    CELL,
+  );
 }
 
 // The farther from the camera, the more fog: each ball fades by its distance
@@ -123,6 +178,23 @@ const dotAt = (frame: Frame, p: Vec3, kind = "dot", r = 4.5) => {
   return `<circle class="${kind}" cx="${round(x)}" cy="${round(y)}" r="${r}"/>`;
 };
 
+// controls: each gesture, and what it does to the view. The cube of orbit turns under the
+// pointer of the reader: the gesture itself. The cube of zoom comes closer, and goes back.
+function controls(): string {
+  const frame: Frame = { ...CELL, scale: 50, x: 66, y: 52 };
+  // a pointer, and the way it is dragged
+  const pointer = path("mark", "M60 92v15l4 -4l3 6.5l2.6 -1.2l-2.9 -6.3h5.3Z") + path("mark", "M32 100H52M36 96l-4 4l4 4M80 100H100M96 96l4 4l-4 4");
+  // a mouse, its wheel, and the two ways the wheel turns
+  const wheel =
+    `<rect class="mark" x="59" y="90" width="14" height="22" rx="7"/>` + path("mark", "M66 94v5") + path("mark", "M48 96v12M45 99l3 -3l3 3M84 96v12M81 105l3 3l3 -3");
+  const orbit = shapeSvg("cube", frame, "orbit", pointer + text(66, 124, "drag"));
+  const zoom = `<g class="pulses" style="transform-origin: ${frame.x}px ${frame.y}px">${lines(box(0.36, 0.36, 0.36), frame)}</g>` + wheel + text(66, 124, "wheel");
+  return `<ol class="figure-cells figure-steps" style="--columns: 2">
+        <li style="--i: 0">${orbit}<code>controls: orbit;</code></li>
+        <li style="--i: 1">${svg(frame, zoom)}<code>controls: zoom;</code></li>
+      </ol>`;
+}
+
 function camera(subject: string): string {
   const base = lines(together(floor(1.2, 0.6), moved(box(0.3, 0.3, 0.3), [0, 0.3, 0])), VIEW);
   const height = 2.6 * Math.sin((25 * PI) / 180) + TARGET[1];
@@ -132,13 +204,6 @@ function camera(subject: string): string {
   const travel = (points: Vec3[], kind: string) => `<g class="travels ${kind}" style="offset-path: path('${route(VIEW, points)}')"><circle class="dot" r="4.5"/></g>`;
   if (subject === "camera-spin") {
     return stage(VIEW, base + path("ghost", route(VIEW, orbit, true)) + travel(orbit, "rides slow")) + says("camera-spin: 12s;");
-  }
-  if (subject === "controls") {
-    const [x, y] = place(eyeAt(100, 25, 2.6), VIEW, REST_VIEW);
-    return (
-      stage(VIEW, base + path("ghost", route(VIEW, orbit, true)) + travel(ringPoints([0, height, 0], radius, -30, 100), "fixed") + text(x + 26, y, "orbit") + path("mark", route(VIEW, [eyeAt(-70, 25, 1.5), eyeAt(-70, 25, 2.6)])) + text(place(eyeAt(-70, 25, 2.6), VIEW, REST_VIEW)[0] - 22, place(eyeAt(-70, 25, 2.6), VIEW, REST_VIEW)[1] - 6, "zoom")) +
-      says("controls: orbit zoom;")
-    );
   }
   if (subject === "camera-distance") {
     const way = [eyeAt(40, 25, 1.3), eyeAt(40, 25, 3)];
@@ -334,7 +399,7 @@ const SCENES: Record<string, (subject: string) => string> = {
   "camera-distance": camera,
   "camera-angle": camera,
   "camera-spin": camera,
-  controls: camera,
+  controls,
   dpr,
   "shape-rendering": shapeRendering,
   view,

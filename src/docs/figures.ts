@@ -7,7 +7,7 @@ import { lanes, offsetDistance, offsetRotate, range, scrollTimeline } from "./fi
 import { cornerRadius, d, measure as measured, viewBox } from "./figure-measures";
 import { calc, plot } from "./figure-plots";
 import { row } from "./figure-rows";
-import { scenes } from "./figure-scenes";
+import { pointLight, scenes } from "./figure-scenes";
 import { tiles } from "./figure-tiles";
 import { AXIS_REACH, REST_VIEW, ball, box, draw, floor, measure, moved, place, spinDrawing, together, type Axis, type Frame, type Vec3 } from "./hairline";
 
@@ -284,6 +284,7 @@ export const FIGURES: Record<Figure, { label: string; art: (subject: string) => 
   tile: { label: "What covers the surface, flat, then on an object", art: tiles },
   color: { label: "The colors the function gives", art: colors },
   scene: { label: "What the property changes in the scene", art: scenes },
+  "point-light": { label: "A point of light that goes from one ball to the other: each is lit the more the nearer it is", art: pointLight },
   flow: { label: "How it goes, from where it is written to what the scene shows", art: flows },
 };
 
