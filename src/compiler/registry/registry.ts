@@ -48,7 +48,19 @@ export type Figure =
   | "keyframes" // a ball between two frames, and the time that passes
   | "easing" // the curve of an easing, and a ball that moves by it
   | "hover" // a cube to hover and to press
-  | "offset-path"; // an object that travels along a line
+  | "offset-path" // an object that travels along a line
+  | "row" // a scene as a row of objects: the ones a selector targets are lit
+  | "measure" // each shape that takes a size property, with the line it sets
+  | "corner-radius" // the corner of a cube, sharp then round
+  | "d" // the commands of a path, each at its point
+  | "view-box" // the drawing area of a path
+  | "plot" // a math function as a curve, with a point that runs along it
+  | "calc" // a full turn divided, and the angle it gives
+  | "lanes" // a longhand of animation: one point per value, to compare
+  | "scroll-timeline" // a page that scrolls, and the animation where the scroll is
+  | "range" // the scene crossing the window, and the part the animation plays on
+  | "offset-distance" // three places on one path
+  | "offset-rotate"; // along a path: turned by it, or not
 
 // A callout under the description: what a reader must know before trying it
 export type Note = { title: string; text: string };
@@ -502,6 +514,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "display",
+    figure: "row",
     since: "0.0.6",
     appliesTo: "object",
     syntax: "none | block",
@@ -530,6 +543,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "visibility",
+    figure: "row",
     since: "0.0.6",
     appliesTo: "object",
     animatable: true,
@@ -1006,6 +1020,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "animation-duration",
+    figure: "lanes",
     since: "0.0.2",
     appliesTo: "everywhere",
     syntax: "<time>",
@@ -1021,6 +1036,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "animation-delay",
+    figure: "lanes",
     since: "0.0.2",
     appliesTo: "everywhere",
     syntax: "<time>",
@@ -1036,6 +1052,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "animation-iteration-count",
+    figure: "lanes",
     since: "0.0.2",
     appliesTo: "everywhere",
     syntax: "<number> | infinite",
@@ -1051,6 +1068,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "animation-direction",
+    figure: "lanes",
     since: "0.0.2",
     appliesTo: "everywhere",
     syntax: "normal | reverse | alternate | alternate-reverse",
@@ -1072,6 +1090,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "animation-fill-mode",
+    figure: "lanes",
     since: "0.0.2",
     appliesTo: "everywhere",
     syntax: "none | forwards | backwards | both",
@@ -1118,6 +1137,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "animation-timeline",
+    figure: "scroll-timeline",
     since: "0.0.3",
     appliesTo: "everywhere",
     syntax:
@@ -1147,6 +1167,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "animation-range",
+    figure: "range",
     since: "0.0.6",
     appliesTo: "everywhere",
     syntax: "[ normal | <range-name> <percentage>? | <percentage> | <length> ]{1,2}",
@@ -1179,6 +1200,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "animation-range-start",
+    figure: "range",
     since: "0.0.6",
     appliesTo: "everywhere",
     syntax: "normal | <range-name> <percentage>? | <percentage> | <length>",
@@ -1195,6 +1217,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "animation-range-end",
+    figure: "range",
     since: "0.0.6",
     appliesTo: "everywhere",
     syntax: "normal | <range-name> <percentage>? | <percentage> | <length>",
@@ -1239,6 +1262,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "offset-distance",
+    figure: "offset-distance",
     since: "0.0.3",
     appliesTo: "object",
     animatable: true,
@@ -1262,6 +1286,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "offset-rotate",
+    figure: "offset-rotate",
     since: "0.0.3",
     appliesTo: "object",
     syntax: "[auto | reverse] || <angle>",
@@ -1284,6 +1309,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "size",
+    figure: "measure",
     since: "0.0.1",
     appliesTo: ["cube", "plane", "pyramid"],
     syntax: "<number>{1,3} (cube, pyramid) | <number>{1,2} (plane: width depth)",
@@ -1305,6 +1331,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "corner-radius",
+    figure: "corner-radius",
     since: "0.0.1",
     appliesTo: ["cube"],
     syntax: "<number>",
@@ -1319,6 +1346,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "radius",
+    figure: "measure",
     since: "0.0.1",
     appliesTo: ["sphere", "torus", "cylinder", "cone", "capsule", "octahedron", "tube"],
     syntax: "<number> | <number> <number> (cone: bottom top)",
@@ -1341,6 +1369,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "thickness",
+    figure: "measure",
     since: "0.0.1",
     appliesTo: ["torus", "tube"],
     syntax: "<number>",
@@ -1355,6 +1384,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "height",
+    figure: "measure",
     since: "0.0.1",
     appliesTo: ["cylinder", "cone", "capsule", "tube"],
     syntax: "<number>",
@@ -1380,6 +1410,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "d",
+    figure: "d",
     since: "0.0.1",
     appliesTo: ["path", "prism", "lathe"],
     syntax: 'path("<svg path>") | polygon(<x> <y>, …) (prism, lathe)',
@@ -1422,6 +1453,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "stroke-width",
+    figure: "measure",
     since: "0.0.1",
     appliesTo: ["path"],
     syntax: "<number>",
@@ -1437,6 +1469,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "depth",
+    figure: "measure",
     since: "0.0.1",
     appliesTo: ["prism"],
     syntax: "<number>",
@@ -1452,6 +1485,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "view-box",
+    figure: "view-box",
     since: "0.0.1",
     appliesTo: ["path", "prism", "lathe"],
     syntax: "<number>{4}",
@@ -1959,6 +1993,7 @@ export const PROPERTIES: PropertyDef[] = [
 export const AT_RULES: AtRuleDef[] = [
   {
     name: "scene",
+    figure: "row",
     since: "0.0.1",
     syntax:
       "@scene { <shape>[#<id>][.<class>]* [* <integer>][;] … group[#<id>][.<class>]* [* <integer>] { … } }",
@@ -2301,6 +2336,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: ".class",
     anchor: "selector-class",
+    figure: "row",
     since: "0.0.1",
     specificity: "100 per class",
     description:
@@ -2315,6 +2351,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: "#id",
     anchor: "selector-id",
+    figure: "row",
     since: "0.0.1",
     specificity: "10000",
     description:
@@ -2329,6 +2366,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: "*",
     anchor: "selector-universal",
+    figure: "row",
     since: "0.0.1",
     specificity: "0",
     description:
@@ -2344,6 +2382,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: "a, b",
     anchor: "selector-list",
+    figure: "row",
     since: "0.0.1",
     specificity: "Each selector keeps its own",
     description:
@@ -2358,6 +2397,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: "a b",
     anchor: "selector-descendant",
+    figure: "row",
     since: "0.0.1",
     specificity: "The sum of its parts",
     description:
@@ -2375,6 +2415,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: "a > b",
     anchor: "selector-child",
+    figure: "row",
     since: "0.0.2",
     specificity: "The sum of its parts",
     description:
@@ -2391,6 +2432,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: "a + b",
     anchor: "selector-adjacent",
+    figure: "row",
     since: "0.0.2",
     specificity: "The sum of its parts",
     description:
@@ -2407,6 +2449,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: "a ~ b",
     anchor: "selector-sibling",
+    figure: "row",
     since: "0.0.2",
     specificity: "The sum of its parts",
     description:
@@ -2423,6 +2466,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: "&",
     anchor: "selector-nesting",
+    figure: "row",
     since: "0.0.4",
     specificity: "The sum of the rule around it and of the nested selector",
     description:
@@ -2557,6 +2601,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: ":has()",
     anchor: "selector-has",
+    figure: "row",
     since: "0.0.2",
     specificity:
       "the most specific selector inside, added to the rest, like CSS",
@@ -2594,6 +2639,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: ":not()",
     anchor: "selector-not",
+    figure: "row",
     since: "0.0.3",
     specificity: "its most specific selector, added to the rest, like CSS",
     description:
@@ -2623,6 +2669,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: ":nth-child(), :nth-last-child()",
     anchor: "selector-nth-child",
+    figure: "row",
     since: "0.0.3",
     specificity: "100, like a class, plus the most specific selector after of",
     description:
@@ -2652,6 +2699,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: ":nth-of-type(), :nth-last-of-type()",
     anchor: "selector-nth-of-type",
+    figure: "row",
     since: "0.0.3",
     specificity: "100, like a class",
     description:
@@ -2668,6 +2716,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: ":first-child, :last-child, :only-child",
     anchor: "selector-first-child",
+    figure: "row",
     since: "0.0.3",
     specificity: "100, like a class",
     description:
@@ -3606,6 +3655,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "random()",
     anchor: "fn-random",
+    figure: "row",
     since: "0.0.2",
     covers: ["random"],
     syntax:
@@ -3667,6 +3717,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "calc()",
     anchor: "fn-calc",
+    figure: "calc",
     since: "0.0.1",
     covers: ["calc"],
     syntax: "calc(<expression>)",
@@ -3684,6 +3735,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "sibling-index()",
     anchor: "fn-sibling-index",
+    figure: "row",
     since: "0.0.1",
     covers: ["sibling-index"],
     syntax: "sibling-index()",
@@ -3701,6 +3753,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "sibling-count()",
     anchor: "fn-sibling-count",
+    figure: "row",
     since: "0.0.1",
     covers: ["sibling-count"],
     syntax: "sibling-count()",
@@ -3716,6 +3769,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "sin(), cos(), tan()",
     anchor: "fn-trig",
+    figure: "plot",
     since: "0.0.1",
     covers: ["sin", "cos", "tan"],
     syntax: "sin(<angle> | <number>)",
@@ -3747,6 +3801,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "min(), max(), clamp()",
     anchor: "fn-min-max-clamp",
+    figure: "plot",
     since: "0.0.1",
     covers: ["min", "max", "clamp"],
     syntax: "min(<value>, …) | max(<value>, …) | clamp(<min>, <value>, <max>)",
@@ -3784,6 +3839,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "abs(), sqrt(), pow()",
     anchor: "fn-abs-sqrt-pow",
+    figure: "plot",
     since: "0.0.1",
     covers: ["abs", "sqrt", "pow"],
     syntax: "abs(<value>) | sqrt(<number>) | pow(<number>, <number>)",
@@ -3815,6 +3871,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "asin(), acos(), atan(), atan2()",
     anchor: "fn-inverse-trig",
+    figure: "plot",
     since: "0.0.2",
     covers: ["asin", "acos", "atan", "atan2"],
     syntax:
@@ -3852,6 +3909,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "sign(), round(), mod(), rem()",
     anchor: "fn-stepped",
+    figure: "plot",
     since: "0.0.2",
     covers: ["sign", "round", "mod", "rem"],
     syntax:
@@ -3896,6 +3954,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "hypot(), log(), exp()",
     anchor: "fn-exponential",
+    figure: "plot",
     since: "0.0.2",
     covers: ["hypot", "log", "exp"],
     syntax: "hypot(<value>, …) | log(<number>, <base>?) | exp(<number>)",
@@ -3933,6 +3992,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "progress()",
     anchor: "fn-progress",
+    figure: "row",
     since: "0.0.2",
     covers: ["progress"],
     syntax: "progress(<value>, <start>, <end>)",

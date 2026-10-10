@@ -26,6 +26,96 @@ describe("the figures of the docs", () => {
     ...[...GETTING_STARTED, ...INSTALLATION].map((entry) => [entry.figure, entry.anchor] as const),
   ].filter(([figure]) => figure);
 
+  // Lucas, Oct. 10: "j'aimerais une illustration dans chaque page de la doc". The pages still
+  // without one are listed here, and the list only shrinks.
+  const WITHOUT_YET: string[] = [
+    "color",
+    "material",
+    "texture",
+    "image-rendering",
+    "texture-size",
+    "content",
+    "font-family",
+    "font-weight",
+    "font-style",
+    "-webkit-text-fill-color",
+    "opacity",
+    "mix-blend-mode",
+    "cursor",
+    "controls",
+    "outline",
+    "outline-width",
+    "outline-style",
+    "outline-color",
+    "outline-offset",
+    "mask-image",
+    "mask-mode",
+    "transform-origin",
+    "operation",
+    "blend",
+    "light",
+    "intensity",
+    "ambient",
+    "camera-target",
+    "camera-distance",
+    "camera-angle",
+    "camera-spin",
+    "floor",
+    "filter",
+    "background",
+    "background-blend-mode",
+    "fog",
+    "shadows",
+    "dpr",
+    "shape-rendering",
+    "view",
+    "at-property",
+    "at-property-panel",
+    "at-media",
+    "at-mixin",
+    "at-apply",
+    "selector-face",
+    "selector-important",
+    "fn-gradients",
+    "fn-noise",
+    "fn-checker",
+    "fn-stripes",
+    "fn-displace",
+    "fn-element",
+    "fn-paint",
+    "fn-rgb",
+    "fn-hsl",
+    "fn-hwb",
+    "fn-lab-lch",
+    "fn-oklab-oklch",
+    "fn-color",
+    "fn-color-mix",
+    "fn-light-dark",
+    "fn-contrast-color",
+    "fn-currentcolor",
+    "fn-var",
+    "fn-if",
+    "why-gss",
+    "embedding",
+    "install-package",
+    "install-vite",
+    "install-cdn",
+    "set-variables",
+    "editor-support",
+  ];
+
+  it("are on every page of the docs", () => {
+    const every = [
+      ...PROPERTIES.map((entry) => [entry.figure, entry.name] as const),
+      ...AT_RULES.map((entry) => [entry.figure, `at-${entry.name}`] as const),
+      ...SELECTORS.map((entry) => [entry.figure, entry.anchor] as const),
+      ...FUNCTIONS.map((entry) => [entry.figure, entry.anchor] as const),
+      ...SHAPE_DOCS.map((entry) => [entry.figure, `shape-${entry.name}`] as const),
+      ...[...GETTING_STARTED, ...INSTALLATION].map((entry) => [entry.figure, entry.anchor] as const),
+    ];
+    expect(every.filter(([figure]) => !figure).map(([, id]) => id)).toEqual(WITHOUT_YET);
+  });
+
   it("draw something for every page that asks, with no number gone wrong", () => {
     expect(pages.length).toBeGreaterThan(30);
     for (const [figure, id] of pages) {
@@ -33,6 +123,11 @@ describe("the figures of the docs", () => {
       expect(html, id).toContain("<path");
       expect(html, id).not.toMatch(/NaN|undefined|Infinity/);
     }
+  });
+
+  // Every id of the docs is an anchor a link or the search can land on: a figure has none
+  it("hold no id", () => {
+    for (const [figure, id] of pages) expect(renderFigure(figure, id), id).not.toMatch(/\sid="/);
   });
 
   it("are lines only, for the eye, under a label for a screen reader", () => {

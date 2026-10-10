@@ -41,7 +41,7 @@ export function spinTo(svg: SVGSVGElement, degrees: number): void {
 // Draws the shape of an SVG again, seen from another side
 export function turnTo(svg: SVGSVGElement, { azimuth, elevation }: View): void {
   const frame = frameOf(svg);
-  const measured = svg.dataset.measured !== undefined;
+  const measured = svg.dataset.measured === undefined ? false : svg.dataset.measured || true;
   const drawing = shapeDrawing(svg.dataset.turn as ShapeDef["name"], frame, viewAt(azimuth, elevation), measured);
   svg.querySelector("path.hidden")?.setAttribute("d", drawing.hidden + drawing.guideHidden);
   svg.querySelector("path.guide")?.setAttribute("d", drawing.guide);

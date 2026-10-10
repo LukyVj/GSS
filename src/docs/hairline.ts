@@ -483,6 +483,8 @@ const MARKS: Partial<Record<ShapeDef["name"], Mark[]>> = {
   ],
   plane: [{ from: [-0.62, 0, 0.62], to: [0.62, 0, 0.62], label: "size" }],
   prism: [{ from: [0, 0.62, 0.14], to: [0, 0.62, -0.14], label: "depth" }],
+  // across the tube, where the line starts
+  path: [{ from: [-0.536, -0.055, 0], to: [-0.704, 0.055, 0], label: "stroke-width" }],
 };
 
 export type Measure = { label: string; d: string; x: number; y: number };
@@ -508,7 +510,10 @@ export function measure({ from, to, label }: Mark, frame: Frame, view: View = RE
 
 export type ShapeDrawing = Drawing & { marks: Measure[] };
 
-export function shapeDrawing(name: ShapeDef["name"], frame: Frame, view: View = REST_VIEW, measured = false): ShapeDrawing {
-  const marks = (measured ? (MARKS[name] ?? []) : []).map((mark) => measure(mark, frame, view));
+// With every measure of the shape, or only the one of a property
+export function shapeDrawing(name: ShapeDef["name"], frame: Frame, view: View = REST_VIEW, measured: boolean | string = false): ShapeDrawing {
+  const marks = (measured ? (MARKS[name] ?? []) : [])
+    .filter((mark) => measured === true || mark.label === measured)
+    .map((mark) => measure(mark, frame, view));
   return { ...draw(SHAPES[name](view), frame, view), marks };
 }
