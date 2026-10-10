@@ -381,16 +381,61 @@
       }
       .on-this-page ul {
         margin: 0;
-        padding: 0 24px;
+        padding: 0 20px 0 54px; /* the wave stands in front of the links */
         list-style: none;
         font: 12px/2 var(--gss-font-code);
       }
       .on-this-page ul a {
         color: var(--gss-dim);
+        transition: color 240ms ease-out;
       }
       .on-this-page ul a:hover {
         color: var(--gss-bone);
         text-decoration: none;
+      }
+      /* The part being read (src/docs/toc-wave.ts) */
+      .on-this-page ul a[aria-current] {
+        color: var(--gss-bone);
+      }
+      /* The wave: a thin line every few pixels in front of the links. A line is the longer
+         the nearer it is to the part being read, in signal there; a link under the pointer
+         grows a second peak, lower, in bone. An element of no height over the list: a line
+         at y stands at y in the list. */
+      .on-this-page .wave {
+        position: relative;
+        height: 0;
+        margin-left: 24px;
+        pointer-events: none;
+      }
+      .on-this-page .wave i {
+        --length: max(var(--now, var(--rest)), calc(var(--hover, 0) + var(--rest) * (1 - var(--hover, 0))));
+        position: absolute;
+        left: 0;
+        width: 22px;
+        height: 1px;
+        transform: scaleX(var(--length));
+        transform-origin: left center;
+        background: color-mix(
+          in oklab,
+          var(--gss-bone) calc(var(--hover, 0) * 100%),
+          color-mix(in oklab, var(--gss-signal) calc((var(--now, var(--rest)) - var(--rest)) / (1 - var(--rest)) * 100%), var(--gss-isoline))
+        );
+        transition:
+          transform 420ms cubic-bezier(0.22, 1, 0.36, 1),
+          background-color 420ms ease-out;
+      }
+      /* The lines grow from rest when a page opens */
+      @starting-style {
+        .on-this-page .wave i {
+          transform: scaleX(var(--rest));
+          background: var(--gss-isoline);
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .on-this-page .wave i,
+        .on-this-page ul a {
+          transition: none;
+        }
       }
       .on-this-page .to-playground {
         display: block;
