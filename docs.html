@@ -820,6 +820,162 @@
         left: calc(50% - 32px);
         transform: rotate(calc(360deg / var(--n) * var(--i))) translateY(-72px) rotate(calc(-360deg / var(--n) * var(--i)));
       }
+      /* An image on the faces of a cube: sheared with the face, its lines as thin */
+      .figure .face * {
+        vector-effect: non-scaling-stroke;
+      }
+      /* Letters in lines, like the rest: the text of content, a font */
+      .figure .letters {
+        fill: none;
+        stroke: var(--gss-bone);
+        stroke-width: 1;
+        font: 800 24px var(--gss-font-display);
+      }
+      .figure .letters.large {
+        font-size: 56px;
+      }
+      /* What goes around, at a constant speed: the ray of a conic gradient */
+      .figure .turns {
+        animation: figure-turn 6s linear infinite;
+      }
+      @keyframes figure-turn {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      /* displace(): an image, plus a map, gives the image moved */
+      .figure-flow.sums li:nth-child(2)::before {
+        content: "+";
+      }
+      .figure-flow.sums li:nth-child(3)::before {
+        content: "=";
+      }
+      /* Materials: the blob inside a jelly, the light of an emissive, the sheen of an
+         iridescent */
+      .figure .wobbles {
+        transform-box: fill-box;
+        transform-origin: center;
+        animation: figure-wobble 2.6s ease-in-out infinite alternate;
+      }
+      @keyframes figure-wobble {
+        from {
+          transform: scale(1.08, 0.92);
+        }
+        to {
+          transform: scale(0.92, 1.08);
+        }
+      }
+      .figure .glows {
+        animation: figure-glow 1.8s ease-in-out infinite alternate;
+      }
+      @keyframes figure-glow {
+        from {
+          opacity: 0.25;
+        }
+      }
+      .figure .sheen {
+        animation: figure-sheen 4s linear infinite;
+      }
+      .figure .sheen.two {
+        animation-delay: -2s;
+      }
+      @keyframes figure-sheen {
+        0%,
+        100% {
+          stroke: #6fe0cf;
+        }
+        33% {
+          stroke: #d29bff;
+        }
+        66% {
+          stroke: #ffb86b;
+        }
+      }
+      /* The colors: a chip is filled with the color its page writes */
+      .figure .chip {
+        fill: var(--c);
+        stroke: none;
+      }
+      .figure .ink {
+        fill: var(--c);
+        font: 700 24px var(--gss-font-display);
+      }
+      .figure .stained path {
+        stroke: var(--c);
+      }
+      /* An object that goes through three colors, with the declarations under it */
+      .figure .hued {
+        color: #ff5a36;
+        animation: figure-hues 7.2s infinite;
+      }
+      .figure .hued path,
+      .figure .hued circle {
+        stroke: currentColor;
+        transition: none;
+      }
+      .figure .hued .shell {
+        opacity: 0.45;
+      }
+      @keyframes figure-hues {
+        0%,
+        30% {
+          color: #ff5a36;
+        }
+        33.33%,
+        63% {
+          color: rgb(79 140 255);
+        }
+        66.66%,
+        96% {
+          color: mediumseagreen;
+        }
+      }
+      /* The channels of a color slide to those of another, and the chip follows */
+      .figure .shifts {
+        animation: figure-shift var(--beat, 1.8s) ease-in-out infinite alternate;
+      }
+      @keyframes figure-shift {
+        to {
+          transform: translateX(var(--dx));
+        }
+      }
+      .figure .chip.blends {
+        fill: var(--a);
+        animation: figure-blend var(--beat, 1.8s) ease-in-out infinite alternate;
+      }
+      @keyframes figure-blend {
+        to {
+          fill: var(--b);
+        }
+      }
+      /* The chip in the middle of the wheel takes the hue the hand points at */
+      .figure .chip.wheels {
+        animation: figure-wheel 6s linear infinite;
+      }
+      @keyframes figure-wheel {
+        0%,
+        100% {
+          fill: hsl(0 100% 60%);
+        }
+        16.66% {
+          fill: hsl(60 100% 60%);
+        }
+        33.33% {
+          fill: hsl(120 100% 60%);
+        }
+        50% {
+          fill: hsl(180 100% 60%);
+        }
+        66.66% {
+          fill: hsl(240 100% 60%);
+        }
+        83.33% {
+          fill: hsl(300 100% 60%);
+        }
+      }
+      .figure .turns.back {
+        animation-direction: reverse;
+      }
       /* The names written beside a line: of a curve, of a lane */
       .figure .plot-label {
         text-anchor: start;

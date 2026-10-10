@@ -60,7 +60,9 @@ export type Figure =
   | "scroll-timeline" // a page that scrolls, and the animation where the scroll is
   | "range" // the scene crossing the window, and the part the animation plays on
   | "offset-distance" // three places on one path
-  | "offset-rotate"; // along a path: turned by it, or not
+  | "offset-rotate" // along a path: turned by it, or not
+  | "tile" // what covers a surface: an image, a text, a pattern, a mask, a material
+  | "color"; // a color, written the way the page writes it
 
 // A callout under the description: what a reader must know before trying it
 export type Note = { title: string; text: string };
@@ -148,6 +150,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "color",
+    figure: "color",
     since: "0.0.1",
     appliesTo: "object",
     animatable: true,
@@ -197,6 +200,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "material",
+    figure: "tile",
     since: "0.0.1",
     appliesTo: "object",
     syntax:
@@ -282,6 +286,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "texture",
+    figure: "tile",
     since: "0.0.1",
     appliesTo: "object",
     syntax: 'url("<file>") | element(<id>) | paint(<name>)',
@@ -310,6 +315,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "image-rendering",
+    figure: "tile",
     since: "0.0.1",
     appliesTo: "object",
     syntax: "auto | smooth | pixelated | crisp-edges",
@@ -330,6 +336,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "texture-size",
+    figure: "tile",
     since: "0.0.1",
     appliesTo: "object",
     syntax: "<number>",
@@ -346,6 +353,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "content",
+    figure: "tile",
     since: "0.0.7",
     appliesTo: "object",
     syntax: "<string>+ | none",
@@ -379,6 +387,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "font-family",
+    figure: "tile",
     since: "0.0.7",
     appliesTo: "object",
     syntax: "[<family-name> | <generic-family>]#",
@@ -395,6 +404,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "font-weight",
+    figure: "tile",
     since: "0.0.7",
     appliesTo: "object",
     syntax: "normal | bold | <number>",
@@ -410,6 +420,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "font-style",
+    figure: "tile",
     since: "0.0.7",
     appliesTo: "object",
     syntax: "normal | italic | oblique",
@@ -424,6 +435,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "-webkit-text-fill-color",
+    figure: "tile",
     since: "0.0.7",
     appliesTo: "object",
     syntax: "<color>",
@@ -760,6 +772,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "mask-image",
+    figure: "tile",
     since: "0.0.4",
     appliesTo: "object",
     animatable: true,
@@ -789,6 +802,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "mask-mode",
+    figure: "tile",
     since: "0.0.4",
     appliesTo: "object",
     syntax: "alpha | luminance | match-source",
@@ -2497,6 +2511,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: "::face(), ::top, ::bottom",
     anchor: "selector-face",
+    figure: "tile",
     since: "0.0.1",
     specificity: "1, like a tag, added to the rest",
     description:
@@ -3153,6 +3168,7 @@ export const FUNCTIONS: FunctionDef[] = [
   {
     name: "<gradient>",
     anchor: "fn-gradients",
+    figure: "tile",
     since: "0.0.2",
     computed: "on the GPU, at each pixel",
     covers: [
@@ -3207,6 +3223,7 @@ export const FUNCTIONS: FunctionDef[] = [
   {
     name: "noise()",
     anchor: "fn-noise",
+    figure: "tile",
     since: "0.0.4",
     covers: ["noise"],
     computed: "on the GPU, at each pixel",
@@ -3250,6 +3267,7 @@ export const FUNCTIONS: FunctionDef[] = [
   {
     name: "checker()",
     anchor: "fn-checker",
+    figure: "tile",
     since: "0.0.6",
     covers: ["checker"],
     computed: "on the GPU, at each pixel",
@@ -3279,6 +3297,7 @@ export const FUNCTIONS: FunctionDef[] = [
   {
     name: "stripes()",
     anchor: "fn-stripes",
+    figure: "tile",
     since: "0.0.6",
     covers: ["stripes"],
     computed: "on the GPU, at each pixel",
@@ -3309,6 +3328,7 @@ export const FUNCTIONS: FunctionDef[] = [
   {
     name: "displace()",
     anchor: "fn-displace",
+    figure: "tile",
     since: "0.0.4",
     covers: ["displace"],
     computed: "on the GPU, at each pixel",
@@ -3344,6 +3364,7 @@ export const FUNCTIONS: FunctionDef[] = [
   {
     name: "element()",
     anchor: "fn-element",
+    figure: "tile",
     since: "0.0.4",
     covers: [],
     syntax: "element(<id>)",
@@ -3375,6 +3396,7 @@ export const FUNCTIONS: FunctionDef[] = [
   {
     name: "paint()",
     anchor: "fn-paint",
+    figure: "paint",
     since: "0.0.6",
     covers: [],
     syntax: "paint(<name>)",
@@ -3405,6 +3427,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "rgb()",
     anchor: "fn-rgb",
+    figure: "color",
     since: "0.0.1",
     covers: ["rgb", "rgba"],
     syntax: "rgb(<red> <green> <blue>) | rgb(<red>, <green>, <blue>)",
@@ -3427,6 +3450,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "hsl()",
     anchor: "fn-hsl",
+    figure: "color",
     since: "0.0.1",
     covers: ["hsl", "hsla"],
     syntax: "hsl(<hue> <saturation> <lightness>)",
@@ -3449,6 +3473,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "hwb()",
     anchor: "fn-hwb",
+    figure: "color",
     since: "0.0.2",
     covers: ["hwb"],
     syntax: "hwb(<hue> <whiteness> <blackness>)",
@@ -3465,6 +3490,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "lab(), lch()",
     anchor: "fn-lab-lch",
+    figure: "color",
     since: "0.0.2",
     covers: ["lab", "lch"],
     syntax: "lab(<lightness> <a> <b>) | lch(<lightness> <chroma> <hue>)",
@@ -3492,6 +3518,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "oklab(), oklch()",
     anchor: "fn-oklab-oklch",
+    figure: "color",
     since: "0.0.2",
     covers: ["oklab", "oklch"],
     syntax: "oklab(<lightness> <a> <b>) | oklch(<lightness> <chroma> <hue>)",
@@ -3519,6 +3546,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "color()",
     anchor: "fn-color",
+    figure: "color",
     since: "0.0.2",
     covers: ["color"],
     syntax: "color(<space> <r> <g> <b>)",
@@ -3541,6 +3569,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "color-mix()",
     anchor: "fn-color-mix",
+    figure: "color",
     since: "0.0.2",
     covers: ["color-mix"],
     syntax:
@@ -3568,6 +3597,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "light-dark()",
     anchor: "fn-light-dark",
+    figure: "color",
     since: "0.0.2",
     covers: ["light-dark"],
     syntax: "light-dark(<light color>, <dark color>)",
@@ -3583,6 +3613,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "contrast-color()",
     anchor: "fn-contrast-color",
+    figure: "color",
     since: "0.0.2",
     covers: ["contrast-color"],
     syntax: "contrast-color(<color>)",
@@ -3599,6 +3630,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "currentColor",
     anchor: "fn-currentcolor",
+    figure: "color",
     since: "0.0.3",
     covers: [],
     syntax: "currentColor",

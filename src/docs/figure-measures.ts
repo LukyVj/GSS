@@ -30,10 +30,7 @@ export function cornerRadius(): string {
     const mark = r ? path("mark", `M${26 + r} ${26 + r}L${26 + r * 0.293} ${26 + r * 0.293}`) + `<circle class="dot" cx="${26 + r}" cy="${26 + r}" r="1.5"/>` : "";
     return square + mark;
   };
-  return cells("figure-steps", [["corner-radius: 0;", corner(0)], ["corner-radius: 0.08;", corner(0.08)], ["corner-radius: 0.25;", corner(0.25)]], frame).replace(
-    "figure-cells figure-steps",
-    'figure-cells figure-steps" style="--columns: 3',
-  );
+  return cells("figure-steps", [["corner-radius: 0;", corner(0)], ["corner-radius: 0.08;", corner(0.08)], ["corner-radius: 0.25;", corner(0.25)]], frame);
 }
 
 // d: the commands of a path, each at the point it goes to

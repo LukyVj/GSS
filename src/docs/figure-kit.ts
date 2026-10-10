@@ -72,8 +72,8 @@ export const between = (a: string, b: string, beat = "") =>
   `<figcaption class="beats"${beat ? ` style="--beat: ${beat}"` : ""}><code>${escapeHtml(a)}</code><code>${escapeHtml(b)}</code></figcaption>`;
 
 // Cells: several drawings side by side, each over its name
-export const cells = (kind: string, items: [label: string, art: string][], frame: Frame) =>
-  `<ol class="figure-cells ${kind}">
+export const cells = (kind: string, items: [label: string, art: string][], frame: Frame, columns = items.length) =>
+  `<ol class="figure-cells ${kind}" style="--columns: ${columns}">
         ${items.map(([label, art], i) => `<li style="--i: ${i}">${svg(frame, art)}<code>${escapeHtml(label)}</code></li>`).join("\n        ")}
       </ol>`;
 
@@ -85,7 +85,7 @@ export function onCube(frame: Frame, art: string, faces: Face[] = ["front", "lef
   const corner = (x: number, y: number, z: number) => place([x * half * 2, y * half * 2, z * half * 2], frame, REST_VIEW);
   const face = (origin: number[], across: number[], down: number[]) => {
     const m = [across[0] - origin[0], across[1] - origin[1], down[0] - origin[0], down[1] - origin[1]].map((n) => +(n / TILE).toFixed(4));
-    return `<g transform="matrix(${m.join(" ")} ${round(origin[0])} ${round(origin[1])})">${art}</g>`;
+    return `<g class="face" transform="matrix(${m.join(" ")} ${round(origin[0])} ${round(origin[1])})">${art}</g>`;
   };
   const sides: Record<Face, string> = {
     front: face(corner(-0.5, 0.5, 0.5), corner(0.5, 0.5, 0.5), corner(-0.5, -0.5, 0.5)),
@@ -93,4 +93,63 @@ export function onCube(frame: Frame, art: string, faces: Face[] = ["front", "lef
     top: face(corner(-0.5, 0.5, -0.5), corner(0.5, 0.5, -0.5), corner(-0.5, 0.5, 0.5)),
   };
   return faces.map((name) => sides[name]).join("") + lines(box(half, half, half), frame);
+}
+
+// A square image, flat, in the middle of a cell of 132
+export const tile = (art: string) => `<rect class="tile" x="30" y="30" width="${TILE}" height="${TILE}"/><g transform="translate(30 30)">${art}</g>`;
+
+// The lines where a function of the plane crosses a level, inside a box: the outline of a
+// distance field, the contours of a noise. Each line is one path, so it can be dashed.
+export function isolines(f: (x: number, y: number) => number, level: number, [x0, y0, x1, y1]: [number, number, number, number], cell = 3): string {
+  const columns = Math.ceil((x1 - x0) / cell);
+  const rows = Math.ceil((y1 - y0) / cell);
+  const value = (i: number, j: number) => f(x0 + i * cell, y0 + j * cell) - level;
+  // Where the level is crossed on a side of a cell, named by the two corners of the side
+  const crossing = (i: number, j: number, k: number, l: number) => {
+    const [a, b] = [value(i, j), value(k, l)];
+    const t = a / (a - b);
+    return [x0 + (i + (k - i) * t) * cell, y0 + (j + (l - j) * t) * cell];
+  };
+  const key = (p: number[]) => `${p[0].toFixed(2)} ${p[1].toFixed(2)}`;
+  const segments: number[][][] = [];
+  for (let j = 0; j < rows; j++) {
+    for (let i = 0; i < columns; i++) {
+      const inside = [value(i, j) < 0, value(i + 1, j) < 0, value(i + 1, j + 1) < 0, value(i, j + 1) < 0];
+      const sides = [
+        [i, j, i + 1, j],
+        [i + 1, j, i + 1, j + 1],
+        [i + 1, j + 1, i, j + 1],
+        [i, j + 1, i, j],
+      ];
+      const crossed = sides.filter((_, side) => inside[side] !== inside[(side + 1) % 4]).map(([a, b, c, d]) => crossing(a, b, c, d));
+      for (let n = 0; n + 1 < crossed.length; n += 2) segments.push([crossed[n], crossed[n + 1]]);
+    }
+  }
+  // Segments that share an end become one line
+  const ends = new Map<string, number[]>();
+  segments.forEach((segment, n) => segment.forEach((p) => ends.set(key(p), [...(ends.get(key(p)) ?? []), n])));
+  const used = new Set<number>();
+  let d = "";
+  const walk = (start: number[], from: number) => {
+    const line = [start];
+    let [at, n] = [start, from];
+    for (;;) {
+      used.add(n);
+      const next = segments[n][key(segments[n][0]) === key(at) ? 1 : 0];
+      line.push(next);
+      const onward = (ends.get(key(next)) ?? []).find((m) => !used.has(m));
+      if (onward === undefined) return line;
+      [at, n] = [next, onward];
+    }
+  };
+  // Open lines first, from their free ends; what is left are loops
+  for (const pass of ["open", "closed"]) {
+    segments.forEach((segment, n) => {
+      if (used.has(n)) return;
+      const free = segment.find((p) => (ends.get(key(p)) ?? []).length === 1);
+      if (pass === "open" && !free) return;
+      d += `M${walk(free ?? segment[0], n).map((p) => `${round(p[0])} ${round(p[1])}`).join("L")}`;
+    });
+  }
+  return d;
 }

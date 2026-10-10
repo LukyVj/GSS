@@ -429,8 +429,10 @@ const AXES: Record<Axis, Vec3> = { x: [1, 0, 0], y: [0, 1, 0], z: [0, 0, 1] };
 export const AXIS_REACH = 1.15;
 
 // A cube turned around an axis, and the axis: dashed where it goes through the cube
-export function spinDrawing(axis: Axis, degrees: number, frame: Frame, view: View = REST_VIEW): { cube: Drawing; axis: Drawing } {
-  const cube = spun(box(0.42, 0.42, 0.42), axis, degrees);
+// The cube can be moved first: its axis then goes through another point of it, like the
+// origin transform-origin sets
+export function spinDrawing(axis: Axis, degrees: number, frame: Frame, view: View = REST_VIEW, from: Vec3 = [0, 0, 0]): { cube: Drawing; axis: Drawing } {
+  const cube = spun(moved(box(0.42, 0.42, 0.42), from), axis, degrees);
   const [x, y, z] = AXES[axis].map((n) => n * AXIS_REACH);
   const line: Line = { points: [[-x, -y, -z], [x, y, z]] };
   return { cube: draw(cube, frame, view), axis: draw({ lines: [line], mesh: cube.mesh }, frame, view) };
@@ -449,6 +451,19 @@ export function floor(half: number, step: number): Solid {
   }
   const [a, b, c, d]: Vec3[] = [[-half, 0, -half], [half, 0, -half], [half, 0, half], [-half, 0, half]];
   return { lines, mesh: [[a, b, c], [a, c, d]] };
+}
+
+// A cylinder cut into slices, with a gap between two of them: an object a mask cuts holes in
+export function slices(view: View, count: number): Solid {
+  const [outer, inner, total] = [0.44, 0.36, 1.2];
+  const height = total / (count * 2 - 1);
+  return together(
+    ...Array.from({ length: count }, (_, i) => {
+      const top = total / 2 - i * height * 2;
+      const bottom = top - height;
+      return revolution(view, [straight(inner, top, outer, top), straight(outer, top, outer, bottom), straight(outer, bottom, inner, bottom), straight(inner, bottom, inner, top)]);
+    }),
+  );
 }
 
 // --- a shape with its measures, for its page and for the script that turns it
