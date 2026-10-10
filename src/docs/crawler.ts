@@ -35,6 +35,8 @@ export const recordExtractor = ({ $, url }: { $: CheerioAPI; url: URL }): DocSea
   $("#docs .page-bar, #docs .pager").remove();
   // What a page folds is read, not the label of the fold
   $("#docs details.more > summary").remove();
+  // A figure is a drawing and the code it plays: like the examples, it is not read
+  $("#docs figure").remove();
   // The cells of a table, read apart: "matte() Scatters the light only"
   $("#docs dt, #docs dd, #docs li").append(" ");
 

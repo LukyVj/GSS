@@ -1,5 +1,5 @@
 import type { ShapeDef } from "../compiler/registry/registry";
-import { REST, shapeDrawing, spinDrawing, viewAt, type Axis, type Frame } from "./hairline";
+import { REST, REST_VIEW, shapeDrawing, spinDrawing, viewAt, type Axis, type Frame, type Vec3 } from "./hairline";
 
 // The shapes of the figures turn (decision 181): a shape arrives turning when its page opens,
 // then follows the pointer over it, and goes back to rest. The page holds each shape as three
@@ -31,7 +31,9 @@ function frameOf(svg: SVGSVGElement): Frame {
 
 // Draws the cube of a rotation again, turned by an angle around its axis
 export function spinTo(svg: SVGSVGElement, degrees: number): void {
-  const { cube, axis } = spinDrawing(svg.dataset.spin as Axis, degrees, frameOf(svg));
+  // data-from: where the cube stands from its axis, when it does not turn around its center
+  const from = (svg.dataset.from ?? "0 0 0").split(" ").map(Number) as Vec3;
+  const { cube, axis } = spinDrawing(svg.dataset.spin as Axis, degrees, frameOf(svg), REST_VIEW, from);
   svg.querySelector("path.hidden")?.setAttribute("d", cube.hidden);
   svg.querySelector("path.line")?.setAttribute("d", cube.visible);
   svg.querySelector("path.axis-behind")?.setAttribute("d", axis.hidden);
@@ -41,7 +43,7 @@ export function spinTo(svg: SVGSVGElement, degrees: number): void {
 // Draws the shape of an SVG again, seen from another side
 export function turnTo(svg: SVGSVGElement, { azimuth, elevation }: View): void {
   const frame = frameOf(svg);
-  const measured = svg.dataset.measured !== undefined;
+  const measured = svg.dataset.measured === undefined ? false : svg.dataset.measured || true;
   const drawing = shapeDrawing(svg.dataset.turn as ShapeDef["name"], frame, viewAt(azimuth, elevation), measured);
   svg.querySelector("path.hidden")?.setAttribute("d", drawing.hidden + drawing.guideHidden);
   svg.querySelector("path.guide")?.setAttribute("d", drawing.guide);

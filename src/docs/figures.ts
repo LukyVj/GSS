@@ -1,55 +1,20 @@
-import { SHAPE_DOCS, type Figure, type ShapeDef } from "../compiler/registry/registry";
+import { SHAPE_DOCS, type Figure } from "../compiler/registry/registry";
 import { escapeHtml } from "./escape";
-import {
-  AXIS_REACH,
-  REST_VIEW,
-  ball,
-  box,
-  draw,
-  floor,
-  measure,
-  moved,
-  place,
-  shapeDrawing,
-  spinDrawing,
-  together,
-  type Axis,
-  type Frame,
-  type Solid,
-  type Vec3,
-} from "./hairline";
+import { TILE, body, lines, onCube, path, playing, round, shapeSvg, shift, stage, svg, text, type ShapeName } from "./figure-kit";
+import { colors } from "./figure-colors";
+import { flows } from "./figure-flows";
+import { lanes, offsetDistance, offsetRotate, range, scrollTimeline } from "./figure-lanes";
+import { cornerRadius, d, measure as measured, viewBox } from "./figure-measures";
+import { calc, plot } from "./figure-plots";
+import { row } from "./figure-rows";
+import { scenes } from "./figure-scenes";
+import { tiles } from "./figure-tiles";
+import { AXIS_REACH, REST_VIEW, ball, box, draw, floor, measure, moved, place, spinDrawing, together, type Axis, type Frame, type Vec3 } from "./hairline";
 
 // The figures of the docs (decision 180): a drawing under the lead of a page, in thin lines,
 // for what a picture says faster than a paragraph. A page asks for one by its name, in the
 // registry. Some move (decision 181): the lines draw themselves when the page opens, a shape
 // turns under the pointer (figure-motion.ts), a ball floats as its animation says.
-
-type ShapeName = ShapeDef["name"];
-
-const path = (kind: string, d: string, more = "") => `<path class="${kind}"${more} d="${d}"/>`;
-const svg = ({ width, height }: Frame, content: string, more = "") =>
-  `<svg viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" aria-hidden="true"${more}>${content}</svg>`;
-
-// The lines of a solid: what is behind first, so the lines in front cross over it. The lines
-// in front are the ones that draw themselves: their length counts as 1.
-const lines = (solid: Solid, frame: Frame) => {
-  const { ground, hidden, guideHidden, guide, visible } = draw(solid, frame);
-  return (ground ? path("ground", ground) : "") + path("hidden", hidden + guideHidden) + path("guide", guide) + path("line", visible, ' pathLength="1"');
-};
-
-// A shape the page script can turn: it finds the shape and its frame here, and rewrites the
-// same three paths (and the measures, when the shape has them)
-function shapeSvg(name: ShapeName, frame: Frame, measured = false): string {
-  const { hidden, guideHidden, guide, visible, marks } = shapeDrawing(name, frame, REST_VIEW, measured);
-  const measures = marks
-    .map(({ label, d, x, y }) => `${path("mark", d)}<text class="mark-label" x="${x}" y="${y}">${escapeHtml(label)}</text>`)
-    .join("");
-  return svg(
-    frame,
-    path("hidden", hidden + guideHidden) + path("guide", guide) + path("line", visible, ' pathLength="1"') + measures,
-    ` data-turn="${escapeHtml(name)}" data-frame="${frame.scale} ${frame.x} ${frame.y}"${measured ? " data-measured" : ""}`,
-  );
-}
 
 // --- shapes: everything a scene can declare, each one a link to its page
 
@@ -109,7 +74,6 @@ function firstScene(): string {
 
 // --- paint: from the shader of @paint to the faces of an object
 
-const TILE = 72; // the texture, in the units of its own drawing
 // Rings that grow from the middle of the texture, one after the other
 const rings = `<g class="rings">${[0, 1, 2, 3].map((i) => `<circle cx="${TILE / 2}" cy="${TILE / 2}" r="${TILE / 2}" style="--i: ${i}"/>`).join("")}</g>`;
 
@@ -121,17 +85,8 @@ function paint(): string {
     path("tint", "M44 76H86") +
     `<rect class="caret" x="89" y="71" width="1" height="10"/>`;
   const tile = `<rect class="tile" x="30" y="30" width="${TILE}" height="${TILE}"/><g transform="translate(30 30)">${rings}</g>`;
-  // The same texture on the three faces the eye sees: each face is the square, sheared
-  const corner = (x: number, y: number, z: number) => place([x, y, z], frame, REST_VIEW);
-  const face = (origin: number[], across: number[], down: number[]) => {
-    const m = [across[0] - origin[0], across[1] - origin[1], down[0] - origin[0], down[1] - origin[1]].map((n) => +(n / TILE).toFixed(4));
-    return `<g transform="matrix(${m.join(" ")} ${+origin[0].toFixed(1)} ${+origin[1].toFixed(1)})">${rings}</g>`;
-  };
-  const cube =
-    face(corner(-0.5, 0.5, 0.5), corner(0.5, 0.5, 0.5), corner(-0.5, -0.5, 0.5)) + // front
-    face(corner(-0.5, 0.5, -0.5), corner(-0.5, 0.5, 0.5), corner(-0.5, -0.5, -0.5)) + // left
-    face(corner(-0.5, 0.5, -0.5), corner(0.5, 0.5, -0.5), corner(-0.5, 0.5, 0.5)) + // top
-    lines(box(0.5, 0.5, 0.5), frame);
+  // The same texture on the three faces the eye sees
+  const cube = onCube(frame, rings);
   const steps: [code: string, art: string][] = [
     ["@paint rings { … }", code],
     ["512 × 512 px", tile],
@@ -141,39 +96,6 @@ function paint(): string {
   return `<ol class="figure-cells figure-flow">
         ${cells.join("\n        ")}
       </ol>`;
-}
-
-// --- one drawing on a stage, and the code it plays under it
-
-const round = (n: number) => +n.toFixed(1);
-const text = (x: number, y: number, words: string, kind = "mark-label") => `<text class="${kind}" x="${round(x)}" y="${round(y)}">${escapeHtml(words)}</text>`;
-const stage = (frame: Frame, content: string, more = "") => `<div class="figure-stage">${svg(frame, content, more)}</div>`;
-// The declarations a figure plays, under it: each one lights up while the figure plays it
-const playing = (codes: string[]) =>
-  `<figcaption>${codes.map((code, i) => `<code style="--phase: ${i}">${escapeHtml(code)}</code>`).join("")}</figcaption>`;
-// How far on the screen a move in the scene goes, in the pixels of a frame
-const shift = (frame: Frame, by: Vec3) => {
-  const [from, to] = [place([0, 0, 0], frame, REST_VIEW), place(by, frame, REST_VIEW)];
-  return [round(to[0] - from[0]), round(to[1] - from[1])];
-};
-// The edges of a solid that moves as a whole: no line draws itself, and a sheet in the color
-// of the page hides what the solid passes over
-function body(solid: Solid, frame: Frame): string {
-  const { visible, hidden } = draw(solid, frame);
-  const points = solid.mesh.flat().map((p) => place(p, frame, REST_VIEW));
-  // The outline of the sheet: the hull of every point of the solid, on the screen
-  const sorted = [...points].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
-  const turn = (o: number[], a: number[], b: number[]) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
-  const half = (list: number[][]) => {
-    const kept: number[][] = [];
-    for (const p of list) {
-      while (kept.length > 1 && turn(kept[kept.length - 2], kept[kept.length - 1], p) <= 0) kept.pop();
-      kept.push(p);
-    }
-    return kept.slice(0, -1);
-  };
-  const hull = [...half(sorted), ...half([...sorted].reverse())];
-  return path("sheet", `M${hull.map((p) => `${round(p[0])} ${round(p[1])}`).join("L")}Z`) + path("hidden", hidden) + path("edge", visible);
 }
 
 // --- translate: a cube along x, then y, then z
@@ -347,6 +269,22 @@ export const FIGURES: Record<Figure, { label: string; art: (subject: string) => 
   easing: { label: "The curve of the easing, and a ball that moves by it", art: easing },
   hover: { label: "A cube that answers the pointer", art: hover },
   "offset-path": { label: "An object that travels along its path", art: offsetPath },
+  row: { label: "A scene as a row of objects: the ones the code targets are in signal", art: row },
+  measure: { label: "The shapes that take the property, with the line it sets", art: measured },
+  "corner-radius": { label: "The corner of a cube, sharp, then more and more round", art: cornerRadius },
+  d: { label: "The commands of a path, each at the point it goes to", art: d },
+  "view-box": { label: "The drawing area of a path, with the origin at its center", art: viewBox },
+  plot: { label: "The functions as curves, with a point that runs along the first", art: plot },
+  calc: { label: "A full turn divided by five", art: calc },
+  lanes: { label: "One point per value of the property, each moved by it", art: lanes },
+  "scroll-timeline": { label: "A page that scrolls, and the animation where the scroll is", art: scrollTimeline },
+  range: { label: "The scene crossing the window, and the part of the way the animation plays on", art: range },
+  "offset-distance": { label: "Three places on one path", art: offsetDistance },
+  "offset-rotate": { label: "Two objects along a path: one turns with it, one keeps its angle", art: offsetRotate },
+  tile: { label: "What covers the surface, flat, then on an object", art: tiles },
+  color: { label: "The colors the function gives", art: colors },
+  scene: { label: "What the property changes in the scene", art: scenes },
+  flow: { label: "How it goes, from where it is written to what the scene shows", art: flows },
 };
 
 // A figure is drawn once: the page is rendered when the site is built, and again at each

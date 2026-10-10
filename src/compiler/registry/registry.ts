@@ -48,7 +48,23 @@ export type Figure =
   | "keyframes" // a ball between two frames, and the time that passes
   | "easing" // the curve of an easing, and a ball that moves by it
   | "hover" // a cube to hover and to press
-  | "offset-path"; // an object that travels along a line
+  | "offset-path" // an object that travels along a line
+  | "row" // a scene as a row of objects: the ones a selector targets are lit
+  | "measure" // each shape that takes a size property, with the line it sets
+  | "corner-radius" // the corner of a cube, sharp then round
+  | "d" // the commands of a path, each at its point
+  | "view-box" // the drawing area of a path
+  | "plot" // a math function as a curve, with a point that runs along it
+  | "calc" // a full turn divided, and the angle it gives
+  | "lanes" // a longhand of animation: one point per value, to compare
+  | "scroll-timeline" // a page that scrolls, and the animation where the scroll is
+  | "range" // the scene crossing the window, and the part the animation plays on
+  | "offset-distance" // three places on one path
+  | "offset-rotate" // along a path: turned by it, or not
+  | "tile" // what covers a surface: an image, a text, a pattern, a mask, a material
+  | "color" // a color, written the way the page writes it
+  | "scene" // the scene around the objects, and how an object shows in it
+  | "flow"; // from one place to another: a file to the page, a variable to an object
 
 // A callout under the description: what a reader must know before trying it
 export type Note = { title: string; text: string };
@@ -136,6 +152,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "color",
+    figure: "color",
     since: "0.0.1",
     appliesTo: "object",
     animatable: true,
@@ -185,6 +202,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "material",
+    figure: "tile",
     since: "0.0.1",
     appliesTo: "object",
     syntax:
@@ -270,6 +288,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "texture",
+    figure: "tile",
     since: "0.0.1",
     appliesTo: "object",
     syntax: 'url("<file>") | element(<id>) | paint(<name>)',
@@ -298,6 +317,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "image-rendering",
+    figure: "tile",
     since: "0.0.1",
     appliesTo: "object",
     syntax: "auto | smooth | pixelated | crisp-edges",
@@ -318,6 +338,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "texture-size",
+    figure: "tile",
     since: "0.0.1",
     appliesTo: "object",
     syntax: "<number>",
@@ -334,6 +355,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "content",
+    figure: "tile",
     since: "0.0.7",
     appliesTo: "object",
     syntax: "<string>+ | none",
@@ -367,6 +389,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "font-family",
+    figure: "tile",
     since: "0.0.7",
     appliesTo: "object",
     syntax: "[<family-name> | <generic-family>]#",
@@ -383,6 +406,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "font-weight",
+    figure: "tile",
     since: "0.0.7",
     appliesTo: "object",
     syntax: "normal | bold | <number>",
@@ -398,6 +422,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "font-style",
+    figure: "tile",
     since: "0.0.7",
     appliesTo: "object",
     syntax: "normal | italic | oblique",
@@ -412,6 +437,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "-webkit-text-fill-color",
+    figure: "tile",
     since: "0.0.7",
     appliesTo: "object",
     syntax: "<color>",
@@ -428,6 +454,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "opacity",
+    figure: "scene",
     since: "0.0.4",
     appliesTo: "object",
     animatable: true,
@@ -457,6 +484,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "mix-blend-mode",
+    figure: "scene",
     since: "0.0.7",
     appliesTo: "object",
     animatable: true,
@@ -502,6 +530,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "display",
+    figure: "row",
     since: "0.0.6",
     appliesTo: "object",
     syntax: "none | block",
@@ -530,6 +559,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "visibility",
+    figure: "row",
     since: "0.0.6",
     appliesTo: "object",
     animatable: true,
@@ -559,6 +589,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "cursor",
+    figure: "scene",
     since: "0.0.6",
     appliesTo: "object",
     syntax: "auto | default | pointer | grab | grabbing | help | crosshair | move | not-allowed | zoom-in | zoom-out | …",
@@ -597,6 +628,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "controls",
+    figure: "scene",
     since: "0.0.7",
     appliesTo: "everywhere",
     syntax: "auto | none | [ orbit || zoom ]",
@@ -631,6 +663,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "outline",
+    figure: "scene",
     since: "0.0.6",
     appliesTo: "object",
     animatable: true,
@@ -655,6 +688,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "outline-width",
+    figure: "scene",
     since: "0.0.6",
     appliesTo: "object",
     animatable: true,
@@ -672,6 +706,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "outline-style",
+    figure: "scene",
     since: "0.0.6",
     appliesTo: "object",
     syntax: "none | auto | solid | dashed | dotted | double | groove | ridge | inset | outset",
@@ -712,6 +747,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "outline-color",
+    figure: "scene",
     since: "0.0.6",
     appliesTo: "object",
     animatable: true,
@@ -729,6 +765,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "outline-offset",
+    figure: "scene",
     since: "0.0.6",
     appliesTo: "object",
     animatable: true,
@@ -746,6 +783,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "mask-image",
+    figure: "tile",
     since: "0.0.4",
     appliesTo: "object",
     animatable: true,
@@ -775,6 +813,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "mask-mode",
+    figure: "tile",
     since: "0.0.4",
     appliesTo: "object",
     syntax: "alpha | luminance | match-source",
@@ -864,6 +903,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "transform-origin",
+    figure: "scene",
     since: "0.0.4",
     appliesTo: "object",
     animatable: true,
@@ -892,6 +932,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "operation",
+    figure: "scene",
     since: "0.0.1",
     appliesTo: "object",
     syntax: "union | subtract | intersect",
@@ -912,6 +953,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "blend",
+    figure: "scene",
     since: "0.0.1",
     appliesTo: "object",
     syntax: "<number>",
@@ -1006,6 +1048,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "animation-duration",
+    figure: "lanes",
     since: "0.0.2",
     appliesTo: "everywhere",
     syntax: "<time>",
@@ -1021,6 +1064,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "animation-delay",
+    figure: "lanes",
     since: "0.0.2",
     appliesTo: "everywhere",
     syntax: "<time>",
@@ -1036,6 +1080,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "animation-iteration-count",
+    figure: "lanes",
     since: "0.0.2",
     appliesTo: "everywhere",
     syntax: "<number> | infinite",
@@ -1051,6 +1096,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "animation-direction",
+    figure: "lanes",
     since: "0.0.2",
     appliesTo: "everywhere",
     syntax: "normal | reverse | alternate | alternate-reverse",
@@ -1072,6 +1118,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "animation-fill-mode",
+    figure: "lanes",
     since: "0.0.2",
     appliesTo: "everywhere",
     syntax: "none | forwards | backwards | both",
@@ -1118,6 +1165,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "animation-timeline",
+    figure: "scroll-timeline",
     since: "0.0.3",
     appliesTo: "everywhere",
     syntax:
@@ -1147,6 +1195,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "animation-range",
+    figure: "range",
     since: "0.0.6",
     appliesTo: "everywhere",
     syntax: "[ normal | <range-name> <percentage>? | <percentage> | <length> ]{1,2}",
@@ -1179,6 +1228,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "animation-range-start",
+    figure: "range",
     since: "0.0.6",
     appliesTo: "everywhere",
     syntax: "normal | <range-name> <percentage>? | <percentage> | <length>",
@@ -1195,6 +1245,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "animation-range-end",
+    figure: "range",
     since: "0.0.6",
     appliesTo: "everywhere",
     syntax: "normal | <range-name> <percentage>? | <percentage> | <length>",
@@ -1239,6 +1290,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "offset-distance",
+    figure: "offset-distance",
     since: "0.0.3",
     appliesTo: "object",
     animatable: true,
@@ -1262,6 +1314,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "offset-rotate",
+    figure: "offset-rotate",
     since: "0.0.3",
     appliesTo: "object",
     syntax: "[auto | reverse] || <angle>",
@@ -1284,6 +1337,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "size",
+    figure: "measure",
     since: "0.0.1",
     appliesTo: ["cube", "plane", "pyramid"],
     syntax: "<number>{1,3} (cube, pyramid) | <number>{1,2} (plane: width depth)",
@@ -1305,6 +1359,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "corner-radius",
+    figure: "corner-radius",
     since: "0.0.1",
     appliesTo: ["cube"],
     syntax: "<number>",
@@ -1319,6 +1374,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "radius",
+    figure: "measure",
     since: "0.0.1",
     appliesTo: ["sphere", "torus", "cylinder", "cone", "capsule", "octahedron", "tube"],
     syntax: "<number> | <number> <number> (cone: bottom top)",
@@ -1341,6 +1397,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "thickness",
+    figure: "measure",
     since: "0.0.1",
     appliesTo: ["torus", "tube"],
     syntax: "<number>",
@@ -1355,6 +1412,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "height",
+    figure: "measure",
     since: "0.0.1",
     appliesTo: ["cylinder", "cone", "capsule", "tube"],
     syntax: "<number>",
@@ -1380,6 +1438,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "d",
+    figure: "d",
     since: "0.0.1",
     appliesTo: ["path", "prism", "lathe"],
     syntax: 'path("<svg path>") | polygon(<x> <y>, …) (prism, lathe)',
@@ -1422,6 +1481,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "stroke-width",
+    figure: "measure",
     since: "0.0.1",
     appliesTo: ["path"],
     syntax: "<number>",
@@ -1437,6 +1497,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "depth",
+    figure: "measure",
     since: "0.0.1",
     appliesTo: ["prism"],
     syntax: "<number>",
@@ -1452,6 +1513,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "view-box",
+    figure: "view-box",
     since: "0.0.1",
     appliesTo: ["path", "prism", "lathe"],
     syntax: "<number>{4}",
@@ -1470,6 +1532,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "light",
+    figure: "scene",
     since: "0.0.1",
     appliesTo: "scene",
     animatable: true,
@@ -1509,6 +1572,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "intensity",
+    figure: "scene",
     since: "0.0.4",
     appliesTo: ["light"],
     animatable: true,
@@ -1526,6 +1590,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "ambient",
+    figure: "scene",
     since: "0.0.1",
     appliesTo: "scene",
     syntax: "<number> <color>?",
@@ -1541,6 +1606,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "camera-target",
+    figure: "scene",
     since: "0.0.1",
     appliesTo: "scene",
     syntax: "<number>{3}",
@@ -1556,6 +1622,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "camera-distance",
+    figure: "scene",
     since: "0.0.1",
     appliesTo: "scene",
     syntax: "<number>",
@@ -1571,6 +1638,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "camera-angle",
+    figure: "scene",
     since: "0.0.1",
     appliesTo: "scene",
     syntax: "<angle> <angle>",
@@ -1586,6 +1654,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "camera-spin",
+    figure: "scene",
     since: "0.0.1",
     appliesTo: "scene",
     syntax: "<time> | none",
@@ -1601,6 +1670,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "floor",
+    figure: "scene",
     since: "0.0.1",
     appliesTo: "scene",
     syntax: "<color> | <gradient> | none",
@@ -1639,6 +1709,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "filter",
+    figure: "scene",
     since: "0.0.2",
     appliesTo: "everywhere",
     syntax: "none | <filter-function>+",
@@ -1739,6 +1810,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "background",
+    figure: "scene",
     since: "0.0.1",
     appliesTo: "scene",
     animatable: true,
@@ -1772,6 +1844,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "background-blend-mode",
+    figure: "scene",
     since: "0.0.4",
     appliesTo: "scene",
     syntax: "<blend-mode>#",
@@ -1804,6 +1877,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "fog",
+    figure: "scene",
     since: "0.0.4",
     appliesTo: "scene",
     animatable: true,
@@ -1838,6 +1912,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "shadows",
+    figure: "scene",
     since: "0.0.4",
     appliesTo: "scene",
     syntax: "none | hard | soft",
@@ -1870,6 +1945,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "dpr",
+    figure: "scene",
     since: "0.0.2",
     appliesTo: "scene",
     syntax: "auto | max | <number>",
@@ -1899,6 +1975,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "shape-rendering",
+    figure: "scene",
     since: "0.0.6",
     appliesTo: "scene",
     syntax: "auto | geometricPrecision",
@@ -1925,6 +2002,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "view",
+    figure: "scene",
     since: "0.0.5",
     appliesTo: "scene",
     syntax: "shaded | distance",
@@ -1959,6 +2037,7 @@ export const PROPERTIES: PropertyDef[] = [
 export const AT_RULES: AtRuleDef[] = [
   {
     name: "scene",
+    figure: "row",
     since: "0.0.1",
     syntax:
       "@scene { <shape>[#<id>][.<class>]* [* <integer>][;] … group[#<id>][.<class>]* [* <integer>] { … } }",
@@ -2020,6 +2099,7 @@ export const AT_RULES: AtRuleDef[] = [
   },
   {
     name: "property",
+    figure: "flow",
     since: "0.0.4",
     syntax: '@property --<name> { syntax: "<number>" | "<angle>" | "<percentage>" | "<color>" | "<length>"; inherits: true | false; initial-value: <value>; }',
     description:
@@ -2113,6 +2193,7 @@ sphere { translate: 0 1 0; texture: paint(checks); }`,
   },
   {
     name: "property-panel",
+    figure: "flow",
     since: "0.0.5",
     syntax: "@property-panel { display: open | folded | none; }",
     description:
@@ -2142,6 +2223,7 @@ sphere { translate: 0 1 0; texture: paint(checks); }`,
   },
   {
     name: "media",
+    figure: "flow",
     since: "0.0.2",
     syntax: "@media <media-query> { <rule> … }",
     description:
@@ -2176,6 +2258,7 @@ sphere { translate: 0 1 0; texture: paint(checks); }`,
   },
   {
     name: "mixin",
+    figure: "flow",
     since: "0.0.7",
     syntax: "@mixin --<name>[(--<parameter> [<type>] [: <default>], …)] { <declaration> … <rule> … [@contents;] }",
     description:
@@ -2245,6 +2328,7 @@ sphere {
   },
   {
     name: "apply",
+    figure: "flow",
     since: "0.0.7",
     syntax: "@apply --<name>[(<value>, …)] [{ <declaration> … }];",
     description:
@@ -2301,6 +2385,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: ".class",
     anchor: "selector-class",
+    figure: "row",
     since: "0.0.1",
     specificity: "100 per class",
     description:
@@ -2315,6 +2400,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: "#id",
     anchor: "selector-id",
+    figure: "row",
     since: "0.0.1",
     specificity: "10000",
     description:
@@ -2329,6 +2415,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: "*",
     anchor: "selector-universal",
+    figure: "row",
     since: "0.0.1",
     specificity: "0",
     description:
@@ -2344,6 +2431,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: "a, b",
     anchor: "selector-list",
+    figure: "row",
     since: "0.0.1",
     specificity: "Each selector keeps its own",
     description:
@@ -2358,6 +2446,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: "a b",
     anchor: "selector-descendant",
+    figure: "row",
     since: "0.0.1",
     specificity: "The sum of its parts",
     description:
@@ -2375,6 +2464,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: "a > b",
     anchor: "selector-child",
+    figure: "row",
     since: "0.0.2",
     specificity: "The sum of its parts",
     description:
@@ -2391,6 +2481,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: "a + b",
     anchor: "selector-adjacent",
+    figure: "row",
     since: "0.0.2",
     specificity: "The sum of its parts",
     description:
@@ -2407,6 +2498,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: "a ~ b",
     anchor: "selector-sibling",
+    figure: "row",
     since: "0.0.2",
     specificity: "The sum of its parts",
     description:
@@ -2423,6 +2515,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: "&",
     anchor: "selector-nesting",
+    figure: "row",
     since: "0.0.4",
     specificity: "The sum of the rule around it and of the nested selector",
     description:
@@ -2453,6 +2546,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: "::face(), ::top, ::bottom",
     anchor: "selector-face",
+    figure: "tile",
     since: "0.0.1",
     specificity: "1, like a tag, added to the rest",
     description:
@@ -2557,6 +2651,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: ":has()",
     anchor: "selector-has",
+    figure: "row",
     since: "0.0.2",
     specificity:
       "the most specific selector inside, added to the rest, like CSS",
@@ -2594,6 +2689,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: ":not()",
     anchor: "selector-not",
+    figure: "row",
     since: "0.0.3",
     specificity: "its most specific selector, added to the rest, like CSS",
     description:
@@ -2623,6 +2719,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: ":nth-child(), :nth-last-child()",
     anchor: "selector-nth-child",
+    figure: "row",
     since: "0.0.3",
     specificity: "100, like a class, plus the most specific selector after of",
     description:
@@ -2652,6 +2749,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: ":nth-of-type(), :nth-last-of-type()",
     anchor: "selector-nth-of-type",
+    figure: "row",
     since: "0.0.3",
     specificity: "100, like a class",
     description:
@@ -2668,6 +2766,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: ":first-child, :last-child, :only-child",
     anchor: "selector-first-child",
+    figure: "row",
     since: "0.0.3",
     specificity: "100, like a class",
     description:
@@ -2698,6 +2797,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: "!important",
     anchor: "selector-important",
+    figure: "flow",
     since: "0.0.1",
     specificity: "Beats every declaration without it",
     description:
@@ -3104,6 +3204,7 @@ export const FUNCTIONS: FunctionDef[] = [
   {
     name: "<gradient>",
     anchor: "fn-gradients",
+    figure: "tile",
     since: "0.0.2",
     computed: "on the GPU, at each pixel",
     covers: [
@@ -3158,6 +3259,7 @@ export const FUNCTIONS: FunctionDef[] = [
   {
     name: "noise()",
     anchor: "fn-noise",
+    figure: "tile",
     since: "0.0.4",
     covers: ["noise"],
     computed: "on the GPU, at each pixel",
@@ -3201,6 +3303,7 @@ export const FUNCTIONS: FunctionDef[] = [
   {
     name: "checker()",
     anchor: "fn-checker",
+    figure: "tile",
     since: "0.0.6",
     covers: ["checker"],
     computed: "on the GPU, at each pixel",
@@ -3230,6 +3333,7 @@ export const FUNCTIONS: FunctionDef[] = [
   {
     name: "stripes()",
     anchor: "fn-stripes",
+    figure: "tile",
     since: "0.0.6",
     covers: ["stripes"],
     computed: "on the GPU, at each pixel",
@@ -3260,6 +3364,7 @@ export const FUNCTIONS: FunctionDef[] = [
   {
     name: "displace()",
     anchor: "fn-displace",
+    figure: "tile",
     since: "0.0.4",
     covers: ["displace"],
     computed: "on the GPU, at each pixel",
@@ -3295,6 +3400,7 @@ export const FUNCTIONS: FunctionDef[] = [
   {
     name: "element()",
     anchor: "fn-element",
+    figure: "tile",
     since: "0.0.4",
     covers: [],
     syntax: "element(<id>)",
@@ -3326,6 +3432,7 @@ export const FUNCTIONS: FunctionDef[] = [
   {
     name: "paint()",
     anchor: "fn-paint",
+    figure: "paint",
     since: "0.0.6",
     covers: [],
     syntax: "paint(<name>)",
@@ -3356,6 +3463,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "rgb()",
     anchor: "fn-rgb",
+    figure: "color",
     since: "0.0.1",
     covers: ["rgb", "rgba"],
     syntax: "rgb(<red> <green> <blue>) | rgb(<red>, <green>, <blue>)",
@@ -3378,6 +3486,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "hsl()",
     anchor: "fn-hsl",
+    figure: "color",
     since: "0.0.1",
     covers: ["hsl", "hsla"],
     syntax: "hsl(<hue> <saturation> <lightness>)",
@@ -3400,6 +3509,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "hwb()",
     anchor: "fn-hwb",
+    figure: "color",
     since: "0.0.2",
     covers: ["hwb"],
     syntax: "hwb(<hue> <whiteness> <blackness>)",
@@ -3416,6 +3526,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "lab(), lch()",
     anchor: "fn-lab-lch",
+    figure: "color",
     since: "0.0.2",
     covers: ["lab", "lch"],
     syntax: "lab(<lightness> <a> <b>) | lch(<lightness> <chroma> <hue>)",
@@ -3443,6 +3554,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "oklab(), oklch()",
     anchor: "fn-oklab-oklch",
+    figure: "color",
     since: "0.0.2",
     covers: ["oklab", "oklch"],
     syntax: "oklab(<lightness> <a> <b>) | oklch(<lightness> <chroma> <hue>)",
@@ -3470,6 +3582,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "color()",
     anchor: "fn-color",
+    figure: "color",
     since: "0.0.2",
     covers: ["color"],
     syntax: "color(<space> <r> <g> <b>)",
@@ -3492,6 +3605,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "color-mix()",
     anchor: "fn-color-mix",
+    figure: "color",
     since: "0.0.2",
     covers: ["color-mix"],
     syntax:
@@ -3519,6 +3633,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "light-dark()",
     anchor: "fn-light-dark",
+    figure: "color",
     since: "0.0.2",
     covers: ["light-dark"],
     syntax: "light-dark(<light color>, <dark color>)",
@@ -3534,6 +3649,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "contrast-color()",
     anchor: "fn-contrast-color",
+    figure: "color",
     since: "0.0.2",
     covers: ["contrast-color"],
     syntax: "contrast-color(<color>)",
@@ -3550,6 +3666,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "currentColor",
     anchor: "fn-currentcolor",
+    figure: "color",
     since: "0.0.3",
     covers: [],
     syntax: "currentColor",
@@ -3573,6 +3690,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "var()",
     anchor: "fn-var",
+    figure: "flow",
     since: "0.0.1",
     covers: ["var"],
     syntax: "var(--<name>) | var(--<name>, <fallback>)",
@@ -3606,6 +3724,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "random()",
     anchor: "fn-random",
+    figure: "row",
     since: "0.0.2",
     covers: ["random"],
     syntax:
@@ -3637,6 +3756,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "if()",
     anchor: "fn-if",
+    figure: "flow",
     since: "0.0.2",
     covers: ["if"],
     syntax: "if(<condition>: <value>; …; else: <value>)",
@@ -3667,6 +3787,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "calc()",
     anchor: "fn-calc",
+    figure: "calc",
     since: "0.0.1",
     covers: ["calc"],
     syntax: "calc(<expression>)",
@@ -3684,6 +3805,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "sibling-index()",
     anchor: "fn-sibling-index",
+    figure: "row",
     since: "0.0.1",
     covers: ["sibling-index"],
     syntax: "sibling-index()",
@@ -3701,6 +3823,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "sibling-count()",
     anchor: "fn-sibling-count",
+    figure: "row",
     since: "0.0.1",
     covers: ["sibling-count"],
     syntax: "sibling-count()",
@@ -3716,6 +3839,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "sin(), cos(), tan()",
     anchor: "fn-trig",
+    figure: "plot",
     since: "0.0.1",
     covers: ["sin", "cos", "tan"],
     syntax: "sin(<angle> | <number>)",
@@ -3747,6 +3871,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "min(), max(), clamp()",
     anchor: "fn-min-max-clamp",
+    figure: "plot",
     since: "0.0.1",
     covers: ["min", "max", "clamp"],
     syntax: "min(<value>, …) | max(<value>, …) | clamp(<min>, <value>, <max>)",
@@ -3784,6 +3909,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "abs(), sqrt(), pow()",
     anchor: "fn-abs-sqrt-pow",
+    figure: "plot",
     since: "0.0.1",
     covers: ["abs", "sqrt", "pow"],
     syntax: "abs(<value>) | sqrt(<number>) | pow(<number>, <number>)",
@@ -3815,6 +3941,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "asin(), acos(), atan(), atan2()",
     anchor: "fn-inverse-trig",
+    figure: "plot",
     since: "0.0.2",
     covers: ["asin", "acos", "atan", "atan2"],
     syntax:
@@ -3852,6 +3979,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "sign(), round(), mod(), rem()",
     anchor: "fn-stepped",
+    figure: "plot",
     since: "0.0.2",
     covers: ["sign", "round", "mod", "rem"],
     syntax:
@@ -3896,6 +4024,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "hypot(), log(), exp()",
     anchor: "fn-exponential",
+    figure: "plot",
     since: "0.0.2",
     covers: ["hypot", "log", "exp"],
     syntax: "hypot(<value>, …) | log(<number>, <base>?) | exp(<number>)",
@@ -3933,6 +4062,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "progress()",
     anchor: "fn-progress",
+    figure: "row",
     since: "0.0.2",
     covers: ["progress"],
     syntax: "progress(<value>, <start>, <end>)",

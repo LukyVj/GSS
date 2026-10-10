@@ -74,8 +74,9 @@ describe("the records of the docs search", () => {
     expect(records.map((record) => record.content).join(" ")).not.toContain("More details");
   });
 
-  it("read the names a figure draws, one word each", () => {
-    expect(byAnchor("selector-type")!.content).toContain("cube sphere torus");
+  it("do not read the figures: a drawing, and the code it plays", () => {
+    expect(byAnchor("selector-type")!.content).not.toContain("torus");
+    expect(byAnchor("translate")!.content).not.toContain("translate: 1.5 0 0");
   });
 
   it("give each chapter of a guide its own record", () => {

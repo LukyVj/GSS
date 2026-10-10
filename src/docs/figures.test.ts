@@ -26,13 +26,32 @@ describe("the figures of the docs", () => {
     ...[...GETTING_STARTED, ...INSTALLATION].map((entry) => [entry.figure, entry.anchor] as const),
   ].filter(([figure]) => figure);
 
+  // Lucas, Oct. 10: "j'aimerais une illustration dans chaque page de la doc"
+  it("are on every page of the docs", () => {
+    const every = [
+      ...PROPERTIES.map((entry) => [entry.figure, entry.name] as const),
+      ...AT_RULES.map((entry) => [entry.figure, `at-${entry.name}`] as const),
+      ...SELECTORS.map((entry) => [entry.figure, entry.anchor] as const),
+      ...FUNCTIONS.map((entry) => [entry.figure, entry.anchor] as const),
+      ...SHAPE_DOCS.map((entry) => [entry.figure, `shape-${entry.name}`] as const),
+      ...[...GETTING_STARTED, ...INSTALLATION].map((entry) => [entry.figure, entry.anchor] as const),
+    ];
+    expect(every.length).toBeGreaterThan(150);
+    expect(every.filter(([figure]) => !figure).map(([, id]) => id)).toEqual([]);
+  });
+
   it("draw something for every page that asks, with no number gone wrong", () => {
     expect(pages.length).toBeGreaterThan(30);
     for (const [figure, id] of pages) {
       const html = renderFigure(figure, id);
-      expect(html, id).toContain("<path");
+      expect(html, id).toMatch(/<(path|circle|rect|text) /);
       expect(html, id).not.toMatch(/NaN|undefined|Infinity/);
     }
+  });
+
+  // Every id of the docs is an anchor a link or the search can land on: a figure has none
+  it("hold no id", () => {
+    for (const [figure, id] of pages) expect(renderFigure(figure, id), id).not.toMatch(/\sid="/);
   });
 
   it("are lines only, for the eye, under a label for a screen reader", () => {

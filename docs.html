@@ -742,6 +742,595 @@
           opacity: 0;
         }
       }
+      /* A scene as a row of objects, a group as a dashed box around its own. What the code
+         of the figure targets is in signal, and nods. */
+      .figure-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        justify-content: center;
+        gap: 8px 10px;
+        padding: 22px 12px 14px;
+        border: 1px solid var(--gss-line);
+      }
+      .figure-row .item {
+        display: grid;
+        justify-items: center;
+        gap: 2px;
+        padding-bottom: var(--lift, 0);
+        color: var(--gss-dim);
+      }
+      .figure-row code {
+        min-height: 14px;
+        font: 10px/1.4 var(--gss-font-code);
+        color: inherit;
+      }
+      .figure-row .group {
+        position: relative;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        gap: 8px;
+        padding: 20px 8px 4px;
+        border: 1px dashed var(--gss-isoline);
+        color: var(--gss-dim);
+      }
+      .figure-row .group > code {
+        position: absolute;
+        top: 3px;
+        left: 8px;
+      }
+      .figure-row .lit {
+        color: var(--gss-signal);
+      }
+      .figure-row .group.lit {
+        border-color: var(--gss-signal);
+      }
+      .figure-row .item.lit path.line {
+        stroke: var(--gss-signal);
+      }
+      .figure-row .item.lit svg {
+        animation: figure-nod 2.4s ease-in-out infinite;
+        animation-delay: calc(var(--i) * 140ms);
+      }
+      @keyframes figure-nod {
+        50% {
+          transform: translateY(-5px);
+        }
+      }
+      /* display: none leaves the place empty; visibility comes and goes */
+      .figure-row .item svg {
+        opacity: var(--fade, 1);
+      }
+      .figure-row .absent svg {
+        visibility: hidden;
+      }
+      .figure-row .blinks svg {
+        animation: figure-blink 2.4s steps(1) infinite;
+      }
+      /* sibling-count(): the copies share a full turn */
+      .figure-row.ring {
+        position: relative;
+        height: 220px;
+        padding: 0;
+      }
+      .figure-row.ring .item {
+        position: absolute;
+        top: calc(50% - 39px);
+        left: calc(50% - 32px);
+        transform: rotate(calc(360deg / var(--n) * var(--i))) translateY(-72px) rotate(calc(-360deg / var(--n) * var(--i)));
+      }
+      /* An image on the faces of a cube: sheared with the face, its lines as thin */
+      .figure .face * {
+        vector-effect: non-scaling-stroke;
+      }
+      /* Letters in lines, like the rest: the text of content, a font */
+      .figure .letters {
+        fill: none;
+        stroke: var(--gss-bone);
+        stroke-width: 1;
+        font: 800 24px var(--gss-font-display);
+      }
+      .figure .letters.large {
+        font-size: 56px;
+      }
+      /* What goes around, at a constant speed: the ray of a conic gradient */
+      .figure .turns {
+        animation: figure-turn 6s linear infinite;
+      }
+      @keyframes figure-turn {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      /* displace(): an image, plus a map, gives the image moved */
+      .figure-flow.sums li:nth-child(2)::before {
+        content: "+";
+      }
+      .figure-flow.sums li:nth-child(3)::before {
+        content: "=";
+      }
+      /* Materials: the blob inside a jelly, the light of an emissive, the sheen of an
+         iridescent */
+      .figure .wobbles {
+        transform-box: fill-box;
+        transform-origin: center;
+        animation: figure-wobble 2.6s ease-in-out infinite alternate;
+      }
+      @keyframes figure-wobble {
+        from {
+          transform: scale(1.08, 0.92);
+        }
+        to {
+          transform: scale(0.92, 1.08);
+        }
+      }
+      .figure .glows {
+        animation: figure-glow 1.8s ease-in-out infinite alternate;
+      }
+      @keyframes figure-glow {
+        from {
+          opacity: 0.25;
+        }
+      }
+      .figure .sheen {
+        animation: figure-sheen 4s linear infinite;
+      }
+      .figure .sheen.two {
+        animation-delay: -2s;
+      }
+      @keyframes figure-sheen {
+        0%,
+        100% {
+          stroke: #6fe0cf;
+        }
+        33% {
+          stroke: #d29bff;
+        }
+        66% {
+          stroke: #ffb86b;
+        }
+      }
+      /* The colors: a chip is filled with the color its page writes */
+      .figure .chip {
+        fill: var(--c);
+        stroke: none;
+      }
+      .figure .ink {
+        fill: var(--c);
+        font: 700 24px var(--gss-font-display);
+      }
+      .figure .stained path {
+        stroke: var(--c);
+      }
+      /* An object that goes through three colors, with the declarations under it */
+      .figure .hued {
+        color: #ff5a36;
+        animation: figure-hues 7.2s infinite;
+      }
+      .figure .hued path,
+      .figure .hued circle {
+        stroke: currentColor;
+        transition: none;
+      }
+      .figure .hued .shell {
+        opacity: 0.45;
+      }
+      @keyframes figure-hues {
+        0%,
+        30% {
+          color: #ff5a36;
+        }
+        33.33%,
+        63% {
+          color: rgb(79 140 255);
+        }
+        66.66%,
+        96% {
+          color: mediumseagreen;
+        }
+      }
+      /* The channels of a color slide to those of another, and the chip follows */
+      .figure .shifts {
+        animation: figure-shift var(--beat, 1.8s) ease-in-out infinite alternate;
+      }
+      @keyframes figure-shift {
+        to {
+          transform: translateX(var(--dx));
+        }
+      }
+      .figure .chip.blends {
+        fill: var(--a);
+        animation: figure-blend var(--beat, 1.8s) ease-in-out infinite alternate;
+      }
+      @keyframes figure-blend {
+        to {
+          fill: var(--b);
+        }
+      }
+      /* The chip in the middle of the wheel takes the hue the hand points at */
+      .figure .chip.wheels {
+        animation: figure-wheel 6s linear infinite;
+      }
+      @keyframes figure-wheel {
+        0%,
+        100% {
+          fill: hsl(0 100% 60%);
+        }
+        16.66% {
+          fill: hsl(60 100% 60%);
+        }
+        33.33% {
+          fill: hsl(120 100% 60%);
+        }
+        50% {
+          fill: hsl(180 100% 60%);
+        }
+        66.66% {
+          fill: hsl(240 100% 60%);
+        }
+        83.33% {
+          fill: hsl(300 100% 60%);
+        }
+      }
+      .figure .turns.back {
+        animation-direction: reverse;
+      }
+      /* Two states of a scene, one after the other: what the second declaration adds comes
+         in, what it takes away goes out */
+      .figure .fades {
+        animation: figure-fade var(--beat, 1.8s) ease-in-out infinite alternate;
+      }
+      .figure .fades.reverse {
+        animation-direction: alternate-reverse;
+      }
+      @keyframes figure-fade {
+        from {
+          opacity: 0;
+        }
+      }
+      .figure .dims {
+        animation: figure-dim 1.8s ease-in-out infinite alternate;
+      }
+      @keyframes figure-dim {
+        to {
+          opacity: 0.2;
+        }
+      }
+      .figure .mists {
+        animation: figure-mist 1.8s ease-in-out infinite alternate;
+      }
+      @keyframes figure-mist {
+        to {
+          opacity: var(--to);
+        }
+      }
+      .figure .faint {
+        opacity: 0.45;
+      }
+      /* The rays of the sun: dashes that run the way the light goes */
+      .figure .flows {
+        stroke-dasharray: 5 5;
+        animation: figure-flow 1s linear infinite;
+      }
+      @keyframes figure-flow {
+        to {
+          stroke-dashoffset: -10;
+        }
+      }
+      .figure .pulses {
+        animation: figure-pulse 1.8s ease-in-out infinite alternate;
+      }
+      @keyframes figure-pulse {
+        from {
+          transform: scale(0.7);
+        }
+        to {
+          transform: scale(1.25);
+        }
+      }
+      /* The lines of a distance, one after the other, away from the objects */
+      .figure .ripples {
+        animation: figure-ripple 2.4s ease-in-out infinite;
+        animation-delay: calc(var(--i) * 300ms);
+      }
+      @keyframes figure-ripple {
+        50% {
+          opacity: 0.25;
+        }
+      }
+      .figure .flickers {
+        animation: figure-flicker 0.5s steps(2) infinite;
+      }
+      @keyframes figure-flicker {
+        50% {
+          transform: translate(3px, -2px);
+        }
+      }
+      /* cursor: the pointer comes over the object, becomes a hand, and leaves */
+      .figure .points {
+        animation: figure-point 4s ease-in-out infinite;
+      }
+      .figure .points .hand {
+        opacity: 0;
+        animation: figure-hand 4s steps(1) infinite;
+      }
+      .figure .points .arrow {
+        animation: figure-arrow 4s steps(1) infinite;
+      }
+      @keyframes figure-point {
+        0%,
+        100% {
+          transform: translate(130px, 50px);
+        }
+        30%,
+        70% {
+          transform: translate(0, 0);
+        }
+      }
+      @keyframes figure-hand {
+        22%,
+        78% {
+          opacity: 1;
+        }
+        0%,
+        79% {
+          opacity: 0;
+        }
+      }
+      @keyframes figure-arrow {
+        22% {
+          opacity: 0;
+        }
+        79% {
+          opacity: 1;
+        }
+      }
+      /* A variable set by the page: the knob slides, the ball rises with it */
+      .figure .rises {
+        animation: figure-float 1.8s ease-in-out infinite alternate;
+      }
+      .figure .grows.soft {
+        animation-name: figure-grow-soft;
+      }
+      @keyframes figure-grow-soft {
+        from {
+          transform: scale(0.8);
+        }
+        to {
+          transform: scale(1.15);
+        }
+      }
+      /* Code written in a figure: as lines in the colors of the editor, or as words */
+      .figure .syntax {
+        stroke-width: 2;
+      }
+      .figure .syntax.selector {
+        stroke: var(--gss-selector, #7cb4ff);
+      }
+      .figure .syntax.property {
+        stroke: var(--gss-property, #6fe0cf);
+      }
+      .figure .syntax.value {
+        stroke: var(--gss-number, #ffb86b);
+      }
+      .figure text.code {
+        text-anchor: start;
+        font: 12px var(--gss-font-code);
+        fill: var(--gss-dim);
+      }
+      .figure text.code.lit {
+        fill: var(--gss-signal);
+      }
+      .figure text.code.struck {
+        text-decoration: line-through;
+      }
+      /* The names written beside a line: of a curve, of a lane */
+      .figure .plot-label {
+        text-anchor: start;
+        fill: var(--gss-dim);
+      }
+      .figure .lane-label {
+        text-anchor: end;
+        fill: var(--gss-dim);
+      }
+      .figure .lane-label.middle {
+        text-anchor: middle;
+      }
+      .figure text.lit {
+        fill: var(--gss-signal);
+      }
+      /* A point that runs along a curve, one way, and starts again */
+      .figure .travels.rides {
+        offset-rotate: 0deg;
+        animation: figure-travel 4s linear infinite;
+      }
+      .figure .travels.slow {
+        animation: figure-travel 5s linear infinite;
+      }
+      .figure .placed {
+        offset-rotate: auto;
+      }
+      .figure .travels.fixed,
+      .figure .placed.fixed {
+        offset-rotate: 0deg;
+      }
+      /* calc(): the angle it gives, from one copy to the next */
+      .figure .sweeps {
+        animation: figure-sweep 5s steps(5) infinite;
+      }
+      @keyframes figure-sweep {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      /* The longhands of animation: a point per lane, moved by the value of its lane */
+      .figure .lane {
+        animation: figure-lane 2s linear infinite;
+      }
+      @keyframes figure-lane {
+        to {
+          transform: translateX(var(--run));
+        }
+      }
+      .figure .lane.once {
+        animation: figure-lane-once 6s linear infinite;
+      }
+      .figure .lane.twice {
+        animation: figure-lane-twice 6s linear infinite;
+      }
+      @keyframes figure-lane-once {
+        25% {
+          transform: translateX(var(--run));
+        }
+        25.01%,
+        100% {
+          transform: translateX(0);
+        }
+      }
+      @keyframes figure-lane-twice {
+        25%,
+        50% {
+          transform: translateX(var(--run));
+        }
+        25.01% {
+          transform: translateX(0);
+        }
+        50.01%,
+        100% {
+          transform: translateX(0);
+        }
+      }
+      /* animation-fill-mode: a wait, the animation, then the rest. The object is at its own
+         place, left of the lane, or held on the first and the last frame. */
+      .figure .lane[class*="fill-"] {
+        animation-duration: 6s;
+      }
+      .figure .lane.fill-none {
+        animation-name: figure-fill-none;
+      }
+      .figure .lane.fill-forwards {
+        animation-name: figure-fill-forwards;
+      }
+      .figure .lane.fill-backwards {
+        animation-name: figure-fill-backwards;
+      }
+      .figure .lane.fill-both {
+        animation-name: figure-fill-both;
+      }
+      @keyframes figure-fill-none {
+        0%,
+        20%,
+        60.01%,
+        100% {
+          transform: translateX(var(--own));
+        }
+        20.01% {
+          transform: translateX(0);
+        }
+        60% {
+          transform: translateX(var(--run));
+        }
+      }
+      @keyframes figure-fill-forwards {
+        0%,
+        20% {
+          transform: translateX(var(--own));
+        }
+        20.01% {
+          transform: translateX(0);
+        }
+        60%,
+        100% {
+          transform: translateX(var(--run));
+        }
+      }
+      @keyframes figure-fill-backwards {
+        0%,
+        20% {
+          transform: translateX(0);
+        }
+        60% {
+          transform: translateX(var(--run));
+        }
+        60.01%,
+        100% {
+          transform: translateX(var(--own));
+        }
+      }
+      @keyframes figure-fill-both {
+        0%,
+        20% {
+          transform: translateX(0);
+        }
+        60%,
+        100% {
+          transform: translateX(var(--run));
+        }
+      }
+      /* A window in a figure: what is inside is cut at its edges */
+      .figure svg.window {
+        overflow: hidden;
+      }
+      /* animation-timeline: the page, its thumb and the animation go together */
+      .figure .scrolls-x {
+        animation: figure-run 3.2s ease-in-out infinite alternate;
+      }
+      .figure .scrolls-y {
+        animation: figure-run-y 3.2s ease-in-out infinite alternate;
+      }
+      @keyframes figure-run-y {
+        to {
+          transform: translateY(var(--run));
+        }
+      }
+      /* animation-range: the scene crosses the window; the point is in signal on the part of
+         the way the animation plays on */
+      .figure .crosses {
+        animation: figure-cross 6s linear infinite;
+      }
+      @keyframes figure-cross {
+        to {
+          transform: translateY(-130px);
+        }
+      }
+      .figure .ranges {
+        animation: figure-run-y 6s linear infinite;
+      }
+      .figure .ranges .dot {
+        fill: var(--gss-dim);
+        animation: 6s steps(1) infinite;
+      }
+      .figure .range-entry .dot {
+        animation-name: figure-range-entry;
+      }
+      .figure .range-from-contain .dot {
+        animation-name: figure-range-from-contain;
+      }
+      .figure .range-to-contain .dot {
+        animation-name: figure-range-to-contain;
+      }
+      @keyframes figure-range-entry {
+        0% {
+          fill: var(--gss-signal);
+        }
+        31% {
+          fill: var(--gss-dim);
+        }
+      }
+      @keyframes figure-range-from-contain {
+        31% {
+          fill: var(--gss-signal);
+        }
+      }
+      @keyframes figure-range-to-contain {
+        0% {
+          fill: var(--gss-signal);
+        }
+        69% {
+          fill: var(--gss-dim);
+        }
+      }
       /* A drawing on its stage, and under it the code it plays: a declaration is in signal
          while the drawing plays it */
       .figure figcaption {

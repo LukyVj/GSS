@@ -257,7 +257,8 @@ describe("the figure of a page", () => {
   });
 
   it("is on no page that does not ask for one", () => {
-    expect(renderSelector(SELECTORS.find((selector) => selector.anchor === "selector-universal")!)).not.toContain("<figure");
+    const universal = SELECTORS.find((selector) => selector.anchor === "selector-universal")!;
+    expect(renderSelector({ ...universal, figure: undefined })).not.toContain("<figure");
   });
 });
 

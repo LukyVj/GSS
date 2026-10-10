@@ -1497,3 +1497,21 @@ The compiler of the package grew past its budget: `mount` goes from 97,000 to 98
 - **`prefers-reduced-motion`**: no animation, no turning. Every figure is complete at rest.
 **Why**: GSS draws things that move in space, and a still picture of a torus says less than one the reader can turn. Motion that repeats the code under it (the same duration, the same easing) teaches the property while it decorates the page.
 **Accepted limits**: the script of the docs goes from 3.5 to 8.4 KB gzipped, for the renderer. The page grows by about 56 KB of SVG (1.22 MB, 133 KB gzipped). The cube of a rotation turns for as long as it is on screen, about 1 ms a frame. A figure is drawn at its natural size or smaller, never larger: the lines that draw themselves count on it. A touch screen has no hover: a shape turns while a finger moves over it. The measures of a shape show its look in the figure, not its default sizes.
+
+## 182. A figure on every page of the docs
+
+**Decision** (Lucas, Oct. 10, once the first 33 figures moved: "C'est bien, j'aimerais une illustration dans chaque page de la doc"): each of the 154 pages has a figure, the 146 of the registry and the 8 guides. A test refuses a page without one.
+- **Families, not 154 drawings.** A page asks for a family by its name, and the family draws what that page is about. The registry names 30 figures; nine of them serve 130 pages:
+  - `row` (21 pages): a scene as a row of objects, in the order of its `@scene`, a group as a dashed box around its own. The selectors and combinators light the objects they target; `sibling-index()`, `random()`, `display`, `visibility` use the same row.
+  - `measure` (6): each shape that takes a size property, with the line the property sets.
+  - `plot` (6): a math function as a curve, with a point that runs along it.
+  - `lanes` (5), `range` (3): the longhands of `animation`, one point per value, moved by the very value of its lane; the scene crossing the window, and the part of the way the animation plays on.
+  - `tile` (18): what covers a surface, flat, then on the faces of a cube: an image, a text and its font, a gradient, a noise, a checkerboard, a mask, a material.
+  - `color` (11): the only figures with colors of their own. Each chip is filled with the color its page writes (`oklch()`, `color-mix()`, `hwb()`…), so the browser shows what the function gives.
+  - `scene` (28): the light, the floor, the fog, the camera around its target, the pixels of the render, an outline, and what joins two objects.
+  - `flow` (15): from a file to the page, from a variable to an object, from a mixin to the rules that apply it; the guides.
+- **Distances, drawn as GSS computes them.** `operation`, `blend`, `view: distance` and `noise()` are the contour lines of a function of the plane (`isolines`, in `figure-kit.ts`): a union is the smaller of two distances, a blend is its smooth version.
+- **In a guide page**, the figure comes under the example, or under the first paragraph when the page has none.
+- **The search does not read the figures**: a drawing and the code it plays, like an example.
+**Why**: a reader who opens any page sees first what the page is about. Families keep 154 figures in one hand: one view, one line weight, the same motion for the same idea (a declaration lit while the figure plays it, two states that take turns), and a new page of a family costs one line of data.
+**Accepted limits**: the page of the docs goes from 1.16 to 1.54 MB (about 125 to 195 KB gzipped): every figure is in the page, drawn when the site is built. Some properties show through a sign more than through themselves: a `filter` on lines, a material as a few strokes, a color function as chips. The figures are drawn for the dark page of the docs. Not looked at in Safari, in Firefox or on a touch screen.

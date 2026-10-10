@@ -30,6 +30,7 @@ const table = (rows: [string, string][]) =>
 export const GETTING_STARTED: GuideEntry[] = [
   {
     anchor: "why-gss",
+    figure: "flow",
     label: "Why GSS",
     since: "0.0.1",
     paragraphs: [
@@ -66,6 +67,7 @@ const REPOSITORY_URL = "https://github.com/LukyVj/GSS";
 export const INSTALLATION: GuideEntry[] = [
   {
     anchor: "embedding",
+    figure: "flow",
     label: "Embedding a scene",
     since: "0.0.1",
     paragraphs: [
@@ -100,6 +102,7 @@ export const INSTALLATION: GuideEntry[] = [
 INSTALLATION.push(
   {
     anchor: "install-package",
+    figure: "flow",
     label: "Package (npm)",
     since: "0.0.2",
     paragraphs: [
@@ -112,6 +115,7 @@ INSTALLATION.push(
   },
   {
     anchor: "install-vite",
+    figure: "flow",
     label: "Vite plugin",
     since: "0.0.2",
     paragraphs: [
@@ -123,6 +127,7 @@ INSTALLATION.push(
   },
   {
     anchor: "install-cdn",
+    figure: "flow",
     label: "CDN (no build step)",
     since: "0.0.2",
     paragraphs: [
@@ -184,6 +189,7 @@ other.setProperty("--lift", 2);`;
 
 INSTALLATION.push({
   anchor: "set-variables",
+  figure: "flow",
   label: "Set variables from JavaScript",
   since: "0.0.4",
   paragraphs: [
@@ -250,6 +256,7 @@ const EDITOR_POCKET =
 
 INSTALLATION.push({
   anchor: "editor-support",
+  figure: "flow",
   label: "Editor support",
   since: "0.0.6", // the tag v0.0.5 was set after this page; the changelog has it in 0.0.6
   paragraphs: [

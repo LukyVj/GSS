@@ -311,11 +311,13 @@ function renderGuideEntry(entry: GuideEntry): string {
     list
       .map((text) => (/^<(pre|div|h4|p)\b/.test(text) ? chapter(text) : `<p>${text}</p>`))
       .join("\n      ");
+  // The figure of a guide page: under its example when it has one, under its lead otherwise
+  const figure = renderFigure(entry.figure, entry.anchor);
   return `
     <article class="guide" id="${escapeHtml(entry.anchor)}">
       <h3${dated(entry.since)}>${escapeHtml(entry.label)}</h3>
-      ${paragraphs(entry.paragraphs)}
-      ${entry.example ? renderExamples(entry.anchor, [{ code: entry.example }]) : ""}${renderFigure(entry.figure, entry.anchor)}
+      ${entry.example ? paragraphs(entry.paragraphs) : `${paragraphs(entry.paragraphs.slice(0, 1))}${figure}\n      ${paragraphs(entry.paragraphs.slice(1))}`}
+      ${entry.example ? renderExamples(entry.anchor, [{ code: entry.example }]) + figure : ""}
       ${paragraphs(entry.after)}
     </article>`;
 }

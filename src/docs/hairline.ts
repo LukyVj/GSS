@@ -429,8 +429,10 @@ const AXES: Record<Axis, Vec3> = { x: [1, 0, 0], y: [0, 1, 0], z: [0, 0, 1] };
 export const AXIS_REACH = 1.15;
 
 // A cube turned around an axis, and the axis: dashed where it goes through the cube
-export function spinDrawing(axis: Axis, degrees: number, frame: Frame, view: View = REST_VIEW): { cube: Drawing; axis: Drawing } {
-  const cube = spun(box(0.42, 0.42, 0.42), axis, degrees);
+// The cube can be moved first: its axis then goes through another point of it, like the
+// origin transform-origin sets
+export function spinDrawing(axis: Axis, degrees: number, frame: Frame, view: View = REST_VIEW, from: Vec3 = [0, 0, 0]): { cube: Drawing; axis: Drawing } {
+  const cube = spun(moved(box(0.42, 0.42, 0.42), from), axis, degrees);
   const [x, y, z] = AXES[axis].map((n) => n * AXIS_REACH);
   const line: Line = { points: [[-x, -y, -z], [x, y, z]] };
   return { cube: draw(cube, frame, view), axis: draw({ lines: [line], mesh: cube.mesh }, frame, view) };
@@ -449,6 +451,19 @@ export function floor(half: number, step: number): Solid {
   }
   const [a, b, c, d]: Vec3[] = [[-half, 0, -half], [half, 0, -half], [half, 0, half], [-half, 0, half]];
   return { lines, mesh: [[a, b, c], [a, c, d]] };
+}
+
+// A cylinder cut into slices, with a gap between two of them: an object a mask cuts holes in
+export function slices(view: View, count: number): Solid {
+  const [outer, inner, total] = [0.44, 0.36, 1.2];
+  const height = total / (count * 2 - 1);
+  return together(
+    ...Array.from({ length: count }, (_, i) => {
+      const top = total / 2 - i * height * 2;
+      const bottom = top - height;
+      return revolution(view, [straight(inner, top, outer, top), straight(outer, top, outer, bottom), straight(outer, bottom, inner, bottom), straight(inner, bottom, inner, top)]);
+    }),
+  );
 }
 
 // --- a shape with its measures, for its page and for the script that turns it
@@ -483,6 +498,8 @@ const MARKS: Partial<Record<ShapeDef["name"], Mark[]>> = {
   ],
   plane: [{ from: [-0.62, 0, 0.62], to: [0.62, 0, 0.62], label: "size" }],
   prism: [{ from: [0, 0.62, 0.14], to: [0, 0.62, -0.14], label: "depth" }],
+  // across the tube, where the line starts
+  path: [{ from: [-0.536, -0.055, 0], to: [-0.704, 0.055, 0], label: "stroke-width" }],
 };
 
 export type Measure = { label: string; d: string; x: number; y: number };
@@ -508,7 +525,10 @@ export function measure({ from, to, label }: Mark, frame: Frame, view: View = RE
 
 export type ShapeDrawing = Drawing & { marks: Measure[] };
 
-export function shapeDrawing(name: ShapeDef["name"], frame: Frame, view: View = REST_VIEW, measured = false): ShapeDrawing {
-  const marks = (measured ? (MARKS[name] ?? []) : []).map((mark) => measure(mark, frame, view));
+// With every measure of the shape, or only the one of a property
+export function shapeDrawing(name: ShapeDef["name"], frame: Frame, view: View = REST_VIEW, measured: boolean | string = false): ShapeDrawing {
+  const marks = (measured ? (MARKS[name] ?? []) : [])
+    .filter((mark) => measured === true || mark.label === measured)
+    .map((mark) => measure(mark, frame, view));
   return { ...draw(SHAPES[name](view), frame, view), marks };
 }
