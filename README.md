@@ -116,7 +116,18 @@ WebGPU and TypeScript: see the [installation guide](https://www.gss-lang.dev/doc
 
 0.0.6, early: the syntax may still change. See the [changelog](https://github.com/LukyVj/GSS/blob/main/CHANGELOG.md).
 
+## Contribute
+
 Bugs and ideas: [issues](https://github.com/LukyVj/GSS/issues) or [@GSS_lang](https://x.com/GSS_lang).
+Pull requests are welcome.
+
+```sh
+npm install
+npm run dev   # the site, the playground and the reference
+npm test
+```
+
+Before a pull request, read the [contributing guide](https://github.com/LukyVj/GSS/blob/main/CONTRIBUTING.md): where things live, and which branch to start from.
 
 ## License
 
