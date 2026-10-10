@@ -244,6 +244,18 @@ describe("the figure of a page", () => {
     expect(html.indexOf(order[1])).toBeGreaterThan(0);
   });
 
+  it("is the shape itself on the page of a shape", () => {
+    const torus = SHAPE_DOCS.find((shape) => shape.name === "torus")!;
+    expect(renderShape(torus, PROPERTIES)).toContain('data-turn="torus"');
+  });
+
+  it("comes under the example of a guide page", () => {
+    const html = renderDocs(PROPERTIES, AT_RULES, SELECTORS, SHAPE_DOCS, FUNCTIONS);
+    const page = html.slice(html.indexOf('id="first-scene"'), html.indexOf('id="embedding"'));
+    expect(page.indexOf('class="example"')).toBeGreaterThan(0);
+    expect(page.indexOf('<figure class="figure"')).toBeGreaterThan(page.indexOf('class="example"'));
+  });
+
   it("is on no page that does not ask for one", () => {
     expect(renderSelector(SELECTORS.find((selector) => selector.anchor === "selector-universal")!)).not.toContain("<figure");
   });

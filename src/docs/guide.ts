@@ -2,6 +2,7 @@ import { VERSION, CDN_URL } from "../version";
 import { EMBED_SNIPPETS } from "../embed/snippets";
 import { escapeHtml } from "./escape";
 import { highlightCode } from "./highlight-code";
+import type { Figure } from "../compiler/registry/registry";
 
 // The "Getting started" section of the docs: written by hand, unlike the reference,
 // which is generated from the registry. The paragraphs are trusted HTML.
@@ -11,6 +12,7 @@ export type GuideEntry = {
   label: string;
   paragraphs: string[];
   example?: string; // shown with a "Try it" button, like the reference examples
+  figure?: Figure; // a drawing under the example (decision 180)
   after?: string[]; // paragraphs under the example
   since: string; // the version that added the page, like the entries of the registry
 };
@@ -51,6 +53,7 @@ export const GETTING_STARTED: GuideEntry[] = [
       "A glass ball that floats above the floor. Press <em>Try it</em> to edit it live.",
     ],
     example: FIRST_SCENE,
+    figure: "first-scene",
     after: [
       "<code>@scene</code> lists the shapes. A rule styles them, like CSS: <code>#ball</code> lifts the sphere, colors it and turns it into glass. <code>@keyframes</code> makes it float.",
       'Next, put the scene on a page with <a href="#embedding">Embedding a scene</a>, or read the reference: each page describes one at-rule, selector, property or function, with examples to try.',

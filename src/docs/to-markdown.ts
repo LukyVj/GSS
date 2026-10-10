@@ -80,11 +80,14 @@ function blockToMarkdown(el: HTMLElement): string {
       .filter(Boolean)
       .join("\n\n");
   }
-  // A figure, in words: its label, then the names it draws
+  // A figure, in words: its label, then the names written in it (under each drawing, or on
+  // the measures of a single one). A drawing without a word says nothing here.
   if (tag === "figure") {
-    const names = [...el.querySelectorAll("li")].map((item) => `\`${(item.textContent ?? "").trim()}\``);
+    const captions = [...el.querySelectorAll("li > code, li > a > code")];
+    const written = captions.length ? captions : [...el.querySelectorAll("text")];
+    const names = written.map((name) => `\`${(name.textContent ?? "").trim()}\``);
     const label = el.getAttribute("aria-label") ?? "";
-    return [label && `**${label}:**`, names.join(", ")].filter(Boolean).join(" ");
+    return names.length ? [label && `**${label}:**`, names.join(", ")].filter(Boolean).join(" ") : "";
   }
   if (tag === "dl") return definitionList(el);
   if (tag === "pre") return fencedCode(el);

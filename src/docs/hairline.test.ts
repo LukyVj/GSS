@@ -1,9 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { SHAPES, draw } from "./hairline";
+import { SHAPES, REST_VIEW, draw, shapeDrawing, viewAt, type Frame } from "./hairline";
 import { SHAPE_DOCS } from "../compiler/registry/registry";
 
 // A drawing in a box of 120, where one unit of the scene is 62
-const drawing = (name: keyof typeof SHAPES) => draw(SHAPES[name](), 120, 62);
+const FRAME: Frame = { width: 120, height: 120, scale: 62, x: 60, y: 60 };
+const drawing = (name: keyof typeof SHAPES) => draw(SHAPES[name](REST_VIEW), FRAME);
 const lines = (path: string) => (path.match(/M/g) ?? []).length;
 const points = (path: string) => [...path.matchAll(/(-?[\d.]+) (-?[\d.]+)/g)].map(([, x, y]) => [+x, +y]);
 
@@ -42,7 +43,8 @@ describe("the line drawings of the shapes", () => {
 
   it("stay inside their box, and give the same drawing each time", () => {
     for (const name of Object.keys(SHAPES) as (keyof typeof SHAPES)[]) {
-      const { visible, hidden, guide, guideHidden } = drawing(name);
+      const { visible, hidden, guide, guideHidden, ground } = drawing(name);
+      expect(ground, name).toBe("");
       for (const [x, y] of points(visible + hidden + guide + guideHidden)) {
         expect(x, name).toBeGreaterThanOrEqual(0);
         expect(x, name).toBeLessThanOrEqual(120);
@@ -50,7 +52,32 @@ describe("the line drawings of the shapes", () => {
         expect(y, name).toBeLessThanOrEqual(120);
       }
       expect(visible, name).not.toBe("");
-      expect(drawing(name), name).toEqual({ visible, hidden, guide, guideHidden });
+      expect(drawing(name), name).toEqual({ visible, hidden, guide, guideHidden, ground });
     }
+  });
+
+  // The page script turns a shape under the pointer: the same shape, from another side
+  it("draw a shape from any side: a cube seen from its corner, above, shows nine edges again", () => {
+    const turned = draw(SHAPES.cube(viewAt(20, 40)), FRAME, viewAt(20, 40));
+    expect(turned.visible).not.toBe(drawing("cube").visible);
+    expect(lines(turned.visible)).toBe(9);
+    expect(lines(turned.hidden)).toBe(3);
+  });
+
+  it("keep the outline of a round shape closed from any side", () => {
+    for (const elevation of [8, 28, 55]) {
+      const view = viewAt(-70, elevation);
+      const { visible } = draw(SHAPES.sphere(view), FRAME, view);
+      const tops = points(visible).map(([, y]) => y);
+      expect(Math.min(...tops), `${elevation}`).toBeCloseTo(60 - 0.6 * 62, 0);
+    }
+  });
+
+  it("measure a shape by the properties that set it, each with a line and a place for its name", () => {
+    const { marks } = shapeDrawing("cylinder", FRAME, REST_VIEW, true);
+    expect(marks.map((mark) => mark.label)).toEqual(["radius", "height"]);
+    for (const mark of marks) expect(lines(mark.d)).toBe(3); // the line and a tick at each end
+    expect(shapeDrawing("cylinder", FRAME).marks).toEqual([]);
+    expect(shapeDrawing("lathe", FRAME, REST_VIEW, true).marks).toEqual([]);
   });
 });

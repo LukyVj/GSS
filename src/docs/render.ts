@@ -209,7 +209,7 @@ export function renderShape(
   return `
     <article class="property" id="shape-${escapeHtml(shape.name)}">
       ${renderTitle(`shape-${shape.name}`, shape.name, shape.since)}
-      <p>${prose(shape.description)}</p>${renderFigure(shape.figure)}
+      <p>${prose(shape.description)}</p>${renderFigure(shape.figure, shape.name)}
       <dl>
         ${propertyList}
       </dl>${renderValues(`shape-${shape.name}`, shape)}
@@ -315,7 +315,7 @@ function renderGuideEntry(entry: GuideEntry): string {
     <article class="guide" id="${escapeHtml(entry.anchor)}">
       <h3${dated(entry.since)}>${escapeHtml(entry.label)}</h3>
       ${paragraphs(entry.paragraphs)}
-      ${entry.example ? renderExamples(entry.anchor, [{ code: entry.example }]) : ""}
+      ${entry.example ? renderExamples(entry.anchor, [{ code: entry.example }]) : ""}${renderFigure(entry.figure)}
       ${paragraphs(entry.after)}
     </article>`;
 }

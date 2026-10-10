@@ -31,7 +31,8 @@ A page of the reference reads: `description` (a lead of three sentences at most)
 of the entry, then `values` (one row per keyword or function), `details` (one paragraph, 40 words at most: what a reader must know), `more` (the limits and the special cases, folded under it), and the
 examples, each with a `name` and a one-sentence `text` (decision 121). Code goes between backticks.
 A page can ask for a figure, `figure: "shapes"`: a drawing under its lead, declared in
-`src/docs/figures.ts` and drawn in lines by `src/docs/hairline.ts` (decision 180).
+`src/docs/figures.ts` and drawn in lines by `src/docs/hairline.ts` (decision 180). What moves is
+CSS in `docs.html`, and `src/docs/figure-motion.ts` for the shapes that turn (decision 181).
 
 ## Branches
 

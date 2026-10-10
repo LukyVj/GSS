@@ -561,70 +561,197 @@
       }
       .figure svg {
         display: block;
+        max-width: 100%;
+        height: auto;
         overflow: visible;
         fill: none;
       }
-      .figure path {
+      .figure path,
+      .figure circle,
+      .figure rect {
         stroke: var(--gss-bone);
         stroke-width: 1;
         stroke-linecap: round;
         stroke-linejoin: round;
-        vector-effect: non-scaling-stroke;
         transition: stroke var(--gss-transition);
       }
-      .figure path.guide,
-      .figure path.hidden {
+      .figure .guide,
+      .figure .hidden,
+      .figure .ground,
+      .figure .ghost,
+      .figure .tile {
         stroke: var(--gss-dim);
       }
-      .figure path.hidden {
+      .figure .hidden,
+      .figure .ghost {
         stroke-dasharray: 1.5 3;
         opacity: 0.75;
       }
-      /* Everything a scene can declare: one cell per name, a link to its page */
-      .figure-shapes {
+      .figure .ground {
+        opacity: 0.4;
+      }
+      /* In signal: a measure and the property that sets it, an object once it has a color */
+      .figure .mark,
+      .figure .tint,
+      .figure .glint,
+      .figure .tinted path {
+        stroke: var(--gss-signal);
+      }
+      .figure .tinted .ground {
+        stroke: var(--gss-dim);
+      }
+      .figure .mark-label {
+        fill: var(--gss-ash);
+        font: 10px var(--gss-font-code);
+        text-anchor: middle;
+        dominant-baseline: middle;
+      }
+      /* Cells: one drawing and its name, side by side. The shapes, the steps of a scene. */
+      .figure-cells {
         display: grid;
-        grid-template-columns: repeat(5, 1fr);
+        grid-template-columns: repeat(var(--columns, 5), 1fr);
         margin: 0;
         padding: 0;
         list-style: none;
         border-top: 1px solid var(--gss-line);
         border-left: 1px solid var(--gss-line);
       }
-      .figure-shapes li {
+      .figure-cells li {
+        position: relative;
         border-right: 1px solid var(--gss-line);
         border-bottom: 1px solid var(--gss-line);
       }
+      .figure-cells li,
       .figure-shapes a {
         display: grid;
+        align-content: start;
         justify-items: center;
-        gap: 4px;
+        gap: 6px;
+      }
+      .figure-steps li,
+      .figure-flow li,
+      .figure-shapes a {
         padding: 16px 8px 14px;
+      }
+      .figure-cells code {
+        font: 11px/1.4 var(--gss-font-code);
+        color: var(--gss-dim);
+        text-align: center;
+        overflow-wrap: anywhere;
+      }
+      .figure-flow {
+        --columns: 3;
+      }
+      /* From one cell to the next: an arrow on the line between them */
+      .figure-flow li + li::before {
+        content: "→";
+        position: absolute;
+        top: 50%;
+        left: 0;
+        padding: 2px 0;
+        transform: translate(-50%, -50%);
+        font: 12px var(--gss-font-code);
+        color: var(--gss-dim);
+        background: var(--gss-void);
+      }
+      /* Everything a scene can declare: each cell is a link to its page */
+      .figure-shapes a {
         color: var(--gss-dim);
         text-decoration: none;
-        transition: color var(--gss-transition), background var(--gss-transition);
-      }
-      .figure-shapes svg {
-        width: min(100%, 104px);
-        height: auto;
-        aspect-ratio: 1;
-      }
-      .figure-shapes code {
-        font: 12px var(--gss-font-code);
-        color: inherit;
+        transition: background var(--gss-transition);
       }
       .figure-shapes a:hover,
       .figure-shapes a:focus-visible {
-        color: var(--gss-bone);
         background: var(--gss-surface);
         outline: none;
       }
-      .figure-shapes a:hover path:not(.hidden, .guide),
-      .figure-shapes a:focus-visible path:not(.hidden, .guide) {
+      .figure-shapes a:hover code,
+      .figure-shapes a:focus-visible code {
+        color: var(--gss-bone);
+      }
+      .figure-shapes a:hover path.line,
+      .figure-shapes a:focus-visible path.line {
         stroke: var(--gss-signal);
       }
+      /* The shape of a page, alone on its stage: it turns under the pointer */
+      .figure-stage {
+        display: grid;
+        place-items: center;
+        padding: 12px;
+        border: 1px solid var(--gss-line);
+      }
       @media (max-width: 640px) {
-        .figure-shapes {
-          grid-template-columns: repeat(3, 1fr);
+        .figure-cells {
+          --columns: 3;
+        }
+      }
+      /* Motion (the shapes also turn, by the page script). The lines in front draw
+         themselves when the page opens, one cell after the other; the rest fades in. */
+      .figure path.line {
+        stroke-dasharray: 1;
+        animation: figure-draw 900ms cubic-bezier(0.4, 0, 0.2, 1) both;
+        animation-delay: calc(var(--i, 0) * 60ms);
+      }
+      .figure :is(.hidden, .guide, .ground, .ghost, .mark, .mark-label, .tint, .glint, .tile, .rings, .caret) {
+        animation: figure-appear 500ms ease-out both;
+        animation-delay: calc(var(--i, 0) * 60ms + 450ms);
+      }
+      @keyframes figure-draw {
+        from {
+          stroke-dashoffset: 1;
+        }
+      }
+      @keyframes figure-appear {
+        from {
+          opacity: 0;
+        }
+      }
+      /* The ball of the first scene floats as its animation says: 2s, ease-in-out, alternate */
+      .figure .floats {
+        animation: figure-float 2s ease-in-out infinite alternate;
+      }
+      @keyframes figure-float {
+        to {
+          transform: translateY(var(--rise));
+        }
+      }
+      /* The texture of @paint: rings that grow from its middle, one after the other */
+      .figure .rings circle {
+        stroke: var(--gss-signal);
+        vector-effect: non-scaling-stroke;
+        transform-box: fill-box;
+        transform-origin: center;
+        transform: scale(calc((var(--i) + 1) / 4));
+        animation: figure-ring 3.2s linear infinite;
+        animation-delay: calc(var(--i) * -0.8s);
+      }
+      @keyframes figure-ring {
+        from {
+          transform: scale(0.02);
+          opacity: 1;
+        }
+        70% {
+          opacity: 1;
+        }
+        to {
+          transform: scale(1);
+          opacity: 0;
+        }
+      }
+      .figure .caret {
+        fill: var(--gss-signal);
+        stroke: none;
+        animation: figure-blink 1.1s steps(1) infinite;
+      }
+      @keyframes figure-blink {
+        50% {
+          opacity: 0;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .figure * {
+          animation: none !important;
+          transition: none !important;
         }
       }
       /* What a reader looks up once, folded under the paragraph of a page: a mono label
