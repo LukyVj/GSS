@@ -66,11 +66,13 @@ function renderTitle(anchor: string, name: string, since: string): string {
   return `<h3${dated(since)}><code>${escapeHtml(name)}</code>${qualifier ? ` <small>(${escapeHtml(qualifier)})</small>` : ""}</h3>`;
 }
 
-// Under the table of the entry: what each value does, then a paragraph, when the entry has them
-function renderValues(page: string, { values, valuesTitle = "Values", details }: {
+// Under the table of the entry: what each value does, then a short paragraph, then what a
+// reader looks up once, folded (decision 179), when the entry has them
+function renderValues(page: string, { values, valuesTitle = "Values", details, more }: {
   values?: Value[];
   valuesTitle?: string;
   details?: string;
+  more?: string;
 }): string {
   const table = values?.length
     ? `
@@ -85,7 +87,11 @@ function renderValues(page: string, { values, valuesTitle = "Values", details }:
       </dl>`
     : "";
   return table + (details ? `
-      <p>${prose(details)}</p>` : "");
+      <p>${prose(details)}</p>` : "") + (more ? `
+      <details class="more">
+        <summary>More details</summary>
+        <p>${prose(more)}</p>
+      </details>` : "");
 }
 
 // ⬇️ YOUR MISSION: the HTML of one property

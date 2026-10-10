@@ -69,6 +69,11 @@ describe("the records of the docs search", () => {
     expect(byAnchor("material--values")!.content).toContain("matte() Scatters the light only, like chalk");
   });
 
+  it("read what a page folds, without the label of the fold", () => {
+    expect(byAnchor("opacity")!.content).toContain("a sphere at 50% looks like a bubble");
+    expect(records.map((record) => record.content).join(" ")).not.toContain("More details");
+  });
+
   it("give each chapter of a guide its own record", () => {
     expect(byAnchor("embedding--from-a-script")).toMatchObject({
       type: "lvl2",

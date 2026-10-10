@@ -554,6 +554,56 @@
         color: var(--gss-bone);
         font-weight: 600;
       }
+      /* What a reader looks up once, folded under the paragraph of a page: a mono label
+         with a hairline chevron, closed until asked */
+      .more {
+        max-width: 65ch;
+        margin: -4px 0 24px;
+      }
+      .more > summary {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 4px 0;
+        font: 12px var(--gss-font-code);
+        color: var(--gss-dim);
+        cursor: pointer;
+        list-style: none;
+        transition: color var(--gss-transition);
+      }
+      .more > summary::-webkit-details-marker {
+        display: none;
+      }
+      .more > summary::before {
+        content: "";
+        width: 6px;
+        height: 6px;
+        border-right: 1px solid currentColor;
+        border-bottom: 1px solid currentColor;
+        transform: translateY(-1px) rotate(-45deg);
+        transition: transform var(--gss-transition);
+      }
+      .more[open] > summary::before {
+        transform: translateY(-2px) rotate(45deg);
+      }
+      .more > summary:hover,
+      .more[open] > summary {
+        color: var(--gss-bone);
+      }
+      .more > summary:focus-visible {
+        outline: 1px solid var(--gss-signal);
+        outline-offset: 4px;
+      }
+      .more > p {
+        margin: 10px 0 0;
+        padding-left: 14px;
+        border-left: 1px solid var(--gss-isoline);
+        font-size: 15px;
+        color: var(--gss-ash);
+      }
+      .more > p code {
+        color: var(--gss-bone);
+      }
       /* The chapters of a page (Values, a chapter of a guide) and the name of each example:
          Martian Mono speaks, like the titles; the sentence under it is prose */
       .property h4,

@@ -52,7 +52,7 @@ export const GETTING_STARTED: GuideEntry[] = [
     ],
     example: FIRST_SCENE,
     after: [
-      "Shapes are declared in <code>@scene</code>, then styled with the rules of a web page: selectors, specificity, units like <code>deg</code> and <code>s</code>, <code>@keyframes</code>. The compiler turns the whole stylesheet into one shader that runs on the GPU.",
+      "<code>@scene</code> lists the shapes. A rule styles them, like CSS: <code>#ball</code> lifts the sphere, colors it and turns it into glass. <code>@keyframes</code> makes it float.",
       'Next, put the scene on a page with <a href="#embedding">Embedding a scene</a>, or read the reference: each page describes one at-rule, selector, property or function, with examples to try.',
     ],
   },
@@ -79,8 +79,15 @@ export const INSTALLATION: GuideEntry[] = [
         `<pre><code class="gss">${highlightCode(way.lang, way.code)}</code></pre>`,
       ]),
       "<h4>In the page</h4>",
-      "An embedded scene behaves like the playground: a drag turns the camera, the wheel zooms, <code>:hover</code> works. With <code>controls=\"none\"</code> (or <code>controls: false</code>), only <code>:hover</code> stays, and the page scrolls over the scene. The GSS can choose too: <code>scene { controls: orbit; }</code> keeps the drag and gives the wheel back to the page, and <code>controls: none</code> on an object lets it be pressed without turning the camera. The scene starts when it comes into view, sleeps when it leaves it, and stands still under <code>prefers-reduced-motion</code>. A scene that does not move draws nothing between two changes (the mouse, a variable, an image that arrives): the GPU rests.",
-      'Images are read next to the <code>.gss</code> file, like <code>url()</code> in a stylesheet. The canvas is opaque: give the scene the <code>background</code> of your page. The <a href="./showcase.html">showcase</a> shows them all live.',
+      table([
+        ["Camera", 'A drag turns it, the wheel zooms, <code>:hover</code> works. <code>controls="none"</code> (or <code>controls: false</code>) keeps only <code>:hover</code>, and the page scrolls over the scene. The GSS can choose too: see <a href="#controls"><code>controls</code></a>.'],
+        ["Off screen", "The scene starts when it comes into view, and sleeps when it leaves it."],
+        ["Reduced motion", "The scene stands still under <code>prefers-reduced-motion</code>."],
+        ["A still scene", "It draws nothing between two changes (the mouse, a variable, an image that arrives): the GPU rests."],
+        ["Images", "A path starts from the <code>.gss</code> file, like <code>url()</code> in a stylesheet."],
+        ["Background", "The canvas is not transparent: give the scene the <code>background</code> of your page."],
+      ]),
+      'See embedded scenes live in the <a href="./showcase.html">showcase</a>.',
       "<h4>From a script</h4>",
       'Once <code>&lt;gss-scene&gt;</code> fires <code>load</code>, its <code>scene</code> property gives the scene, to <code>pause()</code> it, <code>play()</code> it or <a href="#set-variables">set its variables</a>.',
     ],
@@ -120,8 +127,14 @@ INSTALLATION.push(
       `<pre><code class="html">${highlightCode("html", EMBED_SNIPPETS[0].code)}</code></pre>`,
       `The script defines <code>&lt;gss-scene&gt;</code>. Point its <code>src</code> to a <code>.gss</code> file, or write the GSS inline, as above. Serve the page over HTTP(S). The module: <a href="${CDN_URL}">${CDN_URL}</a>.`,
       'To drive the scene from a script, see <a href="#set-variables">Set variables from JavaScript</a>.',
-      '<code>poster="cover.jpg"</code> shows an image until the scene draws, like the poster of a <code>&lt;video&gt;</code>. On a computer without a graphics card, the processor would draw the scene, slowly enough to freeze the page: <code>&lt;gss-scene&gt;</code> then shows its poster and a button, and draws the scene only when the reader asks. With <code>mount()</code>, <code>softwareRendering()</code>, from <code>gss-lang</code> or <code>gss-lang/runtime</code>, returns <code>true</code> on such a computer, to do the same.',
-      'A scene starts at a density of 0.5, then climbs to its <code>dpr</code> while the frames keep up: a weak graphics card never draws a heavy scene at full density at once. When the scene is still far too slow at 0.5, it stops: <code>&lt;gss-scene&gt;</code> shows a button that draws it anyway, and <code>mount()</code> fires a <code>gss-too-heavy</code> event on the canvas, where <code>scene.play()</code> draws it anyway. <code>mount(canvas, scene, { adaptDpr: false })</code> keeps the <code>dpr</code> as written and never stops, for a capture or a benchmark.',
+      "<h4>Slow computers</h4>",
+      table([
+        ["poster", '<code>poster="cover.jpg"</code> shows an image until the scene draws, like the poster of a <code>&lt;video&gt;</code>.'],
+        ["No graphics card", "<code>&lt;gss-scene&gt;</code> shows its poster and a button, and draws the scene only when the reader asks. With <code>mount()</code>, <code>softwareRendering()</code>, from <code>gss-lang</code> or <code>gss-lang/runtime</code>, returns <code>true</code> on such a computer, to do the same."],
+        ["A weak graphics card", "The scene starts at a density of 0.5, then climbs to its <code>dpr</code> while the frames keep up."],
+        ["Still too slow", "The scene stops: <code>&lt;gss-scene&gt;</code> shows a button that draws it anyway, and <code>mount()</code> fires a <code>gss-too-heavy</code> event on the canvas, where <code>scene.play()</code> draws it anyway."],
+        ["adaptDpr: false", "<code>mount(canvas, scene, { adaptDpr: false })</code> keeps the <code>dpr</code> as written and never stops, for a capture or a benchmark."],
+      ]),
     ],
   },
 );
@@ -204,7 +217,8 @@ INSTALLATION.push({
     "<h4>In the playground</h4>",
     'With <code>@property-panel { display: open; }</code> in the scene, the playground, and Try it under the examples of these docs, show a panel over the render with a control for each registered variable: a slider and its number, or a color picker for a <code>"&lt;color&gt;"</code>. It calls <code>setProperty()</code> as it moves, and its reset button calls <code>removeProperty()</code>. A page that embeds the scene shows no panel. See <a href="#at-property-panel"><code>@property-panel</code></a>.',
     "<h4>From <code>&lt;gss-scene&gt;</code></h4>",
-    'Its <code>scene</code> property gives the scene, with the same methods. It is <code>null</code> until the element fires <code>"load"</code>, since the scene only starts when it comes near the screen. Set your values on <code>"load"</code>, as the demo does: it fires again each time the element starts a new scene (a new <code>src</code>, <code>controls</code> or <code>backend</code>, or the element moved in the page), and a new scene starts from its start values.',
+    'The <code>scene</code> property of the element is the scene, with the same methods. It is <code>null</code> until the element fires <code>"load"</code>: set your values in a <code>"load"</code> listener, as the demo does.',
+    'The element fires <code>"load"</code> again each time it starts a new scene: a new <code>src</code>, <code>controls</code> or <code>backend</code>, or the element moved in the page. A new scene starts from its start values, so the listener sets yours again.',
   ],
 });
 

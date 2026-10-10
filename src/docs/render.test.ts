@@ -369,6 +369,17 @@ describe("the parts of a page", () => {
     expect(order.map((part) => html.indexOf(part))).toEqual(order.map((part) => html.indexOf(part)).sort((a, b) => a - b));
   });
 
+  // What a reader looks up once, folded under the paragraph (decision 179)
+  it("folds what the entry keeps for later under the paragraph, closed", () => {
+    const folded = renderProperty({ ...material, more: "Reflections see the `color` too." });
+    expect(folded).toMatch(
+      /<p>A material can take a gradient.<\/p>\s*<details class="more">\s*<summary>More details<\/summary>\s*<p>Reflections see the <code><span class="gss-property">color<\/span><\/code> too.<\/p>\s*<\/details>/,
+    );
+    expect(folded.indexOf('<details class="more">')).toBeLessThan(folded.indexOf('class="example-part"'));
+    expect(folded).not.toContain("<details class=\"more\" open");
+    expect(html).not.toContain("<details");
+  });
+
   it("names the heading of the table when the entry does", () => {
     expect(renderProperty({ ...material, valuesTitle: "Functions" })).toContain('<h4 id="material--functions">Functions</h4>');
     expect(renderProperty({ ...material, values: undefined, details: undefined })).not.toMatch(/<h4 id=/);

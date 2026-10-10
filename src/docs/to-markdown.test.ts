@@ -60,6 +60,20 @@ The surface look of an object.
 `);
   });
 
+  it("unfolds what a page folds: the text, without the label of the fold", () => {
+    const md = articleToMarkdown(
+      article(`
+        <h3><code>opacity</code></h3>
+        <p>A group does not fade as one picture.</p>
+        <details class="more">
+          <summary>More details</summary>
+          <p>The reflections show it <code>opaque</code>.</p>
+        </details>
+      `),
+    );
+    expect(md).toBe("# opacity\n\nA group does not fade as one picture.\n\nThe reflections show it `opaque`.\n");
+  });
+
   it("keeps inline markup in a guide page", () => {
     const md = articleToMarkdown(
       article(`

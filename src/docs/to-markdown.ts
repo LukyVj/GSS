@@ -72,6 +72,14 @@ function blockToMarkdown(el: HTMLElement): string {
     return title ? `## ${title}` : "";
   }
   if (tag === "p") return inlineMarkdown(el).trim();
+  // What a page folds is read like the rest: its text, without the label of the fold
+  if (tag === "details") {
+    return [...el.children]
+      .filter((child) => child.tagName !== "SUMMARY")
+      .map((child) => blockToMarkdown(child as HTMLElement))
+      .filter(Boolean)
+      .join("\n\n");
+  }
   if (tag === "dl") return definitionList(el);
   if (tag === "pre") return fencedCode(el);
   if (el.classList.contains("example")) {
