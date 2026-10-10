@@ -2,10 +2,12 @@ import { SHAPE_DOCS, type Figure } from "../compiler/registry/registry";
 import { escapeHtml } from "./escape";
 import { TILE, body, lines, onCube, path, playing, round, shapeSvg, shift, stage, svg, text, type ShapeName } from "./figure-kit";
 import { colors } from "./figure-colors";
+import { flows } from "./figure-flows";
 import { lanes, offsetDistance, offsetRotate, range, scrollTimeline } from "./figure-lanes";
 import { cornerRadius, d, measure as measured, viewBox } from "./figure-measures";
 import { calc, plot } from "./figure-plots";
 import { row } from "./figure-rows";
+import { scenes } from "./figure-scenes";
 import { tiles } from "./figure-tiles";
 import { AXIS_REACH, REST_VIEW, ball, box, draw, floor, measure, moved, place, spinDrawing, together, type Axis, type Frame, type Vec3 } from "./hairline";
 
@@ -281,6 +283,8 @@ export const FIGURES: Record<Figure, { label: string; art: (subject: string) => 
   "offset-rotate": { label: "Two objects along a path: one turns with it, one keeps its angle", art: offsetRotate },
   tile: { label: "What covers the surface, flat, then on an object", art: tiles },
   color: { label: "The colors the function gives", art: colors },
+  scene: { label: "What the property changes in the scene", art: scenes },
+  flow: { label: "How it goes, from where it is written to what the scene shows", art: flows },
 };
 
 // A figure is drawn once: the page is rendered when the site is built, and again at each

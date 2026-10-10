@@ -976,6 +976,155 @@
       .figure .turns.back {
         animation-direction: reverse;
       }
+      /* Two states of a scene, one after the other: what the second declaration adds comes
+         in, what it takes away goes out */
+      .figure .fades {
+        animation: figure-fade var(--beat, 1.8s) ease-in-out infinite alternate;
+      }
+      .figure .fades.reverse {
+        animation-direction: alternate-reverse;
+      }
+      @keyframes figure-fade {
+        from {
+          opacity: 0;
+        }
+      }
+      .figure .dims {
+        animation: figure-dim 1.8s ease-in-out infinite alternate;
+      }
+      @keyframes figure-dim {
+        to {
+          opacity: 0.2;
+        }
+      }
+      .figure .mists {
+        animation: figure-mist 1.8s ease-in-out infinite alternate;
+      }
+      @keyframes figure-mist {
+        to {
+          opacity: var(--to);
+        }
+      }
+      .figure .faint {
+        opacity: 0.45;
+      }
+      /* The rays of the sun: dashes that run the way the light goes */
+      .figure .flows {
+        stroke-dasharray: 5 5;
+        animation: figure-flow 1s linear infinite;
+      }
+      @keyframes figure-flow {
+        to {
+          stroke-dashoffset: -10;
+        }
+      }
+      .figure .pulses {
+        animation: figure-pulse 1.8s ease-in-out infinite alternate;
+      }
+      @keyframes figure-pulse {
+        from {
+          transform: scale(0.7);
+        }
+        to {
+          transform: scale(1.25);
+        }
+      }
+      /* The lines of a distance, one after the other, away from the objects */
+      .figure .ripples {
+        animation: figure-ripple 2.4s ease-in-out infinite;
+        animation-delay: calc(var(--i) * 300ms);
+      }
+      @keyframes figure-ripple {
+        50% {
+          opacity: 0.25;
+        }
+      }
+      .figure .flickers {
+        animation: figure-flicker 0.5s steps(2) infinite;
+      }
+      @keyframes figure-flicker {
+        50% {
+          transform: translate(3px, -2px);
+        }
+      }
+      /* cursor: the pointer comes over the object, becomes a hand, and leaves */
+      .figure .points {
+        animation: figure-point 4s ease-in-out infinite;
+      }
+      .figure .points .hand {
+        opacity: 0;
+        animation: figure-hand 4s steps(1) infinite;
+      }
+      .figure .points .arrow {
+        animation: figure-arrow 4s steps(1) infinite;
+      }
+      @keyframes figure-point {
+        0%,
+        100% {
+          transform: translate(130px, 50px);
+        }
+        30%,
+        70% {
+          transform: translate(0, 0);
+        }
+      }
+      @keyframes figure-hand {
+        22%,
+        78% {
+          opacity: 1;
+        }
+        0%,
+        79% {
+          opacity: 0;
+        }
+      }
+      @keyframes figure-arrow {
+        22% {
+          opacity: 0;
+        }
+        79% {
+          opacity: 1;
+        }
+      }
+      /* A variable set by the page: the knob slides, the ball rises with it */
+      .figure .rises {
+        animation: figure-float 1.8s ease-in-out infinite alternate;
+      }
+      .figure .grows.soft {
+        animation-name: figure-grow-soft;
+      }
+      @keyframes figure-grow-soft {
+        from {
+          transform: scale(0.8);
+        }
+        to {
+          transform: scale(1.15);
+        }
+      }
+      /* Code written in a figure: as lines in the colors of the editor, or as words */
+      .figure .syntax {
+        stroke-width: 2;
+      }
+      .figure .syntax.selector {
+        stroke: var(--gss-selector, #7cb4ff);
+      }
+      .figure .syntax.property {
+        stroke: var(--gss-property, #6fe0cf);
+      }
+      .figure .syntax.value {
+        stroke: var(--gss-number, #ffb86b);
+      }
+      .figure text.code {
+        text-anchor: start;
+        font: 12px var(--gss-font-code);
+        fill: var(--gss-dim);
+      }
+      .figure text.code.lit {
+        fill: var(--gss-signal);
+      }
+      .figure text.code.struck {
+        text-decoration: line-through;
+      }
       /* The names written beside a line: of a curve, of a lane */
       .figure .plot-label {
         text-anchor: start;

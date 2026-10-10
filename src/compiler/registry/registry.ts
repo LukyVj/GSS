@@ -62,7 +62,9 @@ export type Figure =
   | "offset-distance" // three places on one path
   | "offset-rotate" // along a path: turned by it, or not
   | "tile" // what covers a surface: an image, a text, a pattern, a mask, a material
-  | "color"; // a color, written the way the page writes it
+  | "color" // a color, written the way the page writes it
+  | "scene" // the scene around the objects, and how an object shows in it
+  | "flow"; // from one place to another: a file to the page, a variable to an object
 
 // A callout under the description: what a reader must know before trying it
 export type Note = { title: string; text: string };
@@ -452,6 +454,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "opacity",
+    figure: "scene",
     since: "0.0.4",
     appliesTo: "object",
     animatable: true,
@@ -481,6 +484,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "mix-blend-mode",
+    figure: "scene",
     since: "0.0.7",
     appliesTo: "object",
     animatable: true,
@@ -585,6 +589,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "cursor",
+    figure: "scene",
     since: "0.0.6",
     appliesTo: "object",
     syntax: "auto | default | pointer | grab | grabbing | help | crosshair | move | not-allowed | zoom-in | zoom-out | …",
@@ -623,6 +628,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "controls",
+    figure: "scene",
     since: "0.0.7",
     appliesTo: "everywhere",
     syntax: "auto | none | [ orbit || zoom ]",
@@ -657,6 +663,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "outline",
+    figure: "scene",
     since: "0.0.6",
     appliesTo: "object",
     animatable: true,
@@ -681,6 +688,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "outline-width",
+    figure: "scene",
     since: "0.0.6",
     appliesTo: "object",
     animatable: true,
@@ -698,6 +706,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "outline-style",
+    figure: "scene",
     since: "0.0.6",
     appliesTo: "object",
     syntax: "none | auto | solid | dashed | dotted | double | groove | ridge | inset | outset",
@@ -738,6 +747,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "outline-color",
+    figure: "scene",
     since: "0.0.6",
     appliesTo: "object",
     animatable: true,
@@ -755,6 +765,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "outline-offset",
+    figure: "scene",
     since: "0.0.6",
     appliesTo: "object",
     animatable: true,
@@ -892,6 +903,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "transform-origin",
+    figure: "scene",
     since: "0.0.4",
     appliesTo: "object",
     animatable: true,
@@ -920,6 +932,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "operation",
+    figure: "scene",
     since: "0.0.1",
     appliesTo: "object",
     syntax: "union | subtract | intersect",
@@ -940,6 +953,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "blend",
+    figure: "scene",
     since: "0.0.1",
     appliesTo: "object",
     syntax: "<number>",
@@ -1518,6 +1532,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "light",
+    figure: "scene",
     since: "0.0.1",
     appliesTo: "scene",
     animatable: true,
@@ -1557,6 +1572,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "intensity",
+    figure: "scene",
     since: "0.0.4",
     appliesTo: ["light"],
     animatable: true,
@@ -1574,6 +1590,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "ambient",
+    figure: "scene",
     since: "0.0.1",
     appliesTo: "scene",
     syntax: "<number> <color>?",
@@ -1589,6 +1606,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "camera-target",
+    figure: "scene",
     since: "0.0.1",
     appliesTo: "scene",
     syntax: "<number>{3}",
@@ -1604,6 +1622,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "camera-distance",
+    figure: "scene",
     since: "0.0.1",
     appliesTo: "scene",
     syntax: "<number>",
@@ -1619,6 +1638,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "camera-angle",
+    figure: "scene",
     since: "0.0.1",
     appliesTo: "scene",
     syntax: "<angle> <angle>",
@@ -1634,6 +1654,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "camera-spin",
+    figure: "scene",
     since: "0.0.1",
     appliesTo: "scene",
     syntax: "<time> | none",
@@ -1649,6 +1670,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "floor",
+    figure: "scene",
     since: "0.0.1",
     appliesTo: "scene",
     syntax: "<color> | <gradient> | none",
@@ -1687,6 +1709,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "filter",
+    figure: "scene",
     since: "0.0.2",
     appliesTo: "everywhere",
     syntax: "none | <filter-function>+",
@@ -1787,6 +1810,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "background",
+    figure: "scene",
     since: "0.0.1",
     appliesTo: "scene",
     animatable: true,
@@ -1820,6 +1844,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "background-blend-mode",
+    figure: "scene",
     since: "0.0.4",
     appliesTo: "scene",
     syntax: "<blend-mode>#",
@@ -1852,6 +1877,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "fog",
+    figure: "scene",
     since: "0.0.4",
     appliesTo: "scene",
     animatable: true,
@@ -1886,6 +1912,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "shadows",
+    figure: "scene",
     since: "0.0.4",
     appliesTo: "scene",
     syntax: "none | hard | soft",
@@ -1918,6 +1945,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "dpr",
+    figure: "scene",
     since: "0.0.2",
     appliesTo: "scene",
     syntax: "auto | max | <number>",
@@ -1947,6 +1975,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "shape-rendering",
+    figure: "scene",
     since: "0.0.6",
     appliesTo: "scene",
     syntax: "auto | geometricPrecision",
@@ -1973,6 +2002,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "view",
+    figure: "scene",
     since: "0.0.5",
     appliesTo: "scene",
     syntax: "shaded | distance",
@@ -2069,6 +2099,7 @@ export const AT_RULES: AtRuleDef[] = [
   },
   {
     name: "property",
+    figure: "flow",
     since: "0.0.4",
     syntax: '@property --<name> { syntax: "<number>" | "<angle>" | "<percentage>" | "<color>" | "<length>"; inherits: true | false; initial-value: <value>; }',
     description:
@@ -2162,6 +2193,7 @@ sphere { translate: 0 1 0; texture: paint(checks); }`,
   },
   {
     name: "property-panel",
+    figure: "flow",
     since: "0.0.5",
     syntax: "@property-panel { display: open | folded | none; }",
     description:
@@ -2191,6 +2223,7 @@ sphere { translate: 0 1 0; texture: paint(checks); }`,
   },
   {
     name: "media",
+    figure: "flow",
     since: "0.0.2",
     syntax: "@media <media-query> { <rule> … }",
     description:
@@ -2225,6 +2258,7 @@ sphere { translate: 0 1 0; texture: paint(checks); }`,
   },
   {
     name: "mixin",
+    figure: "flow",
     since: "0.0.7",
     syntax: "@mixin --<name>[(--<parameter> [<type>] [: <default>], …)] { <declaration> … <rule> … [@contents;] }",
     description:
@@ -2294,6 +2328,7 @@ sphere {
   },
   {
     name: "apply",
+    figure: "flow",
     since: "0.0.7",
     syntax: "@apply --<name>[(<value>, …)] [{ <declaration> … }];",
     description:
@@ -2762,6 +2797,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: "!important",
     anchor: "selector-important",
+    figure: "flow",
     since: "0.0.1",
     specificity: "Beats every declaration without it",
     description:
@@ -3654,6 +3690,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "var()",
     anchor: "fn-var",
+    figure: "flow",
     since: "0.0.1",
     covers: ["var"],
     syntax: "var(--<name>) | var(--<name>, <fallback>)",
@@ -3719,6 +3756,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "if()",
     anchor: "fn-if",
+    figure: "flow",
     since: "0.0.2",
     covers: ["if"],
     syntax: "if(<condition>: <value>; …; else: <value>)",

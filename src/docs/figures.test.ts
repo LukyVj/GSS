@@ -26,54 +26,7 @@ describe("the figures of the docs", () => {
     ...[...GETTING_STARTED, ...INSTALLATION].map((entry) => [entry.figure, entry.anchor] as const),
   ].filter(([figure]) => figure);
 
-  // Lucas, Oct. 10: "j'aimerais une illustration dans chaque page de la doc". The pages still
-  // without one are listed here, and the list only shrinks.
-  const WITHOUT_YET: string[] = [
-    "opacity",
-    "mix-blend-mode",
-    "cursor",
-    "controls",
-    "outline",
-    "outline-width",
-    "outline-style",
-    "outline-color",
-    "outline-offset",
-    "transform-origin",
-    "operation",
-    "blend",
-    "light",
-    "intensity",
-    "ambient",
-    "camera-target",
-    "camera-distance",
-    "camera-angle",
-    "camera-spin",
-    "floor",
-    "filter",
-    "background",
-    "background-blend-mode",
-    "fog",
-    "shadows",
-    "dpr",
-    "shape-rendering",
-    "view",
-    "at-property",
-    "at-property-panel",
-    "at-media",
-    "at-mixin",
-    "at-apply",
-    "selector-important",
-    "fn-var",
-    "fn-if",
-    "why-gss",
-    "embedding",
-    "install-package",
-    "install-vite",
-    "install-cdn",
-    "set-variables",
-    "editor-support",
-  ];
-
+  // Lucas, Oct. 10: "j'aimerais une illustration dans chaque page de la doc"
   it("are on every page of the docs", () => {
     const every = [
       ...PROPERTIES.map((entry) => [entry.figure, entry.name] as const),
@@ -83,7 +36,8 @@ describe("the figures of the docs", () => {
       ...SHAPE_DOCS.map((entry) => [entry.figure, `shape-${entry.name}`] as const),
       ...[...GETTING_STARTED, ...INSTALLATION].map((entry) => [entry.figure, entry.anchor] as const),
     ];
-    expect(every.filter(([figure]) => !figure).map(([, id]) => id)).toEqual(WITHOUT_YET);
+    expect(every.length).toBeGreaterThan(150);
+    expect(every.filter(([figure]) => !figure).map(([, id]) => id)).toEqual([]);
   });
 
   it("draw something for every page that asks, with no number gone wrong", () => {
