@@ -85,7 +85,13 @@ function blockToMarkdown(el: HTMLElement): string {
   if (tag === "figure") {
     const captions = [...el.querySelectorAll("li > code, li > a > code")];
     const written = captions.length ? captions : [...el.querySelectorAll("text")];
-    const names = written.map((name) => `\`${(name.textContent ?? "").trim()}\``);
+    // Not the words that only take their place, unseen, to put the next ones under a line
+    const seen = (name: Element) => {
+      const copy = name.cloneNode(true) as Element;
+      for (const blank of copy.querySelectorAll(".blank, .elbow")) blank.remove();
+      return (copy.textContent ?? "").trim();
+    };
+    const names = written.map((name) => `\`${seen(name)}\``);
     const label = el.getAttribute("aria-label") ?? "";
     return names.length ? [label && `**${label}:**`, names.join(", ")].filter(Boolean).join(" ") : "";
   }

@@ -38,6 +38,14 @@ describe("a shape that turns", () => {
     expect([...svg.querySelectorAll("text.mark-label")].map((label) => label.textContent)).toEqual(["radius", "height"]);
   });
 
+  it("takes the box of a group with it", () => {
+    const svg = stage("group");
+    const rest = d(svg, "bound");
+    turnTo(svg, { azimuth: 30, elevation: 45 });
+    expect(d(svg, "bound")).toBe(shapeDrawing("group", { width: 380, height: 250, scale: 130, x: 190, y: 128 }, viewAt(30, 45), true).bound);
+    expect(d(svg, "bound")).not.toBe(rest);
+  });
+
   it("rests when the pointer is in the middle of its box, and turns toward the pointer", () => {
     expect(viewUnder(0, 0)).toEqual(REST);
     expect(viewUnder(1, 0).azimuth).toBeGreaterThan(REST.azimuth);

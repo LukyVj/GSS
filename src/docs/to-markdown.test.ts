@@ -100,6 +100,16 @@ The surface look of an object.
     expect(stage('<path class="line" d="M1 1L2 2"/>')).toBe("# cylinder\n");
   });
 
+  // Words that only take their place in a drawing, to put the next ones under a line above
+  it("leaves out of a figure the words a reader does not see", () => {
+    const md = articleToMarkdown(
+      article(
+        `<h3>@apply</h3><figure class="figure" aria-label="The rule"><div class="figure-stage"><svg><text class="code">#a { @apply --warm; }</text><text class="under code"><tspan class="blank">#a { </tspan><tspan class="put">color: #ff5a36;</tspan></text></svg></div></figure>`,
+      ),
+    );
+    expect(md).toBe("# @apply\n\n**The rule:** `#a { @apply --warm; }`, `color: #ff5a36;`\n");
+  });
+
   it("keeps inline markup in a guide page", () => {
     const md = articleToMarkdown(
       article(`

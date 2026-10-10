@@ -97,14 +97,12 @@ export function oklch(): string {
   );
 }
 
-// color(): a wider space than sRGB holds colors sRGB cannot show
+// color(): the same three numbers are another color in each space
 export function colorSpace(): string {
-  const wide = "M190 22L318 172L62 172Z";
-  const narrow = "M190 62L276 158L104 158Z";
-  return (
-    stage(STAGE, path("edge", wide) + path("ghost", narrow) + chip(190, 22, "color(display-p3 0 1 0)", 6) + chip(190, 62, "color(srgb 0 1 0)", 6) + text(190, 186, "display-p3") + text(190, 144, "srgb")) +
-    says("color(display-p3 0 1 0)")
-  );
+  const chips = ["srgb", "srgb-linear", "display-p3", "xyz"]
+    .map((space, i) => `<g style="--i: ${i * 3}">${chip(64 + i * 84, 50, `color(${space} 0.95 0.35 0.2)`, 20)}</g>` + text(64 + i * 84, 92, space))
+    .join("");
+  return stage({ ...STAGE, height: 120 }, chips) + says("color(<space> 0.95 0.35 0.2)");
 }
 
 // color-mix(): from all of one color to all of the other

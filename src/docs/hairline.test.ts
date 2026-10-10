@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { SHAPES, REST_VIEW, draw, shapeDrawing, spinDrawing, spun, viewAt, type Frame, type Vec3 } from "./hairline";
+import { SHAPES, REST_VIEW, ball, box, draw, moved, shapeDrawing, spinDrawing, spun, together, viewAt, type Frame, type Vec3 } from "./hairline";
 import { SHAPE_DOCS } from "../compiler/registry/registry";
 
 // A drawing in a box of 120, where one unit of the scene is 62
@@ -36,23 +36,46 @@ describe("the line drawings of the shapes", () => {
     expect(Math.max(...top.map(([x]) => x)) - Math.min(...top.map(([x]) => x))).toBeCloseTo(2 * 0.42 * 62, 0);
   });
 
-  it("hide what one solid of a group puts behind another", () => {
-    expect(drawing("group").hidden).not.toBe("");
-    expect(lines(drawing("group").visible)).toBeGreaterThan(9); // the cube, and what shows of the sphere
+  it("hide what one solid puts behind another", () => {
+    const crossed = draw(together(moved(box(0.3, 0.3, 0.3), [-0.24, -0.14, 0.12]), moved(ball(REST_VIEW, 0.36), [0.22, 0.1, -0.1])), FRAME);
+    expect(lines(crossed.hidden)).toBeGreaterThan(3); // more than the back of the cube
+    expect(lines(crossed.visible)).toBeGreaterThan(9); // the cube, and what shows of the sphere
+  });
+
+  // Lucas, Oct. 10: two solids that cross read as a blend. The objects of a group stand apart,
+  // in the box of the group: dashed all the way, for a group draws nothing itself.
+  it("draw a group as objects that stand apart, in the dashed box of the group", () => {
+    const group = drawing("group");
+    // nine edges of the box, cut where an object stands in front: not the three nearest the eye
+    expect(lines(group.bound)).toBeGreaterThanOrEqual(9);
+    const corner = [60 + 62 * (-0.68 * REST_VIEW.right[0] + 0.46 * REST_VIEW.right[2]), 60 - 62 * (-0.68 * REST_VIEW.up[0] + 0.32 * REST_VIEW.up[1] + 0.46 * REST_VIEW.up[2])];
+    for (const [x, y] of points(group.bound)) expect(Math.hypot(x - corner[0], y - corner[1])).toBeGreaterThan(1);
+    expect(lines(group.hidden)).toBe(3); // the back of the cube: no object is behind the other
+    expect(lines(group.visible)).toBeGreaterThan(9);
+    for (const name of Object.keys(SHAPES) as (keyof typeof SHAPES)[]) if (name !== "group") expect(drawing(name).bound, name).toBe("");
+  });
+
+  // Lucas, Oct. 10: a bulb with rays is "un petit soleil"
+  it("draw a light as a point and the rings of its light, not as a sun", () => {
+    const { guide, visible } = drawing("light");
+    expect(visible).not.toBe("");
+    const rings = guide.split("M").filter(Boolean);
+    expect(rings.length).toBeGreaterThanOrEqual(2);
+    for (const ring of rings) expect(points(ring).length).toBeGreaterThan(8); // a ray has two
   });
 
   it("stay inside their box, and give the same drawing each time", () => {
     for (const name of Object.keys(SHAPES) as (keyof typeof SHAPES)[]) {
-      const { visible, hidden, guide, guideHidden, ground } = drawing(name);
+      const { visible, hidden, guide, guideHidden, ground, bound } = drawing(name);
       expect(ground, name).toBe("");
-      for (const [x, y] of points(visible + hidden + guide + guideHidden)) {
+      for (const [x, y] of points(visible + hidden + guide + guideHidden + bound)) {
         expect(x, name).toBeGreaterThanOrEqual(0);
         expect(x, name).toBeLessThanOrEqual(120);
         expect(y, name).toBeGreaterThanOrEqual(0);
         expect(y, name).toBeLessThanOrEqual(120);
       }
       expect(visible, name).not.toBe("");
-      expect(drawing(name), name).toEqual({ visible, hidden, guide, guideHidden, ground });
+      expect(drawing(name), name).toEqual({ visible, hidden, guide, guideHidden, ground, bound });
     }
   });
 
@@ -73,10 +96,21 @@ describe("the line drawings of the shapes", () => {
     }
   });
 
-  it("measure a shape by the properties that set it, each with a line and a place for its name", () => {
+  // Lucas, Oct. 10: a bar across each end of the line read as part of the shape. A point does not.
+  it("measure a shape by the properties that set it, each with a line, a point at each end and a place for its name", () => {
     const { marks } = shapeDrawing("cylinder", FRAME, REST_VIEW, true);
     expect(marks.map((mark) => mark.label)).toEqual(["radius", "height"]);
-    for (const mark of marks) expect(lines(mark.d)).toBe(3); // the line and a tick at each end
+    for (const mark of marks) {
+      const [line, ...ends] = mark.d.split("M").filter(Boolean);
+      expect(line).toMatch(/^[-\d.]+ [-\d.]+L[-\d.]+ [-\d.]+$/);
+      const [from, to] = points(line);
+      // each end is round, and stands on its end of the line
+      expect(ends.length).toBeGreaterThanOrEqual(2);
+      for (const end of ends) expect(end).toMatch(/^[-\d.]+ [-\d.]+(a[-\d. ]+)+$/);
+      const near = (at: number[]) => ends.filter((end) => Math.hypot(points(end)[0][0] - at[0], points(end)[0][1] - at[1]) < 2).length;
+      expect(near(from)).toBeGreaterThan(0);
+      expect(near(to)).toBeGreaterThan(0);
+    }
     expect(shapeDrawing("cylinder", FRAME).marks).toEqual([]);
     expect(shapeDrawing("lathe", FRAME, REST_VIEW, true).marks).toEqual([]);
   });

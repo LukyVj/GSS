@@ -35,6 +35,8 @@ Every page has a figure (decision 182), `figure: "row"`: a drawing under its lea
 CSS in `docs.html`, and `src/docs/figure-motion.ts` for the shapes that turn (decision 181).
 A new page joins a family (`src/docs/figure-rows.ts`, `figure-scenes.ts`…) with one line of data;
 `src/docs/figure-kit.ts` holds what the families share.
+A figure is read before the text (decision 183): code in it is written in words, two colors are
+two fills, and two pages that are close show what differs.
 
 ## Branches
 

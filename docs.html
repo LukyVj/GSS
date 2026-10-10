@@ -600,6 +600,11 @@
       .figure .tinted .ground {
         stroke: var(--gss-dim);
       }
+      /* The box of a group: it draws nothing in the scene, so it is dashed all the way */
+      .figure .bound {
+        stroke: var(--gss-signal);
+        stroke-dasharray: 3 3;
+      }
       /* Cells: one drawing and its name, side by side. The shapes, the steps of a scene. */
       .figure-cells {
         display: grid;
@@ -686,7 +691,7 @@
         animation: figure-draw 900ms cubic-bezier(0.4, 0, 0.2, 1) both;
         animation-delay: calc(var(--i, 0) * 60ms);
       }
-      .figure :is(.hidden, .guide, .ground, .ghost, .mark, .mark-label, .tint, .glint, .tile, .rings, .caret, .edge) {
+      .figure :is(.hidden, .guide, .ground, .ghost, .mark, .mark-label, .tint, .glint, .tile, .rings, .caret, .edge, .bound, .chip) {
         animation: figure-appear 500ms ease-out both;
         animation-delay: calc(var(--i, 0) * 60ms + 450ms);
       }
@@ -819,6 +824,10 @@
         top: calc(50% - 39px);
         left: calc(50% - 32px);
         transform: rotate(calc(360deg / var(--n) * var(--i))) translateY(-72px) rotate(calc(-360deg / var(--n) * var(--i)));
+      }
+      /* A cube covered by a pattern hides its own back: the edges behind are not drawn */
+      .figure .opaque .hidden {
+        display: none;
       }
       /* An image on the faces of a cube: sheared with the face, its lines as thin */
       .figure .face * {
@@ -1122,8 +1131,69 @@
       .figure text.code.lit {
         fill: var(--gss-signal);
       }
-      .figure text.code.struck {
+      .figure text.code.struck,
+      .figure tspan.struck {
         text-decoration: line-through;
+      }
+      .figure text.code.middle {
+        text-anchor: middle;
+      }
+      .figure tspan.lit,
+      .figure tspan.put {
+        fill: var(--gss-signal);
+      }
+      /* A color the code writes, in that color */
+      .figure tspan.inked {
+        fill: var(--c);
+      }
+      /* Words that only take their place, so the ones after them stand under the same
+         words of the line above */
+      .figure tspan.blank {
+        visibility: hidden;
+      }
+      /* A rule read from left to right: each declaration lights up in its turn, and the
+         cube takes its color. The one written last wins. */
+      .figure .first {
+        animation: figure-read-first 4.8s steps(1) infinite;
+      }
+      .figure .last {
+        animation: figure-read-last 4.8s steps(1) infinite;
+      }
+      @keyframes figure-read-first {
+        0%,
+        60% {
+          fill-opacity: 0.4;
+        }
+        25% {
+          fill-opacity: 1;
+        }
+      }
+      @keyframes figure-read-last {
+        0% {
+          fill-opacity: 0.4;
+        }
+        60% {
+          fill-opacity: 1;
+        }
+      }
+      .figure .cascades {
+        color: var(--last);
+        animation: figure-cascade 4.8s steps(1) infinite;
+      }
+      .figure .cascades path {
+        stroke: currentColor;
+        transition: none;
+      }
+      @keyframes figure-cascade {
+        0% {
+          color: var(--gss-bone);
+        }
+        25% {
+          color: var(--first);
+        }
+        60% {
+          color: var(--last);
+        }
       }
       /* The names written beside a line: of a curve, of a lane */
       .figure .plot-label {
@@ -1284,52 +1354,47 @@
           transform: translateY(var(--run));
         }
       }
-      /* animation-range: the scene crosses the window; the point is in signal on the part of
-         the way the animation plays on */
-      .figure .crosses {
-        animation: figure-cross 6s linear infinite;
+      /* animation-range: at each part of its way across the page, the scene goes up and down
+         through that part. The range is a thicker line, its ends are points. */
+      .figure .sways {
+        animation: figure-sway 2.4s ease-in-out infinite alternate;
       }
-      @keyframes figure-cross {
+      @keyframes figure-sway {
+        from {
+          transform: translateY(var(--sway));
+        }
         to {
-          transform: translateY(-130px);
+          transform: translateY(calc(var(--sway) * -1));
         }
       }
-      .figure .ranges {
-        animation: figure-run-y 6s linear infinite;
+      .figure .thick {
+        stroke-width: 2.5;
       }
-      .figure .ranges .dot {
-        fill: var(--gss-dim);
-        animation: 6s steps(1) infinite;
+      /* A point light that goes from one side to the other, around where it is drawn */
+      .figure .sways-xy {
+        animation: figure-sway-xy var(--beat, 3.6s) ease-in-out infinite alternate;
       }
-      .figure .range-entry .dot {
-        animation-name: figure-range-entry;
-      }
-      .figure .range-from-contain .dot {
-        animation-name: figure-range-from-contain;
-      }
-      .figure .range-to-contain .dot {
-        animation-name: figure-range-to-contain;
-      }
-      @keyframes figure-range-entry {
-        0% {
-          fill: var(--gss-signal);
+      @keyframes figure-sway-xy {
+        from {
+          transform: translate(calc(var(--sx) * -1), calc(var(--sy) * -1));
         }
-        31% {
-          fill: var(--gss-dim);
+        to {
+          transform: translate(var(--sx), var(--sy));
         }
       }
-      @keyframes figure-range-from-contain {
-        31% {
-          fill: var(--gss-signal);
-        }
+      /* A shadow is dark: the floor around it is in the light, and the shadow is the page
+         showing through */
+      .figure .lit-floor {
+        fill: var(--gss-bone);
+        fill-opacity: 0.16;
+        stroke: none;
       }
-      @keyframes figure-range-to-contain {
-        0% {
-          fill: var(--gss-signal);
-        }
-        69% {
-          fill: var(--gss-dim);
-        }
+      .figure .shade {
+        fill: var(--gss-void);
+        stroke: none;
+      }
+      .figure .hollow {
+        fill: var(--gss-void);
       }
       /* A drawing on its stage, and under it the code it plays: a declaration is in signal
          while the drawing plays it */

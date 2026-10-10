@@ -13,24 +13,29 @@ const steps = (items: [label: string, art: string][], columns = items.length) =>
 
 const photo = path("edge", "M3 57L24 30L36 45L47 34L69 57") + `<circle class="edge" cx="52" cy="17" r="6"/>`;
 const word = (letters: string, more = "") => `<text class="letters"${more} x="${TILE / 2}" y="${TILE / 2 + 2}">${escapeHtml(letters)}</text>`;
-const bands = path("edge", [1, 3, 5, 7].map((i) => `M0 ${i * 9}H${TILE}`).join(""));
-const checks = path(
-  "edge",
+// A pattern of two colors is filled with them, the two its figure writes: lines would only
+// show where one color ends, and a checkerboard drawn as lines is not one
+const [FIRST, SECOND] = ["#111", "#eee"];
+const filled = (x: number, y: number, width: number, height: number, color: string) =>
+  `<rect class="chip" x="${x}" y="${y}" width="${width}" height="${height}" style="--c: ${color}"/>`;
+// stripes(4): four pairs of bands in the height of a cube, the first color at the bottom
+const bands = Array.from({ length: 8 }, (_, j) => filled(0, j * 9, TILE, 9, j % 2 ? FIRST : SECOND)).join("");
+// checker(4): four cells along each edge of a cube. The grid is cut in the cube, so a cell on
+// an edge has the same color on both faces: from one face to the next, the colors swap.
+const checks = (swapped = false) =>
   Array.from({ length: 16 }, (_, n) => [n % 4, Math.floor(n / 4)])
-    .filter(([i, j]) => (i + j) % 2 === 0)
-    .map(([i, j]) => `M${i * 18} ${j * 18 + 18}L${i * 18 + 18} ${j * 18}M${i * 18} ${j * 18 + 9}L${i * 18 + 9} ${j * 18}M${i * 18 + 9} ${j * 18 + 18}L${i * 18 + 18} ${j * 18 + 9}`)
-    .join(""),
-);
+    .map(([i, j]) => filled(i * 18, j * 18, 18, 18, (i + j + (swapped ? 1 : 0)) % 2 ? SECOND : FIRST))
+    .join("");
 // A smooth noise, drawn by the lines where it crosses three levels
 const wobble = (x: number, y: number) => Math.sin(x * 0.11 + 1) * Math.cos(y * 0.09) + 0.5 * Math.sin((x + y) * 0.07 + 2);
 const clouds = path("edge", [-0.5, 0, 0.5].map((level) => isolines(wobble, level, [0, 0, TILE, TILE])).join(""));
-// The bands, moved by the noise
-const waves = path(
-  "edge",
-  [1, 3, 5, 7]
-    .map((i) => `M${Array.from({ length: 25 }, (_, k) => `${k * 3} ${round(i * 9 + 5 * wobble(k * 3 * 1.6, i * 30))}`).join("L")}`)
-    .join(""),
-);
+// The bands, moved by the noise: each edge between two bands goes up and down with it
+const edge = (j: number) => Array.from({ length: 25 }, (_, k) => `${k * 3} ${round(j * 9 + 5 * wobble(k * 3 * 1.6, j * 30))}`);
+const waves =
+  filled(0, 0, TILE, TILE, FIRST) +
+  [0, 2, 4, 6, 8].map((j) => `<path class="chip" style="--c: ${SECOND}" d="M${edge(j).join("L")}L${edge(j + 1).reverse().join("L")}Z"/>`).join("");
+// An image that goes over the edges of its square is cut there
+const cut = (art: string) => `<rect class="tile" x="30" y="30" width="${TILE}" height="${TILE}"/><svg class="window" aria-hidden="true" x="30" y="30" width="${TILE}" height="${TILE}">${art}</svg>`;
 const card =
   `<rect class="edge" x="6" y="10" width="60" height="52" rx="5"/>` + path("edge", "M6 24H66M14 34H46M14 42H38") + `<rect class="tint" x="40" y="48" width="20" height="8" rx="2"/>`;
 
@@ -110,19 +115,21 @@ export function gradients(): string {
 }
 
 export const noise = () => flow([["noise()", tile(clouds)], ["color", onCube(CELL, clouds)]]) + says("color: noise(3, #1b2a4a, #9fc4ff);");
-export const checker = () => flow([["checker()", tile(checks)], ["color", onCube(CELL, checks)]]) + says("color: checker(4, #111, #eee);");
+export const checker = () =>
+  flow([["checker()", tile(checks())], ["color", `<g class="opaque">${onCube(CELL, (face) => checks(face !== "front"))}</g>`]]) + says(`color: checker(4, ${FIRST}, ${SECOND});`);
 // Across y: bands around the sides, and one color on the top
-export const stripes = () => flow([["stripes()", tile(bands)], ["color", onCube(CELL, bands, ["front", "left"])]]) + says("color: stripes(4, #111, #eee);");
+export const stripes = () =>
+  flow([["stripes()", tile(bands)], ["color", `<g class="opaque">${onCube(CELL, (face) => (face === "top" ? filled(0, 0, TILE, TILE, FIRST) : bands))}</g>`]]) + says(`color: stripes(4, ${FIRST}, ${SECOND});`);
 export const displace = () =>
   cells(
     "figure-flow sums",
     [
       ["an image", tile(bands)],
       ["a map", tile(clouds)],
-      ["displace()", tile(waves)],
+      ["displace()", cut(waves)],
     ],
     CELL,
-  ) + says("color: displace(stripes(4, #111, #eee), noise(2, black, white), 0.3);");
+  ) + says(`color: displace(stripes(4, ${FIRST}, ${SECOND}), noise(2, black, white), 0.3);`);
 
 // --- a mask cuts holes
 
@@ -156,14 +163,39 @@ export function material(): string {
     const angle = (i * Math.PI) / 5;
     return `M${round(cx + (r + 5) * Math.cos(angle))} ${round(cy + (r + 5) * Math.sin(angle))}L${round(cx + (r + 13) * Math.cos(angle))} ${round(cy + (r + 13) * Math.sin(angle))}`;
   }).join("");
+  // Glass: three bars stand behind the ball. Around it they are straight; through it they
+  // are seen bent, like through a lens.
+  const bars = [-15, 0, 15].map((dx) => {
+    const reach = Math.sqrt(r * r - dx * dx);
+    const [x, top, bottom] = [round(cx + dx), round(cy - reach), round(cy + reach)];
+    return { around: `M${x} ${round(cy - r - 16)}V${top}M${x} ${bottom}V${round(cy + r + 16)}`, through: `M${x} ${top}Q${round(cx + dx * 2.6)} ${cy} ${x} ${bottom}` };
+  });
+  const glass =
+    path("guide", bars.map((bar) => bar.around).join("")) +
+    path("guide bent", bars.map((bar) => bar.through).join("")) +
+    `<circle class="edge" cx="${cx}" cy="${cy}" r="${round(r)}"/>` +
+    `<g class="glows">${glint}</g>`;
+  // Jelly: the light goes into the ball, runs through it, and comes out on the far side
+  const [lx, ly] = [0.87, 0.5]; // the way the light goes: down, to the right
+  const beams = [-18, 0, 18].map((across) => {
+    const [ox, oy] = [cx - ly * across, cy + lx * across]; // the middle of the ray, in the ball
+    const reach = Math.sqrt(r * r - across * across);
+    const at = (along: number) => `${round(ox + lx * along)} ${round(oy + ly * along)}`;
+    return { before: `M${at(-reach - 22)}L${at(-reach - 3)}`, inside: `M${at(-reach)}L${at(reach)}` };
+  });
+  const jelly =
+    sphere +
+    path("tint", beams.map((beam) => beam.before).join("")) +
+    path("tint flows", beams.map((beam) => beam.inside).join("")) +
+    `<g class="glows">${path("glint", arc(-5, -8, 68))}</g>`;
   return cells(
     "figure-steps",
     [
       ["matte()", sphere],
       // a metal mirrors the horizon and the floor
       ["metal()", sphere + path("edge", arc(0, 160, 20).replace("0 0 1", "0 0 0").replace(/A[\d.]+ [\d.]+/, `A${r} ${round(r * 0.35)}`)) + glint],
-      ["glass()", `<g class="tinted">${sphere}${glint}</g>` + path("ground", `M${cx - r - 8} ${cy + 10}H${cx + r + 8}M${cx - r - 8} ${cy - 12}H${cx + r + 8}`)],
-      ["jelly()", sphere + `<circle class="tint wobbles" cx="${cx}" cy="${cy + 4}" r="${round(r * 0.55)}"/>`],
+      ["glass()", glass],
+      ["jelly()", jelly],
       ["emissive()", `<g class="tinted">${sphere}</g>` + `<g class="glows">${path("tint", rays)}</g>`],
       ["iridescent()", sphere + `<circle class="sheen one" cx="${cx - 2}" cy="${cy - 2}" r="${r - 4}"/><circle class="sheen two" cx="${cx + 2}" cy="${cy + 2}" r="${r - 8}"/>`],
     ],
