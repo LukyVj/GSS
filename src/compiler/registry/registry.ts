@@ -2110,7 +2110,7 @@ sphere {
     values: [
       ["@apply --card;", "No values: each parameter takes its default. `@apply --card();` is the same."],
       ["@apply --card(0.7, #ff5a36);", "One value per parameter, in order; those left out take their default. A value with a comma of its own goes between braces: `{color 1s, scale 2s}`."],
-      ["@apply --card { … }", "A block for the `@contents` of the mixin, with or without values before it."],
+      ["@apply --card { … }", "The block goes where the mixin writes `@contents`. Values in parentheses can come before it: `@apply --card(0.7) { … }`."],
     ],
     details:
       "`@apply` goes in any rule: an object, a group, the scene, a `:hover` or `:active` rule, a nested rule, a `@media`, and a frame of `@keyframes` when the mixin holds declarations only. The mixin takes the place of `@apply` in the cascade: a declaration written after it in the same rule wins, one written before loses. An unknown mixin, more values than parameters, a parameter with no value and no default, or a mixin that applies itself is an error that points at it.",
