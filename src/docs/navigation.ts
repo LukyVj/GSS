@@ -75,7 +75,7 @@ export const DOC_GROUPS: NavGroup[] = [
   { id: "color-functions", title: "Color functions", category: "Appearance", order: 31, anchors: ["fn-rgb", "fn-hsl", "fn-hwb", "fn-lab-lch", "fn-oklab-oklch", "fn-color", "fn-color-mix", "fn-light-dark", "fn-contrast-color", "fn-currentcolor"] },
   { id: "gradients", title: "Gradients and noise", category: "Appearance", order: 32, anchors: ["fn-gradients", "fn-noise", "fn-checker", "fn-stripes", "fn-displace"] },
   { id: "materials", title: "Materials", category: "Appearance", order: 33, anchors: ["material"] },
-  { id: "textures", title: "Textures", category: "Appearance", order: 34, anchors: ["texture", "fn-element", "fn-paint", "texture-size", "image-rendering"] },
+  { id: "textures", title: "Textures", category: "Appearance", order: 34, anchors: ["texture", "fn-element", "fn-paint", "texture-size", "texture-mapping", "image-rendering"] },
   { id: "text", title: "Text", category: "Appearance", order: 34.5, anchors: ["content", "font-family", "font-weight", "font-style", "-webkit-text-fill-color"] },
   { id: "filters", title: "Filters", category: "Appearance", order: 35, anchors: ["filter"] },
   { id: "masks", title: "Visibility, opacity, outlines and masks", category: "Appearance", order: 36, anchors: ["display", "visibility", "opacity", "outline", "outline-width", "outline-style", "outline-color", "outline-offset", "mask-image", "mask-mode"] },

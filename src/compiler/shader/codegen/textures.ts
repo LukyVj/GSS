@@ -1,8 +1,8 @@
-// Textures (decision 59): one uniform per image, triplanar(), textureColor()
+// Textures (decision 59): one uniform per image, triplanar() or spherical() (decision 185), textureColor()
 import type { Token } from "../../syntax/tokenizer";
 import type { Keyframes } from "../../syntax/ast";
 import { FACES, type Face, type StyledInstance } from "../../cascade/resolve";
-import { readRendering, readTexture, sceneTextures } from "../../features/textures";
+import { readMapping, readRendering, readTexture, sceneTextures } from "../../features/textures";
 import { readContent, readFont, textSource, TEXT_COLOR } from "../../features/content";
 import { glslFloat, label, type Hover } from "./glsl";
 import { readColor } from "./read";
@@ -22,6 +22,22 @@ const TRIPLANAR = `vec3 triplanar(sampler2D image, vec3 q, vec3 n, vec3 box, vec
   if (pixelated) {
     vec2 size = vec2(textureSize(image, 0));         // the image in pixels: 16×16
     st = (floor(st * size) + 0.5) / size;            // the center of the pixel st falls in
+  }
+  vec4 pixel = texture(image, st);
+  return mix(color, pixel.rgb, pixel.a);
+}`;
+
+// The image wrapped once around the object, like a map around a globe (decision 185): the
+// longitude across, the latitude up, seen from the center of the object. The middle of the
+// image faces the front (+z), east is on the right (+x), the top is the top (+y), and the
+// left and right edges meet at the back. q: the point in the object's space
+const SPHERICAL = `vec3 spherical(sampler2D image, vec3 q, vec3 color, bool pixelated) {
+  vec3 d = normalize(q);
+  vec2 st = vec2(0.5 + atan(d.x, d.z) / 6.2831853,               // the longitude, from 0 to 1
+                 0.5 + asin(clamp(d.y, -1.0, 1.0)) / 3.1415927); // the latitude, from 0 to 1
+  if (pixelated) {
+    vec2 size = vec2(textureSize(image, 0));                     // the image in pixels: 1024×512
+    st = (floor(st * size) + 0.5) / size;                        // the center of the pixel st falls in
   }
   vec4 pixel = texture(image, st);
   return mix(color, pixel.rgb, pixel.a);
@@ -97,7 +113,7 @@ function objectBox(instance: StyledInstance): Num[] {
 }
 
 // The GLSL of the textures: one uniform per image, one space function per textured
-// object, triplanar() and textureColor(). Nothing at all when the scene has no texture.
+// object, triplanar() or spherical(), and textureColor(). Nothing at all when the scene has no texture.
 export function textureCode(
   instances: StyledInstance[],
   keyframes: Keyframes[],
@@ -118,13 +134,16 @@ export function textureCode(
   const branches = textured.map((instance) => {
     const id = glslFloat(instance.index);
     const space = `space${instance.index}`;
-    const box = `vec3(${textureBox(instance).map(g).join(", ")})`;
+    const box = `vec3(${textureBox(instance).map(g).join(", ")})`; // read with sphere too, to check texture-size
     const pixelated = readRendering(instance.styles["image-rendering"]); // one rendering for every face
+    const mapping = readMapping(instance.styles["texture-mapping"]); // one mapping for every face
     // The number of the image a texture value names, or null when there is none
     const imageOf = (value: Token[] | undefined): number | null =>
       value ? files.indexOf(readTexture(value)) : null;
     const read = (image: number, q: string, normal: string) =>
-      `triplanar(uTexture${image}, ${q}, ${normal}, ${box}, color, ${pixelated})`;
+      mapping === "sphere"
+        ? `spherical(uTexture${image}, ${q}, color, ${pixelated})`
+        : `triplanar(uTexture${image}, ${q}, ${normal}, ${box}, color, ${pixelated})`;
 
     const side = imageOf(instance.styles["texture"]);
     // The faces with an image of their own, and that image
@@ -201,6 +220,7 @@ export function textureCode(
     functions: [
       ...spaces,
       ...(branches.join("\n").includes("triplanar(") ? [TRIPLANAR] : []),
+      ...(branches.join("\n").includes("spherical(") ? [SPHERICAL] : []),
       ...(branches.join("\n").includes("textLabel(") ? [TEXT_LABEL] : []),
       ...(branches.join("\n").includes("textInk(") ? [TEXT_INK] : []),
       ...(branches.join("\n").includes("faceOf(") ? [FACE_OF] : []),

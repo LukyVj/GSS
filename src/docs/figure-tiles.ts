@@ -1,6 +1,6 @@
 import { escapeHtml } from "./escape";
 import { TILE, cells, isolines, lines, onCube, path, round, says, tile } from "./figure-kit";
-import { REST_VIEW, ball, slices, type Frame } from "./hairline";
+import { REST_VIEW, ball, draw, slices, type Frame, type Vec3 } from "./hairline";
 
 // What covers a surface: an image, a text, a pattern, a mask, a material. A figure shows the
 // image flat, then on the faces of an object.
@@ -46,6 +46,42 @@ export const texture = () => flow([['url("photo.jpg")', tile(photo)], ["texture"
 export function textureSize(): string {
   const quarter = [0, 1, 2, 3].map((n) => `<g transform="translate(${(n % 2) * 36} ${Math.floor(n / 2) * 36}) scale(0.5)">${photo}</g>`).join("");
   return steps([["texture-size: auto;", onCube(CELL, photo)], ["texture-size: 0.5;", onCube(CELL, quarter)]]);
+}
+
+// A map of the world, twice as wide as it is tall: a meridian every 45deg, the parallels at 45deg
+// north and south, and in signal the equator and the meridian of the middle, the one that
+// faces the front. In a box of width × height.
+const graticule = (width: number, height: number) =>
+  path("edge", [1, 2, 3, 5, 6, 7].map((i) => `M${round((i * width) / 8)} 0V${height}`).join("") + [1, 3].map((j) => `M0 ${round((j * height) / 4)}H${width}`).join("")) +
+  path("tint", `M${width / 2} 0V${height}M0 ${height / 2}H${width}`);
+
+// The map on each face of a cube, whole each time, then once around a ball: the same lines,
+// only the half the eye sees, like the faces of a cube
+export function textureMapping(): string {
+  const radius = 0.6;
+  const globe = ball(REST_VIEW, radius);
+  // A point of the ball at a longitude and a latitude, in degrees: longitude 0 faces the front
+  const at = (longitude: number, latitude: number): Vec3 => {
+    const [l, p] = [(longitude * Math.PI) / 180, (latitude * Math.PI) / 180];
+    return [radius * Math.cos(p) * Math.sin(l), radius * Math.sin(p), radius * Math.cos(p) * Math.cos(l)];
+  };
+  const meridian = (longitude: number) => ({ points: Array.from({ length: 37 }, (_, k) => at(longitude, -90 + k * 5)) });
+  const parallel = (latitude: number) => ({ points: Array.from({ length: 73 }, (_, k) => at(-180 + k * 5, latitude)) });
+  const seen = (...drawn: { points: Vec3[] }[]) => draw({ lines: drawn, mesh: globe.mesh }, CELL).visible;
+  // The flat map, as wide as the cell lets it be, in its middle
+  const [width, height] = [CELL.width - 24, (CELL.width - 24) / 2];
+  const [x, y] = [(CELL.width - width) / 2, (CELL.height - height) / 2];
+  const map = `<rect class="tile" x="${x}" y="${y}" width="${width}" height="${height}"/><g transform="translate(${x} ${y})">${graticule(width, height)}</g>`;
+  return steps([
+    ['url("earth.jpg")', map],
+    ["texture-mapping: box;", onCube(CELL, graticule(TILE, TILE))],
+    [
+      "texture-mapping: sphere;",
+      lines(globe, CELL) +
+        path("edge", seen(...[-135, -90, -45, 45, 90, 135].map(meridian), parallel(-45), parallel(45))) +
+        path("tint", seen(meridian(0), parallel(0))),
+    ],
+  ]);
 }
 
 // A curve of the image, seen very close: smooth, or with the squares of its pixels
@@ -207,6 +243,7 @@ export function material(): string {
 const TILES: Record<string, () => string> = {
   texture,
   "texture-size": textureSize,
+  "texture-mapping": textureMapping,
   "image-rendering": imageRendering,
   "selector-face": face,
   "fn-element": element,

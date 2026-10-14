@@ -58,7 +58,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 | Transforms   | `translate`, `rotate-x`, `rotate-y`, `rotate-z`, `scale` (uniform), `transform-origin`; x to the right, like CSS                                                                                                                                    | 13, 99, 107                     |
 | Motion path  | `offset-path: path()` / `ray()`, `offset-distance` (animatable), `offset-rotate`                                                                                                                                                                    | 97                              |
 | Look         | `color`, `material`                                                                                                                                                                                                                                 | 26                              |
-| Textures     | `texture: url("…")`, `element(#id)` (a live HTML element, a `<canvas>` inside it captured too, dec. 101, 168) or `paint(name)` (a GLSL fragment shader of a `@paint`, WebGL2, dec. 151), `image-rendering: pixelated`, `texture-size`                                                                                                                                 | 59                              |
+| Textures     | `texture: url("…")`, `element(#id)` (a live HTML element, a `<canvas>` inside it captured too, dec. 101, 168) or `paint(name)` (a GLSL fragment shader of a `@paint`, WebGL2, dec. 151), `image-rendering: pixelated`, `texture-size`, `texture-mapping: sphere` (an image around the object, like a map around a globe, dec. 185)                                     | 59, 185                         |
 | Opacity      | `opacity: <number> \| <percentage>`, a transparent `color` or gradient, `filter: opacity()`: the surfaces behind showing through, on groups multiplied into each object                                                                             | 116, 117                        |
 | Blend modes  | `mix-blend-mode`: the 16 modes of `background-blend-mode` and `plus-lighter`, the color of an object blended with what is behind it along the ray (objects, floor, background), each object seen once; with `opacity`; on groups into each object; discrete on `:hover` and in `@keyframes` | 173 |
 | Masks        | `mask-image: <gradient> \| noise()` cuts sharp holes where the image is transparent, `mask-mode: alpha \| luminance`                                                                                                                                | 113                             |
@@ -103,7 +103,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
 | Everything compiled into **a single fragment shader**, in GLSL (WebGL2) and WGSL (WebGPU, with a WebGL2 fallback), SDF raymarching, no Three.js                                   | 1, 5, 30, 90 |
 | One reflection (1 bounce), glass refraction (in + out), procedural frost                                                                                                          | 29, 31       |
-| Everything is computed, except the images of `texture`: projected on each face (triplanar), at most 16 per scene                                                                  | 1, 59        |
+| Everything is computed, except the images of `texture`: projected on each face (triplanar) or wrapped around the object (`texture-mapping: sphere`), at most 16 per scene         | 1, 59, 185   |
 | Minimal shader: only the GLSL the scene uses goes in (an empty scene: 104 lines)                                                                                                  | 53           |
 | `:hover`: a 1-pixel picking pass under the mouse, `uHover[]` mixed into every hovered property                                                                                    | 62           |
 | `:hover` read without waiting for the GPU: a pixel buffer and a fence (`runtime/picker.ts`)                                                                                       | 65           |
@@ -153,6 +153,7 @@ On `release/0.0.7`. Decisions from 169.
 - [x] `controls` on `scene` and on objects (176): the gestures that move the camera; the pieces of Back Rank and the buttons of Midnight Arcade hold still under a drag.
 - [x] The slider of the playground moves `scroll()` with `animation-range` (177): it stood at the end, the playground does not scroll.
 - [x] `content` on objects and faces (178): a text painted on the surface, with `font-family`, `font-weight`, `font-style` and `-webkit-text-fill-color`. Next, apart: `attr()`, `font-size`, then a `text` shape whose letters are the shape.
+- [x] `texture-mapping: sphere` (185, Yoshihiro Hasegawa's #15): one image around the object, like a map around a globe, for the Earth or the Moon; `box`, the default, unchanged.
 
 ## Release 0.0.6 (published Oct. 9)
 
@@ -315,7 +316,7 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 ### Textures (after decision 59)
 
 - [ ] A soft blend between faces (triplanar weights), for stone or bark on round shapes
-- [ ] `texture-mapping: sphere`: the image wraps a sphere like a map around a globe (planets)
+- [x] `texture-mapping: sphere`: the image wraps a sphere like a map around a globe (planets) ✅ decision 185
 - [ ] Images in the playground: drag and drop, and in share links (data URLs?)
 - [ ] Unmirror the −x, −z and bottom faces
 - [ ] Textures in reflections and glass (`trace()` → `textureColor()`)
@@ -357,6 +358,7 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 
 ## Done recently
 
+- `texture-mapping: sphere` (decision 185, Oct. 13): one image wrapped around the object, like a map around a globe, the middle of the image in front and its edges meeting at the back; `box`, the default, keeps the projection on the faces, every shader of the existing scenes unchanged. The Earth and the Moon of NASA (public domain) in `public/textures/` for the examples of the docs
 - `content` (decision 178, Oct. 10, Lucas: "content: '';"): a string, several strings or a `var()` on an object or on one of its faces; the runtime draws the text in a canvas, the shader paints its alpha over the color, the gradient or the texture, as large as each face lets it be, readable on every face; WebGL2 and WebGPU.
 - Mixins, like CSS (decision 174, Oct. 9, Lucas: "des mixins, comme Sass"): `@mixin --name(--param: default) { … }` outside the rules, `@apply --name(…);` in any rule, a nested rule, `:hover`, a `@media` or a frame of `@keyframes`, and `@contents` for the block given to `@apply`; unfolded by the parser, so the shader is the one of the rules written by hand (every existing shader identical); errors where they are (an unknown mixin, a value too many, a mixin that applies itself); the highlighter, the formatter, the autocompletion (the mixins of the file after `@apply`) and the VS Code grammar know them; two pages of the docs. The syntax of the CSS draft, not Sass's `@include`
 - `mix-blend-mode` on objects (decision 173, Oct. 9): an object blends its lit color with what is behind it along the ray, the objects, the floor and the background, with the blend functions of `background-blend-mode` and `plus-lighter`; seen once (never with its own back face), with `opacity`, on groups into each object, discrete on `:hover` and in `@keyframes`. No `isolation` yet. Costs nothing to a scene without it; +24 % with the sun of the Orrery screened, +33 % for the three spheres of the docs, × 2.7 with every key of the macro pad multiplied
