@@ -52,6 +52,7 @@ export function sceneTextures(
   };
   for (const instance of instances) {
     readRendering(instance.styles["image-rendering"]); // checked on every object, even without a texture
+    readMapping(instance.styles["texture-mapping"]); // and so is its mapping
     const font = readFont(instance.styles); // and so is its font, even without content
     // The object's own image first, then its faces
     const values = [
@@ -94,6 +95,27 @@ export function readRendering(value: Token[] | undefined): boolean {
     );
   }
   return RENDERINGS[word.value];
+}
+
+// How the images of an object are laid on it (decision 185): box projects them on the faces
+// of the box around the object, sphere wraps them once around it, like a map around a globe
+export type Mapping = "box" | "sphere";
+
+// texture-mapping: sphere → "sphere"; not set → "box", the faces of the box, as before
+export function readMapping(value: Token[] | undefined): Mapping {
+  if (!value) return "box";
+  const [word] = value;
+  if (
+    value.length !== 1 ||
+    word.type !== "IDENT" ||
+    (word.value !== "box" && word.value !== "sphere")
+  ) {
+    throw errorAt(
+      value,
+      "texture-mapping expects box or sphere, like: texture-mapping: sphere;",
+    );
+  }
+  return word.value;
 }
 
 // texture: paint(rings) → "rings"; null for an image or an element

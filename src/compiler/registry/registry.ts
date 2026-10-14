@@ -355,6 +355,34 @@ export const PROPERTIES: PropertyDef[] = [
     ],
   },
   {
+    name: "texture-mapping",
+    figure: "tile",
+    since: "0.0.7",
+    appliesTo: "object",
+    syntax: "box | sphere",
+    initial: "box",
+    description:
+      "How the image of `texture` is laid on the object. `box`, the default, projects one image on each face of the box around it; `sphere` wraps one image around the whole object, like a map around a globe, for the Earth, the Moon or a planet.",
+    values: [
+      ["box", "One image on each face of the box around the object: the default."],
+      ["sphere", "One image around the whole object: the longitude across, the latitude up. The middle of the image faces the front, its top is the top of the object, and its left and right edges meet at the back."],
+    ],
+    details: "`sphere` expects a map twice as wide as it is tall (an equirectangular map, like most maps of the Earth and the Moon). It covers the object once: `texture-size` has no effect.",
+    more: "The image is seen from the center of the object: a sphere shows it in one piece, without the stretched corners of `box`, and only the poles squeeze its top and bottom rows, like on any globe. A map whose left and right edges match shows no seam at the back. Another shape shows the image too, projected from its center. The images of `::face()` are wrapped the same way, each one on its own face, and `image-rendering` applies as with `box`. A large map can shimmer on a small sphere: 1024 pixels across is enough.",
+    examples: [
+      {
+        name: "the Earth",
+        text: "NASA's Blue Marble around a sphere tilted like the Earth, turning once in 12 seconds.",
+        code: '@scene { sphere; } sphere { translate: 0 1 0; radius: 0.8; texture: url("/textures/earth.jpg"); texture-mapping: sphere; rotate-x: -23deg; animation: spin 12s linear infinite; } @keyframes spin { to { rotate-y: 360deg; } }',
+      },
+      {
+        name: "the Moon",
+        text: "NASA's map of the Moon, its near side to the front, lit from the right.",
+        code: '@scene { sphere; } scene { floor: none; background: #000000; light: 60deg 10deg 1.4; ambient: 0.05; } sphere { translate: 0 1 0; radius: 0.8; texture: url("/textures/moon.jpg"); texture-mapping: sphere; }',
+      },
+    ],
+  },
+  {
     name: "content",
     figure: "tile",
     since: "0.0.7",
