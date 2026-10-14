@@ -153,7 +153,7 @@ On `release/0.0.7`. Decisions from 169.
 - [x] `controls` on `scene` and on objects (176): the gestures that move the camera; the pieces of Back Rank and the buttons of Midnight Arcade hold still under a drag.
 - [x] The slider of the playground moves `scroll()` with `animation-range` (177): it stood at the end, the playground does not scroll.
 - [x] `content` on objects and faces (178): a text painted on the surface, with `font-family`, `font-weight`, `font-style` and `-webkit-text-fill-color`. Next, apart: `attr()`, `font-size`, then a `text` shape whose letters are the shape.
-- [x] `texture-mapping: sphere` (185): one image around the object, like a map around a globe, for the Earth or the Moon; `box`, the default, unchanged.
+- [x] `texture-mapping: sphere` (185, Yoshihiro Hasegawa's #15): one image around the object, like a map around a globe, for the Earth or the Moon; `box`, the default, unchanged.
 
 ## Release 0.0.6 (published Oct. 9)
 
