@@ -1,0 +1,49 @@
+/* A small spiral galaxy, drawn behind the label of a button:
+   two arms of glowing stars around a warm core, turning slowly
+   over a glow and a dust of faint stars. */
+
+@scene {
+  group#galaxy {
+    sphere#core;
+    sphere.star * 60;
+  }
+}
+
+scene {
+  floor: none;
+  background:
+    noise(90 1, #ffffff00 90%, #d8d0ff80 97%),
+    radial-gradient(ellipse at 50% 50%, #f3c58a 0%, #8a6cff 10%, #2a1f6a 26%, #0b0920 52%, #030309);
+  camera-distance: 3.2;
+  camera-angle: 0deg 24deg;
+  camera-target: 0 0 0;
+  ambient: 1;
+  filter: bloom(0.85, 10px);
+}
+
+#galaxy {
+  animation: spin 40s linear;
+}
+
+@keyframes spin {
+  to {
+    rotate-y: -360deg;
+  }
+}
+
+#core {
+  radius: 0.14;
+  material: emissive(#ffe2b0, 3);
+}
+
+/* Two arms: odd stars on one, even stars on the other, half a turn apart.
+   Further out, a star is bluer and smaller, and strays further from its arm. */
+.star {
+  --i: sibling-index();
+  --t: calc(var(--i) / 60);
+  --a: calc(var(--t) * 420deg + mod(var(--i), 2) * 180deg + random(-14deg, 14deg));
+  --r: calc(0.22 + var(--t) * 1.9 + random(-0.1, 0.1));
+  radius: calc(0.045 - var(--t) * 0.022 + random(0, 0.012));
+  translate: calc(cos(var(--a)) * var(--r)) random(-0.04, 0.04) calc(sin(var(--a)) * var(--r));
+  material: emissive(hsl(calc(40 - var(--t) * 160) 95% 68%), 1.4);
+}
