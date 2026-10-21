@@ -397,7 +397,7 @@ export const PROPERTIES: PropertyDef[] = [
       ["none", "No text: the default. `normal` is the same."],
     ],
     details: "The text is one line, as large as each face lets it be. Unlike CSS, `content` goes on the object itself, not on a `::before`, and it cannot change on `:hover` or in `@keyframes`.",
-    more: "The text sits in the middle of each face, and keeps its proportions. A cube shows it on its six faces, read from left to right on each; `::face()` gives a face a text of its own, or `none`. A sphere shows it six times around itself. The text follows the size of a cube and of a sphere; on another shape it is written as on a cube of 1 around it. The font comes from `font-family`, `font-weight` and `font-style`, the color from `-webkit-text-fill-color`. An emoji is drawn as a flat shape, in the color of the text.",
+    more: "The text sits in the middle of each face, and keeps its proportions. A cube shows it on its six faces, read from left to right on each; `::face()` gives a face a text of its own, or `none`. A sphere shows it six times around itself. The text follows the size of a cube and of a sphere; on another shape it is written as on a cube of 1 around it. The font comes from `font-family`, `font-weight` and `font-style`, the color from `text-color`. An emoji is drawn as a flat shape, in the color of the text.",
     examples: [
       {
         name: "a sign",
@@ -465,19 +465,19 @@ export const PROPERTIES: PropertyDef[] = [
     ],
   },
   {
-    name: "-webkit-text-fill-color",
+    name: "text-color",
     figure: "tile",
     since: "0.0.7",
     appliesTo: "object",
     syntax: "<color>",
     initial: "black or white",
     description:
-      "The color of the text of `content`, like CSS. Without one, the text is black on a light object and white on a dark one, so it stays readable when the color of the object changes.",
-    details: "In GSS, `color` is the color of the object: this property is the one that colors its text.",
+      "The color of the text of `content`. Without one, the text is black on a light object and white on a dark one, so it stays readable when the color of the object changes.",
+    details: "In CSS, `color` colors the text. In GSS, `color` is the color of the object, so its text has a property of its own.",
     examples: [
       {
         name: "orange on white",
-        code: '@scene { cube; } cube { translate: 0 0.8 0; size: 2.4 1 0.2; color: #f4f1ea; content: "hello"; font-weight: bold; -webkit-text-fill-color: #ff5a36; }',
+        code: '@scene { cube; } cube { translate: 0 0.8 0; size: 2.4 1 0.2; color: #f4f1ea; content: "hello"; font-weight: bold; text-color: #ff5a36; }',
       },
     ],
   },

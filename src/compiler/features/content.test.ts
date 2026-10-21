@@ -160,6 +160,16 @@ describe("content in the shader", () => {
     expect(glslFunction(shader, "vec3 textureColor(")).toContain("textLabel(uTexture0, q, ln, vec3(1.154, 1.154, 1.154), color, textInk(color));");
   });
 
+  it("paints the text in the color of text-color", () => {
+    const shader = compileGSS('@scene { cube; } cube { content: "hello"; text-color: red; }');
+    expect(glslFunction(shader, "vec3 textureColor(")).toContain("color, vec3(1.0, 0.0, 0.0));");
+    expect(shader).not.toContain("textInk(");
+  });
+
+  it("knows no -webkit-text-fill-color", () => {
+    expect(() => compileScene('@scene { cube; } cube { content: "a"; -webkit-text-fill-color: red; }')).toThrow(/Unknown property "-webkit-text-fill-color"/);
+  });
+
   it("paints the text of a face on that face only", () => {
     const shader = compileGSS('@scene { cube; } cube { content: "side"; } cube::face(front) { content: "front"; }');
     const textureColor = glslFunction(shader, "vec3 textureColor(");

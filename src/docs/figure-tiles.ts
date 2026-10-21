@@ -132,7 +132,7 @@ export const fontStyle = () =>
 export const textFill = () =>
   steps([
     ["black or white", onCube(CELL, word("GSS"))],
-    ["-webkit-text-fill-color: #ff5a36;", onCube(CELL, word("GSS", ' style="stroke: var(--gss-signal)"'))],
+    ["text-color: #ff5a36;", onCube(CELL, word("GSS", ' style="stroke: var(--gss-signal)"'))],
   ]);
 
 // --- the patterns that go wherever a gradient goes
@@ -251,7 +251,7 @@ const TILES: Record<string, () => string> = {
   "font-family": fontFamily,
   "font-weight": fontWeight,
   "font-style": fontStyle,
-  "-webkit-text-fill-color": textFill,
+  "text-color": textFill,
   "fn-gradients": gradients,
   "fn-noise": noise,
   "fn-checker": checker,

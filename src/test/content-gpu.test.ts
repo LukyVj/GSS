@@ -75,8 +75,8 @@ describe("content", () => {
     expect(b).toBeLessThan(60);
   }, 60000);
 
-  it("paints it in the color of -webkit-text-fill-color", async () => {
-    const [[r, g, b]] = await pixels(scene('content: "█"; -webkit-text-fill-color: #ff0000;'), [[0, 0]]);
+  it("paints it in the color of text-color", async () => {
+    const [[r, g, b]] = await pixels(scene('content: "█"; text-color: #ff0000;'), [[0, 0]]);
     expect(r).toBeGreaterThan(150);
     expect(g).toBeLessThan(60);
     expect(b).toBeLessThan(60);

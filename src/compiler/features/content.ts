@@ -3,7 +3,7 @@ import type { Styles } from "../cascade/resolve";
 import { errorAt } from "../syntax/errors";
 
 // The color of the text: the name of the property
-export const TEXT_COLOR = "-webkit-text-fill-color";
+export const TEXT_COLOR = "text-color";
 
 // content: "hello" → "hello"; several strings are joined, like CSS. null: no text
 // (none, normal, an empty string, or no value)
