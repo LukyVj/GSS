@@ -141,6 +141,11 @@ describe("strings", () => {
 
   it("keeps an escaped quote", () => {
     expect(tokenize(`"a\\"b"`)).toEqual([{ type: "STRING", value: 'a"b' }]);
+    // The escapes of CSS: a code point in hexadecimal, one space after it is part of it
+    expect(tokenize(`"one\\A two"`)).toEqual([{ type: "STRING", value: "one\ntwo" }]);
+    expect(tokenize(`"\\1F600"`)).toEqual([{ type: "STRING", value: "😀" }]);
+    expect(tokenize(`"\\00e9t\\e9"`)).toEqual([{ type: "STRING", value: "été" }]);
+    expect(tokenize(`"\\0 \\110000"`)).toEqual([{ type: "STRING", value: "\uFFFD\uFFFD" }]);
   });
 
   it("says when a string is never closed, and where", () => {

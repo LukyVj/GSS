@@ -129,6 +129,25 @@ export const fontStyle = () =>
     ["font-style: italic;", letters("font-family: serif; font-style: italic")],
   ]);
 
+export const fontSize = () =>
+  steps([
+    ["font-size: auto;", letters("font-family: sans-serif")],
+    ["font-size: 0.2;", letters("font-family: sans-serif; font-size: 20px")],
+  ]);
+
+// Two lines, leaning to one side
+const aligned = (anchor: "start" | "middle" | "end") => {
+  const x = { start: 18, middle: 66, end: 114 }[anchor];
+  return `<text class="letters" text-anchor="${anchor}" x="${x}" y="58">GPU</text><text class="letters" text-anchor="${anchor}" x="${x}" y="86">Style Sheets</text>`;
+};
+
+export const textAlign = () =>
+  steps([
+    ["text-align: start;", aligned("start")],
+    ["text-align: center;", aligned("middle")],
+    ["text-align: end;", aligned("end")],
+  ]);
+
 export const textFill = () =>
   steps([
     ["black or white", onCube(CELL, word("GSS"))],
@@ -251,6 +270,8 @@ const TILES: Record<string, () => string> = {
   "font-family": fontFamily,
   "font-weight": fontWeight,
   "font-style": fontStyle,
+  "font-size": fontSize,
+  "text-align": textAlign,
   "text-color": textFill,
   "fn-gradients": gradients,
   "fn-noise": noise,

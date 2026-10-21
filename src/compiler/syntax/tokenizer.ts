@@ -133,12 +133,23 @@ export function scan(
       continue;
     }
 
-    // 3. The strings: "M0 0 L1 1" or 'M0 0 L1 1'. A \ keeps the next character as it is.
+    // 3. The strings: "M0 0 L1 1" or 'M0 0 L1 1'. A \ keeps the next character as it is,
+    // or, like CSS, writes the code point of up to 6 hexadecimal digits: "one\A two"
     if (char === '"' || char === "'") {
       i++;
       let value = "";
       while (i < source.length && charAt(i) !== char && charAt(i) !== "\n") {
-        if (charAt(i) === "\\") i++; // \" is a quote inside the string
+        if (charAt(i) === "\\") {
+          i++; // \" is a quote inside the string
+          const hex = /^[0-9a-fA-F]{1,6}/.exec(source.slice(i, i + 6))?.[0];
+          if (hex) {
+            const code = parseInt(hex, 16);
+            value += code === 0 || code > 0x10ffff || (code >= 0xd800 && code <= 0xdfff) ? "\uFFFD" : String.fromCodePoint(code);
+            i += hex.length;
+            if (charAt(i) === " " || charAt(i) === "\t") i++; // one space ends the escape
+            continue;
+          }
+        }
         value += charAt(i);
         i++;
       }

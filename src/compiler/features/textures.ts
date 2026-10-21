@@ -1,8 +1,9 @@
 import type { Token } from "../syntax/tokenizer";
-import { FACES, type Face, type Styles } from "../cascade/resolve";
+import { FACES, type Face, type Styles, type StyledInstance } from "../cascade/resolve";
 import { readFunction } from "../values/values";
 import { errorAt } from "../syntax/errors";
-import { readContent, readFont, textSource } from "./content";
+import { textGroups } from "./text-layout";
+import type { Keyframes } from "../syntax/ast";
 
 const EXAMPLE = 'texture: url("dirt.png");';
 
@@ -37,7 +38,8 @@ export function readTexture(value: Token[]): string {
 
 // Every image of the scene, once each, in the order of the objects
 export function sceneTextures(
-  instances: { styles: Styles; faceStyles: Record<Face, Styles> }[],
+  instances: StyledInstance[],
+  keyframes: Keyframes[] = [],
 ): string[] {
   const files = new Set<string>(); // keeps the first order, ignores duplicates
   const add = (source: string, value: Token[]) => {
@@ -53,7 +55,6 @@ export function sceneTextures(
   for (const instance of instances) {
     readRendering(instance.styles["image-rendering"]); // checked on every object, even without a texture
     readMapping(instance.styles["texture-mapping"]); // and so is its mapping
-    const font = readFont(instance.styles); // and so is its font, even without content
     // The object's own image first, then its faces
     const values = [
       instance.styles["texture"],
@@ -63,11 +64,13 @@ export function sceneTextures(
       if (!value) continue;
       add(readTexture(value), value);
     }
-    // content: the text of the object, then of its faces, an image the runtime draws
-    for (const value of [instance.styles["content"], ...FACES.map((face) => instance.faceStyles[face]["content"])]) {
-      const text = readContent(value);
-      if (text !== null) add(textSource(text, font), value!);
-    }
+    // content: the text of each face, an image the runtime draws. Its font and its layout
+    // are checked on every object, even without content
+    for (const texts of textGroups(instance, keyframes))
+      for (const face of FACES) {
+        const text = texts[face];
+        if (text) add(text.source, instance.faceStyles[face]["content"] ?? instance.styles["content"] ?? []);
+      }
   }
   return [...files];
 }

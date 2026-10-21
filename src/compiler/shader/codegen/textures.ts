@@ -3,11 +3,17 @@ import type { Token } from "../../syntax/tokenizer";
 import type { Keyframes } from "../../syntax/ast";
 import { FACES, type Face, type StyledInstance } from "../../cascade/resolve";
 import { readMapping, readRendering, readTexture, sceneTextures } from "../../features/textures";
-import { readContent, readFont, textSource, TEXT_COLOR } from "../../features/content";
+import { TEXT_COLOR } from "../../features/content";
+import { frameStyles, textGroups, textsIn, textsKey, objectBox, textBox, type FaceText } from "../../features/text-layout";
+import { readFontSize } from "../../features/content";
+import type { Styles } from "../../cascade/resolve";
+import { hoverValue } from "./animation";
+import { round } from "./glsl";
 import { glslFloat, label, type Hover } from "./glsl";
 import { readColor } from "./read";
-import { g, liveNumber, liveSize3, mul, type Num } from "./live";
+import { g, liveNumber, type Num } from "./live";
 import { spaceFunction } from "./transforms";
+import { errorAt } from "../../syntax/errors";
 
 // The image seen from the axis the surface faces most: y is the top and the bottom,
 // x and z are the sides. q: the point in the object's space (centered on 0),
@@ -52,27 +58,29 @@ const FACE_OF = `int faceOf(vec3 n) {
   return n.z > 0.0 ? 3 : 4;                                // front, back
 }`;
 
-// The room a text has on each side of the object. A sphere is seen from six sides, each
-// one a sixth of it: the square that fits in a sixth is 1 / sqrt(3) of its diameter
-function textBox(instance: StyledInstance): Num[] {
-  const box = objectBox(instance);
-  return instance.tag === "sphere" ? box.map((side) => mul(0.577, side)) : box;
-}
-
-// content: the text of an object, drawn by the runtime in an image whose alpha is the ink.
+// content: the text of an object, drawn by the runtime in an image twice: in white above, in
+// black below. Where the two copies differ the letters take the ink; where they agree, an
+// emoji keeps its own colors.
 // The image keeps its proportions: it is as large as the face lets it be, in its middle,
 // and reads from left to right on every face (the top from the front, the bottom from under)
-const TEXT_LABEL = `vec3 textLabel(sampler2D image, vec3 q, vec3 n, vec3 box, vec3 color, vec3 ink) {
+// zoom: 0 fits the text to the face; else font-size sets it, the image being as wide as the
+// face at a zoom of 1
+const TEXT_LABEL = `vec3 textLabel(sampler2D image, vec3 q, vec3 n, vec3 box, vec3 color, vec3 ink, float zoom) {
   vec3 a = abs(n);
   vec2 uv;
   vec2 face;
   if (a.y >= a.x && a.y >= a.z) { uv = vec2(q.x, -sign(n.y) * q.z); face = box.xz; }  // top and bottom
   else if (a.x >= a.z) { uv = vec2(-sign(n.x) * q.z, q.y); face = box.zy; }           // left and right
   else { uv = vec2(sign(n.z) * q.x, q.y); face = box.xy; }                            // front and back
-  vec2 size = vec2(textureSize(image, 0));                                            // the image in pixels
-  vec2 st = uv / (size * min(face.x / size.x, face.y / size.y)) + 0.5;
+  vec2 size = vec2(textureSize(image, 0)) * vec2(1.0, 0.5);                           // one copy, in pixels
+  float scale = zoom > 0.0 ? zoom * face.x / size.x : min(face.x / size.x, face.y / size.y);
+  vec2 st = uv / (size * scale) + 0.5;
   vec2 inside = step(vec2(0.0), st) * step(st, vec2(1.0));                            // nothing around the image
-  return mix(color, ink, texture(image, clamp(st, 0.0, 1.0)).a * inside.x * inside.y);
+  st = clamp(st, 0.0, 1.0);
+  vec4 light = texture(image, vec2(st.x, 0.5 + 0.5 * st.y));                          // the copy in white
+  vec4 dark = texture(image, vec2(st.x, 0.5 * st.y));                                 // the copy in black
+  float plain = clamp(dot(light.rgb - dark.rgb, vec3(0.3333)), 0.0, 1.0);             // 1: a letter, 0: an emoji
+  return mix(color, mix(dark.rgb, ink, plain), light.a * inside.x * inside.y);
 }`;
 
 // The ink of a text without a color of its own: black on a light surface, white on a dark one
@@ -101,17 +109,6 @@ function textureBox(instance: StyledInstance): Num[] {
   return objectBox(instance);
 }
 
-// The full size of the object: what one image, or its text, covers
-function objectBox(instance: StyledInstance): Num[] {
-  // A size set from JS (decision 105): the images follow it
-  if (instance.tag === "cube") return liveSize3(instance.styles["size"]);
-  if (instance.tag === "sphere") {
-    const diameter = mul(2, liveNumber(instance.styles["radius"], "radius", 0.5)); // same default as SHAPES.sphere
-    return [diameter, diameter, diameter];
-  }
-  return [1, 1, 1];
-}
-
 // The GLSL of the textures: one uniform per image, one space function per textured
 // object, triplanar() or spherical(), and textureColor(). Nothing at all when the scene has no texture.
 export function textureCode(
@@ -119,14 +116,14 @@ export function textureCode(
   keyframes: Keyframes[],
   hoverOf: (instance: StyledInstance) => Hover | undefined,
 ) {
-  const files = sceneTextures(instances);
+  const files = sceneTextures(instances, keyframes);
   if (files.length === 0) return { uniforms: "", functions: "", call: "" };
 
   const uniforms = files
     .map((file, i) => `uniform sampler2D uTexture${i}; // ${file}`)
     .join("\n");
 
-  const textured = instances.filter((instance) => sceneTextures([instance]).length > 0);
+  const textured = instances.filter((instance) => sceneTextures([instance], keyframes).length > 0);
 
   // The same moves as in map(): the groups from the outside in, then the object
   const spaces = textured.map((instance) => spaceFunction(instance, keyframes, hoverOf));
@@ -152,19 +149,10 @@ export function textureCode(
       image: imageOf(instance.faceStyles[face]["texture"]),
     })).filter((entry) => entry.image !== null);
 
-    // content: the text of the object, and of the faces that set their own (none: no text there)
-    const font = readFont(instance.styles);
-    const textOf = (value: Token[] | undefined): number | null => {
-      const text = readContent(value);
-      return text === null ? null : files.indexOf(textSource(text, font));
-    };
-    const sideText = textOf(instance.styles["content"]);
-    const faceTexts = FACES.filter((face) => instance.faceStyles[face]["content"]).map((face) => ({
-      face,
-      text: textOf(instance.faceStyles[face]["content"]),
-    }));
+    // content: every text the object can show, the one at rest first
+    const groups = textGroups(instance, keyframes);
 
-    if (sideText === null && faceTexts.every((entry) => entry.text === null)) {
+    if (groups.every((texts) => FACES.every((face) => texts[face] === null))) {
       // No face of its own: one line, like before
       if (faces.length === 0) {
         return `  if (id == ${id}) return ${read(side!, `${space}(p)`, `${space}(p + n * 0.01) - ${space}(p)`)};`;
@@ -185,25 +173,72 @@ export function textureCode(
       ].join("\n");
     }
 
-    // With a text: the image first, then the text over it
-    const ink = instance.styles[TEXT_COLOR] ? readColor(instance.styles[TEXT_COLOR]) : "textInk(color)";
-    const write = (text: number) =>
-      `textLabel(uTexture${text}, q, ln, vec3(${textBox(instance).map(g).join(", ")}), color, ${ink})`;
+    // With a text: the image first, then the text over it. Its color and its zoom mix on
+    // :hover and in @keyframes, like any color and number
+    const hover = hoverOf(instance);
+    const ink = hoverValue(instance.styles, keyframes, TEXT_COLOR, (value) => (value ? readColor(value) : "textInk(color)"), hover);
+    const restSize = readFontSize(instance.styles["font-size"]);
+    const zoom = hoverValue(instance.styles, keyframes, "font-size", (value) => {
+      const size = readFontSize(value);
+      if (restSize !== null) return glslFloat(round((size ?? restSize) / restSize));
+      if (size !== null)
+        throw errorAt(value!, "font-size can change on :hover or in @keyframes only from a number: write one at rest, like: font-size: 0.3;");
+      return "0.0";
+    }, hover);
+    const write = (text: FaceText) =>
+      text
+        ? `textLabel(uTexture${files.indexOf(text.source)}, q, ln, vec3(${textBox(instance).map(g).join(", ")}), color, ${ink}, ${text.sized ? zoom : "0.0"})`
+        : "color";
+    // The texts of the six faces: the one most faces share is written last, the others face by face
+    const lines = (texts: Record<Face, FaceText>, indent: string) => {
+      const key = (text: FaceText) => text?.source ?? "";
+      const count = (text: FaceText) => FACES.filter((face) => key(texts[face]) === key(text)).length;
+      const shared = FACES.map((face) => texts[face]).reduce((best, text) => (count(text) > count(best) ? text : best));
+      return [
+        ...FACES.filter((face) => key(texts[face]) !== key(shared)).map(
+          (face) => `${indent}if (face == ${FACE_NUMBERS[face]}) return ${write(texts[face])}; // ${face}`,
+        ),
+        `${indent}return ${write(shared)};`,
+      ];
+    };
+    // Several texts: each has a weight, 1 in the states that show it, mixed like a number
+    // by :hover and the animations; the text whose weight is past one half is shown, so it
+    // changes halfway, like a value of CSS that does not interpolate
+    const named = (g: number) => ` text ${g}`; // a property no rule can write
+    const one = (on: boolean): Token[] => [{ type: "NUMBER", value: on ? 1 : 0 }];
+    const mark = (styles: Styles): Styles => {
+      const key = textsKey(textsIn(instance, styles));
+      return { ...styles, ...Object.fromEntries(groups.map((texts, g) => [named(g), one(textsKey(texts) === key)])) };
+    };
+    const marked = keyframes.map((k) => ({
+      ...k,
+      frames: k.frames.map((frame) => {
+        const styles = frameStyles(instance, frame);
+        if (!styles) return frame;
+        const key = textsKey(textsIn(instance, styles));
+        return { ...frame, declarations: [...frame.declarations, ...groups.map((texts, g) => ({ property: named(g), value: one(textsKey(texts) === key) }))] };
+      }),
+    }));
+    const layers = hover?.map((layer) => ({ ...layer, styles: mark(layer.styles) }));
+    const weights = groups.slice(0, -1).map((_, g) =>
+      `    float text${g} = ${hoverValue(mark(instance.styles), marked, named(g), (value) => glslFloat(Number(value![0].value)), layers)};`,
+    );
+    const textLines = [
+      ...weights,
+      ...groups.slice(0, -1).flatMap((texts, g) => [`    if (text${g} > 0.5) {`, ...lines(texts, "      "), "    }"]),
+      ...lines(groups[groups.length - 1], "    "),
+    ];
     return [
       `  if (id == ${id}) {  // ${label(instance)}`,
       `    vec3 q = ${space}(p);`,
       `    vec3 ln = ${space}(p + n * 0.01) - q; // the normal in the object's space`,
-      ...(faces.length > 0 || faceTexts.length > 0 ? [`    int face = faceOf(ln);`] : []),
+      ...(faces.length > 0 || textLines.some((line) => line.includes("face ==")) ? [`    int face = faceOf(ln);`] : []),
       ...faces.map(
         ({ face, image }, i) =>
           `    ${i > 0 ? "else " : ""}if (face == ${FACE_NUMBERS[face]}) color = ${read(image!, "q", "ln")}; // ${face}`,
       ),
       ...(side !== null ? [`    ${faces.length > 0 ? "else " : ""}color = ${read(side, "q", "ln")};`] : []),
-      ...faceTexts.map(
-        ({ face, text }) =>
-          `    if (face == ${FACE_NUMBERS[face]}) return ${text !== null ? write(text) : "color"}; // ${face}`,
-      ),
-      sideText !== null ? `    return ${write(sideText)};` : "    return color;",
+      ...textLines,
       "  }",
     ].join("\n");
   });

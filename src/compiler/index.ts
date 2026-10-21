@@ -323,7 +323,7 @@ function compileStylesheet(
   const camera = errors.run(() => readCamera(computedScene));
   const dpr = errors.run(() => readDpr(computedScene));
   // After the cascade and var(): the texture an object really ends up with
-  const textures = errors.run(() => sceneTextures(drawn));
+  const textures = errors.run(() => sceneTextures(drawn, [...shared, ...copies]));
   // @paint (decision 151): the shaders of paint(name), the last one of a name wins like CSS
   const defined = new Map(stylesheet.paints.map((paint) => [String(paint.name.value), { code: String(paint.code.value), line: paint.line ?? 1 }]));
   const paints = errors.run(() => scenePaints(drawn, defined));

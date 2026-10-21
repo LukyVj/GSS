@@ -8,7 +8,8 @@ describe("the text of an object, among the images of the scene", () => {
   const hello = textSource("hello", "italic 700 Georgia, serif");
 
   it("is read back by the runtime: the text and its font", () => {
-    expect(textOf(hello)).toEqual({ text: "hello", font: "italic 700 Georgia, serif" });
+    expect(textOf(hello)).toEqual({ text: "hello", font: "italic 700 Georgia, serif", width: null, align: "left" });
+    expect(textOf(textSource("hi", "normal 400 serif", 4, "center"))).toEqual({ text: "hi", font: "normal 400 serif", width: 4, align: "center" });
   });
 
   it("keeps quotes, parentheses and line breaks of the text", () => {

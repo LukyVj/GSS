@@ -111,6 +111,31 @@ describe("content", () => {
     expect(lit((await pixels(scene(rules, 90), [[0, 0]]))[0])).toBe(true);
   }, 60000);
 
+  // "🟥": an emoji keeps its own colors, where a letter takes the ink
+  it("draws an emoji in its own colors", async () => {
+    const [[r, g, b]] = await pixels(scene('color: #ffffff; content: "🟥"; text-color: #0000ff;'), [[0, 0]]);
+    expect(r).toBeGreaterThan(150);
+    expect(g).toBeLessThan(90);
+    expect(b).toBeLessThan(90);
+  }, 60000);
+
+  // font-size: a line is as wide as the face, and text-align sets the side of the letter
+  it("puts the text at the size of font-size, on the side of text-align", async () => {
+    const [left, middle] = await pixels(scene('content: "█"; font-size: 0.4;'), [[-85, 0], [0, 0]]);
+    expect(lit(left)).toBe(true);
+    expect(dark(middle)).toBe(true);
+    const [start, end] = await pixels(scene('content: "█"; font-size: 0.4; text-align: right;'), [[-85, 0], [85, 0]]);
+    expect(dark(start)).toBe(true);
+    expect(lit(end)).toBe(true);
+  }, 60000);
+
+  // "█\A ": two lines, the first one inked, the second one empty
+  it("breaks a line where the text says \\A", async () => {
+    const [top, bottom] = await pixels(scene('content: "█\\A ▁"; font-size: 0.6; text-align: center;'), [[0, 20], [0, -24]]);
+    expect(lit(top)).toBe(true);
+    expect(dark(bottom)).toBe(true);
+  }, 60000);
+
   it("is drawn by WebGPU too", async () => {
     const [left, right] = await pixels(scene('content: "▌";'), [[-8, 0], [8, 0]], "webgpu");
     expect(lit(left)).toBe(true);

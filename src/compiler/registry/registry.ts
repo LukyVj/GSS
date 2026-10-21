@@ -387,17 +387,18 @@ export const PROPERTIES: PropertyDef[] = [
     figure: "tile",
     since: "0.0.7",
     appliesTo: "object",
+    animatable: true,
     syntax: "<string>+ | none",
     initial: "none",
     description:
       "Writes a text on the surface of the object, the way `content` gives a text to a `::before` in CSS. The text is painted over the color, the gradient or the `texture` of the object: it moves, turns and takes the light with it, and goes behind what stands in front of it.",
     values: [
-      ["<string>", 'The text, between quotes. Several strings side by side are joined: `"3D" " text"`.'],
+      ["<string>", 'The text, between quotes. Several strings side by side are joined: `"3D" " text"`. `\\A` starts a new line, like CSS: `"one\\A two"`.'],
       ["var(--name)", "A variable that holds a string."],
       ["none", "No text: the default. `normal` is the same."],
     ],
-    details: "The text is one line, as large as each face lets it be. Unlike CSS, `content` goes on the object itself, not on a `::before`, and it cannot change on `:hover` or in `@keyframes`.",
-    more: "The text sits in the middle of each face, and keeps its proportions. A cube shows it on its six faces, read from left to right on each; `::face()` gives a face a text of its own, or `none`. A sphere shows it six times around itself. The text follows the size of a cube and of a sphere; on another shape it is written as on a cube of 1 around it. The font comes from `font-family`, `font-weight` and `font-style`, the color from `text-color`. An emoji is drawn as a flat shape, in the color of the text.",
+    details: "The text is as large as each face lets it be, or as `font-size` says. Unlike CSS, `content` goes on the object itself, not on a `::before`.",
+    more: "The text sits in the middle of each face, and keeps its proportions. A cube shows it on its six faces, read from left to right on each; `::face()` gives a face a text of its own, or `none`. A sphere shows it six times around itself. The text follows the size of a cube and of a sphere; on another shape it is written as on a cube of 1 around it. The font comes from `font-family`, `font-weight` and `font-style`, the size from `font-size`, the color from `text-color`, the side its lines lean to from `text-align`. An emoji keeps its own colors. On `:hover` and in `@keyframes` the text changes halfway, like a value of CSS that does not interpolate.",
     examples: [
       {
         name: "a sign",
@@ -421,6 +422,7 @@ export const PROPERTIES: PropertyDef[] = [
     figure: "tile",
     since: "0.0.7",
     appliesTo: "object",
+    animatable: true,
     syntax: "[<family-name> | <generic-family>]#",
     initial: "sans-serif",
     description:
@@ -438,6 +440,7 @@ export const PROPERTIES: PropertyDef[] = [
     figure: "tile",
     since: "0.0.7",
     appliesTo: "object",
+    animatable: true,
     syntax: "normal | bold | <number>",
     initial: "normal",
     description:
@@ -454,6 +457,7 @@ export const PROPERTIES: PropertyDef[] = [
     figure: "tile",
     since: "0.0.7",
     appliesTo: "object",
+    animatable: true,
     syntax: "normal | italic | oblique",
     initial: "normal",
     description: "Slants the letters of `content`, like CSS.",
@@ -465,10 +469,50 @@ export const PROPERTIES: PropertyDef[] = [
     ],
   },
   {
+    name: "font-size",
+    figure: "tile",
+    since: "0.0.7",
+    appliesTo: "object",
+    animatable: true,
+    syntax: "auto | <number>",
+    initial: "auto",
+    description:
+      "The height of the letters of `content`, in the units of the scene, like the other sizes of GSS. A line is as wide as the face: a longer text goes on to the next line, between its words.",
+    values: [
+      ["auto", "The text is as large as each face lets it be, its lines broken only where it says `\\A`: the default."],
+      ["<number>", "The height of the letters: `0.3` on a cube of 1 gives about three lines."],
+    ],
+    details: "Unlike CSS, the size is in the units of the scene, and `auto` fits the text to the face. A taller text is cut at the edges of the face; its lines are centered on its height.",
+    examples: [
+      {
+        name: "a paragraph on a board",
+        code: '@scene { cube; } scene { camera-angle: -15deg 10deg; } cube { translate: 0 0.9 0; size: 2.4 1.4 0.1; color: #f4f1ea; content: "Selectors, the cascade and keyframes, compiled into one shader."; font-size: 0.2; }',
+      },
+    ],
+  },
+  {
+    name: "text-align",
+    figure: "tile",
+    since: "0.0.7",
+    appliesTo: "object",
+    animatable: true,
+    syntax: "left | center | right | start | end",
+    initial: "start",
+    description:
+      "The side the lines of `content` lean to, like CSS. `start` is the left and `end` the right: GSS reads from left to right.",
+    examples: [
+      {
+        name: "centered lines",
+        code: '@scene { cube; } cube { translate: 0 0.9 0; size: 2.4 1.2 0.1; color: #1a1d2b; content: "GPU\\A Style Sheets"; text-align: center; font-weight: bold; }',
+      },
+    ],
+  },
+  {
     name: "text-color",
     figure: "tile",
     since: "0.0.7",
     appliesTo: "object",
+    animatable: true,
     syntax: "<color>",
     initial: "black or white",
     description:

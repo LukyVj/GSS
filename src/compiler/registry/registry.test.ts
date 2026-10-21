@@ -45,6 +45,13 @@ describe("registry", () => {
       expect(animatable.map((property) => property.name)).toEqual([
         "translate",
         "color",
+        "content",
+        "font-family",
+        "font-weight",
+        "font-style",
+        "font-size",
+        "text-align",
+        "text-color",
         "opacity",
         "mix-blend-mode",
         "visibility",
@@ -74,9 +81,17 @@ describe("registry", () => {
       "outline-width": "outline-style: solid;",
       "outline-color": "outline-style: solid;",
       "outline-offset": "outline-style: solid;",
+      // the text properties need a text, font-size a size at rest to zoom from
+      content: 'content: "a";',
+      "font-family": 'content: "a";',
+      "font-weight": 'content: "a";',
+      "font-style": 'content: "a";',
+      "font-size": 'content: "a"; font-size: 0.2;',
+      "text-align": 'content: "a";',
+      "text-color": 'content: "a";',
     };
     // A mask changes into another mask, not into none, its initial value
-    const FRAME: Record<string, string> = { "mask-image": "linear-gradient(black 20%, transparent)", opacity: "0.5", "mix-blend-mode": "multiply", visibility: "hidden", outline: "0.1 solid red", "outline-width": "0.1", "outline-color": "red", "outline-offset": "0.1" };
+    const FRAME: Record<string, string> = { "mask-image": "linear-gradient(black 20%, transparent)", opacity: "0.5", "mix-blend-mode": "multiply", visibility: "hidden", outline: "0.1 solid red", "outline-width": "0.1", "outline-color": "red", "outline-offset": "0.1", content: '"b"', "font-family": "serif", "font-weight": "bold", "font-style": "italic", "font-size": "0.4", "text-align": "center", "text-color": "red" };
 
     // If a property is marked animatable, the compiler must really animate it
     for (const property of animatable) {

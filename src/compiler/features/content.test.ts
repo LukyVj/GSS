@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { tokenize } from "../syntax/tokenizer";
-import { readContent, readFont, textSource } from "./content";
+import { readAlign, readContent, readFont, readFontSize, textSource } from "./content";
 import { compileGSS, compileScene } from "../index";
 
 // The text of one generated GLSL function, from its signature to its closing brace
@@ -68,6 +68,60 @@ describe("readFont", () => {
   });
 });
 
+describe("readFontSize and readAlign", () => {
+  it("read font-size in the units of the scene; none fits the text to the face", () => {
+    expect(readFontSize(tokenize("0.3"))).toBe(0.3);
+    expect(readFontSize(undefined)).toBeNull();
+    expect(readFontSize(tokenize("auto"))).toBeNull();
+    expect(() => readFontSize(tokenize("0"))).toThrow(/font-size expects auto or a positive number, like: font-size: 0.3;/);
+    expect(() => readFontSize(tokenize("big"))).toThrow(/font-size expects/);
+    expect(() => readFontSize(tokenize("12px"))).toThrow(/font-size expects/);
+  });
+
+  it("read text-align: start and end are left and right", () => {
+    expect(readAlign(undefined)).toBe("left");
+    expect(readAlign(tokenize("center"))).toBe("center");
+    expect(readAlign(tokenize("start"))).toBe("left");
+    expect(readAlign(tokenize("end"))).toBe("right");
+    expect(readAlign(tokenize("right"))).toBe("right");
+    expect(() => readAlign(tokenize("justify"))).toThrow(/text-align expects left, center, right, start or end/);
+  });
+});
+
+describe("the layout of a text", () => {
+  const font = "normal 400 sans-serif";
+
+  it("is named with the width of a line, in letters of font-size, and the alignment", () => {
+    expect(textSource("hi", font, 4, "center")).toBe('content(["hi","normal 400 sans-serif",4,"center"])');
+    expect(textSource("hi", font, null, "right")).toBe('content(["hi","normal 400 sans-serif",null,"right"])');
+  });
+
+  it("wraps at the width of each face: the top, the front and the back, then the sides", () => {
+    const scene = compileScene('@scene { cube; } cube { size: 2 1 0.5; content: "hi"; font-size: 0.5; }');
+    expect(scene.textures).toEqual([textSource("hi", font, 4, "left"), textSource("hi", font, 1, "left")]);
+  });
+
+  it("keeps the alignment of text-align, with or without font-size", () => {
+    expect(compileScene('@scene { cube; } cube { content: "hi"; text-align: center; }').textures).toEqual([textSource("hi", font, null, "center")]);
+  });
+
+  it("breaks the lines where the text says, like \\A in CSS", () => {
+    expect(compileScene('@scene { cube; } cube { content: "one\\A two"; }').textures).toEqual([textSource("one\ntwo", font)]);
+  });
+
+  it("reports a wrong font-size or text-align, even without content", () => {
+    expect(() => compileScene("@scene { cube; } cube { font-size: -1; }")).toThrow(/font-size expects/);
+    expect(() => compileScene("@scene { cube; } cube { text-align: justify; }")).toThrow(/text-align expects/);
+  });
+
+  it("gives the sides their own text when they are narrower, in the shader", () => {
+    const textureColor = glslFunction(compileGSS('@scene { cube; } cube { size: 2 1 0.5; content: "hi"; font-size: 0.5; }'), "vec3 textureColor(");
+    expect(textureColor).toContain("int face = faceOf(ln);");
+    expect(textureColor).toContain("if (face == 5) return textLabel(uTexture1, q, ln, vec3(2.0, 1.0, 0.5), color, textInk(color), 1.0); // right");
+    expect(textureColor).toContain("return textLabel(uTexture0, q, ln, vec3(2.0, 1.0, 0.5), color, textInk(color), 1.0);");
+  });
+});
+
 describe("the texts of a scene", () => {
   const hello = textSource("hello", "normal 400 sans-serif");
 
@@ -109,15 +163,53 @@ describe("the texts of a scene", () => {
     expect(() => compileScene("@scene { cube; } cube { font-style: slanted; }")).toThrow(/font-style expects/);
   });
 
-  it("cannot be animated, or change on :hover", () => {
-    expect(() => compileScene('@scene { cube; } cube:hover { content: "a"; }')).toThrow(/"content" cannot change on :hover/);
-    expect(() =>
-      compileScene('@scene { cube; } cube { animation: a 1s; } @keyframes a { to { content: "a"; } }'),
-    ).toThrow(/"content" cannot be animated/);
+  it("are each text an object shows, hovered or in its animation", () => {
+    const font = "normal 400 sans-serif";
+    expect(compileScene('@scene { cube; } cube { content: "a"; } cube:hover { content: "b"; }').textures).toEqual([textSource("a", font), textSource("b", font)]);
+    expect(
+      compileScene('@scene { cube; } cube { content: "a"; animation: t 2s; } @keyframes t { 50% { font-weight: bold; } to { content: "b"; } }').textures,
+    ).toEqual([textSource("a", font), textSource("a", "normal 700 sans-serif"), textSource("b", font)]);
   });
 
   it("only apply to objects", () => {
     expect(() => compileScene('@scene { cube; } scene { content: "a"; }')).toThrow(/"content" only applies to objects/);
+  });
+});
+
+describe("content that changes", () => {
+  it("swaps the text halfway through :hover, like a value of CSS that does not interpolate", () => {
+    const textureColor = glslFunction(compileGSS('@scene { cube; } cube { content: "a"; } cube:hover { content: "b"; }'), "vec3 textureColor(");
+    expect(textureColor).toContain("float text0 = mix(1.0, 0.0, uHover[0]);");
+    expect(textureColor).toContain("if (text0 > 0.5) {");
+    expect(textureColor).toContain("return textLabel(uTexture0, q, ln, vec3(1.0, 1.0, 1.0), color, textInk(color), 0.0);");
+    expect(textureColor).toContain("return textLabel(uTexture1, q, ln, vec3(1.0, 1.0, 1.0), color, textInk(color), 0.0);");
+  });
+
+  it("swaps it in @keyframes, at each frame that sets content or a font", () => {
+    const textureColor = glslFunction(
+      compileGSS('@scene { cube; } cube { content: "a"; animation: t 2s; } @keyframes t { to { content: "b"; } }'),
+      "vec3 textureColor(",
+    );
+    expect(textureColor).toMatch(/float text0 = mix\(1\.0, 0\.0, /);
+  });
+
+  it("mixes text-color, on :hover and in @keyframes", () => {
+    const hovered = glslFunction(compileGSS('@scene { cube; } cube { content: "a"; text-color: red; } cube:hover { text-color: blue; }'), "vec3 textureColor(");
+    expect(hovered).toContain("color, mix(vec3(1.0, 0.0, 0.0), vec3(0.0, 0.0, 1.0), uHover[0]), 0.0);");
+    const unset = glslFunction(compileGSS('@scene { cube; } cube { content: "a"; } cube:hover { text-color: blue; }'), "vec3 textureColor(");
+    expect(unset).toContain("color, mix(textInk(color), vec3(0.0, 0.0, 1.0), uHover[0]), 0.0);");
+  });
+
+  it("zooms the text with font-size, its lines broken at the size at rest", () => {
+    const scene = compileScene('@scene { cube; } cube { content: "a"; font-size: 0.2; animation: g 1s; } @keyframes g { to { font-size: 0.4; } }');
+    expect(scene.textures).toEqual([textSource("a", "normal 400 sans-serif", 5, "left")]);
+    expect(glslFunction(scene.shader, "vec3 textureColor(")).toMatch(/textInk\(color\), mix\(1\.0, 2\.0, /);
+  });
+
+  it("needs a font-size at rest to change it", () => {
+    expect(() => compileScene('@scene { cube; } cube { content: "a"; } cube:hover { font-size: 0.4; }')).toThrow(
+      /font-size can change on :hover or in @keyframes only from a number: write one at rest, like: font-size: 0.3;/,
+    );
   });
 });
 
@@ -137,32 +229,39 @@ describe("content in the shader", () => {
     const shader = compileGSS('@scene { cube#a; cube#b; } #b { content: "hello"; }');
     const textureColor = glslFunction(shader, "vec3 textureColor(");
     expect(textureColor).toContain("if (id == 2.0) {");
-    expect(textureColor).toContain("return textLabel(uTexture0, q, ln, vec3(1.0, 1.0, 1.0), color, textInk(color));");
+    expect(textureColor).toContain("return textLabel(uTexture0, q, ln, vec3(1.0, 1.0, 1.0), color, textInk(color), 0.0);");
     expect(textureColor).not.toContain("id == 1.0");
     const label = glslFunction(shader, "vec3 textLabel(");
     expect(label).toContain("textureSize(image, 0)");
+  });
+
+  it("reads the two copies of the text: the letters take the ink, an emoji keeps its colors", () => {
+    const label = glslFunction(compileGSS('@scene { cube; } cube { content: "hi"; }'), "vec3 textLabel(");
+    expect(label).toContain("vec4 light = texture(image, vec2(st.x, 0.5 + 0.5 * st.y));");
+    expect(label).toContain("vec4 dark = texture(image, vec2(st.x, 0.5 * st.y));");
+    expect(label).toContain("mix(dark.rgb, ink, plain)");
   });
 
   it("paints the text over the image of the object", () => {
     const shader = compileGSS('@scene { cube; } cube { texture: url("dirt.png"); content: "hello"; }');
     const textureColor = glslFunction(shader, "vec3 textureColor(");
     expect(textureColor).toContain("color = triplanar(uTexture0, q, ln, vec3(1.0, 1.0, 1.0), color, false);");
-    expect(textureColor).toContain("return textLabel(uTexture1, q, ln, vec3(1.0, 1.0, 1.0), color, textInk(color));");
+    expect(textureColor).toContain("return textLabel(uTexture1, q, ln, vec3(1.0, 1.0, 1.0), color, textInk(color), 0.0);");
   });
 
   it("follows the size of the object, not texture-size", () => {
     const shader = compileGSS('@scene { cube; } cube { size: 3 1 0.2; texture-size: 0.5; content: "hello"; }');
-    expect(glslFunction(shader, "vec3 textureColor(")).toContain("textLabel(uTexture0, q, ln, vec3(3.0, 1.0, 0.2), color, textInk(color));");
+    expect(glslFunction(shader, "vec3 textureColor(")).toContain("textLabel(uTexture0, q, ln, vec3(3.0, 1.0, 0.2), color, textInk(color), 0.0);");
   });
 
   it("gives the text of a sphere the square that fits in a sixth of it", () => {
     const shader = compileGSS('@scene { sphere; } sphere { radius: 1; content: "hello"; }');
-    expect(glslFunction(shader, "vec3 textureColor(")).toContain("textLabel(uTexture0, q, ln, vec3(1.154, 1.154, 1.154), color, textInk(color));");
+    expect(glslFunction(shader, "vec3 textureColor(")).toContain("textLabel(uTexture0, q, ln, vec3(1.154, 1.154, 1.154), color, textInk(color), 0.0);");
   });
 
   it("paints the text in the color of text-color", () => {
     const shader = compileGSS('@scene { cube; } cube { content: "hello"; text-color: red; }');
-    expect(glslFunction(shader, "vec3 textureColor(")).toContain("color, vec3(1.0, 0.0, 0.0));");
+    expect(glslFunction(shader, "vec3 textureColor(")).toContain("color, vec3(1.0, 0.0, 0.0), 0.0);");
     expect(shader).not.toContain("textInk(");
   });
 
@@ -174,8 +273,8 @@ describe("content in the shader", () => {
     const shader = compileGSS('@scene { cube; } cube { content: "side"; } cube::face(front) { content: "front"; }');
     const textureColor = glslFunction(shader, "vec3 textureColor(");
     expect(textureColor).toContain("int face = faceOf(ln);");
-    expect(textureColor).toContain("if (face == 3) return textLabel(uTexture1, q, ln, vec3(1.0, 1.0, 1.0), color, textInk(color)); // front");
-    expect(textureColor).toContain("return textLabel(uTexture0, q, ln, vec3(1.0, 1.0, 1.0), color, textInk(color));");
+    expect(textureColor).toContain("if (face == 3) return textLabel(uTexture1, q, ln, vec3(1.0, 1.0, 1.0), color, textInk(color), 0.0); // front");
+    expect(textureColor).toContain("return textLabel(uTexture0, q, ln, vec3(1.0, 1.0, 1.0), color, textInk(color), 0.0);");
   });
 
   it("leaves the shader of a textured scene as it was", () => {

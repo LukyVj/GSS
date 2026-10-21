@@ -131,7 +131,7 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
       textures.set(url, text);
       const write = () => {
         if (destroyed) return;
-        const source = drawText(label.text, label.font);
+        const source = drawText(label);
         const next = device.createTexture({ size: [source.width, source.height], format: "rgba8unorm", usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT });
         device.queue.copyExternalImageToTexture({ source, flipY: true }, { texture: next }, [source.width, source.height]);
         text.texture.destroy(); text.texture = next; textureVersion++;
