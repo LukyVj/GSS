@@ -44,7 +44,18 @@ export type SimpleSelector = {
   has?: SimpleSelector[]; // #g:has(sphere, cube:hover): something inside matches one of them
   structural?: Structural[]; // :nth-child(odd), :first-of-type…: all of them must match
   not?: SimpleSelector[][]; // :not(.a, cube):not(#b): no selector of any list may match
+  attributes?: AttributeSelector[]; // [data-col="2"], [id^="hero-" i]: all of them must match
 };
+
+// [name], [name=value] and the other forms of CSS, read at compile time.
+// The attributes are the ones written in @scene, plus id and class (the classes joined by spaces)
+export type AttributeSelector = {
+  name: string;
+  operator?: AttributeOperator; // none: [name], the attribute is there
+  value?: string;
+  ignoreCase?: boolean; // the i flag
+};
+type AttributeOperator = "=" | "~=" | "|=" | "^=" | "$=" | "*=";
 
 // :nth-child(An+B of S) and its family, read at compile time (decision 92).
 // The position counts from 1 among the siblings, the copies of a * n one by one,
@@ -260,8 +271,8 @@ export function parseSelector(
       compounds.push([]);
     }
     compounds[compounds.length - 1].push(token);
-    if (token.type === "PUNCT" && token.value === "(") depth++;
-    if (token.type === "PUNCT" && token.value === ")") depth--;
+    if (token.type === "PUNCT" && (token.value === "(" || token.value === "[")) depth++;
+    if (token.type === "PUNCT" && (token.value === ")" || token.value === "]")) depth--;
   });
   if (compounds.some((part) => part.length === 0))
     throw errorAt(tokens, "A selector is required after a combinator or comma");
@@ -461,6 +472,17 @@ function parseCompound(tokens: Token[]): SimpleSelector {
           `Unknown pseudo-class "${name}": GSS knows ${PSEUDO_CLASSES.slice(0, -1).join(", ")} and ${PSEUDO_CLASSES[PSEUDO_CLASSES.length - 1]}`,
         );
       }
+    } else if (token.type === "PUNCT" && token.value === "[") {
+      const close = tokens.findIndex(
+        (t, j) => j > i && t.type === "PUNCT" && t.value === "]",
+      );
+      if (close === -1)
+        throw errorAt(tokens, '"]" missing after the attribute: [data-col="2"]');
+      selector.attributes = [
+        ...(selector.attributes ?? []),
+        parseAttribute(tokens.slice(i + 1, close), tokens),
+      ];
+      i = close + 1;
     } else {
       const text = tokens.map(tokenToText).join("");
       throw errorAt(tokens, `Selector not supported: "${text}"`);
@@ -482,6 +504,65 @@ function parseCompound(tokens: Token[]): SimpleSelector {
     );
 
   return selector;
+}
+
+// What is between [ and ]: name, then an operator, a value and a flag, or nothing
+function parseAttribute(inside: Token[], where: Token[]): AttributeSelector {
+  const [name, first, second] = inside;
+  if (name?.type !== "IDENT")
+    throw errorAt(where, 'An attribute name is expected after "[", like [data-col]');
+  if (inside.length === 1) return { name: name.value };
+  const punct = (token: Token | undefined) => (token?.type === "PUNCT" ? token.value : "");
+  // "=" alone, or "~" "^" "$" "*" "|" stuck to it
+  const operator = (punct(first) === "=" ? "=" : punct(first) + punct(second)) as AttributeOperator;
+  if (!["=", "~=", "|=", "^=", "$=", "*="].includes(operator))
+    throw errorAt(
+      where,
+      `Unknown attribute selector: GSS knows [${name.value}], and =, ~=, |=, ^=, $=, *= before a value`,
+    );
+  const rest = inside.slice(operator === "=" ? 2 : 3);
+  const [written, extra, ...more] = rest;
+  let text: string;
+  if (written?.type === "STRING" || written?.type === "IDENT") text = written.value;
+  else if (written?.type === "NUMBER") text = String(written.value);
+  else throw errorAt(where, `A value is expected after "${name.value}${operator}", like [${name.value}${operator}"2"]`);
+  if (more.length > 0 || (extra && (extra.type !== "IDENT" || !["i", "s"].includes(extra.value.toLowerCase()))))
+    throw errorAt(where, 'After the value, an attribute selector only takes the flag i or s: [lang="en" i]');
+  const ignoreCase = extra?.type === "IDENT" && extra.value.toLowerCase() === "i";
+  return { name: name.value, operator, value: text, ...(ignoreCase && { ignoreCase }) };
+}
+
+// The value of an attribute on an object, or null when it has none
+function attributeOf(instance: SceneInstance, name: string): string | null {
+  if (name === "id") return instance.id;
+  if (name === "class") return instance.classes.length > 0 ? instance.classes.join(" ") : null;
+  return instance.attributes?.[name] ?? null;
+}
+
+function matchesAttribute(attribute: AttributeSelector, instance: SceneInstance): boolean {
+  let actual = attributeOf(instance, attribute.name);
+  if (actual === null) return false;
+  if (attribute.operator === undefined) return true;
+  let wanted = attribute.value!;
+  if (attribute.ignoreCase) {
+    actual = actual.toLowerCase();
+    wanted = wanted.toLowerCase();
+  }
+  switch (attribute.operator) {
+    case "=":
+      return actual === wanted;
+    case "|=":
+      return actual === wanted || actual.startsWith(`${wanted}-`);
+    // Like CSS, an empty value never matches the next ones
+    case "~=":
+      return wanted !== "" && !/\s/.test(wanted) && actual.split(/\s+/).includes(wanted);
+    case "^=":
+      return wanted !== "" && actual.startsWith(wanted);
+    case "$=":
+      return wanted !== "" && actual.endsWith(wanted);
+    case "*=":
+      return wanted !== "" && actual.includes(wanted);
+  }
 }
 
 // Read every chain from right to left. Backtracking matters for mixed chains:
@@ -552,6 +633,11 @@ function matchesCompound(
   )
     return false;
   if (
+    selector.attributes &&
+    !selector.attributes.every((attribute) => matchesAttribute(attribute, instance))
+  )
+    return false;
+  if (
     selector.structural &&
     !selector.structural.every((s) => matchesPosition(s, instance, scene))
   )
@@ -599,6 +685,7 @@ export function specificity(selector: SimpleSelector): number {
   const own =
     (selector.id ? 10_000 : 0) +
     selector.classes.length * 100 +
+    (selector.attributes?.length ?? 0) * 100 + // like a class, even [id=a]
     (selector.tag ? 1 : 0) +
     (selector.face ? 1 : 0) +
     (selector.hover ? 100 : 0) + // a pseudo-class counts like a class, like CSS
@@ -777,6 +864,7 @@ export function isSceneSelector(selector: SimpleSelector): boolean {
     selector.tag === "scene" &&
     selector.id === null &&
     selector.classes.length === 0 &&
+    selector.attributes === undefined &&
     selector.ancestors === undefined
   );
 }

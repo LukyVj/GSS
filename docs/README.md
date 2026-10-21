@@ -14,7 +14,7 @@ New to GSS? Start with [Getting started](getting-started.md), then [Installation
 ## Language
 
 - [At-rules](at-rules.md): `@keyframes`, `@media`, `@paint`, `@property`, `@property-panel`, `@scene`
-- [Selectors](selectors.md): `<shape>`, `.class`, `#id`, `*`, `a, b`, `&`, `!important`
+- [Selectors](selectors.md): `<shape>`, `.class`, `#id`, `[attribute]`, `*`, `a, b`, `&`, `!important`
 - [Combinators](combinators.md): `a b`, `a > b`, `a + b`, `a ~ b`
 - [Pseudo-classes and cursor](pseudo-classes.md): `:hover`, `:active`, `:has()`, `:not()`, `:nth-child(), :nth-last-child()`, `:nth-of-type(), :nth-last-of-type()`, `:first-child, :last-child, :only-child`, `::face(), ::top, ::bottom`, `cursor`
 - [Variables and conditions](variables-conditions.md): `if()`, `var()`
