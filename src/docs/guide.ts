@@ -264,6 +264,8 @@ INSTALLATION.push({
     EDITOR_POCKET,
     table([
       ["Highlighting", "Selectors, properties, values, colors, numbers and units, the at-rules, nested rules and <code>&amp;</code>."],
+      ["Autocompletion", "While you type a property name, the properties the rule can take, with their syntax and description; after <code>@apply</code>, the mixins of the file."],
+      ["GSS in HTML", "The GSS of a <code>&lt;script type=\"text/gss\"&gt;</code> is colored and completed like a <code>.gss</code> file."],
       ["Formatting", "<em>Format Document</em>, or saving the file, writes the code in the style of these docs: one shape per line in <code>@scene</code>, one declaration per line, two-space indentation, comments kept."],
       ["File icon", "<code>.gss</code> files get the GSS icon in the explorer."],
     ]),

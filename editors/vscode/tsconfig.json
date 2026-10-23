@@ -8,5 +8,5 @@
     "noEmit": true,
     "skipLibCheck": true
   },
-  "include": ["src", "../../src/docs/format.ts", "../../src/compiler/syntax/tokenizer.ts"]
+  "include": ["src", "../../src/docs/format.ts", "../../src/compiler/syntax/tokenizer.ts", "../../src/runtime/completion.ts"]
 }

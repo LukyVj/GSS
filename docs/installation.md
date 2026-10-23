@@ -247,6 +247,8 @@ The GSS extension colors and formats `.gss` files in VS Code and in the editors 
 **How it goes, from where it is written to what the scene shows:** `1`, `2`, `3`, `4`, `5`, `6`, `7`
 
 - **Highlighting:** Selectors, properties, values, colors, numbers and units, the at-rules, nested rules and `&`.
+- **Autocompletion:** While you type a property name, the properties the rule can take, with their syntax and description; after `@apply`, the mixins of the file.
+- **GSS in HTML:** The GSS of a `<script type="text/gss">` is colored and completed like a `.gss` file.
 - **Formatting:** *Format Document*, or saving the file, writes the code in the style of these docs: one shape per line in `@scene`, one declaration per line, two-space indentation, comments kept.
 - **File icon:** `.gss` files get the GSS icon in the explorer.
 
