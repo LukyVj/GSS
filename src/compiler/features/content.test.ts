@@ -231,12 +231,12 @@ describe("content in the shader", () => {
     expect(textureColor).toContain("if (id == 2.0) {");
     expect(textureColor).toContain("return textLabel(uTexture0, q, ln, vec3(1.0, 1.0, 1.0), color, textInk(color), 0.0);");
     expect(textureColor).not.toContain("id == 1.0");
-    const label = glslFunction(shader, "vec3 textLabel(");
-    expect(label).toContain("textureSize(image, 0)");
+    expect(glslFunction(shader, "vec3 textLabel(")).toContain("return textAt(image, uv, face, color, ink, zoom);");
+    expect(glslFunction(shader, "vec3 textAt(")).toContain("textureSize(image, 0)");
   });
 
   it("reads the two copies of the text: the letters take the ink, an emoji keeps its colors", () => {
-    const label = glslFunction(compileGSS('@scene { cube; } cube { content: "hi"; }'), "vec3 textLabel(");
+    const label = glslFunction(compileGSS('@scene { cube; } cube { content: "hi"; }'), "vec3 textAt(");
     expect(label).toContain("vec4 light = texture(image, vec2(st.x, 0.5 + 0.5 * st.y));");
     expect(label).toContain("vec4 dark = texture(image, vec2(st.x, 0.5 * st.y));");
     expect(label).toContain("mix(dark.rgb, ink, plain)");
@@ -264,10 +264,23 @@ describe("content in the shader", () => {
     expect(compileGSS('@scene { cylinder; } cylinder { content: "hi"; }')).toContain("vec3 wrapped(vec3 q, vec3 n, float r, float spread) {");
   });
 
+  it("writes on each face of an octahedron, flat on its triangle", () => {
+    const shader = compileGSS('@scene { octahedron; } octahedron { radius: 1; content: "8"; }');
+    expect(glslFunction(shader, "vec3 textureColor(")).toContain(
+      "return textFacet(uTexture0, q, normalize(sign(ln)), sign(ln) * 0.333, vec2(0.707, 0.408), color, textInk(color), 0.0);",
+    );
+    expect(shader).toContain("vec3 textFacet(sampler2D image, vec3 q, vec3 normal, vec3 middle, vec2 room, vec3 color, vec3 ink, float zoom) {");
+  });
+
+  it("writes on each face of a pyramid: its four slopes and its base", () => {
+    const shader = compileGSS('@scene { pyramid; } pyramid { size: 2 1 2; content: "A"; }');
+    expect(glslFunction(shader, "vec3 textureColor(")).toContain("return textPyramid(uTexture0, q, vec3(2.0, 1.0, 2.0), color, textInk(color), 0.0);");
+    expect(shader).toContain("vec3 textPyramid(sampler2D image, vec3 q, vec3 s, vec3 color, vec3 ink, float zoom) {");
+  });
+
   it("projects the text on another shape from each side, like a sticker, at the size of the shape", () => {
-    const octahedron = glslFunction(compileGSS('@scene { octahedron; } octahedron { content: "hi"; }'), "vec3 textureColor(");
-    expect(octahedron).toMatch(/return textSticker\(uTexture0, q, ln, vec3\(([\d.]+), \1, \1\), color, textInk\(color\), 0\.0\);/);
-    expect(compileGSS('@scene { octahedron; } octahedron { content: "hi"; }')).toContain("vec3 textSticker(");
+    const tube = glslFunction(compileGSS('@scene { prism; } prism { d: path("M0 0 L1 0 L0.5 1 Z"); content: "hi"; }'), "vec3 textureColor(");
+    expect(tube).toMatch(/return textSticker\(uTexture0, q, ln, vec3\(([\d.]+), \1, \1\), color, textInk\(color\), 0\.0\);/);
     // a cube keeps its faces: no sticker, no wrap
     const cube = compileGSS('@scene { cube; } cube { content: "hi"; }');
     expect(cube).not.toContain("textSticker(");

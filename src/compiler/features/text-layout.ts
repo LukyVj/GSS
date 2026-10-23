@@ -3,7 +3,7 @@ import { FACES, type Face, type Styles, type StyledInstance } from "../cascade/r
 import type { Keyframes } from "../syntax/ast";
 import { readAnimation } from "./animation";
 import { errorAt } from "../syntax/errors";
-import { add, div, largest, liveFlatSize, liveNumber, liveRadii, liveSize3, mul, type Num } from "../shader/codegen/live";
+import { add, div, hypot, largest, liveFlatSize, liveNumber, liveRadii, liveSize3, mul, type Num } from "../shader/codegen/live";
 import { shapeRadius } from "../shader/codegen/shapes";
 import { readAlign, readContent, readFont, readFontSize, textSource } from "./content";
 
@@ -24,16 +24,27 @@ export function objectBox(instance: StyledInstance): Num[] {
 // measured at), and lies flat on the top and the bottom, scaled by flat to the room of a
 // side. Any other shape (sticker) is seen from its six sides, in the box of its bounding
 // sphere, the text fading where the surface turns away from the side.
-export type TextRoom = { box: Num[]; wrap?: { r: Num; flat: Num }; sticker?: true };
+// An octahedron and a pyramid have flat faces that are not the sides of a box: the text
+// lies on each of them (facet), the box giving the room of one face for font-size.
+export type TextRoom = {
+  box: Num[];
+  wrap?: { r: Num; flat: Num };
+  sticker?: true;
+  facet?: { shape: "octahedron"; r: Num } | { shape: "pyramid"; size: Num[] };
+};
 
 const QUARTER = Math.PI / 2;
 
 // Three decimals, like the other numbers GSS writes
-const short = (n: Num): Num => (typeof n === "number" ? Math.round(n * 1000) / 1000 : n);
+export const short = (n: Num): Num => (typeof n === "number" ? Math.round(n * 1000) / 1000 : n);
 
 export function textRoom(instance: StyledInstance): TextRoom {
   const room = roomOf(instance);
-  return { ...room, box: room.box.map(short), ...(room.wrap && { wrap: { r: short(room.wrap.r), flat: short(room.wrap.flat) } }) };
+  return {
+    ...room,
+    box: room.box.map(short),
+    ...(room.wrap && { wrap: { r: short(room.wrap.r), flat: short(room.wrap.flat) } }),
+  };
 }
 
 function roomOf(instance: StyledInstance): TextRoom {
@@ -67,6 +78,16 @@ function roomOf(instance: StyledInstance): TextRoom {
     case "cone": {
       const [bottom, top] = liveRadii(styles["radius"]);
       return round(div(add(bottom, top), 2), height(), mul(1.414, largest(bottom, top)));
+    }
+    case "octahedron": {
+      // a triangle of sides r * sqrt(2): the text fits half of its base, a third of its height
+      const r = radius(0.5);
+      return { box: [mul(0.707, r), mul(0.408, r), mul(0.707, r)], facet: { shape: "octahedron", r } };
+    }
+    case "pyramid": {
+      // the front slope: half of its base, a third of its height
+      const size = liveSize3(styles["size"]);
+      return { box: [div(size[0], 2), div(hypot(size[1], div(size[2], 2)), 3), div(size[2], 2)], facet: { shape: "pyramid", size } };
     }
     case "torus": {
       // around the ring, on its outside; as high as the tube is thick

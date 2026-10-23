@@ -3,15 +3,13 @@ import type { Token } from "../../syntax/tokenizer";
 import type { Keyframes } from "../../syntax/ast";
 import { FACES, type Face, type StyledInstance } from "../../cascade/resolve";
 import { readMapping, readRendering, readTexture, sceneTextures } from "../../features/textures";
-import { TEXT_COLOR } from "../../features/content";
-import { frameStyles, textGroups, textsIn, textsKey, objectBox, textRoom, type FaceText } from "../../features/text-layout";
-import { readFontSize } from "../../features/content";
+import { readFontSize, TEXT_COLOR } from "../../features/content";
+import { frameStyles, objectBox, short, textGroups, textRoom, textsIn, textsKey, type FaceText } from "../../features/text-layout";
 import type { Styles } from "../../cascade/resolve";
 import { hoverValue } from "./animation";
-import { round } from "./glsl";
-import { glslFloat, label, type Hover } from "./glsl";
+import { glslFloat, label, round, type Hover } from "./glsl";
 import { readColor } from "./read";
-import { g, liveNumber, type Num } from "./live";
+import { div, g, liveNumber, type Num } from "./live";
 import { spaceFunction } from "./transforms";
 import { errorAt } from "../../syntax/errors";
 
@@ -72,6 +70,11 @@ const TEXT_LABEL = `vec3 textLabel(sampler2D image, vec3 q, vec3 n, vec3 box, ve
   if (a.y >= a.x && a.y >= a.z) { uv = vec2(q.x, -sign(n.y) * q.z); face = box.xz; }  // top and bottom
   else if (a.x >= a.z) { uv = vec2(-sign(n.x) * q.z, q.y); face = box.zy; }           // left and right
   else { uv = vec2(sign(n.z) * q.x, q.y); face = box.xy; }                            // front and back
+  return textAt(image, uv, face, color, ink, zoom);
+}`;
+
+// The text at a point of a face: uv from its middle, along the face and up it; face, its room
+const TEXT_AT = `vec3 textAt(sampler2D image, vec2 uv, vec2 face, vec3 color, vec3 ink, float zoom) {
   vec2 size = vec2(textureSize(image, 0)) * vec2(1.0, 0.5);                           // one copy, in pixels
   float scale = zoom > 0.0 ? zoom * face.x / size.x : min(face.x / size.x, face.y / size.y);
   vec2 st = uv / (size * scale) + 0.5;
@@ -82,6 +85,31 @@ const TEXT_LABEL = `vec3 textLabel(sampler2D image, vec3 q, vec3 n, vec3 box, ve
   float plain = clamp(dot(light.rgb - dark.rgb, vec3(0.3333)), 0.0, 1.0);             // 1: a letter, 0: an emoji
   return mix(color, mix(dark.rgb, ink, plain), light.a * inside.x * inside.y);
 }`;
+
+// content on a flat face that is not a side of a box (a triangle of an octahedron, a slope
+// of a pyramid): the text lies in its plane, around its middle, upright (its top toward +y,
+// or toward the front on a face that looks down)
+const TEXT_FACET = `vec3 textFacet(sampler2D image, vec3 q, vec3 normal, vec3 middle, vec2 room, vec3 color, vec3 ink, float zoom) {
+  vec3 up = abs(normal.y) > 0.99 ? vec3(0.0, 0.0, -sign(normal.y)) : normalize(vec3(0.0, 1.0, 0.0) - normal * normal.y);
+  vec3 right = cross(up, normal);
+  vec3 d = q - middle;
+  return textAt(image, vec2(dot(d, right), dot(d, up)), room, color, ink, zoom);
+}`;
+
+// content on a pyramid of size s: its base, then the slope the point is on, each with its
+// normal, its middle and its room (half of its base, a third of its height)
+const TEXT_PYRAMID = `vec3 textPyramid(sampler2D image, vec3 q, vec3 s, vec3 color, vec3 ink, float zoom) {
+  if (q.y < -0.49 * s.y) return textFacet(image, q, vec3(0.0, -1.0, 0.0), vec3(0.0, -0.5 * s.y, 0.0), s.xz, color, ink, zoom);  // the base
+  vec2 xz = q.xz / s.xz;
+  if (abs(xz.y) >= abs(xz.x)) {                                                       // the front or the back
+    float side = sign(xz.y);
+    vec3 normal = normalize(vec3(0.0, 0.5 * s.z, side * s.y));
+    return textFacet(image, q, normal, vec3(0.0, -s.y / 6.0, side * s.z / 3.0), vec2(0.5 * s.x, length(vec2(s.y, 0.5 * s.z)) / 3.0), color, ink, zoom);
+  }
+  float side = sign(xz.x);                                                            // the right or the left
+  vec3 normal = normalize(vec3(side * s.y, 0.5 * s.x, 0.0));
+  return textFacet(image, q, normal, vec3(side * s.x / 3.0, -s.y / 6.0, 0.0), vec2(0.5 * s.z, length(vec2(s.y, 0.5 * s.x)) / 3.0), color, ink, zoom);
+}`
 
 // content on a round shape: the point seen as if the side it is on were flat, so the text
 // wraps around the shape like a label on a can. A side is a quarter turn around the axis;
@@ -208,10 +236,16 @@ export function textureCode(
     // shape takes it like a sticker on each side
     const room = textRoom(instance);
     const at = room.wrap ? `wrapped(q, ln, ${g(room.wrap.r)}, ${g(room.wrap.flat)})` : "q";
-    const write = (text: FaceText) =>
-      text
-        ? `${room.sticker ? "textSticker" : "textLabel"}(uTexture${files.indexOf(text.source)}, ${at}, ln, vec3(${room.box.map(g).join(", ")}), color, ${ink}, ${text.sized ? zoom : "0.0"})`
-        : "color";
+    const facet = room.facet;
+    const write = (text: FaceText) => {
+      if (!text) return "color";
+      const image = `uTexture${files.indexOf(text.source)}`;
+      const end = `color, ${ink}, ${text.sized ? zoom : "0.0"})`;
+      if (facet?.shape === "octahedron")
+        return `textFacet(${image}, q, normalize(sign(ln)), sign(ln) * ${g(short(div(facet.r, 3)))}, vec2(${g(room.box[0])}, ${g(room.box[1])}), ${end}`;
+      if (facet?.shape === "pyramid") return `textPyramid(${image}, q, vec3(${facet.size.map(g).join(", ")}), ${end}`;
+      return `${room.sticker ? "textSticker" : "textLabel"}(${image}, ${at}, ln, vec3(${room.box.map(g).join(", ")}), ${end}`;
+    };
     // The texts of the six faces: the one most faces share is written last, the others face by face
     const lines = (texts: Record<Face, FaceText>, indent: string) => {
       const key = (text: FaceText) => text?.source ?? "";
@@ -279,7 +313,10 @@ export function textureCode(
       ...spaces,
       ...(branches.join("\n").includes("triplanar(") ? [TRIPLANAR] : []),
       ...(branches.join("\n").includes("spherical(") ? [SPHERICAL] : []),
+      ...(/text(Label|Sticker|Facet|Pyramid)\(/.test(branches.join("\n")) ? [TEXT_AT] : []),
       ...(branches.join("\n").includes("textLabel(") || branches.join("\n").includes("textSticker(") ? [TEXT_LABEL] : []),
+      ...(/text(Facet|Pyramid)\(/.test(branches.join("\n")) ? [TEXT_FACET] : []),
+      ...(branches.join("\n").includes("textPyramid(") ? [TEXT_PYRAMID] : []),
       ...(branches.join("\n").includes("textSticker(") ? [TEXT_STICKER] : []),
       ...(branches.join("\n").includes("wrapped(") ? [WRAPPED] : []),
       ...(branches.join("\n").includes("textInk(") ? [TEXT_INK] : []),

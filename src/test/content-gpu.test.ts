@@ -33,16 +33,17 @@ afterAll(async () => { await browser?.close(); await server?.close(); });
 const scene = (rules: string, yaw = 0, pitch = 0) =>
   `@scene { cube; } scene { floor: none; background: #000000; ambient: 1; light: none; camera-target: 0 0 0; camera-angle: ${yaw}deg ${pitch}deg; camera-distance: 4; } cube { size: 2; color: #000000; font-family: monospace; ${rules} }`;
 
-type Backend = "webgl2" | "webgpu";
+type Backend = "webgl" | "webgpu";
 
 // The colors of the canvas at a few points, given from its center in pixels (y up)
-async function pixels(source: string, points: [number, number][], backend: Backend = "webgl2"): Promise<number[][]> {
+async function pixels(source: string, points: [number, number][], backend: Backend = "webgl"): Promise<number[][]> {
   return page.evaluate(async ({ compiled, points, backend }) => {
     const canvas = document.createElement("canvas");
     canvas.style.cssText = "width:256px;height:192px;display:block";
     document.body.append(canvas);
     const probe = { frameStart() {}, drawStart() {}, drawEnd() {}, shaderBuilt() {} };
     const view = await (window as any).__createViewAsync(canvas, { backend, adaptDpr: false, profile: () => probe, profileWebGPU: () => probe });
+    if (view.backend !== backend) throw new Error(`drawn with ${view.backend}, not ${backend}`);
     view.freeze(true);
     await view.show(compiled);
     await new Promise((resolve) => { let left = 6; const tick = () => --left ? requestAnimationFrame(tick) : resolve(0); requestAnimationFrame(tick); });
@@ -140,6 +141,18 @@ describe("content", () => {
   it.each([["front", 0], ["back", 180], ["right", 90]])("wraps around a cylinder, readable on its %s", async (_side, yaw) => {
     const cylinder = `@scene { cylinder; } scene { floor: none; background: #000000; ambient: 1; light: none; camera-target: 0 0 0; camera-angle: ${yaw}deg 0deg; camera-distance: 4; } cylinder { radius: 1; height: 2; color: #000000; font-family: monospace; content: "▌"; }`;
     const [left, right] = await pixels(cylinder, [[-6, 0], [6, 0]]);
+    expect(lit(left)).toBe(true);
+    expect(dark(right)).toBe(true);
+  }, 60000);
+
+  // A face of an octahedron, and a slope of a pyramid, seen straight: the text reads from left to right
+  it.each([
+    ["an octahedron", "octahedron { radius: 1.6; }", "45deg 35.26deg", "0.533 0.533 0.533"],
+    ["a pyramid", "pyramid { size: 2.4 1.6 2.4; }", "0deg 37deg", "0 -0.267 0.8"],
+  ])("writes flat on each face of %s", async (_shape, rules, angle, middle) => {
+    const tag = rules.split(" ")[0];
+    const source = `@scene { ${tag}; } scene { floor: none; background: #000000; ambient: 1; light: none; camera-target: ${middle}; camera-angle: ${angle}; camera-distance: 4; } ${rules} ${tag} { color: #000000; font-family: monospace; content: "▌"; }`;
+    const [left, right] = await pixels(source, [[-5, 0], [5, 0]]);
     expect(lit(left)).toBe(true);
     expect(dark(right)).toBe(true);
   }, 60000);
