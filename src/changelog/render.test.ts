@@ -21,6 +21,15 @@ describe("the changelog page", () => {
     expect(html).toContain("<code>a &lt; b</code> <strong>strong</strong> <em>soft</em> <a href=\"https://example.com/x_y\">link</a>.");
   });
 
+  // Less to read: each change shows its first sentence; the rest unfolds on a click
+  it("shows the first sentence of a change, and folds the rest", () => {
+    const html = renderChangelog("## [0.0.7] — 2026-10-23\n\n- `content`: a text on an object. `a. b` stays whole. More here.\n- Short one.\n");
+    expect(html).toContain(
+      "<li><details><summary><code>content</code>: a text on an object.</summary><p><code>a. b</code> stays whole. More here.</p></details></li>",
+    );
+    expect(html).toContain("<li>Short one.</li>");
+  });
+
   it("drops the title, the introduction and the link definitions of the file", () => {
     const html = renderChangelog("# Changelog\n\nNotable changes.\n\n## [0.0.1] — 2026-10-01\n\nFirst release.\n\n[0.0.1]: https://github.com/LukyVj/GSS/tree/v0.0.1\n");
     expect(html).not.toContain("Changelog");
