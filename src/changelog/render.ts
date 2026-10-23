@@ -1,4 +1,5 @@
 import { escapeHtml } from "../docs/escape";
+import { docEntries } from "../docs/start-screen";
 import changelog from "../../CHANGELOG.md?raw";
 
 // The changelog page (changelog.html): CHANGELOG.md, written into the page when it is
@@ -36,17 +37,59 @@ function firstSentence(text: string): [string, string | null] {
   return [text, null];
 }
 
-// One change of the list, as a row: the element it is about ("- **`content`**: …") in the
-// first column, its first sentence in the second. When there is more to say, the row is a
-// <details>: the rest unfolds under the sentence, opened by a click anywhere on the row.
+// The pages of the docs, by anchor: a change whose element has a page leads there
+let anchors: Set<string> | null = null;
+function docAnchors(): Set<string> {
+  anchors ??= new Set(docEntries().map((entry) => entry.anchor));
+  return anchors;
+}
+
+// Elements whose page has another name, written as code or as words
+const ALIASES: Record<string, string> = {
+  "<gss-scene>": "embedding",
+  "mount()": "embedding",
+  "currentColor": "fn-currentcolor",
+  "conic-gradient()": "fn-gradients",
+  "Attribute selectors": "selector-attribute",
+  Nesting: "selector-nesting",
+  Combinators: "selector-child",
+  Gradients: "fn-gradients",
+  Embedding: "embedding",
+  "VS Code extension": "editor-support",
+};
+
+// The page of the docs of an element: `content` → content, `@mixin` → at-mixin,
+// `noise()` → fn-noise, `::face()` and `:hover` → selector-face and selector-hover.
+// The first element when there are several (`@mixin`, `@apply`); null: no page
+export function docAnchor(scope: string): string | null {
+  if (ALIASES[scope]) return ALIASES[scope];
+  const code = /`([^`]+)`/.exec(scope)?.[1];
+  if (!code) return null;
+  const name = code.split(/[\s:(]/).filter(Boolean)[0] ?? "";
+  const bare = code.replace(/^:+/, "").replace(/\(.*$/, "");
+  const alias = ALIASES[code];
+  if (alias) return alias;
+  const candidates = code.startsWith("@")
+    ? [`at-${code.slice(1)}`]
+    : code.startsWith(":")
+      ? [`selector-${bare}`]
+      : [name, `fn-${bare}`, `shape-${name}`];
+  return candidates.find((anchor) => docAnchors().has(anchor)) ?? null;
+}
+
+// One change of the list, as one line, like the changelogs of Vite or Tailwind: the element
+// it is about ("- **`content`**: …") in the first column, its first sentence in the second.
+// What follows the first sentence stays in CHANGELOG.md; when the element has a page in the
+// docs, the line leads there.
 function change(text: string): string {
   const scope = /^\*\*(.+?)\*\*:\s+/.exec(text);
   const label = `<span class="scope">${scope ? inline(scope[1]) : ""}</span>`;
-  const [first, rest] = firstSentence(scope ? text.slice(scope[0].length) : text);
+  const [first] = firstSentence(scope ? text.slice(scope[0].length) : text);
   const what = `<span class="what">${inline(first)}</span>`;
-  return rest === null
-    ? `<li><div class="row">${label}${what}</div></li>`
-    : `<li><details><summary class="row">${label}${what}<span class="toggle" aria-hidden="true"></span></summary><p>${inline(rest)}</p></details></li>`;
+  const anchor = scope ? docAnchor(scope[1]) : null;
+  return anchor
+    ? `<li><a class="row" href="./docs.html#${anchor}">${label}${what}<span class="go" aria-hidden="true">→</span></a></li>`
+    : `<li><div class="row">${label}${what}</div></li>`;
 }
 
 // "## [0.0.7] — 2026-10-23" → the version and its date; "## Unreleased" → no date

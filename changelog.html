@@ -105,8 +105,7 @@
         font-size: 15px;
         line-height: 1.6;
       }
-      /* Each change is a row: the element it is about, then its first sentence. A row with
-         more to say opens on a click, the rest under the sentence */
+      /* Each change is one line: the element it is about, then its first sentence */
       .release ul {
         list-style: none;
         margin: 0;
@@ -125,20 +124,18 @@
         padding: 12px 8px;
         list-style: none;
       }
-      .release summary.row {
-        cursor: pointer;
+      /* A line whose element has a page in the docs leads there */
+      .release a.row {
+        color: inherit;
+        text-decoration: none;
         transition: background var(--gss-transition);
       }
-      .release summary.row:hover,
-      .release details[open] summary.row {
+      .release a.row:hover {
         background: var(--gss-surface);
       }
-      .release summary.row:focus-visible {
+      .release a.row:focus-visible {
         outline: 1px solid var(--gss-signal);
         outline-offset: -1px;
-      }
-      .release summary::-webkit-details-marker {
-        display: none;
       }
       .release .scope {
         overflow: hidden;
@@ -151,33 +148,22 @@
         font-size: inherit;
       }
       .release .what {
-        color: var(--gss-bone);
+        color: var(--gss-ash);
         font-size: 15px;
         line-height: 1.5;
       }
-      /* A chevron that turns when the row opens */
-      .release .toggle {
+      .release a.row .what {
+        color: var(--gss-bone);
+      }
+      .release .go {
         justify-self: end;
-        width: 7px;
-        height: 7px;
-        border-right: 1.5px solid var(--gss-dim);
-        border-bottom: 1.5px solid var(--gss-dim);
-        transform: translateY(-3px) rotate(45deg);
-        transition: transform var(--gss-transition), border-color var(--gss-transition);
+        font: 13px var(--gss-font-code);
+        color: var(--gss-dim);
+        transition: color var(--gss-transition), transform var(--gss-transition);
       }
-      .release summary.row:hover .toggle {
-        border-color: var(--gss-signal);
-      }
-      .release details[open] .toggle {
-        transform: translateY(1px) rotate(225deg);
-      }
-      .release details p {
-        margin: 0;
-        padding: 4px 44px 16px 192px;
-        background: var(--gss-surface);
-        color: var(--gss-ash);
-        font-size: 14px;
-        line-height: 1.6;
+      .release a.row:hover .go {
+        color: var(--gss-signal);
+        transform: translateX(2px);
       }
 
       .site-footer {
@@ -247,9 +233,7 @@
         .release .scope {
           grid-column: 1 / -1;
         }
-        .release details p {
-          padding: 4px 12px 16px 8px;
-        }
+
         .topbar nav a[href="./showcase.html"] {
           display: none;
         }
