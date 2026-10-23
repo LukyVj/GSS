@@ -1,0 +1,40 @@
+import { describe, it, expect } from "vitest";
+import { readFileSync } from "node:fs";
+import { renderChangelog, prerenderChangelogHtml } from "./render";
+
+describe("the changelog page", () => {
+  it("gives each version its title, its date and an anchor to link to", () => {
+    const html = renderChangelog("## [0.0.7] — 2026-10-23\n\n### Added\n\n- One.\n\n## Unreleased\n");
+    expect(html).toContain('<section class="release" id="0.0.7">');
+    expect(html).toContain('<h2><a href="#0.0.7">0.0.7</a> <time datetime="2026-10-23">2026-10-23</time></h2>');
+    expect(html).toContain("<h3>Added</h3>");
+    expect(html).toContain("<ul>\n<li>One.</li>\n</ul>");
+  });
+
+  it("leaves out an empty Unreleased, and keeps one with changes", () => {
+    expect(renderChangelog("## Unreleased\n\n## [0.0.7] — 2026-10-23\n")).not.toContain("Unreleased");
+    expect(renderChangelog("## Unreleased\n\n### Added\n\n- Soon.\n")).toContain('<section class="release" id="unreleased">');
+  });
+
+  it("writes the inline Markdown of the changelog: code, links, bold, italic", () => {
+    const html = renderChangelog("## [0.0.1] — 2026-10-01\n\n- `a < b` **strong** _soft_ [link](https://example.com/x_y).\n");
+    expect(html).toContain("<code>a &lt; b</code> <strong>strong</strong> <em>soft</em> <a href=\"https://example.com/x_y\">link</a>.");
+  });
+
+  it("drops the title, the introduction and the link definitions of the file", () => {
+    const html = renderChangelog("# Changelog\n\nNotable changes.\n\n## [0.0.1] — 2026-10-01\n\nFirst release.\n\n[0.0.1]: https://github.com/LukyVj/GSS/tree/v0.0.1\n");
+    expect(html).not.toContain("Changelog");
+    expect(html).not.toContain("Notable changes");
+    expect(html).toContain("<p>First release.</p>");
+    expect(html).not.toContain("tree/v0.0.1");
+  });
+
+  it("fills the page with every version of CHANGELOG.md", () => {
+    const html = prerenderChangelogHtml('<div class="changelog" id="changelog"></div>');
+    expect(html).toContain('id="0.0.7"');
+    expect(html).toContain('id="0.0.1"');
+    const versions = [...readFileSync("CHANGELOG.md", "utf8").matchAll(/^## \[(\d+\.\d+\.\d+)\]/gm)].map((m) => m[1]);
+    expect(versions.length).toBeGreaterThan(6);
+    for (const version of versions) expect(html).toContain(`id="${version}"`);
+  });
+});
