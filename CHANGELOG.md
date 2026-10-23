@@ -6,6 +6,8 @@ The 0.0.1 history was reconstructed from GitHub.
 
 ## Unreleased
 
+## [0.0.7] — 2026-10-23
+
 ### Added
 
 - `range` in `@property-panel`: the scene gives the slider of a variable its ends and its step. `@property-panel { range: --col 0 3 1, --row 0 3 1; }` makes two sliders from 0 to 3, one whole number at a time, for a cube on a board of 4 by 4. A number typed past an end is held there, and the panel says what the end is; a variable without a range keeps its slider as before.
