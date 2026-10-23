@@ -59,6 +59,17 @@
         "language": "gss",
         "scopeName": "source.gss",
         "path": "./syntaxes/gss.tmLanguage.json"
+      },
+      {
+        "scopeName": "text.html.gss.injection",
+        "path": "./syntaxes/gss-html.injection.tmLanguage.json",
+        "injectTo": [
+          "text.html.basic",
+          "text.html.derivative"
+        ],
+        "embeddedLanguages": {
+          "meta.embedded.block.gss": "gss"
+        }
       }
     ],
     "snippets": [
