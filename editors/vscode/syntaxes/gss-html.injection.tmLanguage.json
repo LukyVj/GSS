@@ -1,0 +1,72 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "scopeName": "text.html.gss.injection",
+  "comment": "GSS inside an HTML page: <script type=\"text/gss\"> ... </script>, colored with the GSS grammar",
+  "injectionSelector": "L:text.html -comment",
+  "patterns": [
+    {
+      "include": "#gss-script"
+    }
+  ],
+  "repository": {
+    "gss-script": {
+      "begin": "(<)((?i:script))\\b(?=[^>]*\\btype\\s*=\\s*(['\"]?)text/gss\\3[\\s>/])",
+      "beginCaptures": {
+        "0": {
+          "name": "meta.tag.metadata.script.start.html"
+        },
+        "1": {
+          "name": "punctuation.definition.tag.begin.html"
+        },
+        "2": {
+          "name": "entity.name.tag.html"
+        }
+      },
+      "end": "(</)((?i:script))\\s*(>)",
+      "endCaptures": {
+        "0": {
+          "name": "meta.tag.metadata.script.end.html"
+        },
+        "1": {
+          "name": "punctuation.definition.tag.begin.html"
+        },
+        "2": {
+          "name": "entity.name.tag.html"
+        },
+        "3": {
+          "name": "punctuation.definition.tag.end.html"
+        }
+      },
+      "name": "meta.embedded.block.html",
+      "patterns": [
+        {
+          "comment": "The attributes of the opening tag",
+          "begin": "\\G",
+          "end": "(>)",
+          "name": "meta.tag.metadata.script.start.html",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.end.html"
+            }
+          },
+          "patterns": [
+            {
+              "include": "text.html.basic#attribute"
+            }
+          ]
+        },
+        {
+          "comment": "The GSS, up to the closing tag",
+          "begin": "(?<=>)",
+          "end": "(?=</(?i:script))",
+          "contentName": "meta.embedded.block.gss source.gss",
+          "patterns": [
+            {
+              "include": "source.gss"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
