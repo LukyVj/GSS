@@ -136,6 +136,13 @@
         padding: 0;
         min-height: 0;
       }
+      .tile .art.bleed video {
+        display: block;
+        width: 100%;
+        height: auto;
+        aspect-ratio: 16 / 9;
+        background: var(--gss-surface);
+      }
       .tile .art.bleed img {
         width: 100%;
         height: auto;
@@ -1032,9 +1039,20 @@
       </section>
 
       <!-- 07 Doc icons -->
+      <section id="films" aria-labelledby="films-title">
+        <div class="head">
+          <h2 id="films-title"><span class="n">07</span>Films</h2>
+          <p>
+            The films that announced each version of GSS. Every 3D frame is a GSS scene, drawn by
+            the GSS runtime. Play them here, or download them in 16:9 or 9:16.
+          </p>
+        </div>
+        <div class="grid cols-2 films" id="films"></div>
+      </section>
+
       <section id="doc-icons-section" aria-labelledby="doc-icons-title">
         <div class="head">
-          <h2 id="doc-icons-title"><span class="n">07</span>Doc icons</h2>
+          <h2 id="doc-icons-title"><span class="n">08</span>Doc icons</h2>
           <p>
             One for each group of the docs sidebar. A 16 px grid, a 1.25 stroke
             with round ends, a face filled at 35%. They are drawn in
@@ -1049,7 +1067,7 @@
       <!-- 08 Don't -->
       <section id="dont" aria-labelledby="dont-title">
         <div class="head">
-          <h2 id="dont-title"><span class="n">08</span>Don't</h2>
+          <h2 id="dont-title"><span class="n">09</span>Don't</h2>
           <p>
             The mark is a piece of code: it is drawn once, in two colours, and
             left alone.

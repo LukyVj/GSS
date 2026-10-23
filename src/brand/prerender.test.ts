@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { prerenderBrandHtml, iconFileName } from "./prerender";
 import { DOC_GROUPS } from "../docs/navigation";
 import { navIconFile, navIconMotion } from "../docs/nav-icons";
+import { FILMS, FILM_BASE } from "./films";
 
 describe("prerenderBrandHtml", () => {
   const html = prerenderBrandHtml(readFileSync("brand.html", "utf8"));
@@ -23,6 +24,20 @@ describe("prerenderBrandHtml", () => {
 
   it("plays the motion of an icon when the pointer is over its tile", () => {
     expect(html).toContain(`<style>${navIconMotion(".doc-icon:hover")}</style>`);
+  });
+
+  // The films, served from the media bucket: each one to play in place, its poster, and its
+  // two cuts to download
+  it("shows every film, newest first, with its poster and its two cuts", () => {
+    expect(FILMS.map((film) => film.file)).toEqual(["gss-0.0.7", "gss-0.0.6", "gss-launch", "gss-teaser"]);
+    expect(FILM_BASE).toBe("https://media.gss-lang.dev/films/");
+    expect(html.match(/<figure class="tile film"/g)).toHaveLength(FILMS.length);
+    for (const { file } of FILMS) {
+      expect(html).toContain(`poster="${FILM_BASE}${file}.jpg"`);
+      expect(html).toContain(`<source src="${FILM_BASE}${file}.mp4" type="video/mp4" />`);
+      expect(html).toContain(`href="${FILM_BASE}${file}-vertical.mp4"`);
+    }
+    expect(html).toContain('preload="none"');
   });
 
   it("needs the place of the icons in the page", () => {

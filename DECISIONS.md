@@ -1641,3 +1641,9 @@ The compiler of the package grew past its budget: `mount` goes from 97,000 to 98
 **Why**: the changelog was only on GitHub. The version a reader sees is where they look for what it changed.
 **Accepted limits**: the renderer reads the Markdown the changelog uses (titles, lists, paragraphs, code, links, bold, italic), not every Markdown.
 
+## 195. The films, hosted on Cloudflare R2 and shown on the brand page
+
+**Decision** (Lucas, Oct. 23: "hoster les vidéos quelque part, et les avoir dans le branding", then "je souhaiterais du self hosted", then Cloudflare): the films live in an R2 bucket, `gss-media`, served at `media.gss-lang.dev/films/`: each film as `<file>.mp4` (16:9), `<file>-vertical.mp4` (9:16) and their posters. `scripts/upload-films.sh` sends them from `video/*/out` with `wrangler`. The brand page has a section "Films" (`src/brand/films.ts`, written into the page when it is prerendered): the 16:9 cut plays in place, nothing loads before play (`preload="none"`), and both cuts can be downloaded.
+**Why**: about 200 MB of films do not belong in the repository. R2 stores 10 GB for free and does not bill its traffic, where Vercel Blob on the Hobby plan stops after 10 GB of transfer a month. A video tag on our own domain needs no player of another site.
+**Accepted limits**: `media.gss-lang.dev` needs the DNS of the domain on Cloudflare; until then the films do not play. One file per cut, no adaptive streaming.
+
