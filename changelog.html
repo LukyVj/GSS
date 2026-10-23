@@ -155,6 +155,22 @@
       .release a.row .what {
         color: var(--gss-bone);
       }
+      /* The code of a sentence: a small box of the code surface, so it stands out from the
+         sentence even where the sentence is bone, like the code blocks of the docs */
+      .release .what code {
+        padding: 1px 5px;
+        border: 1px solid var(--gss-line);
+        border-radius: var(--gss-radius-control);
+        background: var(--gss-surface);
+        font-size: 0.86em;
+        color: var(--gss-bone);
+        box-decoration-break: clone;
+        -webkit-box-decoration-break: clone;
+      }
+      .release a.row:hover .what code {
+        border-color: var(--gss-isoline);
+        background: var(--gss-raised);
+      }
       .release .go {
         justify-self: end;
         font: 13px var(--gss-font-code);
