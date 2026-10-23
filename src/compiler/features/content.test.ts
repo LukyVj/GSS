@@ -254,9 +254,24 @@ describe("content in the shader", () => {
     expect(glslFunction(shader, "vec3 textureColor(")).toContain("textLabel(uTexture0, q, ln, vec3(3.0, 1.0, 0.2), color, textInk(color), 0.0);");
   });
 
-  it("gives the text of a sphere the square that fits in a sixth of it", () => {
-    const shader = compileGSS('@scene { sphere; } sphere { radius: 1; content: "hello"; }');
-    expect(glslFunction(shader, "vec3 textureColor(")).toContain("textLabel(uTexture0, q, ln, vec3(1.154, 1.154, 1.154), color, textInk(color), 0.0);");
+  it("wraps the text around a round shape, like a label: four sides, then the top and the bottom", () => {
+    const cylinder = glslFunction(compileGSS('@scene { cylinder; } cylinder { content: "hi"; }'), "vec3 textureColor(");
+    expect(cylinder).toContain("return textLabel(uTexture0, wrapped(q, ln, 0.5, 1.111), ln, vec3(0.785, 1.0, 0.785), color, textInk(color), 0.0);");
+    const sphere = glslFunction(compileGSS('@scene { sphere; } sphere { radius: 1; content: "hi"; }'), "vec3 textureColor(");
+    expect(sphere).toContain("wrapped(q, ln, 1.0, 1.361), ln, vec3(1.571, 1.414, 1.571)");
+    const torus = glslFunction(compileGSS('@scene { torus; } torus { content: "hi"; }'), "vec3 textureColor(");
+    expect(torus).toContain("wrapped(q, ln, 1.28, 1.0), ln, vec3(2.011, 0.56, 2.011)");
+    expect(compileGSS('@scene { cylinder; } cylinder { content: "hi"; }')).toContain("vec3 wrapped(vec3 q, vec3 n, float r, float spread) {");
+  });
+
+  it("projects the text on another shape from each side, like a sticker, at the size of the shape", () => {
+    const octahedron = glslFunction(compileGSS('@scene { octahedron; } octahedron { content: "hi"; }'), "vec3 textureColor(");
+    expect(octahedron).toMatch(/return textSticker\(uTexture0, q, ln, vec3\(([\d.]+), \1, \1\), color, textInk\(color\), 0\.0\);/);
+    expect(compileGSS('@scene { octahedron; } octahedron { content: "hi"; }')).toContain("vec3 textSticker(");
+    // a cube keeps its faces: no sticker, no wrap
+    const cube = compileGSS('@scene { cube; } cube { content: "hi"; }');
+    expect(cube).not.toContain("textSticker(");
+    expect(cube).not.toContain("wrapped(");
   });
 
   it("paints the text in the color of text-color", () => {

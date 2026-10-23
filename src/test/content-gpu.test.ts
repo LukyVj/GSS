@@ -136,6 +136,14 @@ describe("content", () => {
     expect(dark(bottom)).toBe(true);
   }, 60000);
 
+  // A cylinder: the text wraps around it, and still reads from left to right on each side
+  it.each([["front", 0], ["back", 180], ["right", 90]])("wraps around a cylinder, readable on its %s", async (_side, yaw) => {
+    const cylinder = `@scene { cylinder; } scene { floor: none; background: #000000; ambient: 1; light: none; camera-target: 0 0 0; camera-angle: ${yaw}deg 0deg; camera-distance: 4; } cylinder { radius: 1; height: 2; color: #000000; font-family: monospace; content: "▌"; }`;
+    const [left, right] = await pixels(cylinder, [[-6, 0], [6, 0]]);
+    expect(lit(left)).toBe(true);
+    expect(dark(right)).toBe(true);
+  }, 60000);
+
   it("is drawn by WebGPU too", async () => {
     const [left, right] = await pixels(scene('content: "▌";'), [[-8, 0], [8, 0]], "webgpu");
     expect(lit(left)).toBe(true);

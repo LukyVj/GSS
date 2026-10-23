@@ -73,13 +73,13 @@ describe("texture-mapping", () => {
     expect(textureColor).toContain("return spherical(uTexture0, q, color, false);");
   });
 
-  it("wraps the image under the text of content, the text still on each face", () => {
+  it("wraps the image under the text of content, the text wrapped around the sphere too", () => {
     const textureColor = glslFunction(
       compileGSS(`@scene { sphere; } sphere { ${earth}; texture-mapping: sphere; content: "GSS"; }`),
       "vec3 textureColor(",
     );
     expect(textureColor).toContain("color = spherical(uTexture0, q, color, false);");
-    expect(textureColor).toMatch(/return textLabel\(uTexture1, q, ln, /);
+    expect(textureColor).toMatch(/return textLabel\(uTexture1, wrapped\(q, ln, /);
   });
 
   it("ignores texture-size, which only sizes the images of box, but still checks it", () => {

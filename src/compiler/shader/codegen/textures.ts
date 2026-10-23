@@ -4,7 +4,7 @@ import type { Keyframes } from "../../syntax/ast";
 import { FACES, type Face, type StyledInstance } from "../../cascade/resolve";
 import { readMapping, readRendering, readTexture, sceneTextures } from "../../features/textures";
 import { TEXT_COLOR } from "../../features/content";
-import { frameStyles, textGroups, textsIn, textsKey, objectBox, textBox, type FaceText } from "../../features/text-layout";
+import { frameStyles, textGroups, textsIn, textsKey, objectBox, textRoom, type FaceText } from "../../features/text-layout";
 import { readFontSize } from "../../features/content";
 import type { Styles } from "../../cascade/resolve";
 import { hoverValue } from "./animation";
@@ -81,6 +81,25 @@ const TEXT_LABEL = `vec3 textLabel(sampler2D image, vec3 q, vec3 n, vec3 box, ve
   vec4 dark = texture(image, vec2(st.x, 0.5 * st.y));                                 // the copy in black
   float plain = clamp(dot(light.rgb - dark.rgb, vec3(0.3333)), 0.0, 1.0);             // 1: a letter, 0: an emoji
   return mix(color, mix(dark.rgb, ink, plain), light.a * inside.x * inside.y);
+}`;
+
+// content on a round shape: the point seen as if the side it is on were flat, so the text
+// wraps around the shape like a label on a can. A side is a quarter turn around the axis;
+// the top and the bottom stay flat, scaled to the room of a side (spread)
+const WRAPPED = `vec3 wrapped(vec3 q, vec3 n, float r, float spread) {
+  vec3 a = abs(n);
+  if (a.y >= a.x && a.y >= a.z) return vec3(q.x * spread, q.y, q.z * spread);  // top and bottom
+  float middle = floor(atan(n.x, n.z) / 1.5707963 + 0.5) * 1.5707963;     // the side: front, right, back or left
+  float arc = (atan(q.x, q.z) - middle) * r;                               // along the side, from its middle
+  arc -= 6.2831853 * r * floor(arc / (6.2831853 * r) + 0.5);               // the back, across the seam
+  return vec3(arc * cos(middle) + r * sin(middle), q.y, r * cos(middle) - arc * sin(middle));
+}`;
+
+// content on a shape without faces: the text of each side, fading where the surface turns
+// away from it
+const TEXT_STICKER = `vec3 textSticker(sampler2D image, vec3 q, vec3 n, vec3 box, vec3 color, vec3 ink, float zoom) {
+  vec3 a = abs(n) / length(n);
+  return mix(color, textLabel(image, q, n, box, color, ink, zoom), smoothstep(0.35, 0.55, max(a.x, max(a.y, a.z))));
 }`;
 
 // The ink of a text without a color of its own: black on a light surface, white on a dark one
@@ -185,9 +204,13 @@ export function textureCode(
         throw errorAt(value!, "font-size can change on :hover or in @keyframes only from a number: write one at rest, like: font-size: 0.3;");
       return "0.0";
     }, hover);
+    // A cube writes on its faces; a round shape wraps the text around itself; any other
+    // shape takes it like a sticker on each side
+    const room = textRoom(instance);
+    const at = room.wrap ? `wrapped(q, ln, ${g(room.wrap.r)}, ${g(room.wrap.flat)})` : "q";
     const write = (text: FaceText) =>
       text
-        ? `textLabel(uTexture${files.indexOf(text.source)}, q, ln, vec3(${textBox(instance).map(g).join(", ")}), color, ${ink}, ${text.sized ? zoom : "0.0"})`
+        ? `${room.sticker ? "textSticker" : "textLabel"}(uTexture${files.indexOf(text.source)}, ${at}, ln, vec3(${room.box.map(g).join(", ")}), color, ${ink}, ${text.sized ? zoom : "0.0"})`
         : "color";
     // The texts of the six faces: the one most faces share is written last, the others face by face
     const lines = (texts: Record<Face, FaceText>, indent: string) => {
@@ -256,7 +279,9 @@ export function textureCode(
       ...spaces,
       ...(branches.join("\n").includes("triplanar(") ? [TRIPLANAR] : []),
       ...(branches.join("\n").includes("spherical(") ? [SPHERICAL] : []),
-      ...(branches.join("\n").includes("textLabel(") ? [TEXT_LABEL] : []),
+      ...(branches.join("\n").includes("textLabel(") || branches.join("\n").includes("textSticker(") ? [TEXT_LABEL] : []),
+      ...(branches.join("\n").includes("textSticker(") ? [TEXT_STICKER] : []),
+      ...(branches.join("\n").includes("wrapped(") ? [WRAPPED] : []),
       ...(branches.join("\n").includes("textInk(") ? [TEXT_INK] : []),
       ...(branches.join("\n").includes("faceOf(") ? [FACE_OF] : []),
       textureColor,
