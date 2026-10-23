@@ -155,21 +155,20 @@
       .release a.row .what {
         color: var(--gss-bone);
       }
-      /* The code of a sentence: a small box of the code surface, so it stands out from the
-         sentence even where the sentence is bone, like the code blocks of the docs */
+      /* The code of a sentence: a small box, a bone wash with a gutter hairline, so it stands
+         out from the sentence even where the sentence is bone */
       .release .what code {
         padding: 1px 5px;
-        border: 1px solid var(--gss-line);
+        border: 1px solid var(--gss-gutter);
         border-radius: var(--gss-radius-control);
-        background: var(--gss-surface);
+        background: rgb(232 230 225 / 0.08);
         font-size: 0.86em;
         color: var(--gss-bone);
         box-decoration-break: clone;
         -webkit-box-decoration-break: clone;
       }
       .release a.row:hover .what code {
-        border-color: var(--gss-isoline);
-        background: var(--gss-raised);
+        background: rgb(232 230 225 / 0.12);
       }
       .release .go {
         justify-self: end;
