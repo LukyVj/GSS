@@ -71,13 +71,15 @@ export function readPropertyRules(rules: PropertyRule[]): { name: string; syntax
 // display is open when it is not written; the last rule wins, like the cascade.
 export type PropertyPanel = "open" | "folded";
 const DISPLAYS = ["open", "folded", "none"];
+const DESCRIPTORS = ["display", "range"];
 
 export function readPropertyPanel(rules: PanelRule[]): PropertyPanel | undefined {
   let display = "none";
   for (const rule of rules) {
     display = "open";
     for (const d of rule.descriptors) {
-      if (d.property !== "display") throw errorAt(d, `@property-panel takes display, not ${d.property}`);
+      if (!DESCRIPTORS.includes(d.property)) throw errorAt(d, `@property-panel takes display and range, not ${d.property}`);
+      if (d.property !== "display") continue;
       const [token] = d.value;
       const text = d.value.map((t) => String(t.value)).join(" ");
       if (d.value.length !== 1 || token.type !== "IDENT" || !DISPLAYS.includes(String(token.value)))
@@ -86,6 +88,52 @@ export function readPropertyPanel(rules: PanelRule[]): PropertyPanel | undefined
     }
   }
   return display === "none" ? undefined : (display as PropertyPanel);
+}
+
+// range of @property-panel (decision 187): the ends of the slider of a variable, and its step,
+// written like its values (an angle in deg, a percentage in %, a length in px).
+//   @property-panel { range: --col 0 3 1, --row 0 3 1; }
+// A number typed past an end is held there, where a slider without a range widens.
+export type PropertyRange = { min: number; max: number; step?: number };
+
+const RANGE_EXAMPLE = "like: range: --col 0 3, --row 0 3 1;";
+
+export function readPropertyRanges(
+  rules: PanelRule[],
+  registered: { name: string; syntax: PropertySyntax }[],
+): Record<string, PropertyRange> | undefined {
+  const ranges: Record<string, PropertyRange> = {};
+  for (const rule of rules) {
+    for (const d of rule.descriptors) {
+      if (d.property !== "range") continue;
+      // One range per comma, like the layers of transition
+      const items: Token[][] = [[]];
+      for (const token of d.value) {
+        if (token.type === "PUNCT" && token.value === ",") items.push([]);
+        else items[items.length - 1].push(token);
+      }
+      for (const item of items) {
+        const [name, ...ends] = item;
+        if (name?.type !== "IDENT" || !name.value.startsWith("--") || ends.length < 2 || ends.length > 3)
+          throw errorAt(item.length > 0 ? item : d, `range of @property-panel is a variable, its min and its max, and a step if you like, ${RANGE_EXAMPLE}`);
+        const property = registered.find((p) => p.name === name.value);
+        if (!property) throw errorAt(name, `range of @property-panel: ${name.value} is not registered by @property`);
+        if (property.syntax === "color")
+          throw errorAt(name, `range of @property-panel: ${name.value} is a color, it has a color picker and no range`);
+        // In the unit of the slider: an angle in deg, not in the radians of the uniform
+        const [min, max, step] = ends.map((end) => {
+          const [x] = propertyFloats(property.syntax, [end], `an end of the range of ${name.value}`);
+          return property.syntax === "angle" ? +((x * 180) / Math.PI).toFixed(3) : x;
+        });
+        if (min >= max)
+          throw errorAt(ends, `range of @property-panel: the min of ${name.value} must be below its max, like: ${name.value} 0 3`);
+        if (step !== undefined && step <= 0)
+          throw errorAt(ends[2], `range of @property-panel: the step of ${name.value} must be above 0, like: ${name.value} 0 3 1`);
+        ranges[name.value] = step === undefined ? { min, max } : { min, max, step }; // the last one wins
+      }
+    }
+  }
+  return Object.keys(ranges).length > 0 ? ranges : undefined;
 }
 
 // A value of a registered variable, its colors and math already computed: the 4 floats of

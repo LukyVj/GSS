@@ -67,7 +67,7 @@ function createPanel(code: string, html: string): { panel: HTMLElement; start():
     // The link carries the code as it is now, edits included
     const link = panel.querySelector<HTMLAnchorElement>(".open-playground")!;
     editor.onCompile(async (current, compiled) => {
-      variables.update(compiled.properties, compiled.propertyPanel);
+      variables.update(compiled.properties, compiled.propertyPanel, compiled.propertyRanges);
       chips.update(compiled);
       link.href = `./playground.html${await encodeCode(current, html)}`; // the HTML goes too
     });

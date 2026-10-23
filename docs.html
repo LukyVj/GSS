@@ -1721,6 +1721,21 @@
       .values dt {
         text-transform: none;
       }
+      /* A value added after its page: the version that added it, beside it, like the "new"
+         of the contents */
+      .values dt[data-since]::after {
+        content: "new in v" attr(data-since);
+        display: inline-block;
+        margin-left: 8px;
+        padding: 0 4px;
+        border: 1px solid rgb(255 90 54 / 0.45);
+        border-radius: var(--gss-radius-control);
+        font: 500 10px/14px var(--gss-font-code);
+        letter-spacing: 0.02em;
+        color: var(--gss-signal);
+        vertical-align: 1px;
+        white-space: nowrap;
+      }
       .values dd {
         font: 15px/1.5 var(--gss-font-body);
         color: var(--gss-ash);

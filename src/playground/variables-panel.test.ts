@@ -44,6 +44,29 @@ describe("controlFor", () => {
   });
 });
 
+describe("controlFor, with the range of @property-panel (decision 187)", () => {
+  it("uses the min and the max of the scene, not twice the start value", () => {
+    expect(controlFor(number("--col", 0), { min: 0, max: 3 })).toEqual({
+      kind: "range", unit: "", value: 0, min: 0, max: 3, step: 0.01, held: true,
+    });
+  });
+
+  it("uses the step of the scene", () => {
+    expect(controlFor(number("--col", 0), { min: 0, max: 3, step: 1 })).toMatchObject({ step: 1 });
+  });
+
+  it("reads an angle in degrees", () => {
+    expect(controlFor({ name: "--turn", syntax: "angle", initial: [Math.PI / 2, 0, 0, 0] }, { min: 0, max: 180 })).toMatchObject({
+      unit: "deg", value: 90, min: 0, max: 180,
+    });
+  });
+
+  it("is not widened", () => {
+    const control = controlFor(number("--col", 0), { min: 0, max: 3 });
+    expect(widen(control, 5)).toBe(control);
+  });
+});
+
 describe("widen", () => {
   it("doubles the end a value goes past, and the step follows the span", () => {
     const control = controlFor(number("--lift", 1));
@@ -239,6 +262,65 @@ describe("mountVariablesPanel", () => {
     vars.update([number("--lift", 1)], "folded");
     vars.update([number("--lift", 1)], "open");
     expect(expanded()).toBe("true");
+  });
+
+  describe("with the range of @property-panel (decision 187)", () => {
+    const message = (name: string) => row(name).querySelector<HTMLElement>(".vars-message")!;
+
+    it("gives the slider the ends and the step of the scene", () => {
+      const vars = mountVariablesPanel(document.body, fakeScene());
+      vars.update([number("--col", 0)], "open", { "--col": { min: 0, max: 3, step: 1 } });
+      expect([slider("--col").min, slider("--col").max, slider("--col").step]).toEqual(["0", "3", "1"]);
+      expect(message("--col").hidden).toBe(true);
+    });
+
+    it("holds a number typed past the max at the max, and says why", () => {
+      const scene = fakeScene();
+      const vars = mountVariablesPanel(document.body, scene);
+      vars.update([number("--col", 0)], "open", { "--col": { min: 0, max: 3 } });
+      type(field("--col"), "5");
+      expect(field("--col").value).toBe("3");
+      expect(slider("--col").max).toBe("3");
+      expect(scene.calls).toEqual(["set --col 3"]);
+      expect(message("--col").hidden).toBe(false);
+      expect(message("--col").textContent).toBe("the max of --col is 3");
+    });
+
+    it("holds a number typed below the min at the min, with its unit", () => {
+      const vars = mountVariablesPanel(document.body, fakeScene());
+      vars.update([{ name: "--turn", syntax: "angle", initial: [0, 0, 0, 0] }], "open", { "--turn": { min: 0, max: 180 } });
+      type(field("--turn"), "-20");
+      expect(field("--turn").value).toBe("0");
+      expect(message("--turn").textContent).toBe("the min of --turn is 0deg");
+    });
+
+    it("hides the message once a number inside the range is typed, slid or reset", () => {
+      const vars = mountVariablesPanel(document.body, fakeScene());
+      vars.update([number("--col", 0)], "open", { "--col": { min: 0, max: 3 } });
+      type(field("--col"), "5");
+      type(field("--col"), "2");
+      expect(message("--col").hidden).toBe(true);
+      type(field("--col"), "5");
+      slide(slider("--col"), "1");
+      expect(message("--col").hidden).toBe(true);
+      type(field("--col"), "5");
+      reset("--col").click();
+      expect(message("--col").hidden).toBe(true);
+    });
+
+    it("still widens a variable without a range", () => {
+      const vars = mountVariablesPanel(document.body, fakeScene());
+      vars.update([number("--lift", 1), number("--col", 0)], "open", { "--col": { min: 0, max: 3 } });
+      type(field("--lift"), "5");
+      expect(slider("--lift").max).toBe("10");
+    });
+
+    it("makes a new row when the range changes in the code", () => {
+      const vars = mountVariablesPanel(document.body, fakeScene());
+      vars.update([number("--col", 0)], "open", { "--col": { min: 0, max: 3 } });
+      vars.update([number("--col", 0)], "open", { "--col": { min: 0, max: 7 } });
+      expect(slider("--col").max).toBe("7");
+    });
   });
 
   it("names its count in the toggle", () => {

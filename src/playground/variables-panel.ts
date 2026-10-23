@@ -1,16 +1,18 @@
 import "./variables-panel.css";
-import type { PropertyPanel, RegisteredProperty } from "../compiler/features/properties";
+import type { PropertyPanel, PropertyRange, RegisteredProperty } from "../compiler/features/properties";
 
 // The panel of variables (decisions 127, 128): over the top-left corner of the render, in the
 // playground and in "Try it" of the docs, when the scene asks for it with @property-panel,
 // one control per variable the scene registers with @property, that calls setProperty() as
 // it moves, without compiling again. Nothing goes into the code: the share link carries the
 // code, and the code its start values. @property has no min or max: the range of a slider
-// comes from the start value, and a number typed outside it widens it.
+// comes from the start value, and a number typed outside it widens it, unless the scene
+// gives the range with range: in @property-panel (decision 187), and then the number is
+// held at the end it goes past.
 
 type Unit = "" | "deg" | "%" | "px";
 export type Control =
-  | { kind: "range"; unit: Unit; value: number; min: number; max: number; step: number }
+  | { kind: "range"; unit: Unit; value: number; min: number; max: number; step: number; held?: boolean } // held: the range of the scene
   | { kind: "color"; value: string };
 
 const UNITS: Record<Exclude<RegisteredProperty["syntax"], "color">, Unit> = {
@@ -30,14 +32,20 @@ function range(unit: Unit, value: number, min: number, max: number): Control {
   return widen({ kind: "range", unit, value, min, max, step: stepFor(min, max) }, value);
 }
 
-// The control of a variable, at its start value (the 4 floats of its uniform)
-export function controlFor(property: RegisteredProperty): Control {
+// The control of a variable, at its start value (the 4 floats of its uniform), within the
+// range the scene gives it, if any
+export function controlFor(property: RegisteredProperty, given?: PropertyRange): Control {
   const [x, g, b] = property.initial;
   if (property.syntax === "color") {
     const hex = [x, g, b].map((c) => Math.round(Math.min(Math.max(c, 0), 1) * 255).toString(16).padStart(2, "0"));
     return { kind: "color", value: `#${hex.join("")}` };
   }
   const unit = UNITS[property.syntax];
+  if (given) {
+    const value = property.syntax === "angle" ? +((x * 180) / Math.PI).toFixed(3) : x;
+    const step = given.step ?? stepFor(given.min, given.max);
+    return { kind: "range", unit, value, min: given.min, max: given.max, step, held: true };
+  }
   // The compiler keeps six digits of radians, a thousandth of a degree: 30deg, not 30.00001
   if (property.syntax === "angle") return range(unit, +((x * 180) / Math.PI).toFixed(3), 0, 360);
   if (property.syntax === "percentage") return range(unit, x, 0, 100);
@@ -49,7 +57,7 @@ export function controlFor(property: RegisteredProperty): Control {
 // A value past an end of the range moves that end to twice the value (the ranges always
 // hold 0, so twice the value is further out); the step follows the new span
 export function widen<C extends Control>(control: C, value: number): C {
-  if (control.kind !== "range" || (value >= control.min && value <= control.max)) return control;
+  if (control.kind !== "range" || control.held || (value >= control.min && value <= control.max)) return control;
   const min = Math.min(control.min, 2 * value);
   const max = Math.max(control.max, 2 * value);
   return { ...control, min, max, step: stepFor(min, max) };
@@ -65,7 +73,7 @@ type Scene = {
 
 type Row = {
   element: HTMLElement;
-  start: string; // the syntax and the start value: a change in the code makes a new row
+  start: string; // the syntax, the start value and the range: a change in the code makes a new row
 };
 
 function input(type: string, label: string): HTMLInputElement {
@@ -76,7 +84,7 @@ function input(type: string, label: string): HTMLInputElement {
 }
 
 // One row: the name, the control, a reset button once the value has moved
-function createRow(property: RegisteredProperty, scene: Scene): HTMLElement {
+function createRow(property: RegisteredProperty, scene: Scene, range?: PropertyRange): HTMLElement {
   const row = document.createElement("div");
   row.className = "vars-row";
   row.dataset.variable = property.name;
@@ -91,7 +99,7 @@ function createRow(property: RegisteredProperty, scene: Scene): HTMLElement {
   reset.setAttribute("aria-label", `Reset ${property.name}`);
   reset.hidden = true;
 
-  const start = controlFor(property);
+  const start = controlFor(property, range);
   if (start.kind === "color") {
     const picker = input("color", property.name);
     const text = document.createElement("output");
@@ -113,6 +121,15 @@ function createRow(property: RegisteredProperty, scene: Scene): HTMLElement {
   const slider = input("range", property.name);
   const field = input("number", `${property.name}, ${start.unit === "" ? "a number" : `in ${start.unit}`}`);
   field.step = "any";
+  // Why a typed number was held at an end of the range of the scene
+  const message = document.createElement("span");
+  message.className = "vars-message";
+  message.setAttribute("role", "status");
+  message.hidden = true;
+  const say = (text = "") => {
+    message.textContent = text;
+    message.hidden = text === "";
+  };
   let control = start;
   let value = start.value;
   const show = () => {
@@ -127,16 +144,27 @@ function createRow(property: RegisteredProperty, scene: Scene): HTMLElement {
     show();
     scene.setProperty(property.name, cssValue(start.unit, value));
   };
-  slider.addEventListener("input", () => set(Number(slider.value)));
-  // Enter or leaving the field: a value outside the range widens it; an empty field or
-  // one that is not a number shows the last value again
+  slider.addEventListener("input", () => {
+    say();
+    set(Number(slider.value));
+  });
+  // Enter or leaving the field: a value outside the range widens it, or is held at its end
+  // when the scene gives the range; an empty field or one that is not a number shows the
+  // last value again
   field.addEventListener("change", () => {
     const typed = field.value.trim() === "" ? NaN : Number(field.value);
     if (!Number.isFinite(typed)) return show();
+    if (control.held && (typed > control.max || typed < control.min)) {
+      const [end, bound] = typed > control.max ? ["max", control.max] : ["min", control.min];
+      say(`the ${end} of ${property.name} is ${cssValue(start.unit, bound)}`);
+      return set(bound);
+    }
+    say();
     control = widen(control, typed);
     set(typed);
   });
   reset.addEventListener("click", () => {
+    say();
     control = start;
     value = start.value;
     show();
@@ -146,7 +174,7 @@ function createRow(property: RegisteredProperty, scene: Scene): HTMLElement {
   const unit = document.createElement("span");
   unit.className = "vars-unit";
   unit.textContent = start.unit;
-  row.append(name, slider, field, unit, reset);
+  row.append(name, slider, field, unit, reset, message);
   return row;
 }
 
@@ -184,17 +212,25 @@ export function mountVariablesPanel(parent: HTMLElement, scene: Scene) {
     // After each compile: the variables of the scene now on screen, and its @property-panel
     // (none: no panel). A row whose syntax and start value did not change keeps its value;
     // otherwise the code's start value wins.
-    update(properties: RegisteredProperty[] | undefined, display: PropertyPanel | undefined): void {
+    // ranges: the range: of @property-panel, by variable (decision 187).
+    update(
+      properties: RegisteredProperty[] | undefined,
+      display: PropertyPanel | undefined,
+      ranges?: Record<string, PropertyRange>,
+    ): void {
       const next = properties ?? [];
+      // A row keeps its value while its syntax, its start value and its range stay the same
+      const startOf = (property: RegisteredProperty) =>
+        `${property.syntax} ${property.initial} ${JSON.stringify(ranges?.[property.name] ?? null)}`;
       for (const [name, row] of rows) {
         const property = next.find((p) => p.name === name);
-        if (property && `${property.syntax} ${property.initial}` === row.start) continue;
+        if (property && startOf(property) === row.start) continue;
         rows.delete(name);
         scene.removeProperty(name);
       }
       for (const property of next) {
         if (!rows.has(property.name))
-          rows.set(property.name, { element: createRow(property, scene), start: `${property.syntax} ${property.initial}` });
+          rows.set(property.name, { element: createRow(property, scene, ranges?.[property.name]), start: startOf(property) });
       }
       list.replaceChildren(...next.map((property) => rows.get(property.name)!.element));
       toggle.textContent = `variables · ${next.length}`;

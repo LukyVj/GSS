@@ -12,6 +12,7 @@ import {
 import { highlightGss } from "./highlight";
 import { FIRST_SCENE, GETTING_STARTED } from "./guide";
 import { compileGSS } from "../compiler";
+import { compareVersions } from "./news";
 import {
   PROPERTIES,
   AT_RULES,
@@ -498,5 +499,27 @@ describe("the version beside the title of a page", () => {
   it("keeps the text of the title the name of the page", () => {
     const html = renderProperty(rotateX);
     expect(html).toContain('<h3 data-since="0.0.1"><code>rotate-x</code></h3>');
+  });
+});
+
+// A value added after its page (decision 188): "new in" beside the value, not only the page
+describe("the version of a value", () => {
+  const panel = AT_RULES.find((rule) => rule.name === "property-panel")!;
+
+  it("is beside a value added after its page, as an attribute", () => {
+    const html = renderAtRule(panel);
+    expect(html).toMatch(/<dt data-since="0\.0\.7"><code class="gss syntax"><span class="gss-keyword">range<\/span><\/code><\/dt>/);
+  });
+
+  it("is not on a value that came with its page", () => {
+    const html = renderAtRule(panel);
+    expect(html).toMatch(/<dt><code class="gss syntax"><span class="gss-keyword">display<\/span><\/code><\/dt>/);
+  });
+
+  it("is always later than the version of its page", () => {
+    const pages = [...PROPERTIES, ...AT_RULES, ...SELECTORS, ...SHAPE_DOCS, ...FUNCTIONS];
+    for (const page of pages)
+      for (const [value, , since] of page.values ?? [])
+        if (since) expect(compareVersions(since, page.since), `${page.name}: ${value}`).toBeGreaterThan(0);
   });
 });

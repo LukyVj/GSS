@@ -11,9 +11,7 @@
 
 scene {
   floor: none;
-  background:
-    noise(90 1, #ffffff00 90%, #d8d0ff80 97%),
-    radial-gradient(ellipse at 50% 50%, #f3c58a 0%, #8a6cff 10%, #2a1f6a 26%, #0b0920 52%, #030309);
+  background: noise(90 1, #ffffff00 90%, #d8d0ff80 97%), radial-gradient(ellipse at 50% 50%, #f3c58a 0%, #8a6cff 10%, #2a1f6a 26%, #0b0920 52%, #030309);
   camera-distance: 3.2;
   camera-angle: 0deg 24deg;
   camera-target: 0 0 0;

@@ -28,6 +28,10 @@ const ROWS: Record<string, Row> = {
   },
   "selector-class": { code: ".red { color: #ff5a36; }", items: [one("cube"), lit("sphere", ".red"), lit("cube", ".red"), one("torus")] },
   "selector-id": { code: "#hero { color: #ff5a36; }", items: [one("cube"), lit("sphere", "#hero"), one("torus")] },
+  "selector-attribute": {
+    code: "[data-col=2] { color: #ff5a36; }",
+    items: [one("cube", { label: "col=1" }), lit("cube", "col=2"), lit("sphere", "col=2"), one("torus", { label: "col=3" })],
+  },
   "selector-universal": { code: "* { color: #ff5a36; }", items: [lit("cube"), lit("sphere"), lit("torus"), lit("cone")] },
   "selector-list": { code: "cube, torus { color: #ff5a36; }", items: [lit("cube"), one("sphere"), lit("torus"), one("cone")] },
   "selector-descendant": {

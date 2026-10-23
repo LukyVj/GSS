@@ -36,8 +36,10 @@ import {
   propertyFloats,
   propertyToken,
   readPropertyPanel,
+  readPropertyRanges,
   readPropertyRules,
   type PropertyPanel,
+  type PropertyRange,
   type RegisteredProperty,
 } from "./features/properties";
 
@@ -72,6 +74,9 @@ export type CompiledScene = {
   // @property-panel (decision 128): the playground and Try it show a control per variable,
   // open or folded at the start. Absent without the rule, or with display: none.
   propertyPanel?: PropertyPanel;
+  // range of @property-panel (decision 187): the ends and the step of the slider of some
+  // variables. Absent without a range, or without a panel.
+  propertyRanges?: Record<string, PropertyRange>;
   // view (decision 131): the view the code asks for, absent when it is shaded. The shader
   // draws the view of the compile option instead, when there is one.
   view?: "distance";
@@ -191,6 +196,7 @@ function compileStylesheet(
   // its start value, or its initial-value does
   const registered = errors.run(() => registeredProperties(stylesheet, sceneStyles)) ?? [];
   const panel = errors.run(() => readPropertyPanel(stylesheet.panels));
+  const ranges = errors.run(() => readPropertyRanges(stylesheet.panels, registered));
   const live: Variables = Object.fromEntries(registered.map((p, i) => [p.name, [propertyToken(p, i)]]));
   const rootVariables = { ...customProperties(sceneStyles), ...live };
 
@@ -357,6 +363,7 @@ function compileStylesheet(
       : {}),
     ...(registered.length > 0 ? { properties: registered } : {}),
     ...(panel ? { propertyPanel: panel } : {}),
+    ...(panel && ranges ? { propertyRanges: ranges } : {}),
     ...(view === "distance" ? { view } : {}),
     shader: shader!,
     camera: camera!,

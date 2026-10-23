@@ -104,7 +104,7 @@ currentSource = editor.getCode;
 // ----- The panel of variables: a control per @property, set live (decisions 127, 128) -----
 
 const variables = mountVariablesPanel(document.body, renderer);
-editor.onCompile((_code, compiled) => variables.update(compiled.properties, compiled.propertyPanel));
+editor.onCompile((_code, compiled) => variables.update(compiled.properties, compiled.propertyPanel, compiled.propertyRanges));
 
 // ----- The chips of the view: shaded, or the isolines of the distance field (decision 131) -----
 

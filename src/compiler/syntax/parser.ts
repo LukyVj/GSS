@@ -138,6 +138,13 @@ export function parse(input: Token[], errors?: ErrorSink): Stylesheet {
         if (className.type !== "IDENT")
           throw errorAt(className, 'Class name expected after "."');
         element.classes.push(className.value);
+      } else if (isPunct(token, "[")) {
+        next();
+        const [name, value] = parseSceneAttribute(token!);
+        element.attributes ??= {};
+        if (name.value in element.attributes)
+          throw errorAt(name, `The attribute "${name.value}" is already set on this object`);
+        element.attributes[name.value as string] = value;
       } else {
         break;
       }
@@ -175,6 +182,41 @@ export function parse(input: Token[], errors?: ErrorSink): Stylesheet {
     if (isPunct(peek(), ";")) next();
 
     return element;
+  }
+
+  // [data-col=2], [data-name="top left"], [lit]: after the "[", up to its "]".
+  // id and class have their own syntax, and an attribute of @scene has only "="
+  function parseSceneAttribute(open: Token): [Token, string] {
+    const name = next();
+    if (name.type !== "IDENT")
+      throw errorAt(name, 'Attribute name expected after "["');
+    if (name.value === "id" || name.value === "class") {
+      const shown = (token: Token | undefined) =>
+        token && (token.type === "STRING" || token.type === "IDENT") ? token.value : "name";
+      throw errorAt(
+        name,
+        name.value === "id"
+          ? `Write the id with "#": cube#${shown(tokens[pos + 1])}`
+          : `Write a class with ".": cube.${shown(tokens[pos + 1])}`,
+      );
+    }
+    let value = "";
+    if (isPunct(peek(), "=")) {
+      next();
+      const token = next();
+      if (token.type === "STRING" || token.type === "IDENT") value = token.value;
+      else if (token.type === "NUMBER") value = String(token.value);
+      else throw errorAt(token, `A value is expected after "${name.value}="`);
+    } else if (!isPunct(peek(), "]")) {
+      throw errorAt(
+        peek() ?? name,
+        `In @scene, an attribute is [${name.value}] or [${name.value}=value]: "^=", "~=" and the others are for selectors`,
+      );
+    }
+    if (!isPunct(peek(), "]"))
+      throw errorAt(peek() ?? open, '"]" missing after the attribute');
+    next();
+    return [name, value];
   }
 
   // @scene { ... }

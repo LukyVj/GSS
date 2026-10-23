@@ -16,6 +16,7 @@ export function formatGss(code: string): string {
   // their commas stay on the line. parens: how deep in its parentheses, 0 outside.
   let mixinHead = false;
   let parens = 0;
+  let brackets = 0; // inside [data-col=2]: the attribute stays on the line of its element
 
   parts.forEach(({ token, start, end }, index) => {
     const previous = parts[index - 1];
@@ -45,7 +46,7 @@ export function formatGss(code: string): string {
     // the element: .corner, :nth-child(odd)
     const inScene = blocks[blocks.length - 1] === "scene";
     const continues = [".", ":", "(", ","].some(previousIs);
-    if (inScene && token.type === "IDENT" && previous && !continues)
+    if (inScene && token.type === "IDENT" && previous && !continues && brackets === 0)
       needBreak = true;
 
     // Code written on the line after a comment stays on the next line
@@ -92,6 +93,8 @@ export function formatGss(code: string): string {
       blocks.push(startsWithScene || inScene ? "scene" : "rules");
     }
     if (is("}")) blocks.pop();
+    if (is("[")) brackets++;
+    if (is("]")) brackets = Math.max(0, brackets - 1);
     if (is(";") || is("}") || is("{")) headLength = 0;
     if (is(";") || is("}")) needBreak = true;
     // The block of a @paint is GLSL, written as it is: it closes like a "}" (decision 151)

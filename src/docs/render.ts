@@ -80,8 +80,8 @@ function renderValues(page: string, { values, valuesTitle = "Values", details, m
       <h4 id="${escapeHtml(chapterAnchor(page, valuesTitle))}">${escapeHtml(valuesTitle)}</h4>
       <dl class="values">${values
         .map(
-          ([value, text]) => `
-        <dt><code class="gss syntax">${highlightSyntax(value)}</code></dt>
+          ([value, text, since]) => `
+        <dt${since ? dated(since) : ""}><code class="gss syntax">${highlightSyntax(value)}</code></dt>
         <dd>${prose(text)}</dd>`,
         )
         .join("")}

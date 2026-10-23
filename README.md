@@ -233,6 +233,17 @@ See the [changelog](https://github.com/LukyVj/GSS/blob/main/CHANGELOG.md) for re
 - **X**: [@GSS_lang](https://x.com/GSS_lang), for news, scenes, questions and ideas. Share what you make with GSS there: mention the account.
 - **GitHub**: [issues](https://github.com/LukyVj/GSS/issues) for bugs and feature requests.
 
+## Credits
+
+- Signed distance functions, smooth blending and soft shadows adapted from [Inigo Quilez](https://iquilezles.org/articles/) (MIT).
+- Hash functions from [Hash without Sine](https://www.shadertoy.com/view/4djSRW) by David Hoskins (MIT).
+- Gradient noise after Ken Perlin's Improved Noise.
+- Color conversions from the [CSS Color 4](https://www.w3.org/TR/css-color-4/) sample code and Björn Ottosson's [OKLab](https://bottosson.github.io/posts/oklab/).
+- Editor built on [CodeMirror](https://codemirror.net/) (MIT).
+- Fonts: Martian Mono, Geist and JetBrains Mono (SIL OFL 1.1).
+- Zdog studies after models by [Dave DeSandro](https://zzz.dog/); Earth and Moon maps by NASA.
+- `texture-mapping: sphere` contributed by Yoshihiro Hasegawa.
+
 ## License
 
 [Apache 2.0](LICENSE).

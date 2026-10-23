@@ -35,6 +35,7 @@ export type SceneElement = {
   tag: string; // "cube"
   id: string | null; // "hero", or null if there is no
   classes: string[]; // ["corner"]
+  attributes?: Record<string, string>; // cube[data-col=2][lit]: { "data-col": "2", lit: "" }
   count: number; // 4 (1 by default)
   children?: SceneElement[]; // for groups
 };

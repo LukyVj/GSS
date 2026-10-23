@@ -42,7 +42,7 @@ describe("errors in the text: every one of them", () => {
   });
 
   it("an unexpected character, and a broken declaration after it", () => {
-    expect(pointed("@scene { cube; } $ cube { color red; }")).toEqual(["$", "red"]);
+    expect(pointed("@scene { cube; } ? cube { color red; }")).toEqual(["?", "red"]);
   });
 
   it("a missing \":\" before the \"}\" of each block", () => {

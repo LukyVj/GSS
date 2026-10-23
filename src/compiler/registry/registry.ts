@@ -27,7 +27,9 @@ export type Example = {
 };
 
 // The parts of a page under its table, like the docs of a popular language (decision 121)
-export type Value = [value: string, text: string]; // the value as written, then what it does
+// the value as written, then what it does; since: the version that added it, when it came after
+// its page (decision 188): the docs show "new in" beside it
+export type Value = [value: string, text: string, since?: string];
 type Parts = {
   values?: Value[]; // a table, one row per keyword, function or argument
   valuesTitle?: string; // its heading, "Values" by default: "Descriptors", "Functions"…
@@ -2268,15 +2270,16 @@ sphere { translate: 0 1 0; texture: paint(checks); }`,
     name: "property-panel",
     figure: "flow",
     since: "0.0.5",
-    syntax: "@property-panel { display: open | folded | none; }",
+    syntax: "@property-panel { display: open | folded | none; range: [<variable> <min> <max> <step>?]#; }",
     description:
       "Shows a control for each variable of `@property` over the render, in the playground and in Try it: a slider and its number, or a color picker for a color. Moving a control sets the variable without compiling the scene again.",
     valuesTitle: "Descriptors",
     values: [
       ["display", "`open`, the default: the panel shows its controls. `folded`: only its title, `variables · 2`, which opens it. `none`: no panel, as without the rule."],
+      ["range", "The ends of the slider of a variable, and its step if you like: `--col 0 3 1`. One per variable, separated by commas: `range: --col 0 3, --row 0 3;`. They are written like the values of the variable: `0deg 180deg` for an angle, `0% 50%` for a percentage.", "0.0.7"],
     ],
     details: "The panel never writes into the code. A page that embeds the scene shows no panel: it sets the variables with `setProperty()`.",
-    more: "A slider goes from 0 to twice the start value of its variable, at least from 0 to 1, and around 0 for a negative value; an angle from 0 to 360deg, a percentage from 0% to 100%. A number typed past the end of a slider widens it, and the reset button gives the start value back. When the code changes a start value, the code wins over the slider.",
+    more: "A slider goes from 0 to twice the start value of its variable, at least from 0 to 1, and around 0 for a negative value; an angle from 0 to 360deg, a percentage from 0% to 100%. A number typed past the end of a slider widens it, and the reset button gives the start value back. With a `range`, the slider keeps the ends of the scene: a number typed past one is held there, and the panel says what the end is. A color has a color picker and no range. When the code changes a start value, the code wins over the slider.",
     examples: [
       {
         name: "a slider",
@@ -2287,6 +2290,16 @@ sphere { translate: 0 1 0; texture: paint(checks); }`,
         name: "folded, with a color and an angle",
         text: "The panel starts folded: its title opens it.",
         code: '@property --tint { syntax: "<color>"; inherits: false; initial-value: #3a7bff; } @property --turn { syntax: "<angle>"; inherits: false; initial-value: 30deg; } @property-panel { display: folded; } @scene { cube; } cube { translate: 0 0.8 0; rotate-y: var(--turn); color: var(--tint); }',
+      },
+      {
+        name: "a cube on a board of 4 by 4",
+        text: "`range` gives each slider the squares of the board, from 0 to 3, one square at a time.",
+        code: `@property --col { syntax: "<number>"; inherits: false; initial-value: 0; }
+@property --row { syntax: "<number>"; inherits: false; initial-value: 0; }
+@property-panel { range: --col 0 3 1, --row 0 3 1; }
+@scene { path#grid; cube#piece; }
+#grid { d: path("M0 0 H4 M0 1 H4 M0 2 H4 M0 3 H4 M0 4 H4 M0 0 V4 M1 0 V4 M2 0 V4 M3 0 V4 M4 0 V4"); stroke-width: 0.04; rotate-x: 90deg; translate: 0 0.02 0; color: #1a1a1f; }
+#piece { size: 0.6; translate: calc(var(--col) - 1.5) 0.3 calc(var(--row) - 1.5); color: #ff5a36; }`,
       },
     ],
     see: [
@@ -2482,6 +2495,44 @@ export const SELECTORS: SelectorDef[] = [
       {
         name: "one sphere, by its id",
         code: "@scene { sphere#hero; sphere; } sphere { translate: -0.8 0.5 0; } #hero { translate: 0.8 0.5 0; color: #ff5a36; }",
+      },
+    ],
+  },
+  {
+    name: "[attribute]",
+    anchor: "selector-attribute",
+    figure: "row",
+    since: "0.0.7",
+    specificity: "100, like a class, even [id=…]",
+    description:
+      "Targets objects by an attribute, like CSS. An object gets its attributes in `@scene`, like HTML: `cube[data-col=2]`, `sphere[lit]`, or `[data-name=\"top left\"]` with spaces. Its id and its classes count as the attributes `id` and `class`, so `[id^=\"hero-\"]` finds every copy of `torus#hero * 3`.",
+    valuesTitle: "Forms",
+    values: [
+      ["[attr]", "The object has the attribute, whatever its value."],
+      ["[attr=value]", "The value is exactly this one. Quotes are optional for a single word or a number."],
+      ["[attr~=value]", "One of the words of the value, split at the spaces: `[class~=big]`."],
+      ["[attr|=value]", "The value, or the value followed by a dash: `[lang|=en]` matches `en` and `en-US`."],
+      ["[attr^=value]", "The value starts with this."],
+      ["[attr$=value]", "The value ends with this."],
+      ["[attr*=value]", "The value contains this."],
+      ["[attr=value i]", "Ignores the case. `s` keeps it, which is already the default."],
+    ],
+    details: "In `@scene`, an attribute takes `=` only, and every copy of a `* n` gets the same ones. `id` and `class` keep their own syntax there: `cube#a.big`. Like CSS, `~=`, `^=`, `$=` and `*=` never match an empty value.",
+    examples: [
+      {
+        name: "[attr=value]",
+        text: "The cubes of column 2 turn red.",
+        code: "@scene { cube[data-col=1]; cube[data-col=2]; cube[data-col=2]; } cube { size: 0.5; translate: calc((sibling-index() - 2) * -0.8) 0.4 0; } [data-col=\"2\"] { color: #ff5a36; }",
+      },
+      {
+        name: "[attr^=value]",
+        text: "Every copy of `#hero` is numbered: `[id^=\"hero-\"]` styles them all, not the other torus.",
+        code: "@scene { torus#hero * 3; torus#other; } torus { radius: 0.3; thickness: 0.1; rotate-x: 70deg; translate: calc((sibling-index() - 2.5) * -0.9) 0.4 0; } [id^=\"hero-\"] { color: #3a7bff; }",
+      },
+      {
+        name: "[attr~=value] and the i flag",
+        text: "A list of words, read one by one, and a value whatever its case.",
+        code: "@scene { sphere[data-tags=\"round shiny\"]; sphere[data-tags=round]; sphere[lang=EN]; } sphere { radius: 0.3; translate: calc((sibling-index() - 2) * -0.9) 0.4 0; } [data-tags~=shiny] { material: gold; } [lang=en i] { color: #3ad16b; }",
       },
     ],
   },
