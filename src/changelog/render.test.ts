@@ -8,7 +8,7 @@ describe("the changelog page", () => {
     expect(html).toContain('<section class="release" id="0.0.7">');
     expect(html).toContain('<h2><a href="#0.0.7">0.0.7</a> <time datetime="2026-10-23">2026-10-23</time></h2>');
     expect(html).toContain("<h3>Added</h3>");
-    expect(html).toContain("<ul>\n<li>One.</li>\n</ul>");
+    expect(html).toContain('<ul>\n<li><div class="row"><span class="scope"></span><span class="what">One.</span></div></li>\n</ul>');
   });
 
   it("leaves out an empty Unreleased, and keeps one with changes", () => {
@@ -21,13 +21,32 @@ describe("the changelog page", () => {
     expect(html).toContain("<code>a &lt; b</code> <strong>strong</strong> <em>soft</em> <a href=\"https://example.com/x_y\">link</a>.");
   });
 
-  // Less to read: each change shows its first sentence; the rest unfolds on a click
-  it("shows the first sentence of a change, and folds the rest", () => {
-    const html = renderChangelog("## [0.0.7] — 2026-10-23\n\n- `content`: a text on an object. `a. b` stays whole. More here.\n- Short one.\n");
-    expect(html).toContain(
-      "<li><details><summary><code>content</code>: a text on an object.</summary><p><code>a. b</code> stays whole. More here.</p></details></li>",
+  // Like the changelogs of Vite or Tailwind: one short line per change, no paragraph under
+  // it; when its element has a page in the docs, the line leads there
+  it("shows each change as one line: its element and its first sentence", () => {
+    const html = renderChangelog("## [0.0.7] — 2026-10-23\n\n- **Playground**: a slider. It moves the scroll.\n- Short one.\n");
+    expect(html).toContain('<li><div class="row"><span class="scope">Playground</span><span class="what">a slider.</span></div></li>');
+    expect(html).not.toContain("It moves the scroll");
+    expect(html).toContain('<li><div class="row"><span class="scope"></span><span class="what">Short one.</span></div></li>');
+  });
+
+  it("links a change to the page of its element in the docs", () => {
+    const html = renderChangelog(
+      "## [0.0.7] — 2026-10-23\n\n- **`content`**: text on any object.\n- **`@property-panel`**: a range.\n- **`::face()`**: a number.\n- **`noise()`**: colors.\n- **`@mixin`, `@apply`**: mixins.\n",
     );
-    expect(html).toContain("<li>Short one.</li>");
+    expect(html).toContain('<li><a class="row" href="./docs.html#content"><span class="scope"><code>content</code></span><span class="what">text on any object.</span><span class="go" aria-hidden="true">→</span></a></li>');
+    expect(html).toContain('href="./docs.html#at-property-panel"');
+    expect(html).toContain('href="./docs.html#selector-face"');
+    expect(html).toContain('href="./docs.html#fn-noise"');
+    expect(html).toContain('href="./docs.html#at-mixin"');
+    expect(renderChangelog("## [0.0.7] — 2026-10-23\n\n- **`<gss-scene>`**: a poster.\n")).toContain('href="./docs.html#embedding"');
+  });
+
+  it("gives every change of CHANGELOG.md its element, and links most of the language", () => {
+    const html = prerenderChangelogHtml('<div class="changelog" id="changelog"></div>');
+    expect(html.match(/<li>/g)!.length).toBeGreaterThan(150);
+    expect(html).not.toContain('<span class="scope"></span>');
+    expect(html.match(/<a class="row" href="\.\/docs\.html#/g)!.length).toBeGreaterThan(60);
   });
 
   it("drops the title, the introduction and the link definitions of the file", () => {

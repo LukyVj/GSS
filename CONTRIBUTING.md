@@ -96,6 +96,7 @@ beside the search (`src/docs/search-try.ts`), with the live panel of the docs (`
 
 1. Update `package.json` and the root package version in `package-lock.json` together. The site and installation snippets read that version through `src/version.ts`; `npm run docs:github` writes it into the docs on GitHub.
 2. Update the changelog, README, roadmap and decisions. Keep a prepared release marked as such until it is published.
+   Each line of the changelog starts with the element it is about, then one short sentence, like `- **`content`**: text on the surface of any object.`; the details follow, read on GitHub; the changelog page shows the first sentence only, and leads to the page of the element in the docs.
 3. Run the complete tests (including WebGL), `npm run build`, `npm run build:lib`, and `npm pack --dry-run`. Check that `lib/embed.js` is in the package; `package-size.test.ts` holds each entry to its budget.
 4. Publish the npm package, then tag the release and deploy the site. Publish before deploying versioned CDN instructions: jsDelivr can only serve a version after npm has it.
 

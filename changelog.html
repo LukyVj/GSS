@@ -67,8 +67,23 @@
       .changelog a:hover {
         color: var(--gss-signal);
       }
-      .changelog {
-        max-width: 760px;
+      /* The changelog on the left, the cloud of points on the right, held in view */
+      .log {
+        display: grid;
+        grid-template-columns: minmax(0, 760px) minmax(0, 1fr);
+        gap: 56px;
+      }
+      .cloud {
+        position: sticky;
+        top: 72px;
+        height: calc(100vh - 96px);
+        margin-top: 48px;
+        align-self: start;
+      }
+      .cloud gss-scene {
+        display: block;
+        width: 100%;
+        height: 100%;
       }
       .release {
         padding: 40px 0;
@@ -105,34 +120,82 @@
         font-size: 15px;
         line-height: 1.6;
       }
+      /* Each change is one line: the element it is about, then its first sentence */
       .release ul {
+        list-style: none;
         margin: 0;
-        padding-left: 20px;
+        padding: 0;
+        border-top: 1px solid var(--gss-line);
       }
-      .release li + li {
-        margin-top: 10px;
+      .release li {
+        margin: 0;
+        border-bottom: 1px solid var(--gss-line);
       }
-      /* A change shows its first sentence; the rest unfolds on a click */
-      .release summary {
-        cursor: pointer;
+      .release .row {
+        display: grid;
+        grid-template-columns: 168px minmax(0, 1fr) 20px;
+        gap: 16px;
+        align-items: baseline;
+        padding: 12px 8px;
         list-style: none;
       }
-      .release summary::-webkit-details-marker {
-        display: none;
+      /* A line whose element has a page in the docs leads there */
+      .release a.row {
+        color: inherit;
+        text-decoration: none;
+        transition: background var(--gss-transition);
       }
-      .release summary::after {
-        content: " more";
-        font: 12px var(--gss-font-code);
+      .release a.row:hover {
+        background: var(--gss-surface);
+      }
+      .release a.row:focus-visible {
+        outline: 1px solid var(--gss-signal);
+        outline-offset: -1px;
+      }
+      .release .scope {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font: 600 12px / 1.6 var(--gss-font-code);
+        color: var(--gss-bone);
+      }
+      .release .scope code {
+        font-size: inherit;
+      }
+      .release .what {
+        color: var(--gss-ash);
+        font-size: 15px;
+        line-height: 1.5;
+      }
+      .release a.row .what {
+        color: var(--gss-bone);
+      }
+      /* The code of a sentence: a small box, a bone wash with a gutter hairline, so it stands
+         out from the sentence even where the sentence is bone */
+      .release .what code {
+        padding: 1px 5px;
+        border: 1px solid var(--gss-gutter);
+        border-radius: var(--gss-radius-control);
+        background: rgb(232 230 225 / 0.08);
+        font-size: 0.86em;
+        color: var(--gss-bone);
+        box-decoration-break: clone;
+        -webkit-box-decoration-break: clone;
+      }
+      .release a.row:hover .what code {
+        background: rgb(232 230 225 / 0.12);
+      }
+      .release .go {
+        justify-self: end;
+        font: 13px var(--gss-font-code);
         color: var(--gss-dim);
+        transition:
+          color var(--gss-transition),
+          transform var(--gss-transition);
       }
-      .release details[open] summary::after {
-        content: " less";
-      }
-      .release summary:hover::after {
+      .release a.row:hover .go {
         color: var(--gss-signal);
-      }
-      .release details p {
-        margin: 6px 0 0;
+        transform: translateX(2px);
       }
 
       .site-footer {
@@ -175,6 +238,12 @@
 
       /* ----- Smaller screens: the side padding goes 56 → 32 → 16px ----- */
       @media (max-width: 1024px) {
+        .log {
+          display: block;
+        }
+        .cloud {
+          display: none;
+        }
         main {
           padding: 0 32px 72px;
         }
@@ -195,6 +264,14 @@
         .release h2 {
           font-size: 26px;
         }
+        .release .row {
+          grid-template-columns: minmax(0, 1fr) 20px;
+          gap: 4px 12px;
+        }
+        .release .scope {
+          grid-column: 1 / -1;
+        }
+
         .topbar nav a[href="./showcase.html"] {
           display: none;
         }
@@ -229,22 +306,142 @@
         <a href="./playground.html">playground</a>
         <a href="./docs.html">docs</a>
         <a href="./showcase.html">showcase</a>
-        <a class="github" href="https://github.com/LukyVj/GSS"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg><span>github</span></a>
-        <a class="x" href="https://x.com/GSS_lang" aria-label="GSS on X, @GSS_lang"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg><span>@GSS_lang</span></a>
+        <a class="github" href="https://github.com/LukyVj/GSS"
+          ><svg viewBox="0 0 16 16" aria-hidden="true">
+            <path
+              d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"
+            />
+          </svg>
+          <span>github</span>
+        </a>
+        <a
+          class="x"
+          href="https://x.com/GSS_lang"
+          aria-label="GSS on X, @GSS_lang"
+          ><svg viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"
+            />
+          </svg>
+          <span>@GSS_lang</span>
+        </a>
       </nav>
     </header>
 
     <main>
-      <div class="intro">
-        <p class="eyebrow">Changelog</p>
-        <h1>What changed in GSS.</h1>
-        <p class="lead">
-          Every version, the newest first: what it added, what it changed and what it fixed.
-          The package is on <a href="https://www.npmjs.com/package/gss-lang">npm</a>, the code on
-          <a href="https://github.com/LukyVj/GSS">GitHub</a>.
-        </p>
+      <div class="log">
+        <div class="text">
+          <div class="intro">
+            <p class="eyebrow">Changelog</p>
+            <h1>What changed in GSS.</h1>
+            <p class="lead">
+              Every version, the newest first: what it added, what it changed
+              and what it fixed. The package is on
+              <a href="https://www.npmjs.com/package/gss-lang">npm</a>, the code
+              on <a href="https://github.com/LukyVj/GSS">GitHub</a>.
+            </p>
+          </div>
+          <div class="changelog" id="changelog"></div>
+        </div>
+        <aside class="cloud" aria-hidden="true">
+          <gss-scene controls="none">
+            <script type="text/gss">
+              /* A cloud of 64 points that takes a new shape for each version,
+                 driven by the scroll of the page */
+              @scene {
+                group#cloud { sphere.point * 64; }
+              }
+
+              scene {
+                background: #0a0a0c;
+                floor: none;
+                ambient: 0.35;
+                light: -30deg 50deg;
+                camera-target: 0 0 0;
+                camera-distance: 10;
+                camera-angle: 20deg 18deg;
+                camera-spin: none;
+                controls: none;
+              }
+
+              #cloud {
+                animation: turn 24s linear infinite;
+              }
+
+              .point {
+                --i: sibling-index();
+                /* --k runs from 0 to 1 along the points, --a turns by the
+                   golden angle: together they spread the points evenly */
+                --k: calc((var(--i) - 0.5) / 64);
+                --a: calc(var(--i) * 137.508deg);
+                --col: mod(var(--i) - 1, 8);
+                --row: round(down, calc((var(--i) - 1) / 8));
+                --y: calc(1 - 2 * var(--k));
+                --r: sqrt(1 - pow(var(--y), 2));
+
+                /* a sphere */
+                --sphere: calc(cos(var(--a)) * var(--r) * 1.3)
+                  calc(var(--y) * 1.3) calc(sin(var(--a)) * var(--r) * 1.3);
+                /* a torus: 8 rings of 8 points */
+                --torus: calc(cos(var(--row) * 45deg) * (1.1 + cos(var(--col) * 45deg) * 0.4))
+                  calc(sin(var(--col) * 45deg) * 0.4)
+                  calc(sin(var(--row) * 45deg) * (1.1 + cos(var(--col) * 45deg) * 0.4));
+                /* a double helix */
+                --helix: calc(cos(var(--i) * 22.5deg + mod(var(--i), 2) * 180deg) * 0.75)
+                  calc(var(--k) * 3 - 1.5)
+                  calc(sin(var(--i) * 22.5deg + mod(var(--i), 2) * 180deg) * 0.75);
+                /* a cube of 4 × 4 × 4 */
+                --cube: calc((mod(var(--i) - 1, 4) - 1.5) * 0.6)
+                  calc((mod(round(down, calc((var(--i) - 1) / 4)), 4) - 1.5) * 0.6)
+                  calc((round(down, calc((var(--i) - 1) / 16)) - 1.5) * 0.6);
+                /* a disk of seeds, like a sunflower */
+                --disk: calc(cos(var(--a)) * sqrt(var(--k)) * 1.6) 0
+                  calc(sin(var(--a)) * sqrt(var(--k)) * 1.6);
+                /* waves: a grid of 8 × 8 */
+                --waves: calc((var(--col) - 3.5) * 0.36)
+                  calc(sin(var(--col) * 50deg) * cos(var(--row) * 50deg) * 0.45)
+                  calc((var(--row) - 3.5) * 0.36);
+                /* a spiral that narrows as it climbs */
+                --spiral: calc(cos(var(--i) * 33deg) * (1.25 - var(--k)))
+                  calc(var(--k) * 2.8 - 1.4)
+                  calc(sin(var(--i) * 33deg) * (1.25 - var(--k)));
+                /* a seed: every point close to the center */
+                --seed: calc(cos(var(--a)) * var(--r) * 0.3)
+                  calc(var(--y) * 0.3) calc(sin(var(--a)) * var(--r) * 0.3);
+
+                /* a heart */
+                --heart: calc(cos(var(--a)) * (1.25 - var(--k)))
+                  calc(var(--k) * 2.8 - 1.4)
+                  calc(sin(var(--a)) * (1.25 - var(--k)));
+
+                radius: 0.015;
+                color: hsl(calc(8 + var(--k) * 34) 95% 60%);
+                material: emissive(2.2);
+                animation: morph 1s ease-in-out;
+                animation-timeline: scroll(root);
+              }
+
+              @keyframes turn {
+                to { rotate-y: 360deg; }
+              }
+
+              /* One shape per version, newest first: each holds while its
+                 version fills the page, and changes into the next between them */
+              @keyframes morph {
+                0%, 3% { translate: var(--sphere); }
+                6%, 14% { translate: var(--torus); }
+                15%, 20% { translate: var(--heart); }
+                21%, 34% { translate: var(--helix); }
+                41%, 47% { translate: var(--cube); }
+                52%, 58% { translate: var(--disk); }
+                62%, 68% { translate: var(--waves); }
+                73%, 82% { translate: var(--spiral); }
+                88%, 100% { translate: var(--seed); }
+              }
+            </script>
+          </gss-scene>
+        </aside>
       </div>
-      <div class="changelog" id="changelog"></div>
     </main>
 
     <footer class="site-footer">
@@ -254,7 +451,11 @@
           shader.</span
         >
         <nav aria-label="Footer">
-          <a href="./changelog.html#%GSS_VERSION%" aria-label="GSS version %GSS_VERSION%, what changed">v%GSS_VERSION%</a>
+          <a
+            href="./changelog.html#%GSS_VERSION%"
+            aria-label="GSS version %GSS_VERSION%, what changed"
+            >v%GSS_VERSION%</a
+          >
           <a href="https://github.com/LukyVj/GSS">github</a>
           <a href="https://x.com/GSS_lang">@GSS_lang</a>
           <a href="./docs.html#installation">installation</a>
@@ -263,8 +464,14 @@
           <a href="./showcase.html">showcase</a>
           <a href="./brand.html">brand</a>
         </nav>
-        <p class="contact">Questions, ideas, a scene to show? Say hi on X, <a href="https://x.com/GSS_lang">@GSS_lang</a>, or <a href="https://github.com/LukyVj/GSS/issues">open an issue</a> on GitHub.</p>
+        <p class="contact">
+          Questions, ideas, a scene to show? Say hi on X,
+          <a href="https://x.com/GSS_lang">@GSS_lang</a>, or
+          <a href="https://github.com/LukyVj/GSS/issues">open an issue</a> on
+          GitHub.
+        </p>
       </div>
     </footer>
+    <script type="module" src="/src/changelog/main.ts"></script>
   </body>
 </html>
