@@ -1628,3 +1628,10 @@ The compiler of the package grew past its budget: `mount` goes from 97,000 to 98
 - **The README** sends to them: a "Documentation" section (Getting started, Installation, every page), and each line of "What it can do" links to its page. Absolute links to `main`, so they also work on npm.
 **Why**: a second copy written by hand would drift from the site at each version; the registry is already the one source of the reference, the playground and the autocompletion. The wiki is not versioned with the code, nor reviewed in a pull request.
 **Accepted limits**: every change to the registry or the guide now asks for `npm run docs:github` (the test says so). The pages describe the branch they are on: on `main`, the published version. No live example on GitHub; the values of an entry are a list, not the table of the site, and a link in the table of "Embedding a scene" is lost (the converter reads the name of a row as text).
+
+## 193. The contributors, on the home page
+
+**Decision** (Lucas, Oct. 23: "dans le site, quelque part, on ait une section contributors"): a section "Contributors" at the bottom of the home page, before the footer, and a link "contributors" in the footer. Each person whose pull request was merged has a card: the avatar of their GitHub account, their name linked to it, and one line per pull request, linked to it with its number. The list is `src/home/contributors.ts`, filled into the page when it is prerendered, so it reads without JavaScript; a merged pull request from someone new adds them there. A pull request closed without being merged does not count. The first two: Michael Silva (#4, #6, #7) and Yoshihiro Hasegawa (#15).
+**Why**: the people who give their time to GSS should be seen where everyone lands, not only in the history of the repository. A list written by hand says what each one brought, which the list of GitHub does not.
+**Accepted limits**: the avatars come from github.com when the section is seen; the list is kept by hand.
+

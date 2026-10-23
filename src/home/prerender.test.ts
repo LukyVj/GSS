@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { prerenderHomeHtml } from "./prerender";
+import { CONTRIBUTORS } from "./contributors";
 import { PROPERTIES, SELECTORS, SHAPE_DOCS } from "../compiler/registry/registry";
 
 describe("prerenderHomeHtml", () => {
@@ -31,4 +32,17 @@ describe("prerenderHomeHtml", () => {
     );
     expect(html).not.toContain("&amp;lt;");
   });
+
+  // The people whose work is in GSS: their avatar, their name, and each pull request merged
+  it("lists the contributors, with their avatar, their name and what they brought", () => {
+    const html = prerenderHomeHtml('<ul class="contributors-list" id="contributors-list"></ul>');
+    for (const contributor of CONTRIBUTORS) {
+      expect(html).toContain(`<a href="https://github.com/${contributor.login}">${contributor.name}</a>`);
+      expect(html).toContain(`src="https://github.com/${contributor.login}.png?size=96"`);
+      for (const [, pull] of contributor.work) expect(html).toContain(`href="https://github.com/LukyVj/GSS/pull/${pull}"`);
+    }
+    expect(CONTRIBUTORS.map((contributor) => contributor.login)).toEqual(["michaelsilva", "hiroghap1"]);
+    expect(html).toContain("<code>texture-mapping: sphere</code>");
+  });
 });
+

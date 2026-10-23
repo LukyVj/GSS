@@ -487,6 +487,78 @@
         color: var(--gss-signal);
       }
 
+      /* ----- Contributors, filled from their list ----- */
+      .contributors {
+        border-top: 1px solid var(--gss-line);
+      }
+      .contributors .wrap {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        padding-top: 48px;
+        padding-bottom: 48px;
+      }
+      .contributors h2 {
+        margin: 0;
+        font: 600 20px var(--gss-font-display);
+        letter-spacing: -0.03em;
+      }
+      .contributors-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 16px;
+        margin: 8px 0 0;
+        padding: 0;
+        list-style: none;
+      }
+      .contributor {
+        display: flex;
+        gap: 14px;
+        align-items: flex-start;
+        padding: 18px;
+        border: 1px solid var(--gss-line);
+        background: var(--gss-surface);
+      }
+      .contributor img {
+        flex: none;
+        border-radius: 50%;
+        background: var(--gss-line);
+      }
+      .contributor > div > a {
+        color: var(--gss-bone);
+        font-weight: 600;
+      }
+      .contributor > div > a:hover {
+        color: var(--gss-signal);
+      }
+      .contributor ul {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin: 8px 0 0;
+        padding: 0;
+        list-style: none;
+        font-size: 14px;
+      }
+      .contributor ul a {
+        color: var(--gss-ash);
+      }
+      .contributor ul a:hover {
+        color: var(--gss-bone);
+      }
+      .contributor ul span {
+        font: 12px var(--gss-font-code);
+        color: var(--gss-dim);
+      }
+      .contributors-join {
+        margin: 0;
+        color: var(--gss-ash);
+        font-size: 15px;
+      }
+      .contributors-join a {
+        color: var(--gss-bone);
+      }
+
       /* ----- Footer ----- */
       footer {
         border-top: 1px solid var(--gss-line);
@@ -807,6 +879,19 @@ vec2 map(vec3 p) { … }</code></pre>
           </article>
         </div>
       </section>
+
+      <section class="contributors" id="contributors" aria-labelledby="contributors-title">
+        <div class="wrap">
+          <div class="eyebrow">Contributors</div>
+          <h2 id="contributors-title">Thank you to everyone whose work is in GSS</h2>
+          <ul class="contributors-list" id="contributors-list"></ul>
+          <p class="contributors-join">
+            Want to be on this list? Read the
+            <a href="https://github.com/LukyVj/GSS/blob/main/CONTRIBUTING.md">contributing guide</a>,
+            then open a pull request.
+          </p>
+        </div>
+      </section>
     </main>
 
     <footer>
@@ -824,6 +909,7 @@ vec2 map(vec3 p) { … }</code></pre>
           <a href="./docs.html">docs</a>
           <a href="./showcase.html">showcase</a>
           <a href="./brand.html">brand</a>
+          <a href="#contributors">contributors</a>
         </nav>
         <p class="contact">Questions, ideas, a scene to show? Say hi on X, <a href="https://x.com/GSS_lang">@GSS_lang</a>, or <a href="https://github.com/LukyVj/GSS/issues">open an issue</a> on GitHub.</p>
       </div>
