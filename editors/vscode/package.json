@@ -2,7 +2,7 @@
   "name": "gss-language",
   "displayName": "GSS \u2014 GPU Style Sheets",
   "description": "Syntax highlighting, formatting, file icon and HTML snippets for GSS",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "publisher": "lukyvj",
   "license": "Apache-2.0",
   "homepage": "https://www.gss-lang.dev/docs#editor-support",

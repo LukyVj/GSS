@@ -41,10 +41,10 @@ two fills, and two pages that are close show what differs.
 
 ## Branches
 
-New features go to the branch of the next release, not to `main`: `release/0.0.7` for now.
+New features go to the branch of the next release, not to `main`: `release/0.0.8` for now.
 `main` holds the published version.
 
-- Branch from `release/0.0.7`, and open pull requests against it.
+- Branch from `release/0.0.8`, and open pull requests against it.
 - A fix for the published version goes to `main`, then `main` is merged into the release branch.
 - When the release is published, its branch is merged into `main` and tagged (see Publishing),
   and the branch of the next release starts from there.
