@@ -3,12 +3,13 @@ import type { AsyncView, BackendOptions } from "./backend";
 import { createClock } from "./clock";
 import { pixelRatio } from "./dpr";
 import { createDprPicker, viewDensity } from "./dpr-picker";
-import { pickPixel, pointerValues, createPress, decodeId, cursorAt } from "./hover";
+import { pickPixel, pointerValues, createPress, decodeId, cursorAt, controlsAllow } from "./hover";
 import { createTransitions } from "./transitions";
 import { createTriggers } from "./triggers";
 import { createScrollSlider, timelineValues } from "./timeline";
 import { pickVariant, WINDOW_MEDIA } from "./media";
 import { elementId, paintName, resolveImage } from "./textures";
+import { drawText, textOf, whenFontArrives } from "./text";
 import { createProperties } from "./properties";
 import { createDemand, movesWithTime } from "./demand";
 
@@ -88,9 +89,10 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
     canvas.addEventListener(event, listener, config);
     listeners.push(() => canvas.removeEventListener(event, listener, config));
   }
+  // scene { controls } (decision 176): the gestures the GSS lets move the camera
   if (options.controls !== false) {
-    on("pointerdown", e => { camera.dragging = true; canvas.setPointerCapture(e.pointerId); });
-    on("wheel", e => { e.preventDefault(); camera.dist = Math.min(Math.max(camera.dist + e.deltaY * 0.01, 3), 15); }, { passive: false });
+    on("pointerdown", e => { if (scene?.compiled.controls?.orbit === false) return; camera.dragging = true; canvas.setPointerCapture(e.pointerId); });
+    on("wheel", e => { if (!controlsAllow(scene?.compiled.controls, "zoom", hovered)) return; e.preventDefault(); camera.dist = Math.min(Math.max(camera.dist + e.deltaY * 0.01, 3), 15); }, { passive: false });
   }
   on("pointerdown", e => { pointer = { x: e.clientX, y: e.clientY }; pickWanted = true; press.down(hovered); });
   const unpress = () => press.up(); // released anywhere, like CSS
@@ -100,7 +102,7 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
   on("pointermove", e => {
     pointer = { x: e.clientX, y: e.clientY };
     pickWanted = true;
-    if (!camera.dragging) return;
+    if (!camera.dragging || !controlsAllow(scene?.compiled.controls, "orbit", press.id)) return; // not from an object that refuses it
     camera.yaw += e.movementX * 0.01;
     camera.pitch = Math.min(Math.max(camera.pitch + e.movementY * 0.01, 0.05), 1.4);
   });
@@ -121,6 +123,22 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
       console.warn(`GSS: ${file} is drawn with WebGL2 only for now: with WebGPU, the object keeps its color`);
       textures.set(url, { texture, image: new Image() });
       return texture;
+    }
+    // content: the text of an object, drawn here; again when its font arrives
+    const label = textOf(file);
+    if (label) {
+      const text = { texture, image: new Image() };
+      textures.set(url, text);
+      const write = () => {
+        if (destroyed) return;
+        const source = drawText(label);
+        const next = device.createTexture({ size: [source.width, source.height], format: "rgba8unorm", usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT });
+        device.queue.copyExternalImageToTexture({ source, flipY: true }, { texture: next }, [source.width, source.height]);
+        text.texture.destroy(); text.texture = next; textureVersion++;
+      };
+      write();
+      whenFontArrives(label.text, label.font, write);
+      return text.texture;
     }
     const element = new Image();
     const entry = { texture, image: element };
@@ -201,7 +219,7 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
     const pipelines: Pipeline[] = [{ pipeline: await pipeline(compiled.wgsl, passes.length ? "rgba8unorm" : format), inputs: [], textures: compiled.textures }];
     for (const [i, pass] of passes.entries()) pipelines.push({ pipeline: await pipeline(pass.wgsl!, i === passes.length - 1 ? format : "rgba8unorm"), inputs: pass.inputs, textures: [] });
     // cursor (decision 161) needs the object under the mouse too
-    const picking = slots || compiled.cursors ? await pipeline(compiled.wgsl, "rgba8unorm") : null;
+    const picking = slots || compiled.cursors || compiled.controls?.objects ? await pipeline(compiled.wgsl, "rgba8unorm") : null;
     return {
       compiled, layout, pipelines, picking,
       uniforms: device.createBuffer({ size, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST }),

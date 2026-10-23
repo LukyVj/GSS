@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Dev only prototype: a GSS scene as the background of a button. Not in the build inputs of vite.config.ts. -->
+    <title>Galaxy button</title>
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-content: center;
+        gap: 32px;
+        justify-items: center;
+        background: #0b0b10;
+        color: #c8c8d0;
+        font: 15px/1.5 system-ui, sans-serif;
+      }
+
+      /* The button gives the place; the scene fills it, behind the label. */
+      .galaxy-button {
+        position: relative;
+        isolation: isolate;
+        overflow: hidden;
+        width: 280px;
+        height: 72px;
+        padding: 0 28px;
+        border: 1px solid #ffffff2e;
+        border-radius: 999px;
+        background: #07061a;
+        color: #fff;
+        font: 600 17px/1 system-ui, sans-serif;
+        letter-spacing: 0.02em;
+        cursor: pointer;
+        box-shadow: 0 0 0 0 #8f7dff00, 0 10px 30px #00000080;
+        transition: box-shadow 0.3s, border-color 0.3s, transform 0.15s;
+      }
+
+      .galaxy-button:hover {
+        border-color: #ffffff66;
+        box-shadow: 0 0 24px 2px #8f7dff59, 0 10px 30px #00000080;
+      }
+
+      .galaxy-button:active {
+        transform: scale(0.98);
+      }
+
+      .galaxy-button:focus-visible {
+        outline: 2px solid #b8a8ff;
+        outline-offset: 3px;
+      }
+
+      /* The scene: the size of the button, under the label, and the clicks go to the button. */
+      .galaxy-button gss-scene {
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        aspect-ratio: auto;
+        pointer-events: none;
+        background: transparent;
+      }
+
+      .galaxy-button span {
+        text-shadow: 0 1px 8px #000000b3;
+      }
+
+      .galaxy-button.small {
+        width: 180px;
+        height: 48px;
+        font-size: 14px;
+      }
+
+      p {
+        margin: 0;
+        color: #77778a;
+      }
+    </style>
+  </head>
+  <body>
+    <button class="galaxy-button" type="button">
+      <gss-scene src="./galaxy.gss" controls="none"></gss-scene>
+      <span>Launch the galaxy</span>
+    </button>
+
+    <button class="galaxy-button small" type="button">
+      <gss-scene src="./galaxy.gss" controls="none"></gss-scene>
+      <span>Explore</span>
+    </button>
+
+    <p id="clicks">Clicked 0 times.</p>
+
+    <script type="module">
+      import "/src/embed/element.ts";
+
+      let clicks = 0;
+      for (const button of document.querySelectorAll(".galaxy-button"))
+        button.addEventListener("click", () => {
+          clicks++;
+          document.querySelector("#clicks").textContent = `Clicked ${clicks} time${clicks > 1 ? "s" : ""}.`;
+        });
+    </script>
+  </body>
+</html>

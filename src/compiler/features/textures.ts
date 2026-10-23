@@ -1,7 +1,9 @@
 import type { Token } from "../syntax/tokenizer";
-import { FACES, type Face, type Styles } from "../cascade/resolve";
+import { FACES, type Face, type Styles, type StyledInstance } from "../cascade/resolve";
 import { readFunction } from "../values/values";
 import { errorAt } from "../syntax/errors";
+import { textGroups } from "./text-layout";
+import type { Keyframes } from "../syntax/ast";
 
 const EXAMPLE = 'texture: url("dirt.png");';
 
@@ -36,11 +38,23 @@ export function readTexture(value: Token[]): string {
 
 // Every image of the scene, once each, in the order of the objects
 export function sceneTextures(
-  instances: { styles: Styles; faceStyles: Record<Face, Styles> }[],
+  instances: StyledInstance[],
+  keyframes: Keyframes[] = [],
 ): string[] {
   const files = new Set<string>(); // keeps the first order, ignores duplicates
+  const add = (source: string, value: Token[]) => {
+    files.add(source);
+    // Only the image just added can go over the limit
+    if (files.size > MAX_IMAGES) {
+      throw errorAt(
+        value,
+        `a scene can use at most ${MAX_IMAGES} images (WebGL2 guarantees 16 texture units)`,
+      );
+    }
+  };
   for (const instance of instances) {
     readRendering(instance.styles["image-rendering"]); // checked on every object, even without a texture
+    readMapping(instance.styles["texture-mapping"]); // and so is its mapping
     // The object's own image first, then its faces
     const values = [
       instance.styles["texture"],
@@ -48,15 +62,14 @@ export function sceneTextures(
     ];
     for (const value of values) {
       if (!value) continue;
-      files.add(readTexture(value));
-      // Only the image just added can go over the limit
-      if (files.size > MAX_IMAGES) {
-        throw errorAt(
-          value,
-          `a scene can use at most ${MAX_IMAGES} images (WebGL2 guarantees 16 texture units)`,
-        );
-      }
+      add(readTexture(value), value);
     }
+    // content: the text of each face, an image the runtime draws. Its font and its layout
+    // are checked on every object, even without content
+    for (const texts of textGroups(instance, keyframes))
+      texts.forEach((text, i) => {
+        if (text) add(text.source, instance.faceList[i]["content"] ?? instance.styles["content"] ?? []);
+      });
   }
   return [...files];
 }
@@ -84,6 +97,27 @@ export function readRendering(value: Token[] | undefined): boolean {
     );
   }
   return RENDERINGS[word.value];
+}
+
+// How the images of an object are laid on it (decision 185): box projects them on the faces
+// of the box around the object, sphere wraps them once around it, like a map around a globe
+export type Mapping = "box" | "sphere";
+
+// texture-mapping: sphere → "sphere"; not set → "box", the faces of the box, as before
+export function readMapping(value: Token[] | undefined): Mapping {
+  if (!value) return "box";
+  const [word] = value;
+  if (
+    value.length !== 1 ||
+    word.type !== "IDENT" ||
+    (word.value !== "box" && word.value !== "sphere")
+  ) {
+    throw errorAt(
+      value,
+      "texture-mapping expects box or sphere, like: texture-mapping: sphere;",
+    );
+  }
+  return word.value;
 }
 
 // texture: paint(rings) → "rings"; null for an image or an element

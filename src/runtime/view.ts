@@ -2,7 +2,7 @@ import type { CameraSettings } from "../compiler/features/camera";
 import type { CompiledScene } from "../compiler";
 import { createTextureStore, paintName, resolveImage } from "./textures";
 import { createPaints, PAINT_SIZE, type PaintSet } from "./paint";
-import { pickPixel, pointerValues, createPress, cursorAt } from "./hover";
+import { pickPixel, pointerValues, createPress, cursorAt, controlsAllow } from "./hover";
 import { createPicker } from "./picker";
 import { createClock } from "./clock";
 import type { FrameProbe } from "../profiler/profiler";
@@ -245,8 +245,10 @@ export function createView(
 
   // --- 3. The mouse moves the camera ---
   // (controls: false keeps only :hover: the page scrolls, the camera stays where the GSS put it)
+  // (scene { controls }, decision 176: the gestures the GSS lets move the camera)
   if (controls) {
     canvas.addEventListener("pointerdown", (e) => {
+      if (shown?.controls?.orbit === false) return;
       camera.dragging = true;
       canvas.setPointerCapture(e.pointerId);
     });
@@ -254,6 +256,7 @@ export function createView(
     canvas.addEventListener(
       "wheel",
       (e) => {
+        if (!controlsAllow(shown?.controls, "zoom", hovered)) return; // the page scrolls
         e.preventDefault(); // zoom the scene, not the page
         camera.dist += e.deltaY * 0.01;
         camera.dist = Math.min(Math.max(camera.dist, 3), 15);
@@ -277,7 +280,8 @@ export function createView(
   canvas.addEventListener("pointermove", (e) => {
     pointer = { x: e.clientX, y: e.clientY }; // before the return: hover works without a drag
     pickWanted = true;
-    if (!camera.dragging) return;
+    // Not from an object that refuses it (decision 176): known once the picking pass answers
+    if (!camera.dragging || !controlsAllow(shown?.controls, "orbit", press.id)) return;
     camera.yaw += e.movementX * 0.01;
     camera.pitch += e.movementY * 0.01;
     camera.pitch = Math.min(Math.max(camera.pitch, 0.05), 1.4); // we block between the floor and the zenith
@@ -375,8 +379,8 @@ export function createView(
         return;
       }
       // :hover: which object is under the mouse, then how far each slot has glided
-      // cursor (decision 161) needs the object under the mouse too
-      const hovers = scene.hover.length + (scene.active?.length ?? 0) > 0 || shown?.cursors !== undefined;
+      // cursor (decision 161) and controls on an object (decision 176) need the object under the mouse too
+      const hovers = scene.hover.length + (scene.active?.length ?? 0) > 0 || shown?.cursors !== undefined || shown?.controls?.objects !== undefined;
       const pixel = hovers ? pointerPixel() : null;
       let glides: Float32Array | null = null;
       let started: Float32Array | null = null; // uStart[]

@@ -12,6 +12,8 @@ Every example of this page, to edit live: [gss-lang.dev/docs](https://www.gss-la
 
 A cylinder with round ends, standing on the y axis and centered on its origin: a `radius` of 0.25 and a `height` of 1 by default, round ends included.
 
+**The shape, and the properties that size it:** `radius`, `height`
+
 - **Own properties:** [`radius`](object-properties.md#radius), [`height`](object-properties.md#height)
 - **Also:** [geometry properties](object-properties.md)
 
@@ -32,6 +34,8 @@ capsule {
 ## `cone`
 
 A cone standing on the y axis, centered on its origin, pointing up: a `radius` of 0.5 and a `height` of 1 by default. A second radius cuts its top.
+
+**The shape, and the properties that size it:** `radius`, `height`
 
 - **Own properties:** [`radius`](object-properties.md#radius), [`height`](object-properties.md#height)
 - **Also:** [geometry properties](object-properties.md)
@@ -54,6 +58,8 @@ cone {
 
 A box with slightly rounded edges, centered on its origin: 1 × 1 × 1 by default. `size` stretches it into any box, and `corner-radius` rounds its edges.
 
+**The shape, and the properties that size it:** `size`
+
 - **Own properties:** [`size`](object-properties.md#size), [`corner-radius`](object-properties.md#corner-radius)
 - **Also:** [geometry properties](object-properties.md)
 
@@ -74,6 +80,8 @@ cube {
 ## `cylinder`
 
 A cylinder standing on the y axis, centered on its origin: a `radius` of 0.5 and a `height` of 1 by default.
+
+**The shape, and the properties that size it:** `radius`, `height`
 
 - **Own properties:** [`radius`](object-properties.md#radius), [`height`](object-properties.md#height)
 - **Also:** [geometry properties](object-properties.md)
@@ -96,7 +104,7 @@ cylinder {
 
 Not a shape: it holds objects and other groups, like `<g>` in SVG, and draws nothing itself. Its `translate`, rotations and `scale` apply to everything inside it, and the positions of its children become relative to it.
 
-- **Takes:** [`display`](masks.md#display), [`visibility`](masks.md#visibility), [`cursor`](pseudo-classes.md#cursor), [`filter`](filters.md#filter), [`translate`](transforms.md#translate), [`rotate-x`](transforms.md#rotate-x), [`rotate-y`](transforms.md#rotate-y), [`rotate-z`](transforms.md#rotate-z), [`scale`](transforms.md#scale), [`transform-origin`](transforms.md#transform-origin), [`animation`](animations.md#animation), [`animation-duration`](animations.md#animation-duration), [`animation-delay`](animations.md#animation-delay), [`animation-iteration-count`](animations.md#animation-iteration-count), [`animation-direction`](animations.md#animation-direction), [`animation-fill-mode`](animations.md#animation-fill-mode), [`animation-timing-function`](animations.md#animation-timing-function), [`animation-timeline`](animations.md#animation-timeline), [`animation-range`](animations.md#animation-range), [`animation-range-start`](animations.md#animation-range-start), [`animation-range-end`](animations.md#animation-range-end), [`offset-path`](transforms.md#offset-path), [`offset-distance`](transforms.md#offset-distance), [`offset-rotate`](transforms.md#offset-rotate)
+- **Takes:** [`display`](masks.md#display), [`visibility`](masks.md#visibility), [`cursor`](pseudo-classes.md#cursor), [`mix-blend-mode`](colors.md#mix-blend-mode), [`filter`](filters.md#filter), [`translate`](transforms.md#translate), [`rotate-x`](transforms.md#rotate-x), [`rotate-y`](transforms.md#rotate-y), [`rotate-z`](transforms.md#rotate-z), [`scale`](transforms.md#scale), [`transform-origin`](transforms.md#transform-origin), [`animation`](animations.md#animation), [`animation-duration`](animations.md#animation-duration), [`animation-delay`](animations.md#animation-delay), [`animation-iteration-count`](animations.md#animation-iteration-count), [`animation-direction`](animations.md#animation-direction), [`animation-fill-mode`](animations.md#animation-fill-mode), [`animation-timing-function`](animations.md#animation-timing-function), [`animation-timeline`](animations.md#animation-timeline), [`animation-range`](animations.md#animation-range), [`animation-range-start`](animations.md#animation-range-start), [`animation-range-end`](animations.md#animation-range-end), [`offset-path`](transforms.md#offset-path), [`offset-distance`](transforms.md#offset-distance), [`offset-rotate`](transforms.md#offset-rotate)
 
 Its other properties (`color`, `material`, `size`…) are not passed down to its children: to style them, use a descendant selector, like `#letters cube`.
 
@@ -175,7 +183,9 @@ A contour, filled, then turned around the vertical axis, like clay on a potter's
 - **Own properties:** [`d`](object-properties.md#d), [`view-box`](object-properties.md#view-box)
 - **Also:** [geometry properties](object-properties.md)
 
-Draw half the outline: x is the distance from the axis, and y goes down, like SVG. A contour that does not touch the axis turns into a ring, and a contour inside another one is a hole. The height is centered on the contours (or on the `view-box`), and y goes up in the scene, like a path. Seen from the front, a prism and a lathe of the same contour can look alike; turned, the prism is a cut-out as thick as its `depth`, and the lathe stays round.
+Draw half the outline: x is the distance from the axis, and y goes down, like SVG. A contour that does not touch the axis turns into a ring.
+
+A contour inside another one is a hole. The height is centered on the contours (or on the `view-box`), and y goes up in the scene, like a path. Seen from the front, a prism and a lathe of the same contour can look alike; turned, the prism is a cut-out as thick as its `depth`, and the lathe stays round.
 
 ### a lathe and a prism of the same contour
 
@@ -258,6 +268,8 @@ lathe {
 
 Eight triangles, two pyramids joined by their bases, like a die with eight faces: a `radius` of 0.5 by default, from its center to each tip.
 
+**The shape, and the properties that size it:** `radius`
+
 - **Own properties:** [`radius`](object-properties.md#radius)
 - **Also:** [geometry properties](object-properties.md)
 
@@ -288,6 +300,8 @@ octahedron {
 
 A tube with round ends that follows an SVG path, given by `d`. `stroke-width` and `view-box` work like in SVG.
 
+**The shape, and the properties that size it:** `stroke-width`
+
 - **Own properties:** [`d`](object-properties.md#d), [`stroke-width`](object-properties.md#stroke-width), [`view-box`](object-properties.md#view-box)
 - **Also:** [geometry properties](object-properties.md)
 
@@ -312,6 +326,8 @@ path {
 
 A thin, flat rectangle lying in the xz plane, centered on its origin: 1 × 1 by default. `size` sets its width and its depth, and `rotate-x: 90deg` stands it up, like a wall.
 
+**The shape, and the properties that size it:** `size`
+
 - **Own properties:** [`size`](object-properties.md#size)
 - **Also:** [geometry properties](object-properties.md)
 
@@ -334,6 +350,8 @@ plane {
 ## `prism`
 
 A contour, filled, then given a `depth`: a flat object, like a star, a letter, an arrow, a logo. The contour is a `polygon()` or a `path()` (see `d`), and a contour inside another one is a hole.
+
+**The shape, and the properties that size it:** `depth`
 
 - **Own properties:** [`d`](object-properties.md#d), [`depth`](object-properties.md#depth), [`view-box`](object-properties.md#view-box)
 - **Also:** [geometry properties](object-properties.md)
@@ -380,6 +398,8 @@ prism {
 
 A pyramid on a square base, pointing up, centered on its origin: a base of 1 by 1 and a height of 1 by default. `size` sets the width and the depth of its base, and its height, like the box of a cube.
 
+**The shape, and the properties that size it:** `size`
+
 - **Own properties:** [`size`](object-properties.md#size)
 - **Also:** [geometry properties](object-properties.md)
 
@@ -419,6 +439,8 @@ pyramid {
 
 A ball centered on its origin, with a `radius` of 0.5 by default.
 
+**The shape, and the properties that size it:** `radius`
+
 - **Own properties:** [`radius`](object-properties.md#radius)
 - **Also:** [geometry properties](object-properties.md)
 
@@ -439,6 +461,8 @@ sphere {
 ## `torus`
 
 A ring lying flat around the y axis: a `radius` of 1 to the center of its tube, and a tube of 0.28 by default, set by `thickness`.
+
+**The shape, and the properties that size it:** `radius`, `thickness`
 
 - **Own properties:** [`radius`](object-properties.md#radius), [`thickness`](object-properties.md#thickness)
 - **Also:** [geometry properties](object-properties.md)
@@ -461,10 +485,14 @@ torus {
 
 A hollow cylinder, a pipe, standing on the y axis and centered on its origin: an outer `radius` of 0.5, a `height` of 1 and a wall 0.1 `thickness` thick by default.
 
+**The shape, and the properties that size it:** `radius`, `thickness`, `height`
+
 - **Own properties:** [`radius`](object-properties.md#radius), [`thickness`](object-properties.md#thickness), [`height`](object-properties.md#height)
 - **Also:** [geometry properties](object-properties.md)
 
-Not a `path`: a `path` draws a tube along any line, while `tube` is a straight pipe, open at both ends, whose wall has a thickness. The wall goes inside the radius, so the tube keeps its outer size when the wall gets thicker.
+Not a `path`: a `path` draws a tube along any line, while `tube` is a straight pipe, open at both ends, whose wall has a thickness.
+
+The wall goes inside the radius, so the tube keeps its outer size when the wall gets thicker.
 
 ### a pipe
 

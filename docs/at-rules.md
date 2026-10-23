@@ -12,6 +12,8 @@ Every example of this page, to edit live: [gss-lang.dev/docs](https://www.gss-la
 
 Defines the steps of an animation, played by the `animation` property, like CSS.
 
+**A ball between its two frames, and the time that passes:** `from`, `to`, `0%`, `100%`
+
 - **Syntax:** `@keyframes <name> { <offset>[, <offset>]* { <declaration>* } … }`
 
 ### Offsets
@@ -76,6 +78,8 @@ cube {
 
 Applies rules only when the screen matches a media query, like CSS. When the screen changes, a window resized or the system switching to dark mode, the scene follows at once and the camera stays where it is.
 
+**How it goes, from where it is written to what the scene shows:** `900px wide`, `480px wide`
+
 - **Syntax:** `@media <media-query> { <rule> … }`
 
 ### Queries
@@ -86,7 +90,9 @@ Applies rules only when the screen matches a media query, like CSS. When the scr
 - **(prefers-reduced-motion):** The visitor asks for less motion.
 - **and, not, ,:** Combine queries, like CSS.
 
-The browser reads the query, so any media query CSS knows works. Inside, the rules join the cascade where the `@media` is written, with their usual specificity. A scene can use up to 4 different queries, and `@media` holds rules only: `@scene` and `@keyframes` go outside it. On a page, the viewport is the window, like CSS. In the playground and in Try it, it is the render, like the result of CodePen: make the render narrower to see a `max-width` query apply.
+Any media query CSS knows works: the browser reads it. `@media` holds rules only, so `@scene` and `@keyframes` go outside it.
+
+Inside, the rules join the cascade where the `@media` is written, with their usual specificity. A scene can use up to 4 different queries. On a page, the viewport is the window, like CSS. In the playground and in Try it, it is the render, like the result of CodePen: make the render narrower to see a `max-width` query apply.
 
 ### a small screen
 
@@ -179,6 +185,8 @@ A texture drawn by a fragment shader, for `texture: paint(<name>)`: an image tha
 > [!NOTE]
 > **WebGL2 only, for now. GLSL, not CSS.** The GLSL of a `@paint` runs on WebGL2, not on WebGPU, which reads another shader language: a scene with `paint()` is drawn with WebGL2. And everything else in GSS is CSS: `@paint` is a way out for the textures CSS cannot describe. Try the gradients, `noise()`, `checker()` and `stripes()` first: they are lighter, and they work with WebGPU too.
 
+**From the shader to the faces of the object:** `@paint rings { … }`, `512 × 512 px`, `texture: paint(rings);`
+
 - **Syntax:** `@paint <name> { <fragment shader> }`
 - **See also:** [paint()](textures.md#fn-paint), [texture](textures.md#texture)
 
@@ -188,7 +196,9 @@ A texture drawn by a fragment shader, for `texture: paint(<name>)`: an image tha
 - **resolution:** The size of the texture in pixels, `vec2(512.0, 512.0)`. `u_resolution` works too.
 - **mouse:** The pointer over the scene, in the pixels of the texture, from its bottom left like `gl_FragCoord`. `u_mouse` works too.
 
-The block is a whole fragment shader: its uniforms, its functions and its `main()`. Write `out vec4 color;` and set it, or set `gl_FragColor` as in WebGL1; GSS adds `#version 300 es` and a `precision` when the code has none. It is drawn into a texture of 512 by 512 pixels, which the object shows like an image, on each of its faces, with `texture-size` and `image-rendering`. Each `@paint` runs on its own: its names never meet the rest of the scene, and an error in its GLSL names the `@paint` and its line in the file. A scene with `paint()` is drawn with WebGL2: `<gss-scene>`, `mountAsync()` and the playground pick it by themselves in `auto`; with WebGPU chosen, the object shows its `color` instead, and the console says why.
+The block is a whole fragment shader, with its own `main()`: write `out vec4 color;` and set it. It is drawn into a texture of 512 by 512 pixels, which the object shows like an image.
+
+The shader holds its uniforms, its functions and its `main()`. `gl_FragColor` works too, as in WebGL1, and GSS adds `#version 300 es` and a `precision` when the code has none. The texture goes on each face of the object, with `texture-size` and `image-rendering`. Each `@paint` runs on its own: its names never meet the rest of the scene, and an error in its GLSL names the `@paint` and its line in the file. A scene with `paint()` is drawn with WebGL2: `<gss-scene>`, `mountAsync()` and the playground pick it by themselves in `auto`; with WebGPU chosen, the object shows its `color` instead, and the console says why.
 
 ### rings that flow
 
@@ -248,6 +258,8 @@ sphere {
 
 Registers a variable that the page changes from JavaScript while the scene runs, without compiling it again, like CSS `@property`. Like a variable on `:root`, it has one value for the whole scene.
 
+**How it goes, from where it is written to what the scene shows:** `--lift`
+
 - **Syntax:** `@property --<name> { syntax: "<number>" | "<angle>" | "<percentage>" | "<color>" | "<length>"; inherits: true | false; initial-value: <value>; }`
 - **See also:** [Set variables from JavaScript](installation.md#set-variables), [@property-panel](#at-property-panel)
 
@@ -257,7 +269,9 @@ Registers a variable that the page changes from JavaScript while the scene runs,
 - **inherits:** Required, like CSS: `true` or `false`.
 - **initial-value:** Its value until the page sets another one. `scene { --lift: 2; }` gives another start value; declared anywhere else, on an object, a group, a `:hover` rule or a frame, the variable is an error. A frame can read it.
 
-It goes wherever the shader reads a value at each frame: the transforms (`translate`, `rotate-x`, `rotate-y`, `rotate-z`, `scale`, `transform-origin`), `color`, `opacity`, `background`, `mask-image`, the sizes of the shapes (`size`, `radius`, `height`, `thickness`, `corner-radius`, `stroke-width`, `depth`), the numbers of a gradient, `material`, `floor`, `ambient`, `light` and the `intensity` of the point lights, `fog`, `camera-target`, `blend`, `offset-distance`, `offset-rotate`, `texture-size` and `filter`, alone or inside the math and color functions. It cannot go where the scene is built when it compiles: the copies of `* n`, `d` and `view-box`, the timing of animations and transitions, the camera the mouse moves, `dpr` and `random()`. A value set from JavaScript is never refused: it is kept in its range, so a size never goes below 0. With `@property-panel`, the playground and Try it show a control for each registered variable over the render.
+A registered variable goes in transforms, colors, sizes, materials, lights, `fog` and `filter`. It cannot go where the scene is built when it compiles: the copies of `* n`, `d`, timings, `dpr` and `random()`.
+
+The full list, wherever the shader reads a value at each frame: the transforms (`translate`, `rotate-x`, `rotate-y`, `rotate-z`, `scale`, `transform-origin`), `color`, `opacity`, `background`, `mask-image`, the sizes of the shapes (`size`, `radius`, `height`, `thickness`, `corner-radius`, `stroke-width`, `depth`), the numbers of a gradient, `material`, `floor`, `ambient`, `light` and the `intensity` of the point lights, `fog`, `camera-target`, `blend`, `offset-distance`, `offset-rotate`, `texture-size` and `filter`, alone or inside the math and color functions. Out of reach, built when the scene compiles: the copies of `* n`, `d` and `view-box`, the timing of animations and transitions, the camera the mouse moves, `dpr` and `random()`. A value set from JavaScript is never refused: it is kept in its range, so a size never goes below 0. With `@property-panel`, the playground and Try it show a control for each registered variable over the render.
 
 ### a number
 
@@ -341,14 +355,19 @@ sphere {
 
 Shows a control for each variable of `@property` over the render, in the playground and in Try it: a slider and its number, or a color picker for a color. Moving a control sets the variable without compiling the scene again.
 
-- **Syntax:** `@property-panel { display: open | folded | none; }`
+**How it goes, from where it is written to what the scene shows:** `variables · 1`
+
+- **Syntax:** `@property-panel { display: open | folded | none; range: [<variable> <min> <max> <step>?]#; }`
 - **See also:** [@property](#at-property), [Set variables from JavaScript](installation.md#set-variables)
 
 ### Descriptors
 
 - **display:** `open`, the default: the panel shows its controls. `folded`: only its title, `variables · 2`, which opens it. `none`: no panel, as without the rule.
+- **range:** The ends of the slider of a variable, and its step if you like: `--col 0 3 1`. One per variable, separated by commas: `range: --col 0 3, --row 0 3;`. They are written like the values of the variable: `0deg 180deg` for an angle, `0% 50%` for a percentage.
 
-A slider goes from 0 to twice the start value of its variable, at least from 0 to 1, and around 0 for a negative value; an angle from 0 to 360deg, a percentage from 0% to 100%. A number typed past the end of a slider widens it, and the reset button gives the start value back. When the code changes a start value, the code wins over the slider. The panel never writes into the code, and a page that embeds the scene shows no panel: it sets the variables with `setProperty()`.
+The panel never writes into the code. A page that embeds the scene shows no panel: it sets the variables with `setProperty()`.
+
+A slider goes from 0 to twice the start value of its variable, at least from 0 to 1, and around 0 for a negative value; an angle from 0 to 360deg, a percentage from 0% to 100%. A number typed past the end of a slider widens it, and the reset button gives the start value back. With a `range`, the slider keeps the ends of the scene: a number typed past one is held there, and the panel says what the end is. A color has a color picker and no range. When the code changes a start value, the code wins over the slider.
 
 ### a slider
 
@@ -405,6 +424,47 @@ cube {
   translate: 0 0.8 0;
   rotate-y: var(--turn);
   color: var(--tint);
+}
+```
+
+### a cube on a board of 4 by 4
+
+`range` gives each slider the squares of the board, from 0 to 3, one square at a time.
+
+```css
+@property --col {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0;
+}
+
+@property --row {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0;
+}
+
+@property-panel {
+  range: --col 0 3 1, --row 0 3 1;
+}
+
+@scene {
+  path#grid;
+  cube#piece;
+}
+
+#grid {
+  d: path("M0 0 H4 M0 1 H4 M0 2 H4 M0 3 H4 M0 4 H4 M0 0 V4 M1 0 V4 M2 0 V4 M3 0 V4 M4 0 V4");
+  stroke-width: 0.04;
+  rotate-x: 90deg;
+  translate: 0 0.02 0;
+  color: #1a1a1f;
+}
+
+#piece {
+  size: 0.6;
+  translate: calc(var(--col) - 1.5) 0.3 calc(var(--row) - 1.5);
+  color: #ff5a36;
 }
 ```
 
@@ -485,6 +545,339 @@ The two cubes of `#tower` move and turn with their group.
 #b {
   translate: 0 1.5 0;
   scale: 0.7;
+}
+```
+
+<a name="at-mixin"></a>
+
+## `@mixin`
+
+Names a block of declarations and rules, written once and put into any rule with `@apply`, like the mixins of CSS. Its parameters are read with `var()`, and each can have a default. The scene compiles as if the block were written in each rule that applies it.
+
+**How it goes, from where it is written to what the scene shows:** `@mixin --polished {`, `material: metal(0.15);`, `corner-radius: 0.12;`, `}`, `#a { @apply --polished; }`, `#b { @apply --polished; }`
+
+- **Syntax:** `@mixin --<name>[(--<parameter> [<type>] [: <default>], …)] { <declaration> … <rule> … [@contents;] }`
+- **See also:** [@apply](#at-apply), [var()](variables-conditions.md#fn-var)
+
+### Parts
+
+- **--<name>:** Starts with `--`, like a variable: `@mixin --card { … }`.
+- **(--size, --tint: #ff5a36):** The parameters, given by `@apply` in order and read with `var(--size)` inside. After `:`, the default for a value left out. A type, like `--size <number>`, is read as in CSS; the property that gets the value checks it.
+- **{ … }:** Declarations, rules nested with `&`, `@media`, and other `@apply`.
+- **@contents:** Where the block given to `@apply` goes. `@contents { … }` holds what goes there when `@apply` gives none.
+
+A mixin goes outside the rules, before or after the rules that apply it. From Sass: `@apply` replaces `@include`, `var()` replaces `$`, and `@contents` replaces `@content`.
+
+With two mixins of the same name, the last one wins, like CSS. A parameter hides a variable of the same name, and cannot be declared inside the mixin. The block given to `@apply` does not see the parameters: it belongs to the rule that applies the mixin.
+
+### a mixin, and the rules it saves
+
+Both cubes take the two declarations of `--polished`: the scene is the same as with them written in each rule.
+
+```css
+@mixin --polished {
+  material: metal(0.15);
+  corner-radius: 0.12;
+}
+
+@scene {
+  cube#a;
+  cube#b;
+}
+
+#a {
+  translate: -0.9 0.5 0;
+  color: #ff5a36;
+  @apply --polished;
+}
+
+#b {
+  translate: 0.9 0.5 0;
+  color: #3a7bff;
+  @apply --polished;
+}
+```
+
+### parameters and their defaults
+
+`--ball` reads `--x`, `--size` and `--tint` with `var()`; a value left out takes its default.
+
+```css
+@mixin --ball(--x, --size: 0.4, --tint: #3a7bff) {
+  translate: var(--x) var(--size) 0;
+  radius: var(--size);
+  color: var(--tint);
+}
+
+@scene {
+  sphere#a;
+  sphere#b;
+}
+
+#a {
+  @apply --ball(-1);
+}
+
+#b {
+  @apply --ball(0.8, 0.7, #ff5a36);
+}
+```
+
+### nested rules
+
+A mixin holds rules too: its `&:hover` becomes `#a:hover`, then `#b:hover`.
+
+```css
+@mixin --lively {
+  transition: 0.3s;
+  &:hover {
+    scale: 1.2;
+    color: #ff5a36;
+  }
+}
+
+@scene {
+  cube#a;
+  cube#b;
+}
+
+#a {
+  translate: -0.9 0.5 0;
+  @apply --lively;
+}
+
+#b {
+  translate: 0.9 0.5 0;
+  @apply --lively;
+}
+```
+
+### @contents
+
+`--on-small-screens` holds the `@media`, and each rule gives the block to put inside it. Make the render narrower to see it.
+
+```css
+@mixin --on-small-screens {
+  @media (max-width: 600px) {
+    @contents;
+  }
+}
+
+@scene {
+  sphere;
+}
+
+sphere {
+  translate: 0 1 0;
+  color: #3a7bff;
+  @apply --on-small-screens {
+    color: #ff5a36;
+    radius: 0.6;
+  }
+}
+```
+
+<a name="at-apply"></a>
+
+## `@apply`
+
+Puts the declarations and rules of a `@mixin` in the rule where it is written, like CSS. Values in parentheses go to the parameters of the mixin, in order; a block goes where the mixin writes `@contents`.
+
+**How it goes, from where it is written to what the scene shows:** `#a { color: #3a7bff; @apply --warm; }`, `color: #ff5a36;`, `#b { @apply --warm; color: #3a7bff; }`, `color: #ff5a36;`
+
+- **Syntax:** `@apply --<name>[(<value>, …)] [{ <declaration> … }];`
+- **See also:** [@mixin](#at-mixin), [& (nesting)](selectors.md#selector-nesting)
+
+### Forms
+
+- **@apply --card;:** No values: each parameter takes its default. `@apply --card();` is the same.
+- **@apply --card(0.7, #ff5a36);:** One value per parameter, in order; those left out take their default. A value with a comma of its own goes between braces: `{color 1s, scale 2s}`.
+- **@apply --card { … }:** The block goes where the mixin writes `@contents`. Values in parentheses can come before it: `@apply --card(0.7) { … }`.
+
+The mixin takes the place of `@apply` in the cascade: a declaration written after it in the same rule wins, one written before loses.
+
+`@apply` goes in any rule: an object, a group, the scene, a `:hover` or `:active` rule, a nested rule, a `@media`, and a frame of `@keyframes` when the mixin holds declarations only. An unknown mixin, more values than parameters, a parameter with no value and no default, or a mixin that applies itself is an error that points at it.
+
+### where it stands in the rule
+
+The mixin takes the place of `@apply`: in `#a`, its `color` comes after the blue one and wins; in `#b`, the blue one comes after it and wins.
+
+```css
+@mixin --warm {
+  color: #ff5a36;
+}
+
+@scene {
+  cube#a;
+  cube#b;
+}
+
+#a {
+  translate: -0.9 0.5 0;
+  color: #3a7bff;
+  @apply --warm;
+}
+
+#b {
+  translate: 0.9 0.5 0;
+  @apply --warm;
+  color: #3a7bff;
+}
+```
+
+### in a frame of @keyframes
+
+`--pose` gives a height and a size, at rest and at the end of the hop.
+
+```css
+@mixin --pose(--h, --s) {
+  translate: 0 var(--h) 0;
+  scale: var(--s);
+}
+
+@scene {
+  cube;
+}
+
+cube {
+  color: #ff5a36;
+  @apply --pose(0.5, 1);
+  animation: hop 1.2s ease-in-out alternate;
+}
+
+@keyframes hop {
+  to {
+    @apply --pose(1.6, 1.3);
+  }
+}
+```
+
+<a name="at-for"></a>
+
+## `@for`
+
+Writes its block once for each number it counts, with `var(--i)` replaced by that number, like the `@for` of Sass. It goes anywhere: in `@scene` to make objects, around rules, in a rule, in `@keyframes`. The scene compiles as if each step were written by hand.
+
+- **Syntax:** `@for --<name> from <number> through | to <number> [by <number>] { … }`
+- **See also:** [@each](#at-each), [sibling-index()](values.md#fn-sibling-index)
+
+### Parts
+
+- **--<name>:** The variable of the loop, read with `var(--i)` anywhere in the block: in a value, a selector, an attribute of `@scene`, after `*`.
+- **from 1 through 4:** Counts 1, 2, 3, 4: `through` counts the last number.
+- **from 1 to 4:** Counts 1, 2, 3: `to` stops before the last number. From the larger to the smaller, the loop counts down.
+- **by 0.5:** The size of a step, more than 0. Without it, 1.
+- **0deg, 50%:** The numbers can take a unit, the same for all three: `from 0deg to 360deg by 45deg`.
+
+`* n` and `sibling-index()` already repeat an object; `@for` is for what they cannot do, like a grid that needs two indices, or rules written for each step.
+
+A loop takes 1000 steps at most. Loops can be nested, each with its own name. Inside the block, the variable of the loop hides a variable of the same name. The numbers are written in the file: a `var()` of a variable or of a parameter cannot set them.
+
+### objects and rules for each step
+
+The loop in `@scene` makes five cubes; the loop around the rule gives each its height, and stands it on the floor.
+
+```css
+@scene {
+  @for --i from 1 through 5 {
+    cube.step;
+  }
+}
+
+.step {
+  color: #ff5a36;
+}
+
+@for --i from 1 through 5 {
+  .step:nth-child(var(--i)) {
+    size: 0.8 calc(var(--i) * 0.4) 0.8;
+    translate: calc(var(--i) * 1.1 - 3.3) calc(var(--i) * 0.2) 0;
+  }
+}
+```
+
+### a grid
+
+Two loops, one in the other, give each cube its row and its column in attributes; the rules read them back.
+
+```css
+@scene {
+  @for --row from 0 to 3 {
+    @for --col from 0 to 3 {
+      cube[data-row=var(--row)][data-col=var(--col)];
+    }
+  }
+}
+
+cube {
+  scale: 0.8;
+}
+
+@for --row from 0 to 3 {
+  @for --col from 0 to 3 {
+    [data-row=var(--row)][data-col=var(--col)] {
+      translate: calc(var(--col) - 1) 0.4 calc(var(--row) - 1);
+      color: hsl(calc(var(--row) * 50 + var(--col) * 20) 80% 60%);
+    }
+  }
+}
+```
+
+<a name="at-each"></a>
+
+## `@each`
+
+Writes its block once for each value of a list, with `var(--x)` replaced by that value, like the `@each` of Sass. A value can be a number, a color, a word, even a shape: `@each --shape in cube, sphere { var(--shape); }` makes a cube, then a sphere.
+
+- **Syntax:** `@each --<name> in <value>, <value>, … { … }`
+- **See also:** [@for](#at-for), [@scene](#at-scene)
+
+### Parts
+
+- **--<name>:** The variable of the loop, read with `var(--x)` anywhere in the block, even in the place of a shape in `@scene`.
+- **in tomato, gold, teal:** The values, split at the commas. A value can hold several words: `in 0 1 0, 1 0 0`.
+- **{a, b}:** A value with a comma of its own goes between braces, like a value of `@apply`.
+
+It goes anywhere `@for` goes: in `@scene`, around rules, in a rule, in `@keyframes`. Each value is written in place of the `var()`, as if the block were written by hand for it.
+
+A list takes 1000 values at most. An empty value is an error. Inside the block, the variable of the loop hides a variable of the same name.
+
+### a different shape at each step
+
+The variable stands in the place of the shape: four objects of four shapes, in a row.
+
+```css
+@scene {
+  @each --shape in cube, sphere, cone, torus {
+    var(--shape).piece;
+  }
+}
+
+.piece {
+  translate: calc(sibling-index() * 1.6 - 4) 0.6 0;
+  color: #3a7bff;
+}
+```
+
+### a list of colors
+
+Each sphere keeps its color in an attribute, and one rule per color paints it.
+
+```css
+@scene {
+  @each --c in tomato, gold, teal, orchid {
+    sphere[data-color=var(--c)];
+  }
+}
+
+sphere {
+  translate: calc(sibling-index() * 1.3 - 3.25) 0.5 0;
+}
+
+@each --c in tomato, gold, teal, orchid {
+  [data-color=var(--c)] {
+    color: var(--c);
+  }
 }
 ```
 

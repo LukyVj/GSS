@@ -12,6 +12,8 @@ Every example of this page, to edit live: [gss-lang.dev/docs](https://www.gss-la
 
 Plays a `@keyframes` animation on the object, like CSS. After its name come the duration, then if needed an easing, a delay, a number of iterations, a direction and a fill mode, in any order.
 
+**A ball between its two frames, and the time that passes:** `from`, `to`, `0%`, `100%`
+
 - **Syntax:** `<keyframes-name> <time> [<easing>] [<time>] [<number> | infinite] [normal | reverse | alternate | alternate-reverse] [none | forwards | backwards | both]`
 - **Initial value:** `none`
 - **Applies to:** the scene, objects and groups
@@ -25,7 +27,9 @@ Plays a `@keyframes` animation on the object, like CSS. After its name come the 
 - **normal, reverse, alternate, alternate-reverse:** The direction: forward, backward, forward then backward, or backward first.
 - **none, forwards, backwards, both:** The fill mode: what the object shows outside the animation.
 
-Unlike CSS, an animation loops forever unless it has a number of iterations. Each part also has a property of its own, like `animation-duration`, which wins over what `animation` says. On an object, it animates `translate`, the rotations, `scale`, `color` (a gradient too), `opacity`, `mask-image` and `offset-distance`; on a group, its transforms. On the scene, it animates the properties of the scene, like `background`, `light` or `fog`, and the variables they use: the objects do not follow the variables a scene animates. In a `:hover` or `:active` rule, the animation starts with the state and plays to its end, once unless it says how many times, like a button that fires: see `:active`.
+Unlike CSS, an animation loops forever unless it says how many times it plays.
+
+Each part also has a property of its own, like `animation-duration`, which wins over what `animation` says. On an object, it animates `translate`, the rotations, `scale`, `color` (a gradient too), `opacity`, `mask-image` and `offset-distance`; on a group, its transforms. On the scene, it animates the properties of the scene, like `background`, `light` or `fog`, and the variables they use: the objects do not follow the variables a scene animates. In a `:hover` or `:active` rule, the animation starts with the state and plays to its end, once unless it says how many times, like a button that fires: see `:active`.
 
 ### up and down
 
@@ -177,6 +181,8 @@ scene {
 
 How long the animation waits before it starts, in `s` or `ms`; a negative delay starts it partway, as if it had begun earlier. It wins over the delay written in `animation`.
 
+**One point per value of the property, each moved by it:** `0s`, `1s`, `-1s`
+
 - **Syntax:** `<time>`
 - **Initial value:** `0s`
 - **Applies to:** the scene, objects and groups
@@ -211,6 +217,8 @@ sphere {
 ## `animation-direction`
 
 The way the animation plays, like CSS. It wins over the direction written in `animation`.
+
+**One point per value of the property, each moved by it:** `normal`, `reverse`, `alternate`, `alternate-reverse`
 
 - **Syntax:** `normal | reverse | alternate | alternate-reverse`
 - **Initial value:** `normal`
@@ -254,6 +262,8 @@ sphere {
 
 The duration of one iteration of the animation, in `s` or `ms`. It wins over the duration written in `animation`.
 
+**One point per value of the property, each moved by it:** `1s`, `2s`, `4s`
+
 - **Syntax:** `<time>`
 - **Initial value:** `0s`
 - **Applies to:** the scene, objects and groups
@@ -288,6 +298,8 @@ sphere {
 ## `animation-fill-mode`
 
 What the object shows outside the animation, like CSS. It matters only with a delay or a number of iterations.
+
+**One point per value of the property, each moved by it:** `none`, `forwards`, `backwards`, `both`
 
 - **Syntax:** `none | forwards | backwards | both`
 - **Initial value:** `none`
@@ -334,6 +346,8 @@ sphere {
 
 How many times the animation plays: a number, where `1.5` stops halfway through the second time, or `infinite`. Unlike CSS, where an animation plays once, a GSS animation loops forever by default. It wins over the count written in `animation`.
 
+**One point per value of the property, each moved by it:** `1`, `2`, `infinite`
+
 - **Syntax:** `<number> | infinite`
 - **Initial value:** `infinite`
 - **Applies to:** the scene, objects and groups
@@ -369,6 +383,8 @@ sphere {
 
 The part of a scroll timeline the animation plays on, like CSS: `entry` while the scene comes into view, `exit` while it leaves, or percentages of the whole scroll. It goes with `animation-timeline`.
 
+**The scene crossing the window, and the part of the way the animation plays on:** `entry`, `contain`, `exit`, `start`, `end`
+
 - **Syntax:** `[ normal | <range-name> <percentage>? | <percentage> | <length> ]{1,2}`
 - **Initial value:** `normal`
 - **Applies to:** the scene, objects and groups
@@ -384,7 +400,9 @@ The part of a scroll timeline the animation plays on, like CSS: `entry` while th
 - **<percentage>:** A share of the named range before it, or of the whole timeline alone: `entry 50%`, `20% 80%`.
 - **<length>:** Pixels from the start of the named range before it, or of the whole timeline: `100px`.
 
-It takes a start, then an end: `entry 10% exit 90%`. A name alone is the whole of that range, `animation-range: entry`; a name alone at the end is its end, `contain exit`. `animation-range-start` and `animation-range-end` set one side each, and win over `animation-range` wherever they are written, like the other longhands of `animation`. Before the range the animation shows its first frame, past it its last. The named ranges belong to `view()`: `scroll()` takes percentages and pixels. Unlike CSS, which ignores it there, a range on an animation that plays in time is an error.
+It takes a start, then an end: `entry 10% exit 90%`. Before the range the animation shows its first frame, past it its last.
+
+A name alone is the whole of that range, `animation-range: entry`; a name alone at the end is its end, `contain exit`. `animation-range-start` and `animation-range-end` set one side each, and win over `animation-range` wherever they are written, like the other longhands of `animation`. The named ranges belong to `view()`: `scroll()` takes percentages and pixels. Unlike CSS, which ignores it there, a range on an animation that plays in time is an error. In the playground, which does not scroll, the slider over the render stands for one screen of scroll: `100px` is a hundred pixels of the height of the window.
 
 ### rise while it comes in
 
@@ -444,6 +462,8 @@ cube {
 
 Where on the timeline the animation ends, like CSS: the second half of `animation-range`. A name alone is the end of that range.
 
+**The scene crossing the window, and the part of the way the animation plays on:** `entry`, `contain`, `exit`, `start`, `end`
+
 - **Syntax:** `normal | <range-name> <percentage>? | <percentage> | <length>`
 - **Initial value:** `normal`
 - **Applies to:** the scene, objects and groups
@@ -479,6 +499,8 @@ cube {
 ## `animation-range-start`
 
 Where on the timeline the animation starts, like CSS: the first half of `animation-range`. A name alone is the start of that range.
+
+**The scene crossing the window, and the part of the way the animation plays on:** `entry`, `contain`, `exit`, `start`, `end`
 
 - **Syntax:** `normal | <range-name> <percentage>? | <percentage> | <length>`
 - **Initial value:** `normal`
@@ -517,6 +539,8 @@ torus {
 
 Drives the animation with the scroll of the page instead of time, like CSS scroll-driven animations. The whole timeline is the whole animation, so the duration and the delay do not count.
 
+**A page that scrolls, and the animation where the scroll is:** `0%`, `100%`
+
 - **Syntax:** `auto | scroll([root | nearest] || [block | inline | x | y]) | view([block | inline | x | y])`
 - **Initial value:** `auto`
 - **Applies to:** the scene, objects and groups
@@ -528,7 +552,9 @@ Drives the animation with the scroll of the page instead of time, like CSS scrol
 - **scroll():** A scroll container, from its start (0%) to its end (100%): `nearest` (the default) is the closest one around the scene, `root` the page. The axis is `block` (the default), `inline`, `y` or `x`.
 - **view():** The scene crossing its scroll container: 0% when it enters at the bottom, 100% when it leaves at the top.
 
-Write it after `animation`, which still needs a name and a duration: `animation: spin 1s linear; animation-timeline: scroll();`. The number of iterations and the direction still count, an animation without a count plays once along the scroll, and scrolling back plays it backward. A scene takes up to 4 different timelines. In the playground, which does not scroll, a slider stands in for the scroll.
+Write it after `animation`, which still needs a name and a duration: `animation: spin 1s linear; animation-timeline: scroll();`. Scrolling back plays the animation backward.
+
+The number of iterations and the direction still count, an animation without a count plays once along the scroll. A scene takes up to 4 different timelines. In the playground, which does not scroll, a slider stands in for the scroll.
 
 ### turn with the page
 
@@ -595,6 +621,8 @@ sphere:nth-child(2) {
 
 The easing of each step of the animation, like CSS. It wins over the easing written in `animation`.
 
+**The curve of the easing, and a ball that moves by it:** `time`, `progress`
+
 - **Syntax:** `<easing>`
 - **Initial value:** `linear`
 - **Applies to:** the scene, objects and groups
@@ -638,6 +666,8 @@ sphere {
 ## `transition`
 
 Glides the object to its `:hover` state and back, instead of jumping, like CSS. One transition covers every property that `:hover` changes on the object.
+
+**A cube that answers the pointer:** `no transition`, `transition: 0.4s`
 
 - **Syntax:** `none | [all] <time> [<easing>] [<time>]`
 - **Initial value:** `none`

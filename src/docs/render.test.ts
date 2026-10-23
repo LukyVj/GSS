@@ -12,6 +12,7 @@ import {
 import { highlightGss } from "./highlight";
 import { FIRST_SCENE, GETTING_STARTED } from "./guide";
 import { compileGSS } from "../compiler";
+import { compareVersions } from "./news";
 import {
   PROPERTIES,
   AT_RULES,
@@ -235,6 +236,33 @@ describe("renderShape", () => {
   });
 });
 
+// A drawing under the lead of a page (decision 180)
+describe("the figure of a page", () => {
+  it("comes under the lead of the page, before its table", () => {
+    const html = renderSelector(SELECTORS.find((selector) => selector.anchor === "selector-type")!);
+    const order = ["A shape name targets every object", '<figure class="figure"', "<dt>Specificity</dt>"];
+    expect(order.map((part) => html.indexOf(part))).toEqual(order.map((part) => html.indexOf(part)).sort((a, b) => a - b));
+    expect(html.indexOf(order[1])).toBeGreaterThan(0);
+  });
+
+  it("is the shape itself on the page of a shape", () => {
+    const torus = SHAPE_DOCS.find((shape) => shape.name === "torus")!;
+    expect(renderShape(torus, PROPERTIES)).toContain('data-turn="torus"');
+  });
+
+  it("comes under the example of a guide page", () => {
+    const html = renderDocs(PROPERTIES, AT_RULES, SELECTORS, SHAPE_DOCS, FUNCTIONS);
+    const page = html.slice(html.indexOf('id="first-scene"'), html.indexOf('id="embedding"'));
+    expect(page.indexOf('class="example"')).toBeGreaterThan(0);
+    expect(page.indexOf('<figure class="figure"')).toBeGreaterThan(page.indexOf('class="example"'));
+  });
+
+  it("is on no page that does not ask for one", () => {
+    const universal = SELECTORS.find((selector) => selector.anchor === "selector-universal")!;
+    expect(renderSelector({ ...universal, figure: undefined })).not.toContain("<figure");
+  });
+});
+
 describe("renderSelector", () => {
   const universal = SELECTORS.find((selector) => selector.name === "*")!;
   const html = renderSelector(universal);
@@ -369,6 +397,17 @@ describe("the parts of a page", () => {
     expect(order.map((part) => html.indexOf(part))).toEqual(order.map((part) => html.indexOf(part)).sort((a, b) => a - b));
   });
 
+  // What a reader looks up once, folded under the paragraph (decision 179)
+  it("folds what the entry keeps for later under the paragraph, closed", () => {
+    const folded = renderProperty({ ...material, more: "Reflections see the `color` too." });
+    expect(folded).toMatch(
+      /<p>A material can take a gradient.<\/p>\s*<details class="more">\s*<summary>More details<\/summary>\s*<p>Reflections see the <code><span class="gss-property">color<\/span><\/code> too.<\/p>\s*<\/details>/,
+    );
+    expect(folded.indexOf('<details class="more">')).toBeLessThan(folded.indexOf('class="example-part"'));
+    expect(folded).not.toContain("<details class=\"more\" open");
+    expect(html).not.toContain("<details");
+  });
+
   it("names the heading of the table when the entry does", () => {
     expect(renderProperty({ ...material, valuesTitle: "Functions" })).toContain('<h4 id="material--functions">Functions</h4>');
     expect(renderProperty({ ...material, values: undefined, details: undefined })).not.toMatch(/<h4 id=/);
@@ -460,5 +499,27 @@ describe("the version beside the title of a page", () => {
   it("keeps the text of the title the name of the page", () => {
     const html = renderProperty(rotateX);
     expect(html).toContain('<h3 data-since="0.0.1"><code>rotate-x</code></h3>');
+  });
+});
+
+// A value added after its page (decision 188): "new in" beside the value, not only the page
+describe("the version of a value", () => {
+  const panel = AT_RULES.find((rule) => rule.name === "property-panel")!;
+
+  it("is beside a value added after its page, as an attribute", () => {
+    const html = renderAtRule(panel);
+    expect(html).toMatch(/<dt data-since="0\.0\.7"><code class="gss syntax"><span class="gss-keyword">range<\/span><\/code><\/dt>/);
+  });
+
+  it("is not on a value that came with its page", () => {
+    const html = renderAtRule(panel);
+    expect(html).toMatch(/<dt><code class="gss syntax"><span class="gss-keyword">display<\/span><\/code><\/dt>/);
+  });
+
+  it("is always later than the version of its page", () => {
+    const pages = [...PROPERTIES, ...AT_RULES, ...SELECTORS, ...SHAPE_DOCS, ...FUNCTIONS];
+    for (const page of pages)
+      for (const [value, , since] of page.values ?? [])
+        if (since) expect(compareVersions(since, page.since), `${page.name}: ${value}`).toBeGreaterThan(0);
   });
 });

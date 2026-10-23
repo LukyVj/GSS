@@ -13,8 +13,8 @@ New to GSS? Start with [Getting started](getting-started.md), then [Installation
 
 ## Language
 
-- [At-rules](at-rules.md): `@keyframes`, `@media`, `@paint`, `@property`, `@property-panel`, `@scene`
-- [Selectors](selectors.md): `<shape>`, `.class`, `#id`, `*`, `a, b`, `&`, `!important`
+- [At-rules](at-rules.md): `@keyframes`, `@media`, `@paint`, `@property`, `@property-panel`, `@scene`, `@mixin`, `@apply`, `@for`, `@each`
+- [Selectors](selectors.md): `<shape>`, `.class`, `#id`, `[attribute]`, `*`, `a, b`, `&`, `!important`
 - [Combinators](combinators.md): `a b`, `a > b`, `a + b`, `a ~ b`
 - [Pseudo-classes and cursor](pseudo-classes.md): `:hover`, `:active`, `:has()`, `:not()`, `:nth-child(), :nth-last-child()`, `:nth-of-type(), :nth-last-of-type()`, `:first-child, :last-child, :only-child`, `::face(), ::top, ::bottom`, `cursor`
 - [Variables and conditions](variables-conditions.md): `if()`, `var()`
@@ -28,11 +28,12 @@ New to GSS? Start with [Getting started](getting-started.md), then [Installation
 
 ## Appearance
 
-- [Colors](colors.md): `color`, `background`, `background-blend-mode`, `floor`
+- [Colors](colors.md): `color`, `background`, `background-blend-mode`, `floor`, `mix-blend-mode`
 - [Color functions](color-functions.md): `rgb()`, `hsl()`, `hwb()`, `lab(), lch()`, `oklab(), oklch()`, `color()`, `color-mix()`, `light-dark()`, `contrast-color()`, `currentColor`
 - [Gradients and noise](gradients.md): `<gradient>`, `checker()`, `displace()`, `noise()`, `stripes()`
 - [Materials](materials.md): `material`
-- [Textures](textures.md): `element()`, `image-rendering`, `paint()`, `texture`, `texture-size`
+- [Textures](textures.md): `element()`, `image-rendering`, `paint()`, `texture`, `texture-mapping`, `texture-size`
+- [Text](text.md): `content`, `font-family`, `font-size`, `font-style`, `font-weight`, `text-align`, `text-color`
 - [Filters](filters.md): `filter`
 - [Visibility, opacity, outlines and masks](masks.md): `display`, `mask-image`, `mask-mode`, `opacity`, `outline`, `outline-color`, `outline-offset`, `outline-style`, `outline-width`, `visibility`
 
@@ -44,6 +45,6 @@ New to GSS? Start with [Getting started](getting-started.md), then [Installation
 
 ## Scene
 
-- [Camera](camera.md): `camera-angle`, `camera-distance`, `camera-spin`, `camera-target`
+- [Camera](camera.md): `camera-angle`, `camera-distance`, `camera-spin`, `camera-target`, `controls`
 - [Lighting and fog](scene-properties.md): `light` (sun), `light` (point), `intensity`, `ambient`, `shadows`, `fog`
 - [Rendering](rendering.md): `dpr`, `shape-rendering`, `view`

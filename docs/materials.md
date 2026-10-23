@@ -12,6 +12,8 @@ Every example of this page, to edit live: [gss-lang.dev/docs](https://www.gss-la
 
 Sets how the surface of the object reacts to light. Without a color, a material uses the `color` property, like `currentColor` in CSS, so the color stays animatable; with its own, like `brass` or `metal(#3a7bff)`, it keeps it, even when `color` is a gradient. The color can also be a gradient: `metal(linear-gradient(#ffd27a, #ff5a36), 0.2)`.
 
+**What covers the surface, flat, then on an object:** `matte()`, `metal()`, `glass()`, `jelly()`, `emissive()`, `iridescent()`
+
 - **Syntax:** `matte([<color>]) | metal([<color>,] [<roughness>]) | jelly([<color>,] [<density>]) | emissive([<color>,] [<strength>]) | iridescent([<color>,] [<strength>]) | gold | chrome | copper | silver | brass | aluminum | jelly | glass([<color>,] [<refraction-index>] [, [frosted | wavy | hammered | blurred] <frost>]) | glass | ice | emissive | iridescent`
 - **Initial value:** `matte()`
 - **Applies to:** objects

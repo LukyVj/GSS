@@ -96,3 +96,49 @@ describe("outline-style: the styles of CSS", () => {
     expect(() => scene("outline-style: wavy;")).toThrow(/outline-style expects/);
   });
 });
+
+describe("outline of a path, a prism or a lathe: measured from the shape, not from its box", () => {
+  const brace = 'd: path("M0 0 C10 0 10 20 20 20"); view-box: 0 0 20 20;';
+  const path = (rule: string, more = "") => compileGSS(`@scene { path; } path { ${brace} scale: 0.008; ${rule} } ${more}`);
+
+  it("keeps the shortcut of the box beyond twice the reach of the line, in the units of the shape", () => {
+    const shader = path("outline: 0.01 solid red;");
+    expect(shader).toContain("if (far > max(0.5, outlineFar)) return far;");
+    expect(shader).not.toContain("if (far > 0.5) return far;");
+    // 2 × 0.01 / 0.008: set for the outlined object only, then back to nothing
+    expect(mapOf(shader)).toMatch(/outlineFar = 2\.5; float dOutline = \w+\(q\) \* 0\.008; outlineFar = 0\.0;/);
+    // the offset reaches further, an inset line no further than the surface
+    expect(mapOf(path("outline: 0.01 solid red; outline-offset: 0.03;"))).toContain("outlineFar = 10.0;");
+    expect(mapOf(path("outline: 0.01 solid red; outline-offset: -0.05;"))).toContain("outlineFar = 0.0;");
+  });
+
+  it("counts the scale of the groups", () => {
+    const shader = compileScene(`@scene { group#g { path } } #g { scale: 2; } path { ${brace} scale: 0.5; outline: 0.01 solid red; }`).shader;
+    expect(mapOf(shader)).toContain("outlineFar = 0.02;");
+  });
+
+  it("measures the reach on the GPU when the line changes", () => {
+    const shader = path("outline: 0.01 solid red; transition: 0.2s;", "path:hover { outline-width: 0.05; }");
+    expect(mapOf(shader)).toMatch(/outlineFar = 2\.0 \* max\([^;]+\) \/ max\(0\.008, 0\.000001\);/);
+  });
+
+  it("does the same for a prism and a lathe, and lowers to WGSL", () => {
+    for (const tag of ["prism", "lathe"]) {
+      const shader = compileGSS(`@scene { ${tag}; } ${tag} { d: polygon(0 0, 1 0, 1 1, 0 1); outline: 0.05 solid red; }`);
+      expect(shader, tag).toContain("if (far > max(0.5, outlineFar)) return far;");
+      expect(mapOf(shader), tag).toContain("outlineFar = 0.1;");
+    }
+    expect(compileScene(`@scene { path; } path { ${brace} outline: 0.01 solid red; }`).wgsl).toContain("outlineFar");
+  });
+
+  it("adds up with geometricPrecision, which measures a near miss without the shortcut", () => {
+    const shader = path("outline: 0.01 solid red;", "scene { shape-rendering: geometricPrecision; }");
+    expect(shader).toContain("if (far > max(0.5, outlineFar) && !exactDistance) return far;");
+  });
+
+  it("leaves a path as it was when only another object draws a line", () => {
+    const shader = compileGSS(`@scene { path; sphere; } path { ${brace} } sphere { outline: 0.05 solid red; }`);
+    expect(shader).toContain("if (far > 0.5) return far;");
+    expect(shader).not.toContain("outlineFar");
+  });
+});

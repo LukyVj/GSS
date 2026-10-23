@@ -27,6 +27,7 @@ import { readDpr, type Dpr } from "./features/dpr";
 import { readView, type View } from "./features/view";
 import { isDisplayed } from "./features/visibility";
 import { sceneCursors, type ObjectCursor } from "./features/cursor";
+import { sceneControls, type SceneControls } from "./features/controls";
 import { readTransition, type Transition } from "./features/transition";
 import { buildPasses, FILTER_FUNCTIONS, objectFilters, readSceneSteps, type Pass } from "./features/filter";
 import { generateWGSL } from "./shader/wgsl";
@@ -35,8 +36,10 @@ import {
   propertyFloats,
   propertyToken,
   readPropertyPanel,
+  readPropertyRanges,
   readPropertyRules,
   type PropertyPanel,
+  type PropertyRange,
   type RegisteredProperty,
 } from "./features/properties";
 
@@ -71,6 +74,9 @@ export type CompiledScene = {
   // @property-panel (decision 128): the playground and Try it show a control per variable,
   // open or folded at the start. Absent without the rule, or with display: none.
   propertyPanel?: PropertyPanel;
+  // range of @property-panel (decision 187): the ends and the step of the slider of some
+  // variables. Absent without a range, or without a panel.
+  propertyRanges?: Record<string, PropertyRange>;
   // view (decision 131): the view the code asks for, absent when it is shaded. The shader
   // draws the view of the compile option instead, when there is one.
   view?: "distance";
@@ -81,6 +87,9 @@ export type CompiledScene = {
   // cursor (decision 161): the mouse pointer over each object that sets one, hovered and
   // pressed. Absent when every object keeps auto.
   cursors?: ObjectCursor[];
+  // controls (decision 176): the gestures that move the camera, and the objects over which
+  // some cannot start. Absent when the scene takes both and no object refuses one.
+  controls?: SceneControls;
   // for each slot of uHover[] (hover, then active), how it glides to 1 (enter) and back to 0 (leave)
   transitions: { enter: Transition | null; leave: Transition | null }[];
   // The states that start an animation (decision 141): the slot, its index in
@@ -187,6 +196,7 @@ function compileStylesheet(
   // its start value, or its initial-value does
   const registered = errors.run(() => registeredProperties(stylesheet, sceneStyles)) ?? [];
   const panel = errors.run(() => readPropertyPanel(stylesheet.panels));
+  const ranges = errors.run(() => readPropertyRanges(stylesheet.panels, registered));
   const live: Variables = Object.fromEntries(registered.map((p, i) => [p.name, [propertyToken(p, i)]]));
   const rootVariables = { ...customProperties(sceneStyles), ...live };
 
@@ -238,6 +248,7 @@ function compileStylesheet(
       instance.activeStyles,
       ...instance.groupStyles,
       ...FACES.map((face) => instance.faceStyles[face]),
+      ...instance.faceList,
     ])
       for (const name of Object.keys(live)) if (styles[name]) throw oneValue(name, styles[name]);
     // Level 0 = the scene, 1… = the groups from the outside in, last = the object
@@ -281,6 +292,7 @@ function compileStylesheet(
           ),
         ]),
       ) as Record<Face, Styles>,
+      faceList: instance.faceList.map((styles) => computeNode(styles, seenAt(levels.length - 1), instance)),
     };
   }
 
@@ -319,7 +331,7 @@ function compileStylesheet(
   const camera = errors.run(() => readCamera(computedScene));
   const dpr = errors.run(() => readDpr(computedScene));
   // After the cascade and var(): the texture an object really ends up with
-  const textures = errors.run(() => sceneTextures(drawn));
+  const textures = errors.run(() => sceneTextures(drawn, [...shared, ...copies]));
   // @paint (decision 151): the shaders of paint(name), the last one of a name wins like CSS
   const defined = new Map(stylesheet.paints.map((paint) => [String(paint.name.value), { code: String(paint.code.value), line: paint.line ?? 1 }]));
   const paints = errors.run(() => scenePaints(drawn, defined));
@@ -337,6 +349,7 @@ function compileStylesheet(
   ]);
   const active = activeSlots(styled).map((instance) => instance.activeTriggers);
   const cursors = errors.run(() => sceneCursors(drawn));
+  const controls = errors.run(() => sceneControls(computedScene, drawn));
   const triggers = errors.run(() => sceneTriggers(styled));
   const timelines = errors.run(() =>
     sceneTimelines([computedScene, ...styled.flatMap((instance) => [...instance.groupStyles, instance.styles])]),
@@ -352,6 +365,7 @@ function compileStylesheet(
       : {}),
     ...(registered.length > 0 ? { properties: registered } : {}),
     ...(panel ? { propertyPanel: panel } : {}),
+    ...(panel && ranges ? { propertyRanges: ranges } : {}),
     ...(view === "distance" ? { view } : {}),
     shader: shader!,
     camera: camera!,
@@ -362,6 +376,7 @@ function compileStylesheet(
     hover: hoverSlots(styled).map((instance) => instance.hoverTriggers),
     ...(active.length > 0 ? { active } : {}),
     ...(cursors!.length > 0 ? { cursors } : {}),
+    ...(controls ? { controls } : {}),
     ...(timelines!.length > 0 ? { timelines } : {}),
     transitions: transitions!,
     ...(triggers!.length > 0 ? { triggers } : {}),

@@ -12,6 +12,8 @@ Every example of this page, to edit live: [gss-lang.dev/docs](https://www.gss-la
 
 The gradients of CSS, for the `background` of the scene, the `color` of an object, the color of a material and the `floor`. Each color can have one or two positions; the missing ones are spread like CSS, and two colors at the same place make a hard edge.
 
+**What covers the surface, flat, then on an object:** `linear-gradient()`, `radial-gradient()`, `conic-gradient()`
+
 - **Syntax:** `linear-gradient([<angle> | to <side> <side>?]?, <color> <percentage>{0,2}, …) | radial-gradient([circle | ellipse]? [closest-side | farthest-side | closest-corner | farthest-corner]? [at <position>]?, <color> <percentage>{0,2}, …) | conic-gradient([from <angle>]? [at <position>]?, <color> [<angle> | <percentage>]{0,2}, …)`
 - **Computed:** on the GPU, at each pixel
 
@@ -22,7 +24,9 @@ The gradients of CSS, for the `background` of the scene, the `color` of an objec
 - **conic-gradient():** Around a center, clockwise from the top: `from 90deg` starts a quarter turn later, and `at 30% 40%` moves the center. Its colors take angles or percentages: a color wheel, a pie chart, the sweep of a hand.
 - **repeating-linear-gradient():** Repeats the stops; also `repeating-radial-gradient()` and `repeating-conic-gradient()`.
 
-In the background, the gradient covers the canvas and follows its size; reflections and glass see it in the direction they look. On an object, it covers the object as seen from the front, from left to right and from bottom to top (a plane is seen from above): `to top` goes from its bottom to its top, whatever its size, and it moves and turns with the object. On the `floor`, it covers a square of 40 units centered under the scene, seen from above. Colors are mixed in sRGB, like CSS with hex colors.
+On an object, the gradient covers it as seen from the front, whatever its size, and moves and turns with it. In the background, it covers the canvas.
+
+In the background, the gradient follows the size of the canvas; reflections and glass see it in the direction they look. On an object, it goes from left to right and from bottom to top (a plane is seen from above): `to top` goes from its bottom to its top. On the `floor`, it covers a square of 40 units centered under the scene, seen from above. Colors are mixed in sRGB, like CSS with hex colors.
 
 ### linear-gradient()
 
@@ -161,6 +165,8 @@ scene {
 
 A checkerboard, wherever a gradient goes: the `color` of an object, the color of a material, the `background`, the `floor`. Like `noise()`, it is cut in the object's own space: a grid of cubes, one color and then the other.
 
+**What covers the surface, flat, then on an object:** `checker()`, `color`
+
 - **Syntax:** `checker(<number> [at <number> <number> <number>]?, <color>, <color>)`
 - **Computed:** on the GPU, at each pixel
 
@@ -170,7 +176,9 @@ A checkerboard, wherever a gradient goes: the `color` of an object, the color of
 - **at <x> <y> <z>:** Moves the grid.
 - **<color>, <color>:** The two colors of the cells.
 
-On an object, the grid is cut in its own space, like a block of stone carved out of a checkered material: the cells keep their size whatever the shape, and move and turn with the object. On the `floor`, it is read in the units of the scene; in the background, it follows the direction of the view. Like `noise()`, it can be animated into another `checker()`, its numbers can be set from JavaScript, and it can be the map of `displace()`. The edges of the cells are sharp: far away, a fine checkerboard shimmers.
+On an object, the cells keep their size whatever the shape, and move and turn with it. The edges of the cells are sharp: far away, a fine checkerboard shimmers.
+
+On an object, the grid is cut in its own space, like a block of stone carved out of a checkered material. On the `floor`, it is read in the units of the scene; in the background, it follows the direction of the view. Like `noise()`, it can be animated into another `checker()`, its numbers can be set from JavaScript, and it can be the map of `displace()`.
 
 ### a checkered floor
 
@@ -213,6 +221,8 @@ cube {
 
 Moves an image by another one, like SVG `feDisplacementMap`, wherever a gradient goes: `color`, a material, `background` and its layers, `mask-image`, `floor`. Stripes moved by a turbulence make marble, rings make wood, a mask gets ragged edges.
 
+**What covers the surface, flat, then on an object:** `an image`, `a map`, `displace()`
+
 - **Syntax:** `displace(<gradient> | <noise()>, <gradient> | <noise()>, <number> | <percentage>)`
 - **Computed:** on the GPU, at each pixel
 
@@ -222,7 +232,9 @@ Moves an image by another one, like SVG `feDisplacementMap`, wherever a gradient
 - **<map>:** Usually a `noise()`: its colors move each point where the image is read. On a gradient, red moves it right and green down, like SVG; on a `noise()`, red, green and blue move it in 3D. A channel at 50% moves nothing, 0% and 100% the most.
 - **<amount>:** A share of the size of the image: `0.3` or `30%` moves it by up to 15% of its size.
 
-A `noise()` map gives each channel a noise of its own, like `feTurbulence`, so even a gray noise moves the image in every direction; a gradient map is read once, by its colors, which are opaque. Like a gradient, `displace()` can be animated and changed by `:hover`, into another `displace()` whose image and map are of the same kinds: animating the `at` of a noise map makes the image flow. Its numbers can be set from JavaScript.
+It can be animated, and changed by `:hover`, into another `displace()` whose image and map are of the same kinds. Animating the `at` of a noise map makes the image flow.
+
+A `noise()` map gives each channel a noise of its own, like `feTurbulence`, so even a gray noise moves the image in every direction; a gradient map is read once, by its colors, which are opaque. Its numbers can be set from JavaScript.
 
 ### marble
 
@@ -291,6 +303,8 @@ scene {
 
 A noise image, wherever a gradient goes: the `background`, the `color` of an object, the color of a material, the `floor`. Its colors are placed like the stops of a gradient, along the value of a smooth 3D noise, like SVG `feTurbulence`.
 
+**What covers the surface, flat, then on an object:** `noise()`, `color`
+
 - **Syntax:** `noise([turbulence]? <number> <integer>? [seed <integer>]? [at <number> <number> <number>]?, <color> <percentage>{0,2}, …)`
 - **Computed:** on the GPU, at each pixel
 
@@ -302,7 +316,9 @@ A noise image, wherever a gradient goes: the `background`, the `color` of an obj
 - **seed <integer>:** Another pattern.
 - **at <x> <y> <z>:** Moves the pattern.
 
-On an object, the noise is cut in the object's own space, like a block of stone: no seam, and it moves and turns with the object. On the `floor`, it is read at each point of the floor, in the units of the scene. In the background, it follows the direction of the view. Like a gradient, it can be animated and changed by `:hover`, into another `noise()` of the same kind with as many colors: animating `at` makes it drift, like clouds or smoke. Its numbers can be set from JavaScript.
+On an object, the noise has no seam, and moves and turns with it. Animating `at` makes it drift, like clouds or smoke.
+
+On an object, the noise is cut in the object's own space, like a block of stone. On the `floor`, it is read at each point of the floor, in the units of the scene. In the background, it follows the direction of the view. Like a gradient, it can be animated and changed by `:hover`, into another `noise()` of the same kind with as many colors. Its numbers can be set from JavaScript.
 
 ### noise() on an object
 
@@ -386,6 +402,8 @@ torus {
 
 Bands of two colors across an axis, wherever a gradient goes. Like `checker()`, they are cut in the object's own space: across `y` by default, like the rings of a column.
 
+**What covers the surface, flat, then on an object:** `stripes()`, `color`
+
 - **Syntax:** `stripes(<number> [x | y | z]? [at <number> <number> <number>]?, <color>, <color>)`
 - **Computed:** on the GPU, at each pixel
 
@@ -396,7 +414,9 @@ Bands of two colors across an axis, wherever a gradient goes. Like `checker()`, 
 - **at <x> <y> <z>:** Moves the bands: animated, they scroll.
 - **<color>, <color>:** The two colors, each half of a pair.
 
-For bands seen from the front only, at any angle, `repeating-linear-gradient()` is the CSS way; `stripes()` goes all around the object, in its own space. Like `noise()`, it can be animated into another `stripes()` of the same axis, its numbers can be set from JavaScript, and it can be the map of `displace()`. The edges are sharp.
+`stripes()` goes all around the object, in its own space. For bands seen from the front only, at any angle, use `repeating-linear-gradient()`.
+
+Like `noise()`, it can be animated into another `stripes()` of the same axis, its numbers can be set from JavaScript, and it can be the map of `displace()`. The edges are sharp.
 
 ### a striped column
 

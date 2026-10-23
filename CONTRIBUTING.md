@@ -13,7 +13,7 @@ npm run format     # format the .gss files (npm run format:check to only list th
 
 | Path | What lives there |
 | --- | --- |
-| `src/compiler/` | `index.ts` (`compileScene()`, the pipeline), then one folder per stage: `syntax/` (tokenizer, parser, nesting), `cascade/` (selectors, validation, variables), `values/` (math, colors, easings, SVG paths), `features/` (animation, transition, camera, textures…), `shader/` (`codegen/`: the code generator, one file per part of the shader; `wgsl/`: the same shader lowered to WGSL; gradients, paths, the Shadertoy export), `registry/`, and `tests/` for the end-to-end tests |
+| `src/compiler/` | `index.ts` (`compileScene()`, the pipeline), then one folder per stage: `syntax/` (tokenizer, parser, nesting, mixins), `cascade/` (selectors, validation, variables), `values/` (math, colors, easings, SVG paths), `features/` (animation, transition, camera, textures…), `shader/` (`codegen/`: the code generator, one file per part of the shader; `wgsl/`: the same shader lowered to WGSL; gradients, paths, the Shadertoy export), `registry/`, and `tests/` for the end-to-end tests |
 | `src/scenes/` | the `.gss` scenes of the playground, the showcase and the bench |
 | `src/runtime/` | WebGL2 and WebGPU renderers (`backend.ts` picks one), camera, :hover picking, editor and autocompletion, share links |
 | `src/embed/`, `src/vite/` | the npm package: `mount()`, `<gss-scene>`, the Vite plugin |
@@ -29,15 +29,22 @@ Every property, shape, selector and function is described once in the registry
 The compiler reads it only through `registry/core.ts` (names, where a property applies, whether it
 animates): the npm package replaces that file with plain data, so a page never downloads the docs.
 A page of the reference reads: `description` (a lead of three sentences at most), the table
-of the entry, then `values` (one row per keyword or function), `details` (one paragraph), and the
+of the entry, then `values` (one row per keyword or function), `details` (one paragraph, 40 words at most: what a reader must know), `more` (the limits and the special cases, folded under it), and the
 examples, each with a `name` and a one-sentence `text` (decision 121). Code goes between backticks.
+Every page has a figure (decision 182), `figure: "row"`: a drawing under its lead, declared in
+`src/docs/figures.ts` and drawn in lines by `src/docs/hairline.ts` (decision 180). What moves is
+CSS in `docs.html`, and `src/docs/figure-motion.ts` for the shapes that turn (decision 181).
+A new page joins a family (`src/docs/figure-rows.ts`, `figure-scenes.ts`…) with one line of data;
+`src/docs/figure-kit.ts` holds what the families share.
+A figure is read before the text (decision 183): code in it is written in words, two colors are
+two fills, and two pages that are close show what differs.
 
 ## Branches
 
-New features go to the branch of the next release, not to `main`: `release/0.0.6` for now.
+New features go to the branch of the next release, not to `main`: `release/0.0.7` for now.
 `main` holds the published version.
 
-- Branch from `release/0.0.6`, and open pull requests against it.
+- Branch from `release/0.0.7`, and open pull requests against it.
 - A fix for the published version goes to `main`, then `main` is merged into the release branch.
 - When the release is published, its branch is merged into `main` and tagged (see Publishing),
   and the branch of the next release starts from there.

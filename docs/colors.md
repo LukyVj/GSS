@@ -24,7 +24,9 @@ Sets the base color of the surface of the object: a hex color (`#ff5a36`), `rgb(
 - **noise():** A noise cut in the object's own space, like a block of stone.
 - **transparent:** A transparent color (`#ff000080`, `rgb(255 0 0 / 50%)`), or the transparent stops of a gradient, make the object transparent, like `opacity`.
 
-A gradient can be animated and changed by `:hover`, into another gradient of the same kind with as many colors: each of its numbers moves on its own. Through a variable, one number is enough: `linear-gradient(var(--angle), …)` turns when `@keyframes` changes `--angle`. A color cannot change into a gradient. On a point `light`, `color` is the color of its light: a plain color only.
+A gradient can be animated and changed by `:hover`, into another gradient of the same kind with as many colors. A color cannot change into a gradient.
+
+Each number of an animated gradient moves on its own. Through a variable, one number is enough: `linear-gradient(var(--angle), …)` turns when `@keyframes` changes `--angle`. On a point `light`, `color` is the color of its light: a plain color only.
 
 ### a hex color
 
@@ -152,12 +154,16 @@ cube {
 
 Sets the background of the scene, seen wherever there is no object and no floor: a color, a gradient drawn over the canvas like a CSS background, a `noise()` or a `displace()`.
 
+**What the property changes in the scene:** `2`, `1`
+
 - **Syntax:** `[ <gradient> , ]* [ <gradient> | <color> ]`
 - **Initial value:** `#080808`
 - **Applies to:** the scene
 - **Animatable:** yes
 
-Like CSS, a background can have several layers, separated by commas, the first on top: `noise(3, #ffffff00 40%, #ffffff), linear-gradient(#2f6bd8, #9fc4ff)`. Only the last layer can be a plain color; transparent colors let the layers below show through, and `background-blend-mode` blends them. With `animation` on the scene, a color changes into a color and a gradient into a gradient of the same kind, also through variables: without objects and floor, the scene is a moving image.
+Like CSS, a background can have several layers, separated by commas, the first on top. Only the last layer can be a plain color.
+
+Two layers: `noise(3, #ffffff00 40%, #ffffff), linear-gradient(#2f6bd8, #9fc4ff)`. Transparent colors let the layers below show through, and `background-blend-mode` blends them. With `animation` on the scene, a color changes into a color and a gradient into a gradient of the same kind, also through variables: without objects and floor, the scene is a moving image.
 
 ### a color
 
@@ -315,7 +321,9 @@ Sets the color of the floor, an infinite plane at y = 0, lit like the objects. I
 - **noise():** A noise read at each point of the floor, in the units of the scene: its scale is how many patterns fit in one unit.
 - **none:** No floor.
 
-A gradient is seen from above, like on a `plane`: its top is away from the camera at rest, so `linear-gradient(#0b1020, #273d62)` goes from the horizon to the camera, and past the square it goes on with its first and last colors. A `displace()` moves the image by a share of that square: `0.02` moves it by up to 0.4 units. The floor takes one image, not layers, and opaque colors only. It is not animated, but the numbers of its image can be set from JavaScript. Reflections see it, and `fog` covers it like the rest of the scene.
+The floor takes one image, not layers, and opaque colors only. It is not animated, but the numbers of its image can be set from JavaScript.
+
+A gradient is seen from above, like on a `plane`: its top is away from the camera at rest, so `linear-gradient(#0b1020, #273d62)` goes from the horizon to the camera, and past the square it goes on with its first and last colors. A `displace()` moves the image by a share of that square: `0.02` moves it by up to 0.4 units. Reflections see it, and `fog` covers it like the rest of the scene.
 
 ### a dark floor
 
@@ -390,6 +398,157 @@ cube {
 scene {
   floor: radial-gradient(circle, #4a4f6a, #0b1020 12%);
   background: #0b1020;
+}
+```
+
+<a name="mix-blend-mode"></a>
+
+## `mix-blend-mode`
+
+How the color of the object blends with what is behind it, like CSS: the objects behind it, the floor and the background. It takes the modes of `background-blend-mode`, and `plus-lighter`, which adds the colors. `normal`, the default, covers what is behind.
+
+- **Syntax:** `<blend-mode> | plus-lighter`
+- **Initial value:** `normal`
+- **Applies to:** objects
+- **Animatable:** yes
+
+### Modes
+
+- **normal:** Covers what is behind: the default.
+- **multiply, screen:** Darkens, where white changes nothing; lightens, where black changes nothing.
+- **overlay, soft-light, hard-light:** More contrast: multiplies the darks, screens the lights.
+- **darken, lighten:** The darker or the lighter of the two colors.
+- **color-dodge, color-burn:** Brightens or darkens what is behind, by the color of the object.
+- **difference, exclusion:** The difference of the two colors; softer with `exclusion`.
+- **hue, saturation, color, luminosity:** One part of the color of the object, over the rest of the color behind it.
+- **plus-lighter:** Adds the two colors, up to white.
+
+On a group, the mode goes into each object, so they blend with each other too: CSS blends the group as one picture. On `:hover` and in `@keyframes`, the mode switches halfway through.
+
+The eye sees through a blended object to what is behind it, like through a transparent one, and the color of the object, lit, blends with the color behind it. An object never blends with itself: it shows its nearest surface, over what is behind the whole object. Its `opacity` still applies: at 50%, half of the blend shows. On a group, an object with a mode of its own keeps it, and there is no `isolation`. The switch halfway through is the one of a discrete property of CSS. The reflections show a blended object with its own color, and the eye sees six surfaces behind one another at most.
+
+### three lights, screened
+
+A red, a green and a blue sphere over black: where they meet, `screen` adds them up to white.
+
+```css
+@scene {
+  sphere#r;
+  sphere#g;
+  sphere#b;
+}
+
+scene {
+  floor: none;
+  background: #000000;
+  ambient: 0.85;
+}
+
+sphere {
+  radius: 0.75;
+  mix-blend-mode: screen;
+}
+
+#r {
+  translate: 0 1.45 0;
+  color: #ff0000;
+}
+
+#g {
+  translate: -0.45 0.75 0.2;
+  color: #00ff00;
+}
+
+#b {
+  translate: 0.45 0.75 0.4;
+  color: #0000ff;
+}
+```
+
+### multiply over the floor
+
+A sphere multiplied over a checkered floor and a cube: the squares and the cube show through it, tinted.
+
+```css
+@scene {
+  sphere;
+  cube;
+}
+
+scene {
+  floor: checker(0.5, #f4f1ea, #2a2a3a);
+}
+
+sphere {
+  translate: 0 0.9 0.6;
+  radius: 0.9;
+  color: #ffcc33;
+  mix-blend-mode: multiply;
+}
+
+cube {
+  translate: 0.6 0.5 -0.8;
+  size: 1;
+  color: #3a7bff;
+}
+```
+
+### difference on :hover
+
+The white cube turns into the negative of the gradient behind it under the mouse.
+
+```css
+@scene {
+  cube;
+}
+
+scene {
+  floor: none;
+  background: linear-gradient(90deg, #ff5a36, #3a7bff);
+}
+
+cube {
+  translate: 0 0.5 0;
+  size: 1.4;
+  color: #ffffff;
+  rotate-y: 30deg;
+  transition: 0.3s;
+}
+
+cube:hover {
+  mix-blend-mode: difference;
+}
+```
+
+### on a group
+
+The mode of the group goes into each of its cubes: `difference` turns the stripes behind them inside out.
+
+```css
+@scene {
+  group#bars {
+    cube * 3;
+  }
+}
+
+scene {
+  floor: none;
+  ambient: 0.7;
+  camera-distance: 4;
+  background: repeating-linear-gradient(45deg, #ffcc33 0% 5%, #2a2a3a 5% 10%);
+}
+
+#bars {
+  translate: 0 0.5 0;
+  rotate-y: 20deg;
+  mix-blend-mode: difference;
+}
+
+cube {
+  size: 0.6 1.6 0.6;
+  corner-radius: 0.08;
+  translate: calc(sibling-index() * 0.9 - 1.8) 0 0;
+  color: #ffffff;
 }
 ```
 

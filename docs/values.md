@@ -12,6 +12,8 @@ Every example of this page, to edit live: [gss-lang.dev/docs](https://www.gss-la
 
 Computes a value, like CSS `calc()`: `+ - * /` and parentheses, with numbers, angles (`deg`, `rad`, `turn`) and durations (`s`, `ms`). Like CSS, `+` and `-` need a space on each side.
 
+**A full turn divided by five:** `72deg`
+
 - **Syntax:** `calc(<expression>)`
 - **Computed:** at compile time, once per object
 
@@ -38,6 +40,8 @@ Each copy climbs a step higher, with `sibling-index()`.
 ## `abs(), sqrt(), pow()`
 
 Like CSS: `abs()` drops the sign, `sqrt()` is the square root, and `pow(a, b)` is `a` to the power `b`. `pow()` grows fast: good for sizes that double.
+
+**The functions as curves, with a point that runs along the first:** `-1`, `1`, `0`, `1`, `abs()`, `pow(x, 2)`, `sqrt()`
 
 - **Syntax:** `abs(<value>) | sqrt(<number>) | pow(<number>, <number>)`
 - **Computed:** at compile time, once per object
@@ -114,6 +118,8 @@ A sunflower head of 24 seeds.
 ## `asin(), acos(), atan(), atan2()`
 
 The inverse trigonometric functions of CSS: they take a number and return an angle, in `deg`. `atan2(y, x)` gives the angle of the point (x, y), whatever its quarter: the way to turn an object toward a point. Its two values must share a unit.
+
+**The functions as curves, with a point that runs along the first:** `-1`, `1`, `-90deg`, `180deg`, `asin()`, `acos()`, `atan()`
 
 - **Syntax:** `asin(<number>) | acos(<number>) | atan(<number>) | atan2(<y>, <x>)`
 - **Computed:** at compile time, once per object
@@ -211,6 +217,8 @@ A curve drawn with all four.
 
 The exponential functions of CSS, for sizes and distances that grow fast or slowly.
 
+**The functions as curves, with a point that runs along the first:** `0`, `2`, `-1`, `e²`, `exp()`, `log()`
+
 - **Syntax:** `hypot(<value>, …) | log(<number>, <base>?) | exp(<number>)`
 - **Computed:** at compile time, once per object
 
@@ -294,6 +302,8 @@ A spiral of seeds that shrink outward.
 ## `min(), max(), clamp()`
 
 The smallest or the largest of their values, or a value kept between two bounds, like CSS. The values must share a unit: `max(10deg, 20deg)`, not `max(10deg, 2)`.
+
+**The functions as curves, with a point that runs along the first:** `0`, `1`, `0`, `1`, `clamp()`, `the value`
 
 - **Syntax:** `min(<value>, …) | max(<value>, …) | clamp(<min>, <value>, <max>)`
 - **Computed:** at compile time, once per object
@@ -510,6 +520,8 @@ Twelve copies, each placed and turned 30° further than the one before.
 
 The stepped functions of CSS. Their values must share a unit: `round(37deg, 15deg)` is `30deg`.
 
+**The functions as curves, with a point that runs along the first:** `0`, `1`, `0`, `1`, `round(x, 0.25)`, `mod(x, 0.5)`
+
 - **Syntax:** `sign(<value>) | round([nearest | up | down | to-zero,]? <value>, <step>?) | mod(<value>, <value>) | rem(<value>, <value>)`
 - **Computed:** at compile time, once per object
 
@@ -609,6 +621,8 @@ A grid of tiles, of three heights.
 ## `sin(), cos(), tan()`
 
 The trigonometric functions of CSS: they take an angle (`deg`, `rad`, `turn`) or a number of radians, and return a number. `cos()` and `sin()` of the same angle give a point on a circle: the way to place objects in a ring, a spiral or a wave. `pi` is known too: `cos(pi)` is -1.
+
+**The functions as curves, with a point that runs along the first:** `0`, `1turn`, `-1`, `1`, `sin()`, `cos()`
 
 - **Syntax:** `sin(<angle> | <number>)`
 - **Computed:** at compile time, once per object

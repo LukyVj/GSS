@@ -60,6 +60,56 @@ The surface look of an object.
 `);
   });
 
+  it("unfolds what a page folds: the text, without the label of the fold", () => {
+    const md = articleToMarkdown(
+      article(`
+        <h3><code>opacity</code></h3>
+        <p>A group does not fade as one picture.</p>
+        <details class="more">
+          <summary>More details</summary>
+          <p>The reflections show it <code>opaque</code>.</p>
+        </details>
+      `),
+    );
+    expect(md).toBe("# opacity\n\nA group does not fade as one picture.\n\nThe reflections show it `opaque`.\n");
+  });
+
+  it("says a figure in words: its label, then the names it draws", () => {
+    const md = articleToMarkdown(
+      article(`
+        <h3><code>&lt;shape&gt;</code></h3>
+        <figure class="figure" aria-label="What a scene can declare">
+          <ul class="figure-shapes">
+            <li><a href="#shape-cube"><svg viewBox="0 0 120 120" aria-hidden="true"><path class="line" d="M1 1L2 2"/></svg><code>cube</code></a></li>
+            <li><a href="#shape-sphere"><svg viewBox="0 0 120 120" aria-hidden="true"><text class="mark-label">radius</text></svg><code>sphere</code></a></li>
+          </ul>
+        </figure>
+      `),
+    );
+    expect(md).toBe("# <shape>\n\n**What a scene can declare:** `cube`, `sphere`\n");
+  });
+
+  it("says a single drawing by its measures, and nothing for a drawing without a word", () => {
+    const stage = (inside: string) =>
+      articleToMarkdown(
+        article(`<h3>cylinder</h3><figure class="figure" aria-label="The shape"><div class="figure-stage"><svg>${inside}</svg></div></figure>`),
+      );
+    expect(stage('<text class="mark-label">radius</text><text class="mark-label">height</text>')).toBe(
+      "# cylinder\n\n**The shape:** `radius`, `height`\n",
+    );
+    expect(stage('<path class="line" d="M1 1L2 2"/>')).toBe("# cylinder\n");
+  });
+
+  // Words that only take their place in a drawing, to put the next ones under a line above
+  it("leaves out of a figure the words a reader does not see", () => {
+    const md = articleToMarkdown(
+      article(
+        `<h3>@apply</h3><figure class="figure" aria-label="The rule"><div class="figure-stage"><svg><text class="code">#a { @apply --warm; }</text><text class="under code"><tspan class="blank">#a { </tspan><tspan class="put">color: #ff5a36;</tspan></text></svg></div></figure>`,
+      ),
+    );
+    expect(md).toBe("# @apply\n\n**The rule:** `#a { @apply --warm; }`, `color: #ff5a36;`\n");
+  });
+
   it("keeps inline markup in a guide page", () => {
     const md = articleToMarkdown(
       article(`

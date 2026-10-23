@@ -70,7 +70,7 @@
 .vars-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(36px, 56px) auto 18px; /* the unit only when there is one */
-  grid-template-areas: "name name name name" "control field unit reset";
+  grid-template-areas: "name name name name" "control field unit reset" "message message message message";
   align-items: center;
   column-gap: 6px;
 }
@@ -127,6 +127,14 @@
 .vars-row output {
   grid-column: field / reset;
   line-height: 20px;
+}
+/* Why a typed number was held at an end of the range of the scene */
+.vars-message {
+  grid-area: message;
+  color: var(--gss-signal);
+}
+.vars-message[hidden] {
+  display: none;
 }
 .vars-unit {
   grid-area: unit;

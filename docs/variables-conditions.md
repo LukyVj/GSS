@@ -12,6 +12,8 @@ Every example of this page, to edit live: [gss-lang.dev/docs](https://www.gss-la
 
 Picks a value by condition, like CSS: the first branch whose condition is true gives its value. End with `else`: when no branch is true, it is an error.
 
+**How it goes, from where it is written to what the scene shows:** `?`, `scale: 0.6`, `width < 600px`, `scale: 1`, `else`
+
 - **Syntax:** `if(<condition>: <value>; …; else: <value>)`
 - **Computed:** at compile time, once per object
 
@@ -81,6 +83,8 @@ sphere {
 
 Reads a custom property, like CSS. A property whose name starts with `--` is a variable: declared on the scene (like `:root`), on a group or on an object, it is inherited down to the object, and the closest one wins.
 
+**How it goes, from where it is written to what the scene shows:** `--size`
+
 - **Syntax:** `var(--<name>) | var(--<name>, <fallback>)`
 - **Computed:** at compile time, once per object
 
@@ -89,7 +93,9 @@ Reads a custom property, like CSS. A property whose name starts with `--` is a v
 - **var(--name):** The value of the variable. A missing variable is an error, so a typo is never ignored.
 - **var(--name, fallback):** The fallback, when the variable is not defined.
 
-A variable can hold several values (`translate: var(--pos)`), use another one (`--big: calc(var(--size) * 2)`), and go inside `calc()`. A frame of `@keyframes` can set a variable: every animatable property that uses it moves with it. The compiler replaces the variables with their values, unless `@property` registers them: the shader receives only numbers.
+A variable can hold several values (`translate: var(--pos)`), use another one (`--big: calc(var(--size) * 2)`), and go inside `calc()`.
+
+A frame of `@keyframes` can set a variable: every animatable property that uses it moves with it. The compiler replaces the variables with their values, unless `@property` registers them: the shader receives only numbers.
 
 ### a color and a radius
 

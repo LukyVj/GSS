@@ -80,14 +80,13 @@ describe("what is new", () => {
     expect(docEntries().find((entry) => entry.anchor === "at-property-panel")?.since).toBe("0.0.5");
   });
 
-  it("is the 20 pages 0.0.6 added", () => {
+  it("is the 15 pages 0.0.7 added", () => {
     const news = newestPages(docEntries())!;
-    expect(news.version).toBe("0.0.6");
+    expect(news.version).toBe("0.0.7");
     expect(news.pages.map((page) => page.anchor).sort()).toEqual(
       [
-        "animation-range", "animation-range-end", "animation-range-start", "at-paint", "cursor", "display",
-        "editor-support", "fn-checker", "fn-paint", "fn-stripes", "outline", "outline-color", "outline-offset",
-        "outline-style", "outline-width", "shape-octahedron", "shape-pyramid", "shape-rendering", "shape-tube", "visibility",
+        "at-apply", "at-each", "at-for", "at-mixin", "content", "controls", "font-family", "font-size", "font-style",
+        "font-weight", "mix-blend-mode", "selector-attribute", "text-align", "text-color", "texture-mapping",
       ].sort(),
     );
   });

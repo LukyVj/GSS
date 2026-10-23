@@ -159,8 +159,9 @@ export function lightingCode(
   hoisted: Hoisted,
   ambient: { level: string; color: string | null }, // the share of ambient light, in GLSL
   // shadows (decision 115): none, hard or soft, and whether the scene has holes to let light
-  // through, or transparent objects to let it through tinted (decision 116)
-  shadows: { mode: Shadows; holes: boolean; transparent?: boolean } = { mode: null, holes: false },
+  // through, or transparent objects to let it through tinted (decision 116); seeThrough: the
+  // test of the objects the light goes through, isSkin() unless some skins blend (decision 173)
+  shadows: { mode: Shadows; holes: boolean; transparent?: boolean; seeThrough?: string } = { mode: null, holes: false },
 ): Lighting | null {
   if (lamps.length > MAX_LIGHTS)
     throw errorAt(undefined, `A scene has ${MAX_LIGHTS} lights at most: this one has ${lamps.length}`);
@@ -239,7 +240,7 @@ export function lightingCode(
           ...(sun ? [shadows.transparent ? "vec3 sunLit = vec3(1.0);" : "float sunLit = 1.0;"] : []),
           ...lamps.map((_, i) => (shadows.transparent ? `vec3 lit${i} = vec3(1.0);` : `float lit${i} = 1.0;`)),
           "",
-          shadowFunction(shadows.mode!, shadows.holes, shadows.transparent),
+          shadowFunction(shadows.mode!, shadows.holes, shadows.transparent, shadows.seeThrough),
           "",
           "// Each light seen from p, through the objects on the way: main() calls it once",
           "void castShadows(vec3 p, vec3 n) {",

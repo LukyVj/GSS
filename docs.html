@@ -381,16 +381,61 @@
       }
       .on-this-page ul {
         margin: 0;
-        padding: 0 24px;
+        padding: 0 20px 0 54px; /* the wave stands in front of the links */
         list-style: none;
         font: 12px/2 var(--gss-font-code);
       }
       .on-this-page ul a {
         color: var(--gss-dim);
+        transition: color 240ms ease-out;
       }
       .on-this-page ul a:hover {
         color: var(--gss-bone);
         text-decoration: none;
+      }
+      /* The part being read (src/docs/toc-wave.ts) */
+      .on-this-page ul a[aria-current] {
+        color: var(--gss-bone);
+      }
+      /* The wave: a thin line every few pixels in front of the links. A line is the longer
+         the nearer it is to the part being read, in signal there; a link under the pointer
+         grows a second peak, lower, in bone. An element of no height over the list: a line
+         at y stands at y in the list. */
+      .on-this-page .wave {
+        position: relative;
+        height: 0;
+        margin-left: 24px;
+        pointer-events: none;
+      }
+      .on-this-page .wave i {
+        --length: max(var(--now, var(--rest)), calc(var(--hover, 0) + var(--rest) * (1 - var(--hover, 0))));
+        position: absolute;
+        left: 0;
+        width: 22px;
+        height: 1px;
+        transform: scaleX(var(--length));
+        transform-origin: left center;
+        background: color-mix(
+          in oklab,
+          var(--gss-bone) calc(var(--hover, 0) * 100%),
+          color-mix(in oklab, var(--gss-signal) calc((var(--now, var(--rest)) - var(--rest)) / (1 - var(--rest)) * 100%), var(--gss-isoline))
+        );
+        transition:
+          transform 420ms cubic-bezier(0.22, 1, 0.36, 1),
+          background-color 420ms ease-out;
+      }
+      /* The lines grow from rest when a page opens */
+      @starting-style {
+        .on-this-page .wave i {
+          transform: scaleX(var(--rest));
+          background: var(--gss-isoline);
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .on-this-page .wave i,
+        .on-this-page ul a {
+          transition: none;
+        }
       }
       .on-this-page .to-playground {
         display: block;
@@ -554,6 +599,1100 @@
         color: var(--gss-bone);
         font-weight: 600;
       }
+      /* A figure under the lead of a page: thin lines and no fill, like a plan. What stands
+         behind a shape is dashed. */
+      .figure {
+        margin: 4px 0 28px;
+      }
+      .figure svg {
+        display: block;
+        max-width: 100%;
+        height: auto;
+        overflow: visible;
+        fill: none;
+      }
+      .figure path,
+      .figure circle,
+      .figure rect {
+        stroke: var(--gss-bone);
+        stroke-width: 1;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        transition: stroke var(--gss-transition);
+      }
+      .figure .guide,
+      .figure .hidden,
+      .figure .ground,
+      .figure .ghost,
+      .figure .tile {
+        stroke: var(--gss-dim);
+      }
+      .figure .hidden,
+      .figure .ghost {
+        stroke-dasharray: 1.5 3;
+        opacity: 0.75;
+      }
+      .figure .ground {
+        opacity: 0.4;
+      }
+      /* In signal: a measure and the property that sets it, an object once it has a color */
+      .figure .mark,
+      .figure .tint,
+      .figure .glint,
+      .figure .tinted path {
+        stroke: var(--gss-signal);
+      }
+      .figure .tinted .ground {
+        stroke: var(--gss-dim);
+      }
+      /* The box of a group: it draws nothing in the scene, so it is dashed all the way */
+      .figure .bound {
+        stroke: var(--gss-signal);
+        stroke-dasharray: 3 3;
+      }
+      /* Cells: one drawing and its name, side by side. The shapes, the steps of a scene. */
+      .figure-cells {
+        display: grid;
+        grid-template-columns: repeat(var(--columns, 5), 1fr);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        border-top: 1px solid var(--gss-line);
+        border-left: 1px solid var(--gss-line);
+      }
+      .figure-cells li {
+        position: relative;
+        border-right: 1px solid var(--gss-line);
+        border-bottom: 1px solid var(--gss-line);
+      }
+      .figure-cells li,
+      .figure-shapes a {
+        display: grid;
+        align-content: start;
+        justify-items: center;
+        gap: 6px;
+      }
+      .figure-steps li,
+      .figure-flow li,
+      .figure-shapes a {
+        padding: 16px 8px 14px;
+      }
+      .figure-cells code {
+        font: 11px/1.4 var(--gss-font-code);
+        color: var(--gss-dim);
+        text-align: center;
+        overflow-wrap: anywhere;
+      }
+      .figure-flow {
+        --columns: 3;
+      }
+      /* From one cell to the next: an arrow on the line between them */
+      .figure-flow li + li::before {
+        content: "→";
+        position: absolute;
+        top: 50%;
+        left: 0;
+        padding: 2px 0;
+        transform: translate(-50%, -50%);
+        font: 12px var(--gss-font-code);
+        color: var(--gss-dim);
+        background: var(--gss-void);
+      }
+      /* Everything a scene can declare: each cell is a link to its page */
+      .figure-shapes a {
+        color: var(--gss-dim);
+        text-decoration: none;
+        transition: background var(--gss-transition);
+      }
+      .figure-shapes a:hover,
+      .figure-shapes a:focus-visible {
+        background: var(--gss-surface);
+        outline: none;
+      }
+      .figure-shapes a:hover code,
+      .figure-shapes a:focus-visible code {
+        color: var(--gss-bone);
+      }
+      .figure-shapes a:hover path.line,
+      .figure-shapes a:focus-visible path.line {
+        stroke: var(--gss-signal);
+      }
+      /* The shape of a page, alone on its stage: it turns under the pointer */
+      .figure-stage {
+        display: grid;
+        place-items: center;
+        padding: 12px;
+        border: 1px solid var(--gss-line);
+      }
+      @media (max-width: 640px) {
+        .figure-cells {
+          --columns: 3;
+        }
+      }
+      /* Motion (the shapes also turn, by the page script). The lines in front draw
+         themselves when the page opens, one cell after the other; the rest fades in. */
+      .figure path.line {
+        stroke-dasharray: 1;
+        animation: figure-draw 900ms cubic-bezier(0.4, 0, 0.2, 1) both;
+        animation-delay: calc(var(--i, 0) * 60ms);
+      }
+      .figure :is(.hidden, .guide, .ground, .ghost, .mark, .mark-label, .tint, .glint, .tile, .rings, .caret, .edge, .bound, .chip, .jelly, .stipple) {
+        animation: figure-appear 500ms ease-out both;
+        animation-delay: calc(var(--i, 0) * 60ms + 450ms);
+      }
+      @keyframes figure-draw {
+        from {
+          stroke-dashoffset: 1;
+        }
+      }
+      @keyframes figure-appear {
+        from {
+          opacity: 0;
+        }
+      }
+      /* The ball of the first scene floats as its animation says: 2s, ease-in-out, alternate */
+      .figure .floats {
+        animation: figure-float 2s ease-in-out infinite alternate;
+      }
+      @keyframes figure-float {
+        to {
+          transform: translateY(var(--rise));
+        }
+      }
+      /* The texture of @paint: rings that grow from its middle, one after the other */
+      .figure .rings circle {
+        stroke: var(--gss-signal);
+        vector-effect: non-scaling-stroke;
+        transform-box: fill-box;
+        transform-origin: center;
+        transform: scale(calc((var(--i) + 1) / 4));
+        animation: figure-ring 3.2s linear infinite;
+        animation-delay: calc(var(--i) * -0.8s);
+      }
+      @keyframes figure-ring {
+        from {
+          transform: scale(0.02);
+          opacity: 1;
+        }
+        70% {
+          opacity: 1;
+        }
+        to {
+          transform: scale(1);
+          opacity: 0;
+        }
+      }
+      .figure .caret {
+        fill: var(--gss-signal);
+        stroke: none;
+        animation: figure-blink 1.1s steps(1) infinite;
+      }
+      @keyframes figure-blink {
+        50% {
+          opacity: 0;
+        }
+      }
+      /* A scene as a row of objects, a group as a dashed box around its own. What the code
+         of the figure targets is in signal, and nods. */
+      .figure-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        justify-content: center;
+        gap: 8px 10px;
+        padding: 22px 12px 14px;
+        border: 1px solid var(--gss-line);
+      }
+      .figure-row .item {
+        display: grid;
+        justify-items: center;
+        gap: 2px;
+        padding-bottom: var(--lift, 0);
+        color: var(--gss-dim);
+      }
+      .figure-row code {
+        min-height: 14px;
+        font: 10px/1.4 var(--gss-font-code);
+        color: inherit;
+      }
+      .figure-row .group {
+        position: relative;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        gap: 8px;
+        padding: 20px 8px 4px;
+        border: 1px dashed var(--gss-isoline);
+        color: var(--gss-dim);
+      }
+      .figure-row .group > code {
+        position: absolute;
+        top: 3px;
+        left: 8px;
+      }
+      .figure-row .lit {
+        color: var(--gss-signal);
+      }
+      .figure-row .group.lit {
+        border-color: var(--gss-signal);
+      }
+      .figure-row .item.lit path.line {
+        stroke: var(--gss-signal);
+      }
+      .figure-row .item.lit svg {
+        animation: figure-nod 2.4s ease-in-out infinite;
+        animation-delay: calc(var(--i) * 140ms);
+      }
+      @keyframes figure-nod {
+        50% {
+          transform: translateY(-5px);
+        }
+      }
+      /* display: none leaves the place empty; visibility comes and goes */
+      .figure-row .item svg {
+        opacity: var(--fade, 1);
+      }
+      .figure-row .absent svg {
+        visibility: hidden;
+      }
+      .figure-row .blinks svg {
+        animation: figure-blink 2.4s steps(1) infinite;
+      }
+      /* sibling-count(): the copies share a full turn */
+      .figure-row.ring {
+        position: relative;
+        height: 220px;
+        padding: 0;
+      }
+      .figure-row.ring .item {
+        position: absolute;
+        top: calc(50% - 39px);
+        left: calc(50% - 32px);
+        transform: rotate(calc(360deg / var(--n) * var(--i))) translateY(-72px) rotate(calc(-360deg / var(--n) * var(--i)));
+      }
+      /* jelly(): the ball in its color, see-through, and its shade as points */
+      .figure .jelly {
+        fill: var(--gss-signal);
+        fill-opacity: 0.25;
+        stroke: var(--gss-signal);
+      }
+      .figure .stipple {
+        stroke: var(--gss-signal);
+        stroke-width: 1.6;
+      }
+      /* A cube covered by a pattern hides its own back: the edges behind are not drawn */
+      .figure .opaque .hidden {
+        display: none;
+      }
+      /* An image on the faces of a cube: sheared with the face, its lines as thin */
+      .figure .face * {
+        vector-effect: non-scaling-stroke;
+      }
+      /* Letters in lines, like the rest: the text of content, a font */
+      .figure .letters {
+        fill: none;
+        stroke: var(--gss-bone);
+        stroke-width: 1;
+        font: 800 24px var(--gss-font-display);
+      }
+      .figure .letters.large {
+        font-size: 56px;
+      }
+      /* What goes around, at a constant speed: the ray of a conic gradient */
+      .figure .turns {
+        animation: figure-turn 6s linear infinite;
+      }
+      @keyframes figure-turn {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      /* displace(): an image, plus a map, gives the image moved */
+      .figure-flow.sums li:nth-child(2)::before {
+        content: "+";
+      }
+      .figure-flow.sums li:nth-child(3)::before {
+        content: "=";
+      }
+      /* Materials: the blob inside a jelly, the light of an emissive, the sheen of an
+         iridescent */
+      .figure .wobbles {
+        transform-box: fill-box;
+        transform-origin: center;
+        animation: figure-wobble 2.6s ease-in-out infinite alternate;
+      }
+      @keyframes figure-wobble {
+        from {
+          transform: scale(1.08, 0.92);
+        }
+        to {
+          transform: scale(0.92, 1.08);
+        }
+      }
+      .figure .glows {
+        animation: figure-glow 1.8s ease-in-out infinite alternate;
+      }
+      @keyframes figure-glow {
+        from {
+          opacity: 0.25;
+        }
+      }
+      .figure .sheen {
+        animation: figure-sheen 4s linear infinite;
+      }
+      .figure .sheen.two {
+        animation-delay: -2s;
+      }
+      @keyframes figure-sheen {
+        0%,
+        100% {
+          stroke: #6fe0cf;
+        }
+        33% {
+          stroke: #d29bff;
+        }
+        66% {
+          stroke: #ffb86b;
+        }
+      }
+      /* The colors: a chip is filled with the color its page writes */
+      .figure .chip {
+        fill: var(--c);
+        stroke: none;
+      }
+      .figure .ink {
+        fill: var(--c);
+        font: 700 24px var(--gss-font-display);
+      }
+      .figure .stained path {
+        stroke: var(--c);
+      }
+      /* An object that goes through three colors, with the declarations under it */
+      .figure .hued {
+        color: #ff5a36;
+        animation: figure-hues 7.2s infinite;
+      }
+      .figure .hued path,
+      .figure .hued circle {
+        stroke: currentColor;
+        transition: none;
+      }
+      .figure .hued .shell {
+        opacity: 0.45;
+      }
+      @keyframes figure-hues {
+        0%,
+        30% {
+          color: #ff5a36;
+        }
+        33.33%,
+        63% {
+          color: rgb(79 140 255);
+        }
+        66.66%,
+        96% {
+          color: mediumseagreen;
+        }
+      }
+      /* The channels of a color slide to those of another, and the chip follows */
+      .figure .shifts {
+        animation: figure-shift var(--beat, 1.8s) ease-in-out infinite alternate;
+      }
+      @keyframes figure-shift {
+        to {
+          transform: translateX(var(--dx));
+        }
+      }
+      .figure .chip.blends {
+        fill: var(--a);
+        animation: figure-blend var(--beat, 1.8s) ease-in-out infinite alternate;
+      }
+      @keyframes figure-blend {
+        to {
+          fill: var(--b);
+        }
+      }
+      /* The chip in the middle of the wheel takes the hue the hand points at */
+      .figure .chip.wheels {
+        animation: figure-wheel 6s linear infinite;
+      }
+      @keyframes figure-wheel {
+        0%,
+        100% {
+          fill: hsl(0 100% 60%);
+        }
+        16.66% {
+          fill: hsl(60 100% 60%);
+        }
+        33.33% {
+          fill: hsl(120 100% 60%);
+        }
+        50% {
+          fill: hsl(180 100% 60%);
+        }
+        66.66% {
+          fill: hsl(240 100% 60%);
+        }
+        83.33% {
+          fill: hsl(300 100% 60%);
+        }
+      }
+      .figure .turns.back {
+        animation-direction: reverse;
+      }
+      /* Two states of a scene, one after the other: what the second declaration adds comes
+         in, what it takes away goes out */
+      .figure .fades {
+        animation: figure-fade var(--beat, 1.8s) ease-in-out infinite alternate;
+      }
+      .figure .fades.reverse {
+        animation-direction: alternate-reverse;
+      }
+      @keyframes figure-fade {
+        from {
+          opacity: 0;
+        }
+      }
+      .figure .dims {
+        animation: figure-dim 1.8s ease-in-out infinite alternate;
+      }
+      @keyframes figure-dim {
+        to {
+          opacity: 0.2;
+        }
+      }
+      .figure .mists {
+        animation: figure-mist 1.8s ease-in-out infinite alternate;
+      }
+      @keyframes figure-mist {
+        to {
+          opacity: var(--to);
+        }
+      }
+      .figure .faint {
+        opacity: 0.45;
+      }
+      /* The rays of the sun: dashes that run the way the light goes */
+      .figure .flows {
+        stroke-dasharray: 5 5;
+        animation: figure-flow 1s linear infinite;
+      }
+      @keyframes figure-flow {
+        to {
+          stroke-dashoffset: -10;
+        }
+      }
+      .figure .pulses {
+        animation: figure-pulse 1.8s ease-in-out infinite alternate;
+      }
+      @keyframes figure-pulse {
+        from {
+          transform: scale(0.7);
+        }
+        to {
+          transform: scale(1.25);
+        }
+      }
+      /* The lines of a distance, one after the other, away from the objects */
+      .figure .ripples {
+        animation: figure-ripple 2.4s ease-in-out infinite;
+        animation-delay: calc(var(--i) * 300ms);
+      }
+      @keyframes figure-ripple {
+        50% {
+          opacity: 0.25;
+        }
+      }
+      .figure .flickers {
+        animation: figure-flicker 0.5s steps(2) infinite;
+      }
+      @keyframes figure-flicker {
+        50% {
+          transform: translate(3px, -2px);
+        }
+      }
+      /* cursor: the pointer comes over the object, becomes a hand, and leaves */
+      .figure .points {
+        animation: figure-point 4s ease-in-out infinite;
+      }
+      .figure .points .hand {
+        opacity: 0;
+        animation: figure-hand 4s steps(1) infinite;
+      }
+      .figure .points .arrow {
+        animation: figure-arrow 4s steps(1) infinite;
+      }
+      @keyframes figure-point {
+        0%,
+        100% {
+          transform: translate(130px, 50px);
+        }
+        30%,
+        70% {
+          transform: translate(0, 0);
+        }
+      }
+      @keyframes figure-hand {
+        22%,
+        78% {
+          opacity: 1;
+        }
+        0%,
+        79% {
+          opacity: 0;
+        }
+      }
+      @keyframes figure-arrow {
+        22% {
+          opacity: 0;
+        }
+        79% {
+          opacity: 1;
+        }
+      }
+      /* A variable set by the page: the knob slides, the ball rises with it */
+      .figure .rises {
+        animation: figure-float 1.8s ease-in-out infinite alternate;
+      }
+      .figure .grows.soft {
+        animation-name: figure-grow-soft;
+      }
+      @keyframes figure-grow-soft {
+        from {
+          transform: scale(0.8);
+        }
+        to {
+          transform: scale(1.15);
+        }
+      }
+      /* Code written in a figure: as lines in the colors of the editor, or as words */
+      .figure .syntax {
+        stroke-width: 2;
+      }
+      .figure .syntax.selector {
+        stroke: var(--gss-selector, #7cb4ff);
+      }
+      .figure .syntax.property {
+        stroke: var(--gss-property, #6fe0cf);
+      }
+      .figure .syntax.value {
+        stroke: var(--gss-number, #ffb86b);
+      }
+      .figure text.code {
+        text-anchor: start;
+        font: 12px var(--gss-font-code);
+        fill: var(--gss-dim);
+      }
+      .figure text.code.lit {
+        fill: var(--gss-signal);
+      }
+      .figure text.code.struck,
+      .figure tspan.struck {
+        text-decoration: line-through;
+      }
+      .figure text.code.middle {
+        text-anchor: middle;
+      }
+      .figure tspan.lit,
+      .figure tspan.put {
+        fill: var(--gss-signal);
+      }
+      /* A color the code writes, in that color */
+      .figure tspan.inked {
+        fill: var(--c);
+      }
+      /* Words that only take their place, so the ones after them stand under the same
+         words of the line above */
+      .figure tspan.blank {
+        visibility: hidden;
+      }
+      /* A rule read from left to right: each declaration lights up in its turn, and the
+         cube takes its color. The one written last wins. */
+      .figure .first {
+        animation: figure-read-first 4.8s steps(1) infinite;
+      }
+      .figure .last {
+        animation: figure-read-last 4.8s steps(1) infinite;
+      }
+      @keyframes figure-read-first {
+        0%,
+        60% {
+          fill-opacity: 0.4;
+        }
+        25% {
+          fill-opacity: 1;
+        }
+      }
+      @keyframes figure-read-last {
+        0% {
+          fill-opacity: 0.4;
+        }
+        60% {
+          fill-opacity: 1;
+        }
+      }
+      .figure .cascades {
+        color: var(--last);
+        animation: figure-cascade 4.8s steps(1) infinite;
+      }
+      .figure .cascades path {
+        stroke: currentColor;
+        transition: none;
+      }
+      @keyframes figure-cascade {
+        0% {
+          color: var(--gss-bone);
+        }
+        25% {
+          color: var(--first);
+        }
+        60% {
+          color: var(--last);
+        }
+      }
+      /* The names written beside a line: of a curve, of a lane */
+      .figure .plot-label {
+        text-anchor: start;
+        fill: var(--gss-dim);
+      }
+      .figure .lane-label {
+        text-anchor: end;
+        fill: var(--gss-dim);
+      }
+      .figure .lane-label.middle {
+        text-anchor: middle;
+      }
+      .figure text.lit {
+        fill: var(--gss-signal);
+      }
+      /* A point that runs along a curve, one way, and starts again */
+      .figure .travels.rides {
+        offset-rotate: 0deg;
+        animation: figure-travel 4s linear infinite;
+      }
+      .figure .travels.slow {
+        animation: figure-travel 5s linear infinite;
+      }
+      .figure .placed {
+        offset-rotate: auto;
+      }
+      .figure .travels.fixed,
+      .figure .placed.fixed {
+        offset-rotate: 0deg;
+      }
+      /* calc(): the angle it gives, from one copy to the next */
+      .figure .sweeps {
+        animation: figure-sweep 5s steps(5) infinite;
+      }
+      @keyframes figure-sweep {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      /* The longhands of animation: a point per lane, moved by the value of its lane */
+      .figure .lane {
+        animation: figure-lane 2s linear infinite;
+      }
+      @keyframes figure-lane {
+        to {
+          transform: translateX(var(--run));
+        }
+      }
+      .figure .lane.once {
+        animation: figure-lane-once 6s linear infinite;
+      }
+      .figure .lane.twice {
+        animation: figure-lane-twice 6s linear infinite;
+      }
+      @keyframes figure-lane-once {
+        25% {
+          transform: translateX(var(--run));
+        }
+        25.01%,
+        100% {
+          transform: translateX(0);
+        }
+      }
+      @keyframes figure-lane-twice {
+        25%,
+        50% {
+          transform: translateX(var(--run));
+        }
+        25.01% {
+          transform: translateX(0);
+        }
+        50.01%,
+        100% {
+          transform: translateX(0);
+        }
+      }
+      /* animation-fill-mode: a wait, the animation, then the rest. The object is at its own
+         place, left of the lane, or held on the first and the last frame. */
+      .figure .lane[class*="fill-"] {
+        animation-duration: 6s;
+      }
+      .figure .lane.fill-none {
+        animation-name: figure-fill-none;
+      }
+      .figure .lane.fill-forwards {
+        animation-name: figure-fill-forwards;
+      }
+      .figure .lane.fill-backwards {
+        animation-name: figure-fill-backwards;
+      }
+      .figure .lane.fill-both {
+        animation-name: figure-fill-both;
+      }
+      @keyframes figure-fill-none {
+        0%,
+        20%,
+        60.01%,
+        100% {
+          transform: translateX(var(--own));
+        }
+        20.01% {
+          transform: translateX(0);
+        }
+        60% {
+          transform: translateX(var(--run));
+        }
+      }
+      @keyframes figure-fill-forwards {
+        0%,
+        20% {
+          transform: translateX(var(--own));
+        }
+        20.01% {
+          transform: translateX(0);
+        }
+        60%,
+        100% {
+          transform: translateX(var(--run));
+        }
+      }
+      @keyframes figure-fill-backwards {
+        0%,
+        20% {
+          transform: translateX(0);
+        }
+        60% {
+          transform: translateX(var(--run));
+        }
+        60.01%,
+        100% {
+          transform: translateX(var(--own));
+        }
+      }
+      @keyframes figure-fill-both {
+        0%,
+        20% {
+          transform: translateX(0);
+        }
+        60%,
+        100% {
+          transform: translateX(var(--run));
+        }
+      }
+      /* A window in a figure: what is inside is cut at its edges */
+      .figure svg.window {
+        overflow: hidden;
+      }
+      /* animation-timeline: the page, its thumb and the animation go together */
+      .figure .scrolls-x {
+        animation: figure-run 3.2s ease-in-out infinite alternate;
+      }
+      .figure .scrolls-y {
+        animation: figure-run-y 3.2s ease-in-out infinite alternate;
+      }
+      @keyframes figure-run-y {
+        to {
+          transform: translateY(var(--run));
+        }
+      }
+      /* animation-range: at each part of its way across the page, the scene goes up and down
+         through that part. The range is a thicker line, its ends are points. */
+      .figure .sways {
+        animation: figure-sway 2.4s ease-in-out infinite alternate;
+      }
+      @keyframes figure-sway {
+        from {
+          transform: translateY(var(--sway));
+        }
+        to {
+          transform: translateY(calc(var(--sway) * -1));
+        }
+      }
+      .figure .thick {
+        stroke-width: 2.5;
+      }
+      /* A point light that goes from one side to the other, around where it is drawn */
+      .figure .sways-xy {
+        animation: figure-sway-xy var(--beat, 3.6s) ease-in-out infinite alternate;
+      }
+      @keyframes figure-sway-xy {
+        from {
+          transform: translate(calc(var(--sx) * -1), calc(var(--sy) * -1));
+        }
+        to {
+          transform: translate(var(--sx), var(--sy));
+        }
+      }
+      /* A shadow is dark: the floor around it is in the light, and the shadow is the page
+         showing through */
+      .figure .lit-floor {
+        fill: var(--gss-bone);
+        fill-opacity: 0.16;
+        stroke: none;
+      }
+      .figure .shade {
+        fill: var(--gss-void);
+        stroke: none;
+      }
+      .figure .hollow {
+        fill: var(--gss-void);
+      }
+      /* A drawing on its stage, and under it the code it plays: a declaration is in signal
+         while the drawing plays it */
+      .figure figcaption {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 4px 18px;
+        margin-top: 10px;
+      }
+      .figure figcaption code {
+        font: 11px/1.4 var(--gss-font-code);
+        color: var(--gss-dim);
+      }
+      .figure figcaption code.lit {
+        color: var(--gss-ash);
+      }
+      .figure text {
+        fill: var(--gss-ash);
+        font: 10px var(--gss-font-code);
+        text-anchor: middle;
+        dominant-baseline: middle;
+      }
+      .figure .axis {
+        stroke: currentColor;
+      }
+      .figure .axis-label {
+        fill: currentColor;
+      }
+      .figure .axis-label.lit {
+        fill: var(--gss-signal);
+      }
+      .figure .axis-front,
+      .figure .axis-behind,
+      .figure .tinted circle {
+        stroke: var(--gss-signal);
+      }
+      .figure .axis-behind {
+        stroke-dasharray: 1.5 3;
+        opacity: 0.75;
+      }
+      /* What moves as a whole hides what it passes over, with a sheet in the color of the page */
+      .figure .sheet {
+        fill: var(--gss-void);
+        stroke: none;
+      }
+      .figure .dot {
+        fill: var(--gss-signal);
+        stroke: none;
+      }
+      .figure .phase {
+        color: var(--gss-dim);
+      }
+      .figure .phase,
+      .figure figcaption code[style] {
+        animation: figure-phase 7.2s infinite;
+        animation-delay: calc(var(--phase) * 2.4s);
+      }
+      @keyframes figure-phase {
+        0%,
+        30% {
+          color: var(--gss-signal);
+        }
+        33.33%,
+        100% {
+          color: var(--gss-dim);
+        }
+      }
+      /* translate: along x, then y, then z, and back each time */
+      .figure .slides {
+        animation: figure-slide 7.2s ease-in-out infinite;
+      }
+      @keyframes figure-slide {
+        0%,
+        33.33%,
+        66.66%,
+        100% {
+          transform: translate(0, 0);
+        }
+        16.66% {
+          transform: translate(var(--ax), var(--ay));
+        }
+        50% {
+          transform: translate(var(--bx), var(--by));
+        }
+        83.33% {
+          transform: translate(var(--cx), var(--cy));
+        }
+      }
+      /* scale: around the center of the cube, its lines as thin at any size */
+      .figure .grows {
+        animation: figure-grow 1.8s ease-in-out infinite alternate;
+      }
+      .figure .grows path {
+        vector-effect: non-scaling-stroke;
+      }
+      @keyframes figure-grow {
+        from {
+          transform: scale(0.55);
+        }
+        to {
+          transform: scale(1.35);
+        }
+      }
+      /* Two declarations a drawing goes between: each in signal at its end of the way */
+      .figure .beats code {
+        animation: figure-beat var(--beat, 1.8s) ease-in-out infinite alternate;
+      }
+      .figure .beats code + code {
+        animation-direction: alternate-reverse;
+      }
+      @keyframes figure-beat {
+        from {
+          color: var(--gss-signal);
+        }
+        to {
+          color: var(--gss-dim);
+        }
+      }
+      /* @keyframes: the time runs at a constant speed, the ball eases */
+      .figure .plays {
+        animation: figure-run 2s linear infinite alternate;
+      }
+      @keyframes figure-run {
+        to {
+          transform: translateX(var(--run));
+        }
+      }
+      /* An easing: a point runs along the time while the easing lifts it, and a ball takes
+         the same lift. Then both rest, and start again. */
+      .figure .eases-time {
+        animation: figure-ease-run 2.8s linear infinite;
+      }
+      .figure .eases {
+        animation: figure-ease 2.8s infinite;
+      }
+      @keyframes figure-ease-run {
+        72%,
+        100% {
+          transform: translateX(var(--run));
+        }
+      }
+      @keyframes figure-ease {
+        72%,
+        100% {
+          transform: translateY(var(--rise));
+        }
+      }
+      /* :hover, :active, transition: the cube answers the pointer over its cell */
+      .figure .hit {
+        fill: transparent;
+        stroke: none;
+        pointer-events: all;
+        cursor: pointer;
+      }
+      .figure .tries .edge {
+        transition: none;
+      }
+      .figure .tries:hover .lifts {
+        transform: translateY(-16px);
+      }
+      .figure .tries:hover .edge {
+        stroke: var(--gss-signal);
+      }
+      .figure .glides .lifts {
+        transition: transform 0.4s ease-out;
+      }
+      .figure .glides .edge {
+        transition: stroke 0.4s ease-out;
+      }
+      .figure .presses:active .lifts {
+        transform: translateY(7px);
+        transition-duration: 0.12s;
+      }
+      /* offset-path: the object goes along the line, turned the way it goes */
+      .figure .travels {
+        offset-rotate: auto;
+        animation: figure-travel 3.6s ease-in-out infinite alternate;
+      }
+      @keyframes figure-travel {
+        from {
+          offset-distance: 0%;
+        }
+        to {
+          offset-distance: 100%;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .figure * {
+          animation: none !important;
+          transition: none !important;
+        }
+      }
+      /* What a reader looks up once, folded under the paragraph of a page: a mono label
+         with a hairline chevron, closed until asked */
+      .more {
+        max-width: 65ch;
+        margin: -4px 0 24px;
+      }
+      .more > summary {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 4px 0;
+        font: 12px var(--gss-font-code);
+        color: var(--gss-dim);
+        cursor: pointer;
+        list-style: none;
+        transition: color var(--gss-transition);
+      }
+      .more > summary::-webkit-details-marker {
+        display: none;
+      }
+      .more > summary::before {
+        content: "";
+        width: 6px;
+        height: 6px;
+        border-right: 1px solid currentColor;
+        border-bottom: 1px solid currentColor;
+        transform: translateY(-1px) rotate(-45deg);
+        transition: transform var(--gss-transition);
+      }
+      .more[open] > summary::before {
+        transform: translateY(-2px) rotate(45deg);
+      }
+      .more > summary:hover,
+      .more[open] > summary {
+        color: var(--gss-bone);
+      }
+      .more > summary:focus-visible {
+        outline: 1px solid var(--gss-signal);
+        outline-offset: 4px;
+      }
+      .more > p {
+        margin: 10px 0 0;
+        padding-left: 14px;
+        border-left: 1px solid var(--gss-isoline);
+        font-size: 15px;
+        color: var(--gss-ash);
+      }
+      .more > p code {
+        color: var(--gss-bone);
+      }
       /* The chapters of a page (Values, a chapter of a guide) and the name of each example:
          Martian Mono speaks, like the titles; the sentence under it is prose */
       .property h4,
@@ -581,6 +1720,21 @@
       }
       .values dt {
         text-transform: none;
+      }
+      /* A value added after its page: the version that added it, beside it, like the "new"
+         of the contents */
+      .values dt[data-since]::after {
+        content: "new in v" attr(data-since);
+        display: inline-block;
+        margin-left: 8px;
+        padding: 0 4px;
+        border: 1px solid rgb(255 90 54 / 0.45);
+        border-radius: var(--gss-radius-control);
+        font: 500 10px/14px var(--gss-font-code);
+        letter-spacing: 0.02em;
+        color: var(--gss-signal);
+        vertical-align: 1px;
+        white-space: nowrap;
       }
       .values dd {
         font: 15px/1.5 var(--gss-font-body);

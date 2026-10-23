@@ -6,6 +6,8 @@
  * with outline-offset in @keyframes.
  * Hover a piece: a dashed or dotted outline, and cursor: pointer. Click
  * it: it hops, an animation started by :active that plays to its end.
+ * controls: none on the pieces and the clock: a drag that starts on them
+ * leaves the camera still; from the board, it turns it.
  * shape-rendering: geometricPrecision smooths every silhouette.
  */
 @scene {
@@ -72,6 +74,7 @@ scene {
 .king > * {
   translate: calc((var(--f) - 3.5) * 0.5) var(--y) calc((3.5 - var(--r)) * 0.5);
   cursor: pointer;
+  controls: none;
 }
 
 .pawn:active,
@@ -248,6 +251,7 @@ scene {
   translate: var(--x) 0.46 0;
   material: brass;
   cursor: pointer;
+  controls: none;
 }
 
 #tap-white {

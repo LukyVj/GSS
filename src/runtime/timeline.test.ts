@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { scrollProgress, viewProgress, findScroller, rangeProgress } from "./timeline";
+import { scrollProgress, viewProgress, findScroller, rangeProgress, scrollRangeProgress } from "./timeline";
 import type { RangeEdge, RangeName } from "../compiler/features/timeline";
 
 describe("scrollProgress", () => {
@@ -127,5 +127,27 @@ describe("rangeProgress (animation-range)", () => {
   it("is 1 past a range of no length", () => {
     expect(view(300, edge("cover", 30), edge("cover", 30))).toBe(1);
     expect(view(200, edge("cover", 30), edge("cover", 30))).toBe(0);
+  });
+});
+
+describe("scrollRangeProgress (scroll() with animation-range)", () => {
+  const edge = (offset: number, unit: "%" | "px" = "%"): RangeEdge => ({ name: "cover", offset, unit });
+  const middle = { start: edge(25), end: edge(75) };
+
+  it("follows the scroll of the page", () => {
+    expect(scrollRangeProgress(1000, 2000, 800, null, middle)).toBe(0.5);
+    expect(scrollRangeProgress(400, 2000, 800, null, middle)).toBe(0);
+  });
+
+  it("follows the slider of the playground over the length of the page", () => {
+    expect(scrollRangeProgress(0, 2000, 800, 0.5, middle)).toBe(0.5);
+    expect(scrollRangeProgress(0, 2000, 800, 0.75, middle)).toBe(1);
+  });
+
+  it("follows the slider where the page cannot scroll, as over one screen of scroll", () => {
+    expect(scrollRangeProgress(0, 0, 800, 0, middle)).toBe(0);
+    expect(scrollRangeProgress(0, 0, 800, 0.5, middle)).toBe(0.5);
+    expect(scrollRangeProgress(0, 0, 800, 1, middle)).toBe(1);
+    expect(scrollRangeProgress(0, 0, 800, 0.25, { start: edge(100, "px"), end: edge(300, "px") })).toBe(0.5);
   });
 });

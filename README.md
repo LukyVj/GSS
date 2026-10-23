@@ -82,14 +82,14 @@ The same pages, with every example to edit live: [gss-lang.dev/docs](https://www
 **A tag**, no build step:
 
 ```html
-<script type="module" src="https://cdn.jsdelivr.net/npm/gss-lang@0.0.6/lib/embed.js"></script>
+<script type="module" src="https://cdn.jsdelivr.net/npm/gss-lang@0.0.7/lib/embed.js"></script>
 <gss-scene src="logo.gss"></gss-scene>
 ```
 
 **npm**:
 
 ```sh
-npm install gss-lang@0.0.6
+npm install gss-lang@0.0.7
 ```
 
 ```js
@@ -120,7 +120,7 @@ WebGPU, TypeScript and the editor: see [Installation](https://github.com/LukyVj/
 
 ## Status
 
-0.0.6, early: the syntax may still change. See the [changelog](https://github.com/LukyVj/GSS/blob/main/CHANGELOG.md).
+0.0.7, early: the syntax may still change. See the [changelog](https://github.com/LukyVj/GSS/blob/main/CHANGELOG.md).
 
 ## Contribute
 
@@ -134,6 +134,17 @@ npm test
 ```
 
 Before a pull request, read the [contributing guide](https://github.com/LukyVj/GSS/blob/main/CONTRIBUTING.md): where things live, and which branch to start from.
+
+## Credits
+
+- Signed distance functions, smooth blending and soft shadows adapted from [Inigo Quilez](https://iquilezles.org/articles/) (MIT).
+- Hash functions from [Hash without Sine](https://www.shadertoy.com/view/4djSRW) by David Hoskins (MIT).
+- Gradient noise after Ken Perlin's Improved Noise.
+- Color conversions from the [CSS Color 4](https://www.w3.org/TR/css-color-4/) sample code and Björn Ottosson's [OKLab](https://bottosson.github.io/posts/oklab/).
+- Editor built on [CodeMirror](https://codemirror.net/) (MIT).
+- Fonts: Martian Mono, Geist and JetBrains Mono (SIL OFL 1.1).
+- Zdog studies after models by [Dave DeSandro](https://zzz.dog/); Earth and Moon maps by NASA.
+- `texture-mapping: sphere` contributed by Yoshihiro Hasegawa.
 
 ## License
 

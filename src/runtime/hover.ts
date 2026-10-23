@@ -87,3 +87,16 @@ export function cursorAt(
   const cursor = hovered === pressed ? found.active : found.hover;
   return cursor === "auto" ? "" : cursor;
 }
+
+// controls (decision 176): may this gesture move the camera, started over this object
+// (0: the floor or the background)? Both the scene and the object must take it.
+type Gestures = { orbit: boolean; zoom: boolean };
+export function controlsAllow(
+  controls: (Gestures & { objects?: ({ id: number } & Gestures)[] }) | undefined,
+  gesture: keyof Gestures,
+  id: number,
+): boolean {
+  if (!controls) return true;
+  const object = id === 0 ? undefined : controls.objects?.find((found) => found.id === id);
+  return controls[gesture] && (object?.[gesture] ?? true);
+}

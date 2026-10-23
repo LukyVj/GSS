@@ -16,6 +16,7 @@ export type StyledInstance = SceneInstance & {
   styles: Styles;
   groupStyles: Styles[];
   faceStyles: Record<Face, Styles>; // what cube::face(front), cube::top… set
+  faceList: Styles[]; // the faces by number: faceList[0] is ::face(1) (decision 190)
   hoverTriggers: number[]; // the objects that, hovered, put this one in its hover state
   hoverStyles: Styles;
   activeTriggers: number[]; // the objects that, pressed, put this one in its active state
@@ -38,13 +39,24 @@ export type SimpleSelector = {
   ancestors?: SimpleSelector[];
   combinators?: Combinator[];
   relative?: Combinator; // a leading combinator, only inside :has()
-  face?: Face;
+  face?: FacePick;
   hover?: boolean; // cube:hover, #g:hover
   active?: boolean; // cube:active, #g:active: pressed (decision 95)
   has?: SimpleSelector[]; // #g:has(sphere, cube:hover): something inside matches one of them
   structural?: Structural[]; // :nth-child(odd), :first-of-type…: all of them must match
   not?: SimpleSelector[][]; // :not(.a, cube):not(#b): no selector of any list may match
+  attributes?: AttributeSelector[]; // [data-col="2"], [id^="hero-" i]: all of them must match
 };
+
+// [name], [name=value] and the other forms of CSS, read at compile time.
+// The attributes are the ones written in @scene, plus id and class (the classes joined by spaces)
+export type AttributeSelector = {
+  name: string;
+  operator?: AttributeOperator; // none: [name], the attribute is there
+  value?: string;
+  ignoreCase?: boolean; // the i flag
+};
+type AttributeOperator = "=" | "~=" | "|=" | "^=" | "$=" | "*=";
 
 // :nth-child(An+B of S) and its family, read at compile time (decision 92).
 // The position counts from 1 among the siblings, the copies of a * n one by one,
@@ -102,6 +114,51 @@ export const FACES: Face[] = [
 ];
 // ::top is ::face(top): the faces a Minecraft-style block changes most
 const SHORTCUTS: Face[] = ["top", "bottom"];
+
+// ::face(3), ::face(odd), ::face(n + 5): faces by number, like :nth-child() (decision 190).
+// written: as the rule writes it, for the messages
+export type FacePick = Face | { a: number; b: number; written: string };
+
+// The faces of each shape, by number, with their names: a cube is numbered like a die
+// (front 1, top 2, right 3, left 4, bottom 5, back 6), and so is every shape seen from
+// six sides; a pyramid has its slopes from the front, turning right, then its base; the
+// eight triangles of an octahedron have numbers only
+const DIE: Face[] = ["front", "top", "right", "left", "bottom", "back"];
+export function shapeFaces(tag: string): (Face | null)[] {
+  if (tag === "pyramid") return ["front", "right", "back", "left", "bottom"];
+  if (tag === "octahedron") return Array<null>(8).fill(null);
+  return DIE;
+}
+
+// Does a pick of ::face() take face n (from 1) of a shape whose faces are named so?
+function picksFace(pick: FacePick, n: number, names: (Face | null)[]): boolean {
+  if (typeof pick === "string") return names[n - 1] === pick;
+  if (pick.a === 0) return n === pick.b;
+  const k = (n - pick.b) / pick.a;
+  return k >= 0 && Number.isInteger(k);
+}
+
+// "a cube", "an octahedron"
+const named = (tag: string) => `${/^[aeiou]/.test(tag) ? "an" : "a"} ${tag}`;
+
+// A face of the pick the shape does not have: a number out of its faces, or a name of
+// another shape (checked where the face is used: content needs a face of the shape)
+export function checkFacePick(pick: FacePick, tag: string, at: object): void {
+  const names = shapeFaces(tag);
+  if (typeof pick !== "string" && pick.a === 0 && (pick.b < 1 || pick.b > names.length))
+    throw errorAt(at, `${named(tag)} has ${names.length} faces: ::face(1) to ::face(${names.length})`);
+}
+
+// A name of a face the shape does not have, for content (texture reads a face by the side
+// it looks at, on any shape)
+export function missingFaceName(face: Face, tag: string): string | null {
+  const names = shapeFaces(tag);
+  if (names.includes(face)) return null;
+  const list = names.filter((name): name is Face => name !== null);
+  return list.length === 0
+    ? `${named(tag)} has no face named ${face}: its faces are numbered, ::face(1) to ::face(${names.length})`
+    : `${named(tag)} has no face named ${face}: its faces are ${list.slice(0, -1).join(", ")} and ${list.at(-1)}, or ::face(1) to ::face(${names.length})`;
+}
 
 // A hover trigger must satisfy every part of one complete matching path.
 // Alternative paths are a union; multiple :hover conditions on a path intersect.
@@ -162,13 +219,14 @@ function hasTriggers(
   return found;
 }
 
-// How a face is written, for the messages: ::top, ::face(front)
-export function faceSelector(face: Face): string {
+// How a face is written, for the messages: ::top, ::face(front), ::face(odd)
+export function faceSelector(face: FacePick): string {
+  if (typeof face !== "string") return `::face(${face.written})`;
   return SHORTCUTS.includes(face) ? `::${face}` : `::face(${face})`;
 }
 
 const FACES_HELP =
-  "a face is ::face(top), ::face(bottom), ::face(front), ::face(back), ::face(left) or ::face(right); ::top and ::bottom are shortcuts";
+  "a face is ::face(top), ::face(bottom), ::face(front), ::face(back), ::face(left) or ::face(right), or a number like ::face(3), ::face(odd) or ::face(n + 5); ::top and ::bottom are shortcuts";
 
 function tokenToText(token: Token): string {
   if (token.type === "HASH") return `#${token.value}`;
@@ -195,7 +253,7 @@ function splitAtCommas(tokens: Token[]): Token[][] {
 }
 
 // An+B, like CSS: odd, even, 3, n, -n+3, 2n + 1. The spaces only go around the sign of B.
-function parseAnB(tokens: Token[], where: Token[], name: string): [number, number] {
+function parseAnB(tokens: Token[], where: Token[], name: string, written = `:${name}()`): [number, number] {
   const text = tokens
     .map(
       (token, i) =>
@@ -211,7 +269,7 @@ function parseAnB(tokens: Token[], where: Token[], name: string): [number, numbe
   if (!formula)
     throw errorAt(
       where,
-      `:${name}() takes An+B, like :${name}(2n+1), :${name}(odd), :${name}(even) or :${name}(3)`,
+      `${written} takes An+B, like ${written.slice(0, -1)}2n+1), ${written.slice(0, -1)}odd), ${written.slice(0, -1)}even) or ${written.slice(0, -1)}3)`,
     );
   const [, sign, digits, bSign, bDigits] = formula;
   const a = (sign === "-" ? -1 : 1) * (digits === "" ? 1 : parseInt(digits, 10));
@@ -260,8 +318,8 @@ export function parseSelector(
       compounds.push([]);
     }
     compounds[compounds.length - 1].push(token);
-    if (token.type === "PUNCT" && token.value === "(") depth++;
-    if (token.type === "PUNCT" && token.value === ")") depth--;
+    if (token.type === "PUNCT" && (token.value === "(" || token.value === "[")) depth++;
+    if (token.type === "PUNCT" && (token.value === ")" || token.value === "]")) depth--;
   });
   if (compounds.some((part) => part.length === 0))
     throw errorAt(tokens, "A selector is required after a combinator or comma");
@@ -317,10 +375,11 @@ function parseCompound(tokens: Token[]): SimpleSelector {
       next?.type === "PUNCT" &&
       next.value === ":"
     ) {
-      // ::face(front), like ::part(name) in CSS, or a shortcut: ::top, ::bottom
+      // ::face(front), like ::part(name) in CSS, or a shortcut: ::top, ::bottom; or a
+      // number, like :nth-child(): ::face(3), ::face(odd), ::face(n + 5) (decision 190)
       const name = tokens[i + 2];
       const open = tokens[i + 3];
-      let face: string | undefined;
+      let face: FacePick | undefined;
       let length: number; // how many tokens the pseudo-element takes
       if (
         name?.type === "IDENT" &&
@@ -328,34 +387,33 @@ function parseCompound(tokens: Token[]): SimpleSelector {
         open?.type === "PUNCT" &&
         open.value === "("
       ) {
-        const inside = tokens[i + 4];
-        const close = tokens[i + 5];
-        if (
-          inside?.type === "IDENT" &&
-          close?.type === "PUNCT" &&
-          close.value === ")"
-        )
-          face = inside.value;
-        length = 6;
+        const close = tokens.findIndex((token, k) => k > i + 3 && token.type === "PUNCT" && token.value === ")");
+        if (close === -1) throw errorAt(tokens, `Unknown pseudo-element: ${FACES_HELP}`);
+        const inside = tokens.slice(i + 4, close);
+        const [word] = inside;
+        if (inside.length === 1 && word.type === "IDENT" && FACES.includes(word.value as Face)) face = word.value as Face;
+        else if (inside.length > 0 && !(inside.length === 1 && word.type === "IDENT" && word.value !== "odd" && word.value !== "even" && word.value !== "n")) {
+          const [a, b] = parseAnB(inside, tokens, "face", "::face()");
+          const written = inside.map((token, k) => (k > 0 && spaceBetween(inside[k - 1], token) ? " " : "") + tokenToText(token)).join("");
+          face = { a, b, written };
+        }
+        length = close - i + 1;
       } else {
-        if (name?.type === "IDENT") face = name.value;
+        if (name?.type === "IDENT" && SHORTCUTS.includes(name.value as Face)) face = name.value as Face;
         length = 3;
       }
-      const known =
-        face !== undefined &&
-        (length === 6 ? FACES : SHORTCUTS).includes(face as Face);
-      if (!known) {
+      if (face === undefined) {
         throw errorAt(tokens, `Unknown pseudo-element: ${FACES_HELP}`);
       }
       // Like CSS, a pseudo-element closes the selector: nothing after it
       if (i + length !== tokens.length) {
-        const written = faceSelector(face as Face);
+        const written = faceSelector(face);
         throw errorAt(
           tokens,
           `${written} goes at the end of the selector, like: cube.grass${written}`,
         );
       }
-      selector.face = face as Face;
+      selector.face = face;
       i += length;
     } else if (token.type === "PUNCT" && token.value === ":") {
       // :hover, a pseudo-class: like a class, it can go anywhere after the tag
@@ -461,6 +519,17 @@ function parseCompound(tokens: Token[]): SimpleSelector {
           `Unknown pseudo-class "${name}": GSS knows ${PSEUDO_CLASSES.slice(0, -1).join(", ")} and ${PSEUDO_CLASSES[PSEUDO_CLASSES.length - 1]}`,
         );
       }
+    } else if (token.type === "PUNCT" && token.value === "[") {
+      const close = tokens.findIndex(
+        (t, j) => j > i && t.type === "PUNCT" && t.value === "]",
+      );
+      if (close === -1)
+        throw errorAt(tokens, '"]" missing after the attribute: [data-col="2"]');
+      selector.attributes = [
+        ...(selector.attributes ?? []),
+        parseAttribute(tokens.slice(i + 1, close), tokens),
+      ];
+      i = close + 1;
     } else {
       const text = tokens.map(tokenToText).join("");
       throw errorAt(tokens, `Selector not supported: "${text}"`);
@@ -482,6 +551,65 @@ function parseCompound(tokens: Token[]): SimpleSelector {
     );
 
   return selector;
+}
+
+// What is between [ and ]: name, then an operator, a value and a flag, or nothing
+function parseAttribute(inside: Token[], where: Token[]): AttributeSelector {
+  const [name, first, second] = inside;
+  if (name?.type !== "IDENT")
+    throw errorAt(where, 'An attribute name is expected after "[", like [data-col]');
+  if (inside.length === 1) return { name: name.value };
+  const punct = (token: Token | undefined) => (token?.type === "PUNCT" ? token.value : "");
+  // "=" alone, or "~" "^" "$" "*" "|" stuck to it
+  const operator = (punct(first) === "=" ? "=" : punct(first) + punct(second)) as AttributeOperator;
+  if (!["=", "~=", "|=", "^=", "$=", "*="].includes(operator))
+    throw errorAt(
+      where,
+      `Unknown attribute selector: GSS knows [${name.value}], and =, ~=, |=, ^=, $=, *= before a value`,
+    );
+  const rest = inside.slice(operator === "=" ? 2 : 3);
+  const [written, extra, ...more] = rest;
+  let text: string;
+  if (written?.type === "STRING" || written?.type === "IDENT") text = written.value;
+  else if (written?.type === "NUMBER") text = String(written.value);
+  else throw errorAt(where, `A value is expected after "${name.value}${operator}", like [${name.value}${operator}"2"]`);
+  if (more.length > 0 || (extra && (extra.type !== "IDENT" || !["i", "s"].includes(extra.value.toLowerCase()))))
+    throw errorAt(where, 'After the value, an attribute selector only takes the flag i or s: [lang="en" i]');
+  const ignoreCase = extra?.type === "IDENT" && extra.value.toLowerCase() === "i";
+  return { name: name.value, operator, value: text, ...(ignoreCase && { ignoreCase }) };
+}
+
+// The value of an attribute on an object, or null when it has none
+function attributeOf(instance: SceneInstance, name: string): string | null {
+  if (name === "id") return instance.id;
+  if (name === "class") return instance.classes.length > 0 ? instance.classes.join(" ") : null;
+  return instance.attributes?.[name] ?? null;
+}
+
+function matchesAttribute(attribute: AttributeSelector, instance: SceneInstance): boolean {
+  let actual = attributeOf(instance, attribute.name);
+  if (actual === null) return false;
+  if (attribute.operator === undefined) return true;
+  let wanted = attribute.value!;
+  if (attribute.ignoreCase) {
+    actual = actual.toLowerCase();
+    wanted = wanted.toLowerCase();
+  }
+  switch (attribute.operator) {
+    case "=":
+      return actual === wanted;
+    case "|=":
+      return actual === wanted || actual.startsWith(`${wanted}-`);
+    // Like CSS, an empty value never matches the next ones
+    case "~=":
+      return wanted !== "" && !/\s/.test(wanted) && actual.split(/\s+/).includes(wanted);
+    case "^=":
+      return wanted !== "" && actual.startsWith(wanted);
+    case "$=":
+      return wanted !== "" && actual.endsWith(wanted);
+    case "*=":
+      return wanted !== "" && actual.includes(wanted);
+  }
 }
 
 // Read every chain from right to left. Backtracking matters for mixed chains:
@@ -552,6 +680,11 @@ function matchesCompound(
   )
     return false;
   if (
+    selector.attributes &&
+    !selector.attributes.every((attribute) => matchesAttribute(attribute, instance))
+  )
+    return false;
+  if (
     selector.structural &&
     !selector.structural.every((s) => matchesPosition(s, instance, scene))
   )
@@ -599,6 +732,7 @@ export function specificity(selector: SimpleSelector): number {
   const own =
     (selector.id ? 10_000 : 0) +
     selector.classes.length * 100 +
+    (selector.attributes?.length ?? 0) * 100 + // like a class, even [id=a]
     (selector.tag ? 1 : 0) +
     (selector.face ? 1 : 0) +
     (selector.hover ? 100 : 0) + // a pseudo-class counts like a class, like CSS
@@ -664,26 +798,33 @@ export function resolveStyles(
     );
   // The cascade for one instance (an object or a group), or for one face of an object.
   // state: at rest, hovered, or pressed (the :hover rules still apply when pressed)
+  // face: a name, the rules that write that name (texture reads a face by its side, on
+  // any shape); or a number, the rules whose pick takes it (decision 190)
   function cascade(
     instance: SceneInstance,
-    face?: Face,
+    face?: Face | number,
     state: "rest" | PointerState = "rest",
   ): Styles {
+    const names = shapeFaces(instance.tag);
     const styles: Styles = {};
     for (const important of [false, true]) {
       for (const { rule, selector } of sortedRules) {
         if (!matches(selector, instance, instances)) continue;
         if (needsHover(selector) && state === "rest") continue;
         if (needsActive(selector) && state !== "active") continue;
-        if (selector.face !== face) continue; // a face rule styles its face, the other rules the object
+        // a face rule styles its face, the other rules the object
+        if ((selector.face === undefined) !== (face === undefined)) continue;
+        if (typeof face === "string" && selector.face !== face) continue;
+        if (typeof face === "number" && !picksFace(selector.face!, face, names)) continue;
         for (const declaration of rule.declarations) {
           if (
             selector.face !== undefined &&
-            declaration.property !== "texture"
+            declaration.property !== "texture" &&
+            declaration.property !== "content"
           ) {
             throw errorAt(
               declaration,
-              `${faceSelector(selector.face)} only takes texture, like: cube${faceSelector(selector.face)} { texture: url("${selector.face}.png"); }`,
+              `${faceSelector(selector.face)} only takes texture and content, like: cube${faceSelector(selector.face)} { texture: url("${typeof selector.face === "string" ? selector.face : "face"}.png"); }`,
             );
           }
           if ((declaration.important ?? false) !== important) continue;
@@ -713,6 +854,13 @@ export function resolveStyles(
     }
   }
 
+  // The faces of each object, by number; a number it does not have is an error
+  const names = (instance: SceneInstance) => shapeFaces(instance.tag);
+  for (const { rule, selector } of sortedRules) {
+    if (selector.face === undefined) continue;
+    for (const instance of instances) if (matches(selector, instance, instances)) checkFacePick(selector.face, instance.tag, rule.selector);
+  }
+
   return instances.map((instance) => {
     const styles = cascade(instance);
     const hoverStyles = cascade(instance, undefined, "hover");
@@ -726,8 +874,9 @@ export function resolveStyles(
     styles,
     groupStyles: instance.groups.map((group) => cascade(group)),
     faceStyles: Object.fromEntries(
-      FACES.map((face) => [face, cascade(instance, face)]),
+      FACES.map((face) => [face, names(instance).includes(face) ? cascade(instance, names(instance).indexOf(face) + 1) : cascade(instance, face)]),
     ) as Record<Face, Styles>,
+    faceList: names(instance).map((_, n) => cascade(instance, n + 1)),
     hoverTriggers: [
       ...new Set(
         sortedRules
@@ -777,6 +926,7 @@ export function isSceneSelector(selector: SimpleSelector): boolean {
     selector.tag === "scene" &&
     selector.id === null &&
     selector.classes.length === 0 &&
+    selector.attributes === undefined &&
     selector.ancestors === undefined
   );
 }

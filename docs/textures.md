@@ -15,10 +15,14 @@ A live image of an HTML element of the page, for `texture`, like CSS `element()`
 > [!NOTE]
 > **Behind a flag for now.** `element()` needs HTML-in-Canvas, which Chromium ships behind a flag: turn on `chrome://flags/#canvas-draw-element` to see it, and the examples of this page. On your own site, visitors see it once you register the site for the HTML-in-Canvas origin trial and add its token to the page, until the trial ends on October 20, 2026. Without it, the object keeps its color.
 
+**What covers the surface, flat, then on an object:** `<div id="card">`, `element(#card)`
+
 - **Syntax:** `element(<id>)`
 - **Computed:** by the browser, each time the element changes
 
-Put the element inside the scene: inside `<gss-scene>`, next to its script, or inside the canvas given to `mount()`. It stays in the page, so screen readers still read it, but it is seen only on the object. One image covers each face, like any texture: give the element the proportions of the face, and use `::face(front)` for one face only. A `<canvas>` inside the element is captured with it, frame after frame while the scene draws: a chart, a game, another shader. A scene with an element is drawn with WebGL2.
+Put the element inside `<gss-scene>`, next to its script, or inside the canvas given to `mount()`. Screen readers still read it, but it is seen only on the object.
+
+One image covers each face, like any texture: give the element the proportions of the face, and use `::face(front)` for one face only. A `<canvas>` inside the element is captured with it, frame after frame while the scene draws: a chart, a game, another shader. A scene with an element is drawn with WebGL2.
 
 ### an HTML card
 
@@ -118,6 +122,8 @@ cube::face(front) {
 
 How the image of `texture` is drawn, like CSS.
 
+**What covers the surface, flat, then on an object:** `image-rendering: smooth;`, `image-rendering: pixelated;`
+
 - **Syntax:** `auto | smooth | pixelated | crisp-edges`
 - **Initial value:** `auto`
 - **Applies to:** objects
@@ -149,10 +155,14 @@ cube {
 
 The texture a `@paint` draws, for `texture`, like CSS `paint()`, whose image comes from code: `texture: paint(rings);`. WebGL2 only, for now.
 
+**From the shader to the faces of the object:** `@paint rings { … }`, `512 × 512 px`, `texture: paint(rings);`
+
 - **Syntax:** `paint(<name>)`
 - **Computed:** on the GPU: once, or at every frame when its shader reads time
 
-The name is that of a `@paint` of the scene. Several objects can show the same one: it is drawn once for all of them. A scene with `paint()` is drawn with WebGL2, which `<gss-scene>`, `mountAsync()` and the playground pick by themselves; with WebGPU chosen, the object shows its `color` instead.
+The name is that of a `@paint` of the scene. Several objects can show the same one: it is drawn once for all of them.
+
+A scene with `paint()` is drawn with WebGL2, which `<gss-scene>`, `mountAsync()` and the playground pick by themselves; with WebGPU chosen, the object shows its `color` instead.
 
 ### two objects, one shader
 
@@ -195,6 +205,8 @@ Projects an image onto the surface of the object: one image per face, the top, t
 
 > [!NOTE]
 > **Behind a flag for now.** `element()` needs HTML-in-Canvas, which Chromium ships behind a flag: turn on `chrome://flags/#canvas-draw-element` to see it, and the examples of this page. On your own site, visitors see it once you register the site for the HTML-in-Canvas origin trial and add its token to the page, until the trial ends on October 20, 2026. Without it, the object keeps its color.
+
+**What covers the surface, flat, then on an object:** `url("photo.jpg")`, `texture`
 
 - **Syntax:** `url("<file>") | element(<id>) | paint(<name>)`
 - **Initial value:** `none`
@@ -259,11 +271,84 @@ cube::face(front) {
 </article>
 ```
 
+<a name="texture-mapping"></a>
+
+## `texture-mapping`
+
+How the image of `texture` is laid on the object. `box`, the default, projects one image on each face of the box around it; `sphere` wraps one image around the whole object, like a map around a globe, for the Earth, the Moon or a planet.
+
+**What covers the surface, flat, then on an object:** `url("earth.jpg")`, `texture-mapping: box;`, `texture-mapping: sphere;`
+
+- **Syntax:** `box | sphere`
+- **Initial value:** `box`
+- **Applies to:** objects
+- **Animatable:** no
+
+### Values
+
+- **box:** One image on each face of the box around the object: the default.
+- **sphere:** One image around the whole object: the longitude across, the latitude up. The middle of the image faces the front, its top is the top of the object, and its left and right edges meet at the back.
+
+`sphere` expects a map twice as wide as it is tall (an equirectangular map, like most maps of the Earth and the Moon). It covers the object once: `texture-size` has no effect.
+
+The image is seen from the center of the object: a sphere shows it in one piece, without the stretched corners of `box`, and only the poles squeeze its top and bottom rows, like on any globe. A map whose left and right edges match shows no seam at the back. Another shape shows the image too, projected from its center. The images of `::face()` are wrapped the same way, each one on its own face, and `image-rendering` applies as with `box`. A large map can shimmer on a small sphere: 1024 pixels across is enough.
+
+### the Earth
+
+NASA's Blue Marble around a sphere tilted like the Earth, turning once in 12 seconds.
+
+```css
+@scene {
+  sphere;
+}
+
+sphere {
+  translate: 0 1 0;
+  radius: 0.8;
+  texture: url("/textures/earth.jpg");
+  texture-mapping: sphere;
+  rotate-x: -23deg;
+  animation: spin 12s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    rotate-y: 360deg;
+  }
+}
+```
+
+### the Moon
+
+NASA's map of the Moon, its near side to the front, lit from the right.
+
+```css
+@scene {
+  sphere;
+}
+
+scene {
+  floor: none;
+  background: #000000;
+  light: 60deg 10deg 1.4;
+  ambient: 0.05;
+}
+
+sphere {
+  translate: 0 1 0;
+  radius: 0.8;
+  texture: url("/textures/moon.jpg");
+  texture-mapping: sphere;
+}
+```
+
 <a name="texture-size"></a>
 
 ## `texture-size`
 
 The size of one image on the surface, in the units of the object, like `background-size`: the image repeats to cover each face. `auto`, the default, fits one image to each face.
+
+**What covers the surface, flat, then on an object:** `texture-size: auto;`, `texture-size: 0.5;`
 
 - **Syntax:** `<number>`
 - **Initial value:** `auto`
@@ -290,4 +375,4 @@ cube {
 
 ---
 
-Next: [Filters](filters.md)
+Next: [Text](text.md)

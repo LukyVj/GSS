@@ -5,7 +5,7 @@ export type Token =
   | { type: "HASH"; value: string } // #hero, #ff5a36
   | { type: "AT_KEYWORD"; value: string } // @scene, @keyframes
   | { type: "NUMBER"; value: number } // 1, 0.28, -2.5
-  | { type: "PUNCT"; value: string } // { } : ; , ( ) . * + - / > ~ < = & (< and = for media ranges, & for nesting)
+  | { type: "PUNCT"; value: string } // { } : ; , ( ) . * + - / > ~ < = & [ ] ^ $ | (< and = for media ranges, & for nesting, [ ] ^ $ | for attributes)
   | { type: "DIMENSION"; value: number; unit: string } // 70deg, 24s
   | { type: "PERCENTAGE"; value: number } // 50%, 12.5%
   | { type: "STRING"; value: string } // "M0 0 L1 1", without the quotes
@@ -19,7 +19,7 @@ export type PropertySyntax = "number" | "angle" | "percentage" | "color" | "leng
 
 import { ErrorSink, GssError, rememberSpan } from "./errors";
 
-const PUNCTUATION = "{}:;,().*+-/!>~<=&";
+const PUNCTUATION = "{}:;,().*+-/!>~<=&[]^$|";
 
 function isDigit(char: string): boolean {
   return char >= "0" && char <= "9";
@@ -133,12 +133,23 @@ export function scan(
       continue;
     }
 
-    // 3. The strings: "M0 0 L1 1" or 'M0 0 L1 1'. A \ keeps the next character as it is.
+    // 3. The strings: "M0 0 L1 1" or 'M0 0 L1 1'. A \ keeps the next character as it is,
+    // or, like CSS, writes the code point of up to 6 hexadecimal digits: "one\A two"
     if (char === '"' || char === "'") {
       i++;
       let value = "";
       while (i < source.length && charAt(i) !== char && charAt(i) !== "\n") {
-        if (charAt(i) === "\\") i++; // \" is a quote inside the string
+        if (charAt(i) === "\\") {
+          i++; // \" is a quote inside the string
+          const hex = /^[0-9a-fA-F]{1,6}/.exec(source.slice(i, i + 6))?.[0];
+          if (hex) {
+            const code = parseInt(hex, 16);
+            value += code === 0 || code > 0x10ffff || (code >= 0xd800 && code <= 0xdfff) ? "\uFFFD" : String.fromCodePoint(code);
+            i += hex.length;
+            if (charAt(i) === " " || charAt(i) === "\t") i++; // one space ends the escape
+            continue;
+          }
+        }
         value += charAt(i);
         i++;
       }

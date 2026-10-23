@@ -7,15 +7,21 @@ import type {
   Keyframes,
   Keyframe,
 } from "./ast";
-import { ErrorSink, errorAt, errorsOf, rememberSpan, spanAcross, spanOf } from "./errors";
-import { isAmpersand, nestSelector } from "./nesting";
+import { ErrorSink, errorAt, errorsOf, rememberSpan, spanAcross } from "./errors";
+import { isAmpersand, nestSelector, spaceBetween } from "./nesting";
+import { expandApply, readApply, readMixins, type Apply } from "./mixins";
+import { unfoldLoops } from "./loops";
 
 // Reading goes on after an error (decision 86): the error is kept, the parser skips to
 // the end of the declaration, the element or the rule, and reads the rest. errors:
 // where the errors go; without it, parse() throws them at the end.
-export function parse(tokens: Token[], errors?: ErrorSink): Stylesheet {
-  let pos = 0; // our position in the list of tokens
+export function parse(input: Token[], errors?: ErrorSink): Stylesheet {
   const sink = errors ?? new ErrorSink();
+  // The loops are written out first, wherever they are, mixins included (decision 191).
+  // Then the @mixin rules are taken out: @apply finds a mixin written after it, like CSS.
+  // A copy: an @apply is replaced by the tokens of its mixin in this list (decision 174)
+  const { tokens, mixins } = readMixins(unfoldLoops(input, sink), sink);
+  let pos = 0; // our position in the list of tokens
 
   // Looks at the current token, without advancing
   const peek = (): Token | undefined => tokens[pos];
@@ -134,6 +140,13 @@ export function parse(tokens: Token[], errors?: ErrorSink): Stylesheet {
         if (className.type !== "IDENT")
           throw errorAt(className, 'Class name expected after "."');
         element.classes.push(className.value);
+      } else if (isPunct(token, "[")) {
+        next();
+        const [name, value] = parseSceneAttribute(token!);
+        element.attributes ??= {};
+        if (name.value in element.attributes)
+          throw errorAt(name, `The attribute "${name.value}" is already set on this object`);
+        element.attributes[name.value as string] = value;
       } else {
         break;
       }
@@ -171,6 +184,41 @@ export function parse(tokens: Token[], errors?: ErrorSink): Stylesheet {
     if (isPunct(peek(), ";")) next();
 
     return element;
+  }
+
+  // [data-col=2], [data-name="top left"], [lit]: after the "[", up to its "]".
+  // id and class have their own syntax, and an attribute of @scene has only "="
+  function parseSceneAttribute(open: Token): [Token, string] {
+    const name = next();
+    if (name.type !== "IDENT")
+      throw errorAt(name, 'Attribute name expected after "["');
+    if (name.value === "id" || name.value === "class") {
+      const shown = (token: Token | undefined) =>
+        token && (token.type === "STRING" || token.type === "IDENT") ? token.value : "name";
+      throw errorAt(
+        name,
+        name.value === "id"
+          ? `Write the id with "#": cube#${shown(tokens[pos + 1])}`
+          : `Write a class with ".": cube.${shown(tokens[pos + 1])}`,
+      );
+    }
+    let value = "";
+    if (isPunct(peek(), "=")) {
+      next();
+      const token = next();
+      if (token.type === "STRING" || token.type === "IDENT") value = token.value;
+      else if (token.type === "NUMBER") value = String(token.value);
+      else throw errorAt(token, `A value is expected after "${name.value}="`);
+    } else if (!isPunct(peek(), "]")) {
+      throw errorAt(
+        peek() ?? name,
+        `In @scene, an attribute is [${name.value}] or [${name.value}=value]: "^=", "~=" and the others are for selectors`,
+      );
+    }
+    if (!isPunct(peek(), "]"))
+      throw errorAt(peek() ?? open, '"]" missing after the attribute');
+    next();
+    return [name, value];
   }
 
   // @scene { ... }
@@ -233,13 +281,45 @@ export function parse(tokens: Token[], errors?: ErrorSink): Stylesheet {
     return declaration;
   }
 
-  // { radius: 1; color: #fff; } : shared by rules and keyframes
-  function parseDeclarationBlock(): Declaration[] {
+  // @apply --name(…); in a rule or a frame of @keyframes: the tokens of the mixin take its
+  // place, and are read next, as if they were written there (decision 174). A broken @apply
+  // is reported and skipped, block included.
+  function applyMixin(frame: boolean): void {
+    const start = pos;
+    let apply: Apply;
+    try {
+      apply = readApply(tokens, start);
+    } catch (caught) {
+      for (const error of errorsOf(caught)) sink.add(error);
+      pos++; // past the @apply
+      skipStatement(true);
+      return;
+    }
+    try {
+      const unfolded = expandApply(apply, mixins);
+      if (frame && unfolded.some((token) => isPunct(token, "{") || token.type === "AT_KEYWORD"))
+        throw errorAt(apply.name, `A frame of @keyframes takes declarations only, and ${apply.name.value} holds a rule`);
+      tokens.splice(start, apply.end - start, ...unfolded);
+    } catch (caught) {
+      for (const error of errorsOf(caught)) sink.add(error);
+      pos = apply.end;
+    }
+  }
+
+  const isApply = (token: Token | undefined): boolean => token?.type === "AT_KEYWORD" && token.value === "apply";
+
+  // { radius: 1; color: #fff; } : shared by rules and keyframes. frame: a frame of @keyframes,
+  // which takes @apply too
+  function parseDeclarationBlock(frame = false): Declaration[] {
     const open = peek();
     expectPunct("{");
     const declarations: Declaration[] = [];
     while (!isPunct(peek(), "}")) {
       if (!peek()) throw errorAt(open, 'Block never closed: "}" missing');
+      if (frame && isApply(peek())) {
+        applyMixin(true);
+        continue;
+      }
       const declaration = attempt(parseDeclaration, skipDeclaration);
       if (declaration) declarations.push(declaration);
     }
@@ -297,6 +377,10 @@ export function parse(tokens: Token[], errors?: ErrorSink): Stylesheet {
     while (!isPunct(peek(), "}")) {
       const token = peek();
       if (!token) throw errorAt(open, 'Block never closed: "}" missing');
+      if (isApply(token)) {
+        applyMixin(false);
+        continue;
+      }
       if (token.type === "AT_KEYWORD" || startsRule()) {
         if (declarations.length > 0) flush();
         nested = true;
@@ -332,8 +416,9 @@ export function parse(tokens: Token[], errors?: ErrorSink): Stylesheet {
   // @media inside a rule: its declarations and rules go to the selectors of the rule
   function parseNestedAt(selectors: Token[][], outer?: string): Rule[] {
     const at = next();
-    if (at.type === "AT_KEYWORD" && ["scene", "keyframes", "property", "property-panel"].includes(at.value as string))
+    if (at.type === "AT_KEYWORD" && ["scene", "keyframes", "property", "property-panel", "mixin"].includes(at.value as string))
       throw errorAt(at, `@${at.value} goes outside the rules`);
+    if (at.type === "AT_KEYWORD" && at.value === "contents") throw misplacedContents(at);
     if (at.type !== "AT_KEYWORD" || at.value !== "media")
       throw errorAt(at, `@${at.value} isn't supported yet`);
     const query = readMediaQuery(at);
@@ -378,7 +463,7 @@ export function parse(tokens: Token[], errors?: ErrorSink): Stylesheet {
         const token = next();
         if (!isPunct(token, ",")) offsets.push(token); // we skip the commas
       }
-      frames.push({ offsets, declarations: parseDeclarationBlock() });
+      frames.push({ offsets, declarations: parseDeclarationBlock(true) });
     }
     next(); // we consume the "}"
     return { name: name.value, frames };
@@ -393,8 +478,8 @@ export function parse(tokens: Token[], errors?: ErrorSink): Stylesheet {
       const token = peek();
       if (!token) throw errorAt(open, '@media never closed: "}" missing');
       const read = attempt(() => {
-        if (token.type === "AT_KEYWORD" && token.value === "property-panel")
-          throw errorAt(token, "@property-panel goes outside the rules");
+        if (token.type === "AT_KEYWORD" && (token.value === "property-panel" || token.value === "mixin"))
+          throw errorAt(token, `@${token.value} goes outside the rules`);
         if (token.type === "AT_KEYWORD")
           throw errorAt(
             token,
@@ -447,6 +532,10 @@ export function parse(tokens: Token[], errors?: ErrorSink): Stylesheet {
         if (!isPunct(peek(), "{"))
           throw errorAt(peek() ?? token, "@property-panel takes a block, like: @property-panel { display: open; }");
         stylesheet.panels.push({ at: token, descriptors: parseDeclarationBlock() });
+      } else if (token.value === "apply") {
+        throw errorAt(token, "@apply goes inside a rule, like: cube { @apply --name; }");
+      } else if (token.value === "contents") {
+        throw misplacedContents(token);
       } else {
         throw errorAt(token, `@${token.value} isn't supported yet`);
       }
@@ -465,15 +554,17 @@ export function parse(tokens: Token[], errors?: ErrorSink): Stylesheet {
   return stylesheet;
 }
 
+// @contents outside a @mixin (decision 174)
+const misplacedContents = (at: Token) =>
+  errorAt(at, "@contents goes inside a @mixin: it is where @apply puts its block");
+
 // Tokens back to text, with a space where the source had one: the query of a
 // @media, which the browser reads (matchMedia)
 export function textOf(tokens: Token[]): string {
   return tokens
     .map((token, i) => {
       const before = tokens[i - 1];
-      const a = before && spanOf(before);
-      const b = spanOf(token);
-      const space = a !== undefined && b !== undefined && a.end < b.start;
+      const space = before !== undefined && spaceBetween(before, token);
       return (space ? " " : "") + tokenText(token);
     })
     .join("");

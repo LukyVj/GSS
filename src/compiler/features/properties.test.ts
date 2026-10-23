@@ -404,7 +404,7 @@ describe("@property-panel: a control per variable in the playground (decision 12
     expect(() => scene("@property-panel { display: shown; }")).toThrow(
       "display of @property-panel is open, folded or none, not shown",
     );
-    expect(() => scene("@property-panel { width: 300px; }")).toThrow("@property-panel takes display, not width");
+    expect(() => scene("@property-panel { width: 300px; }")).toThrow("@property-panel takes display and range, not width");
     expect(() => scene("@property-panel --h { display: open; }")).toThrow(
       "@property-panel takes a block, like: @property-panel { display: open; }",
     );
@@ -415,5 +415,81 @@ describe("@property-panel: a control per variable in the playground (decision 12
     expect(() => scene("@media (min-width: 600px) { @property-panel { display: open; } }")).toThrow(
       "@property-panel goes outside the rules",
     );
+  });
+});
+
+describe("@property-panel: range sets the ends of a slider (decision 187)", () => {
+  const COL = '@property --col { syntax: "<number>"; inherits: false; initial-value: 0; }';
+  const ROW = '@property --row { syntax: "<number>"; inherits: false; initial-value: 0; }';
+  const scene = (rules: string) =>
+    compileScene(`${COL} ${ROW} ${rules} @scene { cube } cube { translate: var(--col) 0 var(--row); }`);
+
+  it("reads one range per variable, separated by commas, like transition", () => {
+    expect(scene("@property-panel { range: --col 0 3, --row 0 3; }").propertyRanges).toEqual({
+      "--col": { min: 0, max: 3 },
+      "--row": { min: 0, max: 3 },
+    });
+  });
+
+  it("takes a step after the max", () => {
+    expect(scene("@property-panel { range: --col 0 3 1; }").propertyRanges).toEqual({ "--col": { min: 0, max: 3, step: 1 } });
+  });
+
+  it("takes negative ends", () => {
+    expect(scene("@property-panel { range: --col -2 2; }").propertyRanges).toEqual({ "--col": { min: -2, max: 2 } });
+  });
+
+  it("writes the ends like the values of the variable: an angle in deg, a percentage, a length in px", () => {
+    const compiled = compileScene(
+      `${ANGLE} ${PERCENT} @property --blur { syntax: "<length>"; inherits: false; initial-value: 2px; } ` +
+        "@property-panel { range: --turn 0deg 0.5turn 15deg, --along 0% 50%, --blur 0px 8px; } " +
+        '@scene { cube } cube { rotate-y: var(--turn); offset-path: path("M0 0 L4 0"); offset-distance: var(--along); } scene { filter: blur(var(--blur)); }',
+    );
+    expect(compiled.propertyRanges).toEqual({
+      "--turn": { min: 0, max: 180, step: 15 },
+      "--along": { min: 0, max: 50 },
+      "--blur": { min: 0, max: 8 },
+    });
+  });
+
+  it("keeps display, and opens the panel when only range is written", () => {
+    expect(scene("@property-panel { range: --col 0 3; }").propertyPanel).toBe("open");
+    expect(scene("@property-panel { display: folded; range: --col 0 3; }").propertyPanel).toBe("folded");
+  });
+
+  it("gives no ranges without range, or without a panel", () => {
+    expect(scene("@property-panel { display: open; }").propertyRanges).toBeUndefined();
+    expect(scene("@property-panel { display: none; range: --col 0 3; }").propertyRanges).toBeUndefined();
+  });
+
+  it("takes the last range of a variable, like the cascade", () => {
+    expect(scene("@property-panel { range: --col 0 3; } @property-panel { range: --col 0 10; }").propertyRanges).toEqual({
+      "--col": { min: 0, max: 10 },
+    });
+  });
+
+  it("leaves the shader as it was", () => {
+    expect(scene("@property-panel { range: --col 0 3; }").shader).toBe(scene("@property-panel { }").shader);
+  });
+
+  it("says what it takes", () => {
+    expect(() => scene("@property-panel { range: --col 3; }")).toThrow(
+      "range of @property-panel is a variable, its min and its max, and a step if you like, like: range: --col 0 3, --row 0 3 1;",
+    );
+    expect(() => scene("@property-panel { range: --size 0 3; }")).toThrow(
+      "range of @property-panel: --size is not registered by @property",
+    );
+    expect(() => scene("@property-panel { range: --col 3 0; }")).toThrow(
+      "range of @property-panel: the min of --col must be below its max, like: --col 0 3",
+    );
+    expect(() => scene("@property-panel { range: --col 0 3 0; }")).toThrow(
+      "range of @property-panel: the step of --col must be above 0, like: --col 0 3 1",
+    );
+    expect(() => scene("@property-panel { range: --col 0deg 3deg; }")).toThrow(
+      "an end of the range of --col is a number, like: 4",
+    );
+    expect(() =>
+      compileScene(`${COLOR} @property-panel { range: --tint 0 1; } @scene { cube } cube { color: var(--tint); }`),
+    ).toThrow("range of @property-panel: --tint is a color, it has a color picker and no range");
   });
 });

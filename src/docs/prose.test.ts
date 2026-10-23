@@ -34,6 +34,7 @@ describe("the texts of the registry", () => {
     [entry.name, entry.description],
     ...("note" in entry && entry.note ? [[entry.name, entry.note.text]] : []),
     ...(entry.details ? [[entry.name, entry.details]] : []),
+    ...(entry.more ? [[entry.name, entry.more]] : []),
     ...(entry.values ?? []).map(([, text]) => [entry.name, text]),
     ...entry.examples.flatMap((example) => (example.text ? [[entry.name, example.text]] : [])),
   ]);

@@ -27,12 +27,47 @@ export type Example = {
 };
 
 // The parts of a page under its table, like the docs of a popular language (decision 121)
-export type Value = [value: string, text: string]; // the value as written, then what it does
+// the value as written, then what it does; since: the version that added it, when it came after
+// its page (decision 188): the docs show "new in" beside it
+export type Value = [value: string, text: string, since?: string];
 type Parts = {
   values?: Value[]; // a table, one row per keyword, function or argument
   valuesTitle?: string; // its heading, "Values" by default: "Descriptors", "Functions"…
-  details?: string; // one paragraph under it: the limits, the differences from CSS
+  details?: string; // one short paragraph under it, 40 words at most: what a reader must know (decision 179)
+  more?: string; // folded under it: the limits, the special cases, how it is drawn
+  figure?: Figure; // a drawing under the lead of the page (decision 180)
 };
+
+// The drawings of the docs, by name: the docs hold one for each (src/docs/figures.ts)
+export type Figure =
+  | "shapes" // everything a scene can declare, as thin lines
+  | "shape" // the shape of the page, with the properties that size it
+  | "first-scene" // the scene of "Your first scene", one declaration at a time
+  | "paint" // from the shader of @paint to the faces of an object
+  | "translate" // a cube moved along x, then y, then z
+  | "scale" // a cube that grows and shrinks
+  | "rotate" // a cube turning around the axis of the property
+  | "keyframes" // a ball between two frames, and the time that passes
+  | "easing" // the curve of an easing, and a ball that moves by it
+  | "hover" // a cube to hover and to press
+  | "offset-path" // an object that travels along a line
+  | "row" // a scene as a row of objects: the ones a selector targets are lit
+  | "measure" // each shape that takes a size property, with the line it sets
+  | "corner-radius" // the corner of a cube, sharp then round
+  | "d" // the commands of a path, each at its point
+  | "view-box" // the drawing area of a path
+  | "plot" // a math function as a curve, with a point that runs along it
+  | "calc" // a full turn divided, and the angle it gives
+  | "lanes" // a longhand of animation: one point per value, to compare
+  | "scroll-timeline" // a page that scrolls, and the animation where the scroll is
+  | "range" // the three parts of the way of a scene across the page, and the ones the animation plays on
+  | "offset-distance" // three places on one path
+  | "offset-rotate" // two paths: an object turned by its path, one that keeps its angle
+  | "tile" // what covers a surface: an image, a text, a pattern, a mask, a material
+  | "color" // a color, written the way the page writes it
+  | "scene" // the scene around the objects, and how an object shows in it
+  | "point-light" // a point of light that moves between two balls, and the side of each it lights
+  | "flow"; // from one place to another: a file to the page, a variable to an object
 
 // A callout under the description: what a reader must know before trying it
 export type Note = { title: string; text: string };
@@ -102,6 +137,7 @@ const ELEMENT_NOTE: Note = {
 export const PROPERTIES: PropertyDef[] = [
   {
     name: "translate",
+    figure: "translate",
     since: "0.0.1",
     appliesTo: "object",
     animatable: true,
@@ -119,6 +155,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "color",
+    figure: "color",
     since: "0.0.1",
     appliesTo: "object",
     animatable: true,
@@ -132,7 +169,8 @@ export const PROPERTIES: PropertyDef[] = [
       ["noise()", "A noise cut in the object's own space, like a block of stone."],
       ["transparent", "A transparent color (`#ff000080`, `rgb(255 0 0 / 50%)`), or the transparent stops of a gradient, make the object transparent, like `opacity`."],
     ],
-    details: "A gradient can be animated and changed by `:hover`, into another gradient of the same kind with as many colors: each of its numbers moves on its own. Through a variable, one number is enough: `linear-gradient(var(--angle), …)` turns when `@keyframes` changes `--angle`. A color cannot change into a gradient. On a point `light`, `color` is the color of its light: a plain color only.",
+    details: "A gradient can be animated and changed by `:hover`, into another gradient of the same kind with as many colors. A color cannot change into a gradient.",
+    more: "Each number of an animated gradient moves on its own. Through a variable, one number is enough: `linear-gradient(var(--angle), …)` turns when `@keyframes` changes `--angle`. On a point `light`, `color` is the color of its light: a plain color only.",
     examples: [
       {
         name: "a hex color",
@@ -167,6 +205,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "material",
+    figure: "tile",
     since: "0.0.1",
     appliesTo: "object",
     syntax:
@@ -252,6 +291,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "texture",
+    figure: "tile",
     since: "0.0.1",
     appliesTo: "object",
     syntax: 'url("<file>") | element(<id>) | paint(<name>)',
@@ -280,6 +320,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "image-rendering",
+    figure: "tile",
     since: "0.0.1",
     appliesTo: "object",
     syntax: "auto | smooth | pixelated | crisp-edges",
@@ -300,6 +341,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "texture-size",
+    figure: "tile",
     since: "0.0.1",
     appliesTo: "object",
     syntax: "<number>",
@@ -315,7 +357,184 @@ export const PROPERTIES: PropertyDef[] = [
     ],
   },
   {
+    name: "texture-mapping",
+    figure: "tile",
+    since: "0.0.7",
+    appliesTo: "object",
+    syntax: "box | sphere",
+    initial: "box",
+    description:
+      "How the image of `texture` is laid on the object. `box`, the default, projects one image on each face of the box around it; `sphere` wraps one image around the whole object, like a map around a globe, for the Earth, the Moon or a planet.",
+    values: [
+      ["box", "One image on each face of the box around the object: the default."],
+      ["sphere", "One image around the whole object: the longitude across, the latitude up. The middle of the image faces the front, its top is the top of the object, and its left and right edges meet at the back."],
+    ],
+    details: "`sphere` expects a map twice as wide as it is tall (an equirectangular map, like most maps of the Earth and the Moon). It covers the object once: `texture-size` has no effect.",
+    more: "The image is seen from the center of the object: a sphere shows it in one piece, without the stretched corners of `box`, and only the poles squeeze its top and bottom rows, like on any globe. A map whose left and right edges match shows no seam at the back. Another shape shows the image too, projected from its center. The images of `::face()` are wrapped the same way, each one on its own face, and `image-rendering` applies as with `box`. A large map can shimmer on a small sphere: 1024 pixels across is enough.",
+    examples: [
+      {
+        name: "the Earth",
+        text: "NASA's Blue Marble around a sphere tilted like the Earth, turning once in 12 seconds.",
+        code: '@scene { sphere; } sphere { translate: 0 1 0; radius: 0.8; texture: url("/textures/earth.jpg"); texture-mapping: sphere; rotate-x: -23deg; animation: spin 12s linear infinite; } @keyframes spin { to { rotate-y: 360deg; } }',
+      },
+      {
+        name: "the Moon",
+        text: "NASA's map of the Moon, its near side to the front, lit from the right.",
+        code: '@scene { sphere; } scene { floor: none; background: #000000; light: 60deg 10deg 1.4; ambient: 0.05; } sphere { translate: 0 1 0; radius: 0.8; texture: url("/textures/moon.jpg"); texture-mapping: sphere; }',
+      },
+    ],
+  },
+  {
+    name: "content",
+    figure: "tile",
+    since: "0.0.7",
+    appliesTo: "object",
+    animatable: true,
+    syntax: "<string>+ | none",
+    initial: "none",
+    description:
+      "Writes a text on the surface of the object, the way `content` gives a text to a `::before` in CSS. The text is painted over the color, the gradient or the `texture` of the object: it moves, turns and takes the light with it, and goes behind what stands in front of it.",
+    values: [
+      ["<string>", 'The text, between quotes. Several strings side by side are joined: `"3D" " text"`. `\\A` starts a new line, like CSS: `"one\\A two"`.'],
+      ["var(--name)", "A variable that holds a string."],
+      ["none", "No text: the default. `normal` is the same."],
+    ],
+    details: "The text is as large as each face lets it be, or as `font-size` says. Unlike CSS, `content` goes on the object itself, not on a `::before`.",
+    more: "The text sits in the middle of each face, and keeps its proportions. Without `::face()`, every face of the object shows it, read from left to right on each; `::face()` gives a face a text of its own, or `none`, by its name or its number (`::face(3)`, `::face(odd)`). A cube and a plane write on their flat faces. A round shape (a sphere, a cylinder, a tube, a cone, a capsule, a torus) wraps the text around itself like a label on a can, on four sides around its axis, and lays it flat on its top and its bottom. A pyramid writes on its four slopes and its base, an octahedron on its eight triangles, upright. Any other shape takes the text of each side like a sticker, fading where its surface turns away. The font comes from `font-family`, `font-weight` and `font-style`, the size from `font-size`, the color from `text-color`, the side its lines lean to from `text-align`. An emoji keeps its own colors. On `:hover` and in `@keyframes` the text changes halfway, like a value of CSS that does not interpolate.",
+    examples: [
+      {
+        name: "a sign",
+        text: "The word fits the front of the board, and each of its other faces.",
+        code: '@scene { cube; } scene { camera-angle: -20deg 12deg; } cube { translate: 0 0.8 0; size: 2.4 1 0.2; color: #1a1d2b; content: "hello"; font-weight: bold; }',
+      },
+      {
+        name: "a text per face",
+        text: "Each face of the die takes its own `content`.",
+        code: '@scene { cube; } scene { camera-angle: 35deg 30deg; } cube { translate: 0 0.6 0; color: #f4f1ea; corner-radius: 0.08; font-weight: bold; } cube::face(top) { content: "1"; } cube::face(front) { content: "2"; } cube::face(right) { content: "3"; } cube::face(left) { content: "4"; } cube::face(back) { content: "5"; } cube::face(bottom) { content: "6"; }',
+      },
+      {
+        name: "around a can",
+        text: "On a cylinder, the text wraps around the side like a label.",
+        code: '@scene { cylinder; } scene { camera-angle: 25deg 15deg; } cylinder { translate: 0 0.9 0; radius: 0.6; height: 1.6; color: #e8443a; content: "SODA"; font-weight: bold; animation: turn 6s linear infinite; } @keyframes turn { to { rotate-y: 360deg; } }',
+      },
+      {
+        name: "a variable",
+        text: "The text is a variable of the scene, read with `var()`.",
+        code: '@scene { sphere; } scene { --word: "GSS"; } sphere { translate: 0 0.8 0; radius: 0.8; color: #3a7bff; content: var(--word); font-family: Georgia, serif; font-style: italic; }',
+      },
+    ],
+  },
+  {
+    name: "font-family",
+    figure: "tile",
+    since: "0.0.7",
+    appliesTo: "object",
+    animatable: true,
+    syntax: "[<family-name> | <generic-family>]#",
+    initial: "sans-serif",
+    description:
+      "The font of the text of `content`, like CSS: a list of fonts, and the first one the browser has draws the text.",
+    details: "A font the page loads, with `@font-face` or a stylesheet of fonts, can be named: the text is drawn again when it arrives. Unlike CSS, the font is not inherited: set it on the object that has the text.",
+    examples: [
+      {
+        name: "a serif and a monospace",
+        code: '@scene { cube#a; cube#b; } scene { camera-distance: 5; } cube { size: 1.8 0.9 0.2; color: #f4f1ea; content: "Hello"; } #a { translate: -1 0.8 0; font-family: Georgia, "Times New Roman", serif; } #b { translate: 1 0.8 0; font-family: monospace; }',
+      },
+    ],
+  },
+  {
+    name: "font-weight",
+    figure: "tile",
+    since: "0.0.7",
+    appliesTo: "object",
+    animatable: true,
+    syntax: "normal | bold | <number>",
+    initial: "normal",
+    description:
+      "How thick the letters of `content` are, like CSS: `normal` is 400, `bold` is 700, and a number goes from 1 to 1000 when the font has that weight.",
+    examples: [
+      {
+        name: "normal and bold",
+        code: '@scene { cube#a; cube#b; } scene { camera-distance: 5; } cube { size: 1.8 0.9 0.2; color: #1a1d2b; content: "Hello"; } #a { translate: -1 0.8 0; } #b { translate: 1 0.8 0; font-weight: bold; }',
+      },
+    ],
+  },
+  {
+    name: "font-style",
+    figure: "tile",
+    since: "0.0.7",
+    appliesTo: "object",
+    animatable: true,
+    syntax: "normal | italic | oblique",
+    initial: "normal",
+    description: "Slants the letters of `content`, like CSS.",
+    examples: [
+      {
+        name: "italic",
+        code: '@scene { cube; } cube { translate: 0 0.8 0; size: 2.4 1 0.2; color: #f4f1ea; content: "Hello"; font-family: Georgia, serif; font-style: italic; }',
+      },
+    ],
+  },
+  {
+    name: "font-size",
+    figure: "tile",
+    since: "0.0.7",
+    appliesTo: "object",
+    animatable: true,
+    syntax: "auto | <number>",
+    initial: "auto",
+    description:
+      "The height of the letters of `content`, in the units of the scene, like the other sizes of GSS. A line is as wide as the face: a longer text goes on to the next line, between its words.",
+    values: [
+      ["auto", "The text is as large as each face lets it be, its lines broken only where it says `\\A`: the default."],
+      ["<number>", "The height of the letters: `0.3` on a cube of 1 gives about three lines."],
+    ],
+    details: "Unlike CSS, the size is in the units of the scene, and `auto` fits the text to the face. A taller text is cut at the edges of the face; its lines are centered on its height.",
+    examples: [
+      {
+        name: "a paragraph on a board",
+        code: '@scene { cube; } scene { camera-angle: -15deg 10deg; } cube { translate: 0 0.9 0; size: 2.4 1.4 0.1; color: #f4f1ea; content: "Selectors, the cascade and keyframes, compiled into one shader."; font-size: 0.2; }',
+      },
+    ],
+  },
+  {
+    name: "text-align",
+    figure: "tile",
+    since: "0.0.7",
+    appliesTo: "object",
+    animatable: true,
+    syntax: "left | center | right | start | end",
+    initial: "start",
+    description:
+      "The side the lines of `content` lean to, like CSS. `start` is the left and `end` the right: GSS reads from left to right.",
+    examples: [
+      {
+        name: "centered lines",
+        code: '@scene { cube; } cube { translate: 0 0.9 0; size: 2.4 1.2 0.1; color: #1a1d2b; content: "GPU\\A Style Sheets"; text-align: center; font-weight: bold; }',
+      },
+    ],
+  },
+  {
+    name: "text-color",
+    figure: "tile",
+    since: "0.0.7",
+    appliesTo: "object",
+    animatable: true,
+    syntax: "<color>",
+    initial: "black or white",
+    description:
+      "The color of the text of `content`. Without one, the text is black on a light object and white on a dark one, so it stays readable when the color of the object changes.",
+    details: "In CSS, `color` colors the text. In GSS, `color` is the color of the object, so its text has a property of its own.",
+    examples: [
+      {
+        name: "orange on white",
+        code: '@scene { cube; } cube { translate: 0 0.8 0; size: 2.4 1 0.2; color: #f4f1ea; content: "hello"; font-weight: bold; text-color: #ff5a36; }',
+      },
+    ],
+  },
+  {
     name: "opacity",
+    figure: "scene",
     since: "0.0.4",
     appliesTo: "object",
     animatable: true,
@@ -323,7 +542,8 @@ export const PROPERTIES: PropertyDef[] = [
     initial: "1",
     description:
       "How much the object covers what is behind it, like CSS: from 0, invisible, to 1, opaque (the default), as a number or a percentage; a value outside is kept between them. The alpha of its `color` and `opacity()` in `filter` multiply with it.",
-    details: "Through a transparent object, the eye sees its back face from the inside, then what is behind it: a sphere at 50% looks like a bubble. On a group, the opacity goes into each of its objects: unlike CSS, which fades a group as one picture, its objects show through each other. With `shadows`, the light goes through a transparent object like stained glass: a red glass at 50% casts a pink light. The mouse still points at a transparent object, like CSS, and the reflections show it opaque.",
+    details: "Unlike CSS, a group does not fade as one picture: each of its objects fades, so they show through each other.",
+    more: "Through a transparent object, the eye sees its back face from the inside, then what is behind it: a sphere at 50% looks like a bubble. With `shadows`, the light goes through a transparent object like stained glass: a red glass at 50% casts a pink light. The mouse still points at a transparent object, like CSS, and the reflections show it opaque.",
     examples: [
       {
         name: "a bubble",
@@ -343,14 +563,62 @@ export const PROPERTIES: PropertyDef[] = [
     ],
   },
   {
+    name: "mix-blend-mode",
+    figure: "scene",
+    since: "0.0.7",
+    appliesTo: "object",
+    animatable: true,
+    syntax: "<blend-mode> | plus-lighter",
+    initial: "normal",
+    description:
+      "How the color of the object blends with what is behind it, like CSS: the objects behind it, the floor and the background. It takes the modes of `background-blend-mode`, and `plus-lighter`, which adds the colors. `normal`, the default, covers what is behind.",
+    valuesTitle: "Modes",
+    values: [
+      ["normal", "Covers what is behind: the default."],
+      ["multiply, screen", "Darkens, where white changes nothing; lightens, where black changes nothing."],
+      ["overlay, soft-light, hard-light", "More contrast: multiplies the darks, screens the lights."],
+      ["darken, lighten", "The darker or the lighter of the two colors."],
+      ["color-dodge, color-burn", "Brightens or darkens what is behind, by the color of the object."],
+      ["difference, exclusion", "The difference of the two colors; softer with `exclusion`."],
+      ["hue, saturation, color, luminosity", "One part of the color of the object, over the rest of the color behind it."],
+      ["plus-lighter", "Adds the two colors, up to white."],
+    ],
+    details: "On a group, the mode goes into each object, so they blend with each other too: CSS blends the group as one picture. On `:hover` and in `@keyframes`, the mode switches halfway through.",
+    more: "The eye sees through a blended object to what is behind it, like through a transparent one, and the color of the object, lit, blends with the color behind it. An object never blends with itself: it shows its nearest surface, over what is behind the whole object. Its `opacity` still applies: at 50%, half of the blend shows. On a group, an object with a mode of its own keeps it, and there is no `isolation`. The switch halfway through is the one of a discrete property of CSS. The reflections show a blended object with its own color, and the eye sees six surfaces behind one another at most.",
+    examples: [
+      {
+        name: "three lights, screened",
+        text: "A red, a green and a blue sphere over black: where they meet, `screen` adds them up to white.",
+        code: "@scene { sphere#r; sphere#g; sphere#b; } scene { floor: none; background: #000000; ambient: 0.85; } sphere { radius: 0.75; mix-blend-mode: screen; } #r { translate: 0 1.45 0; color: #ff0000; } #g { translate: -0.45 0.75 0.2; color: #00ff00; } #b { translate: 0.45 0.75 0.4; color: #0000ff; }",
+      },
+      {
+        name: "multiply over the floor",
+        text: "A sphere multiplied over a checkered floor and a cube: the squares and the cube show through it, tinted.",
+        code: "@scene { sphere; cube; } scene { floor: checker(0.5, #f4f1ea, #2a2a3a); } sphere { translate: 0 0.9 0.6; radius: 0.9; color: #ffcc33; mix-blend-mode: multiply; } cube { translate: 0.6 0.5 -0.8; size: 1; color: #3a7bff; }",
+      },
+      {
+        name: "difference on :hover",
+        text: "The white cube turns into the negative of the gradient behind it under the mouse.",
+        code: "@scene { cube; } scene { floor: none; background: linear-gradient(90deg, #ff5a36, #3a7bff); } cube { translate: 0 0.5 0; size: 1.4; color: #ffffff; rotate-y: 30deg; transition: 0.3s; } cube:hover { mix-blend-mode: difference; }",
+      },
+      {
+        name: "on a group",
+        text: "The mode of the group goes into each of its cubes: `difference` turns the stripes behind them inside out.",
+        code: "@scene { group#bars { cube * 3; } } scene { floor: none; ambient: 0.7; camera-distance: 4; background: repeating-linear-gradient(45deg, #ffcc33 0% 5%, #2a2a3a 5% 10%); } #bars { translate: 0 0.5 0; rotate-y: 20deg; mix-blend-mode: difference; } cube { size: 0.6 1.6 0.6; corner-radius: 0.08; translate: calc(sibling-index() * 0.9 - 1.8) 0 0; color: #ffffff; }",
+      },
+    ],
+  },
+  {
     name: "display",
+    figure: "row",
     since: "0.0.6",
     appliesTo: "object",
     syntax: "none | block",
     initial: "block",
     description:
       "`none` leaves the object out of the scene, like CSS: it is not drawn, casts no shadow and cannot be pointed at. On a group, every object inside it is left out; on a `light`, the light is off.",
-    details: "The object still counts among its siblings, like an element of the page with `display: none`: `:nth-child()` and `sibling-index()` see it. It is set when the scene compiles, so it changes with `@media`, not on `:hover` or in `@keyframes`: to hide an object for a moment, use `visibility`. Like CSS, `@media (max-width: …)` reads the width of the window on a page; in the playground and in Try it, the width of the render.",
+    details: "It changes with `@media`, not on `:hover` or in `@keyframes`: to hide an object for a moment, use `visibility`.",
+    more: "The object still counts among its siblings, like an element of the page with `display: none`: `:nth-child()` and `sibling-index()` see it. It is set when the scene compiles. Like CSS, `@media (max-width: …)` reads the width of the window on a page; in the playground and in Try it, the width of the render.",
     examples: [
       {
         name: "a whole group left out",
@@ -371,6 +639,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "visibility",
+    figure: "row",
     since: "0.0.6",
     appliesTo: "object",
     animatable: true,
@@ -378,7 +647,8 @@ export const PROPERTIES: PropertyDef[] = [
     initial: "visible",
     description:
       "`hidden` hides the object, like CSS: it is not drawn, casts no shadow, and the mouse goes through it. `collapse` is `hidden`, as in CSS outside tables.",
-    details: "Like CSS, it is inherited: a hidden group hides its objects, and an object inside it can be `visible` again. It changes on `:hover` and in `@keyframes`, at once, like CSS: between `visible` and `hidden`, the object is there for the whole way, and gone only at `hidden`. A hidden object cannot be hovered: hide another object, like `#button:hover #label`. A group's own visibility is read when the scene compiles.",
+    details: "Like CSS, it is inherited: a hidden group hides its objects, and an object inside it can be `visible` again. A hidden object cannot be hovered: hide another object, like `#button:hover #label`.",
+    more: "It changes on `:hover` and in `@keyframes`, at once, like CSS: between `visible` and `hidden`, the object is there for the whole way, and gone only at `hidden`. A group's own visibility is read when the scene compiles.",
     examples: [
       {
         name: "a light that blinks",
@@ -399,13 +669,15 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "cursor",
+    figure: "scene",
     since: "0.0.6",
     appliesTo: "object",
     syntax: "auto | default | pointer | grab | grabbing | help | crosshair | move | not-allowed | zoom-in | zoom-out | …",
     initial: "auto",
     description:
       "The mouse pointer over the object, like CSS: `pointer` says it can be clicked, `grab` that it can be held. It takes the keywords of CSS `cursor`.",
-    details: "Like CSS, it is inherited: a group gives its cursor to its objects. A `:hover` or `:active` rule can change it, like `cube:active { cursor: grabbing; }`, at once: a cursor does not glide. Over the background and the floor, the page keeps its own cursor. A hidden object has none, since the mouse goes through it.",
+    details: "Like CSS, it is inherited: a group gives its cursor to its objects. A `:hover` or `:active` rule can change it, like `cube:active { cursor: grabbing; }`.",
+    more: "A cursor changes at once: it does not glide. Over the background and the floor, the page keeps its own cursor. A hidden object has none, since the mouse goes through it.",
     examples: [
       {
         name: "a button",
@@ -435,7 +707,43 @@ export const PROPERTIES: PropertyDef[] = [
     ],
   },
   {
+    name: "controls",
+    figure: "scene",
+    since: "0.0.7",
+    appliesTo: "everywhere",
+    syntax: "auto | none | [ orbit || zoom ]",
+    initial: "auto",
+    description:
+      "The gestures that move the camera: `orbit`, a drag turns it around its target, and `zoom`, the wheel brings it closer. `none` keeps the camera where the GSS puts it, and the page scrolls over the scene. On an object, the gestures that cannot start over it.",
+    values: [
+      ["auto", "Both gestures, the default: a drag turns the camera, the wheel zooms."],
+      ["none", "Neither: the camera stays where the GSS puts it, and the wheel scrolls the page."],
+      ["orbit", "A drag turns the camera around its target."],
+      ["zoom", "The wheel brings the camera closer or takes it farther, from 3 to 15."],
+    ],
+    details: "On `scene`, it says which gestures move the camera. On an object or a group, it says which gestures can start over it: a button with `controls: none` is pressed without turning the camera.",
+    more: "CSS has no camera, so GSS has a property of its own for it. Around a button with `controls: none`, a drag from the floor still turns the camera. A gesture moves the camera when the scene and the object under the pointer both take it. Like `cursor`, it is inherited from the groups; it follows `@media`, not `:hover`. On a page, `<gss-scene controls=\"none\">` and `mount(canvas, scene, { controls: false })` turn every gesture off, whatever the GSS says. `camera-spin` still turns the camera.",
+    examples: [
+      {
+        name: "a still camera",
+        text: "The camera stays where the GSS puts it: a drag does nothing, and the wheel scrolls the page.",
+        code: "@scene { torus; } scene { controls: none; camera-angle: 30deg 30deg; } torus { translate: 0 0.8 0; rotate-x: 60deg; radius: 0.6; thickness: 0.2; color: #ff5a36; }",
+      },
+      {
+        name: "turn, but no zoom",
+        text: "A drag turns the camera; the wheel scrolls the page.",
+        code: "@scene { cube; } scene { controls: orbit; } cube { translate: 0 0.5 0; rotate-y: 30deg; color: #3a7bff; }",
+      },
+      {
+        name: "a button that holds still",
+        text: "Press the orange button and drag: it sinks, and the camera stays. From the floor, a drag still turns it.",
+        code: "@scene { cube#base; cube#button; } #base { size: 1.6 0.2 1.6; translate: 0 0.1 0; color: #2a2a33; } #button { size: 1 0.3 1; translate: 0 0.35 0; color: #ff5a36; cursor: pointer; controls: none; transition: 0.15s; } #button:active { translate: 0 0.25 0; }",
+      },
+    ],
+  },
+  {
     name: "outline",
+    figure: "scene",
     since: "0.0.6",
     appliesTo: "object",
     animatable: true,
@@ -443,7 +751,8 @@ export const PROPERTIES: PropertyDef[] = [
     initial: "medium none currentColor",
     description:
       "A line around the silhouette of the object, like CSS `outline`: a width, a style and a color, in any order. Like CSS, it needs a style: `outline: 0.03 solid #111;`, or `dashed`, `dotted`, `double`…",
-    details: "The line is drawn outside the object, where the eye passes close to its edge, and over what is behind it: another object, the floor or the background. It takes no room, is never lit and cannot be pointed at, like CSS, but the fog covers it. Unlike CSS, its width is in the units of the scene, not in pixels: it gets thinner far from the camera, like the object. `outline-width`, `outline-style`, `outline-color` and `outline-offset` set one part each, and win over `outline` wherever they are written, like the other longhands of GSS. It changes on `:hover` and in `@keyframes`.",
+    details: "Unlike CSS, its width is in the units of the scene, not in pixels: it gets thinner far from the camera, like the object. It changes on `:hover` and in `@keyframes`.",
+    more: "The line is drawn outside the object, where the eye passes close to its edge, and over what is behind it: another object, the floor or the background. It takes no room, is never lit and cannot be pointed at, like CSS, but the fog covers it. `outline-width`, `outline-style`, `outline-color` and `outline-offset` set one part each, and win over `outline` wherever they are written, like the other longhands of GSS.",
     examples: [
       {
         name: "a drawn look",
@@ -459,6 +768,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "outline-width",
+    figure: "scene",
     since: "0.0.6",
     appliesTo: "object",
     animatable: true,
@@ -476,6 +786,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "outline-style",
+    figure: "scene",
     since: "0.0.6",
     appliesTo: "object",
     syntax: "none | auto | solid | dashed | dotted | double | groove | ridge | inset | outset",
@@ -494,7 +805,8 @@ export const PROPERTIES: PropertyDef[] = [
       ["inset", "The line darker at the top left, as if the object sat in a hollow."],
       ["outset", "The line darker at the bottom right, as if the object stood out."],
     ],
-    details: "Dashes and dots are placed around the object, by the angle seen from the camera, and as many as fit around its size: they close without a broken one. The shaded styles take the light from the top left of the screen, like the borders of CSS, at half the color on their dark side. A `:hover` or `:active` rule can change the style; `@keyframes` cannot. When the object has no style at rest, the one of `:hover`, then of `:active`, is drawn.",
+    details: "A `:hover` or `:active` rule can change the style; `@keyframes` cannot.",
+    more: "Dashes and dots are placed around the object, by the angle seen from the camera, and as many as fit around its size: they close without a broken one. The shaded styles take the light from the top left of the screen, like the borders of CSS, at half the color on their dark side. When the object has no style at rest, the one of `:hover`, then of `:active`, is drawn.",
     examples: [
       {
         name: "every style",
@@ -515,6 +827,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "outline-color",
+    figure: "scene",
     since: "0.0.6",
     appliesTo: "object",
     animatable: true,
@@ -532,6 +845,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "outline-offset",
+    figure: "scene",
     since: "0.0.6",
     appliesTo: "object",
     animatable: true,
@@ -549,6 +863,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "mask-image",
+    figure: "tile",
     since: "0.0.4",
     appliesTo: "object",
     animatable: true,
@@ -556,7 +871,8 @@ export const PROPERTIES: PropertyDef[] = [
     initial: "none",
     description:
       "Cuts holes in the object, like a CSS mask: where the image covers the surface, the object is there; where it is transparent, the surface is not drawn, and the eye sees inside the object, then what is behind it. The image is a gradient, a `noise()`, or one of them moved by `displace()`.",
-    details: "It is read like a gradient in `color`: seen from the front in the object's own space, and in 3D for a `noise()`, so the holes move and turn with the object. A part covered less than half is a hole, so the edge of a hole is sharp: unlike CSS, a mask does not fade the object. `mask-mode` says what counts, the alpha by default. The holes show in the reflections too, and the mouse goes through them: `:hover` reaches the object behind a hole.",
+    details: "Unlike CSS, a mask does not fade the object: a part covered less than half is a hole, with a sharp edge. The mouse goes through the holes.",
+    more: "It is read like a gradient in `color`: seen from the front in the object's own space, and in 3D for a `noise()`, so the holes move and turn with the object. `mask-mode` says what counts, the alpha by default. The holes show in the reflections too, and `:hover` reaches the object behind a hole.",
     examples: [
       {
         name: "holes from a noise",
@@ -577,6 +893,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "mask-mode",
+    figure: "tile",
     since: "0.0.4",
     appliesTo: "object",
     syntax: "alpha | luminance | match-source",
@@ -598,6 +915,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "rotate-x",
+    figure: "rotate",
     since: "0.0.1",
     appliesTo: "object",
     animatable: true,
@@ -614,6 +932,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "rotate-y",
+    figure: "rotate",
     since: "0.0.1",
     appliesTo: "object",
     animatable: true,
@@ -630,6 +949,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "rotate-z",
+    figure: "rotate",
     since: "0.0.1",
     appliesTo: "object",
     animatable: true,
@@ -646,6 +966,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "scale",
+    figure: "scale",
     since: "0.0.1",
     appliesTo: "object",
     animatable: true,
@@ -662,6 +983,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "transform-origin",
+    figure: "scene",
     since: "0.0.4",
     appliesTo: "object",
     animatable: true,
@@ -690,6 +1012,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "operation",
+    figure: "scene",
     since: "0.0.1",
     appliesTo: "object",
     syntax: "union | subtract | intersect",
@@ -710,6 +1033,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "blend",
+    figure: "scene",
     since: "0.0.1",
     appliesTo: "object",
     syntax: "<number>",
@@ -725,6 +1049,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "transition",
+    figure: "hover",
     since: "0.0.2",
     appliesTo: "object",
     syntax: "none | [all] <time> [<easing>] [<time>]",
@@ -751,6 +1076,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "animation",
+    figure: "keyframes",
     since: "0.0.1",
     appliesTo: "everywhere",
     syntax:
@@ -765,7 +1091,8 @@ export const PROPERTIES: PropertyDef[] = [
       ["normal, reverse, alternate, alternate-reverse", "The direction: forward, backward, forward then backward, or backward first."],
       ["none, forwards, backwards, both", "The fill mode: what the object shows outside the animation."],
     ],
-    details: "Unlike CSS, an animation loops forever unless it has a number of iterations. Each part also has a property of its own, like `animation-duration`, which wins over what `animation` says. On an object, it animates `translate`, the rotations, `scale`, `color` (a gradient too), `opacity`, `mask-image` and `offset-distance`; on a group, its transforms. On the scene, it animates the properties of the scene, like `background`, `light` or `fog`, and the variables they use: the objects do not follow the variables a scene animates. In a `:hover` or `:active` rule, the animation starts with the state and plays to its end, once unless it says how many times, like a button that fires: see `:active`.",
+    details: "Unlike CSS, an animation loops forever unless it says how many times it plays.",
+    more: "Each part also has a property of its own, like `animation-duration`, which wins over what `animation` says. On an object, it animates `translate`, the rotations, `scale`, `color` (a gradient too), `opacity`, `mask-image` and `offset-distance`; on a group, its transforms. On the scene, it animates the properties of the scene, like `background`, `light` or `fog`, and the variables they use: the objects do not follow the variables a scene animates. In a `:hover` or `:active` rule, the animation starts with the state and plays to its end, once unless it says how many times, like a button that fires: see `:active`.",
     examples: [
       {
         name: "up and down",
@@ -801,6 +1128,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "animation-duration",
+    figure: "lanes",
     since: "0.0.2",
     appliesTo: "everywhere",
     syntax: "<time>",
@@ -816,6 +1144,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "animation-delay",
+    figure: "lanes",
     since: "0.0.2",
     appliesTo: "everywhere",
     syntax: "<time>",
@@ -831,6 +1160,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "animation-iteration-count",
+    figure: "lanes",
     since: "0.0.2",
     appliesTo: "everywhere",
     syntax: "<number> | infinite",
@@ -846,6 +1176,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "animation-direction",
+    figure: "lanes",
     since: "0.0.2",
     appliesTo: "everywhere",
     syntax: "normal | reverse | alternate | alternate-reverse",
@@ -867,6 +1198,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "animation-fill-mode",
+    figure: "lanes",
     since: "0.0.2",
     appliesTo: "everywhere",
     syntax: "none | forwards | backwards | both",
@@ -889,6 +1221,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "animation-timing-function",
+    figure: "easing",
     since: "0.0.2",
     appliesTo: "everywhere",
     syntax: "<easing>",
@@ -912,6 +1245,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "animation-timeline",
+    figure: "scroll-timeline",
     since: "0.0.3",
     appliesTo: "everywhere",
     syntax:
@@ -924,7 +1258,8 @@ export const PROPERTIES: PropertyDef[] = [
       ["scroll()", "A scroll container, from its start (0%) to its end (100%): `nearest` (the default) is the closest one around the scene, `root` the page. The axis is `block` (the default), `inline`, `y` or `x`."],
       ["view()", "The scene crossing its scroll container: 0% when it enters at the bottom, 100% when it leaves at the top."],
     ],
-    details: "Write it after `animation`, which still needs a name and a duration: `animation: spin 1s linear; animation-timeline: scroll();`. The number of iterations and the direction still count, an animation without a count plays once along the scroll, and scrolling back plays it backward. A scene takes up to 4 different timelines. In the playground, which does not scroll, a slider stands in for the scroll.",
+    details: "Write it after `animation`, which still needs a name and a duration: `animation: spin 1s linear; animation-timeline: scroll();`. Scrolling back plays the animation backward.",
+    more: "The number of iterations and the direction still count, an animation without a count plays once along the scroll. A scene takes up to 4 different timelines. In the playground, which does not scroll, a slider stands in for the scroll.",
     examples: [
       {
         name: "turn with the page",
@@ -940,6 +1275,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "animation-range",
+    figure: "range",
     since: "0.0.6",
     appliesTo: "everywhere",
     syntax: "[ normal | <range-name> <percentage>? | <percentage> | <length> ]{1,2}",
@@ -955,7 +1291,8 @@ export const PROPERTIES: PropertyDef[] = [
       ["<percentage>", "A share of the named range before it, or of the whole timeline alone: `entry 50%`, `20% 80%`."],
       ["<length>", "Pixels from the start of the named range before it, or of the whole timeline: `100px`."],
     ],
-    details: "It takes a start, then an end: `entry 10% exit 90%`. A name alone is the whole of that range, `animation-range: entry`; a name alone at the end is its end, `contain exit`. `animation-range-start` and `animation-range-end` set one side each, and win over `animation-range` wherever they are written, like the other longhands of `animation`. Before the range the animation shows its first frame, past it its last. The named ranges belong to `view()`: `scroll()` takes percentages and pixels. Unlike CSS, which ignores it there, a range on an animation that plays in time is an error.",
+    details: "It takes a start, then an end: `entry 10% exit 90%`. Before the range the animation shows its first frame, past it its last.",
+    more: "A name alone is the whole of that range, `animation-range: entry`; a name alone at the end is its end, `contain exit`. `animation-range-start` and `animation-range-end` set one side each, and win over `animation-range` wherever they are written, like the other longhands of `animation`. The named ranges belong to `view()`: `scroll()` takes percentages and pixels. Unlike CSS, which ignores it there, a range on an animation that plays in time is an error. In the playground, which does not scroll, the slider over the render stands for one screen of scroll: `100px` is a hundred pixels of the height of the window.",
     examples: [
       {
         name: "rise while it comes in",
@@ -971,6 +1308,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "animation-range-start",
+    figure: "range",
     since: "0.0.6",
     appliesTo: "everywhere",
     syntax: "normal | <range-name> <percentage>? | <percentage> | <length>",
@@ -987,6 +1325,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "animation-range-end",
+    figure: "range",
     since: "0.0.6",
     appliesTo: "everywhere",
     syntax: "normal | <range-name> <percentage>? | <percentage> | <length>",
@@ -1003,6 +1342,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "offset-path",
+    figure: "offset-path",
     since: "0.0.3",
     appliesTo: "object",
     syntax: "none | path(<string>) | ray(<angle>)",
@@ -1030,6 +1370,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "offset-distance",
+    figure: "offset-distance",
     since: "0.0.3",
     appliesTo: "object",
     animatable: true,
@@ -1053,6 +1394,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "offset-rotate",
+    figure: "offset-rotate",
     since: "0.0.3",
     appliesTo: "object",
     syntax: "[auto | reverse] || <angle>",
@@ -1075,6 +1417,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "size",
+    figure: "measure",
     since: "0.0.1",
     appliesTo: ["cube", "plane", "pyramid"],
     syntax: "<number>{1,3} (cube, pyramid) | <number>{1,2} (plane: width depth)",
@@ -1096,6 +1439,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "corner-radius",
+    figure: "corner-radius",
     since: "0.0.1",
     appliesTo: ["cube"],
     syntax: "<number>",
@@ -1110,6 +1454,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "radius",
+    figure: "measure",
     since: "0.0.1",
     appliesTo: ["sphere", "torus", "cylinder", "cone", "capsule", "octahedron", "tube"],
     syntax: "<number> | <number> <number> (cone: bottom top)",
@@ -1132,6 +1477,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "thickness",
+    figure: "measure",
     since: "0.0.1",
     appliesTo: ["torus", "tube"],
     syntax: "<number>",
@@ -1146,6 +1492,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "height",
+    figure: "measure",
     since: "0.0.1",
     appliesTo: ["cylinder", "cone", "capsule", "tube"],
     syntax: "<number>",
@@ -1171,6 +1518,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "d",
+    figure: "d",
     since: "0.0.1",
     appliesTo: ["path", "prism", "lathe"],
     syntax: 'path("<svg path>") | polygon(<x> <y>, …) (prism, lathe)',
@@ -1186,7 +1534,8 @@ export const PROPERTIES: PropertyDef[] = [
       ["Z", "Closes the path."],
       ["polygon()", "On a prism or a lathe: one point per comma, x and y separated by a space, y going down, like CSS `clip-path`. It closes itself."],
     ],
-    details: "Capitals are absolute, lowercase letters relative. A path copied from an SVG keeps its way up: y goes down in SVG and up in the scene, and GSS flips it. One path unit is one scene unit, so an icon drawn in a box of 24 or 32 usually needs a `scale`. On a prism or a lathe, each subpath of a `path()` is a closed contour, filled with the even-odd rule: a contour inside another one is a hole, like the inside of an o. A lathe turns its contour around x = 0, so its x are never negative.",
+    details: "A path copied from an SVG keeps its way up. One path unit is one scene unit, so an icon drawn in a box of 24 usually needs a `scale`.",
+    more: "Capitals are absolute, lowercase letters relative. y goes down in SVG and up in the scene: GSS flips a path. On a prism or a lathe, each subpath of a `path()` is a closed contour, filled with the even-odd rule: a contour inside another one is a hole, like the inside of an o. A lathe turns its contour around x = 0, so its x are never negative.",
     examples: [
       {
         name: "a curve",
@@ -1212,6 +1561,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "stroke-width",
+    figure: "measure",
     since: "0.0.1",
     appliesTo: ["path"],
     syntax: "<number>",
@@ -1227,6 +1577,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "depth",
+    figure: "measure",
     since: "0.0.1",
     appliesTo: ["prism"],
     syntax: "<number>",
@@ -1242,13 +1593,15 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "view-box",
+    figure: "view-box",
     since: "0.0.1",
     appliesTo: ["path", "prism", "lathe"],
     syntax: "<number>{4}",
     initial: "the box of the path itself",
     description:
       "The drawing area of a path: x, y, width and height, like the `viewBox` of SVG. Its center becomes the origin of the object.",
-    details: "Without it, each path is centered on itself; with the same `view-box`, the paths copied from one SVG keep their places relative to each other. On a lathe, only its y and its height count: the height is centered on them, and x = 0 stays the axis.",
+    details: "Without it, each path is centered on itself; with the same `view-box`, the paths copied from one SVG keep their places relative to each other.",
+    more: "On a lathe, only its y and its height count: the height is centered on them, and x = 0 stays the axis.",
     examples: [
       {
         name: "two braces of one icon",
@@ -1259,6 +1612,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "light",
+    figure: "scene",
     since: "0.0.1",
     appliesTo: "scene",
     animatable: true,
@@ -1298,6 +1652,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "intensity",
+    figure: "scene",
     since: "0.0.4",
     appliesTo: ["light"],
     animatable: true,
@@ -1315,6 +1670,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "ambient",
+    figure: "scene",
     since: "0.0.1",
     appliesTo: "scene",
     syntax: "<number> <color>?",
@@ -1330,6 +1686,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "camera-target",
+    figure: "scene",
     since: "0.0.1",
     appliesTo: "scene",
     syntax: "<number>{3}",
@@ -1345,6 +1702,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "camera-distance",
+    figure: "scene",
     since: "0.0.1",
     appliesTo: "scene",
     syntax: "<number>",
@@ -1360,6 +1718,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "camera-angle",
+    figure: "scene",
     since: "0.0.1",
     appliesTo: "scene",
     syntax: "<angle> <angle>",
@@ -1375,6 +1734,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "camera-spin",
+    figure: "scene",
     since: "0.0.1",
     appliesTo: "scene",
     syntax: "<time> | none",
@@ -1390,6 +1750,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "floor",
+    figure: "scene",
     since: "0.0.1",
     appliesTo: "scene",
     syntax: "<color> | <gradient> | none",
@@ -1402,7 +1763,8 @@ export const PROPERTIES: PropertyDef[] = [
       ["noise()", "A noise read at each point of the floor, in the units of the scene: its scale is how many patterns fit in one unit."],
       ["none", "No floor."],
     ],
-    details: "A gradient is seen from above, like on a `plane`: its top is away from the camera at rest, so `linear-gradient(#0b1020, #273d62)` goes from the horizon to the camera, and past the square it goes on with its first and last colors. A `displace()` moves the image by a share of that square: `0.02` moves it by up to 0.4 units. The floor takes one image, not layers, and opaque colors only. It is not animated, but the numbers of its image can be set from JavaScript. Reflections see it, and `fog` covers it like the rest of the scene.",
+    details: "The floor takes one image, not layers, and opaque colors only. It is not animated, but the numbers of its image can be set from JavaScript.",
+    more: "A gradient is seen from above, like on a `plane`: its top is away from the camera at rest, so `linear-gradient(#0b1020, #273d62)` goes from the horizon to the camera, and past the square it goes on with its first and last colors. A `displace()` moves the image by a share of that square: `0.02` moves it by up to 0.4 units. Reflections see it, and `fog` covers it like the rest of the scene.",
     examples: [
       {
         name: "a dark floor",
@@ -1427,6 +1789,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "filter",
+    figure: "scene",
     since: "0.0.2",
     appliesTo: "everywhere",
     syntax: "none | <filter-function>+",
@@ -1445,7 +1808,8 @@ export const PROPERTIES: PropertyDef[] = [
       ["bloom()", "Makes the bright parts glow: an amount (0.6 by default) and a radius in px (16px by default)."],
       ["opacity()", "Makes an object or a group transparent, multiplied with `opacity`. On the scene, it is an error: the scene stays opaque."],
     ],
-    details: "On an object or a group, the filters change only its own pixels, and the reflections see them too: a `blur()` spreads it over what is around it. Like CSS, an object's filter comes before its group's, and the scene's comes last; on an object, the filters that read one pixel come before `blur()` and `bloom()`, and an object and its group cannot both have one of them. `blur()` and `bloom()` read the pixels around each pixel, so they cost more as the radius grows; the other filters cost almost nothing.",
+    details: "On an object or a group, the filters change only its own pixels. `blur()` and `bloom()` cost more as their radius grows; the other filters cost almost nothing.",
+    more: "The reflections see the filters of an object too, and a `blur()` spreads the object over what is around it. Like CSS, an object's filter comes before its group's, and the scene's comes last; on an object, the filters that read one pixel come before `blur()` and `bloom()`, and an object and its group cannot both have one of them. `blur()` and `bloom()` cost more because they read the pixels around each pixel.",
     examples: [
       {
         name: "brightness()",
@@ -1526,6 +1890,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "background",
+    figure: "scene",
     since: "0.0.1",
     appliesTo: "scene",
     animatable: true,
@@ -1533,7 +1898,8 @@ export const PROPERTIES: PropertyDef[] = [
     initial: "#080808",
     description:
       "Sets the background of the scene, seen wherever there is no object and no floor: a color, a gradient drawn over the canvas like a CSS background, a `noise()` or a `displace()`.",
-    details: "Like CSS, a background can have several layers, separated by commas, the first on top: `noise(3, #ffffff00 40%, #ffffff), linear-gradient(#2f6bd8, #9fc4ff)`. Only the last layer can be a plain color; transparent colors let the layers below show through, and `background-blend-mode` blends them. With `animation` on the scene, a color changes into a color and a gradient into a gradient of the same kind, also through variables: without objects and floor, the scene is a moving image.",
+    details: "Like CSS, a background can have several layers, separated by commas, the first on top. Only the last layer can be a plain color.",
+    more: "Two layers: `noise(3, #ffffff00 40%, #ffffff), linear-gradient(#2f6bd8, #9fc4ff)`. Transparent colors let the layers below show through, and `background-blend-mode` blends them. With `animation` on the scene, a color changes into a color and a gradient into a gradient of the same kind, also through variables: without objects and floor, the scene is a moving image.",
     examples: [
       {
         name: "a color",
@@ -1558,6 +1924,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "background-blend-mode",
+    figure: "scene",
     since: "0.0.4",
     appliesTo: "scene",
     syntax: "<blend-mode>#",
@@ -1590,6 +1957,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "fog",
+    figure: "scene",
     since: "0.0.4",
     appliesTo: "scene",
     animatable: true,
@@ -1602,7 +1970,8 @@ export const PROPERTIES: PropertyDef[] = [
       ["<color>", "Its color, before or after the distances. The background takes it too: past the fog, only the fog is seen."],
       ["none", "No fog: the default."],
     ],
-    details: "The scene draws nothing farther than 20 units from the camera: a fog that ends before that hides the far edge of the floor. The scene can animate its fog, from `none` too. The reflections and the refractions show the objects without fog.",
+    details: "The scene draws nothing farther than 20 units from the camera: a fog that ends before that hides the far edge of the floor. The scene can animate its fog, from `none` too.",
+    more: "The reflections and the refractions show the objects without fog.",
     examples: [
       {
         name: "into the background",
@@ -1623,6 +1992,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "shadows",
+    figure: "scene",
     since: "0.0.4",
     appliesTo: "scene",
     syntax: "none | hard | soft",
@@ -1655,6 +2025,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "dpr",
+    figure: "scene",
     since: "0.0.2",
     appliesTo: "scene",
     syntax: "auto | max | <number>",
@@ -1684,6 +2055,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "shape-rendering",
+    figure: "scene",
     since: "0.0.6",
     appliesTo: "scene",
     syntax: "auto | geometricPrecision",
@@ -1694,8 +2066,8 @@ export const PROPERTIES: PropertyDef[] = [
       ["auto", "The default: each pixel shows one surface, and silhouettes keep their steps."],
       ["geometricPrecision", "A pixel that the edge of an object only partly covers blends the object with what is behind it: the silhouettes come out smooth."],
     ],
-    details:
-      "Like `shape-rendering` in SVG, but on the scene only, with two values: `auto` keeps the sharp edges GSS has always drawn. The smoothing comes from the ray each pixel already casts, not from more rays or a bigger render. Only silhouettes are smoothed: the edges of a texture, of a shadow or of the floor keep their steps.",
+    details: "Like `shape-rendering` in SVG, but on the scene only, with two values. Only silhouettes are smoothed: the edges of a texture, of a shadow or of the floor keep their steps.",
+    more: "`auto` keeps the sharp edges GSS has always drawn. The smoothing comes from the ray each pixel already casts, not from more rays or a bigger render.",
     note: {
       title: "Heavier to draw, for now.",
       text: "With `geometricPrecision`, the graphics card does about 15 % more work for the same scene, more on some heavy scenes. On a weak computer, the scene lowers its density sooner, and a scene already at the limit may stop and offer to draw it anyway. Keep `auto` on a heavy scene.",
@@ -1710,6 +2082,7 @@ export const PROPERTIES: PropertyDef[] = [
   },
   {
     name: "view",
+    figure: "scene",
     since: "0.0.5",
     appliesTo: "scene",
     syntax: "shaded | distance",
@@ -1720,7 +2093,8 @@ export const PROPERTIES: PropertyDef[] = [
       ["shaded", "The scene, lit: the default."],
       ["distance", "The same scene, with a line every 0.25 units from the objects, fainter as it goes away. The lines lie on the plane that faces the camera through `camera-target`, and show where that plane is in front of the objects."],
     ],
-    details: "The floor is left out of the distance: the lines go around the objects only. Far from a `path`, a `prism` or a `lathe`, the distance is the one to its box, which the shader uses to skip it quickly, and the lines show that box. The lines are light on a dark scene and dark on a light one.",
+    details: "The floor is left out of the distance: the lines go around the objects only.",
+    more: "Far from a `path`, a `prism` or a `lathe`, the distance is the one to its box, which the shader uses to skip it quickly, and the lines show that box. The lines are light on a dark scene and dark on a light one.",
     note: {
       title: "Two chips switch it here.",
       text: "In the playground and in the examples of these docs, the chips `view: shaded` and `view: distance` at the top left of the render switch the view, without touching the code; when the code changes its `view`, the code wins again. On your own site, the `view` of the scene applies.",
@@ -1743,6 +2117,7 @@ export const PROPERTIES: PropertyDef[] = [
 export const AT_RULES: AtRuleDef[] = [
   {
     name: "scene",
+    figure: "row",
     since: "0.0.1",
     syntax:
       "@scene { <shape>[#<id>][.<class>]* [* <integer>][;] … group[#<id>][.<class>]* [* <integer>] { … } }",
@@ -1777,6 +2152,7 @@ export const AT_RULES: AtRuleDef[] = [
   },
   {
     name: "keyframes",
+    figure: "keyframes",
     since: "0.0.1",
     syntax: "@keyframes <name> { <offset>[, <offset>]* { <declaration>* } … }",
     description:
@@ -1803,6 +2179,7 @@ export const AT_RULES: AtRuleDef[] = [
   },
   {
     name: "property",
+    figure: "flow",
     since: "0.0.4",
     syntax: '@property --<name> { syntax: "<number>" | "<angle>" | "<percentage>" | "<color>" | "<length>"; inherits: true | false; initial-value: <value>; }',
     description:
@@ -1813,7 +2190,8 @@ export const AT_RULES: AtRuleDef[] = [
       ["inherits", "Required, like CSS: `true` or `false`."],
       ["initial-value", "Its value until the page sets another one. `scene { --lift: 2; }` gives another start value; declared anywhere else, on an object, a group, a `:hover` rule or a frame, the variable is an error. A frame can read it."],
     ],
-    details: "It goes wherever the shader reads a value at each frame: the transforms (`translate`, `rotate-x`, `rotate-y`, `rotate-z`, `scale`, `transform-origin`), `color`, `opacity`, `background`, `mask-image`, the sizes of the shapes (`size`, `radius`, `height`, `thickness`, `corner-radius`, `stroke-width`, `depth`), the numbers of a gradient, `material`, `floor`, `ambient`, `light` and the `intensity` of the point lights, `fog`, `camera-target`, `blend`, `offset-distance`, `offset-rotate`, `texture-size` and `filter`, alone or inside the math and color functions. It cannot go where the scene is built when it compiles: the copies of `* n`, `d` and `view-box`, the timing of animations and transitions, the camera the mouse moves, `dpr` and `random()`. A value set from JavaScript is never refused: it is kept in its range, so a size never goes below 0. With `@property-panel`, the playground and Try it show a control for each registered variable over the render.",
+    details: "A registered variable goes in transforms, colors, sizes, materials, lights, `fog` and `filter`. It cannot go where the scene is built when it compiles: the copies of `* n`, `d`, timings, `dpr` and `random()`.",
+    more: "The full list, wherever the shader reads a value at each frame: the transforms (`translate`, `rotate-x`, `rotate-y`, `rotate-z`, `scale`, `transform-origin`), `color`, `opacity`, `background`, `mask-image`, the sizes of the shapes (`size`, `radius`, `height`, `thickness`, `corner-radius`, `stroke-width`, `depth`), the numbers of a gradient, `material`, `floor`, `ambient`, `light` and the `intensity` of the point lights, `fog`, `camera-target`, `blend`, `offset-distance`, `offset-rotate`, `texture-size` and `filter`, alone or inside the math and color functions. Out of reach, built when the scene compiles: the copies of `* n`, `d` and `view-box`, the timing of animations and transitions, the camera the mouse moves, `dpr` and `random()`. A value set from JavaScript is never refused: it is kept in its range, so a size never goes below 0. With `@property-panel`, the playground and Try it show a control for each registered variable over the render.",
     examples: [
       {
         name: "a number",
@@ -1838,6 +2216,7 @@ export const AT_RULES: AtRuleDef[] = [
   },
   {
     name: "paint",
+    figure: "paint",
     since: "0.0.6",
     syntax: "@paint <name> { <fragment shader> }",
     description:
@@ -1848,8 +2227,8 @@ export const AT_RULES: AtRuleDef[] = [
       ["resolution", "The size of the texture in pixels, `vec2(512.0, 512.0)`. `u_resolution` works too."],
       ["mouse", "The pointer over the scene, in the pixels of the texture, from its bottom left like `gl_FragCoord`. `u_mouse` works too."],
     ],
-    details:
-      "The block is a whole fragment shader: its uniforms, its functions and its `main()`. Write `out vec4 color;` and set it, or set `gl_FragColor` as in WebGL1; GSS adds `#version 300 es` and a `precision` when the code has none. It is drawn into a texture of 512 by 512 pixels, which the object shows like an image, on each of its faces, with `texture-size` and `image-rendering`. Each `@paint` runs on its own: its names never meet the rest of the scene, and an error in its GLSL names the `@paint` and its line in the file. A scene with `paint()` is drawn with WebGL2: `<gss-scene>`, `mountAsync()` and the playground pick it by themselves in `auto`; with WebGPU chosen, the object shows its `color` instead, and the console says why.",
+    details: "The block is a whole fragment shader, with its own `main()`: write `out vec4 color;` and set it. It is drawn into a texture of 512 by 512 pixels, which the object shows like an image.",
+    more: "The shader holds its uniforms, its functions and its `main()`. `gl_FragColor` works too, as in WebGL1, and GSS adds `#version 300 es` and a `precision` when the code has none. The texture goes on each face of the object, with `texture-size` and `image-rendering`. Each `@paint` runs on its own: its names never meet the rest of the scene, and an error in its GLSL names the `@paint` and its line in the file. A scene with `paint()` is drawn with WebGL2: `<gss-scene>`, `mountAsync()` and the playground pick it by themselves in `auto`; with WebGPU chosen, the object shows its `color` instead, and the console says why.",
     note: {
       title: "WebGL2 only, for now. GLSL, not CSS.",
       text: "The GLSL of a `@paint` runs on WebGL2, not on WebGPU, which reads another shader language: a scene with `paint()` is drawn with WebGL2. And everything else in GSS is CSS: `@paint` is a way out for the textures CSS cannot describe. Try the gradients, `noise()`, `checker()` and `stripes()` first: they are lighter, and they work with WebGPU too.",
@@ -1894,16 +2273,18 @@ sphere { translate: 0 1 0; texture: paint(checks); }`,
   },
   {
     name: "property-panel",
+    figure: "flow",
     since: "0.0.5",
-    syntax: "@property-panel { display: open | folded | none; }",
+    syntax: "@property-panel { display: open | folded | none; range: [<variable> <min> <max> <step>?]#; }",
     description:
       "Shows a control for each variable of `@property` over the render, in the playground and in Try it: a slider and its number, or a color picker for a color. Moving a control sets the variable without compiling the scene again.",
     valuesTitle: "Descriptors",
     values: [
       ["display", "`open`, the default: the panel shows its controls. `folded`: only its title, `variables · 2`, which opens it. `none`: no panel, as without the rule."],
+      ["range", "The ends of the slider of a variable, and its step if you like: `--col 0 3 1`. One per variable, separated by commas: `range: --col 0 3, --row 0 3;`. They are written like the values of the variable: `0deg 180deg` for an angle, `0% 50%` for a percentage.", "0.0.7"],
     ],
-    details:
-      "A slider goes from 0 to twice the start value of its variable, at least from 0 to 1, and around 0 for a negative value; an angle from 0 to 360deg, a percentage from 0% to 100%. A number typed past the end of a slider widens it, and the reset button gives the start value back. When the code changes a start value, the code wins over the slider. The panel never writes into the code, and a page that embeds the scene shows no panel: it sets the variables with `setProperty()`.",
+    details: "The panel never writes into the code. A page that embeds the scene shows no panel: it sets the variables with `setProperty()`.",
+    more: "A slider goes from 0 to twice the start value of its variable, at least from 0 to 1, and around 0 for a negative value; an angle from 0 to 360deg, a percentage from 0% to 100%. A number typed past the end of a slider widens it, and the reset button gives the start value back. With a `range`, the slider keeps the ends of the scene: a number typed past one is held there, and the panel says what the end is. A color has a color picker and no range. When the code changes a start value, the code wins over the slider.",
     examples: [
       {
         name: "a slider",
@@ -1915,6 +2296,16 @@ sphere { translate: 0 1 0; texture: paint(checks); }`,
         text: "The panel starts folded: its title opens it.",
         code: '@property --tint { syntax: "<color>"; inherits: false; initial-value: #3a7bff; } @property --turn { syntax: "<angle>"; inherits: false; initial-value: 30deg; } @property-panel { display: folded; } @scene { cube; } cube { translate: 0 0.8 0; rotate-y: var(--turn); color: var(--tint); }',
       },
+      {
+        name: "a cube on a board of 4 by 4",
+        text: "`range` gives each slider the squares of the board, from 0 to 3, one square at a time.",
+        code: `@property --col { syntax: "<number>"; inherits: false; initial-value: 0; }
+@property --row { syntax: "<number>"; inherits: false; initial-value: 0; }
+@property-panel { range: --col 0 3 1, --row 0 3 1; }
+@scene { path#grid; cube#piece; }
+#grid { d: path("M0 0 H4 M0 1 H4 M0 2 H4 M0 3 H4 M0 4 H4 M0 0 V4 M1 0 V4 M2 0 V4 M3 0 V4 M4 0 V4"); stroke-width: 0.04; rotate-x: 90deg; translate: 0 0.02 0; color: #1a1a1f; }
+#piece { size: 0.6; translate: calc(var(--col) - 1.5) 0.3 calc(var(--row) - 1.5); color: #ff5a36; }`,
+      },
     ],
     see: [
       { anchor: "at-property", label: "@property" },
@@ -1923,6 +2314,7 @@ sphere { translate: 0 1 0; texture: paint(checks); }`,
   },
   {
     name: "media",
+    figure: "flow",
     since: "0.0.2",
     syntax: "@media <media-query> { <rule> … }",
     description:
@@ -1935,7 +2327,8 @@ sphere { translate: 0 1 0; texture: paint(checks); }`,
       ["(prefers-reduced-motion)", "The visitor asks for less motion."],
       ["and, not, ,", "Combine queries, like CSS."],
     ],
-    details: "The browser reads the query, so any media query CSS knows works. Inside, the rules join the cascade where the `@media` is written, with their usual specificity. A scene can use up to 4 different queries, and `@media` holds rules only: `@scene` and `@keyframes` go outside it. On a page, the viewport is the window, like CSS. In the playground and in Try it, it is the render, like the result of CodePen: make the render narrower to see a `max-width` query apply.",
+    details: "Any media query CSS knows works: the browser reads it. `@media` holds rules only, so `@scene` and `@keyframes` go outside it.",
+    more: "Inside, the rules join the cascade where the `@media` is written, with their usual specificity. A scene can use up to 4 different queries. On a page, the viewport is the window, like CSS. In the playground and in Try it, it is the render, like the result of CodePen: make the render narrower to see a `max-width` query apply.",
     examples: [
       {
         name: "a small screen",
@@ -1954,6 +2347,217 @@ sphere { translate: 0 1 0; texture: paint(checks); }`,
       },
     ],
   },
+  {
+    name: "mixin",
+    figure: "flow",
+    since: "0.0.7",
+    syntax: "@mixin --<name>[(--<parameter> [<type>] [: <default>], …)] { <declaration> … <rule> … [@contents;] }",
+    description:
+      "Names a block of declarations and rules, written once and put into any rule with `@apply`, like the mixins of CSS. Its parameters are read with `var()`, and each can have a default. The scene compiles as if the block were written in each rule that applies it.",
+    valuesTitle: "Parts",
+    values: [
+      ["--<name>", "Starts with `--`, like a variable: `@mixin --card { … }`."],
+      ["(--size, --tint: #ff5a36)", "The parameters, given by `@apply` in order and read with `var(--size)` inside. After `:`, the default for a value left out. A type, like `--size <number>`, is read as in CSS; the property that gets the value checks it."],
+      ["{ … }", "Declarations, rules nested with `&`, `@media`, and other `@apply`."],
+      ["@contents", "Where the block given to `@apply` goes. `@contents { … }` holds what goes there when `@apply` gives none."],
+    ],
+    details: "A mixin goes outside the rules, before or after the rules that apply it. From Sass: `@apply` replaces `@include`, `var()` replaces `$`, and `@contents` replaces `@content`.",
+    more: "With two mixins of the same name, the last one wins, like CSS. A parameter hides a variable of the same name, and cannot be declared inside the mixin. The block given to `@apply` does not see the parameters: it belongs to the rule that applies the mixin.",
+    examples: [
+      {
+        name: "a mixin, and the rules it saves",
+        text: "Both cubes take the two declarations of `--polished`: the scene is the same as with them written in each rule.",
+        code: `@mixin --polished {
+  material: metal(0.15);
+  corner-radius: 0.12;
+}
+@scene { cube#a; cube#b; }
+#a { translate: -0.9 0.5 0; color: #ff5a36; @apply --polished; }
+#b { translate: 0.9 0.5 0; color: #3a7bff; @apply --polished; }`,
+      },
+      {
+        name: "parameters and their defaults",
+        text: "`--ball` reads `--x`, `--size` and `--tint` with `var()`; a value left out takes its default.",
+        code: `@mixin --ball(--x, --size: 0.4, --tint: #3a7bff) {
+  translate: var(--x) var(--size) 0;
+  radius: var(--size);
+  color: var(--tint);
+}
+@scene { sphere#a; sphere#b; }
+#a { @apply --ball(-1); }
+#b { @apply --ball(0.8, 0.7, #ff5a36); }`,
+      },
+      {
+        name: "nested rules",
+        text: "A mixin holds rules too: its `&:hover` becomes `#a:hover`, then `#b:hover`.",
+        code: `@mixin --lively {
+  transition: 0.3s;
+  &:hover { scale: 1.2; color: #ff5a36; }
+}
+@scene { cube#a; cube#b; }
+#a { translate: -0.9 0.5 0; @apply --lively; }
+#b { translate: 0.9 0.5 0; @apply --lively; }`,
+      },
+      {
+        name: "@contents",
+        text: "`--on-small-screens` holds the `@media`, and each rule gives the block to put inside it. Make the render narrower to see it.",
+        code: `@mixin --on-small-screens {
+  @media (max-width: 600px) { @contents; }
+}
+@scene { sphere; }
+sphere {
+  translate: 0 1 0;
+  color: #3a7bff;
+  @apply --on-small-screens { color: #ff5a36; radius: 0.6; }
+}`,
+      },
+    ],
+    see: [
+      { anchor: "at-apply", label: "@apply" },
+      { anchor: "fn-var", label: "var()" },
+    ],
+  },
+  {
+    name: "apply",
+    figure: "flow",
+    since: "0.0.7",
+    syntax: "@apply --<name>[(<value>, …)] [{ <declaration> … }];",
+    description:
+      "Puts the declarations and rules of a `@mixin` in the rule where it is written, like CSS. Values in parentheses go to the parameters of the mixin, in order; a block goes where the mixin writes `@contents`.",
+    valuesTitle: "Forms",
+    values: [
+      ["@apply --card;", "No values: each parameter takes its default. `@apply --card();` is the same."],
+      ["@apply --card(0.7, #ff5a36);", "One value per parameter, in order; those left out take their default. A value with a comma of its own goes between braces: `{color 1s, scale 2s}`."],
+      ["@apply --card { … }", "The block goes where the mixin writes `@contents`. Values in parentheses can come before it: `@apply --card(0.7) { … }`."],
+    ],
+    details: "The mixin takes the place of `@apply` in the cascade: a declaration written after it in the same rule wins, one written before loses.",
+    more: "`@apply` goes in any rule: an object, a group, the scene, a `:hover` or `:active` rule, a nested rule, a `@media`, and a frame of `@keyframes` when the mixin holds declarations only. An unknown mixin, more values than parameters, a parameter with no value and no default, or a mixin that applies itself is an error that points at it.",
+    examples: [
+      {
+        name: "where it stands in the rule",
+        text: "The mixin takes the place of `@apply`: in `#a`, its `color` comes after the blue one and wins; in `#b`, the blue one comes after it and wins.",
+        code: `@mixin --warm { color: #ff5a36; }
+@scene { cube#a; cube#b; }
+#a { translate: -0.9 0.5 0; color: #3a7bff; @apply --warm; }
+#b { translate: 0.9 0.5 0; @apply --warm; color: #3a7bff; }`,
+      },
+      {
+        name: "in a frame of @keyframes",
+        text: "`--pose` gives a height and a size, at rest and at the end of the hop.",
+        code: `@mixin --pose(--h, --s) { translate: 0 var(--h) 0; scale: var(--s); }
+@scene { cube; }
+cube { color: #ff5a36; @apply --pose(0.5, 1); animation: hop 1.2s ease-in-out alternate; }
+@keyframes hop { to { @apply --pose(1.6, 1.3); } }`,
+      },
+    ],
+    see: [
+      { anchor: "at-mixin", label: "@mixin" },
+      { anchor: "selector-nesting", label: "& (nesting)" },
+    ],
+  },
+  {
+    name: "for",
+    figure: "row",
+    since: "0.0.7",
+    syntax: "@for --<name> from <number> through | to <number> [by <number>] { … }",
+    description:
+      "Writes its block once for each number it counts, with `var(--i)` replaced by that number, like the `@for` of Sass. It goes anywhere: in `@scene` to make objects, around rules, in a rule, in `@keyframes`. The scene compiles as if each step were written by hand.",
+    valuesTitle: "Parts",
+    values: [
+      ["--<name>", "The variable of the loop, read with `var(--i)` anywhere in the block: in a value, a selector, an attribute of `@scene`, after `*`."],
+      ["from 1 through 4", "Counts 1, 2, 3, 4: `through` counts the last number."],
+      ["from 1 to 4", "Counts 1, 2, 3: `to` stops before the last number. From the larger to the smaller, the loop counts down."],
+      ["by 0.5", "The size of a step, more than 0. Without it, 1."],
+      ["0deg, 50%", "The numbers can take a unit, the same for all three: `from 0deg to 360deg by 45deg`."],
+    ],
+    details: "`* n` and `sibling-index()` already repeat an object; `@for` is for what they cannot do, like a grid that needs two indices, or rules written for each step.",
+    more: "A loop takes 1000 steps at most. Loops can be nested, each with its own name. Inside the block, the variable of the loop hides a variable of the same name. The numbers are written in the file: a `var()` of a variable or of a parameter cannot set them.",
+    examples: [
+      {
+        name: "objects and rules for each step",
+        text: "The loop in `@scene` makes five cubes; the loop around the rule gives each its height, and stands it on the floor.",
+        code: `@scene {
+  @for --i from 1 through 5 { cube.step; }
+}
+.step { color: #ff5a36; }
+@for --i from 1 through 5 {
+  .step:nth-child(var(--i)) {
+    size: 0.8 calc(var(--i) * 0.4) 0.8;
+    translate: calc(var(--i) * 1.1 - 3.3) calc(var(--i) * 0.2) 0;
+  }
+}`,
+      },
+      {
+        name: "a grid",
+        text: "Two loops, one in the other, give each cube its row and its column in attributes; the rules read them back.",
+        code: `@scene {
+  @for --row from 0 to 3 {
+    @for --col from 0 to 3 {
+      cube[data-row=var(--row)][data-col=var(--col)];
+    }
+  }
+}
+cube { scale: 0.8; }
+@for --row from 0 to 3 {
+  @for --col from 0 to 3 {
+    [data-row=var(--row)][data-col=var(--col)] {
+      translate: calc(var(--col) - 1) 0.4 calc(var(--row) - 1);
+      color: hsl(calc(var(--row) * 50 + var(--col) * 20) 80% 60%);
+    }
+  }
+}`,
+      },
+    ],
+    see: [
+      { anchor: "at-each", label: "@each" },
+      { anchor: "fn-sibling-index", label: "sibling-index()" },
+    ],
+  },
+  {
+    name: "each",
+    figure: "row",
+    since: "0.0.7",
+    syntax: "@each --<name> in <value>, <value>, … { … }",
+    description:
+      "Writes its block once for each value of a list, with `var(--x)` replaced by that value, like the `@each` of Sass. A value can be a number, a color, a word, even a shape: `@each --shape in cube, sphere { var(--shape); }` makes a cube, then a sphere.",
+    valuesTitle: "Parts",
+    values: [
+      ["--<name>", "The variable of the loop, read with `var(--x)` anywhere in the block, even in the place of a shape in `@scene`."],
+      ["in tomato, gold, teal", "The values, split at the commas. A value can hold several words: `in 0 1 0, 1 0 0`."],
+      ["{a, b}", "A value with a comma of its own goes between braces, like a value of `@apply`."],
+    ],
+    details: "It goes anywhere `@for` goes: in `@scene`, around rules, in a rule, in `@keyframes`. Each value is written in place of the `var()`, as if the block were written by hand for it.",
+    more: "A list takes 1000 values at most. An empty value is an error. Inside the block, the variable of the loop hides a variable of the same name.",
+    examples: [
+      {
+        name: "a different shape at each step",
+        text: "The variable stands in the place of the shape: four objects of four shapes, in a row.",
+        code: `@scene {
+  @each --shape in cube, sphere, cone, torus {
+    var(--shape).piece;
+  }
+}
+.piece { translate: calc(sibling-index() * 1.6 - 4) 0.6 0; color: #3a7bff; }`,
+      },
+      {
+        name: "a list of colors",
+        text: "Each sphere keeps its color in an attribute, and one rule per color paints it.",
+        code: `@scene {
+  @each --c in tomato, gold, teal, orchid {
+    sphere[data-color=var(--c)];
+  }
+}
+sphere { translate: calc(sibling-index() * 1.3 - 3.25) 0.5 0; }
+@each --c in tomato, gold, teal, orchid {
+  [data-color=var(--c)] { color: var(--c); }
+}`,
+      },
+    ],
+    see: [
+      { anchor: "at-for", label: "@for" },
+      { anchor: "at-scene", label: "@scene" },
+    ],
+  },
 ];
 
 export const SELECTORS: SelectorDef[] = [
@@ -1962,6 +2566,7 @@ export const SELECTORS: SelectorDef[] = [
     anchor: "selector-type",
     since: "0.0.1",
     specificity: "1",
+    figure: "shapes",
     description:
       "A shape name targets every object of that shape: `cube` styles every cube, and `group` every group.",
     examples: [
@@ -1974,6 +2579,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: ".class",
     anchor: "selector-class",
+    figure: "row",
     since: "0.0.1",
     specificity: "100 per class",
     description:
@@ -1988,6 +2594,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: "#id",
     anchor: "selector-id",
+    figure: "row",
     since: "0.0.1",
     specificity: "10000",
     description:
@@ -2000,8 +2607,47 @@ export const SELECTORS: SelectorDef[] = [
     ],
   },
   {
+    name: "[attribute]",
+    anchor: "selector-attribute",
+    figure: "row",
+    since: "0.0.7",
+    specificity: "100, like a class, even [id=…]",
+    description:
+      "Targets objects by an attribute, like CSS. An object gets its attributes in `@scene`, like HTML: `cube[data-col=2]`, `sphere[lit]`, or `[data-name=\"top left\"]` with spaces. Its id and its classes count as the attributes `id` and `class`, so `[id^=\"hero-\"]` finds every copy of `torus#hero * 3`.",
+    valuesTitle: "Forms",
+    values: [
+      ["[attr]", "The object has the attribute, whatever its value."],
+      ["[attr=value]", "The value is exactly this one. Quotes are optional for a single word or a number."],
+      ["[attr~=value]", "One of the words of the value, split at the spaces: `[class~=big]`."],
+      ["[attr|=value]", "The value, or the value followed by a dash: `[lang|=en]` matches `en` and `en-US`."],
+      ["[attr^=value]", "The value starts with this."],
+      ["[attr$=value]", "The value ends with this."],
+      ["[attr*=value]", "The value contains this."],
+      ["[attr=value i]", "Ignores the case. `s` keeps it, which is already the default."],
+    ],
+    details: "In `@scene`, an attribute takes `=` only, and every copy of a `* n` gets the same ones. `id` and `class` keep their own syntax there: `cube#a.big`. Like CSS, `~=`, `^=`, `$=` and `*=` never match an empty value.",
+    examples: [
+      {
+        name: "[attr=value]",
+        text: "The cubes of column 2 turn red.",
+        code: "@scene { cube[data-col=1]; cube[data-col=2]; cube[data-col=2]; } cube { size: 0.5; translate: calc((sibling-index() - 2) * -0.8) 0.4 0; } [data-col=\"2\"] { color: #ff5a36; }",
+      },
+      {
+        name: "[attr^=value]",
+        text: "Every copy of `#hero` is numbered: `[id^=\"hero-\"]` styles them all, not the other torus.",
+        code: "@scene { torus#hero * 3; torus#other; } torus { radius: 0.3; thickness: 0.1; rotate-x: 70deg; translate: calc((sibling-index() - 2.5) * -0.9) 0.4 0; } [id^=\"hero-\"] { color: #3a7bff; }",
+      },
+      {
+        name: "[attr~=value] and the i flag",
+        text: "A list of words, read one by one, and a value whatever its case.",
+        code: "@scene { sphere[data-tags=\"round shiny\"]; sphere[data-tags=round]; sphere[lang=EN]; } sphere { radius: 0.3; translate: calc((sibling-index() - 2) * -0.9) 0.4 0; } [data-tags~=shiny] { material: gold; } [lang=en i] { color: #3ad16b; }",
+      },
+    ],
+  },
+  {
     name: "*",
     anchor: "selector-universal",
+    figure: "row",
     since: "0.0.1",
     specificity: "0",
     description:
@@ -2017,6 +2663,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: "a, b",
     anchor: "selector-list",
+    figure: "row",
     since: "0.0.1",
     specificity: "Each selector keeps its own",
     description:
@@ -2031,11 +2678,13 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: "a b",
     anchor: "selector-descendant",
+    figure: "row",
     since: "0.0.1",
     specificity: "The sum of its parts",
     description:
       "A space means \"inside\": `#letters cube` targets the cubes of the group `#letters`, at any depth.",
-    details: "Like CSS, it reads from right to left: the last part is the object, and each part before it is one of its groups, further out each time. `#letters#S` asks for one object with two ids, which never exists: it is an error.",
+    details: "Like CSS, it reads from right to left: the last part is the object, and each part before it is one of its groups, further out each time.",
+    more: "`#letters#S` asks for one object with two ids, which never exists: it is an error.",
     examples: [
       {
         name: "the cubes of a group",
@@ -2047,6 +2696,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: "a > b",
     anchor: "selector-child",
+    figure: "row",
     since: "0.0.2",
     specificity: "The sum of its parts",
     description:
@@ -2063,6 +2713,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: "a + b",
     anchor: "selector-adjacent",
+    figure: "row",
     since: "0.0.2",
     specificity: "The sum of its parts",
     description:
@@ -2079,6 +2730,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: "a ~ b",
     anchor: "selector-sibling",
+    figure: "row",
     since: "0.0.2",
     specificity: "The sum of its parts",
     description:
@@ -2095,6 +2747,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: "&",
     anchor: "selector-nesting",
+    figure: "row",
     since: "0.0.4",
     specificity: "The sum of the rule around it and of the nested selector",
     description:
@@ -2107,7 +2760,8 @@ export const SELECTORS: SelectorDef[] = [
       ["> sphere", "A leading combinator: `#g { > sphere { … } }` is `#g > sphere`."],
       ["@media", "A query inside a rule: its declarations apply to that rule when the query matches."],
     ],
-    details: "Rules nest at any depth, and `&` also works inside `:has()` and `:not()`. The declarations written after a nested rule come after it in the cascade, like CSS. With a list as the parent, `a, b { & c { … } }` gives `a c` and `b c`, each with its own specificity, where CSS gives both the specificity of the most specific selector of the list.",
+    details: "Rules nest at any depth, and `&` also works inside `:has()` and `:not()`.",
+    more: "The declarations written after a nested rule come after it in the cascade, like CSS. With a list as the parent, `a, b { & c { … } }` gives `a c` and `b c`, each with its own specificity, where CSS gives both the specificity of the most specific selector of the list.",
     examples: [
       {
         name: "a group and what it holds",
@@ -2124,18 +2778,22 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: "::face(), ::top, ::bottom",
     anchor: "selector-face",
+    figure: "tile",
     since: "0.0.1",
     specificity: "1, like a tag, added to the rest",
     description:
-      "A pseudo-element, like `::part()` in CSS: the rule styles one face of the object, not the object. A face takes `texture` only.",
+      "A pseudo-element, like `::part()` in CSS: the rule styles one face of the object, not the object. A face takes `texture` and `content`. It is named, or numbered like `:nth-child()`.",
     valuesTitle: "Faces",
     values: [
       ["top, bottom", "Up (+y) and down, in the object's own space: the faces turn with it."],
       ["front, back", "Toward +z and toward −z."],
       ["right, left", "Toward +x and toward −x."],
       ["::top, ::bottom", "Shortcuts for `::face(top)` and `::face(bottom)`."],
+      ["<number>", "A face by its number: `::face(3)`. A cube is numbered like a die, its opposite faces adding up to 7: front 1, top 2, right 3, left 4, bottom 5, back 6."],
+      ["odd, even, An+B", "Several faces, like `:nth-child()`: `::face(odd)`, `::face(2n)`, `::face(n + 5)` (5 and the faces after it)."],
     ],
-    details: "A face without a rule of its own shows the texture of the object. On a round shape, a face is the part that looks that way the most: a sphere is cut like the cube around it. Like CSS, the pseudo-element ends the selector: `cube.grass::top`, never `#g::top cube`.",
+    details: "A face without a rule of its own shows the texture and the text of the object. Like CSS, the pseudo-element ends the selector: `cube.grass::top`, never `#g::top cube`.",
+    more: "Every shape seen from six sides (a cube, a sphere, a cylinder, a cone, a capsule, a tube, a torus, a plane and the shapes drawn with `path`) has the six faces of the cube and its numbers: on a round shape, a face is the part that looks that way the most. A pyramid has five faces: its slopes from the front, turning right (front 1, right 2, back 3, left 4), then its base, 5 or `bottom`. An octahedron has eight triangles, with numbers only: 1 to 4 on top, from the front-right turning right (front-right, back-right, back-left, front-left), 5 to 8 below them, in the same order. A number the shape does not have, like `cube::face(7)`, is an error; so is the `content` of a name the shape does not have, like `pyramid::face(top)`.",
     examples: [
       {
         name: "::face()",
@@ -2153,6 +2811,21 @@ export const SELECTORS: SelectorDef[] = [
         code: '@scene { cube.flip; } .flip { translate: 0 0.6 0; rotate-x: 150deg; texture: url("/textures/grass-side.png"); image-rendering: pixelated; } .flip::bottom { texture: url("/textures/dirt.png"); }',
       },
       {
+        name: "::face() with a number",
+        text: "A die: each face writes its own number, the opposite faces adding up to 7.",
+        code: '@scene { cube; } scene { camera-angle: 35deg 30deg; } cube { translate: 0 0.6 0; color: #f4f1ea; corner-radius: 0.08; font-weight: bold; } cube::face(1) { content: "1"; } cube::face(2) { content: "2"; } cube::face(3) { content: "3"; } cube::face(4) { content: "4"; } cube::face(5) { content: "5"; } cube::face(6) { content: "6"; }',
+      },
+      {
+        name: "::face(odd), on an octahedron",
+        text: "The faces of an octahedron have numbers only: one in two takes a word, the others stay plain.",
+        code: '@scene { octahedron; } scene { camera-angle: 30deg 25deg; } octahedron { translate: 0 0.9 0; radius: 0.9; color: #3ad16b; font-weight: bold; animation: turn 8s linear infinite; } octahedron::face(odd) { content: "GSS"; } @keyframes turn { to { rotate-y: 360deg; } }',
+      },
+      {
+        name: "::face(even), on a pyramid",
+        text: "The slopes of a pyramid are 1 to 4 from the front, turning right, and its base is 5: the even faces, its right and left slopes, take their own word.",
+        code: '@scene { pyramid; } scene { camera-angle: 30deg 25deg; } pyramid { translate: 0 0.7 0; size: 1.8 1.4 1.8; color: #722cff; font-weight: bold; content: "odd"; } pyramid::face(even) { content: "even"; }',
+      },
+      {
         name: "::face(), ::top and ::bottom together",
         text: "Two grass blocks, the second turned over: each face keeps its texture as the block turns.",
         code: '@scene { cube.grass * 2; } .grass { translate: calc(2.1 - sibling-index() * 1.4) 0.5 0; rotate-y: -30deg; rotate-x: calc(sibling-index() * 150deg - 150deg); texture: url("/textures/grass-side.png"); image-rendering: pixelated; } .grass::top { texture: url("/textures/grass-top.png"); } .grass::bottom { texture: url("/textures/dirt.png"); } .grass::face(front) { texture: url("/textures/dirt.png"); }',
@@ -2162,6 +2835,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: ":hover",
     anchor: "selector-hover",
+    figure: "hover",
     since: "0.0.1",
     specificity: "100, like a class, added to the rest",
     description:
@@ -2173,7 +2847,8 @@ export const SELECTORS: SelectorDef[] = [
       ["#letters:hover cube", "On a group: every cube of `#letters` reacts as soon as the mouse is over any object of the group, like hovering a child hovers its parent in CSS."],
       ["#g:has(sphere:hover)", "Inside `:has()`: hovering one object changes another."],
     ],
-    details: "The `:hover` rules join the cascade like any other: `#a { color: blue; }` beats `cube:hover { color: red; }`, and a normal `!important` beats them all. A `:hover` rule changes animatable properties only (the transforms, `color`, `opacity`, `mask-image`, `offset-distance` and variables), never a face, and it styles objects, not groups: write `#g:hover cube`, not `#g:hover { … }`. It can also start an `animation`: it begins when the pointer arrives and plays to its end, pointer gone or not (see `:active`).",
+    details: "A `:hover` rule changes animatable properties only, and it styles objects, not groups: write `#g:hover cube`, not `#g:hover { … }`.",
+    more: "The `:hover` rules join the cascade like any other: `#a { color: blue; }` beats `cube:hover { color: red; }`, and a normal `!important` beats them all. The animatable properties are the transforms, `color`, `opacity`, `mask-image`, `offset-distance` and variables: never a face. It can also start an `animation`: it begins when the pointer arrives and plays to its end, pointer gone or not (see `:active`).",
     examples: [
       {
         name: "lift on hover",
@@ -2190,6 +2865,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: ":active",
     anchor: "selector-active",
+    figure: "hover",
     since: "0.0.3",
     specificity: "100, like a class, added to the rest",
     description:
@@ -2201,7 +2877,8 @@ export const SELECTORS: SelectorDef[] = [
       ["#g:active cube", "On a group: every cube of `#g` is pressed when any of its objects is."],
       ["#lamp:has(#switch:active) #bulb", "Inside `:has()`: press one object, change another."],
     ],
-    details: "A pressed object is under the pointer, so its `:hover` rules still apply, and `:active` wins over them at equal specificity when written after them: `cube:hover { scale: 1.1; } cube:active { scale: 0.95; }` grows under the mouse and sinks when clicked. Like `:hover`, it changes animatable properties only, and styles objects, not groups. With `transition`, pressing takes the transition of the `:active` rule, and releasing the one of the hovered state. An `animation` in a `:active` rule starts at the press and plays to its end, released or not, like a button that fires: once, unless it says how many times; the pressed state stays on until the animation ends, or for good with `forwards`, and the next press plays it again.",
+    details: "Write `:active` after `:hover`: a pressed object is hovered too, and the later rule wins. Like `:hover`, it changes animatable properties only, and styles objects, not groups.",
+    more: "`cube:hover { scale: 1.1; } cube:active { scale: 0.95; }` grows under the mouse and sinks when clicked. With `transition`, pressing takes the transition of the `:active` rule, and releasing the one of the hovered state. An `animation` in a `:active` rule starts at the press and plays to its end, released or not, like a button that fires: once, unless it says how many times; the pressed state stays on until the animation ends, or for good with `forwards`, and the next press plays it again.",
     examples: [
       {
         name: "a button that sinks when pressed",
@@ -2223,6 +2900,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: ":has()",
     anchor: "selector-has",
+    figure: "row",
     since: "0.0.2",
     specificity:
       "the most specific selector inside, added to the rest, like CSS",
@@ -2237,7 +2915,8 @@ export const SELECTORS: SelectorDef[] = [
       ["group:has(> sphere)", "A leading combinator, relative to the subject: here, direct children."],
       ["cube:has(+ sphere)", "The next sibling, or any later one with `~`. Chains work too: `cube:has(+ group > sphere)`."],
     ],
-    details: "Without a leading sibling combinator, `:has()` goes on a group: an object holds nothing, so `cube:has(sphere)` is an error. Empty groups can match, and a `:has()` cannot hold another one. Unlike CSS, a list that mixes a static selector with `:hover` matches only during a hover.",
+    details: "Without a leading sibling combinator, `:has()` goes on a group: an object holds nothing, so `cube:has(sphere)` is an error.",
+    more: "Empty groups can match, and a `:has()` cannot hold another one. Unlike CSS, a list that mixes a static selector with `:hover` matches only during a hover.",
     examples: [
       {
         name: "the groups that hold a sphere",
@@ -2259,6 +2938,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: ":not()",
     anchor: "selector-not",
+    figure: "row",
     since: "0.0.3",
     specificity: "its most specific selector, added to the rest, like CSS",
     description:
@@ -2288,6 +2968,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: ":nth-child(), :nth-last-child()",
     anchor: "selector-nth-child",
+    figure: "row",
     since: "0.0.3",
     specificity: "100, like a class, plus the most specific selector after of",
     description:
@@ -2299,7 +2980,8 @@ export const SELECTORS: SelectorDef[] = [
       ["An+B", "A formula where `n` runs from 0 up: `2n+1` is 1, 3, 5…, `3n` every third, `-n+3` the first three."],
       ["An+B of <selector>", "Counts only the siblings that match the list, and the object must match it too: `:nth-child(2 of .red)` is the second `.red`."],
     ],
-    details: "Each copy of `* n` is a sibling of its own: in `@scene { cube * 4; sphere; }`, `cube:nth-child(odd)` is cubes 1 and 3, and the sphere is child 5, as `sibling-index()` counts. Groups count as siblings, and the count starts again inside each group. The position is read once, when the scene compiles: `of` cannot hold `:hover`.",
+    details: "Each copy of `* n` is a sibling of its own. Groups count as siblings, and the count starts again inside each group.",
+    more: "In `@scene { cube * 4; sphere; }`, `cube:nth-child(odd)` is cubes 1 and 3, and the sphere is child 5, as `sibling-index()` counts. The position is read once, when the scene compiles: `of` cannot hold `:hover`.",
     examples: [
       {
         name: "odd, and every third",
@@ -2316,6 +2998,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: ":nth-of-type(), :nth-last-of-type()",
     anchor: "selector-nth-of-type",
+    figure: "row",
     since: "0.0.3",
     specificity: "100, like a class",
     description:
@@ -2332,6 +3015,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: ":first-child, :last-child, :only-child",
     anchor: "selector-first-child",
+    figure: "row",
     since: "0.0.3",
     specificity: "100, like a class",
     description:
@@ -2362,6 +3046,7 @@ export const SELECTORS: SelectorDef[] = [
   {
     name: "!important",
     anchor: "selector-important",
+    figure: "flow",
     since: "0.0.1",
     specificity: "Beats every declaration without it",
     description:
@@ -2381,6 +3066,7 @@ export const SELECTORS: SelectorDef[] = [
 export const SHAPE_DOCS: ShapeDef[] = [
   {
     name: "cube",
+    figure: "shape",
     since: "0.0.1",
     description:
       "A box with slightly rounded edges, centered on its origin: 1 × 1 × 1 by default. `size` stretches it into any box, and `corner-radius` rounds its edges.",
@@ -2393,6 +3079,7 @@ export const SHAPE_DOCS: ShapeDef[] = [
   },
   {
     name: "sphere",
+    figure: "shape",
     since: "0.0.1",
     description:
       "A ball centered on its origin, with a `radius` of 0.5 by default.",
@@ -2405,6 +3092,7 @@ export const SHAPE_DOCS: ShapeDef[] = [
   },
   {
     name: "torus",
+    figure: "shape",
     since: "0.0.1",
     description:
       "A ring lying flat around the y axis: a `radius` of 1 to the center of its tube, and a tube of 0.28 by default, set by `thickness`.",
@@ -2417,6 +3105,7 @@ export const SHAPE_DOCS: ShapeDef[] = [
   },
   {
     name: "cylinder",
+    figure: "shape",
     since: "0.0.1",
     description:
       "A cylinder standing on the y axis, centered on its origin: a `radius` of 0.5 and a `height` of 1 by default.",
@@ -2429,6 +3118,7 @@ export const SHAPE_DOCS: ShapeDef[] = [
   },
   {
     name: "cone",
+    figure: "shape",
     since: "0.0.1",
     description:
       "A cone standing on the y axis, centered on its origin, pointing up: a `radius` of 0.5 and a `height` of 1 by default. A second radius cuts its top.",
@@ -2441,6 +3131,7 @@ export const SHAPE_DOCS: ShapeDef[] = [
   },
   {
     name: "capsule",
+    figure: "shape",
     since: "0.0.1",
     description:
       "A cylinder with round ends, standing on the y axis and centered on its origin: a `radius` of 0.25 and a `height` of 1 by default, round ends included.",
@@ -2453,6 +3144,7 @@ export const SHAPE_DOCS: ShapeDef[] = [
   },
   {
     name: "pyramid",
+    figure: "shape",
     since: "0.0.6",
     description:
       "A pyramid on a square base, pointing up, centered on its origin: a base of 1 by 1 and a height of 1 by default. `size` sets the width and the depth of its base, and its height, like the box of a cube.",
@@ -2470,6 +3162,7 @@ export const SHAPE_DOCS: ShapeDef[] = [
   },
   {
     name: "octahedron",
+    figure: "shape",
     since: "0.0.6",
     description:
       "Eight triangles, two pyramids joined by their bases, like a die with eight faces: a `radius` of 0.5 by default, from its center to each tip.",
@@ -2482,10 +3175,12 @@ export const SHAPE_DOCS: ShapeDef[] = [
   },
   {
     name: "tube",
+    figure: "shape",
     since: "0.0.6",
     description:
       "A hollow cylinder, a pipe, standing on the y axis and centered on its origin: an outer `radius` of 0.5, a `height` of 1 and a wall 0.1 `thickness` thick by default.",
-    details: "Not a `path`: a `path` draws a tube along any line, while `tube` is a straight pipe, open at both ends, whose wall has a thickness. The wall goes inside the radius, so the tube keeps its outer size when the wall gets thicker.",
+    details: "Not a `path`: a `path` draws a tube along any line, while `tube` is a straight pipe, open at both ends, whose wall has a thickness.",
+    more: "The wall goes inside the radius, so the tube keeps its outer size when the wall gets thicker.",
     examples: [
       {
         name: "a pipe",
@@ -2500,6 +3195,7 @@ export const SHAPE_DOCS: ShapeDef[] = [
   },
   {
     name: "path",
+    figure: "shape",
     since: "0.0.1",
     description:
       "A tube with round ends that follows an SVG path, given by `d`. `stroke-width` and `view-box` work like in SVG.",
@@ -2512,6 +3208,7 @@ export const SHAPE_DOCS: ShapeDef[] = [
   },
   {
     name: "plane",
+    figure: "shape",
     since: "0.0.1",
     description:
       "A thin, flat rectangle lying in the xz plane, centered on its origin: 1 × 1 by default. `size` sets its width and its depth, and `rotate-x: 90deg` stands it up, like a wall.",
@@ -2524,6 +3221,7 @@ export const SHAPE_DOCS: ShapeDef[] = [
   },
   {
     name: "prism",
+    figure: "shape",
     since: "0.0.1",
     description:
       "A contour, filled, then given a `depth`: a flat object, like a star, a letter, an arrow, a logo. The contour is a `polygon()` or a `path()` (see `d`), and a contour inside another one is a hole.",
@@ -2543,10 +3241,12 @@ export const SHAPE_DOCS: ShapeDef[] = [
   },
   {
     name: "lathe",
+    figure: "shape",
     since: "0.0.5",
     description:
       "A contour, filled, then turned around the vertical axis, like clay on a potter's wheel: a vase, a bowl, a bottle, a chess piece. A `prism` pushes its contour straight back into a flat plate; a lathe turns it into an object that is round from every side. The contour is a `polygon()` or a `path()` (see `d`), drawn right of the axis x = 0.",
-    details: "Draw half the outline: x is the distance from the axis, and y goes down, like SVG. A contour that does not touch the axis turns into a ring, and a contour inside another one is a hole. The height is centered on the contours (or on the `view-box`), and y goes up in the scene, like a path. Seen from the front, a prism and a lathe of the same contour can look alike; turned, the prism is a cut-out as thick as its `depth`, and the lathe stays round.",
+    details: "Draw half the outline: x is the distance from the axis, and y goes down, like SVG. A contour that does not touch the axis turns into a ring.",
+    more: "A contour inside another one is a hole. The height is centered on the contours (or on the `view-box`), and y goes up in the scene, like a path. Seen from the front, a prism and a lathe of the same contour can look alike; turned, the prism is a cut-out as thick as its `depth`, and the lathe stays round.",
     examples: [
       {
         name: "a lathe and a prism of the same contour",
@@ -2572,6 +3272,7 @@ export const SHAPE_DOCS: ShapeDef[] = [
   },
   {
     name: "group",
+    figure: "shape",
     since: "0.0.1",
     description:
       "Not a shape: it holds objects and other groups, like `<g>` in SVG, and draws nothing itself. Its `translate`, rotations and `scale` apply to everything inside it, and the positions of its children become relative to it.",
@@ -2580,6 +3281,7 @@ export const SHAPE_DOCS: ShapeDef[] = [
       "display",
       "visibility",
       "cursor",
+      "mix-blend-mode",
       "filter",
       "translate",
       "rotate-x",
@@ -2617,10 +3319,12 @@ export const SHAPE_DOCS: ShapeDef[] = [
   },
   {
     name: "light",
+    figure: "point-light",
     since: "0.0.4",
     description:
       "Not a shape: a point of light, which draws nothing. Its `color` is the color of its light (white by default), and `intensity` how much light it gives, on top of the sun and the `ambient` light of the scene.",
-    details: "It moves like an object: `translate`, the groups it is in, animations, `:hover` through its group, a motion path, and rotations around a `transform-origin`, in numbers, since a light has no size. Lights add up, 8 at most per scene. A light is never drawn, so it cannot be hovered or pressed: to see the bulb, put a shape at its place, and hover the shape, like `#lamp:hover light`. Without `shadows`, the light goes through the objects.",
+    details: "A light moves like an object, and is never drawn: to see the bulb, put a shape at its place. A scene takes 8 lights at most.",
+    more: "What moves a light: `translate`, the groups it is in, animations, `:hover` through its group, a motion path, and rotations around a `transform-origin`, in numbers, since a light has no size. Lights add up. A light cannot be hovered or pressed: hover the shape at its place, like `#lamp:hover light`. Without `shadows`, the light goes through the objects.",
     takes: [
       "display",
       "color",
@@ -2675,6 +3379,7 @@ export const FUNCTIONS: FunctionDef[] = [
   {
     name: "cubic-bezier()",
     anchor: "fn-cubic-bezier",
+    figure: "easing",
     since: "0.0.2",
     covers: ["cubic-bezier"],
     syntax: "cubic-bezier(<x1>, <y1>, <x2>, <y2>)",
@@ -2698,12 +3403,14 @@ export const FUNCTIONS: FunctionDef[] = [
   {
     name: "linear()",
     anchor: "fn-linear",
+    figure: "easing",
     since: "0.0.2",
     covers: ["linear"],
     syntax: "linear(<number> [<percentage>{0,2}], …)",
     description:
       "An easing drawn as straight segments, like CSS: each number is the progress at one moment, a percentage of the duration. With enough points, it draws bounces and springs.",
-    details: "A missing moment is spread evenly between its neighbours; the first point is at 0% and the last one at 100%. Two percentages on one number hold it still between them, and two points at the same moment jump. The keyword `linear` is `linear(0, 1)`: a constant speed.",
+    details: "A missing moment is spread evenly between its neighbours; the first point is at 0% and the last one at 100%. The keyword `linear` is `linear(0, 1)`: a constant speed.",
+    more: "Two percentages on one number hold it still between them, and two points at the same moment jump.",
     examples: [
       {
         name: "a bounce",
@@ -2715,6 +3422,7 @@ export const FUNCTIONS: FunctionDef[] = [
   {
     name: "steps()",
     anchor: "fn-steps",
+    figure: "easing",
     since: "0.0.2",
     covers: ["steps"],
     syntax:
@@ -2745,6 +3453,7 @@ export const FUNCTIONS: FunctionDef[] = [
   {
     name: "<gradient>",
     anchor: "fn-gradients",
+    figure: "tile",
     since: "0.0.2",
     computed: "on the GPU, at each pixel",
     covers: [
@@ -2766,7 +3475,8 @@ export const FUNCTIONS: FunctionDef[] = [
       ["conic-gradient()", "Around a center, clockwise from the top: `from 90deg` starts a quarter turn later, and `at 30% 40%` moves the center. Its colors take angles or percentages: a color wheel, a pie chart, the sweep of a hand."],
       ["repeating-linear-gradient()", "Repeats the stops; also `repeating-radial-gradient()` and `repeating-conic-gradient()`."],
     ],
-    details: "In the background, the gradient covers the canvas and follows its size; reflections and glass see it in the direction they look. On an object, it covers the object as seen from the front, from left to right and from bottom to top (a plane is seen from above): `to top` goes from its bottom to its top, whatever its size, and it moves and turns with the object. On the `floor`, it covers a square of 40 units centered under the scene, seen from above. Colors are mixed in sRGB, like CSS with hex colors.",
+    details: "On an object, the gradient covers it as seen from the front, whatever its size, and moves and turns with it. In the background, it covers the canvas.",
+    more: "In the background, the gradient follows the size of the canvas; reflections and glass see it in the direction they look. On an object, it goes from left to right and from bottom to top (a plane is seen from above): `to top` goes from its bottom to its top. On the `floor`, it covers a square of 40 units centered under the scene, seen from above. Colors are mixed in sRGB, like CSS with hex colors.",
     examples: [
       {
         name: "linear-gradient()",
@@ -2798,6 +3508,7 @@ export const FUNCTIONS: FunctionDef[] = [
   {
     name: "noise()",
     anchor: "fn-noise",
+    figure: "tile",
     since: "0.0.4",
     covers: ["noise"],
     computed: "on the GPU, at each pixel",
@@ -2813,7 +3524,8 @@ export const FUNCTIONS: FunctionDef[] = [
       ["seed <integer>", "Another pattern."],
       ["at <x> <y> <z>", "Moves the pattern."],
     ],
-    details: "On an object, the noise is cut in the object's own space, like a block of stone: no seam, and it moves and turns with the object. On the `floor`, it is read at each point of the floor, in the units of the scene. In the background, it follows the direction of the view. Like a gradient, it can be animated and changed by `:hover`, into another `noise()` of the same kind with as many colors: animating `at` makes it drift, like clouds or smoke. Its numbers can be set from JavaScript.",
+    details: "On an object, the noise has no seam, and moves and turns with it. Animating `at` makes it drift, like clouds or smoke.",
+    more: "On an object, the noise is cut in the object's own space, like a block of stone. On the `floor`, it is read at each point of the floor, in the units of the scene. In the background, it follows the direction of the view. Like a gradient, it can be animated and changed by `:hover`, into another `noise()` of the same kind with as many colors. Its numbers can be set from JavaScript.",
     examples: [
       {
         name: "noise() on an object",
@@ -2840,6 +3552,7 @@ export const FUNCTIONS: FunctionDef[] = [
   {
     name: "checker()",
     anchor: "fn-checker",
+    figure: "tile",
     since: "0.0.6",
     covers: ["checker"],
     computed: "on the GPU, at each pixel",
@@ -2852,7 +3565,8 @@ export const FUNCTIONS: FunctionDef[] = [
       ["at <x> <y> <z>", "Moves the grid."],
       ["<color>, <color>", "The two colors of the cells."],
     ],
-    details: "On an object, the grid is cut in its own space, like a block of stone carved out of a checkered material: the cells keep their size whatever the shape, and move and turn with the object. On the `floor`, it is read in the units of the scene; in the background, it follows the direction of the view. Like `noise()`, it can be animated into another `checker()`, its numbers can be set from JavaScript, and it can be the map of `displace()`. The edges of the cells are sharp: far away, a fine checkerboard shimmers.",
+    details: "On an object, the cells keep their size whatever the shape, and move and turn with it. The edges of the cells are sharp: far away, a fine checkerboard shimmers.",
+    more: "On an object, the grid is cut in its own space, like a block of stone carved out of a checkered material. On the `floor`, it is read in the units of the scene; in the background, it follows the direction of the view. Like `noise()`, it can be animated into another `checker()`, its numbers can be set from JavaScript, and it can be the map of `displace()`.",
     examples: [
       {
         name: "a checkered floor",
@@ -2868,6 +3582,7 @@ export const FUNCTIONS: FunctionDef[] = [
   {
     name: "stripes()",
     anchor: "fn-stripes",
+    figure: "tile",
     since: "0.0.6",
     covers: ["stripes"],
     computed: "on the GPU, at each pixel",
@@ -2881,7 +3596,8 @@ export const FUNCTIONS: FunctionDef[] = [
       ["at <x> <y> <z>", "Moves the bands: animated, they scroll."],
       ["<color>, <color>", "The two colors, each half of a pair."],
     ],
-    details: "For bands seen from the front only, at any angle, `repeating-linear-gradient()` is the CSS way; `stripes()` goes all around the object, in its own space. Like `noise()`, it can be animated into another `stripes()` of the same axis, its numbers can be set from JavaScript, and it can be the map of `displace()`. The edges are sharp.",
+    details: "`stripes()` goes all around the object, in its own space. For bands seen from the front only, at any angle, use `repeating-linear-gradient()`.",
+    more: "Like `noise()`, it can be animated into another `stripes()` of the same axis, its numbers can be set from JavaScript, and it can be the map of `displace()`. The edges are sharp.",
     examples: [
       {
         name: "a striped column",
@@ -2897,6 +3613,7 @@ export const FUNCTIONS: FunctionDef[] = [
   {
     name: "displace()",
     anchor: "fn-displace",
+    figure: "tile",
     since: "0.0.4",
     covers: ["displace"],
     computed: "on the GPU, at each pixel",
@@ -2909,7 +3626,8 @@ export const FUNCTIONS: FunctionDef[] = [
       ["<map>", "Usually a `noise()`: its colors move each point where the image is read. On a gradient, red moves it right and green down, like SVG; on a `noise()`, red, green and blue move it in 3D. A channel at 50% moves nothing, 0% and 100% the most."],
       ["<amount>", "A share of the size of the image: `0.3` or `30%` moves it by up to 15% of its size."],
     ],
-    details: "A `noise()` map gives each channel a noise of its own, like `feTurbulence`, so even a gray noise moves the image in every direction; a gradient map is read once, by its colors, which are opaque. Like a gradient, `displace()` can be animated and changed by `:hover`, into another `displace()` whose image and map are of the same kinds: animating the `at` of a noise map makes the image flow. Its numbers can be set from JavaScript.",
+    details: "It can be animated, and changed by `:hover`, into another `displace()` whose image and map are of the same kinds. Animating the `at` of a noise map makes the image flow.",
+    more: "A `noise()` map gives each channel a noise of its own, like `feTurbulence`, so even a gray noise moves the image in every direction; a gradient map is read once, by its colors, which are opaque. Its numbers can be set from JavaScript.",
     examples: [
       {
         name: "marble",
@@ -2931,13 +3649,15 @@ export const FUNCTIONS: FunctionDef[] = [
   {
     name: "element()",
     anchor: "fn-element",
+    figure: "tile",
     since: "0.0.4",
     covers: [],
     syntax: "element(<id>)",
     computed: "by the browser, each time the element changes",
     description:
       "A live image of an HTML element of the page, for `texture`, like CSS `element()`: a card, a form, a chart, any interface on a 3D surface. The browser draws the element with the CSS and the fonts of the page, and the object shows it again each time it changes.",
-    details: "Put the element inside the scene: inside `<gss-scene>`, next to its script, or inside the canvas given to `mount()`. It stays in the page, so screen readers still read it, but it is seen only on the object. One image covers each face, like any texture: give the element the proportions of the face, and use `::face(front)` for one face only. A `<canvas>` inside the element is captured with it, frame after frame while the scene draws: a chart, a game, another shader. A scene with an element is drawn with WebGL2.",
+    details: "Put the element inside `<gss-scene>`, next to its script, or inside the canvas given to `mount()`. Screen readers still read it, but it is seen only on the object.",
+    more: "One image covers each face, like any texture: give the element the proportions of the face, and use `::face(front)` for one face only. A `<canvas>` inside the element is captured with it, frame after frame while the scene draws: a chart, a game, another shader. A scene with an element is drawn with WebGL2.",
     note: ELEMENT_NOTE,
     examples: [
       {
@@ -2961,13 +3681,15 @@ export const FUNCTIONS: FunctionDef[] = [
   {
     name: "paint()",
     anchor: "fn-paint",
+    figure: "paint",
     since: "0.0.6",
     covers: [],
     syntax: "paint(<name>)",
     computed: "on the GPU: once, or at every frame when its shader reads time",
     description:
       "The texture a `@paint` draws, for `texture`, like CSS `paint()`, whose image comes from code: `texture: paint(rings);`. WebGL2 only, for now.",
-    details: "The name is that of a `@paint` of the scene. Several objects can show the same one: it is drawn once for all of them. A scene with `paint()` is drawn with WebGL2, which `<gss-scene>`, `mountAsync()` and the playground pick by themselves; with WebGPU chosen, the object shows its `color` instead.",
+    details: "The name is that of a `@paint` of the scene. Several objects can show the same one: it is drawn once for all of them.",
+    more: "A scene with `paint()` is drawn with WebGL2, which `<gss-scene>`, `mountAsync()` and the playground pick by themselves; with WebGPU chosen, the object shows its `color` instead.",
     examples: [
       {
         name: "two objects, one shader",
@@ -2990,12 +3712,14 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "rgb()",
     anchor: "fn-rgb",
+    figure: "color",
     since: "0.0.1",
     covers: ["rgb", "rgba"],
     syntax: "rgb(<red> <green> <blue>) | rgb(<red>, <green>, <blue>)",
     description:
       "A color from its red, green and blue channels, like CSS: numbers from 0 to 255, or percentages (100% is 255). Spaces or commas both work, and `rgba()` is the same function.",
-    details: "Values outside the range are clamped. An alpha (`rgb(255 0 0 / 50%)`) makes the color transparent, which only `color`, `background` and `mask-image` take: anywhere else, it is an error. The math works inside, so one rule can give each copy its own color.",
+    details: "An alpha (`rgb(255 0 0 / 50%)`) makes the color transparent, which only `color`, `background` and `mask-image` take: anywhere else, it is an error.",
+    more: "Values outside the range are clamped. The math works inside, so one rule can give each copy its own color.",
     examples: [
       {
         name: "red, green and blue",
@@ -3011,12 +3735,14 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "hsl()",
     anchor: "fn-hsl",
+    figure: "color",
     since: "0.0.1",
     covers: ["hsl", "hsla"],
     syntax: "hsl(<hue> <saturation> <lightness>)",
     description:
       "A color from its hue, saturation and lightness, like CSS. The hue is an angle on the color wheel (0 red, 120 green, 240 blue), in degrees or in `deg`, `rad` or `turn`, and it goes round: -120 is 240.",
-    details: "Saturation and lightness are percentages, or numbers where 100 is 100%; a lightness of 50% gives the pure color. Commas, `hsla()` and the alpha work as in `rgb()`. With `sibling-index()` on the hue, the copies of an object spread a rainbow.",
+    details: "Saturation and lightness are percentages, or numbers where 100 is 100%; a lightness of 50% gives the pure color. Commas, `hsla()` and the alpha work as in `rgb()`.",
+    more: "With `sibling-index()` on the hue, the copies of an object spread a rainbow.",
     examples: [
       {
         name: "an orange",
@@ -3032,6 +3758,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "hwb()",
     anchor: "fn-hwb",
+    figure: "color",
     since: "0.0.2",
     covers: ["hwb"],
     syntax: "hwb(<hue> <whiteness> <blackness>)",
@@ -3048,6 +3775,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "lab(), lch()",
     anchor: "fn-lab-lch",
+    figure: "color",
     since: "0.0.2",
     covers: ["lab", "lch"],
     syntax: "lab(<lightness> <a> <b>) | lch(<lightness> <chroma> <hue>)",
@@ -3075,6 +3803,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "oklab(), oklch()",
     anchor: "fn-oklab-oklch",
+    figure: "color",
     since: "0.0.2",
     covers: ["oklab", "oklch"],
     syntax: "oklab(<lightness> <a> <b>) | oklch(<lightness> <chroma> <hue>)",
@@ -3102,6 +3831,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "color()",
     anchor: "fn-color",
+    figure: "color",
     since: "0.0.2",
     covers: ["color"],
     syntax: "color(<space> <r> <g> <b>)",
@@ -3124,6 +3854,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "color-mix()",
     anchor: "fn-color-mix",
+    figure: "color",
     since: "0.0.2",
     covers: ["color-mix"],
     syntax:
@@ -3138,7 +3869,8 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
       ["lab", "Like `oklab`, in CIE Lab."],
       ["oklch, lch, hsl, hwb", "Spaces with a hue: it goes the shorter way round the wheel, or the longer one with `longer hue`. A gray takes the hue of the other color."],
     ],
-    details: "Like CSS, when the percentages add up to less than 100%, the color becomes transparent, which only `color`, `background` and `mask-image` take: anywhere else, it is an error. A percentage set from JavaScript is kept between 0% and 100%, and percentages that add up to less are scaled up to 100%.",
+    details: "Like CSS, when the percentages add up to less than 100%, the color becomes transparent, which only `color`, `background` and `mask-image` take: anywhere else, it is an error.",
+    more: "A percentage set from JavaScript is kept between 0% and 100%, and percentages that add up to less are scaled up to 100%.",
     examples: [
       {
         name: "from orange to blue",
@@ -3150,6 +3882,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "light-dark()",
     anchor: "fn-light-dark",
+    figure: "color",
     since: "0.0.2",
     covers: ["light-dark"],
     syntax: "light-dark(<light color>, <dark color>)",
@@ -3165,6 +3898,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "contrast-color()",
     anchor: "fn-contrast-color",
+    figure: "color",
     since: "0.0.2",
     covers: ["contrast-color"],
     syntax: "contrast-color(<color>)",
@@ -3181,12 +3915,14 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "currentColor",
     anchor: "fn-currentcolor",
+    figure: "color",
     since: "0.0.3",
     covers: [],
     syntax: "currentColor",
     description:
       "A keyword, like CSS: the object's own `color`, wherever a color is expected. `color-mix(in oklab, currentColor 60%, white)` is a lighter version of whatever color the object has, so one rule can tint many objects.",
-    details: "As the color of a material, `metal(currentColor, 0.2)` is `metal(0.2)`: the material follows the color, animated, on `:hover`, or a gradient. It also works in the stops of a gradient, in `light-dark()` and in a variable, read with the color of the object that uses the variable. An object without color uses the initial `#e6e6e6`. It can be written `currentcolor` too. `color: currentColor` is an error: a group passes no color down, and the scene has none.",
+    details: "It works in a material, in the stops of a gradient, in `light-dark()` and in a variable. `color: currentColor` is an error: a group passes no color down.",
+    more: "As the color of a material, `metal(currentColor, 0.2)` is `metal(0.2)`: the material follows the color, animated, on `:hover`, or a gradient. In a variable, it is read with the color of the object that uses the variable. An object without color uses the initial `#e6e6e6`. It can be written `currentcolor` too.",
     examples: [
       {
         name: "a lighter shell for every color",
@@ -3203,6 +3939,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "var()",
     anchor: "fn-var",
+    figure: "flow",
     since: "0.0.1",
     covers: ["var"],
     syntax: "var(--<name>) | var(--<name>, <fallback>)",
@@ -3213,7 +3950,8 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
       ["var(--name)", "The value of the variable. A missing variable is an error, so a typo is never ignored."],
       ["var(--name, fallback)", "The fallback, when the variable is not defined."],
     ],
-    details: "A variable can hold several values (`translate: var(--pos)`), use another one (`--big: calc(var(--size) * 2)`), and go inside `calc()`. A frame of `@keyframes` can set a variable: every animatable property that uses it moves with it. The compiler replaces the variables with their values, unless `@property` registers them: the shader receives only numbers.",
+    details: "A variable can hold several values (`translate: var(--pos)`), use another one (`--big: calc(var(--size) * 2)`), and go inside `calc()`.",
+    more: "A frame of `@keyframes` can set a variable: every animatable property that uses it moves with it. The compiler replaces the variables with their values, unless `@property` registers them: the shader receives only numbers.",
     examples: [
       {
         name: "a color and a radius",
@@ -3235,6 +3973,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "random()",
     anchor: "fn-random",
+    figure: "row",
     since: "0.0.2",
     covers: ["random"],
     syntax:
@@ -3266,6 +4005,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "if()",
     anchor: "fn-if",
+    figure: "flow",
     since: "0.0.2",
     covers: ["if"],
     syntax: "if(<condition>: <value>; …; else: <value>)",
@@ -3296,6 +4036,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "calc()",
     anchor: "fn-calc",
+    figure: "calc",
     since: "0.0.1",
     covers: ["calc"],
     syntax: "calc(<expression>)",
@@ -3313,6 +4054,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "sibling-index()",
     anchor: "fn-sibling-index",
+    figure: "row",
     since: "0.0.1",
     covers: ["sibling-index"],
     syntax: "sibling-index()",
@@ -3330,6 +4072,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "sibling-count()",
     anchor: "fn-sibling-count",
+    figure: "row",
     since: "0.0.1",
     covers: ["sibling-count"],
     syntax: "sibling-count()",
@@ -3345,6 +4088,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "sin(), cos(), tan()",
     anchor: "fn-trig",
+    figure: "plot",
     since: "0.0.1",
     covers: ["sin", "cos", "tan"],
     syntax: "sin(<angle> | <number>)",
@@ -3376,6 +4120,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "min(), max(), clamp()",
     anchor: "fn-min-max-clamp",
+    figure: "plot",
     since: "0.0.1",
     covers: ["min", "max", "clamp"],
     syntax: "min(<value>, …) | max(<value>, …) | clamp(<min>, <value>, <max>)",
@@ -3413,6 +4158,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "abs(), sqrt(), pow()",
     anchor: "fn-abs-sqrt-pow",
+    figure: "plot",
     since: "0.0.1",
     covers: ["abs", "sqrt", "pow"],
     syntax: "abs(<value>) | sqrt(<number>) | pow(<number>, <number>)",
@@ -3444,6 +4190,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "asin(), acos(), atan(), atan2()",
     anchor: "fn-inverse-trig",
+    figure: "plot",
     since: "0.0.2",
     covers: ["asin", "acos", "atan", "atan2"],
     syntax:
@@ -3481,6 +4228,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "sign(), round(), mod(), rem()",
     anchor: "fn-stepped",
+    figure: "plot",
     since: "0.0.2",
     covers: ["sign", "round", "mod", "rem"],
     syntax:
@@ -3525,6 +4273,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "hypot(), log(), exp()",
     anchor: "fn-exponential",
+    figure: "plot",
     since: "0.0.2",
     covers: ["hypot", "log", "exp"],
     syntax: "hypot(<value>, …) | log(<number>, <base>?) | exp(<number>)",
@@ -3562,6 +4311,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
   {
     name: "progress()",
     anchor: "fn-progress",
+    figure: "row",
     since: "0.0.2",
     covers: ["progress"],
     syntax: "progress(<value>, <start>, <end>)",

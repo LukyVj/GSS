@@ -18,6 +18,7 @@ import { groupEntries, qualified, QUALIFIERS } from "./navigation";
 import { navIcon, navIconMotion } from "./nav-icons";
 import { GETTING_STARTED, INSTALLATION, type GuideEntry } from "./guide";
 import { chapterAnchor, exampleAnchor } from "./anchors";
+import { renderFigure } from "./figures";
 import { newestVersion } from "./news";
 import { VERSION } from "../version";
 
@@ -66,26 +67,32 @@ function renderTitle(anchor: string, name: string, since: string): string {
   return `<h3${dated(since)}><code>${escapeHtml(name)}</code>${qualifier ? ` <small>(${escapeHtml(qualifier)})</small>` : ""}</h3>`;
 }
 
-// Under the table of the entry: what each value does, then a paragraph, when the entry has them
-function renderValues(page: string, { values, valuesTitle = "Values", details }: {
+// Under the table of the entry: what each value does, then a short paragraph, then what a
+// reader looks up once, folded (decision 179), when the entry has them
+function renderValues(page: string, { values, valuesTitle = "Values", details, more }: {
   values?: Value[];
   valuesTitle?: string;
   details?: string;
+  more?: string;
 }): string {
   const table = values?.length
     ? `
       <h4 id="${escapeHtml(chapterAnchor(page, valuesTitle))}">${escapeHtml(valuesTitle)}</h4>
       <dl class="values">${values
         .map(
-          ([value, text]) => `
-        <dt><code class="gss syntax">${highlightSyntax(value)}</code></dt>
+          ([value, text, since]) => `
+        <dt${since ? dated(since) : ""}><code class="gss syntax">${highlightSyntax(value)}</code></dt>
         <dd>${prose(text)}</dd>`,
         )
         .join("")}
       </dl>`
     : "";
   return table + (details ? `
-      <p>${prose(details)}</p>` : "");
+      <p>${prose(details)}</p>` : "") + (more ? `
+      <details class="more">
+        <summary>More details</summary>
+        <p>${prose(more)}</p>
+      </details>` : "");
 }
 
 // ⬇️ YOUR MISSION: the HTML of one property
@@ -102,7 +109,7 @@ export function renderProperty(property: PropertyDef): string {
   return `
     <article class="property" id="${escapeHtml(property.name)}">
       ${renderTitle(property.name, property.name, property.since)}
-      <p>${prose(property.description)}</p>${renderNote(property.note)}
+      <p>${prose(property.description)}</p>${renderNote(property.note)}${renderFigure(property.figure, property.name)}
       <dl>
         <dt>Syntax</dt>
         <dd><code class="gss syntax">${highlightSyntax(property.syntax)}</code></dd>
@@ -126,7 +133,7 @@ export function renderAtRule(atRule: AtRuleDef): string {
   return `
     <article class="property" id="at-${escapeHtml(atRule.name)}">
       <h3${dated(atRule.since)}><code>@${escapeHtml(atRule.name)}</code></h3>
-      <p>${prose(atRule.description)}</p>${renderNote(atRule.note)}
+      <p>${prose(atRule.description)}</p>${renderNote(atRule.note)}${renderFigure(atRule.figure, `at-${atRule.name}`)}
       <dl>
         <dt>Syntax</dt>
         <dd><code class="gss syntax">${highlightSyntax(atRule.syntax)}</code></dd>${
@@ -143,7 +150,7 @@ export function renderSelector(selector: SelectorDef): string {
   return `
     <article class="property" id="${escapeHtml(selector.anchor)}">
       <h3${dated(selector.since)}><code>${escapeHtml(selector.name)}</code></h3>
-      <p>${prose(selector.description)}</p>
+      <p>${prose(selector.description)}</p>${renderFigure(selector.figure, selector.anchor)}
       <dl>
         <dt>Specificity</dt>
         <dd>${prose(selector.specificity)}</dd>
@@ -157,7 +164,7 @@ export function renderFunction(fn: FunctionDef): string {
   return `
     <article class="property" id="${escapeHtml(fn.anchor)}">
       <h3${dated(fn.since)}><code>${escapeHtml(fn.name)}</code></h3>
-      <p>${prose(fn.description)}</p>${renderNote(fn.note)}
+      <p>${prose(fn.description)}</p>${renderNote(fn.note)}${renderFigure(fn.figure, fn.anchor)}
       <dl>
         <dt>Syntax</dt>
         <dd><code class="gss syntax">${highlightSyntax(fn.syntax)}</code></dd>
@@ -202,7 +209,7 @@ export function renderShape(
   return `
     <article class="property" id="shape-${escapeHtml(shape.name)}">
       ${renderTitle(`shape-${shape.name}`, shape.name, shape.since)}
-      <p>${prose(shape.description)}</p>
+      <p>${prose(shape.description)}</p>${renderFigure(shape.figure, shape.name)}
       <dl>
         ${propertyList}
       </dl>${renderValues(`shape-${shape.name}`, shape)}
@@ -304,11 +311,13 @@ function renderGuideEntry(entry: GuideEntry): string {
     list
       .map((text) => (/^<(pre|div|h4|p)\b/.test(text) ? chapter(text) : `<p>${text}</p>`))
       .join("\n      ");
+  // The figure of a guide page: under its example when it has one, under its lead otherwise
+  const figure = renderFigure(entry.figure, entry.anchor);
   return `
     <article class="guide" id="${escapeHtml(entry.anchor)}">
       <h3${dated(entry.since)}>${escapeHtml(entry.label)}</h3>
-      ${paragraphs(entry.paragraphs)}
-      ${entry.example ? renderExamples(entry.anchor, [{ code: entry.example }]) : ""}
+      ${entry.example ? paragraphs(entry.paragraphs) : `${paragraphs(entry.paragraphs.slice(0, 1))}${figure}\n      ${paragraphs(entry.paragraphs.slice(1))}`}
+      ${entry.example ? renderExamples(entry.anchor, [{ code: entry.example }]) + figure : ""}
       ${paragraphs(entry.after)}
     </article>`;
 }

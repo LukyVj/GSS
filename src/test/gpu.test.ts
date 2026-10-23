@@ -4,6 +4,7 @@ import { compileGSS, compileScene } from "../compiler";
 import { toShadertoy } from "../compiler/shader/shadertoy";
 import {
   PROPERTIES,
+  AT_RULES,
   SELECTORS,
   SHAPE_DOCS,
   FUNCTIONS,
@@ -49,6 +50,13 @@ describe("every documented example compiles on the GPU", () => {
   for (const fn of FUNCTIONS) {
     for (const { code: example } of fn.examples) {
       it(`${fn.name}: ${example}`, async () => {
+        expect(await compileOnGpu(compileGSS(example))).toBe("");
+      });
+    }
+  }
+  for (const atRule of AT_RULES) {
+    for (const { code: example } of atRule.examples) {
+      it(`@${atRule.name}: ${example}`, async () => {
         expect(await compileOnGpu(compileGSS(example))).toBe("");
       });
     }

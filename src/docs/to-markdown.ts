@@ -74,6 +74,29 @@ function blockToMarkdown(el: HTMLElement, depth: number): string {
     return title ? `${"#".repeat(depth + 1)} ${title}` : "";
   }
   if (tag === "p") return inlineMarkdown(el).trim();
+  // What a page folds is read like the rest: its text, without the label of the fold
+  if (tag === "details") {
+    return [...el.children]
+      .filter((child) => child.tagName !== "SUMMARY")
+      .map((child) => blockToMarkdown(child as HTMLElement, depth))
+      .filter(Boolean)
+      .join("\n\n");
+  }
+  // A figure, in words: its label, then the names written in it (under each drawing, or on
+  // the measures of a single one). A drawing without a word says nothing here.
+  if (tag === "figure") {
+    const captions = [...el.querySelectorAll("li > code, li > a > code")];
+    const written = captions.length ? captions : [...el.querySelectorAll("text")];
+    // Not the words that only take their place, unseen, to put the next ones under a line
+    const seen = (name: Element) => {
+      const copy = name.cloneNode(true) as Element;
+      for (const blank of copy.querySelectorAll(".blank, .elbow")) blank.remove();
+      return (copy.textContent ?? "").trim();
+    };
+    const names = written.map((name) => `\`${seen(name)}\``);
+    const label = el.getAttribute("aria-label") ?? "";
+    return names.length ? [label && `**${label}:**`, names.join(", ")].filter(Boolean).join(" ") : "";
+  }
   if (tag === "dl") return definitionList(el);
   if (tag === "pre") return fencedCode(el);
   if (el.classList.contains("example")) {

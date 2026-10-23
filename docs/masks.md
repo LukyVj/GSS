@@ -17,7 +17,9 @@ Every example of this page, to edit live: [gss-lang.dev/docs](https://www.gss-la
 - **Applies to:** objects
 - **Animatable:** no
 
-The object still counts among its siblings, like an element of the page with `display: none`: `:nth-child()` and `sibling-index()` see it. It is set when the scene compiles, so it changes with `@media`, not on `:hover` or in `@keyframes`: to hide an object for a moment, use `visibility`. Like CSS, `@media (max-width: …)` reads the width of the window on a page; in the playground and in Try it, the width of the render.
+It changes with `@media`, not on `:hover` or in `@keyframes`: to hide an object for a moment, use `visibility`.
+
+The object still counts among its siblings, like an element of the page with `display: none`: `:nth-child()` and `sibling-index()` see it. It is set when the scene compiles. Like CSS, `@media (max-width: …)` reads the width of the window on a page; in the playground and in Try it, the width of the render.
 
 ### a whole group left out
 
@@ -105,12 +107,16 @@ cube:nth-child(even) {
 
 Cuts holes in the object, like a CSS mask: where the image covers the surface, the object is there; where it is transparent, the surface is not drawn, and the eye sees inside the object, then what is behind it. The image is a gradient, a `noise()`, or one of them moved by `displace()`.
 
+**What covers the surface, flat, then on an object:** `mask-image`, `the object`
+
 - **Syntax:** `none | <gradient>`
 - **Initial value:** `none`
 - **Applies to:** objects
 - **Animatable:** yes
 
-It is read like a gradient in `color`: seen from the front in the object's own space, and in 3D for a `noise()`, so the holes move and turn with the object. A part covered less than half is a hole, so the edge of a hole is sharp: unlike CSS, a mask does not fade the object. `mask-mode` says what counts, the alpha by default. The holes show in the reflections too, and the mouse goes through them: `:hover` reaches the object behind a hole.
+Unlike CSS, a mask does not fade the object: a part covered less than half is a hole, with a sharp edge. The mouse goes through the holes.
+
+It is read like a gradient in `color`: seen from the front in the object's own space, and in 3D for a `noise()`, so the holes move and turn with the object. `mask-mode` says what counts, the alpha by default. The holes show in the reflections too, and `:hover` reaches the object behind a hole.
 
 ### holes from a noise
 
@@ -187,6 +193,8 @@ sphere {
 
 Which part of `mask-image` counts, like CSS.
 
+**What covers the surface, flat, then on an object:** `mask-mode: alpha;`, `mask-mode: luminance;`
+
 - **Syntax:** `alpha | luminance | match-source`
 - **Initial value:** `match-source`
 - **Applies to:** objects
@@ -233,7 +241,9 @@ How much the object covers what is behind it, like CSS: from 0, invisible, to 1,
 - **Applies to:** objects
 - **Animatable:** yes
 
-Through a transparent object, the eye sees its back face from the inside, then what is behind it: a sphere at 50% looks like a bubble. On a group, the opacity goes into each of its objects: unlike CSS, which fades a group as one picture, its objects show through each other. With `shadows`, the light goes through a transparent object like stained glass: a red glass at 50% casts a pink light. The mouse still points at a transparent object, like CSS, and the reflections show it opaque.
+Unlike CSS, a group does not fade as one picture: each of its objects fades, so they show through each other.
+
+Through a transparent object, the eye sees its back face from the inside, then what is behind it: a sphere at 50% looks like a bubble. With `shadows`, the light goes through a transparent object like stained glass: a red glass at 50% casts a pink light. The mouse still points at a transparent object, like CSS, and the reflections show it opaque.
 
 ### a bubble
 
@@ -326,7 +336,9 @@ A line around the silhouette of the object, like CSS `outline`: a width, a style
 - **Applies to:** objects
 - **Animatable:** yes
 
-The line is drawn outside the object, where the eye passes close to its edge, and over what is behind it: another object, the floor or the background. It takes no room, is never lit and cannot be pointed at, like CSS, but the fog covers it. Unlike CSS, its width is in the units of the scene, not in pixels: it gets thinner far from the camera, like the object. `outline-width`, `outline-style`, `outline-color` and `outline-offset` set one part each, and win over `outline` wherever they are written, like the other longhands of GSS. It changes on `:hover` and in `@keyframes`.
+Unlike CSS, its width is in the units of the scene, not in pixels: it gets thinner far from the camera, like the object. It changes on `:hover` and in `@keyframes`.
+
+The line is drawn outside the object, where the eye passes close to its edge, and over what is behind it: another object, the floor or the background. It takes no room, is never lit and cannot be pointed at, like CSS, but the fog covers it. `outline-width`, `outline-style`, `outline-color` and `outline-offset` set one part each, and win over `outline` wherever they are written, like the other longhands of GSS.
 
 ### a drawn look
 
@@ -464,6 +476,8 @@ sphere {
 
 How the line of `outline` is drawn, like CSS: `none`, the default, draws none; the others draw a line, plain, broken or shaded.
 
+**What the property changes in the scene:** `outline-style: solid;`, `outline-style: dashed;`, `outline-style: dotted;`, `outline-style: double;`
+
 - **Syntax:** `none | auto | solid | dashed | dotted | double | groove | ridge | inset | outset`
 - **Initial value:** `none`
 - **Applies to:** objects
@@ -482,7 +496,9 @@ How the line of `outline` is drawn, like CSS: `none`, the default, draws none; t
 - **inset:** The line darker at the top left, as if the object sat in a hollow.
 - **outset:** The line darker at the bottom right, as if the object stood out.
 
-Dashes and dots are placed around the object, by the angle seen from the camera, and as many as fit around its size: they close without a broken one. The shaded styles take the light from the top left of the screen, like the borders of CSS, at half the color on their dark side. A `:hover` or `:active` rule can change the style; `@keyframes` cannot. When the object has no style at rest, the one of `:hover`, then of `:active`, is drawn.
+A `:hover` or `:active` rule can change the style; `@keyframes` cannot.
+
+Dashes and dots are placed around the object, by the angle seen from the camera, and as many as fit around its size: they close without a broken one. The shaded styles take the light from the top left of the screen, like the borders of CSS, at half the color on their dark side. When the object has no style at rest, the one of `:hover`, then of `:active`, is drawn.
 
 ### every style
 
@@ -582,6 +598,8 @@ cube {
 
 How wide the line of `outline` is, in the units of the scene, unlike CSS pixels: `thin` is 0.01, `medium` 0.02 and `thick` 0.04.
 
+**What the property changes in the scene:** `outline-width: thin;`, `outline-width: medium;`, `outline-width: thick;`
+
 - **Syntax:** `<number> | thin | medium | thick`
 - **Initial value:** `medium`
 - **Applies to:** objects
@@ -621,7 +639,9 @@ sphere {
 - **Applies to:** objects
 - **Animatable:** yes
 
-Like CSS, it is inherited: a hidden group hides its objects, and an object inside it can be `visible` again. It changes on `:hover` and in `@keyframes`, at once, like CSS: between `visible` and `hidden`, the object is there for the whole way, and gone only at `hidden`. A hidden object cannot be hovered: hide another object, like `#button:hover #label`. A group's own visibility is read when the scene compiles.
+Like CSS, it is inherited: a hidden group hides its objects, and an object inside it can be `visible` again. A hidden object cannot be hovered: hide another object, like `#button:hover #label`.
+
+It changes on `:hover` and in `@keyframes`, at once, like CSS: between `visible` and `hidden`, the object is there for the whole way, and gone only at `hidden`. A group's own visibility is read when the scene compiles.
 
 ### a light that blinks
 

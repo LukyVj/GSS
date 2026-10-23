@@ -135,6 +135,43 @@ describe("formatGss with comments", () => {
   });
 });
 
+describe("formatGss with mixins", () => {
+  it("keeps the parameters of @mixin on one line, with one space after each colon", () => {
+    expect(formatGss("@mixin --ball(--x, --size:0.4,  --tint <color> :#3a7bff){radius:var(--size);@contents;}")).toBe(
+      "@mixin --ball(--x, --size: 0.4, --tint <color>: #3a7bff) {\n  radius: var(--size);\n  @contents;\n}\n",
+    );
+  });
+
+  it("puts @apply on its own line, and its block like a rule", () => {
+    expect(formatGss("@mixin --m{size:1;} cube{color:red;@apply --ball(0.6,  #ff5a36);@apply --small{color:red;}}")).toBe(
+      "@mixin --m {\n  size: 1;\n}\n\ncube {\n  color: red;\n  @apply --ball(0.6, #ff5a36);\n  @apply --small {\n    color: red;\n  }\n}\n",
+    );
+  });
+});
+
+describe("formatGss with loops", () => {
+  it("keeps the head of @for and @each on one line, in @scene too", () => {
+    expect(formatGss("@scene{@for --i from 1 through 3{cube.step;}@each --s in cube,sphere{var(--s).piece}}")).toBe(
+      "@scene {\n  @for --i from 1 through 3 {\n    cube.step;\n  }\n  @each --s in cube, sphere {\n    var(--s).piece\n  }\n}\n",
+    );
+  });
+
+  it("keeps the colon of a selector stuck in a loop and in a @media", () => {
+    expect(formatGss("@for --i from 1 through 2 { .p:nth-child(var(--i)) { size: 1; } }")).toBe(
+      "@for --i from 1 through 2 {\n  .p:nth-child(var(--i)) {\n    size: 1;\n  }\n}\n",
+    );
+    expect(formatGss("@media (max-width: 600px) { cube:hover { color: red; } }")).toBe(
+      "@media (max-width: 600px) {\n  cube:hover {\n    color: red;\n  }\n}\n",
+    );
+  });
+
+  it("puts the rules of a loop in its block, like a @media", () => {
+    expect(formatGss("@each --c in tomato,gold{.p{color:var(--c);}}")).toBe(
+      "@each --c in tomato, gold {\n  .p {\n    color: var(--c);\n  }\n}\n",
+    );
+  });
+});
+
 describe("formatGss with groups", () => {
   it("puts one element per line, with or without ;", () => {
     expect(

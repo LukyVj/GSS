@@ -24,9 +24,11 @@ const SOFTNESS = "12.0";
 // holes: the scene has holes (mask-image), which let the light through; the objects with
 // holes are skins on the way (shell(), masks.ts). transparent: the scene has transparent
 // objects (opacity, decision 116), which let the light through tinted: shadow() gives a color.
-export function shadowFunction(mode: "hard" | "soft", holes: boolean, transparent = false): string {
+// seeThrough: the test of the objects the light goes through, which make no penumbra; with
+// blended objects (mix-blend-mode, decision 173), the skins are not all of them.
+export function shadowFunction(mode: "hard" | "soft", holes: boolean, transparent = false, seeThrough = "isSkin"): string {
   const soft = mode === "soft";
-  if (transparent) return tintedShadow(soft, holes);
+  if (transparent) return tintedShadow(soft, holes, seeThrough);
   const head = soft
     ? [
         "// shadows: soft: how much of a light reaches ro along rd, up to far, from 0 behind an",
@@ -83,7 +85,7 @@ export function shadowFunction(mode: "hard" | "soft", holes: boolean, transparen
 // mix(1, color, a): a red glass at 50% casts a pink light. Close to opaque, the last tenth,
 // it lets less and less through, down to the black shadow of an opaque object. A surface is
 // crossed once: the light goes on until it leaves it. The penumbra comes from the solid objects.
-function tintedShadow(soft: boolean, holes: boolean): string {
+function tintedShadow(soft: boolean, holes: boolean, seeThrough: string): string {
   return [
     soft
       ? "// shadows: soft: how much of a light reaches ro along rd, up to far, through the transparent\n// objects, which tint it; the penumbra grows with the distance to the object that casts it"
@@ -114,7 +116,7 @@ function tintedShadow(soft: boolean, holes: boolean): string {
     "    } else {",
     "      crossing = false;",
     // A ray through a skin passes right by it: only the solid objects make a penumbra
-    ...(soft ? [`      if (!isSkin(res.y)) soft = min(soft, ${SOFTNESS} * h / t);`] : []),
+    ...(soft ? [`      if (!${seeThrough}(res.y)) soft = min(soft, ${SOFTNESS} * h / t);`] : []),
     "    }",
     "    t += h;",
     `    if (max(lit.r, max(lit.g, lit.b)) < 0.001${soft ? " || soft < 0.001" : ""} || t > far) break;`,

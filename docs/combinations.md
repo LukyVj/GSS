@@ -41,6 +41,8 @@ Smooths the junction between the object and the objects declared before it, over
 
 Sets how the object combines with the objects declared before it in `@scene`. The floor is never affected.
 
+**What the property changes in the scene:** `operation: union;`, `operation: subtract;`, `operation: intersect;`
+
 - **Syntax:** `union | subtract | intersect`
 - **Initial value:** `union`
 - **Applies to:** objects

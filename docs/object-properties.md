@@ -12,6 +12,8 @@ Every example of this page, to edit live: [gss-lang.dev/docs](https://www.gss-la
 
 Rounds the edges of a cube; 0 keeps them sharp.
 
+**The corner of a cube, sharp, then more and more round:** `corner-radius: 0;`, `corner-radius: 0.08;`, `corner-radius: 0.25;`
+
 - **Syntax:** `<number>`
 - **Initial value:** `0.08`
 - **Applies to:** cube
@@ -36,6 +38,8 @@ cube {
 
 The line a `path` follows, written like the `d` of an SVG path or CSS `path()`. On a `prism`, the contour to fill; on a `lathe`, the contour to turn around its axis: a `polygon()` or a `path()`.
 
+**The commands of a path, each at the point it goes to:** `M`, `L`, `C`, `L`
+
 - **Syntax:** `path("<svg path>") | polygon(<x> <y>, …) (prism, lathe)`
 - **Initial value:** `none (required)`
 - **Applies to:** path, prism, lathe
@@ -50,7 +54,9 @@ The line a `path` follows, written like the `d` of an SVG path or CSS `path()`. 
 - **Z:** Closes the path.
 - **polygon():** On a prism or a lathe: one point per comma, x and y separated by a space, y going down, like CSS `clip-path`. It closes itself.
 
-Capitals are absolute, lowercase letters relative. A path copied from an SVG keeps its way up: y goes down in SVG and up in the scene, and GSS flips it. One path unit is one scene unit, so an icon drawn in a box of 24 or 32 usually needs a `scale`. On a prism or a lathe, each subpath of a `path()` is a closed contour, filled with the even-odd rule: a contour inside another one is a hole, like the inside of an o. A lathe turns its contour around x = 0, so its x are never negative.
+A path copied from an SVG keeps its way up. One path unit is one scene unit, so an icon drawn in a box of 24 usually needs a `scale`.
+
+Capitals are absolute, lowercase letters relative. y goes down in SVG and up in the scene: GSS flips a path. On a prism or a lathe, each subpath of a `path()` is a closed contour, filled with the even-odd rule: a contour inside another one is a hole, like the inside of an o. A lathe turns its contour around x = 0, so its x are never negative.
 
 ### a curve
 
@@ -127,6 +133,8 @@ path {
 
 The full thickness of a prism along the z axis, centered on its origin: `depth: 1` goes from z = -0.5 to z = 0.5.
 
+**The shapes that take the property, with the line it sets:** `prism`
+
 - **Syntax:** `<number>`
 - **Initial value:** `0.2`
 - **Applies to:** prism
@@ -152,6 +160,8 @@ prism {
 ## `height`
 
 Sets the full height of a cylinder, a cone or a capsule, along the y axis. The shape is centered on its origin: to stand it on the floor, set its y to half its height.
+
+**The shapes that take the property, with the line it sets:** `cylinder`, `cone`, `capsule`, `tube`
 
 - **Syntax:** `<number>`
 - **Initial value:** `1`
@@ -210,6 +220,8 @@ capsule {
 
 Sets the radius of a sphere, a cylinder or a capsule, or that of a torus ring, measured to the center of its tube. On an octahedron, from its center to each tip; on a tube, its outer radius.
 
+**The shapes that take the property, with the line it sets:** `sphere`, `torus`, `cylinder`, `cone`, `capsule`, `octahedron`, `tube`
+
 - **Syntax:** `<number> | <number> <number> (cone: bottom top)`
 - **Initial value:** `0.5 (sphere), 1 (torus), 0.5 (cylinder), 0.5 0 (cone), 0.25 (capsule), 0.5 (octahedron), 0.5 (tube)`
 - **Applies to:** sphere, torus, cylinder, cone, capsule, octahedron, tube
@@ -251,6 +263,8 @@ cone {
 ## `size`
 
 Sets the size of a cube along the x, y and z axes: one value makes a cube, three make a box. On a pyramid, the width and the depth of its base, and its height in the middle. On a plane, it sets the width and the depth: one value makes a square.
+
+**The shapes that take the property, with the line it sets:** `cube`, `plane`, `pyramid`
 
 - **Syntax:** `<number>{1,3} (cube, pyramid) | <number>{1,2} (plane: width depth)`
 - **Initial value:** `1 (cube), 1 (plane), 1 (pyramid)`
@@ -295,6 +309,8 @@ plane {
 
 The thickness of the tube along the path, in path units, like the `stroke-width` of SVG. Its ends are round.
 
+**The shapes that take the property, with the line it sets:** `path`
+
 - **Syntax:** `<number>`
 - **Initial value:** `1`
 - **Applies to:** path
@@ -321,6 +337,8 @@ path {
 
 Sets the radius of the tube of a torus, or the thickness of the wall of a tube, inside its radius.
 
+**The shapes that take the property, with the line it sets:** `torus`, `tube`
+
 - **Syntax:** `<number>`
 - **Initial value:** `0.28 (torus), 0.1 (tube)`
 - **Applies to:** torus, tube
@@ -345,12 +363,16 @@ torus {
 
 The drawing area of a path: x, y, width and height, like the `viewBox` of SVG. Its center becomes the origin of the object.
 
+**The drawing area of a path, with the origin at its center:** `x y`, `width`, `height`, `origin`
+
 - **Syntax:** `<number>{4}`
 - **Initial value:** `the box of the path itself`
 - **Applies to:** path, prism, lathe
 - **Animatable:** no
 
-Without it, each path is centered on itself; with the same `view-box`, the paths copied from one SVG keep their places relative to each other. On a lathe, only its y and its height count: the height is centered on them, and x = 0 stays the axis.
+Without it, each path is centered on itself; with the same `view-box`, the paths copied from one SVG keep their places relative to each other.
+
+On a lathe, only its y and its height count: the height is centered on them, and x = 0 stays the axis.
 
 ### two braces of one icon
 

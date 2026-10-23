@@ -45,7 +45,15 @@ describe("registry", () => {
       expect(animatable.map((property) => property.name)).toEqual([
         "translate",
         "color",
+        "content",
+        "font-family",
+        "font-weight",
+        "font-style",
+        "font-size",
+        "text-align",
+        "text-color",
         "opacity",
+        "mix-blend-mode",
         "visibility",
         "outline",
         "outline-width",
@@ -73,9 +81,17 @@ describe("registry", () => {
       "outline-width": "outline-style: solid;",
       "outline-color": "outline-style: solid;",
       "outline-offset": "outline-style: solid;",
+      // the text properties need a text, font-size a size at rest to zoom from
+      content: 'content: "a";',
+      "font-family": 'content: "a";',
+      "font-weight": 'content: "a";',
+      "font-style": 'content: "a";',
+      "font-size": 'content: "a"; font-size: 0.2;',
+      "text-align": 'content: "a";',
+      "text-color": 'content: "a";',
     };
     // A mask changes into another mask, not into none, its initial value
-    const FRAME: Record<string, string> = { "mask-image": "linear-gradient(black 20%, transparent)", opacity: "0.5", visibility: "hidden", outline: "0.1 solid red", "outline-width": "0.1", "outline-color": "red", "outline-offset": "0.1" };
+    const FRAME: Record<string, string> = { "mask-image": "linear-gradient(black 20%, transparent)", opacity: "0.5", "mix-blend-mode": "multiply", visibility: "hidden", outline: "0.1 solid red", "outline-width": "0.1", "outline-color": "red", "outline-offset": "0.1", content: '"b"', "font-family": "serif", "font-weight": "bold", "font-style": "italic", "font-size": "0.4", "text-align": "center", "text-color": "red" };
 
     // If a property is marked animatable, the compiler must really animate it
     for (const property of animatable) {
@@ -99,7 +115,7 @@ describe("at-rules", () => {
     expect(new Set(names).size).toBe(names.length);
   });
 
-  it("documents @scene, @keyframes, @property, @property-panel, @paint and @media", () => {
+  it("documents @scene, @keyframes, @property, @property-panel, @paint, @media, @mixin, @apply, @for and @each", () => {
     expect(AT_RULES.map((atRule) => atRule.name)).toEqual([
       "scene",
       "keyframes",
@@ -107,6 +123,10 @@ describe("at-rules", () => {
       "paint",
       "property-panel",
       "media",
+      "mixin",
+      "apply",
+      "for",
+      "each",
     ]);
   });
 
@@ -136,10 +156,10 @@ describe("at-rules", () => {
 
   // The list a reader looks for: where a variable set from JavaScript can go
   it("@property names every property a variable set from JS can go in", () => {
-    // the page: its lead, and the paragraph under its table (decision 121)
-    const { description, details } = AT_RULES.find((atRule) => atRule.name === "property")!;
+    // the page: its lead, the paragraph under its table (decision 121) and what is folded under it
+    const { description, details, more } = AT_RULES.find((atRule) => atRule.name === "property")!;
     for (const property of LIVE_PROPERTIES) {
-      expect(`${description} ${details}`, property).toMatch(new RegExp(`(?<![\\w-])${property}(?![\\w-])`));
+      expect(`${description} ${details} ${more}`, property).toMatch(new RegExp(`(?<![\\w-])${property}(?![\\w-])`));
     }
   });
 
@@ -245,5 +265,21 @@ describe("functions", () => {
         });
       }
     }
+  });
+});
+
+// The paragraph under the table of a page is read at a glance. What a reader looks up once
+// (a limit, a special case, how it is drawn) goes in `more`, folded under it (decision 179).
+describe("the paragraph under the table of a page", () => {
+  const entries = [...PROPERTIES, ...AT_RULES, ...SELECTORS, ...SHAPE_DOCS, ...FUNCTIONS];
+  const words = (text: string) => text.trim().split(/\s+/).length;
+
+  it("is 40 words at most", () => {
+    const long = entries.filter((entry) => entry.details && words(entry.details) > 40);
+    expect(long.map((entry) => `${entry.name}: ${words(entry.details!)} words`)).toEqual([]);
+  });
+
+  it("comes before what is folded under it", () => {
+    expect(entries.filter((entry) => entry.more && !entry.details).map((entry) => entry.name)).toEqual([]);
   });
 });

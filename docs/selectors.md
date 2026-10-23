@@ -12,6 +12,8 @@ Every example of this page, to edit live: [gss-lang.dev/docs](https://www.gss-la
 
 A shape name targets every object of that shape: `cube` styles every cube, and `group` every group.
 
+**What a scene can declare:** `cube`, `sphere`, `torus`, `cylinder`, `cone`, `capsule`, `pyramid`, `octahedron`, `tube`, `path`, `plane`, `prism`, `lathe`, `group`, `light`
+
 - **Specificity:** 1
 
 ### every cube, every sphere
@@ -84,6 +86,95 @@ sphere {
 #hero {
   translate: 0.8 0.5 0;
   color: #ff5a36;
+}
+```
+
+<a name="selector-attribute"></a>
+
+## `[attribute]`
+
+Targets objects by an attribute, like CSS. An object gets its attributes in `@scene`, like HTML: `cube[data-col=2]`, `sphere[lit]`, or `[data-name="top left"]` with spaces. Its id and its classes count as the attributes `id` and `class`, so `[id^="hero-"]` finds every copy of `torus#hero * 3`.
+
+- **Specificity:** 100, like a class, even [id=…]
+
+### Forms
+
+- **[attr]:** The object has the attribute, whatever its value.
+- **[attr=value]:** The value is exactly this one. Quotes are optional for a single word or a number.
+- **[attr~=value]:** One of the words of the value, split at the spaces: `[class~=big]`.
+- **[attr|=value]:** The value, or the value followed by a dash: `[lang|=en]` matches `en` and `en-US`.
+- **[attr^=value]:** The value starts with this.
+- **[attr$=value]:** The value ends with this.
+- **[attr*=value]:** The value contains this.
+- **[attr=value i]:** Ignores the case. `s` keeps it, which is already the default.
+
+In `@scene`, an attribute takes `=` only, and every copy of a `* n` gets the same ones. `id` and `class` keep their own syntax there: `cube#a.big`. Like CSS, `~=`, `^=`, `$=` and `*=` never match an empty value.
+
+### [attr=value]
+
+The cubes of column 2 turn red.
+
+```css
+@scene {
+  cube[data-col=1];
+  cube[data-col=2];
+  cube[data-col=2];
+}
+
+cube {
+  size: 0.5;
+  translate: calc((sibling-index() - 2) * -0.8) 0.4 0;
+}
+
+[data-col="2"] {
+  color: #ff5a36;
+}
+```
+
+### [attr^=value]
+
+Every copy of `#hero` is numbered: `[id^="hero-"]` styles them all, not the other torus.
+
+```css
+@scene {
+  torus#hero * 3;
+  torus#other;
+}
+
+torus {
+  radius: 0.3;
+  thickness: 0.1;
+  rotate-x: 70deg;
+  translate: calc((sibling-index() - 2.5) * -0.9) 0.4 0;
+}
+
+[id^="hero-"] {
+  color: #3a7bff;
+}
+```
+
+### [attr~=value] and the i flag
+
+A list of words, read one by one, and a value whatever its case.
+
+```css
+@scene {
+  sphere[data-tags="round shiny"];
+  sphere[data-tags=round];
+  sphere[lang=EN];
+}
+
+sphere {
+  radius: 0.3;
+  translate: calc((sibling-index() - 2) * -0.9) 0.4 0;
+}
+
+[data-tags~=shiny] {
+  material: gold;
+}
+
+[lang=en i] {
+  color: #3ad16b;
 }
 ```
 
@@ -170,7 +261,9 @@ Nesting, like CSS: a rule can hold other rules, and `&` stands for the selector 
 - **> sphere:** A leading combinator: `#g { > sphere { … } }` is `#g > sphere`.
 - **@media:** A query inside a rule: its declarations apply to that rule when the query matches.
 
-Rules nest at any depth, and `&` also works inside `:has()` and `:not()`. The declarations written after a nested rule come after it in the cascade, like CSS. With a list as the parent, `a, b { & c { … } }` gives `a c` and `b c`, each with its own specificity, where CSS gives both the specificity of the most specific selector of the list.
+Rules nest at any depth, and `&` also works inside `:has()` and `:not()`.
+
+The declarations written after a nested rule come after it in the cascade, like CSS. With a list as the parent, `a, b { & c { … } }` gives `a c` and `b c`, each with its own specificity, where CSS gives both the specificity of the most specific selector of the list.
 
 ### a group and what it holds
 
@@ -226,6 +319,8 @@ torus {
 ## `!important`
 
 Written after a value, it makes the declaration win against every normal one, whatever their selectors. Between two `!important` declarations, specificity decides again.
+
+**How it goes, from where it is written to what the scene shows:** `#a { color: blue; }`, `cube { color: red !important; }`
 
 - **Specificity:** Beats every declaration without it
 

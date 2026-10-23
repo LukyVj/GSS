@@ -15,6 +15,8 @@ Sets the pixel density of the render, like the device pixel ratio of the screen.
 > [!NOTE]
 > **The density follows the computer.** A scene starts at a density of 0.5, then climbs to its `dpr` while the frames keep up, and lowers it while they are slow: a weak graphics card never draws a heavy scene at full density at once. When it is still far too slow at 0.5, the scene stops and offers to draw it anyway. In the playground and in the examples of these docs, the dpr menu at the top right of the render picks the density for you: `auto` follows the frame rate, a number replaces the `dpr`, never above the screen's. Your choice is kept in this browser.
 
+**What the property changes in the scene:** `dpr: 1;`, `dpr: 2;`
+
 - **Syntax:** `auto | max | <number>`
 - **Initial value:** `auto`
 - **Applies to:** the scene
@@ -69,6 +71,8 @@ Smooths the silhouettes of the objects, without raising the pixel density of the
 > [!NOTE]
 > **Heavier to draw, for now.** With `geometricPrecision`, the graphics card does about 15 % more work for the same scene, more on some heavy scenes. On a weak computer, the scene lowers its density sooner, and a scene already at the limit may stop and offer to draw it anyway. Keep `auto` on a heavy scene.
 
+**What the property changes in the scene:** `shape-rendering: auto;`, `shape-rendering: geometricPrecision;`
+
 - **Syntax:** `auto | geometricPrecision`
 - **Initial value:** `auto`
 - **Applies to:** the scene
@@ -79,7 +83,9 @@ Smooths the silhouettes of the objects, without raising the pixel density of the
 - **auto:** The default: each pixel shows one surface, and silhouettes keep their steps.
 - **geometricPrecision:** A pixel that the edge of an object only partly covers blends the object with what is behind it: the silhouettes come out smooth.
 
-Like `shape-rendering` in SVG, but on the scene only, with two values: `auto` keeps the sharp edges GSS has always drawn. The smoothing comes from the ray each pixel already casts, not from more rays or a bigger render. Only silhouettes are smoothed: the edges of a texture, of a shadow or of the floor keep their steps.
+Like `shape-rendering` in SVG, but on the scene only, with two values. Only silhouettes are smoothed: the edges of a texture, of a shadow or of the floor keep their steps.
+
+`auto` keeps the sharp edges GSS has always drawn. The smoothing comes from the ray each pixel already casts, not from more rays or a bigger render.
 
 ### smooth silhouettes
 
@@ -109,6 +115,8 @@ Shows the scene as it is lit, or with the isolines of its distance field over it
 > [!NOTE]
 > **Two chips switch it here.** In the playground and in the examples of these docs, the chips `view: shaded` and `view: distance` at the top left of the render switch the view, without touching the code; when the code changes its `view`, the code wins again. On your own site, the `view` of the scene applies.
 
+**What the property changes in the scene:** `view: shaded;`, `view: distance;`
+
 - **Syntax:** `shaded | distance`
 - **Initial value:** `shaded`
 - **Applies to:** the scene
@@ -119,7 +127,9 @@ Shows the scene as it is lit, or with the isolines of its distance field over it
 - **shaded:** The scene, lit: the default.
 - **distance:** The same scene, with a line every 0.25 units from the objects, fainter as it goes away. The lines lie on the plane that faces the camera through `camera-target`, and show where that plane is in front of the objects.
 
-The floor is left out of the distance: the lines go around the objects only. Far from a `path`, a `prism` or a `lathe`, the distance is the one to its box, which the shader uses to skip it quickly, and the lines show that box. The lines are light on a dark scene and dark on a light one.
+The floor is left out of the distance: the lines go around the objects only.
+
+Far from a `path`, a `prism` or a `lathe`, the distance is the one to its box, which the shader uses to skip it quickly, and the lines show that box. The lines are light on a dark scene and dark on a light one.
 
 ### the distance around a sphere
 

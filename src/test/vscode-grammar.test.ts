@@ -44,4 +44,27 @@ describe("the VS Code grammar", () => {
     const pattern = grammar.repository["at-property"];
     expect(new RegExp(pattern.begin!).exec("@property --lift {")?.[3]).toBe("--lift");
   });
+
+  it("names the mixin of @mixin and of @apply", () => {
+    expect(new RegExp(grammar.repository["at-mixin"].begin!).exec("@mixin --card(--size: 1) {")?.[3]).toBe("--card");
+    expect(new RegExp(grammar.repository["at-apply"].begin!).exec("@apply --card(2);")?.[3]).toBe("--card");
+  });
+
+  it("reads @apply and @contents in a block before a nested rule, which would take them for a selector", () => {
+    const block = grammar.repository["rule-block"].patterns!.map((pattern) => pattern.include);
+    expect(block.indexOf("#at-apply")).toBeGreaterThan(-1);
+    expect(block.indexOf("#at-apply")).toBeLessThan(block.indexOf("#nested-rule"));
+    expect(block.indexOf("#at-contents")).toBeLessThan(block.indexOf("#nested-rule"));
+  });
+
+  it("reads @for and @each in @scene, in a rule and in @keyframes, and names the loop variable", () => {
+    const loop = new RegExp(grammar.repository["at-loop"].begin!);
+    expect(loop.exec("@for --i from 1 through 4 {")?.[3]).toBe("--i");
+    expect(loop.exec("@each --shape in cube, sphere {")?.[3]).toBe("--shape");
+    const includes = (patterns: Pattern[] | undefined) => (patterns ?? []).map((pattern) => pattern.include);
+    expect(includes(grammar.repository["scene-contents"].patterns)).toContain("#at-loop");
+    const block = includes(grammar.repository["rule-block"].patterns);
+    expect(block.indexOf("#at-loop")).toBeGreaterThan(-1);
+    expect(block.indexOf("#at-loop")).toBeLessThan(block.indexOf("#nested-rule"));
+  });
 });

@@ -150,6 +150,29 @@ export function objectOutline(
   };
 }
 
+// Far from its segments, a path, a prism or a lathe returns the distance to their box: shorter
+// than the distance to the shape, it put the box in the line. An outlined one measures its shape
+// closer than twice the reach of its line (outlineFar, in the units of its shape: twice, so that
+// a rounded distance to the box never falls in the line)
+// (the start of the condition of that shortcut: anything after it stays)
+const SHORTCUT = "if (far > 0.5";
+export const BOXED = new Set(["path", "prism", "lathe"]);
+
+export function withOutlineShapes(functions: string): string {
+  return `// outline: twice the reach of the line of the object map() measures, in the units of its
+// shape; closer than that, a path, a prism or a lathe measures its shape, not its box
+float outlineFar = 0.0;
+
+${functions.replaceAll(SHORTCUT, "if (far > max(0.5, outlineFar)")}`;
+}
+
+// outlineFar for an object: its reach, divided by its scales and those of its groups
+export function outlineFarCode(outline: Outlined, scales: string[]): string {
+  const product = scales.every((scale) => Number.isFinite(Number(scale))) ? scales.reduce((all, scale) => all * Number(scale), 1) : null;
+  if (outline.reach !== null && product !== null && product > 0) return glslFloat(Number(((2 * outline.reach) / product).toPrecision(6)));
+  return `2.0 * max(${outline.offset} + ${outline.width}, 0.0) / max(${product !== null ? glslFloat(product) : scales.join(" * ")}, 0.000001)`;
+}
+
 // outlineAt(), called by map(), and outlineColor(), outlineReach(), called by main()
 export function outlineFunctions(outlines: { instance: StyledInstance; outline: Outlined }[]): string {
   const styled = outlines.some(({ outline }) => outline.style > 0);

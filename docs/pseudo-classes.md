@@ -12,6 +12,8 @@ Every example of this page, to edit live: [gss-lang.dev/docs](https://www.gss-la
 
 A pseudo-class, like CSS: the rule applies while the mouse is over the object. With `transition`, the change glides instead of jumping.
 
+**A cube that answers the pointer:** `hover`
+
 - **Specificity:** 100, like a class, added to the rest
 
 ### Where it goes
@@ -21,7 +23,9 @@ A pseudo-class, like CSS: the rule applies while the mouse is over the object. W
 - **#letters:hover cube:** On a group: every cube of `#letters` reacts as soon as the mouse is over any object of the group, like hovering a child hovers its parent in CSS.
 - **#g:has(sphere:hover):** Inside `:has()`: hovering one object changes another.
 
-The `:hover` rules join the cascade like any other: `#a { color: blue; }` beats `cube:hover { color: red; }`, and a normal `!important` beats them all. A `:hover` rule changes animatable properties only (the transforms, `color`, `opacity`, `mask-image`, `offset-distance` and variables), never a face, and it styles objects, not groups: write `#g:hover cube`, not `#g:hover { … }`. It can also start an `animation`: it begins when the pointer arrives and plays to its end, pointer gone or not (see `:active`).
+A `:hover` rule changes animatable properties only, and it styles objects, not groups: write `#g:hover cube`, not `#g:hover { … }`.
+
+The `:hover` rules join the cascade like any other: `#a { color: blue; }` beats `cube:hover { color: red; }`, and a normal `!important` beats them all. The animatable properties are the transforms, `color`, `opacity`, `mask-image`, `offset-distance` and variables: never a face. It can also start an `animation`: it begins when the pointer arrives and plays to its end, pointer gone or not (see `:active`).
 
 ### lift on hover
 
@@ -101,6 +105,8 @@ sphere {
 
 A pseudo-class, like CSS: the rule applies while the object is pressed, with the mouse button or a finger. Like CSS, it stays pressed until the button goes up, even if the pointer leaves it.
 
+**A cube that answers the pointer:** `hover, then press`
+
 - **Specificity:** 100, like a class, added to the rest
 
 ### Where it goes
@@ -110,7 +116,9 @@ A pseudo-class, like CSS: the rule applies while the object is pressed, with the
 - **#g:active cube:** On a group: every cube of `#g` is pressed when any of its objects is.
 - **#lamp:has(#switch:active) #bulb:** Inside `:has()`: press one object, change another.
 
-A pressed object is under the pointer, so its `:hover` rules still apply, and `:active` wins over them at equal specificity when written after them: `cube:hover { scale: 1.1; } cube:active { scale: 0.95; }` grows under the mouse and sinks when clicked. Like `:hover`, it changes animatable properties only, and styles objects, not groups. With `transition`, pressing takes the transition of the `:active` rule, and releasing the one of the hovered state. An `animation` in a `:active` rule starts at the press and plays to its end, released or not, like a button that fires: once, unless it says how many times; the pressed state stays on until the animation ends, or for good with `forwards`, and the next press plays it again.
+Write `:active` after `:hover`: a pressed object is hovered too, and the later rule wins. Like `:hover`, it changes animatable properties only, and styles objects, not groups.
+
+`cube:hover { scale: 1.1; } cube:active { scale: 0.95; }` grows under the mouse and sinks when clicked. With `transition`, pressing takes the transition of the `:active` rule, and releasing the one of the hovered state. An `animation` in a `:active` rule starts at the press and plays to its end, released or not, like a button that fires: once, unless it says how many times; the pressed state stays on until the animation ends, or for good with `forwards`, and the next press plays it again.
 
 ### a button that sinks when pressed
 
@@ -221,7 +229,9 @@ A pseudo-class, like CSS: a group matches when something inside it, at any depth
 - **group:has(> sphere):** A leading combinator, relative to the subject: here, direct children.
 - **cube:has(+ sphere):** The next sibling, or any later one with `~`. Chains work too: `cube:has(+ group > sphere)`.
 
-Without a leading sibling combinator, `:has()` goes on a group: an object holds nothing, so `cube:has(sphere)` is an error. Empty groups can match, and a `:has()` cannot hold another one. Unlike CSS, a list that mixes a static selector with `:hover` matches only during a hover.
+Without a leading sibling combinator, `:has()` goes on a group: an object holds nothing, so `cube:has(sphere)` is an error.
+
+Empty groups can match, and a `:has()` cannot hold another one. Unlike CSS, a list that mixes a static selector with `:hover` matches only during a hover.
 
 ### the groups that hold a sphere
 
@@ -399,7 +409,9 @@ A pseudo-class, like CSS: the position of the object among its siblings, the obj
 - **An+B:** A formula where `n` runs from 0 up: `2n+1` is 1, 3, 5…, `3n` every third, `-n+3` the first three.
 - **An+B of <selector>:** Counts only the siblings that match the list, and the object must match it too: `:nth-child(2 of .red)` is the second `.red`.
 
-Each copy of `* n` is a sibling of its own: in `@scene { cube * 4; sphere; }`, `cube:nth-child(odd)` is cubes 1 and 3, and the sphere is child 5, as `sibling-index()` counts. Groups count as siblings, and the count starts again inside each group. The position is read once, when the scene compiles: `of` cannot hold `:hover`.
+Each copy of `* n` is a sibling of its own. Groups count as siblings, and the count starts again inside each group.
+
+In `@scene { cube * 4; sphere; }`, `cube:nth-child(odd)` is cubes 1 and 3, and the sphere is child 5, as `sibling-index()` counts. The position is read once, when the scene compiles: `of` cannot hold `:hover`.
 
 ### odd, and every third
 
@@ -592,7 +604,9 @@ cube:only-child {
 
 ## `::face(), ::top, ::bottom`
 
-A pseudo-element, like `::part()` in CSS: the rule styles one face of the object, not the object. A face takes `texture` only.
+A pseudo-element, like `::part()` in CSS: the rule styles one face of the object, not the object. A face takes `texture` and `content`. It is named, or numbered like `:nth-child()`.
+
+**What covers the surface, flat, then on an object:** `cube::face(1)`, `pyramid::face(1)`, `octahedron::face(1)`
 
 - **Specificity:** 1, like a tag, added to the rest
 
@@ -602,8 +616,12 @@ A pseudo-element, like `::part()` in CSS: the rule styles one face of the object
 - **front, back:** Toward +z and toward −z.
 - **right, left:** Toward +x and toward −x.
 - **::top, ::bottom:** Shortcuts for `::face(top)` and `::face(bottom)`.
+- **<number>:** A face by its number: `::face(3)`. A cube is numbered like a die, its opposite faces adding up to 7: front 1, top 2, right 3, left 4, bottom 5, back 6.
+- **odd, even, An+B:** Several faces, like `:nth-child()`: `::face(odd)`, `::face(2n)`, `::face(n + 5)` (5 and the faces after it).
 
-A face without a rule of its own shows the texture of the object. On a round shape, a face is the part that looks that way the most: a sphere is cut like the cube around it. Like CSS, the pseudo-element ends the selector: `cube.grass::top`, never `#g::top cube`.
+A face without a rule of its own shows the texture and the text of the object. Like CSS, the pseudo-element ends the selector: `cube.grass::top`, never `#g::top cube`.
+
+Every shape seen from six sides (a cube, a sphere, a cylinder, a cone, a capsule, a tube, a torus, a plane and the shapes drawn with `path`) has the six faces of the cube and its numbers: on a round shape, a face is the part that looks that way the most. A pyramid has five faces: its slopes from the front, turning right (front 1, right 2, back 3, left 4), then its base, 5 or `bottom`. An octahedron has eight triangles, with numbers only: 1 to 4 on top, from the front-right turning right (front-right, back-right, back-left, front-left), 5 to 8 below them, in the same order. A number the shape does not have, like `cube::face(7)`, is an error; so is the `content` of a name the shape does not have, like `pyramid::face(top)`.
 
 ### ::face()
 
@@ -667,6 +685,109 @@ The block is turned over: its bottom face, now on top, shows dirt.
 }
 ```
 
+### ::face() with a number
+
+A die: each face writes its own number, the opposite faces adding up to 7.
+
+```css
+@scene {
+  cube;
+}
+
+scene {
+  camera-angle: 35deg 30deg;
+}
+
+cube {
+  translate: 0 0.6 0;
+  color: #f4f1ea;
+  corner-radius: 0.08;
+  font-weight: bold;
+}
+
+cube::face(1) {
+  content: "1";
+}
+
+cube::face(2) {
+  content: "2";
+}
+
+cube::face(3) {
+  content: "3";
+}
+
+cube::face(4) {
+  content: "4";
+}
+
+cube::face(5) {
+  content: "5";
+}
+
+cube::face(6) {
+  content: "6";
+}
+```
+
+### ::face(odd), on an octahedron
+
+The faces of an octahedron have numbers only: one in two takes a word, the others stay plain.
+
+```css
+@scene {
+  octahedron;
+}
+
+scene {
+  camera-angle: 30deg 25deg;
+}
+
+octahedron {
+  translate: 0 0.9 0;
+  radius: 0.9;
+  color: #3ad16b;
+  font-weight: bold;
+  animation: turn 8s linear infinite;
+}
+
+octahedron::face(odd) {
+  content: "GSS";
+}
+
+@keyframes turn {
+  to {
+    rotate-y: 360deg;
+  }
+}
+```
+
+### ::face(even), on a pyramid
+
+The slopes of a pyramid are 1 to 4 from the front, turning right, and its base is 5: the even faces, its right and left slopes, take their own word.
+
+```css
+@scene {
+  pyramid;
+}
+
+scene {
+  camera-angle: 30deg 25deg;
+}
+
+pyramid {
+  translate: 0 0.7 0;
+  size: 1.8 1.4 1.8;
+  color: #722cff;
+  font-weight: bold;
+  content: "odd";
+}
+
+pyramid::face(even) {
+  content: "even";
+}
+```
+
 ### ::face(), ::top and ::bottom together
 
 Two grass blocks, the second turned over: each face keeps its texture as the block turns.
@@ -708,7 +829,9 @@ The mouse pointer over the object, like CSS: `pointer` says it can be clicked, `
 - **Applies to:** objects
 - **Animatable:** no
 
-Like CSS, it is inherited: a group gives its cursor to its objects. A `:hover` or `:active` rule can change it, like `cube:active { cursor: grabbing; }`, at once: a cursor does not glide. Over the background and the floor, the page keeps its own cursor. A hidden object has none, since the mouse goes through it.
+Like CSS, it is inherited: a group gives its cursor to its objects. A `:hover` or `:active` rule can change it, like `cube:active { cursor: grabbing; }`.
+
+A cursor changes at once: it does not glide. Over the background and the floor, the page keeps its own cursor. A hidden object has none, since the mouse goes through it.
 
 ### a button
 

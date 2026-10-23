@@ -125,7 +125,9 @@ Not a shape: a point of light, which draws nothing. Its `color` is the color of 
 
 - **Takes:** [`display`](masks.md#display), [`color`](colors.md#color), [`intensity`](#intensity), [`translate`](transforms.md#translate), [`rotate-x`](transforms.md#rotate-x), [`rotate-y`](transforms.md#rotate-y), [`rotate-z`](transforms.md#rotate-z), [`transform-origin`](transforms.md#transform-origin), [`transition`](animations.md#transition), [`animation`](animations.md#animation), [`animation-duration`](animations.md#animation-duration), [`animation-delay`](animations.md#animation-delay), [`animation-iteration-count`](animations.md#animation-iteration-count), [`animation-direction`](animations.md#animation-direction), [`animation-fill-mode`](animations.md#animation-fill-mode), [`animation-timing-function`](animations.md#animation-timing-function), [`animation-timeline`](animations.md#animation-timeline), [`animation-range`](animations.md#animation-range), [`animation-range-start`](animations.md#animation-range-start), [`animation-range-end`](animations.md#animation-range-end), [`offset-path`](transforms.md#offset-path), [`offset-distance`](transforms.md#offset-distance), [`offset-rotate`](transforms.md#offset-rotate)
 
-It moves like an object: `translate`, the groups it is in, animations, `:hover` through its group, a motion path, and rotations around a `transform-origin`, in numbers, since a light has no size. Lights add up, 8 at most per scene. A light is never drawn, so it cannot be hovered or pressed: to see the bulb, put a shape at its place, and hover the shape, like `#lamp:hover light`. Without `shadows`, the light goes through the objects.
+A light moves like an object, and is never drawn: to see the bulb, put a shape at its place. A scene takes 8 lights at most.
+
+What moves a light: `translate`, the groups it is in, animations, `:hover` through its group, a motion path, and rotations around a `transform-origin`, in numbers, since a light has no size. Lights add up. A light cannot be hovered or pressed: hover the shape at its place, like `#lamp:hover light`. Without `shadows`, the light goes through the objects.
 
 ### a lamp
 
@@ -269,6 +271,8 @@ scene {
 
 How much light a point `light` gives: what a surface facing it receives at 1 unit, then less with the square of the distance, a quarter at 2 units and a ninth at 3. 0 turns it off.
 
+**What the property changes in the scene:** `intensity: 0.5;`, `intensity: 1;`, `intensity: 4;`
+
 - **Syntax:** `<number>`
 - **Initial value:** `1`
 - **Applies to:** light
@@ -332,6 +336,8 @@ scene {
 ## `shadows`
 
 Lets the objects cast shadows, on the floor and on each other: a point in the shadow of an object keeps only the `ambient` light.
+
+**What the property changes in the scene:** `shadows: none;`, `shadows: hard;`, `shadows: soft;`
 
 - **Syntax:** `none | hard | soft`
 - **Initial value:** `none`
@@ -440,7 +446,9 @@ Fills the scene with fog, measured from the camera: none before the first distan
 - **<color>:** Its color, before or after the distances. The background takes it too: past the fog, only the fog is seen.
 - **none:** No fog: the default.
 
-The scene draws nothing farther than 20 units from the camera: a fog that ends before that hides the far edge of the floor. The scene can animate its fog, from `none` too. The reflections and the refractions show the objects without fog.
+The scene draws nothing farther than 20 units from the camera: a fog that ends before that hides the far edge of the floor. The scene can animate its fog, from `none` too.
+
+The reflections and the refractions show the objects without fog.
 
 ### into the background
 

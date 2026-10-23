@@ -10,7 +10,7 @@ Every example of this page, to edit live: [gss-lang.dev/docs](https://www.gss-la
 
 ## Embedding a scene
 
-A GSS scene runs on any web page, in three ways. All three use the package `gss-lang@0.0.6`.
+A GSS scene runs on any web page, in three ways. All three use the package `gss-lang@0.0.7`.
 
 GSS is open source, under the Apache-2.0 license: its code is on [GitHub](https://github.com/LukyVj/GSS), where you can [report a bug](https://github.com/LukyVj/GSS/issues). Questions, ideas, a scene to show: say hi on X, [@GSS_lang](https://x.com/GSS_lang).
 
@@ -20,10 +20,10 @@ GSS is open source, under the Apache-2.0 license: its code is on [GitHub](https:
 
 ### A tag
 
-CDN · v0.0.6 · no build step
+CDN · v0.0.7 · no build step
 
 ```html
-<script type="module" src="https://cdn.jsdelivr.net/npm/gss-lang@0.0.6/lib/embed.js"></script>
+<script type="module" src="https://cdn.jsdelivr.net/npm/gss-lang@0.0.7/lib/embed.js"></script>
 
 <gss-scene src="logo.gss"></gss-scene>
 <gss-scene controls="none">
@@ -33,7 +33,7 @@ CDN · v0.0.6 · no build step
 
 ### A function
 
-npm install gss-lang@0.0.6
+npm install gss-lang@0.0.7
 
 ```js
 import { mount } from "gss-lang";
@@ -45,7 +45,7 @@ scene.destroy();
 
 ### A build step
 
-gss-lang@0.0.6 · compiled with Vite
+gss-lang@0.0.7 · compiled with Vite
 
 ```js
 // vite.config.ts
@@ -60,9 +60,14 @@ mount(canvas, logo);
 
 ### In the page
 
-An embedded scene behaves like the playground: a drag turns the camera, the wheel zooms, `:hover` works. With `controls="none"` (or `controls: false`), only `:hover` stays, and the page scrolls over the scene. The scene starts when it comes into view, sleeps when it leaves it, and stands still under `prefers-reduced-motion`. A scene that does not move draws nothing between two changes (the mouse, a variable, an image that arrives): the GPU rests.
+- **Camera:** A drag turns it, the wheel zooms, `:hover` works. `controls="none"` (or `controls: false`) keeps only `:hover`, and the page scrolls over the scene. The GSS can choose too: see [`controls`](camera.md#controls).
+- **Off screen:** The scene starts when it comes into view, and sleeps when it leaves it.
+- **Reduced motion:** The scene stands still under `prefers-reduced-motion`.
+- **A still scene:** It draws nothing between two changes (the mouse, a variable, an image that arrives): the GPU rests.
+- **Images:** A path starts from the `.gss` file, like `url()` in a stylesheet.
+- **Background:** The canvas is not transparent: give the scene the `background` of your page.
 
-Images are read next to the `.gss` file, like `url()` in a stylesheet. The canvas is opaque: give the scene the `background` of your page. The [showcase](https://www.gss-lang.dev/showcase.html) shows them all live.
+See embedded scenes live in the [showcase](https://www.gss-lang.dev/showcase.html).
 
 ### From a script
 
@@ -72,10 +77,12 @@ Once `<gss-scene>` fires `load`, its `scene` property gives the scene, to `pause
 
 ## Package (npm)
 
-Install `gss-lang@0.0.6` in your application. The package holds the compiler, the renderer and the TypeScript declarations.
+Install `gss-lang@0.0.7` in your application. The package holds the compiler, the renderer and the TypeScript declarations.
+
+**How it goes, from where it is written to what the scene shows:** `npm install gss-lang`, `mount(canvas, source)`, `a canvas of the page`
 
 ```sh
-npm install gss-lang@0.0.6
+npm install gss-lang@0.0.7
 ```
 
 ```js
@@ -96,8 +103,10 @@ A variable the scene registers with `@property` can be set from the page without
 
 The Vite plugin comes with the package. It compiles the `.gss` imports at build time, so the browser loads only the renderer and the compiled scene.
 
+**How it goes, from where it is written to what the scene shows:** `scene.gss`, `vite build`, `the scene, compiled`
+
 ```sh
-npm install gss-lang@0.0.6
+npm install gss-lang@0.0.7
 npm install --save-dev vite
 ```
 
@@ -118,10 +127,12 @@ With TypeScript, add `"gss-lang/client"` to `compilerOptions.types` in `tsconfig
 
 ## CDN (no build step)
 
-Load the browser module of `v0.0.6` from jsDelivr: no install, no bundler. The version is pinned, so an update never changes your scene unexpectedly.
+Load the browser module of `v0.0.7` from jsDelivr: no install, no bundler. The version is pinned, so an update never changes your scene unexpectedly.
+
+**How it goes, from where it is written to what the scene shows:** `<script src="embed.js">`, `<gss-scene>`, `the scene`
 
 ```html
-<script type="module" src="https://cdn.jsdelivr.net/npm/gss-lang@0.0.6/lib/embed.js"></script>
+<script type="module" src="https://cdn.jsdelivr.net/npm/gss-lang@0.0.7/lib/embed.js"></script>
 
 <gss-scene src="logo.gss"></gss-scene>
 <gss-scene controls="none">
@@ -129,19 +140,25 @@ Load the browser module of `v0.0.6` from jsDelivr: no install, no bundler. The v
 </gss-scene>
 ```
 
-The script defines `<gss-scene>`. Point its `src` to a `.gss` file, or write the GSS inline, as above. Serve the page over HTTP(S). The module: [https://cdn.jsdelivr.net/npm/gss-lang@0.0.6/lib/embed.js](https://cdn.jsdelivr.net/npm/gss-lang@0.0.6/lib/embed.js).
+The script defines `<gss-scene>`. Point its `src` to a `.gss` file, or write the GSS inline, as above. Serve the page over HTTP(S). The module: [https://cdn.jsdelivr.net/npm/gss-lang@0.0.7/lib/embed.js](https://cdn.jsdelivr.net/npm/gss-lang@0.0.7/lib/embed.js).
 
 To drive the scene from a script, see [Set variables from JavaScript](#set-variables).
 
-`poster="cover.jpg"` shows an image until the scene draws, like the poster of a `<video>`. On a computer without a graphics card, the processor would draw the scene, slowly enough to freeze the page: `<gss-scene>` then shows its poster and a button, and draws the scene only when the reader asks. With `mount()`, `softwareRendering()`, from `gss-lang` or `gss-lang/runtime`, returns `true` on such a computer, to do the same.
+### Slow computers
 
-A scene starts at a density of 0.5, then climbs to its `dpr` while the frames keep up: a weak graphics card never draws a heavy scene at full density at once. When the scene is still far too slow at 0.5, it stops: `<gss-scene>` shows a button that draws it anyway, and `mount()` fires a `gss-too-heavy` event on the canvas, where `scene.play()` draws it anyway. `mount(canvas, scene, { adaptDpr: false })` keeps the `dpr` as written and never stops, for a capture or a benchmark.
+- **poster:** `poster="cover.jpg"` shows an image until the scene draws, like the poster of a `<video>`.
+- **No graphics card:** `<gss-scene>` shows its poster and a button, and draws the scene only when the reader asks. With `mount()`, `softwareRendering()`, from `gss-lang` or `gss-lang/runtime`, returns `true` on such a computer, to do the same.
+- **A weak graphics card:** The scene starts at a density of 0.5, then climbs to its `dpr` while the frames keep up.
+- **Still too slow:** The scene stops: `<gss-scene>` shows a button that draws it anyway, and `mount()` fires a `gss-too-heavy` event on the canvas, where `scene.play()` draws it anyway.
+- **adaptDpr: false:** `mount(canvas, scene, { adaptDpr: false })` keeps the `dpr` as written and never stops, for a capture or a benchmark.
 
 <a name="set-variables"></a>
 
 ## Set variables from JavaScript
 
 A variable the scene registers with [`@property`](at-rules.md#at-property) can be set by the page at any moment, without compiling the scene again, the way `element.style.setProperty()` sets a CSS custom property. Drive a scene from a slider, the scroll position or your data. Move the slider:
+
+**How it goes, from where it is written to what the scene shows:** `--lift`
 
 The scene registers `--lift` and reads it in `translate` and in its color; the page sets it when the slider moves:
 
@@ -217,13 +234,17 @@ With `@property-panel { display: open; }` in the scene, the playground, and Try 
 
 ### From `<gss-scene>`
 
-Its `scene` property gives the scene, with the same methods. It is `null` until the element fires `"load"`, since the scene only starts when it comes near the screen. Set your values on `"load"`, as the demo does: it fires again each time the element starts a new scene (a new `src`, `controls` or `backend`, or the element moved in the page), and a new scene starts from its start values.
+The `scene` property of the element is the scene, with the same methods. It is `null` until the element fires `"load"`: set your values in a `"load"` listener, as the demo does.
+
+The element fires `"load"` again each time it starts a new scene: a new `src`, `controls` or `backend`, or the element moved in the page. A new scene starts from its start values, so the listener sets yours again.
 
 <a name="editor-support"></a>
 
 ## Editor support
 
 The GSS extension colors and formats `.gss` files in VS Code and in the editors built on it, like Cursor, VSCodium and Windsurf. It is not needed to run a scene.
+
+**How it goes, from where it is written to what the scene shows:** `1`, `2`, `3`, `4`, `5`, `6`, `7`
 
 - **Highlighting:** Selectors, properties, values, colors, numbers and units, the at-rules, nested rules and `&`.
 - **Formatting:** *Format Document*, or saving the file, writes the code in the style of these docs: one shape per line in `@scene`, one declaration per line, two-space indentation, comments kept.

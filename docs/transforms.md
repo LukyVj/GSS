@@ -12,6 +12,8 @@ Every example of this page, to edit live: [gss-lang.dev/docs](https://www.gss-la
 
 How far along its `offset-path` the object is, like CSS: a number, in the units of the path, or a percentage of its length. Animate it with `@keyframes`, a `transition` on `:hover`, or the scroll.
 
+**Three places on one path:** `0%`, `50%`, `100%`
+
 - **Syntax:** `<number> | <percentage>`
 - **Initial value:** `0`
 - **Applies to:** objects
@@ -69,6 +71,8 @@ cube:hover {
 ## `offset-path`
 
 A motion path, like CSS: the line the object travels along, placed by `offset-distance` and turned by `offset-rotate`. It works on groups too.
+
+**An object that travels along its path:** `0%`, `100%`
 
 - **Syntax:** `none | path(<string>) | ray(<angle>)`
 - **Initial value:** `none`
@@ -145,6 +149,8 @@ cube {
 
 How the object turns along its `offset-path`, like CSS.
 
+**Two objects along a path: one turns with it, one keeps its angle:** `offset-rotate: auto;`, `offset-rotate: 0deg;`
+
 - **Syntax:** `[auto | reverse] || <angle>`
 - **Initial value:** `auto`
 - **Applies to:** objects
@@ -197,6 +203,8 @@ cube {
 
 Rotates the object around the x axis. Like CSS `rotateX()`, a positive angle turns its top away from the viewer. On a group, it turns everything inside it around the origin of the group.
 
+**A cube turning around the axis:** `x`
+
 - **Syntax:** `<angle>`
 - **Initial value:** `0deg`
 - **Applies to:** objects
@@ -220,6 +228,8 @@ cube {
 
 Rotates the object around the y axis. Like CSS `rotateY()`, a positive angle turns its right side away from the viewer. On a group, it turns everything inside it around the origin of the group.
 
+**A cube turning around the axis:** `y`
+
 - **Syntax:** `<angle>`
 - **Initial value:** `0deg`
 - **Applies to:** objects
@@ -242,6 +252,8 @@ cube {
 ## `rotate-z`
 
 Rotates the object around the z axis. Like CSS `rotate()`, a positive angle turns it clockwise. On a group, it turns everything inside it around the origin of the group.
+
+**A cube turning around the axis:** `z`
 
 - **Syntax:** `<angle>`
 - **Initial value:** `0deg`
@@ -363,6 +375,8 @@ cylinder {
 ## `translate`
 
 Moves the object along the x, y and z axes. Like CSS, x points right and z toward the viewer; y points up, and the floor is at y = 0. On a group, it moves everything inside it, and the positions of its children become relative to the group.
+
+**A cube moved along x, then y, then z:** `x`, `y`, `z`
 
 - **Syntax:** `<number>{3}`
 - **Initial value:** `0 0 0`

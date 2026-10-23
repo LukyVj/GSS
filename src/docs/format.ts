@@ -12,6 +12,30 @@ export function formatGss(code: string): string {
   let startsWithScene = false; // does the current rule head start with @scene?
   let headLength = 0; // how many tokens the current head has, comments aside
   let afterColon = false; // the previous token was the ":" of a declaration
+  // The parameters of a @mixin (decision 174): "--size: 1" reads like a declaration, and
+  // their commas stay on the line. parens: how deep in its parentheses, 0 outside.
+  let mixinHead = false;
+  let parens = 0;
+  // The head of @for and @each (decision 191) stays on one line, in @scene too, where a name
+  // would start a new element, and its commas with it
+  let loopHead = false;
+  let brackets = 0; // inside [data-col=2]: the attribute stays on the line of its element
+
+  // Does a "{" come before the next ";" or "}"? Then the ":" at `at` is in a selector, like
+  // the one of a rule in a @media or in a loop (cube:hover { … }), not after a property
+  const opensBlock = (at: number): boolean => {
+    let parens = 0;
+    for (let i = at + 1; i < parts.length; i++) {
+      const { token } = parts[i];
+      if (token.type !== "PUNCT") continue;
+      if (token.value === "(") parens++;
+      if (token.value === ")") parens--;
+      if (parens > 0) continue;
+      if (token.value === "{") return true;
+      if (token.value === ";" || token.value === "}") return false;
+    }
+    return false;
+  };
 
   parts.forEach(({ token, start, end }, index) => {
     const previous = parts[index - 1];
@@ -22,12 +46,15 @@ export function formatGss(code: string): string {
     const previousIs = (p: string) =>
       previous?.token.type === "PUNCT" && previous.token.value === p;
 
-    // A ":" right after a name, in a block that holds declarations
+    // A ":" right after a name, in a block that holds declarations, or after a parameter
+    // of a @mixin (and its type: --tint <color>: red)
     const isDeclarationColon =
       is(":") &&
-      previous?.token.type === "IDENT" &&
-      blocks.length > 0 &&
-      blocks[blocks.length - 1] !== "scene";
+      ((mixinHead && parens === 1) ||
+        (previous?.token.type === "IDENT" &&
+          blocks.length > 0 &&
+          blocks[blocks.length - 1] !== "scene" &&
+          !opensBlock(index)));
 
     // A "}" goes back one level, and always starts its own line
     if (is("}")) {
@@ -39,7 +66,7 @@ export function formatGss(code: string): string {
     // the element: .corner, :nth-child(odd)
     const inScene = blocks[blocks.length - 1] === "scene";
     const continues = [".", ":", "(", ","].some(previousIs);
-    if (inScene && token.type === "IDENT" && previous && !continues)
+    if (inScene && token.type === "IDENT" && previous && !continues && brackets === 0 && !loopHead)
       needBreak = true;
 
     // Code written on the line after a comment stays on the next line
@@ -60,19 +87,25 @@ export function formatGss(code: string): string {
       needBreak = false;
     } else if (isDeclarationColon) {
       // "radius : 1" → "radius: 1": nothing before the colon
-    } else if (is("{") || afterColon || gap !== "") {
-      out += " "; // one space where the source had some, always before { and after a declaration's ":"
+    } else if (is("{") || afterColon || gap !== "" || (loopHead && previousIs(","))) {
+      out += " "; // one space where the source had some, always before {, after a declaration's ":" and after a comma of a loop head
     }
 
     out += text;
 
     if (token.type !== "COMMENT") {
       afterColon = isDeclarationColon;
-      if (headLength === 0)
+      if (headLength === 0) {
         startsWithScene =
           token.type === "AT_KEYWORD" && token.value === "scene";
+        mixinHead = token.type === "AT_KEYWORD" && token.value === "mixin";
+        loopHead = token.type === "AT_KEYWORD" && (token.value === "for" || token.value === "each");
+        parens = 0;
+      }
       headLength++;
     }
+    if (is("(")) parens++;
+    if (is(")")) parens = Math.max(0, parens - 1);
 
     if (is("{")) {
       depth++;
@@ -81,14 +114,19 @@ export function formatGss(code: string): string {
       blocks.push(startsWithScene || inScene ? "scene" : "rules");
     }
     if (is("}")) blocks.pop();
-    if (is(";") || is("}") || is("{")) headLength = 0;
+    if (is("[")) brackets++;
+    if (is("]")) brackets = Math.max(0, brackets - 1);
+    if (is(";") || is("}") || is("{")) {
+      headLength = 0;
+      loopHead = false;
+    }
     if (is(";") || is("}")) needBreak = true;
     // The block of a @paint is GLSL, written as it is: it closes like a "}" (decision 151)
     if (token.type === "GLSL") {
       headLength = 0;
       needBreak = true;
     }
-    if (is(",") && depth === 0) needBreak = true;
+    if (is(",") && depth === 0 && !(mixinHead && parens > 0) && !loopHead) needBreak = true;
   });
 
   return out.trim() + "\n";

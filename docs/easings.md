@@ -12,6 +12,8 @@ Every example of this page, to edit live: [gss-lang.dev/docs](https://www.gss-la
 
 An easing curve, like CSS, for `animation` and `transition`. The curve goes from (0, 0) to (1, 1), pulled by two handles: x is the time, from 0 to 1, and y the progress, which can go below 0 or above 1 to overshoot.
 
+**The curve of the easing, and a ball that moves by it:** `time`, `progress`
+
 - **Syntax:** `cubic-bezier(<x1>, <y1>, <x2>, <y2>)`
 - **Computed:** at compile time, once per object
 
@@ -51,10 +53,14 @@ sphere {
 
 An easing drawn as straight segments, like CSS: each number is the progress at one moment, a percentage of the duration. With enough points, it draws bounces and springs.
 
+**The curve of the easing, and a ball that moves by it:** `time`, `progress`
+
 - **Syntax:** `linear(<number> [<percentage>{0,2}], …)`
 - **Computed:** at compile time, once per object
 
-A missing moment is spread evenly between its neighbours; the first point is at 0% and the last one at 100%. Two percentages on one number hold it still between them, and two points at the same moment jump. The keyword `linear` is `linear(0, 1)`: a constant speed.
+A missing moment is spread evenly between its neighbours; the first point is at 0% and the last one at 100%. The keyword `linear` is `linear(0, 1)`: a constant speed.
+
+Two percentages on one number hold it still between them, and two points at the same moment jump.
 
 ### a bounce
 
@@ -86,6 +92,8 @@ sphere {
 ## `steps()`
 
 An easing that moves by equal jumps instead of gliding, like CSS: `steps(4)` holds still, then jumps, four times. Good for ticking hands, sprites and anything mechanical.
+
+**The curve of the easing, and a ball that moves by it:** `time`, `progress`
 
 - **Syntax:** `steps(<integer>, [jump-start | jump-end | jump-none | jump-both | start | end]?) | step-start | step-end`
 - **Computed:** at compile time, once per object

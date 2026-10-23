@@ -5,6 +5,7 @@ export type SceneInstance = {
   tag: string;
   id: string | null;
   classes: string[];
+  attributes?: Record<string, string>; // written in @scene: cube[data-col=2]
   index: number; // its number among the drawn objects, from 1 (the material id of the shader)
   siblingIndex: number; // its position among its siblings, from 1, like CSS sibling-index()
   siblingCount: number; // how many siblings it has, itself included, like CSS sibling-count()
@@ -50,6 +51,7 @@ export function expandScene(elements: SceneElement[]): SceneInstance[] {
           tag: element.tag,
           id,
           classes: element.classes,
+          ...(element.attributes && { attributes: element.attributes }),
           index: 0, // a group is never drawn: it keeps 0
           siblingIndex: ++siblingIndex,
           siblingCount,

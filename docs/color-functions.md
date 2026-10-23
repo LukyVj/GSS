@@ -12,10 +12,14 @@ Every example of this page, to edit live: [gss-lang.dev/docs](https://www.gss-la
 
 A color from its red, green and blue channels, like CSS: numbers from 0 to 255, or percentages (100% is 255). Spaces or commas both work, and `rgba()` is the same function.
 
+**The colors the function gives:** `red`, `green`, `blue`
+
 - **Syntax:** `rgb(<red> <green> <blue>) | rgb(<red>, <green>, <blue>)`
 - **Computed:** at compile time, once per object
 
-Values outside the range are clamped. An alpha (`rgb(255 0 0 / 50%)`) makes the color transparent, which only `color`, `background` and `mask-image` take: anywhere else, it is an error. The math works inside, so one rule can give each copy its own color.
+An alpha (`rgb(255 0 0 / 50%)`) makes the color transparent, which only `color`, `background` and `mask-image` take: anywhere else, it is an error.
+
+Values outside the range are clamped. The math works inside, so one rule can give each copy its own color.
 
 ### red, green and blue
 
@@ -51,10 +55,14 @@ sphere {
 
 A color from its hue, saturation and lightness, like CSS. The hue is an angle on the color wheel (0 red, 120 green, 240 blue), in degrees or in `deg`, `rad` or `turn`, and it goes round: -120 is 240.
 
+**The colors the function gives:** `0`, `90`, `180`, `270`
+
 - **Syntax:** `hsl(<hue> <saturation> <lightness>)`
 - **Computed:** at compile time, once per object
 
-Saturation and lightness are percentages, or numbers where 100 is 100%; a lightness of 50% gives the pure color. Commas, `hsla()` and the alpha work as in `rgb()`. With `sibling-index()` on the hue, the copies of an object spread a rainbow.
+Saturation and lightness are percentages, or numbers where 100 is 100%; a lightness of 50% gives the pure color. Commas, `hsla()` and the alpha work as in `rgb()`.
+
+With `sibling-index()` on the hue, the copies of an object spread a rainbow.
 
 ### an orange
 
@@ -90,6 +98,8 @@ Each dot turns the hue 45° further.
 
 A color from a hue, and how much white and black are mixed into it, like CSS: `hwb(0 0% 0%)` is pure red; more whiteness makes it paler, more blackness darker. When whiteness and blackness add up to 100% or more, the color is a gray. The hue works as in `hsl()`.
 
+**The colors the function gives:** `hwb(15 0% 0%)`, `hwb(15 50% 0%)`, `hwb(15 0% 50%)`
+
 - **Syntax:** `hwb(<hue> <whiteness> <blackness>)`
 - **Computed:** at compile time, once per object
 
@@ -114,6 +124,8 @@ Each cube adds 15% of white.
 ## `lab(), lch()`
 
 The CIE Lab color space of CSS, built on how the eye sees: the lightness goes from 0 (black) to 100 (white), `a` from green to red, `b` from blue to yellow. `lch()` is the same space, written with a chroma (how colorful) and a hue.
+
+**The colors the function gives:** `a`, `b`, `chroma`
 
 - **Syntax:** `lab(<lightness> <a> <b>) | lch(<lightness> <chroma> <hue>)`
 - **Computed:** at compile time, once per object
@@ -177,6 +189,8 @@ A green in `lab()`, and one in `lch()`.
 
 The OKLab color space of CSS: its lightness matches the eye much better than `hsl()`, so colors of the same lightness look equally light, whatever their hue. With `sibling-index()` on its hue, `oklch()` gives a rainbow whose colors all look as light.
 
+**The colors the function gives:** `hsl()`, `oklch()`
+
 - **Syntax:** `oklab(<lightness> <a> <b>) | oklch(<lightness> <chroma> <hue>)`
 - **Computed:** at compile time, once per object
 
@@ -239,6 +253,8 @@ A blue in `oklab()`, and a red in `oklch()`.
 
 A color in a named color space, like CSS, with three channels from 0 to 1, or percentages.
 
+**The colors the function gives:** `srgb`, `srgb-linear`, `display-p3`, `xyz`
+
 - **Syntax:** `color(<space> <r> <g> <b>)`
 - **Computed:** at compile time, once per object
 
@@ -274,6 +290,8 @@ A color in a named color space, like CSS, with three channels from 0 to 1, or pe
 
 Mixes two colors in a color space, like CSS. Without percentages, half of each; with one, the other color takes the rest; with both, they are scaled to add up to 100%.
 
+**The colors the function gives:** `100%`, `75%`, `50%`, `25%`, `0%`
+
 - **Syntax:** `color-mix(in <space> [shorter | longer hue]?, <color> <percentage>?, <color> <percentage>?)`
 - **Computed:** at compile time, once per object
 
@@ -285,7 +303,9 @@ Mixes two colors in a color space, like CSS. Without percentages, half of each; 
 - **lab:** Like `oklab`, in CIE Lab.
 - **oklch, lch, hsl, hwb:** Spaces with a hue: it goes the shorter way round the wheel, or the longer one with `longer hue`. A gray takes the hue of the other color.
 
-Like CSS, when the percentages add up to less than 100%, the color becomes transparent, which only `color`, `background` and `mask-image` take: anywhere else, it is an error. A percentage set from JavaScript is kept between 0% and 100%, and percentages that add up to less are scaled up to 100%.
+Like CSS, when the percentages add up to less than 100%, the color becomes transparent, which only `color`, `background` and `mask-image` take: anywhere else, it is an error.
+
+A percentage set from JavaScript is kept between 0% and 100%, and percentages that add up to less are scaled up to 100%.
 
 ### from orange to blue
 
@@ -308,6 +328,8 @@ Each cube takes 20% more blue, mixed in `oklab`.
 ## `light-dark()`
 
 The first color in light mode, the second in dark mode, like CSS. The scene follows the system as it changes: it works like `@media (prefers-color-scheme: dark)`, and counts as one of the queries of the scene.
+
+**The colors the function gives:** `light mode`, `dark mode`
 
 - **Syntax:** `light-dark(<light color>, <dark color>)`
 - **Computed:** at compile time, once per object
@@ -334,6 +356,8 @@ sphere {
 ## `contrast-color()`
 
 White or black, whichever contrasts most with the color, like CSS: the way to keep an object readable against a background held in a variable.
+
+**The colors the function gives:** `contrast-color(#f2efe9)`, `contrast-color(#1b2a4a)`
 
 - **Syntax:** `contrast-color(<color>)`
 - **Computed:** at compile time, once per object
@@ -374,7 +398,9 @@ A keyword, like CSS: the object's own `color`, wherever a color is expected. `co
 - **Syntax:** `currentColor`
 - **Computed:** at compile time, once per object
 
-As the color of a material, `metal(currentColor, 0.2)` is `metal(0.2)`: the material follows the color, animated, on `:hover`, or a gradient. It also works in the stops of a gradient, in `light-dark()` and in a variable, read with the color of the object that uses the variable. An object without color uses the initial `#e6e6e6`. It can be written `currentcolor` too. `color: currentColor` is an error: a group passes no color down, and the scene has none.
+It works in a material, in the stops of a gradient, in `light-dark()` and in a variable. `color: currentColor` is an error: a group passes no color down.
+
+As the color of a material, `metal(currentColor, 0.2)` is `metal(0.2)`: the material follows the color, animated, on `:hover`, or a gradient. In a variable, it is read with the color of the object that uses the variable. An object without color uses the initial `#e6e6e6`. It can be written `currentcolor` too.
 
 ### a lighter shell for every color
 

@@ -12,6 +12,8 @@ Every example of this page, to edit live: [gss-lang.dev/docs](https://www.gss-la
 
 Post-processing, like CSS `filter`: a list of functions applied in order, on the whole image (`scene { filter }`), on an object, or on a group and everything in it.
 
+**What the property changes in the scene:** `filter: blur(4px);`, `filter: bloom();`, `filter: hue-rotate(160deg);`, `filter: grain();`
+
 - **Syntax:** `none | <filter-function>+`
 - **Initial value:** `none`
 - **Applies to:** the scene, objects and groups
@@ -29,7 +31,9 @@ Post-processing, like CSS `filter`: a list of functions applied in order, on the
 - **bloom():** Makes the bright parts glow: an amount (0.6 by default) and a radius in px (16px by default).
 - **opacity():** Makes an object or a group transparent, multiplied with `opacity`. On the scene, it is an error: the scene stays opaque.
 
-On an object or a group, the filters change only its own pixels, and the reflections see them too: a `blur()` spreads it over what is around it. Like CSS, an object's filter comes before its group's, and the scene's comes last; on an object, the filters that read one pixel come before `blur()` and `bloom()`, and an object and its group cannot both have one of them. `blur()` and `bloom()` read the pixels around each pixel, so they cost more as the radius grows; the other filters cost almost nothing.
+On an object or a group, the filters change only its own pixels. `blur()` and `bloom()` cost more as their radius grows; the other filters cost almost nothing.
+
+The reflections see the filters of an object too, and a `blur()` spreads the object over what is around it. Like CSS, an object's filter comes before its group's, and the scene's comes last; on an object, the filters that read one pixel come before `blur()` and `bloom()`, and an object and its group cannot both have one of them. `blur()` and `bloom()` cost more because they read the pixels around each pixel.
 
 ### brightness()
 

@@ -12,6 +12,8 @@ Every example of this page, to edit live: [gss-lang.dev/docs](https://www.gss-la
 
 Front-end developers already describe how things look with selectors, properties, the cascade and `@keyframes`. To go 3D, they meet GLSL, the language of the GPU: powerful, but written in distance functions, vectors and math, far from the way they think about design.
 
+**How it goes, from where it is written to what the scene shows:** `scene.gss`, `one shader`, `the GPU draws it`
+
 GSS bridges that gap. If you can write CSS, you can already read GSS:
 
 - **Selectors:** `sphere`, `.glass`, `#ball`, `:hover`, `:has()`, the cascade and `!important`
@@ -50,7 +52,9 @@ A glass ball that floats above the floor. Press *Try it* to edit it live.
 }
 ```
 
-Shapes are declared in `@scene`, then styled with the rules of a web page: selectors, specificity, units like `deg` and `s`, `@keyframes`. The compiler turns the whole stylesheet into one shader that runs on the GPU.
+**The first scene, one declaration at a time:** `sphere#ball;`, `translate: 0 1 0;`, `color: #ff5a36;`, `material: glass(1.5, frosted 0.3);`, `animation: float 2s ease-in-out alternate;`
+
+`@scene` lists the shapes. A rule styles them, like CSS: `#ball` lifts the sphere, colors it and turns it into glass. `@keyframes` makes it float.
 
 Next, put the scene on a page with [Embedding a scene](installation.md#embedding), or read the reference: each page describes one at-rule, selector, property or function, with examples to try.
 

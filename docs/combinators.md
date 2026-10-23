@@ -14,7 +14,9 @@ A space means "inside": `#letters cube` targets the cubes of the group `#letters
 
 - **Specificity:** The sum of its parts
 
-Like CSS, it reads from right to left: the last part is the object, and each part before it is one of its groups, further out each time. `#letters#S` asks for one object with two ids, which never exists: it is an error.
+Like CSS, it reads from right to left: the last part is the object, and each part before it is one of its groups, further out each time.
+
+`#letters#S` asks for one object with two ids, which never exists: it is an error.
 
 ### the cubes of a group
 

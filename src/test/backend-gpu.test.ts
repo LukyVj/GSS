@@ -67,6 +67,7 @@ const cases: [string, string, boolean?][] = [
   ["a state starts an animation", "@scene { sphere; } scene { camera-angle: 0deg 0deg; camera-distance: 5; camera-target: 0 0 0; floor: none; } sphere { radius: 1; color: red; } sphere:hover { animation: paint 1s -2s 1 forwards; } @keyframes paint { to { color: blue; } }", true],
   ["animated transforms and negative delay", "@scene { cube; } cube { translate: 0 1 0; animation: turn 2s -0.7s ease-in-out alternate; } @keyframes turn { from { rotate-y: 0deg; scale: 0.5; } to { rotate-y: 120deg; scale: 1.2; } }"],
   ["texture orientation and pixelated faces", `@scene { cube; } cube { translate: 0 1 0; texture: url("data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"><path fill="red" d="M0 0h8v4H0z"/><path fill="blue" d="M0 4h8v4H0z"/></svg>')}"); image-rendering: pixelated; rotate-y: 20deg; }`],
+  ["a texture wrapped around a sphere", `@scene { sphere; } sphere { translate: 0 1 0; rotate-y: 150deg; texture: url("data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="8" height="4"><path fill="red" d="M0 0h4v2H0z"/><path fill="lime" d="M4 0h4v2H4z"/><path fill="blue" d="M0 2h4v2H0z"/><path fill="yellow" d="M4 2h4v2H4z"/></svg>')}"); texture-mapping: sphere; }`],
 ];
 describe("WebGPU and WebGL2 render the same scenes", () => {
   for (const [name, source, hover] of cases) it(name, async () => {
@@ -827,11 +828,13 @@ describe("shape-rendering: geometricPrecision", () => {
         const smoothLight = smooth[i] + smooth[i + 1] + smooth[i + 2];
         if (autoLight > 24) {
           exactHits++;
+          // A hit is closer than a quarter of a pixel (decision 169): a ray that grazes the
+          // rim stops a little sooner, on a point of the sphere next to it
           expect(Math.max(
             Math.abs(smooth[i] - auto[i]),
             Math.abs(smooth[i + 1] - auto[i + 1]),
             Math.abs(smooth[i + 2] - auto[i + 2]),
-          )).toBeLessThanOrEqual(3);
+          )).toBeLessThanOrEqual(8);
         } else if (smoothLight > 8) {
           coveredMisses++;
         }
