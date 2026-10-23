@@ -8,7 +8,7 @@ describe("the changelog page", () => {
     expect(html).toContain('<section class="release" id="0.0.7">');
     expect(html).toContain('<h2><a href="#0.0.7">0.0.7</a> <time datetime="2026-10-23">2026-10-23</time></h2>');
     expect(html).toContain("<h3>Added</h3>");
-    expect(html).toContain("<ul>\n<li>One.</li>\n</ul>");
+    expect(html).toContain('<ul>\n<li><div class="row"><span class="scope"></span><span class="what">One.</span></div></li>\n</ul>');
   });
 
   it("leaves out an empty Unreleased, and keeps one with changes", () => {
@@ -25,23 +25,24 @@ describe("the changelog page", () => {
   it("shows the first sentence of a change, and folds the rest", () => {
     const html = renderChangelog("## [0.0.7] — 2026-10-23\n\n- `content`: a text on an object. `a. b` stays whole. More here.\n- Short one.\n");
     expect(html).toContain(
-      "<li><details><summary><code>content</code>: a text on an object.</summary><p><code>a. b</code> stays whole. More here.</p></details></li>",
+      '<li><details><summary class="row"><span class="scope"></span><span class="what"><code>content</code>: a text on an object.</span><span class="toggle" aria-hidden="true"></span></summary><p><code>a. b</code> stays whole. More here.</p></details></li>',
     );
-    expect(html).toContain("<li>Short one.</li>");
+    expect(html).toContain('<li><div class="row"><span class="scope"></span><span class="what">Short one.</span></div></li>');
   });
 
   // Like Vite: each change starts with the element it is about, shown as a label
   it("shows the element of a change as a label at the start of its line", () => {
     const html = renderChangelog("## [0.0.7] — 2026-10-23\n\n- **`content`**: text on any object. `cube { content: \"hi\"; }` writes it.\n- **Playground**: a slider.\n");
     expect(html).toContain(
-      '<li><details><summary><span class="scope"><code>content</code></span> text on any object.</summary><p><code>cube { content: &quot;hi&quot;; }</code> writes it.</p></details></li>',
+      '<li><details><summary class="row"><span class="scope"><code>content</code></span><span class="what">text on any object.</span><span class="toggle" aria-hidden="true"></span></summary><p><code>cube { content: &quot;hi&quot;; }</code> writes it.</p></details></li>',
     );
-    expect(html).toContain('<li><span class="scope">Playground</span> a slider.</li>');
+    expect(html).toContain('<li><div class="row"><span class="scope">Playground</span><span class="what">a slider.</span></div></li>');
   });
 
   it("gives every change of CHANGELOG.md its element", () => {
     const html = prerenderChangelogHtml('<div class="changelog" id="changelog"></div>');
-    expect(html.match(/<li>/g)!.length).toBe(html.match(/<li><(details><summary><)?span class="scope">/g)!.length);
+    expect(html.match(/<li>/g)!.length).toBeGreaterThan(150);
+    expect(html).not.toContain('<span class="scope"></span>');
   });
 
   it("drops the title, the introduction and the link definitions of the file", () => {

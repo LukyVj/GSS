@@ -105,52 +105,79 @@
         font-size: 15px;
         line-height: 1.6;
       }
+      /* Each change is a row: the element it is about, then its first sentence. A row with
+         more to say opens on a click, the rest under the sentence */
       .release ul {
+        list-style: none;
         margin: 0;
-        padding-left: 20px;
+        padding: 0;
+        border-top: 1px solid var(--gss-line);
       }
-      .release li + li {
-        margin-top: 10px;
+      .release li {
+        margin: 0;
+        border-bottom: 1px solid var(--gss-line);
       }
-      /* Each change starts with the element it is about, as a label */
-      .release .scope {
-        display: inline-block;
-        margin-right: 6px;
-        padding: 1px 7px;
-        border: 1px solid var(--gss-line);
-        background: var(--gss-surface);
-        font: 600 12px / 1.6 var(--gss-font-code);
-        color: var(--gss-bone);
-        vertical-align: 1px;
-      }
-      .release .scope code {
-        font-size: inherit;
-      }
-      .release ul {
+      .release .row {
+        display: grid;
+        grid-template-columns: 168px minmax(0, 1fr) 20px;
+        gap: 16px;
+        align-items: baseline;
+        padding: 12px 8px;
         list-style: none;
-        padding-left: 0;
       }
-      /* A change shows its first sentence; the rest unfolds on a click */
-      .release summary {
+      .release summary.row {
         cursor: pointer;
-        list-style: none;
+        transition: background var(--gss-transition);
+      }
+      .release summary.row:hover,
+      .release details[open] summary.row {
+        background: var(--gss-surface);
+      }
+      .release summary.row:focus-visible {
+        outline: 1px solid var(--gss-signal);
+        outline-offset: -1px;
       }
       .release summary::-webkit-details-marker {
         display: none;
       }
-      .release summary::after {
-        content: " more";
-        font: 12px var(--gss-font-code);
-        color: var(--gss-dim);
+      .release .scope {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font: 600 12px / 1.6 var(--gss-font-code);
+        color: var(--gss-bone);
       }
-      .release details[open] summary::after {
-        content: " less";
+      .release .scope code {
+        font-size: inherit;
       }
-      .release summary:hover::after {
-        color: var(--gss-signal);
+      .release .what {
+        color: var(--gss-bone);
+        font-size: 15px;
+        line-height: 1.5;
+      }
+      /* A chevron that turns when the row opens */
+      .release .toggle {
+        justify-self: end;
+        width: 7px;
+        height: 7px;
+        border-right: 1.5px solid var(--gss-dim);
+        border-bottom: 1.5px solid var(--gss-dim);
+        transform: translateY(-3px) rotate(45deg);
+        transition: transform var(--gss-transition), border-color var(--gss-transition);
+      }
+      .release summary.row:hover .toggle {
+        border-color: var(--gss-signal);
+      }
+      .release details[open] .toggle {
+        transform: translateY(1px) rotate(225deg);
       }
       .release details p {
-        margin: 6px 0 0;
+        margin: 0;
+        padding: 4px 44px 16px 192px;
+        background: var(--gss-surface);
+        color: var(--gss-ash);
+        font-size: 14px;
+        line-height: 1.6;
       }
 
       .site-footer {
@@ -213,6 +240,16 @@
         .release h2 {
           font-size: 26px;
         }
+        .release .row {
+          grid-template-columns: minmax(0, 1fr) 20px;
+          gap: 4px 12px;
+        }
+        .release .scope {
+          grid-column: 1 / -1;
+        }
+        .release details p {
+          padding: 4px 12px 16px 8px;
+        }
         .topbar nav a[href="./showcase.html"] {
           display: none;
         }
@@ -247,8 +284,23 @@
         <a href="./playground.html">playground</a>
         <a href="./docs.html">docs</a>
         <a href="./showcase.html">showcase</a>
-        <a class="github" href="https://github.com/LukyVj/GSS"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg><span>github</span></a>
-        <a class="x" href="https://x.com/GSS_lang" aria-label="GSS on X, @GSS_lang"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg><span>@GSS_lang</span></a>
+        <a class="github" href="https://github.com/LukyVj/GSS"
+          ><svg viewBox="0 0 16 16" aria-hidden="true">
+            <path
+              d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"
+            /></svg
+          ><span>github</span></a
+        >
+        <a
+          class="x"
+          href="https://x.com/GSS_lang"
+          aria-label="GSS on X, @GSS_lang"
+          ><svg viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"
+            /></svg
+          ><span>@GSS_lang</span></a
+        >
       </nav>
     </header>
 
@@ -257,8 +309,9 @@
         <p class="eyebrow">Changelog</p>
         <h1>What changed in GSS.</h1>
         <p class="lead">
-          Every version, the newest first: what it added, what it changed and what it fixed.
-          The package is on <a href="https://www.npmjs.com/package/gss-lang">npm</a>, the code on
+          Every version, the newest first: what it added, what it changed and
+          what it fixed. The package is on
+          <a href="https://www.npmjs.com/package/gss-lang">npm</a>, the code on
           <a href="https://github.com/LukyVj/GSS">GitHub</a>.
         </p>
       </div>
@@ -272,7 +325,11 @@
           shader.</span
         >
         <nav aria-label="Footer">
-          <a href="./changelog.html#%GSS_VERSION%" aria-label="GSS version %GSS_VERSION%, what changed">v%GSS_VERSION%</a>
+          <a
+            href="./changelog.html#%GSS_VERSION%"
+            aria-label="GSS version %GSS_VERSION%, what changed"
+            >v%GSS_VERSION%</a
+          >
           <a href="https://github.com/LukyVj/GSS">github</a>
           <a href="https://x.com/GSS_lang">@GSS_lang</a>
           <a href="./docs.html#installation">installation</a>
@@ -281,7 +338,12 @@
           <a href="./showcase.html">showcase</a>
           <a href="./brand.html">brand</a>
         </nav>
-        <p class="contact">Questions, ideas, a scene to show? Say hi on X, <a href="https://x.com/GSS_lang">@GSS_lang</a>, or <a href="https://github.com/LukyVj/GSS/issues">open an issue</a> on GitHub.</p>
+        <p class="contact">
+          Questions, ideas, a scene to show? Say hi on X,
+          <a href="https://x.com/GSS_lang">@GSS_lang</a>, or
+          <a href="https://github.com/LukyVj/GSS/issues">open an issue</a> on
+          GitHub.
+        </p>
       </div>
     </footer>
   </body>

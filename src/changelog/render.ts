@@ -36,15 +36,17 @@ function firstSentence(text: string): [string, string | null] {
   return [text, null];
 }
 
-// One change of the list: the element it is about ("- **`content`**: …"), shown as a label,
-// then its first sentence, and the rest folded under it, opened on a click
+// One change of the list, as a row: the element it is about ("- **`content`**: …") in the
+// first column, its first sentence in the second. When there is more to say, the row is a
+// <details>: the rest unfolds under the sentence, opened by a click anywhere on the row.
 function change(text: string): string {
   const scope = /^\*\*(.+?)\*\*:\s+/.exec(text);
-  const label = scope ? `<span class="scope">${inline(scope[1])}</span> ` : "";
+  const label = `<span class="scope">${scope ? inline(scope[1]) : ""}</span>`;
   const [first, rest] = firstSentence(scope ? text.slice(scope[0].length) : text);
+  const what = `<span class="what">${inline(first)}</span>`;
   return rest === null
-    ? `<li>${label}${inline(first)}</li>`
-    : `<li><details><summary>${label}${inline(first)}</summary><p>${inline(rest)}</p></details></li>`;
+    ? `<li><div class="row">${label}${what}</div></li>`
+    : `<li><details><summary class="row">${label}${what}<span class="toggle" aria-hidden="true"></span></summary><p>${inline(rest)}</p></details></li>`;
 }
 
 // "## [0.0.7] — 2026-10-23" → the version and its date; "## Unreleased" → no date
