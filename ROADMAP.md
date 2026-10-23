@@ -148,6 +148,15 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 ## Release 0.0.8
 
 - [ ] Fix (Lucas, Oct. 23: "on va faire un fix dans la v0.0.8"): in a scene with a `filter` (a post pass, like `bloom()`), the text of `content` on the last object can stay blank. The post pass creates its images on the texture unit of the last image of the scene, after the frame bound them and before the scene is drawn into them; a scene at rest does not draw again, so that text keeps reading the wrong image (images that download draw the scene again, which hid it). Fix: bind the images of the scene just before each draw (`view.ts`), with a GPU test of a scene at rest, without a probe. Seen in the stories of the 0.0.7 film, which hide a seventh plate to work around it.
+- [ ] Fix: `filter: bloom()` with an `animation-timeline: scroll()` leaves the scene blank until the first scroll (seen on the cloud of the changelog page, which leaves `bloom()` out for now). Probably the same cause as the fix above; check it with a GPU test of a scroll-driven scene at rest.
+- [ ] `hover-position()` (Lucas, Oct. 23, the cloud of the changelog page: "au hover, un radius se fasse autour du point concerné, que les autres s'échappent"): the position of the hovered object, readable by every other object, so that a rule can push the objects away by their distance to it (`--d: distance(...)`, a falloff in `translate`). Today `:hover` and `:has(:hover)` say that something is hovered, not where.
+- [ ] One hover state per rule, not per object: an object gets a single hover state, the union of every `:hover` rule that touches it, set as soon as any of their triggers is hovered. `.point:hover { scale: 2 }` and `#cloud:has(.point:hover) .point { translate: … }` cannot tell "I am hovered" from "another point is". Each rule (or each kind of trigger) should keep its own state.
+- [ ] Copies of `* n` share their hover: hovering one copy puts every copy in its hover state. `@for` makes distinct objects, but then the shader grows a lot (64 points, each triggered by the 64 others, took about 10 s to compile).
+- [ ] `:hover` on a group (`#g:hover { scale: 1.5 }`): today a `:hover` rule styles objects only. A group that moves on hover would carry what it holds, like a point in a cloud.
+- [ ] `radius` (and the other sizes of shapes) on `:hover`: today only `scale` changes the size on hover.
+- [ ] `:not()` holding `:hover` (`.wrap:not(:has(.point:hover))`).
+- [ ] A variable that a group passes to its objects keeps the value it has on the group: `.g { --i: sibling-index(); }` then `var(--i)` in an object of `.g` gives the index of the object inside the group, not the index of the group, unlike CSS, where a custom property inherits its computed value.
+- [ ] A scroll timeline that follows an element of the page (`view()` of a section of the page, not of the scene): the shapes of the cloud of the changelog would follow the versions by themselves, without percentages written by hand.
 
 ## Release 0.0.7
 
