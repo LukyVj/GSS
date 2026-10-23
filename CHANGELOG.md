@@ -10,6 +10,7 @@ The 0.0.1 history was reconstructed from GitHub.
 
 - The home page thanks the contributors: a section "Contributors" with the avatar and the name of each person whose pull request is in GSS, and what each pull request brought, linked to it. The footer links to it.
 - A page for the changelog, `/changelog`: every version, the newest first, each with its anchor (`/changelog#0.0.7`). The version in the footer of every page opens it, where it opened npm.
+- The films of GSS on the brand page: the teaser, the launch film and the films of 0.0.6 and 0.0.7, to play in place or to download in 16:9 or 9:16.
 
 ## [0.0.7] — 2026-10-23
 

@@ -1,6 +1,7 @@
 import { DOC_GROUPS } from "../docs/navigation";
 import { navIcon, navIconFile, navIconMotion } from "../docs/nav-icons";
 import { escapeHtml } from "../docs/escape";
+import { renderFilms } from "./films";
 
 // Fills the doc icons of the brand page at build (and in dev) from the icons of the docs
 // sidebar, so the two never differ. Each link holds its file, so there is no copy to keep.
@@ -28,5 +29,9 @@ export function prerenderBrandHtml(html: string): string {
     )
     .join("");
   const motion = `<style>${navIconMotion(".doc-icon:hover")}</style>`;
-  return html.replace(PLACE, `${motion}\n        ${PLACE.replace("></div>", `>${tiles}\n        </div>`)}`);
+  const films = '<div class="grid cols-2 films" id="films"></div>';
+  if (!html.includes(films)) throw new Error(`prerender brand: expected ${films}`);
+  return html
+    .replace(films, films.replace("></div>", `>${renderFilms()}\n        </div>`))
+    .replace(PLACE, `${motion}\n        ${PLACE.replace("></div>", `>${tiles}\n        </div>`)}`);
 }
