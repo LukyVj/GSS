@@ -36,12 +36,15 @@ function firstSentence(text: string): [string, string | null] {
   return [text, null];
 }
 
-// One change of the list: its first sentence, and the rest folded under it, opened on a click
+// One change of the list: the element it is about ("- **`content`**: …"), shown as a label,
+// then its first sentence, and the rest folded under it, opened on a click
 function change(text: string): string {
-  const [first, rest] = firstSentence(text);
+  const scope = /^\*\*(.+?)\*\*:\s+/.exec(text);
+  const label = scope ? `<span class="scope">${inline(scope[1])}</span> ` : "";
+  const [first, rest] = firstSentence(scope ? text.slice(scope[0].length) : text);
   return rest === null
-    ? `<li>${inline(text)}</li>`
-    : `<li><details><summary>${inline(first)}</summary><p>${inline(rest)}</p></details></li>`;
+    ? `<li>${label}${inline(first)}</li>`
+    : `<li><details><summary>${label}${inline(first)}</summary><p>${inline(rest)}</p></details></li>`;
 }
 
 // "## [0.0.7] — 2026-10-23" → the version and its date; "## Unreleased" → no date

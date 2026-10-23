@@ -112,6 +112,24 @@
       .release li + li {
         margin-top: 10px;
       }
+      /* Each change starts with the element it is about, as a label */
+      .release .scope {
+        display: inline-block;
+        margin-right: 6px;
+        padding: 1px 7px;
+        border: 1px solid var(--gss-line);
+        background: var(--gss-surface);
+        font: 600 12px / 1.6 var(--gss-font-code);
+        color: var(--gss-bone);
+        vertical-align: 1px;
+      }
+      .release .scope code {
+        font-size: inherit;
+      }
+      .release ul {
+        list-style: none;
+        padding-left: 0;
+      }
       /* A change shows its first sentence; the rest unfolds on a click */
       .release summary {
         cursor: pointer;

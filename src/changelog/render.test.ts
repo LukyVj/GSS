@@ -30,6 +30,20 @@ describe("the changelog page", () => {
     expect(html).toContain("<li>Short one.</li>");
   });
 
+  // Like Vite: each change starts with the element it is about, shown as a label
+  it("shows the element of a change as a label at the start of its line", () => {
+    const html = renderChangelog("## [0.0.7] — 2026-10-23\n\n- **`content`**: text on any object. `cube { content: \"hi\"; }` writes it.\n- **Playground**: a slider.\n");
+    expect(html).toContain(
+      '<li><details><summary><span class="scope"><code>content</code></span> text on any object.</summary><p><code>cube { content: &quot;hi&quot;; }</code> writes it.</p></details></li>',
+    );
+    expect(html).toContain('<li><span class="scope">Playground</span> a slider.</li>');
+  });
+
+  it("gives every change of CHANGELOG.md its element", () => {
+    const html = prerenderChangelogHtml('<div class="changelog" id="changelog"></div>');
+    expect(html.match(/<li>/g)!.length).toBe(html.match(/<li><(details><summary><)?span class="scope">/g)!.length);
+  });
+
   it("drops the title, the introduction and the link definitions of the file", () => {
     const html = renderChangelog("# Changelog\n\nNotable changes.\n\n## [0.0.1] — 2026-10-01\n\nFirst release.\n\n[0.0.1]: https://github.com/LukyVj/GSS/tree/v0.0.1\n");
     expect(html).not.toContain("Changelog");
