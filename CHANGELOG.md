@@ -6,6 +6,10 @@ The 0.0.1 history was reconstructed from GitHub.
 
 ## Unreleased
 
+### Added
+
+- The home page thanks the contributors: a section "Contributors" with the avatar and the name of each person whose pull request is in GSS, and what each pull request brought, linked to it. The footer links to it.
+
 ## [0.0.7] — 2026-10-23
 
 ### Added

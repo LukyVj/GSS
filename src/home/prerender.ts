@@ -1,6 +1,7 @@
 import { highlightGss } from "../docs/highlight";
 import { highlightCode } from "../docs/highlight-code";
 import { PROPERTIES, SELECTORS, SHAPE_DOCS } from "../compiler/registry/registry";
+import { renderContributors } from "./contributors";
 
 // Highlights pillar GSS and the install snippets, and fills the registry counts so the
 // home page reads without JS.
@@ -29,6 +30,11 @@ export function prerenderHomeHtml(html: string): string {
   out = out.replace(
     /(<strong id="count-selectors">)[^<]*/,
     `$1${SELECTORS.length}`,
+  );
+  // The contributors, from their list
+  out = out.replace(
+    /(<ul class="contributors-list" id="contributors-list">)[\s\S]*?(<\/ul>)/,
+    (_match, open: string, close: string) => `${open}\n          ${renderContributors()}\n        ${close}`,
   );
   return out;
 }
