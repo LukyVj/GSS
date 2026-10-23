@@ -143,6 +143,10 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 | Profiler                   | a panel over the playground scene, public, closed by default and lazy (nothing measured before it opens), `perf` button or Alt+P (remembered), WebGL2 and WebGPU (timestamp queries when available): fps, frame, GPU and CPU time, real pixels, shader build time; over budget in signal                                                                                                                                                                  | 64, 87, 91                      |
 | Bench                      | `npm run bench:compare -- main --dpr 2`: another commit against the working tree, 3 alternating rounds, images compared pixel by pixel, report in `bench-results/compare.md`                                                                                                                                                                                                                                                                              | 64                              |
 
+## Release 0.0.8
+
+- [ ] Fix (Lucas, Oct. 23: "on va faire un fix dans la v0.0.8"): in a scene with a `filter` (a post pass, like `bloom()`), the text of `content` on the last object can stay blank. The post pass creates its images on the texture unit of the last image of the scene, after the frame bound them and before the scene is drawn into them; a scene at rest does not draw again, so that text keeps reading the wrong image (images that download draw the scene again, which hid it). Fix: bind the images of the scene just before each draw (`view.ts`), with a GPU test of a scene at rest, without a probe. Seen in the stories of the 0.0.7 film, which hide a seventh plate to work around it.
+
 ## Release 0.0.7
 
 On `release/0.0.7`. Decisions from 169.
