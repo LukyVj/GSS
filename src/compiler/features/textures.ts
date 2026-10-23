@@ -67,10 +67,9 @@ export function sceneTextures(
     // content: the text of each face, an image the runtime draws. Its font and its layout
     // are checked on every object, even without content
     for (const texts of textGroups(instance, keyframes))
-      for (const face of FACES) {
-        const text = texts[face];
-        if (text) add(text.source, instance.faceStyles[face]["content"] ?? instance.styles["content"] ?? []);
-      }
+      texts.forEach((text, i) => {
+        if (text) add(text.source, instance.faceList[i]["content"] ?? instance.styles["content"] ?? []);
+      });
   }
   return [...files];
 }

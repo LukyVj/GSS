@@ -400,7 +400,7 @@ export const PROPERTIES: PropertyDef[] = [
       ["none", "No text: the default. `normal` is the same."],
     ],
     details: "The text is as large as each face lets it be, or as `font-size` says. Unlike CSS, `content` goes on the object itself, not on a `::before`.",
-    more: "The text sits in the middle of each face, and keeps its proportions. A cube shows it on its six faces, read from left to right on each; `::face()` gives a face a text of its own, or `none`. A sphere shows it six times around itself. The text follows the size of a cube and of a sphere; on another shape it is written as on a cube of 1 around it. The font comes from `font-family`, `font-weight` and `font-style`, the size from `font-size`, the color from `text-color`, the side its lines lean to from `text-align`. An emoji keeps its own colors. On `:hover` and in `@keyframes` the text changes halfway, like a value of CSS that does not interpolate.",
+    more: "The text sits in the middle of each face, and keeps its proportions. Without `::face()`, every face of the object shows it, read from left to right on each; `::face()` gives a face a text of its own, or `none`, by its name or its number (`::face(3)`, `::face(odd)`). A cube and a plane write on their flat faces. A round shape (a sphere, a cylinder, a tube, a cone, a capsule, a torus) wraps the text around itself like a label on a can, on four sides around its axis, and lays it flat on its top and its bottom. A pyramid writes on its four slopes and its base, an octahedron on its eight triangles, upright. Any other shape takes the text of each side like a sticker, fading where its surface turns away. The font comes from `font-family`, `font-weight` and `font-style`, the size from `font-size`, the color from `text-color`, the side its lines lean to from `text-align`. An emoji keeps its own colors. On `:hover` and in `@keyframes` the text changes halfway, like a value of CSS that does not interpolate.",
     examples: [
       {
         name: "a sign",
@@ -411,6 +411,11 @@ export const PROPERTIES: PropertyDef[] = [
         name: "a text per face",
         text: "Each face of the die takes its own `content`.",
         code: '@scene { cube; } scene { camera-angle: 35deg 30deg; } cube { translate: 0 0.6 0; color: #f4f1ea; corner-radius: 0.08; font-weight: bold; } cube::face(top) { content: "1"; } cube::face(front) { content: "2"; } cube::face(right) { content: "3"; } cube::face(left) { content: "4"; } cube::face(back) { content: "5"; } cube::face(bottom) { content: "6"; }',
+      },
+      {
+        name: "around a can",
+        text: "On a cylinder, the text wraps around the side like a label.",
+        code: '@scene { cylinder; } scene { camera-angle: 25deg 15deg; } cylinder { translate: 0 0.9 0; radius: 0.6; height: 1.6; color: #e8443a; content: "SODA"; font-weight: bold; animation: turn 6s linear infinite; } @keyframes turn { to { rotate-y: 360deg; } }',
       },
       {
         name: "a variable",
@@ -2674,16 +2679,18 @@ export const SELECTORS: SelectorDef[] = [
     since: "0.0.1",
     specificity: "1, like a tag, added to the rest",
     description:
-      "A pseudo-element, like `::part()` in CSS: the rule styles one face of the object, not the object. A face takes `texture` only.",
+      "A pseudo-element, like `::part()` in CSS: the rule styles one face of the object, not the object. A face takes `texture` and `content`. It is named, or numbered like `:nth-child()`.",
     valuesTitle: "Faces",
     values: [
       ["top, bottom", "Up (+y) and down, in the object's own space: the faces turn with it."],
       ["front, back", "Toward +z and toward −z."],
       ["right, left", "Toward +x and toward −x."],
       ["::top, ::bottom", "Shortcuts for `::face(top)` and `::face(bottom)`."],
+      ["<number>", "A face by its number: `::face(3)`. A cube is numbered like a die, its opposite faces adding up to 7: front 1, top 2, right 3, left 4, bottom 5, back 6."],
+      ["odd, even, An+B", "Several faces, like `:nth-child()`: `::face(odd)`, `::face(2n)`, `::face(n + 5)` (5 and the faces after it)."],
     ],
-    details: "A face without a rule of its own shows the texture of the object. Like CSS, the pseudo-element ends the selector: `cube.grass::top`, never `#g::top cube`.",
-    more: "On a round shape, a face is the part that looks that way the most: a sphere is cut like the cube around it.",
+    details: "A face without a rule of its own shows the texture and the text of the object. Like CSS, the pseudo-element ends the selector: `cube.grass::top`, never `#g::top cube`.",
+    more: "Every shape seen from six sides (a cube, a sphere, a cylinder, a cone, a capsule, a tube, a torus, a plane and the shapes drawn with `path`) has the six faces of the cube and its numbers: on a round shape, a face is the part that looks that way the most. A pyramid has five faces: its slopes from the front, turning right (front 1, right 2, back 3, left 4), then its base, 5 or `bottom`. An octahedron has eight triangles, with numbers only: 1 to 4 on top, from the front-right turning right (front-right, back-right, back-left, front-left), 5 to 8 below them, in the same order. A number the shape does not have, like `cube::face(7)`, is an error; so is the `content` of a name the shape does not have, like `pyramid::face(top)`.",
     examples: [
       {
         name: "::face()",
@@ -2699,6 +2706,21 @@ export const SELECTORS: SelectorDef[] = [
         name: "::bottom",
         text: "The block is turned over: its bottom face, now on top, shows dirt.",
         code: '@scene { cube.flip; } .flip { translate: 0 0.6 0; rotate-x: 150deg; texture: url("/textures/grass-side.png"); image-rendering: pixelated; } .flip::bottom { texture: url("/textures/dirt.png"); }',
+      },
+      {
+        name: "::face() with a number",
+        text: "A die: each face writes its own number, the opposite faces adding up to 7.",
+        code: '@scene { cube; } scene { camera-angle: 35deg 30deg; } cube { translate: 0 0.6 0; color: #f4f1ea; corner-radius: 0.08; font-weight: bold; } cube::face(1) { content: "1"; } cube::face(2) { content: "2"; } cube::face(3) { content: "3"; } cube::face(4) { content: "4"; } cube::face(5) { content: "5"; } cube::face(6) { content: "6"; }',
+      },
+      {
+        name: "::face(odd), on an octahedron",
+        text: "The faces of an octahedron have numbers only: one in two takes a word, the others stay plain.",
+        code: '@scene { octahedron; } scene { camera-angle: 30deg 25deg; } octahedron { translate: 0 0.9 0; radius: 0.9; color: #3ad16b; font-weight: bold; animation: turn 8s linear infinite; } octahedron::face(odd) { content: "GSS"; } @keyframes turn { to { rotate-y: 360deg; } }',
+      },
+      {
+        name: "::face(even), on a pyramid",
+        text: "The slopes of a pyramid are 1 to 4 from the front, turning right, and its base is 5: the even faces, its right and left slopes, take their own word.",
+        code: '@scene { pyramid; } scene { camera-angle: 30deg 25deg; } pyramid { translate: 0 0.7 0; size: 1.8 1.4 1.8; color: #722cff; font-weight: bold; content: "odd"; } pyramid::face(even) { content: "even"; }',
       },
       {
         name: "::face(), ::top and ::bottom together",

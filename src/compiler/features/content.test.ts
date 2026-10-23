@@ -153,7 +153,7 @@ describe("the texts of a scene", () => {
       cube { font-style: italic; }
       cube::face(front) { content: "A"; }
       cube::top { content: "B"; }`);
-    expect(scene.textures).toEqual([textSource("B", "italic 400 sans-serif"), textSource("A", "italic 400 sans-serif")]);
+    expect(scene.textures).toEqual([textSource("A", "italic 400 sans-serif"), textSource("B", "italic 400 sans-serif")]); // by number: front 1, top 2
   });
 
   it("report a wrong value where it is written", () => {
@@ -210,6 +210,56 @@ describe("content that changes", () => {
     expect(() => compileScene('@scene { cube; } cube { content: "a"; } cube:hover { font-size: 0.4; }')).toThrow(
       /font-size can change on :hover or in @keyframes only from a number: write one at rest, like: font-size: 0.3;/,
     );
+  });
+});
+
+describe("::face() with a number, like :nth-child()", () => {
+  const textureColor = (source: string) => glslFunction(compileGSS(source), "vec3 textureColor(");
+
+  it("numbers the faces of a cube like a die: front 1, top 2, right 3, left 4, bottom 5, back 6", () => {
+    const shader = textureColor('@scene { cube; } cube::face(1) { content: "A"; } cube::face(2) { content: "B"; } cube::face(6) { content: "C"; }');
+    expect(shader).toContain("if (face == 3) return textLabel(uTexture0, "); // front, face 1: the first text
+    expect(shader).toContain("if (face == 1) return textLabel(uTexture1, "); // top
+    expect(shader).toContain("if (face == 4) return textLabel(uTexture2, "); // back
+  });
+
+  it("takes odd, even and An+B", () => {
+    const odd = compileScene('@scene { cube; } cube::face(odd) { content: "o"; }');
+    expect(odd.textures).toEqual([textSource("o", "normal 400 sans-serif")]);
+    const shader = textureColor('@scene { cube; } cube::face(odd) { content: "o"; }');
+    for (const internal of [1, 6, 4]) expect(shader).toContain(`if (face == ${internal}) return color;`); // top, left, back: no text
+    expect(shader).toContain("return textLabel(uTexture0, "); // front, right, bottom
+    const last = textureColor('@scene { octahedron; } octahedron::face(n + 5) { content: "b"; }');
+    expect(last).toContain("int face = octahedronFace(ln);");
+    for (const n of [5, 6, 7, 8]) expect(last).toContain(`if (face == ${n}) return textFacet(uTexture0, `);
+    expect(last).not.toContain("if (face == 4)");
+  });
+
+  it("numbers the faces of a pyramid: its slopes from the front, turning right, then its base", () => {
+    const shader = textureColor('@scene { pyramid; } pyramid::face(5) { content: "base"; } pyramid::face(2) { content: "right"; }');
+    expect(shader).toContain("int face = pyramidFace(q, vec3(1.0, 1.0, 1.0));");
+    expect(shader).toContain("if (face == 2) return textPyramid(uTexture0, ");
+    expect(shader).toContain("if (face == 5) return textPyramid(uTexture1, ");
+  });
+
+  it("keeps the names where a face has one", () => {
+    const named = compileScene('@scene { cube; } cube::face(front) { content: "A"; }').shader;
+    const numbered = compileScene('@scene { cube; } cube::face(1) { content: "A"; }').shader;
+    expect(numbered).toBe(named);
+    expect(compileScene('@scene { pyramid; } pyramid::face(bottom) { content: "A"; }').shader).toBe(
+      compileScene('@scene { pyramid; } pyramid::face(5) { content: "A"; }').shader,
+    );
+  });
+
+  it("explains a face the shape does not have", () => {
+    expect(() => compileScene('@scene { cube; } cube::face(7) { content: "A"; }')).toThrow(/a cube has 6 faces: ::face\(1\) to ::face\(6\)/);
+    expect(() => compileScene('@scene { octahedron; } octahedron::face(front) { content: "A"; }')).toThrow(
+      /an octahedron has no face named front: its faces are numbered, ::face\(1\) to ::face\(8\)/,
+    );
+    expect(() => compileScene('@scene { pyramid; } pyramid::face(top) { content: "A"; }')).toThrow(
+      /a pyramid has no face named top: its faces are front, right, back, left and bottom, or ::face\(1\) to ::face\(5\)/,
+    );
+    expect(() => compileScene('@scene { cube; } cube::face(n + ) { content: "A"; }')).toThrow(/::face\(\)/);
   });
 });
 
@@ -301,8 +351,8 @@ describe("content in the shader", () => {
     const shader = compileGSS('@scene { cube; } cube { content: "side"; } cube::face(front) { content: "front"; }');
     const textureColor = glslFunction(shader, "vec3 textureColor(");
     expect(textureColor).toContain("int face = faceOf(ln);");
-    expect(textureColor).toContain("if (face == 3) return textLabel(uTexture1, q, ln, vec3(1.0, 1.0, 1.0), color, textInk(color), 0.0); // front");
-    expect(textureColor).toContain("return textLabel(uTexture0, q, ln, vec3(1.0, 1.0, 1.0), color, textInk(color), 0.0);");
+    expect(textureColor).toContain("if (face == 3) return textLabel(uTexture0, q, ln, vec3(1.0, 1.0, 1.0), color, textInk(color), 0.0); // front");
+    expect(textureColor).toContain("return textLabel(uTexture1, q, ln, vec3(1.0, 1.0, 1.0), color, textInk(color), 0.0);");
   });
 
   it("leaves the shader of a textured scene as it was", () => {

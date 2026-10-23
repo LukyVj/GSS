@@ -1,10 +1,10 @@
 // Textures (decision 59): one uniform per image, triplanar() or spherical() (decision 185), textureColor()
 import type { Token } from "../../syntax/tokenizer";
 import type { Keyframes } from "../../syntax/ast";
-import { FACES, type Face, type StyledInstance } from "../../cascade/resolve";
+import { FACES, shapeFaces, type Face, type StyledInstance } from "../../cascade/resolve";
 import { readMapping, readRendering, readTexture, sceneTextures } from "../../features/textures";
 import { readFontSize, TEXT_COLOR } from "../../features/content";
-import { frameStyles, objectBox, short, textGroups, textRoom, textsIn, textsKey, type FaceText } from "../../features/text-layout";
+import { frameStyles, objectBox, short, textGroups, textRoom, textsIn, textsKey, type FaceText, type Texts } from "../../features/text-layout";
 import type { Styles } from "../../cascade/resolve";
 import { hoverValue } from "./animation";
 import { glslFloat, label, round, type Hover } from "./glsl";
@@ -130,6 +130,21 @@ const TEXT_STICKER = `vec3 textSticker(sampler2D image, vec3 q, vec3 n, vec3 box
   return mix(color, textLabel(image, q, n, box, color, ink, zoom), smoothstep(0.35, 0.55, max(a.x, max(a.y, a.z))));
 }`;
 
+// The face of an octahedron a normal is on: 1 to 4 on top, from the front-right turning
+// right (front-right, back-right, back-left, front-left), 5 to 8 below them
+const OCTAHEDRON_FACE = `int octahedronFace(vec3 n) {
+  int i = n.x >= 0.0 ? (n.z >= 0.0 ? 1 : 2) : (n.z >= 0.0 ? 4 : 3);
+  return n.y >= 0.0 ? i : i + 4;
+}`;
+
+// The face of a pyramid of size s a point is on: 1 front, 2 right, 3 back, 4 left, 5 the base
+const PYRAMID_FACE = `int pyramidFace(vec3 q, vec3 s) {
+  if (q.y < -0.49 * s.y) return 5;
+  vec2 xz = q.xz / s.xz;
+  if (abs(xz.y) >= abs(xz.x)) return xz.y >= 0.0 ? 1 : 3;
+  return xz.x >= 0.0 ? 2 : 4;
+}`;
+
 // The ink of a text without a color of its own: black on a light surface, white on a dark one
 const TEXT_INK = `vec3 textInk(vec3 color) {
   return vec3(step(dot(color, vec3(0.2126, 0.7152, 0.0722)), 0.5));
@@ -199,7 +214,7 @@ export function textureCode(
     // content: every text the object can show, the one at rest first
     const groups = textGroups(instance, keyframes);
 
-    if (groups.every((texts) => FACES.every((face) => texts[face] === null))) {
+    if (groups.every((texts) => texts.every((text) => text === null))) {
       // No face of its own: one line, like before
       if (faces.length === 0) {
         return `  if (id == ${id}) return ${read(side!, `${space}(p)`, `${space}(p + n * 0.01) - ${space}(p)`)};`;
@@ -246,14 +261,19 @@ export function textureCode(
       if (facet?.shape === "pyramid") return `textPyramid(${image}, q, vec3(${facet.size.map(g).join(", ")}), ${end}`;
       return `${room.sticker ? "textSticker" : "textLabel"}(${image}, ${at}, ln, vec3(${room.box.map(g).join(", ")}), ${end}`;
     };
-    // The texts of the six faces: the one most faces share is written last, the others face by face
-    const lines = (texts: Record<Face, FaceText>, indent: string) => {
+    // The texts of the faces: the one most faces share is written last, the others face by
+    // face. faceOf() gives the face of a shape seen from six sides (its own numbers); a
+    // pyramid and an octahedron number their faces as ::face() does
+    const names = shapeFaces(instance.tag);
+    const faceCode = facet?.shape === "octahedron" ? "octahedronFace(ln)" : facet?.shape === "pyramid" ? `pyramidFace(q, vec3(${facet.size.map(g).join(", ")}))` : "faceOf(ln)";
+    const glslFace = (i: number) => (facet ? i + 1 : FACE_NUMBERS[names[i]!]);
+    const lines = (texts: Texts, indent: string) => {
       const key = (text: FaceText) => text?.source ?? "";
-      const count = (text: FaceText) => FACES.filter((face) => key(texts[face]) === key(text)).length;
-      const shared = FACES.map((face) => texts[face]).reduce((best, text) => (count(text) > count(best) ? text : best));
+      const count = (text: FaceText) => texts.filter((other) => key(other) === key(text)).length;
+      const shared = texts.reduce((best, text) => (count(text) > count(best) ? text : best));
       return [
-        ...FACES.filter((face) => key(texts[face]) !== key(shared)).map(
-          (face) => `${indent}if (face == ${FACE_NUMBERS[face]}) return ${write(texts[face])}; // ${face}`,
+        ...texts.flatMap((text, i) =>
+          key(text) === key(shared) ? [] : [`${indent}if (face == ${glslFace(i)}) return ${write(text)}; // ${names[i] ?? `face ${i + 1}`}`],
         ),
         `${indent}return ${write(shared)};`,
       ];
@@ -289,10 +309,14 @@ export function textureCode(
       `  if (id == ${id}) {  // ${label(instance)}`,
       `    vec3 q = ${space}(p);`,
       `    vec3 ln = ${space}(p + n * 0.01) - q; // the normal in the object's space`,
-      ...(faces.length > 0 || textLines.some((line) => line.includes("face ==")) ? [`    int face = faceOf(ln);`] : []),
+      // the faces of the images are seen from six sides; on a pyramid or an octahedron, the
+      // texts have faces of their own
+      ...(facet
+        ? textLines.some((line) => line.includes("face ==")) ? [`    int face = ${faceCode};`] : []
+        : faces.length > 0 || textLines.some((line) => line.includes("face ==")) ? [`    int face = faceOf(ln);`] : []),
       ...faces.map(
         ({ face, image }, i) =>
-          `    ${i > 0 ? "else " : ""}if (face == ${FACE_NUMBERS[face]}) color = ${read(image!, "q", "ln")}; // ${face}`,
+          `    ${i > 0 ? "else " : ""}if (${facet ? "faceOf(ln)" : "face"} == ${FACE_NUMBERS[face]}) color = ${read(image!, "q", "ln")}; // ${face}`,
       ),
       ...(side !== null ? [`    ${faces.length > 0 ? "else " : ""}color = ${read(side, "q", "ln")};`] : []),
       ...textLines,
@@ -321,6 +345,8 @@ export function textureCode(
       ...(branches.join("\n").includes("wrapped(") ? [WRAPPED] : []),
       ...(branches.join("\n").includes("textInk(") ? [TEXT_INK] : []),
       ...(branches.join("\n").includes("faceOf(") ? [FACE_OF] : []),
+      ...(branches.join("\n").includes("octahedronFace(") ? [OCTAHEDRON_FACE] : []),
+      ...(branches.join("\n").includes("pyramidFace(") ? [PYRAMID_FACE] : []),
       textureColor,
     ].join("\n\n"),
     call: "    m.color = textureColor(id, p, n, m.color);",

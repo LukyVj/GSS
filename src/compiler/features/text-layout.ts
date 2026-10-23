@@ -1,5 +1,5 @@
 // content: where the text of an object goes, face by face, and how its lines are laid out
-import { FACES, type Face, type Styles, type StyledInstance } from "../cascade/resolve";
+import { FACES, missingFaceName, shapeFaces, type Styles, type StyledInstance } from "../cascade/resolve";
 import type { Keyframes } from "../syntax/ast";
 import { readAnimation } from "./animation";
 import { errorAt } from "../syntax/errors";
@@ -112,33 +112,35 @@ export function textBox(instance: StyledInstance): Num[] {
 // its size (sized) or the face does
 export type FaceText = { source: string; sized: boolean } | null;
 
-// The text of each face: its own content, or else the object's (a face's none wins). With
-// font-size, a line is as wide as the face: the top, the bottom, the front and the back are
-// as wide as the object, the left and the right as deep as it.
-export function faceTexts(instance: StyledInstance): Record<Face, FaceText> {
+// The text of each face, by number (faceList[0] is ::face(1)): its own content, or else
+// the object's (a face's none wins). With font-size, a line is as wide as the face: the
+// left and the right are as deep as the object, the other faces as wide as it.
+export type Texts = FaceText[];
+export function faceTexts(instance: StyledInstance): Texts {
   const font = readFont(instance.styles);
   const size = readFontSize(instance.styles["font-size"]);
   const align = readAlign(instance.styles["text-align"]);
   readContent(instance.styles["content"]); // checked even when every face has its own
-  const box = size === null ? null : textBox(instance);
-  const texts = {} as Record<Face, FaceText>;
+  // content on a face the shape does not have: pyramid::face(top), octahedron::face(front)
   for (const face of FACES) {
-    const own = instance.faceStyles[face]["content"];
-    const text = readContent(own ?? instance.styles["content"]);
-    if (text === null) {
-      texts[face] = null;
-      continue;
-    }
+    const value = instance.faceStyles[face]["content"];
+    const missing = value && missingFaceName(face, instance.tag);
+    if (missing) throw errorAt(value, missing);
+  }
+  const names = shapeFaces(instance.tag);
+  const box = size === null ? null : textBox(instance);
+  return instance.faceList.map((styles, i) => {
+    const text = readContent(styles["content"] ?? instance.styles["content"]);
+    if (text === null) return null;
     let width: number | null = null;
     if (size !== null) {
-      const across = face === "left" || face === "right" ? box![2] : box![0];
+      const across = names[i] === "left" || names[i] === "right" ? box![2] : box![0];
       if (typeof across !== "number")
         throw errorAt(instance.styles["font-size"], "font-size cannot go yet on an object whose size is set from JS");
       width = Math.round((across / size) * 1000) / 1000;
     }
-    texts[face] = { source: textSource(text, font, width, align), sized: size !== null };
-  }
-  return texts;
+    return { source: textSource(text, font, width, align), sized: size !== null };
+  });
 }
 
 // content, the font and text-align change the image: a hovered or pressed object, or a frame
@@ -152,16 +154,16 @@ export function frameStyles(instance: StyledInstance, frame: Keyframes["frames"]
 }
 
 // The texts of the object in some styles, laid out with its font-size at rest
-export function textsIn(instance: StyledInstance, styles: Styles): Record<Face, FaceText> {
+export function textsIn(instance: StyledInstance, styles: Styles): Texts {
   return faceTexts({ ...instance, styles: { ...styles, "font-size": instance.styles["font-size"] } });
 }
 
-// A name for the texts of the six faces, to tell two of them apart
-export const textsKey = (texts: Record<Face, FaceText>) => JSON.stringify(FACES.map((face) => texts[face]?.source ?? null));
+// A name for the texts of the faces, to tell two of them apart
+export const textsKey = (texts: Texts) => JSON.stringify(texts.map((text) => text?.source ?? null));
 
 // Every text the object can show, once each, the one at rest first: at rest, hovered,
 // pressed, then at each frame of their animations that sets a text property
-export function textGroups(instance: StyledInstance, keyframes: Keyframes[]): Record<Face, FaceText>[] {
+export function textGroups(instance: StyledInstance, keyframes: Keyframes[]): Texts[] {
   const states = [instance.styles, instance.hoverStyles, instance.activeStyles];
   const all = states.map((styles) => textsIn(instance, styles));
   for (const styles of states) {

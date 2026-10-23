@@ -157,6 +157,15 @@ describe("content", () => {
     expect(dark(right)).toBe(true);
   }, 60000);
 
+  // ::face(1) of an octahedron is its front-right top triangle: seen straight, it has the text; ::face(2) does not
+  it("writes on the face of the number ::face() gives", async () => {
+    const source = (pick: string) =>
+      `@scene { octahedron; } scene { floor: none; background: #000000; ambient: 1; light: none; camera-target: 0.533 0.533 0.533; camera-angle: 45deg 35.26deg; camera-distance: 4; } octahedron { radius: 1.6; color: #000000; font-family: monospace; } octahedron::face(${pick}) { content: "█"; }`;
+    expect(lit((await pixels(source("1"), [[0, 0]]))[0])).toBe(true);
+    expect(dark((await pixels(source("2"), [[0, 0]]))[0])).toBe(true);
+    expect(lit((await pixels(source("odd"), [[0, 0]]))[0])).toBe(true);
+  }, 60000);
+
   it("is drawn by WebGPU too", async () => {
     const [left, right] = await pixels(scene('content: "▌";'), [[-8, 0], [8, 0]], "webgpu");
     expect(lit(left)).toBe(true);

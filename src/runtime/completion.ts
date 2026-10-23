@@ -125,7 +125,7 @@ function forSelector(tokens: Token[]): PropertyDef[] {
   }
   if (isSceneSelector(selector))
     return PROPERTIES.filter((p) => p.appliesTo === "scene" || p.appliesTo === "everywhere");
-  if (selector.face !== undefined) return PROPERTIES.filter((p) => p.name === "texture");
+  if (selector.face !== undefined) return PROPERTIES.filter((p) => p.name === "texture" || p.name === "content");
   if (needsPointer(selector))
     return PROPERTIES.filter((p) => p.animatable || p.name === "transition");
   // A group and a light take only a few properties

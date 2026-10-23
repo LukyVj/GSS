@@ -248,6 +248,7 @@ function compileStylesheet(
       instance.activeStyles,
       ...instance.groupStyles,
       ...FACES.map((face) => instance.faceStyles[face]),
+      ...instance.faceList,
     ])
       for (const name of Object.keys(live)) if (styles[name]) throw oneValue(name, styles[name]);
     // Level 0 = the scene, 1… = the groups from the outside in, last = the object
@@ -291,6 +292,7 @@ function compileStylesheet(
           ),
         ]),
       ) as Record<Face, Styles>,
+      faceList: instance.faceList.map((styles) => computeNode(styles, seenAt(levels.length - 1), instance)),
     };
   }
 

@@ -1,6 +1,6 @@
 import { escapeHtml } from "./escape";
-import { TILE, cells, isolines, lines, onCube, path, round, says, tile } from "./figure-kit";
-import { REST_VIEW, ball, draw, slices, type Frame, type Vec3 } from "./hairline";
+import { TILE, cells, isolines, lines, onCube, path, round, says, text, tile } from "./figure-kit";
+import { REST_VIEW, SHAPES, ball, draw, place, slices, type Frame, type Vec3 } from "./hairline";
 
 // What covers a surface: an image, a text, a pattern, a mask, a material. A figure shows the
 // image flat, then on the faces of an object.
@@ -96,7 +96,43 @@ export function imageRendering(): string {
   ]);
 }
 
-export const face = () => flow([['url("grass.png")', tile(photo)], ["cube::top", onCube(CELL, photo, ["top"])]]) + says('cube::top { texture: url("grass.png"); }');
+// The number of each face ::face() gives, written on the faces the eye sees: a cube like a
+// die, a pyramid from its front slope turning right then its base, an octahedron from its
+// front-right top triangle
+const numbered = (shape: "cube" | "pyramid" | "octahedron", faces: [middle: Vec3, normal: Vec3][]) =>
+  lines(SHAPES[shape](REST_VIEW), CELL) +
+  faces
+    .map(([middle, normal], i) => {
+      const seen = normal[0] * REST_VIEW.eye[0] + normal[1] * REST_VIEW.eye[1] + normal[2] * REST_VIEW.eye[2] > 0.3 * Math.hypot(...normal); // a face seen nearly edge-on is left without its number
+      const [x, y] = place(middle, CELL, REST_VIEW);
+      return seen ? text(x - 3.5, y + 4, String(i + 1), "mark-label face-number") : "";
+    })
+    .join("");
+const corner = (sx: number, sy: number, sz: number): [Vec3, Vec3] => [[sx * 0.21, sy * 0.21, sz * 0.21], [sx, sy, sz]];
+export const face = () =>
+  steps([
+    [
+      "cube::face(1)",
+      numbered("cube", [
+        [[0, 0, 0.5], [0, 0, 1]], [[0, 0.5, 0], [0, 1, 0]], [[0.5, 0, 0], [1, 0, 0]],
+        [[-0.5, 0, 0], [-1, 0, 0]], [[0, -0.5, 0], [0, -1, 0]], [[0, 0, -0.5], [0, 0, -1]],
+      ]),
+    ],
+    [
+      "pyramid::face(1)",
+      numbered("pyramid", [
+        [[0, -0.1, 0.33], [0, 0.5, 1.05]], [[0.33, -0.1, 0], [1.05, 0.5, 0]], [[0, -0.1, -0.33], [0, 0.5, -1.05]],
+        [[-0.33, -0.1, 0], [-1.05, 0.5, 0]], [[0, -0.45, 0], [0, -1, 0]],
+      ]),
+    ],
+    [
+      "octahedron::face(1)",
+      numbered("octahedron", [
+        corner(1, 1, 1), corner(1, 1, -1), corner(-1, 1, -1), corner(-1, 1, 1),
+        corner(1, -1, 1), corner(1, -1, -1), corner(-1, -1, -1), corner(-1, -1, 1),
+      ]),
+    ],
+  ]) + says('cube::face(1) { content: "1"; }');
 
 export const element = () => {
   const plate: Frame = { ...CELL, scale: 78 };

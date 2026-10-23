@@ -74,8 +74,9 @@ describe("only the properties the rule can take", () => {
     expect(names).not.toContain("material");
   });
 
-  it("a face: only texture", () => {
-    expect(suggest("cube::top { |}")!.names).toEqual(["texture"]);
+  it("a face: texture and content", () => {
+    expect(suggest("cube::top { |}")!.names).toEqual(["texture", "content"]);
+    expect(suggest("octahedron::face(3) { |}")!.names).toEqual(["texture", "content"]);
   });
 
   it("a frame of @keyframes: what can be animated", () => {
