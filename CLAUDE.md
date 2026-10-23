@@ -10,7 +10,7 @@ gss-lang.dev; npm package: `gss-lang`.
   Lucas's order for what comes next is at the top of **Priorities** (the panel of variables,
   `@property-panel`, is done: ask him for the next one). 0.0.6 is published (Oct. 9, tag `v0.0.6`); what
   comes next goes under "Unreleased" in `CHANGELOG.md`, on the branch `release/0.0.7`.
-- `DECISIONS.md`: every design decision, numbered. The next one is **192**. Add a decision for every
+- `DECISIONS.md`: every design decision, numbered. The next one is **193**. Add a decision for every
   new feature or behavior change.
 - `CONTRIBUTING.md`: where things live. `CHANGELOG.md`: user-facing changes, under "Unreleased".
 
@@ -30,6 +30,7 @@ gss-lang.dev; npm package: `gss-lang`.
   (GPU tests included: `src/test/gpu.test.ts`, Chromium), `npx tsc --noEmit -p .`, and `npm run build`.
 - Every feature goes into the **registry** (`src/compiler/registry/registry.ts`): the docs, the
   playground examples, the autocompletion and the example tests are generated from it.
+- After a change to the registry or the guide of the docs: `npm run docs:github` (the docs on GitHub, `docs/`).
 - Then update `ROADMAP.md`, `DECISIONS.md` and `CHANGELOG.md`.
 - A refactor of the code generator must leave every shader identical: compile every scene of
   `src/scenes/` and every registry example before and after, and compare.
