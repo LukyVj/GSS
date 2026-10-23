@@ -26,6 +26,14 @@ const ROWS: Record<string, Row> = {
     code: "@scene { cube; sphere; torus * 3; }",
     items: [one("cube", { label: "cube" }), one("sphere", { label: "sphere" }), ...copies("torus", 3, (i) => ({ label: `torus ${i}` }))],
   },
+  "at-for": {
+    code: "@scene { @for --i from 1 through 4 { cube; } }",
+    items: copies("cube", 4, (i) => ({ label: `--i: ${i}`, lit: true })),
+  },
+  "at-each": {
+    code: "@scene { @each --s in cube, sphere, cone, torus { var(--s); } }",
+    items: (["cube", "sphere", "cone", "torus"] as const).map((shape) => lit(shape, shape)),
+  },
   "selector-class": { code: ".red { color: #ff5a36; }", items: [one("cube"), lit("sphere", ".red"), lit("cube", ".red"), one("torus")] },
   "selector-id": { code: "#hero { color: #ff5a36; }", items: [one("cube"), lit("sphere", "#hero"), one("torus")] },
   "selector-attribute": {

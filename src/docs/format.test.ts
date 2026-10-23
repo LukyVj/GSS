@@ -149,6 +149,29 @@ describe("formatGss with mixins", () => {
   });
 });
 
+describe("formatGss with loops", () => {
+  it("keeps the head of @for and @each on one line, in @scene too", () => {
+    expect(formatGss("@scene{@for --i from 1 through 3{cube.step;}@each --s in cube,sphere{var(--s).piece}}")).toBe(
+      "@scene {\n  @for --i from 1 through 3 {\n    cube.step;\n  }\n  @each --s in cube, sphere {\n    var(--s).piece\n  }\n}\n",
+    );
+  });
+
+  it("keeps the colon of a selector stuck in a loop and in a @media", () => {
+    expect(formatGss("@for --i from 1 through 2 { .p:nth-child(var(--i)) { size: 1; } }")).toBe(
+      "@for --i from 1 through 2 {\n  .p:nth-child(var(--i)) {\n    size: 1;\n  }\n}\n",
+    );
+    expect(formatGss("@media (max-width: 600px) { cube:hover { color: red; } }")).toBe(
+      "@media (max-width: 600px) {\n  cube:hover {\n    color: red;\n  }\n}\n",
+    );
+  });
+
+  it("puts the rules of a loop in its block, like a @media", () => {
+    expect(formatGss("@each --c in tomato,gold{.p{color:var(--c);}}")).toBe(
+      "@each --c in tomato, gold {\n  .p {\n    color: var(--c);\n  }\n}\n",
+    );
+  });
+});
+
 describe("formatGss with groups", () => {
   it("puts one element per line, with or without ;", () => {
     expect(

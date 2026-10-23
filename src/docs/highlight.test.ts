@@ -65,6 +65,17 @@ describe("highlightGss", () => {
     expect(kind(html, "gold")).toBe("keyword");
   });
 
+  it("colors @for and @each as at-rules, and their heads as values", () => {
+    const html = highlightGss("@for --i from 1 through 4 by 2 { cube { size: var(--i); } } @each --c in tomato, #3a7bff { }");
+    expect(kind(html, "@for")).toBe("at-rule");
+    expect(kind(html, "@each")).toBe("at-rule");
+    expect(kind(html, "--i")).toBe("variable");
+    expect(kind(html, "through")).toBe("keyword");
+    expect(kind(html, "tomato")).toBe("keyword");
+    expect(kind(html, "#3a7bff")).toBe("color");
+    expect(kind(html, "cube")).toBe("selector");
+  });
+
   it("colors the frames of @keyframes as selectors", () => {
     const html = highlightGss("@keyframes k { from { scale: 1; } 50% { scale: 2; } }");
     expect(kind(html, "from")).toBe("selector");

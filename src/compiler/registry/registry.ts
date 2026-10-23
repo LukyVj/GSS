@@ -2455,6 +2455,109 @@ cube { color: #ff5a36; @apply --pose(0.5, 1); animation: hop 1.2s ease-in-out al
       { anchor: "selector-nesting", label: "& (nesting)" },
     ],
   },
+  {
+    name: "for",
+    figure: "row",
+    since: "0.0.7",
+    syntax: "@for --<name> from <number> through | to <number> [by <number>] { … }",
+    description:
+      "Writes its block once for each number it counts, with `var(--i)` replaced by that number, like the `@for` of Sass. It goes anywhere: in `@scene` to make objects, around rules, in a rule, in `@keyframes`. The scene compiles as if each step were written by hand.",
+    valuesTitle: "Parts",
+    values: [
+      ["--<name>", "The variable of the loop, read with `var(--i)` anywhere in the block: in a value, a selector, an attribute of `@scene`, after `*`."],
+      ["from 1 through 4", "Counts 1, 2, 3, 4: `through` counts the last number."],
+      ["from 1 to 4", "Counts 1, 2, 3: `to` stops before the last number. From the larger to the smaller, the loop counts down."],
+      ["by 0.5", "The size of a step, more than 0. Without it, 1."],
+      ["0deg, 50%", "The numbers can take a unit, the same for all three: `from 0deg to 360deg by 45deg`."],
+    ],
+    details: "`* n` and `sibling-index()` already repeat an object; `@for` is for what they cannot do, like a grid that needs two indices, or rules written for each step.",
+    more: "A loop takes 1000 steps at most. Loops can be nested, each with its own name. Inside the block, the variable of the loop hides a variable of the same name. The numbers are written in the file: a `var()` of a variable or of a parameter cannot set them.",
+    examples: [
+      {
+        name: "objects and rules for each step",
+        text: "The loop in `@scene` makes five cubes; the loop around the rule gives each its height, and stands it on the floor.",
+        code: `@scene {
+  @for --i from 1 through 5 { cube.step; }
+}
+.step { color: #ff5a36; }
+@for --i from 1 through 5 {
+  .step:nth-child(var(--i)) {
+    size: 0.8 calc(var(--i) * 0.4) 0.8;
+    translate: calc(var(--i) * 1.1 - 3.3) calc(var(--i) * 0.2) 0;
+  }
+}`,
+      },
+      {
+        name: "a grid",
+        text: "Two loops, one in the other, give each cube its row and its column in attributes; the rules read them back.",
+        code: `@scene {
+  @for --row from 0 to 3 {
+    @for --col from 0 to 3 {
+      cube[data-row=var(--row)][data-col=var(--col)];
+    }
+  }
+}
+cube { scale: 0.8; }
+@for --row from 0 to 3 {
+  @for --col from 0 to 3 {
+    [data-row=var(--row)][data-col=var(--col)] {
+      translate: calc(var(--col) - 1) 0.4 calc(var(--row) - 1);
+      color: hsl(calc(var(--row) * 50 + var(--col) * 20) 80% 60%);
+    }
+  }
+}`,
+      },
+    ],
+    see: [
+      { anchor: "at-each", label: "@each" },
+      { anchor: "fn-sibling-index", label: "sibling-index()" },
+    ],
+  },
+  {
+    name: "each",
+    figure: "row",
+    since: "0.0.7",
+    syntax: "@each --<name> in <value>, <value>, … { … }",
+    description:
+      "Writes its block once for each value of a list, with `var(--x)` replaced by that value, like the `@each` of Sass. A value can be a number, a color, a word, even a shape: `@each --shape in cube, sphere { var(--shape); }` makes a cube, then a sphere.",
+    valuesTitle: "Parts",
+    values: [
+      ["--<name>", "The variable of the loop, read with `var(--x)` anywhere in the block, even in the place of a shape in `@scene`."],
+      ["in tomato, gold, teal", "The values, split at the commas. A value can hold several words: `in 0 1 0, 1 0 0`."],
+      ["{a, b}", "A value with a comma of its own goes between braces, like a value of `@apply`."],
+    ],
+    details: "It goes anywhere `@for` goes: in `@scene`, around rules, in a rule, in `@keyframes`. Each value is written in place of the `var()`, as if the block were written by hand for it.",
+    more: "A list takes 1000 values at most. An empty value is an error. Inside the block, the variable of the loop hides a variable of the same name.",
+    examples: [
+      {
+        name: "a different shape at each step",
+        text: "The variable stands in the place of the shape: four objects of four shapes, in a row.",
+        code: `@scene {
+  @each --shape in cube, sphere, cone, torus {
+    var(--shape).piece;
+  }
+}
+.piece { translate: calc(sibling-index() * 1.6 - 4) 0.6 0; color: #3a7bff; }`,
+      },
+      {
+        name: "a list of colors",
+        text: "Each sphere keeps its color in an attribute, and one rule per color paints it.",
+        code: `@scene {
+  @each --c in tomato, gold, teal, orchid {
+    sphere[data-color=var(--c)];
+  }
+}
+sphere { translate: calc(sibling-index() * 1.3 - 3.25) 0.5 0; }
+@each --c in tomato, gold, teal, orchid {
+  [data-color=var(--c)] { color: var(--c); }
+}`,
+      },
+    ],
+    see: [
+      { anchor: "at-for", label: "@for" },
+      { anchor: "at-scene", label: "@scene" },
+    ],
+  },
 ];
 
 export const SELECTORS: SelectorDef[] = [

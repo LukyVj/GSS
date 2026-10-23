@@ -66,11 +66,15 @@ export function propertySuggestions(
 
 // The block a { opens, from what comes before it and the block around it
 function blockOf(prelude: Token[], parent: Block | undefined): Block {
+  const [first] = prelude;
+  // The block of @for or @each holds what the block around it holds; at the top, rules,
+  // like a @media (decision 191)
+  if (first?.type === "AT_KEYWORD" && (first.value === "for" || first.value === "each"))
+    return parent ?? { kind: "media" };
   if (parent?.kind === "scene") return { kind: "scene" }; // a group inside @scene
   if (parent?.kind === "keyframes") return { kind: "frame" };
   // Every block inside a mixin: its nested rules, @media, @contents { … }
   if (parent?.kind === "mixin") return parent;
-  const [first] = prelude;
   // The block of @apply goes into the rule, or the frame, it is written in
   if (first?.type === "AT_KEYWORD" && first.value === "apply" && (parent?.kind === "rule" || parent?.kind === "frame"))
     return parent;

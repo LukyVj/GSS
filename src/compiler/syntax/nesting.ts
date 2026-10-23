@@ -23,7 +23,7 @@ export const isAmpersand = (token: Token | undefined): boolean =>
 
 // A copy of the token that says if a space comes before it. It keeps the position of the
 // original, so an error still underlines what was written.
-function glue(token: Token, space: boolean): Token {
+export function glue(token: Token, space: boolean): Token {
   const copy = { ...token };
   const span = spanOf(token);
   if (span) rememberSpan(copy, span);

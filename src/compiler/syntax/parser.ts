@@ -7,18 +7,20 @@ import type {
   Keyframes,
   Keyframe,
 } from "./ast";
-import { ErrorSink, errorAt, errorsOf, rememberSpan, spanAcross, spanOf } from "./errors";
-import { isAmpersand, nestSelector } from "./nesting";
+import { ErrorSink, errorAt, errorsOf, rememberSpan, spanAcross } from "./errors";
+import { isAmpersand, nestSelector, spaceBetween } from "./nesting";
 import { expandApply, readApply, readMixins, type Apply } from "./mixins";
+import { unfoldLoops } from "./loops";
 
 // Reading goes on after an error (decision 86): the error is kept, the parser skips to
 // the end of the declaration, the element or the rule, and reads the rest. errors:
 // where the errors go; without it, parse() throws them at the end.
 export function parse(input: Token[], errors?: ErrorSink): Stylesheet {
   const sink = errors ?? new ErrorSink();
-  // The @mixin rules are taken out first: @apply finds a mixin written after it, like CSS.
+  // The loops are written out first, wherever they are, mixins included (decision 191).
+  // Then the @mixin rules are taken out: @apply finds a mixin written after it, like CSS.
   // A copy: an @apply is replaced by the tokens of its mixin in this list (decision 174)
-  const { tokens, mixins } = readMixins(input, sink);
+  const { tokens, mixins } = readMixins(unfoldLoops(input, sink), sink);
   let pos = 0; // our position in the list of tokens
 
   // Looks at the current token, without advancing
@@ -562,9 +564,7 @@ export function textOf(tokens: Token[]): string {
   return tokens
     .map((token, i) => {
       const before = tokens[i - 1];
-      const a = before && spanOf(before);
-      const b = spanOf(token);
-      const space = a !== undefined && b !== undefined && a.end < b.start;
+      const space = before !== undefined && spaceBetween(before, token);
       return (space ? " " : "") + tokenText(token);
     })
     .join("");

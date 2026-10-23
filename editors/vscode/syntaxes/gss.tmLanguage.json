@@ -31,6 +31,9 @@
       "include": "#at-contents"
     },
     {
+      "include": "#at-loop"
+    },
+    {
       "include": "#selector"
     },
     {
@@ -84,23 +87,53 @@
           },
           "patterns": [
             {
-              "include": "#comment"
-            },
-            {
-              "include": "#selector"
-            },
-            {
-              "match": "\\*",
-              "name": "keyword.operator.arithmetic.multiply.gss"
-            },
-            {
-              "include": "#number"
-            },
-            {
-              "match": ";",
-              "name": "punctuation.terminator.instance.gss"
+              "include": "#scene-contents"
             }
           ]
+        }
+      ]
+    },
+    "scene-contents": {
+      "patterns": [
+        {
+          "include": "#comment"
+        },
+        {
+          "include": "#at-loop"
+        },
+        {
+          "comment": "The block of a group or of a loop holds objects too",
+          "begin": "\\{",
+          "end": "\\}",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.section.scene.begin.bracket.curly.gss"
+            }
+          },
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.section.scene.end.bracket.curly.gss"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#scene-contents"
+            }
+          ]
+        },
+        {
+          "include": "#selector"
+        },
+        {
+          "match": "\\*",
+          "name": "keyword.operator.arithmetic.multiply.gss"
+        },
+        {
+          "include": "#number"
+        },
+        {
+          "match": ";",
+          "name": "punctuation.terminator.instance.gss"
         }
       ]
     },
@@ -139,6 +172,9 @@
           "patterns": [
             {
               "include": "#comment"
+            },
+            {
+              "include": "#at-loop"
             },
             {
               "match": "\\b(from|to)\\b",
@@ -340,6 +376,34 @@
         }
       ]
     },
+    "at-loop": {
+      "comment": "@for --i from 1 through 4 by 1 { … } and @each --x in a, b { … }: the block is written once per value, in @scene, around rules or in a rule",
+      "begin": "(@)(for|each)(?![\\w-])\\s*(--[\\w-]+)?",
+      "beginCaptures": {
+        "0": {
+          "name": "keyword.control.at-rule.loop.gss"
+        },
+        "1": {
+          "name": "punctuation.definition.keyword.gss"
+        },
+        "3": {
+          "name": "variable.parameter.loop.gss"
+        }
+      },
+      "end": "(?=[{};])",
+      "patterns": [
+        {
+          "include": "#comment"
+        },
+        {
+          "match": "(?<![\\w-])(from|through|to|by|in)(?![\\w-])",
+          "name": "keyword.control.loop.gss"
+        },
+        {
+          "include": "#value"
+        }
+      ]
+    },
     "selector": {
       "patterns": [
         {
@@ -421,6 +485,12 @@
         },
         {
           "include": "#at-contents"
+        },
+        {
+          "include": "#at-loop"
+        },
+        {
+          "include": "#rule-block"
         },
         {
           "include": "#nested-rule"

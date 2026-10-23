@@ -113,6 +113,16 @@ describe("only the properties the rule can take", () => {
   });
 });
 
+describe("loops", () => {
+  it("in a loop, what the block around it takes: rules at the top, declarations in a rule", () => {
+    expect(suggest("@for --i from 1 through 3 { cube { ra| } }")?.names).toContain("size");
+    expect(suggest("@for --i from 1 through 3 { |}")).toBeNull();
+    expect(suggest("sphere { @each --c in red, blue { |} }")?.names).toContain("radius");
+    expect(suggest("@scene { @for --i from 1 through 3 { cu| } }")).toBeNull();
+    expect(suggest("@keyframes up { @for --p from 0% through 100% by 50% { var(--p) { |} } }")?.names).toContain("translate");
+  });
+});
+
 describe("mixins", () => {
   it("every property in the body of a @mixin, which any rule can apply, and in its nested blocks", () => {
     const names = suggest("@mixin --m(--a: 1) { |}")!.names;
