@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>GSS — Changelog</title>
+    <meta
+      name="description"
+      content="What changed in each version of GSS, the newest first: the features, the changes and the fixes."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="GSS" />
+    <meta property="og:url" content="https://www.gss-lang.dev/changelog" />
+    <meta property="og:title" content="GSS — Changelog" />
+    <meta
+      property="og:description"
+      content="What changed in each version of GSS, the newest first: the features, the changes and the fixes."
+    />
+    <meta
+      property="og:image"
+      content="https://www.gss-lang.dev/marks/social-logo.png"
+    />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="The GSS logo, drawn in GSS: two braces around an orange sphere"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@GSS_lang" />
+    <link rel="canonical" href="https://www.gss-lang.dev/changelog" />
+    <link rel="stylesheet" href="/src/styles/site.css" />
+    <style>
+      /* The changelog page: CHANGELOG.md, written into the page when it is prerendered */
+      code {
+        font-family: var(--gss-font-code);
+        font-size: 0.9em;
+        color: var(--gss-bone);
+      }
+      main {
+        box-sizing: border-box;
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 0 56px 96px;
+      }
+      .intro {
+        padding: 96px 0 40px;
+        max-width: 720px;
+      }
+      .eyebrow {
+        margin: 0 0 16px;
+      }
+      h1 {
+        margin: 0 0 24px;
+        font: 800 clamp(40px, 6vw, 68px) / 1.02 var(--gss-font-display);
+        letter-spacing: -0.05em;
+      }
+      .lead {
+        line-height: 1.5;
+      }
+      .lead a,
+      .changelog a {
+        color: var(--gss-bone);
+      }
+      .lead a:hover,
+      .changelog a:hover {
+        color: var(--gss-signal);
+      }
+      .changelog {
+        max-width: 760px;
+      }
+      .release {
+        padding: 40px 0;
+        border-top: 1px solid var(--gss-line);
+        scroll-margin-top: 72px;
+      }
+      .release h2 {
+        display: flex;
+        align-items: baseline;
+        gap: 16px;
+        margin: 0 0 8px;
+        font: 800 32px / 1.1 var(--gss-font-display);
+        letter-spacing: -0.04em;
+      }
+      .release h2 a {
+        color: var(--gss-bone);
+        text-decoration: none;
+      }
+      .release h2 time {
+        font: 13px var(--gss-font-code);
+        letter-spacing: 0;
+        color: var(--gss-dim);
+      }
+      .release h3 {
+        margin: 28px 0 10px;
+        font: 600 13px var(--gss-font-code);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--gss-signal);
+      }
+      .release p,
+      .release li {
+        color: var(--gss-ash);
+        font-size: 15px;
+        line-height: 1.6;
+      }
+      .release ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+      .release li + li {
+        margin-top: 10px;
+      }
+
+      .site-footer {
+        border-top: 1px solid var(--gss-line);
+        margin-top: 96px;
+      }
+      .site-footer .in {
+        box-sizing: border-box;
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 28px 56px;
+        display: flex;
+        justify-content: space-between;
+        gap: 24px;
+        font: 13px var(--gss-font-code);
+        color: var(--gss-dim);
+      }
+      .site-footer nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 24px;
+      }
+      .site-footer nav a {
+        color: var(--gss-ash);
+      }
+      .site-footer .in {
+        flex-wrap: wrap;
+      }
+      .site-footer .contact {
+        flex-basis: 100%;
+        margin: 0;
+        color: var(--gss-ash);
+      }
+      .site-footer .contact a {
+        color: var(--gss-bone);
+      }
+      .site-footer .contact a:hover {
+        color: var(--gss-signal);
+      }
+
+      /* ----- Smaller screens: the side padding goes 56 → 32 → 16px ----- */
+      @media (max-width: 1024px) {
+        main {
+          padding: 0 32px 72px;
+        }
+        .site-footer {
+          margin-top: 72px;
+        }
+        .site-footer .in {
+          padding: 24px 32px;
+        }
+      }
+      @media (max-width: 640px) {
+        main {
+          padding: 0 16px 56px;
+        }
+        .intro {
+          padding: 56px 0 24px;
+        }
+        .release h2 {
+          font-size: 26px;
+        }
+        .topbar nav a[href="./showcase.html"] {
+          display: none;
+        }
+        .site-footer {
+          margin-top: 56px;
+        }
+        .site-footer .in {
+          padding: 24px 16px;
+          flex-direction: column;
+          gap: 14px;
+        }
+        .site-footer nav {
+          gap: 10px 18px;
+        }
+      }
+    </style>
+    <script
+      defer
+      src="https://cloud.umami.is/script.js"
+      data-website-id="89b55a0a-cc5f-44e3-9d29-1db01ff93bc9"
+    ></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="mark" href="./" aria-label="GSS home"
+        >{<span class="dot"></span>}</a
+      >
+      <span class="crumb">/</span>
+      <span>changelog</span>
+      <span class="spacer"></span>
+      <nav aria-label="Main">
+        <a href="./playground.html">playground</a>
+        <a href="./docs.html">docs</a>
+        <a href="./showcase.html">showcase</a>
+        <a class="github" href="https://github.com/LukyVj/GSS"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg><span>github</span></a>
+        <a class="x" href="https://x.com/GSS_lang" aria-label="GSS on X, @GSS_lang"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg><span>@GSS_lang</span></a>
+      </nav>
+    </header>
+
+    <main>
+      <div class="intro">
+        <p class="eyebrow">Changelog</p>
+        <h1>What changed in GSS.</h1>
+        <p class="lead">
+          Every version, the newest first: what it added, what it changed and what it fixed.
+          The package is on <a href="https://www.npmjs.com/package/gss-lang">npm</a>, the code on
+          <a href="https://github.com/LukyVj/GSS">GitHub</a>.
+        </p>
+      </div>
+      <div class="changelog" id="changelog"></div>
+    </main>
+
+    <footer class="site-footer">
+      <div class="in">
+        <span
+          >GSS — GPU Style Sheets. CSS for 3D scenes, compiled to a
+          shader.</span
+        >
+        <nav aria-label="Footer">
+          <a href="./changelog.html#%GSS_VERSION%" aria-label="GSS version %GSS_VERSION%, what changed">v%GSS_VERSION%</a>
+          <a href="https://github.com/LukyVj/GSS">github</a>
+          <a href="https://x.com/GSS_lang">@GSS_lang</a>
+          <a href="./docs.html#installation">installation</a>
+          <a href="./playground.html">playground</a>
+          <a href="./docs.html">docs</a>
+          <a href="./showcase.html">showcase</a>
+          <a href="./brand.html">brand</a>
+        </nav>
+        <p class="contact">Questions, ideas, a scene to show? Say hi on X, <a href="https://x.com/GSS_lang">@GSS_lang</a>, or <a href="https://github.com/LukyVj/GSS/issues">open an issue</a> on GitHub.</p>
+      </div>
+    </footer>
+  </body>
+</html>

@@ -2,7 +2,7 @@ import type { Plugin, ViteDevServer } from "vite";
 import { createServer } from "vite";
 import { VERSION } from "../version.ts";
 
-// Injects docs / home / showcase / brand HTML at transformIndexHtml so those pages are
+// Injects docs / home / showcase / brand / changelog HTML at transformIndexHtml so those pages are
 // readable without JS. Playground stays client-rendered.
 // Modules are loaded through Vite SSR (supports `.gss?raw`) rather than imported
 // into vite.config, which would pull the whole app into the config bundle.
@@ -65,6 +65,12 @@ export function prerenderSite(): Plugin {
             prerenderBrandHtml: (html: string) => string;
           }>("/src/brand/prerender.ts");
           return prerenderBrandHtml(html);
+        }
+        if (name === "changelog.html") {
+          const { prerenderChangelogHtml } = await load<{
+            prerenderChangelogHtml: (html: string) => string;
+          }>("/src/changelog/render.ts");
+          return prerenderChangelogHtml(html);
         }
         if (name === "showcase.html") {
           const { prerenderShowcaseHtml } = await load<{

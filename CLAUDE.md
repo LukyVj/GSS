@@ -10,7 +10,7 @@ gss-lang.dev; npm package: `gss-lang`.
   Lucas's order for what comes next is at the top of **Priorities** (the panel of variables,
   `@property-panel`, is done: ask him for the next one). 0.0.7 is published (Oct. 23, tag `v0.0.7`); what
   comes next goes under "Unreleased" in `CHANGELOG.md`, on the branch `release/0.0.8`.
-- `DECISIONS.md`: every design decision, numbered. The next one is **194**. Add a decision for every
+- `DECISIONS.md`: every design decision, numbered. The next one is **195**. Add a decision for every
   new feature or behavior change.
 - `CONTRIBUTING.md`: where things live. `CHANGELOG.md`: user-facing changes, under "Unreleased".
 

@@ -1635,3 +1635,9 @@ The compiler of the package grew past its budget: `mount` goes from 97,000 to 98
 **Why**: the people who give their time to GSS should be seen where everyone lands, not only in the history of the repository. A list written by hand says what each one brought, which the list of GitHub does not.
 **Accepted limits**: the avatars come from github.com when the section is seen; the list is kept by hand.
 
+## 194. The changelog on the site
+
+**Decision** (Lucas, Oct. 23: "avoir le changelog quelque part dans le site"; Vite links its version to its changelog, Bun has a page per release): a page `changelog.html` (`/changelog`), written from `CHANGELOG.md` when it is prerendered (`src/changelog/render.ts`), so it reads without JavaScript and never differs from the file. Each version is a section with its anchor (`#0.0.7`) and its date; an Unreleased with nothing under it is left out. The version in the footer of every page (`v0.0.7`) opens it at that version, where it opened npm; the page links npm and GitHub.
+**Why**: the changelog was only on GitHub. The version a reader sees is where they look for what it changed.
+**Accepted limits**: the renderer reads the Markdown the changelog uses (titles, lists, paragraphs, code, links, bold, italic), not every Markdown.
+
