@@ -1,7 +1,6 @@
 import { escapeHtml } from "../docs/escape";
 import { docEntries } from "../docs/start-screen";
 import changelog from "../../CHANGELOG.md?raw";
-import { changelogScene } from "./scene";
 
 // The changelog page (changelog.html): CHANGELOG.md, written into the page when it is
 // prerendered. The file only uses a little Markdown: titles, lists, paragraphs, and code,
@@ -160,22 +159,8 @@ export function renderChangelog(markdown: string = changelog): string {
 }
 
 const PLACE = '<div class="changelog" id="changelog"></div>';
-const CLOUD = '<aside class="cloud" aria-hidden="true"></aside>';
 
-// About the height of each version in the page: its lines, its headings and its title
-export function releaseWeights(html: string): number[] {
-  return html
-    .split('<section class="release"')
-    .slice(1)
-    .map((section) => 4 + section.split("<li>").length - 1 + 2 * (section.split("<h3>").length - 1));
-}
-
-// The changelog, and beside it the cloud of points that changes shape with each version
 export function prerenderChangelogHtml(html: string): string {
-  for (const place of [PLACE, CLOUD]) if (!html.includes(place)) throw new Error(`prerender changelog: expected ${place}`);
-  const releases = renderChangelog();
-  const scene = `<gss-scene controls="none"><script type="text/gss">\n${changelogScene(releaseWeights(releases))}</script></gss-scene>`;
-  return html
-    .replace(PLACE, `<div class="changelog" id="changelog">\n${releases}\n</div>`)
-    .replace(CLOUD, CLOUD.replace("</aside>", `${scene}</aside>`));
+  if (!html.includes(PLACE)) throw new Error(`prerender changelog: expected ${PLACE}`);
+  return html.replace(PLACE, `<div class="changelog" id="changelog">\n${renderChangelog()}\n</div>`);
 }
