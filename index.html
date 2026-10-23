@@ -7,7 +7,7 @@
     <title>GSS — GPU Style Sheets</title>
     <meta
       name="description"
-      content="Selectors, the cascade and @keyframes, compiled into a single raymarching shader. The 3D language designers and AIs already speak."
+      content="If you can write CSS, you can write GSS. Your 3D scene is a style sheet, and the GPU draws it."
     />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="GSS" />
@@ -15,7 +15,7 @@
     <meta property="og:title" content="GSS — GPU Style Sheets" />
     <meta
       property="og:description"
-      content="Selectors, the cascade and @keyframes, compiled into a single raymarching shader. The 3D language designers and AIs already speak."
+      content="If you can write CSS, you can write GSS. Your 3D scene is a style sheet, and the GPU draws it."
     />
     <meta
       property="og:image"
@@ -106,7 +106,7 @@
       .lead {
         max-width: 34rem;
       }
-      .lead code {
+      .pillar p code {
         color: var(--gss-bone);
         font-size: 0.92em;
       }
@@ -351,6 +351,9 @@
         color: var(--gss-ash);
         font-size: 15px;
       }
+      .pillar pre {
+        margin-top: auto;
+      }
       pre {
         margin: 0;
         padding: 16px 18px;
@@ -359,13 +362,6 @@
         background: var(--gss-surface);
         font-size: 13px;
         line-height: 1.65;
-      }
-      .glsl {
-        color: var(--gss-ash);
-      }
-      .glsl .c {
-        color: var(--gss-comment, #6e6e7a);
-        font-style: italic;
       }
 
       /* ----- Live: the real compiler, in the page ----- */
@@ -719,9 +715,8 @@
             <div class="eyebrow">GPU Style Sheets</div>
             <h1>Style sheets<br />for the GPU.</h1>
             <p class="lead">
-              Selectors, the cascade and <code>@keyframes</code>, compiled into
-              a single raymarching shader. No Three.js. No meshes. Just CSS you
-              already know.
+              If you can write CSS, you can write GSS. Your 3D scene is a style
+              sheet, and the GPU draws it.
             </p>
             <div class="actions">
               <a class="button primary" href="./playground.html"
@@ -776,36 +771,33 @@
         <div class="wrap">
           <article class="pillar">
             <div class="eyebrow">01</div>
-            <h2>Rules, not loops</h2>
+            <h2>Your selectors</h2>
             <p>
-              Style a thousand objects with one selector. The cascade decides,
-              like on a web page.
+              Classes, ids, <code>:last-child</code> and the cascade pick the
+              objects, like the elements of a page.
             </p>
-            <pre><code data-gss>@scene { cube.corner * 4; }
-.corner { color: #ff5a36; }</code></pre>
+            <pre><code data-gss>@scene { cube.key * 4; }
+.key:last-child { color: #ff5a36; }</code></pre>
           </article>
           <article class="pillar">
             <div class="eyebrow">02</div>
-            <h2>One shader</h2>
+            <h2>Your animations</h2>
             <p>
-              The compiler writes the GLSL: the whole scene becomes one fragment
-              shader, raymarched on the GPU.
+              <code>:hover</code>, <code>transition</code> and
+              <code>@keyframes</code> move the scene the way they move a page.
             </p>
-            <pre
-              class="glsl"
-            ><code><span class="c">// GSS → AST → cascade → GLSL</span>
-vec2 map(vec3 p) { … }</code></pre>
+            <pre><code data-gss>.key { transition: 0.2s ease-out; }
+.key:hover { translate: 0 0.2 0; }</code></pre>
           </article>
           <article class="pillar">
             <div class="eyebrow">03</div>
-            <h2>LLMs already speak it</h2>
+            <h2>Your variables</h2>
             <p>
-              Every model knows CSS by heart. It writes the style sheet; the
-              compiler writes the shader.
+              <code>var()</code>, <code>calc()</code>, <code>@media</code> and
+              <code>light-dark()</code> fit the scene to the page around it.
             </p>
-            <pre><code data-gss>#dot {
-  material: jelly(0.6);
-}</code></pre>
+            <pre><code data-gss>scene { --accent: #ff5a36; }
+cube { color: var(--accent); }</code></pre>
           </article>
         </div>
       </section>
