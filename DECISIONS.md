@@ -1637,7 +1637,7 @@ The compiler of the package grew past its budget: `mount` goes from 97,000 to 98
 
 ## 194. The changelog on the site
 
-**Decision** (Lucas, Oct. 23: "avoir le changelog quelque part dans le site"; Vite links its version to its changelog, Bun has a page per release): a page `changelog.html` (`/changelog`), written from `CHANGELOG.md` when it is prerendered (`src/changelog/render.ts`), so it reads without JavaScript and never differs from the file. Each version is a section with its anchor (`#0.0.7`) and its date; an Unreleased with nothing under it is left out. The version in the footer of every page (`v0.0.7`) opens it at that version, where it opened npm; the page links npm and GitHub.
+**Decision** (Lucas, Oct. 23: "avoir le changelog quelque part dans le site"; Vite links its version to its changelog, Bun has a page per release): a page `changelog.html` (`/changelog`), written from `CHANGELOG.md` when it is prerendered (`src/changelog/render.ts`), so it reads without JavaScript and never differs from the file. Each version is a section with its anchor (`#0.0.7`) and its date; an Unreleased with nothing under it is left out. The version in the footer of every page (`v0.0.7`) opens it at that version, where it opened npm; the page links npm and GitHub. Each change shows its first sentence (up to a period followed by a space, outside code and links); the rest unfolds under it, in a `<details>` (Lucas, Oct. 23: "le changelog est trop verbeux sur le site").
 **Why**: the changelog was only on GitHub. The version a reader sees is where they look for what it changed.
 **Accepted limits**: the renderer reads the Markdown the changelog uses (titles, lists, paragraphs, code, links, bold, italic), not every Markdown.
 
