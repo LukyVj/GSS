@@ -67,8 +67,23 @@
       .changelog a:hover {
         color: var(--gss-signal);
       }
-      .changelog {
-        max-width: 760px;
+      /* The changelog on the left, the cloud of points on the right, held in view */
+      .log {
+        display: grid;
+        grid-template-columns: minmax(0, 760px) minmax(0, 1fr);
+        gap: 56px;
+      }
+      .cloud {
+        position: sticky;
+        top: 72px;
+        height: calc(100vh - 96px);
+        margin-top: 48px;
+        align-self: start;
+      }
+      .cloud gss-scene {
+        display: block;
+        width: 100%;
+        height: 100%;
       }
       .release {
         padding: 40px 0;
@@ -221,6 +236,12 @@
 
       /* ----- Smaller screens: the side padding goes 56 → 32 → 16px ----- */
       @media (max-width: 1024px) {
+        .log {
+          display: block;
+        }
+        .cloud {
+          display: none;
+        }
         main {
           padding: 0 32px 72px;
         }
@@ -304,17 +325,22 @@
     </header>
 
     <main>
-      <div class="intro">
-        <p class="eyebrow">Changelog</p>
-        <h1>What changed in GSS.</h1>
-        <p class="lead">
-          Every version, the newest first: what it added, what it changed and
-          what it fixed. The package is on
-          <a href="https://www.npmjs.com/package/gss-lang">npm</a>, the code on
-          <a href="https://github.com/LukyVj/GSS">GitHub</a>.
-        </p>
+      <div class="log">
+        <div class="text">
+          <div class="intro">
+            <p class="eyebrow">Changelog</p>
+            <h1>What changed in GSS.</h1>
+            <p class="lead">
+              Every version, the newest first: what it added, what it changed
+              and what it fixed. The package is on
+              <a href="https://www.npmjs.com/package/gss-lang">npm</a>, the code
+              on <a href="https://github.com/LukyVj/GSS">GitHub</a>.
+            </p>
+          </div>
+          <div class="changelog" id="changelog"></div>
+        </div>
+        <aside class="cloud" aria-hidden="true"></aside>
       </div>
-      <div class="changelog" id="changelog"></div>
     </main>
 
     <footer class="site-footer">
@@ -345,5 +371,6 @@
         </p>
       </div>
     </footer>
+    <script type="module" src="/src/changelog/main.ts"></script>
   </body>
 </html>

@@ -43,7 +43,7 @@ describe("the changelog page", () => {
   });
 
   it("gives every change of CHANGELOG.md its element, and links most of the language", () => {
-    const html = prerenderChangelogHtml('<div class="changelog" id="changelog"></div>');
+    const html = prerenderChangelogHtml('<div class="changelog" id="changelog"></div><aside class="cloud" aria-hidden="true"></aside>');
     expect(html.match(/<li>/g)!.length).toBeGreaterThan(150);
     expect(html).not.toContain('<span class="scope"></span>');
     expect(html.match(/<a class="row" href="\.\/docs\.html#/g)!.length).toBeGreaterThan(60);
@@ -58,7 +58,7 @@ describe("the changelog page", () => {
   });
 
   it("fills the page with every version of CHANGELOG.md", () => {
-    const html = prerenderChangelogHtml('<div class="changelog" id="changelog"></div>');
+    const html = prerenderChangelogHtml('<div class="changelog" id="changelog"></div><aside class="cloud" aria-hidden="true"></aside>');
     expect(html).toContain('id="0.0.7"');
     expect(html).toContain('id="0.0.1"');
     const versions = [...readFileSync("CHANGELOG.md", "utf8").matchAll(/^## \[(\d+\.\d+\.\d+)\]/gm)].map((m) => m[1]);

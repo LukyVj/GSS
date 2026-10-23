@@ -1647,3 +1647,8 @@ The compiler of the package grew past its budget: `mount` goes from 97,000 to 98
 **Why**: about 200 MB of films do not belong in the repository. R2 stores 10 GB for free and does not bill its traffic, where Vercel Blob on the Hobby plan stops after 10 GB of transfer a month. A video tag on our own domain needs no player of another site.
 **Accepted limits**: `media.gss-lang.dev` needs the DNS of the domain on Cloudflare; until then the films do not play. One file per cut, no adaptive streaming.
 
+## 196. A cloud of points beside the changelog
+
+**Decision** (Lucas, Oct. 23: "on génère un blob, qui change de forme à chaque section… comme une nuée de points… et qui utilise la fonction scroll() de gss"): on wide screens, the right of the changelog page holds a GSS scene, sticky: 64 glowing spheres that take one shape per version (a sphere, a torus, a double helix, a cube of points, a disk of seeds, waves, a narrowing spiral, a seed) and change shape as the page scrolls, with `animation-timeline: scroll(root)`. The scene is written when the page is prerendered (`src/changelog/scene.ts`): each version holds its shape over the middle of its part of the scroll, its part weighed by its lines, so the shapes follow the versions without any script of the page. Below 1024px the scene is not shown.
+**Why**: the changelog, one line per change, leaves the right of the page empty; a scene driven by the scroll shows GSS where the page talks about it.
+**Accepted limits**: the parts of the scroll are estimated from the number of lines of each version, not measured in the page. `filter: bloom()` is left out: with it, the scene stays blank until the first scroll.
