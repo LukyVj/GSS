@@ -63,6 +63,7 @@ const cases: [string, string, boolean?][] = [
   ["gradient reflection", "@scene { sphere; } scene { background: repeating-linear-gradient(45deg, red 0%, blue 25%); } sphere { translate: 0 1 0; material: chrome; }"],
   ["scene blur and bloom", "@scene { sphere; } scene { filter: blur(1px) bloom(0.4, 2px); } sphere { translate: 0 1 0; color: red; }"],
   ["object blur", "@scene { sphere; cube; } sphere { translate: -0.4 1 0; filter: blur(2px); color: red; } cube { translate: 0.4 1 0; color: blue; }"],
+  ["view: steps (decision 204)", "@scene { sphere; cube; } scene { view: steps; } sphere { translate: -0.4 1 0; } cube { translate: 0.4 1 0; rotate-y: 30deg; }"],
   ["hover picking", "@scene { sphere; } scene { camera-angle: 0deg 0deg; camera-distance: 5; camera-target: 0 0 0; floor: none; } sphere { radius: 1; color: red; } sphere:hover { color: blue; }", true],
   ["a state starts an animation", "@scene { sphere; } scene { camera-angle: 0deg 0deg; camera-distance: 5; camera-target: 0 0 0; floor: none; } sphere { radius: 1; color: red; } sphere:hover { animation: paint 1s -2s 1 forwards; } @keyframes paint { to { color: blue; } }", true],
   ["animated transforms and negative delay", "@scene { cube; } cube { translate: 0 1 0; animation: turn 2s -0.7s ease-in-out alternate; } @keyframes turn { from { rotate-y: 0deg; scale: 0.5; } to { rotate-y: 120deg; scale: 1.2; } }"],

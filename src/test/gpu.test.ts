@@ -130,6 +130,14 @@ it("the watch compiles on WebGL2 in every media variant", async () => {
   }
 }, 30000);
 
+// @debug-panel (decision 204): the axes and the grid the playground draws, over each view
+it("the axes and the grid of @debug-panel compile on WebGL2, in every view", async () => {
+  for (const view of ["shaded", "distance", "steps"]) {
+    const source = `@debug-panel { display: open; } @scene { sphere; cube; } scene { view: ${view}; } sphere { translate: 0 1 0; opacity: 0.6; } cube { material: metal(0.2); }`;
+    expect(await compileOnGpu(compileScene(source, { debug: true, target: "glsl" }).shader), view).toBe("");
+  }
+});
+
 // The reflections call objectFilter(): it is written before them
 it("a filtered object next to a metal compiles on WebGL2", async () => {
   const scene =

@@ -6,6 +6,77 @@
 
 Every example of this page, to edit live: [gss-lang.dev/docs](https://www.gss-lang.dev/docs#at-rules).
 
+<a name="at-debug-panel"></a>
+
+## `@debug-panel`
+
+Shows the axes and a grid at the origin over the render, in the playground and in Try it, and a panel with the numbers of the scene: its objects, its images, and how fast it draws.
+
+**What the property changes in the scene:** `x`, `y`, `z`
+
+- **Syntax:** `@debug-panel { display: open | folded | none; }`
+- **See also:** [view](rendering.md#view), [@property-panel](#at-property-panel)
+
+### Descriptors
+
+- **display:** `open`, the default: the panel shows its numbers. `folded`: only its title, `debug`, which opens it; the axes and the grid stay. `none`: nothing, as without the rule.
+
+The axes are x in red, y in green and z in blue, one unit apart on the grid, fainter behind the objects. A page that embeds the scene shows neither the panel nor the axes.
+
+The grid lies on the plane where the floor is, out to 10 units from the origin; its lines are light on a dark scene and dark on a light one. The panel counts the objects drawn and the images used, out of the 16 a scene can take. In the playground, it shows the frames per second, the time of a frame on the GPU and on the CPU, the size of the render in pixels and the time the shader took to build, like the performance panel; while it is open, the scene draws every frame, so that the numbers measure it. To see where the time goes, switch the view to `view: steps`.
+
+### the axes and the grid
+
+A cube one unit to the right of the origin, along the red axis.
+
+```css
+@debug-panel {
+  display: open;
+}
+
+@scene {
+  cube;
+}
+
+cube {
+  translate: 1 0.5 0;
+  size: 0.6;
+  color: #ff5a36;
+}
+```
+
+### folded, on a dark scene
+
+The panel starts folded: its title opens it. The grid turns light on the dark background.
+
+```css
+@debug-panel {
+  display: folded;
+}
+
+@scene {
+  sphere;
+  torus;
+}
+
+scene {
+  floor: none;
+  background: #0a0a0c;
+}
+
+sphere {
+  translate: 0 1 0;
+  radius: 0.4;
+  color: #e8e6e1;
+}
+
+torus {
+  translate: 0 1 0;
+  rotate-x: 90deg;
+  color: #ff5a36;
+}
+```
+
 <a name="at-keyframes"></a>
 
 ## `@keyframes`

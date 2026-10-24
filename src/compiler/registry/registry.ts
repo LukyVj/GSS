@@ -2085,19 +2085,20 @@ export const PROPERTIES: PropertyDef[] = [
     figure: "scene",
     since: "0.0.5",
     appliesTo: "scene",
-    syntax: "shaded | distance",
+    syntax: "shaded | distance | steps",
     initial: "shaded",
     description:
-      "Shows the scene as it is lit, or with the isolines of its distance field over it: the distance to the nearest object, which the shader measures at every step of every ray.",
+      "Shows the scene as it is lit, with the isolines of its distance field over it, or with each pixel colored by the work it costs: the distance to the nearest object is what the shader measures at every step of every ray.",
     values: [
       ["shaded", "The scene, lit: the default."],
       ["distance", "The same scene, with a line every 0.25 units from the objects, fainter as it goes away. The lines lie on the plane that faces the camera through `camera-target`, and show where that plane is in front of the objects."],
+      ["steps", "Each pixel colored by how many times its rays measured the distance: dark blue for a few, then green, yellow, and red at 150 and over. The red parts are the ones that slow a scene down.", "0.0.8"],
     ],
     details: "The floor is left out of the distance: the lines go around the objects only.",
-    more: "Far from a `path`, a `prism` or a `lathe`, the distance is the one to its box, which the shader uses to skip it quickly, and the lines show that box. The lines are light on a dark scene and dark on a light one.",
+    more: "Far from a `path`, a `prism` or a `lathe`, the distance is the one to its box, which the shader uses to skip it quickly, and the lines show that box. The lines are light on a dark scene and dark on a light one. `steps` counts every measure of a pixel: the march of its ray, its normal, its shadows, its reflections and what shows through a transparent object. The rays that graze an object take the most steps, along its edges.",
     note: {
-      title: "Two chips switch it here.",
-      text: "In the playground and in the examples of these docs, the chips `view: shaded` and `view: distance` at the top left of the render switch the view, without touching the code; when the code changes its `view`, the code wins again. On your own site, the `view` of the scene applies.",
+      title: "Three chips switch it here.",
+      text: "In the playground and in the examples of these docs, the chips `view: shaded`, `view: distance` and `view: steps` at the top left of the render switch the view, without touching the code; when the code changes its `view`, the code wins again. On your own site, the `view` of the scene applies.",
     },
     examples: [
       {
@@ -2109,6 +2110,11 @@ export const PROPERTIES: PropertyDef[] = [
         name: "on a dark scene",
         text: "Without a floor, on a dark background: the lines of the field around two objects meet halfway.",
         code: "@scene { sphere; cube; } sphere { translate: -0.8 0.5 0; color: #ff5a36; } cube { translate: 0.8 0.5 0; color: #e8e6e1; } scene { view: distance; floor: none; background: #0a0a0c; }",
+      },
+      {
+        name: "what a scene costs",
+        text: "The edges of the torus and the ground near it take the most steps.",
+        code: "@scene { torus; } torus { translate: 0 0.6 0; rotate-x: 60deg; } scene { view: steps; }",
       },
     ],
   },
@@ -2310,6 +2316,36 @@ sphere { translate: 0 1 0; texture: paint(checks); }`,
     see: [
       { anchor: "at-property", label: "@property" },
       { anchor: "set-variables", label: "Set variables from JavaScript" },
+    ],
+  },
+  {
+    name: "debug-panel",
+    figure: "scene",
+    since: "0.0.8",
+    syntax: "@debug-panel { display: open | folded | none; }",
+    description:
+      "Shows the axes and a grid at the origin over the render, in the playground and in Try it, and a panel with the numbers of the scene: its objects, its images, and how fast it draws.",
+    valuesTitle: "Descriptors",
+    values: [
+      ["display", "`open`, the default: the panel shows its numbers. `folded`: only its title, `debug`, which opens it; the axes and the grid stay. `none`: nothing, as without the rule."],
+    ],
+    details: "The axes are x in red, y in green and z in blue, one unit apart on the grid, fainter behind the objects. A page that embeds the scene shows neither the panel nor the axes.",
+    more: "The grid lies on the plane where the floor is, out to 10 units from the origin; its lines are light on a dark scene and dark on a light one. The panel counts the objects drawn and the images used, out of the 16 a scene can take. In the playground, it shows the frames per second, the time of a frame on the GPU and on the CPU, the size of the render in pixels and the time the shader took to build, like the performance panel; while it is open, the scene draws every frame, so that the numbers measure it. To see where the time goes, switch the view to `view: steps`.",
+    examples: [
+      {
+        name: "the axes and the grid",
+        text: "A cube one unit to the right of the origin, along the red axis.",
+        code: "@debug-panel { display: open; } @scene { cube; } cube { translate: 1 0.5 0; size: 0.6; color: #ff5a36; }",
+      },
+      {
+        name: "folded, on a dark scene",
+        text: "The panel starts folded: its title opens it. The grid turns light on the dark background.",
+        code: "@debug-panel { display: folded; } @scene { sphere; torus; } scene { floor: none; background: #0a0a0c; } sphere { translate: 0 1 0; radius: 0.4; color: #e8e6e1; } torus { translate: 0 1 0; rotate-x: 90deg; color: #ff5a36; }",
+      },
+    ],
+    see: [
+      { anchor: "view", label: "view" },
+      { anchor: "at-property-panel", label: "@property-panel" },
     ],
   },
   {

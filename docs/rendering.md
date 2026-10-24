@@ -110,14 +110,14 @@ sphere {
 
 ## `view`
 
-Shows the scene as it is lit, or with the isolines of its distance field over it: the distance to the nearest object, which the shader measures at every step of every ray.
+Shows the scene as it is lit, with the isolines of its distance field over it, or with each pixel colored by the work it costs: the distance to the nearest object is what the shader measures at every step of every ray.
 
 > [!NOTE]
-> **Two chips switch it here.** In the playground and in the examples of these docs, the chips `view: shaded` and `view: distance` at the top left of the render switch the view, without touching the code; when the code changes its `view`, the code wins again. On your own site, the `view` of the scene applies.
+> **Three chips switch it here.** In the playground and in the examples of these docs, the chips `view: shaded`, `view: distance` and `view: steps` at the top left of the render switch the view, without touching the code; when the code changes its `view`, the code wins again. On your own site, the `view` of the scene applies.
 
-**What the property changes in the scene:** `view: shaded;`, `view: distance;`
+**What the property changes in the scene:** `view: shaded;`, `view: distance;`, `view: steps;`
 
-- **Syntax:** `shaded | distance`
+- **Syntax:** `shaded | distance | steps`
 - **Initial value:** `shaded`
 - **Applies to:** the scene
 - **Animatable:** no
@@ -126,10 +126,11 @@ Shows the scene as it is lit, or with the isolines of its distance field over it
 
 - **shaded:** The scene, lit: the default.
 - **distance:** The same scene, with a line every 0.25 units from the objects, fainter as it goes away. The lines lie on the plane that faces the camera through `camera-target`, and show where that plane is in front of the objects.
+- **steps:** Each pixel colored by how many times its rays measured the distance: dark blue for a few, then green, yellow, and red at 150 and over. The red parts are the ones that slow a scene down.
 
 The floor is left out of the distance: the lines go around the objects only.
 
-Far from a `path`, a `prism` or a `lathe`, the distance is the one to its box, which the shader uses to skip it quickly, and the lines show that box. The lines are light on a dark scene and dark on a light one.
+Far from a `path`, a `prism` or a `lathe`, the distance is the one to its box, which the shader uses to skip it quickly, and the lines show that box. The lines are light on a dark scene and dark on a light one. `steps` counts every measure of a pixel: the march of its ray, its normal, its shadows, its reflections and what shows through a transparent object. The rays that graze an object take the most steps, along its edges.
 
 ### the distance around a sphere
 
@@ -173,6 +174,25 @@ scene {
   view: distance;
   floor: none;
   background: #0a0a0c;
+}
+```
+
+### what a scene costs
+
+The edges of the torus and the ground near it take the most steps.
+
+```css
+@scene {
+  torus;
+}
+
+torus {
+  translate: 0 0.6 0;
+  rotate-x: 60deg;
+}
+
+scene {
+  view: steps;
 }
 ```
 

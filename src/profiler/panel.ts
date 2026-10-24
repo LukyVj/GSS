@@ -3,7 +3,7 @@ import { createProfiler, type FrameProbe } from "./profiler";
 import { createGpuTimer } from "./gpu-timer";
 import type { GpuTimer } from "./gpu-timer";
 import { createWebGPUTimer, type WebGPUTimer } from "./webgpu-timer";
-import { reportRows } from "./format";
+import { reportRows, type Row } from "./format";
 
 let profiler: ReturnType<typeof createProfiler> | null = null;
 let timerFactory: (() => GpuTimer | WebGPUTimer) | null = null;
@@ -12,6 +12,7 @@ let backendLabel = "WebGL2";
 let wanted = false; // the panel has been opened at least once
 let lastShaderMs: number | null = null; // the build before the panel opened, shown when it does
 let open = false; // the panel is on screen: the scene draws every frame for it (decision 134)
+let watched = false; // the debug panel shows its rows (decision 204): the same
 
 // Where the visitor's choice is kept. Not "gss-perf": while the panel was open by
 // default, every visit saved "1" there, so it would keep the panel open for them.
@@ -37,7 +38,7 @@ function connect(factory: () => GpuTimer | WebGPUTimer): FrameProbe {
     frameStart: (now, width, height) => profiler?.frameStart(now, width, height),
     drawStart: () => profiler?.drawStart(),
     drawEnd: () => profiler?.drawEnd(),
-    measuring: () => profiler !== null && open,
+    measuring: () => profiler !== null && (open || watched),
     shaderBuilt: (ms) => {
       lastShaderMs = ms;
       profiler?.shaderBuilt(ms);
@@ -57,6 +58,15 @@ function start(): void {
   timer = timerFactory();
   profiler = createProfiler(timer);
   if (lastShaderMs !== null) profiler.shaderBuilt(lastShaderMs);
+}
+
+// The debug panel of the playground (decision 204) shows the same rows: it measures while open
+export function perfRows(): Row[] | null {
+  return profiler ? reportRows(profiler.report()) : null;
+}
+export function watchPerf(on: boolean): void {
+  watched = on;
+  if (on) start();
 }
 
 // The panel over the scene, its toggle in the status bar; Alt+P shows or hides it.

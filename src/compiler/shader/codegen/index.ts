@@ -15,6 +15,7 @@
 //   gradients.ts   gradients in the background and on objects (decisions 81, 82), animated (102, 103)
 //   filters.ts     filter on the scene and on objects (decisions 83, 84)
 //   view.ts        view: distance, the isolines of the distance field (decision 131)
+//   debug.ts       @debug-panel, its axes and its grid, and view: steps (decision 204)
 //   mix-blend-mode.ts  mix-blend-mode, objects blended with what is behind them (decision 173)
 import type { Keyframes } from "../../syntax/ast";
 import type { StyledInstance, Styles } from "../../cascade/resolve";
@@ -58,6 +59,7 @@ import { EXACT_DISTANCE, exactShapes, precisionMarch } from "./shape-rendering";
 import { readVisibility, withInheritedVisibility } from "../../features/visibility";
 import { sceneCursors } from "../../features/cursor";
 import { sceneControls } from "../../features/controls";
+import { withStepsView } from "./debug";
 import { BOXED, objectOutline, outlineBlend, outlineFarCode, outlineFunctions, withOutlineBand, withOutlineFrames, withOutlineMarch, withOutlineShapes, type Outlined } from "./outline";
 
 export { activeSlots, hoverSlots, sceneTriggers, type Trigger } from "./animation";
@@ -68,7 +70,7 @@ export function generateShader(
   sceneStyles: Styles = {},
   keyframes: Keyframes[] = [],
   properties = 0, // the variables registered with @property: uProperties[] (decision 105)
-  view: View = "shaded", // distance: the isolines of the distance to the objects (decision 131)
+  view: View = "shaded", // distance: the isolines of the distance to the objects (decision 131); steps (decision 204)
 ): string {
   // visibility is inherited from the groups, like CSS (decision 160)
   everything = everything.map(withInheritedVisibility);
@@ -657,5 +659,7 @@ uniform vec2 uPick;`
   // The normals of a scene with holes (decision 113)
   const turned = skins.size > 0 ? holeNormals(outlined) : outlined;
   // Every light in the highlights of the materials too
-  return lights ? lights.rewrite(turned) : turned;
+  const relit = lights ? lights.rewrite(turned) : turned;
+  // view: steps (decision 204): the calls of map() for each pixel, in color
+  return view === "steps" ? withStepsView(relit) : relit;
 }

@@ -701,6 +701,7 @@
 }
 .gss-search-try-panel .playground-body canvas,
 .gss-search-try-panel .playground-body .vars-panel,
+.gss-search-try-panel .playground-body .debug-panel,
 .gss-search-try-panel .playground-body .view-chips {
   grid-row: 1;
   grid-column: 1;
@@ -723,6 +724,7 @@
   }
   .gss-search-try-panel .playground-body canvas,
   .gss-search-try-panel .playground-body .vars-panel,
+  .gss-search-try-panel .playground-body .debug-panel,
   .gss-search-try-panel .playground-body .view-chips {
     grid-column: 2;
   }
