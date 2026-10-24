@@ -130,7 +130,7 @@ it("a hovered group carries the objects it holds", async () => {
   for (const backend of ["gl", "gpu"] as const) expect(column(hovered[backend]), backend).toBeGreaterThan(column(rest[backend]) + 3);
 }, 60000);
 
-// The sizes of a shape on :hover (decision 212): the sphere under the mouse grows
+// The sizes of a shape on :hover (decision 213): the sphere under the mouse grows
 it("a hovered sphere takes its hovered radius", async () => {
   const source = `@scene { sphere; } scene { camera-angle: 0deg 0deg; camera-distance: 5; camera-target: 0 0 0; floor: none; }
     sphere { radius: 0.5; color: red; } sphere:hover { radius: 1; }`;

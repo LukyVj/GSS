@@ -45,7 +45,7 @@ function liveSize(token: Token): string | null {
   return code === null ? null : `max(${code}, 0.0)`;
 }
 
-// The sizes of a shape that :hover changes (decision 212): while a shape is written, the
+// The sizes of a shape that :hover changes (decision 213): while a shape is written, the
 // codegen gives, for a property and a way to read one of its numbers, the GLSL that mixes
 // it with its hovered values, or null when no state changes it
 type HoverSizes = (property: string, read: (value: Token[] | undefined) => number) => string | null;

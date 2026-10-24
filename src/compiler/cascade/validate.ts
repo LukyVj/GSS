@@ -30,7 +30,7 @@ export function validateProperties(rules: Rule[], errors?: ErrorSink): Rule[] {
 
 // animation and its longhands: a state can start an animation (decision 141)
 const startsAnimation = (name: string) => name === "animation" || ANIMATION_LONGHANDS.includes(name);
-// The sizes of the shapes: a :hover or :active rule changes them (decision 212)
+// The sizes of the shapes: a :hover or :active rule changes them (decision 213)
 const HOVER_SIZES = ["size", "radius", "height", "thickness", "corner-radius", "depth", "stroke-width"];
 
 // Returns true, or throws the error of the declaration
@@ -50,7 +50,7 @@ function checkDeclaration(rule: Rule, declaration: Declaration): true {
 
   // transition, cursor and outline-style are not animated, but :hover can set them, like CSS; an animation
   // in a :hover or :active rule starts when the state does (decision 141); the sizes of the
-  // shapes change on :hover, not in @keyframes (decision 212)
+  // shapes change on :hover, not in @keyframes (decision 213)
   if (hover && !property.animatable && !["transition", "cursor", "outline-style", ...HOVER_SIZES].includes(property.name) && !startsAnimation(property.name)) {
     const animatable = PROPERTIES.filter((p) => p.animatable).map((p) => p.name);
     throw errorAt(

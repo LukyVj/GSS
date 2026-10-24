@@ -203,7 +203,7 @@ export function generateShader(
         `Unknown object: "${instance.tag}". Available: ${Object.keys(SHAPES).join(", ")}`,
       );
     }
-    // The sizes :hover changes are mixed into the shape (decision 212); its bounding sphere
+    // The sizes :hover changes are mixed into the shape (decision 213); its bounding sphere
     // holds the largest of its states, when the transitions never overshoot
     const states = hoverOf(instance);
     const sizes = states
