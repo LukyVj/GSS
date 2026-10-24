@@ -4,7 +4,7 @@ import type { Keyframes } from "../../syntax/ast";
 import type { HoverState, StyledInstance, Styles } from "../../cascade/resolve";
 import { errorAt } from "../../syntax/errors";
 import { type Easing, stepsShape } from "../../values/easing";
-import { countsIterations, readAnimation, type AnimationSpec } from "../../features/animation";
+import { animationStyles, countsIterations, readAnimation, readAnimations, type AnimationSpec } from "../../features/animation";
 import { timelineCode, type Timeline } from "../../features/timeline";
 import { glslFloat, round, type Hover, type HoverLayer } from "./glsl";
 import { liveRead } from "./properties";
@@ -29,12 +29,12 @@ export function sceneTriggers(instances: StyledInstance[]): Trigger[] {
   const actives = activeSlots(instances);
   const started: { slot: number; hold: number | null }[] = [];
   hovers.forEach(({ state }, slot) => {
-    const spec = startedAnimation(state.styles, state.starts);
-    if (spec) started.push({ slot, hold: holdOf(spec) });
+    const specs = startedAnimation(state.styles, state.starts);
+    if (specs.length > 0) started.push({ slot, hold: holdOf(specs) });
   });
   actives.forEach((instance, i) => {
-    const spec = startedAnimation(instance.activeStyles, instance.starts.active);
-    if (spec) started.push({ slot: hovers.length + i, hold: holdOf(spec) });
+    const specs = startedAnimation(instance.activeStyles, instance.starts.active);
+    if (specs.length > 0) started.push({ slot: hovers.length + i, hold: holdOf(specs) });
   });
   return started.sort((a, b) => a.slot - b.slot).map((trigger, start) => ({ ...trigger, start }));
 }
@@ -73,25 +73,31 @@ export function layerClock(layer: HoverLayer): string {
   return layer.start === undefined ? "iTime" : `(iTime - uStart[${layer.start}])`;
 }
 
-// The animation a state starts (decision 141): the one its own rules set (starts, from
-// the cascade), not the one of the state below it. null: none.
-export function startedAnimation(styles: Styles, writes: boolean): AnimationSpec | null {
-  return writes ? startedSpec(styles) : null;
+// The animations a state starts (decision 141): the ones its own rules set (starts, from
+// the cascade), not the ones of the state below it. []: none.
+export function startedAnimation(styles: Styles, writes: boolean): AnimationSpec[] {
+  return writes ? startedSpecs(styles) : [];
 }
 
 // An animation a state starts plays once unless it says how many times (decision 141):
 // a button that fires, where the rest of GSS loops (decision 70)
-function startedSpec(styles: Styles): AnimationSpec | null {
-  const spec = readAnimation(styles);
-  if (!spec || countsIterations(styles)) return spec;
-  return { ...spec, iterations: 1 };
+function startedSpecs(styles: Styles): AnimationSpec[] {
+  return animationStyles(styles).flatMap((one) => {
+    const spec = readAnimation(one);
+    if (!spec) return [];
+    return countsIterations(one) ? [spec] : [{ ...spec, iterations: 1 }];
+  });
 }
 
-// How long a started animation holds its state, in seconds: null when the last frame
-// stays (forwards, both, or an infinite animation)
-export function holdOf(spec: AnimationSpec): number | null {
-  if (spec.iterations === Infinity || spec.fill === "forwards" || spec.fill === "both") return null;
-  return round(Math.max(spec.delay, 0) + spec.iterations * spec.duration);
+// How long started animations hold their state, in seconds: null when a last frame
+// stays (forwards, both, or an infinite animation); the longest of a list
+export function holdOf(specs: AnimationSpec[]): number | null {
+  let longest = 0;
+  for (const spec of specs) {
+    if (spec.iterations === Infinity || spec.fill === "forwards" || spec.fill === "both") return null;
+    longest = Math.max(longest, round(Math.max(spec.delay, 0) + spec.iterations * spec.duration));
+  }
+  return longest;
 }
 
 // The timelines of the scene being generated: scroll() and view() (decision 96)
@@ -235,9 +241,22 @@ export function animatedValue(
 ): string {
   read = liveRead(property, read); // a variable set from JS (decision 105)
   const own = read(styles[property]);
-  const animation = clock === "iTime" ? readAnimation(styles) : startedSpec(styles);
-  if (!animation) return own;
+  const animations = clock === "iTime" ? readAnimations(styles) : startedSpecs(styles);
+  // Each animation of the list plays over the value the ones before it give (decision 209):
+  // the last one that changes the property wins while it plays, like CSS
+  return animations.reduce((below, animation) => playedValue(animation, keyframes, property, read, clock, below), own);
+}
 
+// A property as one animation plays it, over the value under it: the value at rest, or what
+// the animations before it in the list give
+function playedValue(
+  animation: AnimationSpec,
+  keyframes: Keyframes[],
+  property: string,
+  read: (value: Token[] | undefined) => string,
+  clock: string,
+  own: string,
+): string {
   const { name } = animation;
   // Like in CSS, if two @keyframes have the same name, the last one wins
   const found = keyframes.findLast((k) => k.name === name.value);

@@ -5,6 +5,7 @@ import type { Token } from "../syntax/tokenizer";
 import { errorAt } from "../syntax/errors";
 import { closingParen } from "../values/calc";
 import type { Styles } from "../cascade/resolve";
+import { animationStyles } from "./animation";
 
 export type Axis = "block" | "inline" | "x" | "y";
 // animation-range (decision 162): the named ranges of view(), like CSS
@@ -165,9 +166,11 @@ export function timelineOf(styles: Styles): Timeline | null {
 // their component of uTimeline
 export function sceneTimelines(nodes: Styles[]): Timeline[] {
   const found = new Map<string, Timeline>();
-  for (const styles of nodes) {
+  // one timeline per animation of a list (decision 209)
+  for (const styles of nodes.flatMap((node) => (node["animation"] ? animationStyles(node) : []))) {
     const value = styles["animation-timeline"] ?? styles["animation-range"] ?? styles["animation-range-start"] ?? styles["animation-range-end"];
-    if (!value || !styles["animation"]) continue;
+    const name = styles["animation"]?.[0];
+    if (!value || (name?.type === "IDENT" && name.value === "none")) continue;
     const timeline = timelineOf(styles);
     if (!timeline || found.has(keyOf(timeline))) continue;
     if (found.size === TIMELINE_COMPONENTS.length)

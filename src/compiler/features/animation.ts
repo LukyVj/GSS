@@ -70,12 +70,54 @@ const isOneOf = <T extends string>(
 // Whether the styles say how many times the animation plays: a count or infinite in
 // the shorthand, or animation-iteration-count. Without it, an animation started by a
 // state plays once (decision 141), while an animation of the rest loops (decision 70).
+// styles: the styles of one animation of the list (animationStyles()).
 export function countsIterations(styles: Styles): boolean {
   if (styles["animation-iteration-count"]) return true;
   return (styles["animation"] ?? []).slice(1).some((token) => iterationsOf(token) !== null);
 }
 
-// The animation of an object or a group, or null when it has none
+// A value cut at its commas, outside parentheses: the items of a list, like CSS
+export function splitList(value: Token[]): Token[][] {
+  const items: Token[][] = [[]];
+  let depth = 0;
+  for (const token of value) {
+    if (token.type === "PUNCT" && token.value === "(") depth++;
+    if (token.type === "PUNCT" && token.value === ")") depth--;
+    if (depth === 0 && token.type === "PUNCT" && token.value === ",") items.push([]);
+    else items[items.length - 1].push(token);
+  }
+  return items;
+}
+
+const LIST_PROPERTIES = ["animation", ...ANIMATION_LONGHANDS];
+
+// The styles of each animation of a list (decision 209): the item of the shorthand, and of
+// each longhand its item at the same place, the longhand repeated when its list is shorter,
+// like CSS. One set of styles per animation, none included; [] without an animation.
+export function animationStyles(styles: Styles): Styles[] {
+  const value = styles["animation"];
+  if (!value) return styles[ANIMATION_LONGHANDS.find((p) => styles[p]) ?? ""] ? [styles] : [];
+  const lists = Object.fromEntries(LIST_PROPERTIES.filter((p) => styles[p]).map((p) => [p, splitList(styles[p])]));
+  return lists["animation"].map((item, i) => {
+    const one: Styles = { ...styles };
+    for (const [property, items] of Object.entries(lists)) one[property] = items[i % items.length];
+    if (item.length === 0) one["animation"] = value; // reported by readAnimation, on the whole list
+    return one;
+  });
+}
+
+// The animations of an object or a group, in the order of the list: the last one wins a
+// property they both change, like CSS
+export function readAnimations(styles: Styles): AnimationSpec[] {
+  return animationStyles(styles).flatMap((one) => {
+    if (one["animation"] && splitList(one["animation"]).length > 1)
+      throw errorAt(one["animation"], "animation needs a name and a duration for each animation of the list, like: animation: spin 2s, float 1s;");
+    const spec = readAnimation(one);
+    return spec ? [spec] : [];
+  });
+}
+
+// One animation of an object or a group, or null when it has none
 export function readAnimation(styles: Styles): AnimationSpec | null {
   const value = styles["animation"];
   if (!value) {

@@ -3,7 +3,7 @@ import type { Keyframes } from "../../syntax/ast";
 import type { StyledInstance, Styles } from "../../cascade/resolve";
 import { errorAt } from "../../syntax/errors";
 import { closingParen } from "../../values/calc";
-import { readAnimation } from "../../features/animation";
+import { readAnimations } from "../../features/animation";
 import {
   BACKGROUND_CAMERA,
   BACKGROUND_CANVAS,
@@ -178,12 +178,13 @@ export function valuesOf(styles: Styles, keyframes: Keyframes[], property: strin
   const values: Token[][] = [];
   for (const state of [styles, ...(hover ?? []).map((layer) => layer.styles)]) {
     if (state[property]) values.push(state[property]);
-    const animation = readAnimation(state);
-    // Like in CSS, if two @keyframes have the same name, the last one wins
-    const played = animation && keyframes.findLast((k) => k.name === animation.name.value);
-    for (const frame of played ? played.frames : [])
-      for (const declaration of frame.declarations)
-        if (declaration.property === property) values.push(declaration.value);
+    for (const animation of readAnimations(state)) {
+      // Like in CSS, if two @keyframes have the same name, the last one wins
+      const played = keyframes.findLast((k) => k.name === animation.name.value);
+      for (const frame of played ? played.frames : [])
+        for (const declaration of frame.declarations)
+          if (declaration.property === property) values.push(declaration.value);
+    }
   }
   return values;
 }
