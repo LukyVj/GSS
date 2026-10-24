@@ -61,7 +61,6 @@ The 0.0.1 history was reconstructed from GitHub.
 - **Docs**: "On this page" follows you down the page. Docs: "On this page" follows you down the page. The link of the part you are reading lights up, and thin lines in front of the links grow toward it like a sound wave, with their peak there; the peak slides to the next link as you scroll. A link under the pointer grows a second, lower peak.
 - **Docs**: less to read on each page, the details folded. Docs: less to read on each page. The paragraph under the table of a page is now one or two sentences, what you need before writing the property; the limits, the special cases and how things are drawn are folded under "More details", one click away. 52 pages of the reference changed, and nothing they said is gone: "copy page" and the search still read the folded text. In the guides, "In the page" of Embedding a scene and the new "Slow computers" of the CDN page are tables, one line per thing to know.
 - **Showcase**: the studies wait for play. Showcase: the studies wait for play. The viewer at the top of the page opens on a still image of the study and a large play button, so the page no longer draws its heaviest scene on arrival; choosing another study in the list draws it at once.
-- **Install lines**: colored like the rest of the code. The install lines are colored like the rest of the code: the three of the home page (npm, the Vite plugin, the CDN) and the shell lines of the docs, the command, its flags and the version of the package.
 
 ### Fixed
 
@@ -109,7 +108,6 @@ The 0.0.1 history was reconstructed from GitHub.
 - **Docs search**: columns you can widen or narrow. Docs search: the columns on each side of the results can be widened or narrowed, by dragging the line between them or with the arrow keys, and the search keeps the widths for next time. Each column arranges itself for its width: the contents show the icon of each group once there is room, and a wide right column puts each drawing beside its text.
 - **Docs search**: "Try it" on the example of a preview. Docs search: "Try it" on the example of a preview. The search slides to the left and the example opens live beside it, code and render, to edit without leaving the results; "Close" brings the search back. On a screen too narrow for both, it opens the example in the playground, in a new tab.
 - **Docs**: "Editor support", the VS Code extension. Docs: "Editor support", at the end of Installation. The GSS extension for VS Code (highlighting, formatting, the `.gss` file icon) is on the Visual Studio Marketplace, and on Open VSX for Cursor, VSCodium and Windsurf: search for *GSS* in the Extensions view, or run `code --install-extension lukyvj.gss-language`.
-- **Docs**: a button with the marks of VS Code and Cursor. Docs: "Editor support" opens on a square button that holds the marks of VS Code and Cursor like letters in a pocket; on hover they come out, one after the other. It leads to the extension, with a line on what it does and where Cursor installs it.
 
 ### Changed
 
@@ -118,13 +116,11 @@ The 0.0.1 history was reconstructed from GitHub.
 - **Site**: the live scenes stop drawing when scrolled off screen. The live demo of the home page and the Try it of the docs stop drawing when they are scrolled off screen, and resume where they were, like `<gss-scene>` and `mount()` already did.
 - **Runtime**: every scene starts at half density, then climbs. Every scene starts at a density of 0.5, then climbs to its `dpr` in under a second while the frames keep up, and lowers it while they are slow: in `mount()`, `<gss-scene>`, the home page and the showcase too, not only in the docs and the playground. A weak graphics card no longer draws the first frames of a heavy scene at full density, which froze some browsers on the home page.
 - **Site**: fits small screens. The site on small screens: the side padding follows the width (56, 32, then 16 pixels), the top bars and the footers with it. The bars shrink in steps: the gaps first, then the GitHub and X links keep their mark and lose their text (under 800 pixels), then, on a phone, the home bar is two rows and the footers stack. A link never breaks on two lines.
-- **Showcase**: the studies render at `dpr: 1.5`. The eight studies render at a pixel density of 1.5 (`dpr: 1.5`), in the showcase and in the playground: sharper than before on a standard screen, lighter than before on a high-density one.
 
 ### Fixed
 
 - **`animation`**: an animation that stops holds exactly its last keyframe. An animation that stops on its end (a number of iterations with `forwards` or `both`, the end of a scroll timeline) holds exactly its last keyframe, like CSS. With `steps()` or `step-end`, an animation whose last keyframe came after one at 80% or 99% stopped one step short; an object hidden by its last keyframe stayed visible. With `ease` and the other `cubic-bezier()` easings, an object animated from `visibility: hidden` to `visible` no longer shows before the keyframe that shows it.
 - **`material`**: a material with its own color keeps it over a gradient. A material with a color of its own keeps it when `color` is a gradient or a pattern, as it does over a plain color: `brass` on a striped object is brass, and `metal(#3a7bff)` stays blue. `metal(0.2)` and the other materials without a color still take the gradient. The transparent stops of the gradient still show.
-- **Docs search**: a tag in a title shows as text. Docs search: a result whose title holds a tag, like the chapter "From <gss-scene>", shows the tag as text; it was drawn as a real element in the list.
 
 ## [0.0.5] — 2026-10-04
 
@@ -139,7 +135,6 @@ The 0.0.1 history was reconstructed from GitHub.
 - **Playground**: a `dpr` menu over the render. Playground and docs: a dpr menu at the top right of the render. `auto`, the default, lowers the pixel density while the frames are slow and raises it back when they are fast, never above the scene's `dpr`; a number fixes it. The choice is kept in the browser.
 - **Showcase**: seven studies, one at a time in a viewer. Seven studies open the showcase, one at a time in a viewer: Glass Circuit, Soft Relic, Candy Garden, Chromatic Bloom, the Zdog character and burger reconstructions, and a Nikon F exterior with an illustrative exploded lens. A study driven by `scroll()` has a slider. Each one opens in the playground, where they have their own group, "Studies".
 - **Docs search**: a wider window in three columns. Docs search: a wider window in three columns. On the left, the contents of the docs; on the right, four drawings that explain GSS: objects in `@scene`, the cascade, space, and how the shader draws the scene. In the middle, before a word is typed: where to start, the pages the latest version added ("New in 0.0.5"), and, once there are enough searches, the ones people make the most; a click on one types it.
-- **Docs**: an icon for each group of the sidebar. Docs: an icon for each group of the sidebar, before its title: a cube for Shapes and groups, a drop for Colors, a camera for Camera. They take the colour of the title, and the accent on the page being read. On hover, each one moves in its own way: the arrow drops into the tray, the camera's shutter closes, a dot rides the easing curve. The brand page shows all of them and offers each one as an SVG file.
 
 ### Changed
 
@@ -147,7 +142,6 @@ The 0.0.1 history was reconstructed from GitHub.
 - **Rendering**: scenes with many objects draw much faster. Scenes with many objects draw much faster, with the same image: the shader groups the objects by where they are, whatever the groups of the code, and skips those far from each point. In the bench, a scene of 82 objects went from 75 ms to under 20 ms a frame, a field of 64 tufts of grass from 26 ms to 5 ms.
 - **Docs**: shorter pages, cut into parts. Docs: every page of the reference is shorter and cut into parts, like the reference of a popular language: a lead of three sentences at most, a table of its values, a paragraph, then its examples, each under a heading with a sentence that says what it shows. "On this page" lists them, and the code in the text shows as code. "Embedding a scene" and "Set variables from JavaScript" have chapters.
 - **Docs**: clearer navigation and example names. Docs navigation: "light (sun)" and "light (point)" instead of two "light"; Colors is split into Colors, Color functions, and Gradients and noise; Selectors into Selectors, Combinators, and Pseudo-classes. The examples of the reference have telling names, in the docs and in the Examples menu of the playground.
-- **Showcase**: the note on transparency is corrected. Showcase: the note under "On your site" no longer says GSS has no transparency: a transparent object shows the scene behind it, not the page, so the scene still takes the background of the page.
 - **Docs**: how to see `element()` today. Docs: a callout under `element()` and `texture` says how to see `element()` today: behind `chrome://flags/#canvas-draw-element` in Chromium, or on a site with the HTML-in-Canvas origin trial and its token, until the trial ends on October 20, 2026.
 
 ### Fixed
@@ -247,9 +241,6 @@ The 0.0.1 history was reconstructed from GitHub.
 - **Docs**: the sidebar grouped by topic. Documentation sidebar grouped by topic, with alphabetical entry sorting and explicit numeric order overrides; reading order and breadcrumbs follow the same structure.
 
 - **Site**: pages readable without JavaScript. Pre-render the home page, documentation and showcase so their content is available without JavaScript, and remove their rendering dependencies from client bundles. ([9bb1b83](https://github.com/LukyVj/GSS/commit/9bb1b83))
-- **Docs**: descriptive names for the examples. Give reference examples descriptive names in the documentation and playground menu. ([bfd5f4e](https://github.com/LukyVj/GSS/commit/bfd5f4e))
-- **Compiler**: modules organized by pipeline stage. Organize compiler modules by pipeline stage and consolidate demo scenes in `src/scenes/`. ([2eeb00d](https://github.com/LukyVj/GSS/commit/2eeb00d), [06374f2](https://github.com/LukyVj/GSS/commit/06374f2))
-- **Bench**: image comparisons that tolerate GPU rounding. Refine benchmark image comparisons to tolerate isolated GPU rounding differences and one-pixel edge shifts within a 0.05% image budget. ([f713c9e](https://github.com/LukyVj/GSS/commit/f713c9e))
 
 ### Performance
 
@@ -287,15 +278,12 @@ First tagged release of `gss-lang`, covering development from September 25 to Oc
 - **Docs**: the reference, generated from the registry. Generate the reference from a shared feature registry, with editable live examples, syntax highlighting and Algolia DocSearch.
 - **Formatter**: and a VS Code extension. Provide a comment-preserving GSS formatter and a VS Code extension with syntax highlighting and formatting.
 - **Site**: the website, the brand, the showcase. Add the public website, brand assets, showcase, capture generation and embedding examples.
-- **Profiler**: and a benchmark across commits. Add a development profiler and a benchmark that compares rendering and performance across commits using alternating rounds.
-- **Tests**: documented examples compiled in Chromium. Test documented examples by compiling their generated shaders in Chromium/WebGL2.
 
 ### Performance and fixes
 
 - **Rendering**: only the helpers a scene uses are emitted. Emit only the shader helpers and materials used by a scene.
 - **`:hover`**: picking read without blocking the CPU. Read hover picking results asynchronously to avoid blocking the CPU on the GPU.
 - **Rendering**: bounding spheres for `path` and `prism`. Use bounding spheres to skip unnecessary `path` and `prism` distance calculations.
-- **Fixes**: search, editor selection and error messages. Fix shared search initialization, editor selection visibility and error messages for negative computed radii.
 - **Camera**: spinning off by default. Keep camera spinning off by default.
 
 [0.0.1]: https://github.com/LukyVj/GSS/tree/v0.0.1
