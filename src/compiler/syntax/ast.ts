@@ -45,8 +45,14 @@ export type SceneElement = {
 export type Rule = {
   selector: Token[]; // for now, we keep the raw tokens
   declarations: Declaration[];
-  media?: string; // inside @media (max-width: 600px) { … }: the query, as text
+  // inside @media (max-width: 600px) { … }: the query, as text; inside @gpu (slow) { … }:
+  // "@gpu (slow)" or "@gpu not (slow)", which the runtime reads instead of the browser
+  media?: string;
 };
+
+// @gpu (decision 211): its conditions sit among the @media queries of a scene
+export const GPU_EXAMPLE = "@gpu (slow) { scene { --n: 8; } }";
+export const isGpuCondition = (query: string): boolean => query.startsWith("@gpu ");
 
 // A declaration: radius: 1 0.28;
 export type Declaration = {

@@ -7,6 +7,7 @@ import type {
   Keyframes,
   Keyframe,
 } from "./ast";
+import { GPU_EXAMPLE, isGpuCondition } from "./ast";
 import { ErrorSink, errorAt, errorsOf, rememberSpan, spanAcross } from "./errors";
 import { isAmpersand, nestSelector, spaceBetween } from "./nesting";
 import { expandApply, readApply, readMixins, type Apply } from "./mixins";
@@ -413,14 +414,17 @@ export function parse(input: Token[], errors?: ErrorSink): Stylesheet {
     return false;
   }
 
-  // @media inside a rule: its declarations and rules go to the selectors of the rule
+  // @media or @gpu inside a rule: its declarations and rules go to the selectors of the rule
   function parseNestedAt(selectors: Token[][], outer?: string): Rule[] {
     const at = next();
     if (at.type === "AT_KEYWORD" && ["scene", "keyframes", "property", "property-panel", "debug-panel", "mixin"].includes(at.value as string))
       throw errorAt(at, `@${at.value} goes outside the rules`);
     if (at.type === "AT_KEYWORD" && at.value === "contents") throw misplacedContents(at);
-    if (at.type !== "AT_KEYWORD" || at.value !== "media")
+    if (at.type !== "AT_KEYWORD" || (at.value !== "media" && at.value !== "gpu"))
       throw errorAt(at, `@${at.value} isn't supported yet`);
+    if (outer && (at.value === "gpu" || isGpuCondition(outer)))
+      throw errorAt(at, "@gpu and @media cannot be nested in each other, for now: write them side by side");
+    if (at.value === "gpu") return parseRuleBlock(selectors, readGpuCondition(at));
     const query = readMediaQuery(at);
     if (outer && (outer.includes(",") || query.includes(",")))
       throw errorAt(
@@ -440,6 +444,18 @@ export function parse(input: Token[], errors?: ErrorSink): Stylesheet {
         "@media needs a query, like: @media (max-width: 600px) { scene { dpr: 1; } }",
       );
     return textOf(prelude);
+  }
+
+  // The condition of a @gpu, as the runtime reads it (decision 211): "@gpu (slow)" or
+  // "@gpu not (slow)", kept with the @media queries of the scene
+  function readGpuCondition(at: Token): string {
+    const prelude: Token[] = [];
+    while (peek() && !isPunct(peek(), "{")) prelude.push(next());
+    if (prelude.length === 0) throw errorAt(at, `@gpu needs a condition, like: ${GPU_EXAMPLE}`);
+    const condition = textOf(prelude);
+    if (condition !== "(slow)" && condition !== "not (slow)")
+      throw errorAt(prelude, `@gpu knows one condition, for now: (slow), or not (slow), like: ${GPU_EXAMPLE}`);
+    return `@gpu ${condition}`;
   }
 
   // @keyframes float { from { ... } 50% { ... } to { ... } }
@@ -469,21 +485,25 @@ export function parse(input: Token[], errors?: ErrorSink): Stylesheet {
     return { name: name.value, frames };
   }
 
-  // @media (max-width: 600px) { rules }: each rule remembers its query, like CSS
+  // @media (max-width: 600px) { rules }, @gpu (slow) { rules }: each rule remembers its
+  // query, like CSS
   function parseMedia(at: Token): Rule[] {
-    const media = readMediaQuery(at);
+    const gpu = at.value === "gpu";
+    const media = gpu ? readGpuCondition(at) : readMediaQuery(at);
     const open = next(); // the "{"
     const rules: Rule[] = [];
     while (!isPunct(peek(), "}")) {
       const token = peek();
-      if (!token) throw errorAt(open, '@media never closed: "}" missing');
+      if (!token) throw errorAt(open, `@${at.value} never closed: "}" missing`);
       const read = attempt(() => {
         if (token.type === "AT_KEYWORD" && (token.value === "property-panel" || token.value === "debug-panel" || token.value === "mixin"))
           throw errorAt(token, `@${token.value} goes outside the rules`);
         if (token.type === "AT_KEYWORD")
           throw errorAt(
             token,
-            "@media holds rules only, for now: write @scene and @keyframes outside it",
+            gpu
+              ? "@gpu holds rules only, for now: write @scene, @keyframes and @media outside it"
+              : "@media holds rules only, for now: write @scene and @keyframes outside it",
           );
         return parseRules(undefined, media);
       }, () => skipStatement(true));
@@ -510,7 +530,7 @@ export function parse(input: Token[], errors?: ErrorSink): Stylesheet {
         stylesheet.scene.push(...parseScene("@scene"));
       } else if (token.value === "keyframes") {
         stylesheet.keyframes.push(parseKeyframes());
-      } else if (token.value === "media") {
+      } else if (token.value === "media" || token.value === "gpu") {
         stylesheet.rules.push(...parseMedia(token));
       } else if (token.value === "property") {
         // @property --speed { syntax: "<number>"; … }: read in features/properties.ts

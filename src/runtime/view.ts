@@ -14,6 +14,8 @@ import { createTriggers } from "./triggers";
 import { createScrollSlider, timelineValues } from "./timeline";
 import type { Timeline } from "../compiler/features/timeline";
 import { pickVariant, WINDOW_MEDIA, type MediaViewport } from "./media";
+import { createGpu, usesGpu, withGpu, type GpuChoice } from "./gpu";
+import { FLOOR } from "./dpr";
 import { createPost } from "./post";
 import { createProperties } from "./properties";
 import { createDemand, movesWithTime } from "./demand";
@@ -71,6 +73,9 @@ export type ViewOptions = {
   // the docs, where the reader sizes the render, not the window. A function, so a page
   // that does not use it never downloads it.
   viewport?: (canvas: HTMLCanvasElement) => MediaViewport;
+  // @gpu (slow) (decision 211): "slow" shows the version of the scene for a slow GPU from the
+  // start, whatever the frames say; "auto" (default) waits for slow frames
+  gpu?: GpuChoice;
 };
 
 // The vertex shader: a giant triangle that covers the whole canvas.
@@ -139,7 +144,11 @@ export function createView(
   let reducedMotion = false; // freeze(): transitions jump, like the animations stop
   let shown: CompiledScene | null = null; // the version on screen (@media)
   let stopMedia = () => {}; // stops listening to the @media queries of the scene
-  const media = options.viewport?.(canvas) ?? WINDOW_MEDIA; // decision 165
+  // @gpu (decision 211): the frames say when the GPU is slow, and it stays so
+  const gpu = createGpu(options.gpu);
+  const media = withGpu(options.viewport?.(canvas) ?? WINDOW_MEDIA, gpu); // decision 165
+  let lighter = false; // the scene has a version for a slow GPU: auto never draws it under 1
+  const holdDpr = () => density?.floor(lighter && !gpu.slow ? 1 : FLOOR);
   const properties = createProperties(); // @property: what the page set (decision 105)
   const demand = createDemand(); // render on demand (decision 134)
   let pickWanted = false; // the pointer moved since the last picking pass
@@ -386,7 +395,11 @@ export function createView(
 
     if (scene) {
       // Too heavy for the computer: stop, and say so (decision 142)
-      if (!document.hidden && density?.frame(now)) {
+      const heavy = !document.hidden && density?.frame(now);
+      // @gpu (slow): the lighter version, before the notice (decision 211)
+      if (lighter && !gpu.slow && (heavy || density?.slow)) {
+        queueMicrotask(() => gpu.slowDown()); // after this frame
+      } else if (heavy) {
         playing = false;
         halted = true;
         canvas.dispatchEvent(new CustomEvent("gss-too-heavy"));
@@ -587,10 +600,13 @@ export function createView(
     show(compiled) {
       // @media: the version for the screen now, then another one when it changes,
       // keeping the camera where the mouse left it
+      lighter = usesGpu(compiled);
+      holdDpr();
       const linkedNow = display(pickVariant(compiled, media.matches), true); // GLSL errors
       stopMedia();
       stopMedia = compiled.media
         ? media.watch(compiled.media.queries, () => {
+            holdDpr();
             const next = pickVariant(compiled, media.matches);
             if (next === shown) return;
             try {

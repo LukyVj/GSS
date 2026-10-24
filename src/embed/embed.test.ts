@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { valueImports } from "../test/imports";
 import { toCompiled } from "./index";
-import { readControls, sourceUrl } from "./options";
+import { readControls, readGpu, sourceUrl } from "./options";
 
 // Decision 63: three ways to embed a scene. The GPU parts run in a browser;
 // here, what decides what runs.
@@ -41,6 +41,22 @@ describe("<gss-scene controls>", () => {
     expect(readControls("none")).toBe(false);
     expect(readControls("false")).toBe(false);
     expect(readControls("OFF")).toBe(false);
+  });
+});
+
+describe("<gss-scene gpu>", () => {
+  it("auto by default: the frames say when the GPU is slow", () => {
+    expect(readGpu(null)).toBe("auto");
+    expect(readGpu("auto")).toBe("auto");
+  });
+
+  it("slow shows the version of @gpu (slow) from the start", () => {
+    expect(readGpu("slow")).toBe("slow");
+    expect(readGpu(" SLOW ")).toBe("slow");
+  });
+
+  it("says what it takes", () => {
+    expect(() => readGpu("fast")).toThrow('gpu must be "auto" or "slow"');
   });
 });
 
