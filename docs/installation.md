@@ -238,6 +238,79 @@ The `scene` property of the element is the scene, with the same methods. It is `
 
 The element fires `"load"` again each time it starts a new scene: a new `src`, `controls` or `backend`, or the element moved in the page. A new scene starts from its start values, so the listener sets yours again.
 
+<a name="follow-the-page"></a>
+
+## Follow the page as it scrolls
+
+A scene can follow a part of the page: a section, a card, a list that scrolls. The page gives the part a name in its own CSS, as it would for a CSS scroll-driven animation, and the scene plays an animation along it with [`animation-timeline`](animations.md#animation-timeline). Scroll the box: the ring turns while the section *Three* crosses it.
+
+**A page that scrolls, and the animation where the scroll is:** `0%`, `100%`
+
+`--feature`
+
+@scene { torus; }
+scene { camera-spin: none; floor: none; }
+torus {
+  translate: 0 0.9 0;
+  radius: 0.6;
+  thickness: 0.18;
+  color: #3a7bff;
+  animation: turn 1s ease-in-out;
+  animation-timeline: --feature;
+}
+@keyframes turn {
+  from { rotate-x: 90deg; }
+  to { rotate-y: 360deg; color: #ff5a36; }
+}
+
+The CSS of the page names the section; the GSS of the scene writes that name instead of `view()`:
+
+```html
+<style>
+  #feature { view-timeline-name: --feature; }
+</style>
+
+<section id="feature">…</section>
+
+<gss-scene>
+  <script type="text/gss">
+    @scene { torus; }
+    scene { camera-spin: none; floor: none; }
+    torus {
+      translate: 0 0.9 0;
+      radius: 0.6;
+      thickness: 0.18;
+      color: #3a7bff;
+      animation: turn 1s ease-in-out;
+      animation-timeline: --feature;
+    }
+    @keyframes turn {
+      from { rotate-x: 90deg; }
+      to { rotate-y: 360deg; color: #ff5a36; }
+    }
+  </script>
+</gss-scene>
+```
+
+### What the scene follows
+
+- **view-timeline-name:** The section crossing its scroll container, the box around it or the window: the animation starts when its top edge comes in at the bottom, and ends when its bottom edge has left at the top. Like `view()`, but for the section instead of the scene.
+- **scroll-timeline-name:** The scroll of the element itself, from its top to its bottom: a list, a panel, a carousel. Like `scroll()`, for that element.
+- **view-timeline-axis, scroll-timeline-axis:** `block` (the default) for the vertical scroll, `inline` for the horizontal one, written in the CSS of the page beside the name.
+- **view-timeline-inset:** Takes pixels or a percentage off the top and the bottom of the scroll container: `view-timeline-inset: 20%` starts the animation when the section is a fifth of the way in.
+
+The animation plays like on `view()`: its duration and its delay do not count, its number of iterations and its direction do, and [`animation-range`](animations.md#animation-range) plays it on a part of the way, `animation-range: contain` while the section is all in view.
+
+### Several sections
+
+Each section takes a name of its own, `--intro`, `--pricing`, and each object of the scene follows the one its rule names. A scene follows up to 4 timelines, the ones of `scroll()` and `view()` included.
+
+### Unlike CSS
+
+CSS only lets an element follow a timeline named by itself or one of its ancestors, and asks for `timeline-scope` otherwise. The scene is drawn apart from the page, never inside the section: it looks for the name in the whole page, and takes the first element that has it. Give each section its own name.
+
+While no element of the page has the name, the animation shows its first frame, where CSS would not play it at all. A page that adds its sections later is followed once they are there. In the playground and under the examples of these docs, where there is no such section, the slider over the render stands in for the scroll.
+
 <a name="editor-support"></a>
 
 ## Editor support

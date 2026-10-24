@@ -26,7 +26,7 @@ A scroll progress timeline, like CSS: the scroll of a container, from its start 
 
 The two arguments come in any order, each one at most once: `scroll(root)`, `scroll(x nearest)`. The whole scroll is the whole animation; scrolling back plays it backward.
 
-The duration and the delay of the animation do not count, its count and its direction still do. `animation-range` plays it on a part of the scroll, in percentages or pixels: the named ranges belong to `view()`. In the playground, which does not scroll, a slider stands in for the scroll.
+The duration and the delay of the animation do not count, its count and its direction still do. `animation-range` plays it on a part of the scroll, in percentages or pixels: the named ranges belong to `view()`. Another scroll container of the page can be named in its CSS, `scroll-timeline-name: --list`, and followed with `animation-timeline: --list`. In the playground, which does not scroll, a slider stands in for the scroll.
 
 ### the scroll of the page
 
@@ -97,7 +97,7 @@ A view progress timeline, like CSS: the way of the scene across its scroll conta
 
 `animation-range` plays the animation on a part of the way: `entry` while the scene comes in, `contain` while it is all in, `exit` while it leaves.
 
-The scroll container is the closest one around the scene, or the page. The duration and the delay of the animation do not count, its count and its direction still do. Unlike CSS, `view()` takes no inset. In the playground, which does not scroll, a slider stands in for the scroll.
+The scroll container is the closest one around the scene, or the page. The duration and the delay of the animation do not count, its count and its direction still do. Unlike CSS, `view()` takes no inset. To follow an element of the page instead of the scene, give it a name in the CSS of the page, `view-timeline-name: --intro`, and write that name: `animation-timeline: --intro`; its `view-timeline-inset` counts. In the playground, which does not scroll, a slider stands in for the scroll.
 
 ### across the page
 
