@@ -1,4 +1,4 @@
-import { decodeId } from "./hover";
+import { decodeDepth, decodeId } from "./hover";
 
 // :hover without stopping the CPU. The picking pass draws one pixel into a 1×1 image;
 // the GPU copies it into a buffer of its own (a PBO), and a fence tells when it's done.
@@ -9,6 +9,9 @@ export type Picker = {
   request(draw: () => void): boolean; // false: a pixel is still on its way, nothing sent
   // The id read back since the last call (0: the background), or null if none came back
   poll(): number | null;
+  // How far along the ray the point under the mouse was, in the last pixel poll() read
+  // (hover-distance(), decision 217), or null before any
+  depth(): number | null;
   destroy(): void;
 };
 
@@ -30,6 +33,7 @@ export function createPicker(gl: WebGL2RenderingContext): Picker {
 
   const pixel = new Uint8Array(4); // where poll() copies it, once ready
   let sync: WebGLSync | null = null; // the fence of the pixel on its way, if any
+  let read = false; // a pixel came back
 
   return {
     request(draw) {
@@ -56,7 +60,12 @@ export function createPicker(gl: WebGL2RenderingContext): Picker {
       gl.bindBuffer(gl.PIXEL_PACK_BUFFER, buffer);
       gl.getBufferSubData(gl.PIXEL_PACK_BUFFER, 0, pixel);
       gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
+      read = true;
       return decodeId(pixel);
+    },
+
+    depth() {
+      return read ? decodeDepth(pixel) : null;
     },
 
     destroy() {

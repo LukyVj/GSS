@@ -10,7 +10,7 @@ import type { Dpr } from "../compiler/features/dpr";
 import { pixelRatio } from "./dpr";
 import { createDprPicker, viewDensity } from "./dpr-picker";
 import { createTransitions } from "./transitions";
-import { createPointer } from "./pointer";
+import { createPointer, type PointerTarget } from "./pointer";
 import { createTriggers } from "./triggers";
 import { createScrollSlider, timelineValues } from "./timeline";
 import type { Timeline } from "../compiler/features/timeline";
@@ -145,6 +145,8 @@ export function createView(
   let dpr: Dpr = "auto"; // the pixel density the scene asks for (scene { dpr })
   let transitions = createTransitions([]); // how each hover slot glides (transition)
   let measured = createPointer(null); // where hover-distance() measures from (decision 216)
+  let asked: [number, number] | null = null; // the pixel of the picking pass on its way
+  let aimed: PointerTarget | null = null; // the point under the mouse, as last read back (decision 217)
   let triggers = createTriggers([], 0); // the states that start an animation (decision 141)
   let reducedMotion = false; // freeze(): transitions jump, like the animations stop
   let shown: CompiledScene | null = null; // the version on screen (@media)
@@ -359,7 +361,10 @@ export function createView(
       gl!.drawArrays(gl!.TRIANGLES, 0, 3);
       gl!.uniform1i(scene.uPicking, 0);
     });
-    if (sent) pickWanted = false;
+    if (sent) {
+      pickWanted = false;
+      asked = pixel;
+    }
     gl!.viewport(0, 0, canvas.width, canvas.height); // the picker drew on 1×1
   }
 
@@ -421,9 +426,11 @@ export function createView(
         if (id !== null && pointer) {
           hovered = id;
           press.picked(id);
+          if (asked) aimed = [asked[0], asked[1], picker.depth() ?? 0];
         }
         if (!pixel) {
           hovered = 0; // outside the canvas: nothing is hovered, at once
+          aimed = null;
           pickWanted = false;
         }
         if (shown?.cursors) canvas.style.cursor = cursorAt(shown.cursors, hovered, press.id);
@@ -431,7 +438,7 @@ export function createView(
         // A state that starts an animation holds until it ends (decision 141)
         const { targets, starts } = triggers.update(pointed, clock.seconds);
         glides = transitions.update(targets, now, reducedMotion);
-        if (scene.uPointer) measures = measured.update(hovered, now, reducedMotion);
+        if (scene.uPointer) measures = measured.update(aimed, now, reducedMotion);
         if (starts.length > 0) started = starts;
       }
       const values = properties.values();
@@ -452,7 +459,7 @@ export function createView(
         ...(values ?? []),
         ...(timeline ?? []),
         ...(glides ?? []),
-        ...(measures ?? []), // hover-distance() measures from it (decisions 215, 216)
+        ...(measures ?? []), // hover-distance() measures from it (decisions 215 to 217)
         ...(scene.paints?.pointer ? paintMouse() : []), // a @paint that reads mouse
       ]);
       if (!changed && !measuring()) {
@@ -595,6 +602,7 @@ export function createView(
     demand.forget(); // a new shader: its first frame is drawn
     properties.use(compiled.properties);
     hovered = 0; // the ids belong to the new scene now
+    aimed = null;
     press.reset();
     slider?.show(compiled.timelines !== undefined);
     dpr = compiled.dpr;

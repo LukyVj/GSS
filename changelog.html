@@ -441,11 +441,11 @@
                   --v0-0-5, --v0-0-4, --v0-0-3, --v0-0-2, --v0-0-1;
               }
 
-              /* the points near the one under the pointer move aside in their
-                 slot, the nearest the most */
+              /* the points near the pointer move aside in their slot, the
+                 nearest the most */
               .point {
                 --push: calc(0.18 * exp(-6 * hover-distance()));
-                /* they glide aside, from one hovered point to the next, and back */
+                /* they glide aside as the pointer passes, and back */
                 transition: 0.45s ease-out;
                 translate: calc(hover-direction(x) * var(--push))
                   calc(hover-direction(y) * var(--push)) calc(hover-direction(z) * var(--push));
