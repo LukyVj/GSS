@@ -477,6 +477,20 @@ describe("the contents mark the new pages", () => {
     expect(html).toContain('<span class="toc-new">new in v0.0.4</span>'); // the pages of 0.0.4 are new then
   });
 
+  it("puts updated in v… after an older page that the newest version gave a value", () => {
+    const html = nav("0.0.8");
+    expect(item(html, "content")).toContain('<span class="toc-new">updated in v0.0.8</span>'); // content took a number
+    expect(item(html, "at-mixin")).not.toContain("toc-new"); // a page of 0.0.7 is no longer new
+    expect(group(html, "text")).toContain('class="toc-group-new"');
+  });
+
+  it("counts a value as much as a page to find the newest version", () => {
+    const html = nav("0.0.7");
+    expect(item(html, "at-mixin")).toContain('<span class="toc-new">new in v0.0.7</span>');
+    expect(item(html, "content")).toContain('<span class="toc-new">new in v0.0.7</span>'); // a new page says new, not updated
+    expect(item(html, "at-property-panel")).toContain('<span class="toc-new">updated in v0.0.7</span>'); // range came in 0.0.7
+  });
+
   it("puts a dot on a group that holds a new page, folded or not", () => {
     const html = nav("0.0.5");
     expect(group(html, "rendering")).toContain('class="toc-group-new"');

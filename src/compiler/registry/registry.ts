@@ -396,7 +396,7 @@ export const PROPERTIES: PropertyDef[] = [
       "Writes a text on the surface of the object, the way `content` gives a text to a `::before` in CSS. The text is painted over the color, the gradient or the `texture` of the object: it moves, turns and takes the light with it, and goes behind what stands in front of it.",
     values: [
       ["<string>", 'The text, between quotes. Several strings side by side are joined: `"3D" " text"`. `\\A` starts a new line, like CSS: `"one\\A two"`.'],
-      ["<number>", 'A number, joined to the strings around it: `"item " sibling-index()` writes `item 1`, `item 2`… Unlike CSS, where `content` takes no number. One number per text, on one line, written like CSS writes it: `0.5`, `-2`, six decimals at most.'],
+      ["<number>", 'A number, joined to the strings around it: `"item " sibling-index()` writes `item 1`, `item 2`… Unlike CSS, where `content` takes no number. One number per text, on one line, written like CSS writes it: `0.5`, `-2`, six decimals at most.', "0.0.8"],
       ["var(--name)", "A variable that holds a string or a number."],
       ["none", "No text: the default. `normal` is the same."],
     ],
