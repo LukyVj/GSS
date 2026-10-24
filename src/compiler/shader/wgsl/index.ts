@@ -273,7 +273,7 @@ class Lowering {
         const uniform: Record<string, string> = {
           iResolution: "gss.resolutionTime.xyz", iTime: "gss.resolutionTime.w",
           uCamera: "gss.cameraDistanceRatio.xy", uDist: "gss.cameraDistanceRatio.z", uRatio: "gss.cameraDistanceRatio.w",
-          uPick: "gss.pick.xy", uPicking: "(gss.pick.z != 0.0)", uHover: "gss.hover", uTimeline: "gss.timeline", uProperties: "gss.properties", uStart: "gss.start",
+          uPick: "gss.pick.xy", uPicking: "(gss.pick.z != 0.0)", uHovered: "gss.pick.w", uHover: "gss.hover", uTimeline: "gss.timeline", uProperties: "gss.properties", uStart: "gss.start",
         };
         expr = { code: this.uniforms.has(token) ? uniform[token] ?? nameOf(token) : nameOf(token), type };
       }

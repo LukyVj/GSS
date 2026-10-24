@@ -2,7 +2,7 @@ import { tokenize } from "./syntax/tokenizer";
 import { parse } from "./syntax/parser";
 import { expandScene } from "./cascade/expand";
 import { resolveStyles, resolveSceneStyles, FACES, type Face } from "./cascade/resolve";
-import { activeSlots, generateShader, hoverSlots, sceneTriggers, type Trigger } from "./shader/codegen";
+import { activeSlots, generateShader, hoverSlots, readsPointer, sceneTriggers, type Trigger } from "./shader/codegen";
 import { validateProperties, validateKeyframes } from "./cascade/validate";
 import { readCamera, type CameraSettings } from "./features/camera";
 import { resolveMath, type CalcContext } from "./values/calc";
@@ -100,6 +100,9 @@ export type CompiledScene = {
   controls?: SceneControls;
   // for each slot of uHover[] (hover, then active), how it glides to 1 (enter) and back to 0 (leave)
   transitions: { enter: Transition | null; leave: Transition | null }[];
+  // hover-distance(), hover-direction() (decision 215): the shader reads the object under the
+  // pointer, uHovered. Absent when no value measures from it.
+  pointer?: true;
   // The states that start an animation (decision 141): the slot, its index in
   // uStart[], and how long the state holds in seconds (null: until the next start).
   // Absent when no state starts one.
@@ -406,6 +409,7 @@ function compileStylesheet(
     ...(timelines!.length > 0 ? { timelines } : {}),
     transitions: transitions!,
     ...(triggers!.length > 0 ? { triggers } : {}),
+    ...(readsPointer(styled) ? { pointer: true as const } : {}),
   };
 }
 
@@ -507,7 +511,10 @@ function refuseLive(property: string, value: Token[]): void {
   if (!LIVE_PROPERTIES.includes(property))
     throw errorAt(
       value,
-      `${token.value} is set from JS, and ${property} is read when the scene compiles. A variable set from JS can go in ${LIVE_PROPERTIES.slice(0, -1).join(", ")} and ${LIVE_PROPERTIES.at(-1)}`,
+      // a variable set from JS, or hover-distance() (decision 215): both are known on the GPU only
+      String(token.value).endsWith("()")
+        ? `${token.value} is measured on the GPU, and ${property} is read when the scene compiles. It can go in ${LIVE_PROPERTIES.slice(0, -1).join(", ")} and ${LIVE_PROPERTIES.at(-1)}`
+        : `${token.value} is set from JS, and ${property} is read when the scene compiles. A variable set from JS can go in ${LIVE_PROPERTIES.slice(0, -1).join(", ")} and ${LIVE_PROPERTIES.at(-1)}`,
     );
 }
 

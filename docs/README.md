@@ -18,7 +18,7 @@ New to GSS? Start with [Getting started](getting-started.md), then [Installation
 - [Combinators](combinators.md): `a b`, `a > b`, `a + b`, `a ~ b`
 - [Pseudo-classes and cursor](pseudo-classes.md): `:hover`, `:active`, `:has()`, `:not()`, `:nth-child(), :nth-last-child()`, `:nth-of-type(), :nth-last-of-type()`, `:first-child, :last-child, :only-child`, `::face(), ::top, ::bottom`, `cursor`
 - [Variables and conditions](variables-conditions.md): `if()`, `var()`
-- [Math](values.md): `calc()`, `abs(), sqrt(), pow()`, `asin(), acos(), atan(), atan2()`, `hypot(), log(), exp()`, `min(), max(), clamp()`, `progress()`, `random()`, `sibling-count()`, `sibling-index()`, `sign(), round(), mod(), rem()`, `sin(), cos(), tan()`
+- [Math](values.md): `calc()`, `abs(), sqrt(), pow()`, `asin(), acos(), atan(), atan2()`, `hover-distance(), hover-direction()`, `hypot(), log(), exp()`, `min(), max(), clamp()`, `progress()`, `random()`, `sibling-count()`, `sibling-index()`, `sign(), round(), mod(), rem()`, `sin(), cos(), tan()`
 
 ## Structure
 

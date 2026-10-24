@@ -13,6 +13,7 @@ export type CalcContext = {
   siblingCount: number;
   tag?: string;
   id?: string | null;
+  index?: number; // its number among the drawn objects: 0 for a group (hover-distance(), decision 215)
   groups?: Node[];
 } | null;
 
@@ -70,6 +71,8 @@ export const MATH_FUNCTIONS = [
   "random",
   "sibling-index",
   "sibling-count",
+  "hover-distance",
+  "hover-direction",
 ] as const;
 const isMathFunction = (name: string) =>
   (MATH_FUNCTIONS as readonly string[]).includes(name);
@@ -372,6 +375,7 @@ class Reader {
     this.i += 2; // the name and "("
     const args: Quantity[] = [];
     if (name === "random") return this.random();
+    if (name === "hover-distance" || name === "hover-direction") return this.hover(name);
     // round(up, 2.5, 1): the rounding strategy comes first, as a keyword
     let strategy = "nearest";
     const first = this.peek();
@@ -526,6 +530,25 @@ class Reader {
 
   // The same functions with an argument known only on the GPU (decision 105): the units
   // are checked as above, the value is written in GLSL
+  // hover-distance(), hover-direction(x | y | z) (decision 215): computed on the GPU from
+  // the place of the object under the pointer and the place of this one at rest
+  private hover(name: "hover-distance" | "hover-direction"): Quantity {
+    const index = this.context?.index;
+    if (!index)
+      throw this.error(`${name}() goes in a rule that styles objects: it measures from the object to the one under the pointer`);
+    const center = `restCenter${index}()`;
+    if (name === "hover-distance") {
+      this.expect(")", "hover-distance()");
+      return { value: NaN, unit: "", code: `hoverDistance(${center})`, name: "hover-distance()" };
+    }
+    const axis = this.peek();
+    if (axis?.type !== "IDENT" || !["x", "y", "z"].includes(axis.value))
+      throw this.error("hover-direction() takes an axis, like: hover-direction(x)");
+    this.i++;
+    this.expect(")", "hover-direction()");
+    return { value: NaN, unit: "", code: `hoverDirection(${center}).${axis.value}`, name: "hover-direction()" };
+  }
+
   private applyLive(name: string, args: Quantity[], strategy: string): Quantity {
     const count = (n: number, example: string) => {
       if (args.length !== n)

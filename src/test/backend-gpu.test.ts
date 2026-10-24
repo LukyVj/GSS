@@ -153,6 +153,23 @@ it("a :not(:hover) rule holds at rest and lets go under the mouse", async () => 
   }
 }, 60000);
 
+// hover-direction() and hover-distance() (decision 215): hovering #a pushes #b away
+it("an object moves away from the object under the pointer", async () => {
+  const source = `@scene { sphere#a; sphere#b; } scene { camera-angle: 0deg 0deg; camera-distance: 5; camera-target: 0 0 0; floor: none; }
+    sphere { radius: 0.4; color: red; } #b { translate: calc(1.1 + hover-direction(x) * 0.6 * exp(-1 * hover-distance())) 0 0; }`;
+  const rest = await render(source);
+  const hovered = await render(source, true);
+  const column = (pixels: number[]) => {
+    let sum = 0, count = 0;
+    for (let y = 0; y < 72; y++) for (let x = 60; x < 96; x++) {
+      const i = (y * 96 + x) * 4;
+      if (pixels[i] > pixels[i + 2] + 30) { sum += x; count++; }
+    }
+    return sum / count;
+  };
+  for (const backend of ["gl", "gpu"] as const) expect(column(hovered[backend]), backend).toBeGreaterThan(column(rest[backend]) + 2);
+}, 60000);
+
 // A variable set from JS reaches the uniform, after the hover slots, on both backends
 it("setProperty() changes the scene without compiling again (decision 105)", async () => {
   const source = '@property --tint { syntax: "<color>"; inherits: false; initial-value: #ff0000; } @scene { sphere; } scene { camera-angle: 0deg 0deg; camera-distance: 5; camera-target: 0 0 0; floor: none; ambient: 1; } sphere { radius: 1; color: var(--tint); } sphere:hover { scale: 1.1; }';

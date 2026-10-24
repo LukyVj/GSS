@@ -4257,6 +4257,26 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
     ],
   },
   {
+    name: "hover-distance(), hover-direction()",
+    anchor: "fn-hover-distance",
+    figure: "row",
+    since: "0.0.8",
+    covers: ["hover-distance", "hover-direction"],
+    syntax: "hover-distance() | hover-direction(x | y | z)",
+    computed: "on the GPU, at every frame",
+    description:
+      "How far the object is from the object under the pointer, and which way: `hover-distance()` in units of the scene, `hover-direction(x)` the part along x of the direction from the hovered object to this one, from -1 to 1. With `exp()`, the objects near the pointer move aside and the others stay.",
+    details: "Both measure between the centers of the objects, as placed with nothing under the pointer. With nothing hovered, `hover-distance()` is very large and `hover-direction()` is 0: a push in `exp(-1 * hover-distance())` fades away.",
+    more: "They go in a rule that styles objects, in the math of a value computed on the GPU: `translate`, the rotations, `scale`, `color`. The places include the animations and `:hover`. Write `-1 * hover-distance()`, not `-hover-distance()`: like CSS, a `-` stuck to a name is part of the name.",
+    examples: [
+      {
+        name: "the points move aside",
+        text: "Hover a point: the points around it move away, the nearest the most.",
+        code: "@scene { sphere.p * 9; } .p { radius: 0.18; color: #ff5a36; translate: calc((sibling-index() - 5) * 0.5 + hover-direction(x) * 0.5 * exp(-3 * hover-distance())) 0.4 0; }",
+      },
+    ],
+  },
+  {
     name: "sin(), cos(), tan()",
     anchor: "fn-trig",
     figure: "plot",
