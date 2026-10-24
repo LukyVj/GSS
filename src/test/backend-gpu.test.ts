@@ -130,6 +130,16 @@ it("a hovered group carries the objects it holds", async () => {
   for (const backend of ["gl", "gpu"] as const) expect(column(hovered[backend]), backend).toBeGreaterThan(column(rest[backend]) + 3);
 }, 60000);
 
+// The sizes of a shape on :hover (decision 212): the sphere under the mouse grows
+it("a hovered sphere takes its hovered radius", async () => {
+  const source = `@scene { sphere; } scene { camera-angle: 0deg 0deg; camera-distance: 5; camera-target: 0 0 0; floor: none; }
+    sphere { radius: 0.5; color: red; } sphere:hover { radius: 1; }`;
+  const red = (pixels: number[]) => pixels.filter((_, i) => i % 4 === 0 && pixels[i] > pixels[i + 2] + 30).length;
+  const rest = await render(source);
+  const hovered = await render(source, true);
+  for (const backend of ["gl", "gpu"] as const) expect(red(hovered[backend]), backend).toBeGreaterThan(red(rest[backend]) * 3);
+}, 60000);
+
 // A variable set from JS reaches the uniform, after the hover slots, on both backends
 it("setProperty() changes the scene without compiling again (decision 105)", async () => {
   const source = '@property --tint { syntax: "<color>"; inherits: false; initial-value: #ff0000; } @scene { sphere; } scene { camera-angle: 0deg 0deg; camera-distance: 5; camera-target: 0 0 0; floor: none; ambient: 1; } sphere { radius: 1; color: var(--tint); } sphere:hover { scale: 1.1; }';

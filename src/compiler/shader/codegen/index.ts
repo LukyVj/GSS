@@ -22,6 +22,7 @@ import type { StyledInstance, Styles } from "../../cascade/resolve";
 import { errorAt } from "../../syntax/errors";
 import { readNumber } from "../../values/values";
 import { sceneTextures } from "../../features/textures";
+import type { Token } from "../../syntax/tokenizer";
 import { glslFloat, moreLines, round, section, used, label, vec3, type Hover } from "./glsl";
 import { EASINGS, MAP_HELPERS, MATERIALS, PATH_HELPERS, SHADE_CALLS, SHAPE_FUNCTIONS } from "./library";
 import { SHADING } from "./shading";
@@ -31,7 +32,7 @@ import { LAYERS, PAST_SURFACE, alphaFunction, colorFunction, objectAlpha, surfac
 import { BLENDED_LAYERS, blendFunctions, objectBlend, withInheritedBlendMode, type Blended } from "./mix-blend-mode";
 import { readColor, readLight, readScale, readSurfaceColor, readTranslate } from "./read";
 import { readOperation, SMOOTH } from "./operations";
-import { BOUNDED, SHAPES, type ShapeContext } from "./shapes";
+import { BOUNDED, SHAPES, shapeRadius as radiusOf, type ShapeContext } from "./shapes";
 import { textureCode } from "./textures";
 import { backgroundCode, backgroundNeedsCamera, floorGradient, gradientCode, objectGradient, paintsTransparent, type Painted } from "./gradients";
 import { gradientMean } from "../gradient";
@@ -43,12 +44,12 @@ import { offsetLines, offsetReach, useOffsetFunctions } from "./offset";
 import { animateCode, createHoisted, hoist, originOf, rotationLines, transformLines } from "./transforms";
 import { objectBox } from "./origin";
 import { fogCode } from "./fog";
-import { boundedMap, enclosing, objectSphere, sceneMiss, type Sphere } from "./bounds";
+import { boundedMap, enclosing, objectSphere, sceneMiss, steadyTransitions, type Sphere } from "./bounds";
 import { GRAIN } from "../../features/filter";
 import { filterCode } from "./filters";
 import { COLOR_LIBRARY } from "./color-library";
 import { NOISE_LIBRARY } from "./noise-library";
-import { isLive, liveCode, liveNumber } from "./live";
+import { isLive, liveCode, liveNumber, withHoverSizes } from "./live";
 import { liveLight, liveRead } from "./properties";
 import { DIFFUSE, isLight, lightingCode, splitAmbient } from "./lights";
 import { readShadows } from "./shadows";
@@ -202,7 +203,21 @@ export function generateShader(
         `Unknown object: "${instance.tag}". Available: ${Object.keys(SHAPES).join(", ")}`,
       );
     }
-    const { code: shapeCode, radius: ownRadius } = shape(instance.styles, context);
+    // The sizes :hover changes are mixed into the shape (decision 212); its bounding sphere
+    // holds the largest of its states, when the transitions never overshoot
+    const states = hoverOf(instance);
+    const sizes = states
+      ? (property: string, read: (value: Token[] | undefined) => number) => {
+          const value = hoverValue(instance.styles, keyframes, property, (v) => glslFloat(read(v)), states);
+          return value === glslFloat(read(instance.styles[property])) ? null : value;
+        }
+      : null;
+    const { code: shapeCode, radius: shapeBound } = withHoverSizes(sizes, () => shape(instance.styles, context));
+    const radii = states ? [instance.styles, ...states.map((layer) => layer.styles)].map((styles) => radiusOf(instance.tag, styles)) : [];
+    const ownRadius =
+      shapeBound !== null || !states || radii.some((r) => r === null) || !steadyTransitions(instance, instance.groups.length)
+        ? shapeBound
+        : Math.max(...(radii as number[]));
     // An outline reaches past the surface: its bounding spheres grow with it
     const outline = outlines.get(instance);
     const shapeRadius = ownRadius === null || !outline ? ownRadius : outline.reach === null ? null : ownRadius + outline.reach;

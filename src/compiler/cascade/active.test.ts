@@ -65,10 +65,11 @@ describe(":active in the cascade", () => {
     );
   });
 
-  it("changes only the animatable properties", () => {
-    expect(() => compileScene("@scene { cube; } cube:active { size: 2; }")).toThrow(
-      /"size" cannot change on :active/,
+  it("changes only the animatable properties, and the sizes of the shapes", () => {
+    expect(() => compileScene("@scene { cube; } cube:active { material: gold; }")).toThrow(
+      /"material" cannot change on :active/,
     );
+    expect(compileScene("@scene { cube; } cube:active { size: 2; }").shader).toContain("mix(1.0, 2.0, uHover[0])");
   });
 });
 

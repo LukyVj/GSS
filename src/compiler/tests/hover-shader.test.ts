@@ -167,6 +167,42 @@ describe("a hovered group in the shader", () => {
   });
 });
 
+// The sizes of the shapes on :hover: each number of the shape is mixed like the rest
+describe("a hovered size in the shader", () => {
+  it("mixes the radius of a sphere", () => {
+    const shader = compileGSS(`@scene { sphere; } sphere { radius: 0.5; } sphere:hover { radius: 1; }`);
+    expect(mapPart(shader, "sphere")).toContain("sdSphere(q, mix(0.5, 1.0, uHover[0]))");
+  });
+
+  it("starts from the size of the shape when the object does not set one", () => {
+    const shader = compileGSS(`@scene { torus; } torus:hover { radius: 1.5; }`);
+    expect(mapPart(shader, "torus")).toContain("mix(1.0, 1.5, uHover[0])");
+  });
+
+  it("mixes each number of a size", () => {
+    const part = mapPart(compileGSS(`@scene { cube; } cube { size: 1; } cube:hover { size: 1 2 1; }`), "cube");
+    expect(part).toContain("mix(1.0, 2.0, uHover[0])");
+    expect(part).toContain("vec3(0.5, ");
+    // the radius of a cone, bottom and top
+    const cone = mapPart(compileGSS(`@scene { cone; } cone:hover { radius: 0.5 0.3; }`), "cone");
+    expect(cone).toContain("mix(0.0, 0.3, uHover[0])");
+  });
+
+  it("keeps the shader of a size that does not change", () => {
+    const shader = compileGSS(`@scene { sphere; } sphere { radius: 0.7; } sphere:hover { color: #ff0000; }`);
+    expect(mapPart(shader, "sphere")).toContain("sdSphere(q, 0.7)");
+  });
+
+  it("keeps the bounding sphere of a path, around its largest size", () => {
+    const rest = compileGSS(`@scene { path; } path { d: path("M0 0 L10 0"); view-box: 0 0 10 10; stroke-width: 1; }`);
+    const hovered = compileGSS(`@scene { path; } path { d: path("M0 0 L10 0"); view-box: 0 0 10 10; stroke-width: 1; } path:hover { stroke-width: 2; }`);
+    // the test of the sphere stays: length(q) - R
+    const bound = (shader: string) => /length\(q\) - [\d.]+/.test(shader);
+    expect(bound(rest)).toBe(true);
+    expect(bound(hovered)).toBe(true);
+  });
+});
+
 describe("a hovered property in the shader", () => {
   it("mixes the color at rest and the hovered color", () => {
     const shader = compileGSS(`

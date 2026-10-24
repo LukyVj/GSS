@@ -8,6 +8,7 @@ The 0.0.1 history was reconstructed from GitHub.
 
 ### Added
 
+- **`:hover`**: the sizes of a shape. `sphere:hover { radius: 1; }` grows the sphere itself, and so do `size`, `height`, `thickness`, `corner-radius`, `depth` and `stroke-width`, with the `transition` of the object. `:active` changes them too.
 - **`:hover`**: on a group itself. `#g:hover { scale: 1.2; }` moves, turns, scales or fades the whole group when any of its objects is hovered, and the group carries every object it holds, with its `transition`.
 - **`material`**: `toon()`, flat bands of light, like a cartoon. `material: toon` shades an object in flat bands of light, like a cartoon or a cel-shaded game: from half the color in the shade to the full color, with a highlight. `toon(5)` gives it more bands (from 2 to 8, 3 by default), and `toon(#ff5a36)` a color of its own. It takes the sun, the lights of the scene and their shadows, like the other materials.
 - **`content`**: a number among the strings, `"item: " sibling-index()`. `content` takes a number, joined to the strings around it like CSS joins strings: `content: "item: " sibling-index()` numbers each copy, `content: var(--i)` writes a variable that holds a number. The number is written like CSS writes it, at most six decimals. The digits of a font are drawn once, so a scene can number many copies (64 copies use 2 of its 16 images). Unlike CSS, where `content` takes no number. A text with a number holds on one line.

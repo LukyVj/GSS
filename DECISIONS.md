@@ -1762,3 +1762,12 @@ A first version cut the light from 0 into steps, with a pinpoint highlight: its 
 **Why**: a group that grows, lifts or turns under the mouse is the most common hover of a scene made of parts (a lamp, a card, a point of the cloud of the changelog page), and until now each part had to repeat the move, around its own center instead of the group's.
 **Accepted limits**: a group cannot start an animation on `:hover` yet; `cursor` and `controls` read the groups at rest.
 
+## 212. The sizes of the shapes change on `:hover`
+
+**Decision** (roadmap 0.0.8, Oct. 24): `size`, `radius`, `height`, `thickness`, `corner-radius`, `depth` and `stroke-width` can be set by a `:hover` or `:active` rule, like the animatable properties. `sphere:hover { radius: 1; }` grows the sphere itself, where `scale` grows the whole space of the object.
+- **How**: the shapes already read their numbers as GLSL when a variable is set from JS (decision 105, `live.ts`). While the shape of a hovered object is written, `withHoverSizes()` gives each of its numbers the mix of its states (`hoverValue`, decision 206): `sdSphere(q, mix(0.5, 1.0, uHover[0]))`. A size the states do not change stays a number, so every scene and registry example compiles to the same shader as before (compared). Each number of a list is mixed apart (`size: 1` to `size: 1 2 1`, the two radii of a cone), from the shape's own default when the object sets none.
+- **The bounding sphere** of a path, a prism or a lathe, and of the object in the sphere of the scene, holds the largest of its states while its transitions never overshoot; with an overshooting easing, there is none.
+**Differences from CSS**: CSS animates `width` and `border-radius` in transitions and keyframes alike; here the sizes change only with a state, not in `@keyframes`, which compute in the shader with the time (decision 21) and would need the same mixing over their frames.
+**Why**: `scale` grows a shape with its corners, its stroke and its texture; a button whose corner rounds, a ring that thickens or a path whose stroke swells on hover need the size itself.
+**Accepted limits**: what reads the size at rest still does: the box of `transform-origin` in percent, the mapping of a texture and the faces of `content`. A path whose `stroke-width` changes is cut into segments as for a width set from JS, a hundredth of the default width.
+
