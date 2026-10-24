@@ -332,6 +332,11 @@ class Lowering {
       const uv = args[0].code.startsWith("g_uInput") ? `vec2<f32>(${args[1].code}.x, 1.0 - ${args[1].code}.y)` : args[1].code;
       return { code: `textureSampleLevel(${args[0].code}, gssSampler, ${uv}, 0.0)`, type: "vec4<f32>" };
     }
+    // The images of WebGPU are read at their full size (level 0, like texture() above): the
+    // gradients of textureGrad() are not needed, and a derivative would need uniform control
+    // flow, which the branches of textureColor() are not. dFdx() and dFdy() feed only them
+    if (name === "textureGrad") return { code: `textureSampleLevel(${args[0].code}, gssSampler, ${args[1].code}, 0.0)`, type: "vec4<f32>" };
+    if (name === "dFdx" || name === "dFdy") return { code: `${args[0].type}()`, type: args[0].type };
     if (name === "textureSize") return { code: `vec2<i32>(textureDimensions(${codes()}))`, type: "vec2<i32>" };
     if (name === "texelFetch") {
       const coord = args[0].code.startsWith("g_uInput")

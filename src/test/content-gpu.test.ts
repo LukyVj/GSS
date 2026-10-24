@@ -192,3 +192,42 @@ describe("content", () => {
     expect(dark(right)).toBe(true);
   }, 60000);
 });
+
+// content with a number (decision 203): its strings and its digits, each an image, put end
+// to end by the shader. In monospace, every digit is as wide as its cell: the text reads as
+// the same text written as one string
+describe("content with a number", () => {
+  // A grid of points over the middle of the front face: lit or not
+  const grid: [number, number][] = [];
+  for (let x = -60; x <= 60; x += 4) for (let y = -12; y <= 12; y += 4) grid.push([x, y]);
+  const ink = async (rules: string, backend: Backend = "webgl") => (await pixels(scene(rules), grid, backend)).map((pixel) => pixel[0]);
+  // the points lit in one and dark in the other: the edges of the letters, half lit, do not count
+  const differ = (a: number[], b: number[]) => a.filter((red, i) => (red > 150 && b[i] < 60) || (red < 60 && b[i] > 150)).length;
+
+  it.each<[Backend]>([["webgl"], ["webgpu"]])("writes the number as its string, with %s", async (backend) => {
+    const string = await ink('content: "a12";', backend);
+    expect(string.filter((red) => red > 150).length).toBeGreaterThan(10); // there is a text to compare
+    const run = await ink('content: "a" 12;', backend);
+    expect(differ(run, string)).toBeLessThan(3);
+    // another number is another text
+    expect(differ(await ink('content: "a" 47;', backend), string)).toBeGreaterThan(15);
+  }, 60000);
+
+  it("keeps the space at the end of the string before the number", async () => {
+    const string = await ink('content: "a 1";');
+    expect(differ(await ink('content: "a " 1;'), string)).toBeLessThan(3);
+  }, 60000);
+
+  it("puts the string after the number", async () => {
+    const string = await ink('content: "7 m";');
+    expect(differ(await ink('content: 7 " m";'), string)).toBeLessThan(3);
+  }, 60000);
+
+  it("gives each copy its own number", async () => {
+    const copies = (pick: string) =>
+      `@scene { cube * 3; } scene { floor: none; background: #000000; ambient: 1; light: none; camera-target: 0 0 0; camera-angle: 0deg 0deg; camera-distance: 4; } cube { size: 2; color: #000000; font-family: monospace; content: "n" sibling-index(); display: none; } cube:nth-child(${pick}) { display: block; }`;
+    const third = (await pixels(copies("3"), grid)).map((pixel) => pixel[0]);
+    expect(differ(third, await ink('content: "n3";'))).toBeLessThan(3);
+    expect(differ((await pixels(copies("1"), grid)).map((pixel) => pixel[0]), third)).toBeGreaterThan(6);
+  }, 60000);
+});
