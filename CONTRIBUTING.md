@@ -5,7 +5,9 @@
 ```sh
 npm install
 npm run dev        # the site: home, playground, docs, brand, showcase
-npm test           # Vitest
+npm test           # Vitest: the tests Node runs alone (~25 s)
+npm run test:gpu   # the tests in a real Chromium, WebGL2 and WebGPU (several minutes)
+npm run test:all   # both
 npm run build      # type-check, then build the site to dist/ and embed.js
 npm run build:lib  # the npm package, minified, to lib/ (embed.js included)
 npm run format     # format the .gss files (npm run format:check to only list them)
@@ -97,7 +99,7 @@ beside the search (`src/docs/search-try.ts`), with the live panel of the docs (`
 1. Update `package.json` and the root package version in `package-lock.json` together. The site and installation snippets read that version through `src/version.ts`; `npm run docs:github` writes it into the docs on GitHub.
 2. Update the changelog, README, roadmap and decisions. Keep a prepared release marked as such until it is published.
    Each line of the changelog starts with the element it is about, then one short sentence, like `- **`content`**: text on the surface of any object.`; the details follow, read on GitHub; the changelog page shows the first sentence only, and leads to the page of the element in the docs.
-3. Run the complete tests (including WebGL), `npm run build`, `npm run build:lib`, and `npm pack --dry-run`. Check that `lib/embed.js` is in the package; `package-size.test.ts` holds each entry to its budget.
+3. Run the complete tests (`npm run test:all`, WebGL2 and WebGPU included), `npm run build`, `npm run build:lib`, and `npm pack --dry-run`. Check that `lib/embed.js` is in the package; `package-size.test.ts` holds each entry to its budget.
 4. Publish the npm package, then tag the release and deploy the site. Publish before deploying versioned CDN instructions: jsDelivr can only serve a version after npm has it.
 
 `npm publish` rebuilds `lib/` (including the `gss-lang/embed` browser entry, which imports the same compiler and runtime files) and runs
