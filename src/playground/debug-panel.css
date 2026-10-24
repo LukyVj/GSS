@@ -10,7 +10,7 @@
   justify-self: start;
   z-index: 1;
   margin: 12px 12px 44px; /* over the slider of scroll(), at the bottom */
-  width: min(240px, calc(100% - 24px));
+  width: min(280px, calc(100% - 24px));
   box-sizing: border-box;
   background: rgb(10 10 12 / 0.86); /* --gss-void, the scene shows through a little */
   border: 1px solid var(--gss-isoline);

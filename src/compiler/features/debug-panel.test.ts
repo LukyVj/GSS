@@ -48,8 +48,16 @@ describe("@debug-panel: the debug panel of the playground", () => {
 describe("the axes and the grid of @debug-panel", () => {
   it("are drawn when the playground asks for them, after the filters", () => {
     const { shader } = scene("@debug-panel { display: open; }", { debug: true });
-    expect(shader).toContain("vec3 debugOverlay(vec3 col, vec3 ro, vec3 rd, float t) {");
-    expect(shader).toMatch(/  col = debugOverlay\(col, ro, rd, t\);\n  outColor = vec4\(col, [^;]+\);\n}\s*$/);
+    expect(shader).toContain("vec3 debugOverlay(vec3 col, vec3 ro, vec3 rd, float t, vec2 uv, vec3 forward, vec3 right, vec3 up) {");
+    expect(shader).toMatch(/  col = debugOverlay\(col, ro, rd, t, uv, forward, right, up\);\n  outColor = vec4\(col, [^;]+\);\n}\s*$/);
+  });
+
+  it("name each axis with its letter, at one unit and a bit from the origin", () => {
+    const { shader } = scene("@debug-panel { display: open; }", { debug: true });
+    expect(shader).toContain("float debugLetter(vec2 q, int letter) {");
+    expect(shader).toContain("vec3(1.25, 0.0, 0.0), 0, ");
+    expect(shader).toContain("vec3(0.0, 1.25, 0.0), 1, ");
+    expect(shader).toContain("vec3(0.0, 0.0, 1.25), 2, ");
   });
 
   it("are drawn folded too, never without the rule or with display: none", () => {
@@ -81,7 +89,7 @@ describe("the axes and the grid of @debug-panel", () => {
       "sphere:hover { color: red; }",
     ]) {
       const { shader } = compileScene(`${debug} ${SPHERE} ${rules}`, { debug: true });
-      expect(shader, rules).toContain("  col = debugOverlay(col, ro, rd, t);\n");
+      expect(shader, rules).toContain("  col = debugOverlay(col, ro, rd, t, uv, forward, right, up);\n");
     }
   });
 });
@@ -115,5 +123,14 @@ describe("view: steps", () => {
     expect(() => compileGSS(`${SPHERE} scene { view: wireframe; }`)).toThrow(
       "view expects shaded, distance or steps, like: view: distance;",
     );
+  });
+});
+
+describe("the numbers @debug-panel shows", () => {
+  it("count the point lights of the scene apart from the objects", () => {
+    expect(compileScene(SPHERE).lights).toBeUndefined();
+    const lit = compileScene("@scene { sphere; light#a; light#b; } #a { translate: 1 1 0; } #b { translate: -1 1 0; }");
+    expect(lit.lights).toBe(2);
+    expect(lit.objects).toBe(1);
   });
 });

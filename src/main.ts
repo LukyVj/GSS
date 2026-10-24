@@ -16,11 +16,12 @@ import { toShadertoy } from "./compiler/shader/shadertoy";
 import { EXAMPLES, renderExampleOptions } from "./playground/examples";
 import { statusParts, fpsText } from "./runtime/status";
 import { mountSearch } from "./docs/search-box";
-import { profile, profileWebGPU, mountPanel, perfRows, watchPerf } from "./profiler/panel";
+import { profile, profileWebGPU, mountPanel, perfRows, watchPerf, onDrawn } from "./profiler/panel";
 import { mountSplitter } from "./playground/splitter";
 import { mountVariablesPanel } from "./playground/variables-panel";
 import { mountViewChips } from "./playground/view-chips";
 import { mountDebugPanel } from "./playground/debug-panel";
+import { createStepsReader } from "./playground/steps-reader";
 
 mountSearch();
 
@@ -115,7 +116,14 @@ editor.onCompile((_code, compiled) => chips.update(compiled));
 
 // ----- The debug panel: the axes, the grid and the numbers of the scene (decision 204) -----
 
-const debug = mountDebugPanel(document.body, { rows: perfRows, watch: watchPerf });
+const steps = createStepsReader(sceneCanvas);
+onDrawn(() => steps.drawn()); // view: steps, read back just after a frame
+const debug = mountDebugPanel(document.body, {
+  perf: { rows: perfRows, watch: watchPerf },
+  backend: renderer.backend,
+  camera: renderer.camera,
+  steps: steps.steps,
+});
 editor.onCompile((_code, compiled) => debug.update(compiled));
 
 // ----- The status bar: the numbers of the last compile, and the frame rate -----

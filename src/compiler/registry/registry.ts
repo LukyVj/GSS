@@ -2324,13 +2324,13 @@ sphere { translate: 0 1 0; texture: paint(checks); }`,
     since: "0.0.8",
     syntax: "@debug-panel { display: open | folded | none; }",
     description:
-      "Shows the axes and a grid at the origin over the render, in the playground and in Try it, and a panel with the numbers of the scene: its objects, its images, and how fast it draws.",
+      "Shows the axes, their letters and a grid at the origin over the render, in the playground and in Try it, and a panel with everything known about the scene: where the camera is, what the scene holds, what each pixel costs, and how fast it draws.",
     valuesTitle: "Descriptors",
     values: [
       ["display", "`open`, the default: the panel shows its numbers. `folded`: only its title, `debug`, which opens it; the axes and the grid stay. `none`: nothing, as without the rule."],
     ],
-    details: "The axes are x in red, y in green and z in blue, one unit apart on the grid, fainter behind the objects. A page that embeds the scene shows neither the panel nor the axes.",
-    more: "The grid lies on the plane where the floor is, out to 10 units from the origin; its lines are light on a dark scene and dark on a light one. The panel counts the objects drawn and the images used, out of the 16 a scene can take. In the playground, it shows the frames per second, the time of a frame on the GPU and on the CPU, the size of the render in pixels and the time the shader took to build, like the performance panel; while it is open, the scene draws every frame, so that the numbers measure it. To see where the time goes, switch the view to `view: steps`.",
+    details: "x in red, y in green, z in blue, each with its letter, one unit apart on the grid, fainter behind the objects. A page that embeds the scene shows neither the panel nor the axes.",
+    more: "The grid lies on the plane where the floor is, out to 10 units from the origin; its lines are light on a dark scene and dark on a light one. The panel gives the backend that draws the scene (WebGL2 or WebGPU), the camera as the `camera-angle` and `camera-distance` that put it where the mouse left it, ready to copy into the code, the objects, the point lights, the images used out of the 16 a scene can take, the variables, the states of `:hover` and `:active`, the scroll timelines, the passes of `filter`, the `@media` queries and the lines of the shader. With `view: steps`, it reads the render back: the mean and the max of the steps per pixel, and the share of pixels at 150 and over. In the playground, it adds the frames per second, the time of a frame on the GPU and on the CPU, the size of the render in pixels and the time the shader took to build, like the performance panel; while it is open, the scene draws every frame, so that the numbers measure it.",
     examples: [
       {
         name: "the axes and the grid",

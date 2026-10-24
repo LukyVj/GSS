@@ -61,6 +61,7 @@ export type CompiledScene = {
   camera: CameraSettings;
   dpr: Dpr;
   objects: number; // instances drawn, for the status bar (decision 42)
+  lights?: number; // the point lights of @scene, for the debug panel (decision 204); absent when none
   textures: string[]; // the image files the runtime loads, once each
   hover: number[][]; // for each slot of uHover[], the ids that, hovered, set it to 1
   // :active (decision 95): for each slot after the hover slots, the ids that, pressed,
@@ -381,6 +382,7 @@ function compileStylesheet(
     camera: camera!,
     dpr: dpr!,
     objects: drawn.length,
+    ...(styled.length > drawn.length ? { lights: styled.length - drawn.length } : {}),
     textures: textures!,
     ...(paints!.length > 0 ? { paints } : {}),
     hover: hoverSlots(styled).map((instance) => instance.hoverTriggers),

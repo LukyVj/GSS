@@ -108,6 +108,16 @@ describe("the profiler behind the panel", () => {
     expect(perfRows()).not.toBeNull(); // it keeps measuring, like the panel once opened
   });
 
+  it("tells the debug panel each time a frame is drawn, measured or not (decision 204)", async () => {
+    const { profile, onDrawn } = await freshPanel();
+    const probe = profile(fakeGl());
+    let drawn = 0;
+    onDrawn(() => drawn++);
+    probe.drawStart();
+    probe.drawEnd();
+    expect(drawn).toBe(1);
+  });
+
   it("starts at once when the panel was left open on the last visit", async () => {
     localStorage.setItem("gss-perf-panel", "1");
     const { profile, mountPanel } = await freshPanel();

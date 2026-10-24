@@ -20,7 +20,7 @@ vi.mock("../runtime/renderer", () => ({
 vi.mock("../runtime/editor", () => ({
   connectEditor: (_elements: unknown, _renderer: unknown, code: string) => ({
     onCompile: (listener: (code: string, compiled: object) => void) =>
-      listener(code, { properties: registered, propertyPanel: display, debugPanel, objects: 1, textures: [] }),
+      listener(code, { properties: registered, propertyPanel: display, debugPanel, objects: 1, textures: [], hover: [], shader: "void main() {}" }),
     refresh: () => void calls.push("refresh"),
     destroy: () => {},
   }),

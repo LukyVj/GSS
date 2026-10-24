@@ -8,8 +8,8 @@ import { PROPERTIES } from "./compiler/registry/registry";
 // room to grow a little: going past one is a choice to make, not a surprise.
 const BUDGETS = {
   runtime: 16_000, // gss-lang/runtime: a scene compiled at build time (14_000 before cursor and animation-range, decisions 161 and 162; 14_500 before the text of content, decision 178; 15_500 before its lines and emoji, decision 186)
-  mount: 112_000, // gss-lang: compiles GSS text in the page (97_000 before the styles of outline-style, 98_000 before mix-blend-mode and mixins, decisions 173 and 174; 102_000 before content; 104_000 before its lines and states; 106_500 before the attribute selectors; 107_500 before content on every shape, decision 190; 109_500 before @for and @each, decision 191; 110_500 before @debug-panel and view: steps, decision 204)
-  embed: 114_000, // gss-lang/embed: <gss-scene>, from a CDN (99_000 before the styles of outline-style, 100_000 before mix-blend-mode and mixins; 104_000 before content; 106_000 before its lines and states; 108_500 before the attribute selectors; 109_500 before content on every shape; 111_500 before @for and @each; 112_500 before @debug-panel and view: steps)
+  mount: 113_000, // gss-lang: compiles GSS text in the page (97_000 before the styles of outline-style, 98_000 before mix-blend-mode and mixins, decisions 173 and 174; 102_000 before content; 104_000 before its lines and states; 106_500 before the attribute selectors; 107_500 before content on every shape, decision 190; 109_500 before @for and @each, decision 191; 110_500 before @debug-panel and view: steps, decision 204)
+  embed: 115_000, // gss-lang/embed: <gss-scene>, from a CDN (99_000 before the styles of outline-style, 100_000 before mix-blend-mode and mixins; 104_000 before content; 106_000 before its lines and states; 108_500 before the attribute selectors; 109_500 before content on every shape; 111_500 before @for and @each; 112_500 before @debug-panel and view: steps)
 };
 
 type Chunk = Rolldown.OutputChunk;

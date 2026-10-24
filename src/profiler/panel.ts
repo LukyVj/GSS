@@ -13,6 +13,7 @@ let wanted = false; // the panel has been opened at least once
 let lastShaderMs: number | null = null; // the build before the panel opened, shown when it does
 let open = false; // the panel is on screen: the scene draws every frame for it (decision 134)
 let watched = false; // the debug panel shows its rows (decision 204): the same
+const drawnListeners: (() => void)[] = []; // the debug panel reads view: steps back after a frame
 
 // Where the visitor's choice is kept. Not "gss-perf": while the panel was open by
 // default, every visit saved "1" there, so it would keep the panel open for them.
@@ -37,7 +38,10 @@ function connect(factory: () => GpuTimer | WebGPUTimer): FrameProbe {
   return {
     frameStart: (now, width, height) => profiler?.frameStart(now, width, height),
     drawStart: () => profiler?.drawStart(),
-    drawEnd: () => profiler?.drawEnd(),
+    drawEnd: () => {
+      profiler?.drawEnd();
+      drawnListeners.forEach((listener) => listener());
+    },
     measuring: () => profiler !== null && (open || watched),
     shaderBuilt: (ms) => {
       lastShaderMs = ms;
@@ -63,6 +67,10 @@ function start(): void {
 // The debug panel of the playground (decision 204) shows the same rows: it measures while open
 export function perfRows(): Row[] | null {
   return profiler ? reportRows(profiler.report()) : null;
+}
+// Called just after each frame is drawn, while the canvas still holds it
+export function onDrawn(listener: () => void): void {
+  drawnListeners.push(listener);
 }
 export function watchPerf(on: boolean): void {
   watched = on;
