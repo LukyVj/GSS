@@ -330,7 +330,7 @@ sphere {
 
 ## `animation-fill-mode`
 
-What the object shows outside the animation, like CSS. It matters only with a delay or a number of iterations.
+What the object shows outside the animation, like CSS. It matters with a delay or a number of iterations, and on a scroll timeline, before and after it.
 
 **One point per value of the property, each moved by it:** `none`, `forwards`, `backwards`, `both`
 
@@ -342,9 +342,11 @@ What the object shows outside the animation, like CSS. It matters only with a de
 ### Values
 
 - **none:** Its own value: the default.
-- **backwards:** The first frame, during the delay.
-- **forwards:** The last frame, once the animation is over.
+- **backwards:** The first frame, during the delay, or before its timeline or its `animation-range`.
+- **forwards:** The last frame, once the animation is over, or past its timeline or its range.
 - **both:** The two.
+
+On a scroll timeline, an animation without a fill mode applies only while its timeline runs, like CSS: write `both` to hold its first frame before and its last one after.
 
 ### staying at the top
 
@@ -433,7 +435,7 @@ The part of a scroll timeline the animation plays on, like CSS: `entry` while th
 - **<percentage>:** A share of the named range before it, or of the whole timeline alone: `entry 50%`, `20% 80%`.
 - **<length>:** Pixels from the start of the named range before it, or of the whole timeline: `100px`.
 
-It takes a start, then an end: `entry 10% exit 90%`. Before the range the animation shows its first frame, past it its last.
+It takes a start, then an end: `entry 10% exit 90%`. Outside the range the animation does not apply, like CSS: `both` holds its first frame before it and its last one after.
 
 A name alone is the whole of that range, `animation-range: entry`; a name alone at the end is its end, `contain exit`. `animation-range-start` and `animation-range-end` set one side each, and win over `animation-range` wherever they are written, like the other longhands of `animation`. The named ranges belong to `view()`: `scroll()` takes percentages and pixels. Unlike CSS, which ignores it there, a range on an animation that plays in time is an error. In the playground, which does not scroll, the slider over the render stands for one screen of scroll: `100px` is a hundred pixels of the height of the window.
 
@@ -451,7 +453,7 @@ sphere {
   radius: 0.35;
   translate: var(--x) 0.35 0;
   color: #3a7bff;
-  animation: rise 1s ease-out;
+  animation: rise 1s ease-out both;
   animation-timeline: view();
   animation-range: entry;
 }
@@ -480,6 +482,7 @@ cube {
   animation: turn 1s linear;
   animation-timeline: scroll();
   animation-range: 25% 75%;
+  animation-fill-mode: both;
 }
 
 @keyframes turn {
@@ -518,6 +521,7 @@ cube {
   animation: grow 1s ease-out;
   animation-timeline: view();
   animation-range-end: entry;
+  animation-fill-mode: both;
 }
 
 @keyframes grow {
@@ -557,6 +561,7 @@ torus {
   animation: tilt 1s;
   animation-timeline: view();
   animation-range-start: entry 50%;
+  animation-fill-mode: both;
 }
 
 @keyframes tilt {
@@ -588,7 +593,7 @@ Drives the animation with the scroll of the page instead of time, like CSS scrol
 
 Write it after `animation`, which still needs a name and a duration: `animation: spin 1s linear; animation-timeline: scroll();`. Scrolling back plays the animation backward.
 
-The number of iterations and the direction still count, an animation without a count plays once along the scroll. A scene takes up to 16 different timelines, and an animation of a list its own: `animation: a 1s, b 1s; animation-timeline: --a, --b`. A name is looked for in the whole page, the first element that declares it wins: unlike CSS, the page needs no `timeline-scope`, the scene being drawn apart from the page. While no element declares it, the animation shows its first frame. The page Follow the page as it scrolls, under Installation, shows it live, with the CSS of the page to copy. In the playground, which does not scroll, a slider stands in for the scroll.
+The number of iterations and the direction still count, an animation without a count plays once along the scroll. A scene takes up to 16 different timelines, and an animation of a list its own: `animation: a 1s, b 1s; animation-timeline: --a, --b`. A name is looked for in the whole page, the first element that declares it wins: unlike CSS, the page needs no `timeline-scope`, the scene being drawn apart from the page. While no element declares it, the animation does not apply, as before a timeline. The page Follow the page as it scrolls, under Installation, shows it live, with the CSS of the page to copy. In the playground, which does not scroll, a slider stands in for the scroll.
 
 ### turn with the page
 
@@ -663,7 +668,7 @@ torus {
   radius: 0.6;
   thickness: 0.18;
   color: #ff5a36;
-  animation: tilt 1s ease-in-out;
+  animation: tilt 1s ease-in-out both;
   animation-timeline: --pricing;
   animation-range: contain;
 }

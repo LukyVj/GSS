@@ -255,7 +255,7 @@ torus {
   radius: 0.6;
   thickness: 0.18;
   color: #3a7bff;
-  animation: turn 1s ease-in-out;
+  animation: turn 1s ease-in-out both;
   animation-timeline: --feature;
 }
 @keyframes turn {
@@ -281,7 +281,7 @@ The CSS of the page names the section; the GSS of the scene writes that name ins
       radius: 0.6;
       thickness: 0.18;
       color: #3a7bff;
-      animation: turn 1s ease-in-out;
+      animation: turn 1s ease-in-out both;
       animation-timeline: --feature;
     }
     @keyframes turn {
@@ -309,7 +309,7 @@ Each section takes a name of its own, `--intro`, `--pricing`, and each object of
 
 CSS only lets an element follow a timeline named by itself or one of its ancestors, and asks for `timeline-scope` otherwise. The scene is drawn apart from the page, never inside the section: it looks for the name in the whole page, and takes the first element that has it. Give each section its own name.
 
-While no element of the page has the name, the animation shows its first frame, where CSS would not play it at all. A page that adds its sections later is followed once they are there. In the playground and under the examples of these docs, where there is no such section, the slider over the render stands in for the scroll.
+Like CSS, the animation applies only while the section crosses: before and after, the object has its own value. `both` in `animation`, as in the demo, holds its first frame before and its last one after. While no element of the page has the name, the animation does not apply either. A page that adds its sections later is followed once they are there. In the playground and under the examples of these docs, where there is no such section, the slider over the render stands in for the scroll.
 
 <a name="editor-support"></a>
 

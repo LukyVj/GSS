@@ -137,7 +137,7 @@ sphere {
   radius: 0.35;
   translate: 0 0.35 0;
   color: #ff5a36;
-  animation: spread 1s ease-out;
+  animation: spread 1s ease-out both;
   animation-timeline: view();
   animation-range: entry;
 }
