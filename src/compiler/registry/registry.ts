@@ -2848,7 +2848,7 @@ export const SELECTORS: SelectorDef[] = [
       ["#g:has(sphere:hover)", "Inside `:has()`: hovering one object changes another."],
     ],
     details: "A `:hover` rule changes animatable properties only, and it styles objects, not groups: write `#g:hover cube`, not `#g:hover { … }`.",
-    more: "The `:hover` rules join the cascade like any other: `#a { color: blue; }` beats `cube:hover { color: red; }`, and a normal `!important` beats them all. The animatable properties are the transforms, `color`, `opacity`, `mask-image`, `offset-distance` and variables: never a face. It can also start an `animation`: it begins when the pointer arrives and plays to its end, pointer gone or not (see `:active`).",
+    more: "The `:hover` rules join the cascade like any other: `#a { color: blue; }` beats `cube:hover { color: red; }`, and a normal `!important` beats them all. The animatable properties are the transforms, `color`, `opacity`, `mask-image`, `offset-distance` and variables: never a face. It can also start an `animation`: it begins when the pointer arrives and plays to its end, pointer gone or not (see `:active`). Each rule waits for its own objects, like CSS: `cube:hover` applies when the cube itself is hovered, `cube:hover + cube` when the one before it is, and when both apply, the most specific wins.",
     examples: [
       {
         name: "lift on hover",
@@ -2859,6 +2859,11 @@ export const SELECTORS: SelectorDef[] = [
         name: "hover a group",
         text: "The mouse over any letter lights up every letter of `#letters`.",
         code: "@scene { group#letters { cube#l1; cube#l2; cube#l3; } sphere; } #letters { translate: 1.6 0.5 0; } #letters cube { size: 0.4 1 0.4; color: #e6e6e6; } #l2 { translate: -0.7 0 0; } #l3 { translate: -1.4 0 0; } #letters:hover cube { color: #ff5a36; scale: 1.15; } sphere { translate: -1.4 0.5 0; radius: 0.5; }",
+      },
+      {
+        name: "hover and its neighbours",
+        text: "The cube under the mouse grows the most; the cubes beside it grow a little.",
+        code: "@scene { cube * 5; } cube { size: 0.5; translate: calc((sibling-index() - 3) * 0.7) 0.4 0; color: #e6e6e6; transition: 0.2s; } cube:hover + cube, cube:has(+ cube:hover) { scale: 1.2; color: #ffb199; } cube:hover { scale: 1.5; color: #ff5a36; }",
       },
     ],
   },

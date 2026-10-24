@@ -86,6 +86,30 @@ describe("WebGPU and WebGL2 render the same scenes", () => {
   }, 60000);
 });
 
+// One hover state per kind of trigger: hovering #a puts #b in the state of the :has() rule,
+// not in the state of sphere:hover, which waits for #b itself
+it("hovering one object leaves the hover state of another one alone", async () => {
+  const { gl, gpu } = await render(
+    `@scene { group#g { sphere#a; sphere#b; } } scene { camera-angle: 0deg 0deg; camera-distance: 5; camera-target: 0 0 0; floor: none; }
+    sphere { radius: 0.5; color: red; } #b { translate: 1.4 0 0; }
+    sphere:hover { color: blue; } #g:has(sphere:hover) sphere { scale: 1; }`,
+    true,
+  );
+  for (const pixels of [gl, gpu]) {
+    const center = (36 * 96 + 48) * 4;
+    expect(pixels[center + 2], "#a, hovered").toBeGreaterThan(pixels[center]);
+    // the right of the canvas, where #b is: red, not blue
+    let red = 0, blue = 0;
+    for (let y = 0; y < 72; y++) for (let x = 64; x < 96; x++) {
+      const i = (y * 96 + x) * 4;
+      if (pixels[i] > pixels[i + 2] + 30) red++;
+      if (pixels[i + 2] > pixels[i] + 30) blue++;
+    }
+    expect(red, "#b, at rest").toBeGreaterThan(20);
+    expect(blue, "#b is not blue").toBe(0);
+  }
+}, 60000);
+
 // A variable set from JS reaches the uniform, after the hover slots, on both backends
 it("setProperty() changes the scene without compiling again (decision 105)", async () => {
   const source = '@property --tint { syntax: "<color>"; inherits: false; initial-value: #ff0000; } @scene { sphere; } scene { camera-angle: 0deg 0deg; camera-distance: 5; camera-target: 0 0 0; floor: none; ambient: 1; } sphere { radius: 1; color: var(--tint); } sphere:hover { scale: 1.1; }';

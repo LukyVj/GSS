@@ -52,6 +52,68 @@ describe("the hover slots of a scene", () => {
   });
 });
 
+// One hover state per kind of trigger: an object hovered itself and an object whose
+// group is hovered are two states, each with its slot
+describe("the hover states of an object in the shader", () => {
+  const cloud = `
+    @scene { group#cloud { sphere.point * 3; } }
+    .point:hover { scale: 2; }
+    #cloud:has(.point:hover) .point { translate: 0 1 0; }
+  `;
+
+  it("give each state its own slot, the states of an object one after the other", () => {
+    const compiled = compileScene(cloud);
+    expect(compiled.hover).toEqual([[1], [1, 2, 3], [2], [1, 2, 3], [3], [1, 2, 3]]);
+    expect(compiled.shader).toContain("uniform float uHover[6];");
+    expect(compiled.transitions).toHaveLength(6);
+  });
+
+  it("mix each property with the slot of the state that changes it", () => {
+    const part = mapPart(compileGSS(cloud), "sphere.point");
+    // hovering another point moves this one, but only hovering it scales it
+    expect(part).toContain("q -= mix(vec3(0.0), vec3(0.0, 1.0, 0.0), uHover[1]);");
+    expect(part).toContain("q /= mix(1.0, 2.0, uHover[0]);");
+  });
+
+  it("let the more specific rule win when both states are on, like CSS", () => {
+    const shader = compileGSS(`
+      @scene { group#g { cube; sphere; } }
+      #g:hover cube { scale: 3; }
+      cube:hover { scale: 2; }
+    `);
+    expect(mapPart(shader, "cube")).toContain("q /= mix(mix(1.0, 2.0, uHover[0]), 3.0, uHover[1]);");
+    // !important wins over a more specific rule: its state is mixed last
+    const important = compileGSS(`
+      @scene { group#g { cube; sphere; } }
+      #g:hover cube { scale: 3; }
+      cube:hover { scale: 2 !important; }
+    `);
+    expect(mapPart(important, "cube")).toContain("q /= mix(mix(1.0, 3.0, uHover[1]), 2.0, uHover[0]);");
+  });
+
+  it("take the transition of their own rules", () => {
+    const compiled = compileScene(`
+      @scene { group#g { cube; sphere; } }
+      cube:hover { scale: 2; }
+      #g:hover cube { translate: 0 1 0; transition: 0.5s; }
+    `);
+    expect(compiled.transitions[0].enter).toBeNull();
+    expect(compiled.transitions[1].enter).toEqual(expect.objectContaining({ duration: 0.5 }));
+  });
+
+  it("stay under the pressed state, which only mixes what :active changes", () => {
+    const shader = compileGSS(`
+      @scene { group#g { cube; sphere; } }
+      cube:hover { scale: 2; }
+      #g:hover cube { translate: 0 1 0; }
+      cube:active { scale: 3; }
+    `);
+    const part = mapPart(shader, "cube");
+    expect(part).toContain("q -= mix(vec3(0.0), vec3(0.0, 1.0, 0.0), uHover[1]);");
+    expect(part).toContain("q /= mix(mix(1.0, 2.0, uHover[0]), 3.0, uHover[2]);");
+  });
+});
+
 describe("a hovered property in the shader", () => {
   it("mixes the color at rest and the hovered color", () => {
     const shader = compileGSS(`
