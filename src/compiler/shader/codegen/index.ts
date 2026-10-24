@@ -41,7 +41,7 @@ import { readMaterial } from "./materials";
 import { activeSlots, groupHover, hoverSlots, hoverValue, sceneTriggers, useGroupHovers, useTimelines } from "./animation";
 import { sceneTimelines, timelineUniform } from "../../features/timeline";
 import { offsetLines, offsetReach, useOffsetFunctions } from "./offset";
-import { animateCode, createHoisted, hoist, originOf, pointerCode, readsPointer, rotationLines, transformLines } from "./transforms";
+import { animateCode, createHoisted, hoist, originOf, pointerCode, pointerReaders, rotationLines, transformLines } from "./transforms";
 import { objectBox } from "./origin";
 import { fogCode } from "./fog";
 import { boundedMap, enclosing, objectSphere, sceneMiss, steadyTransitions, type Sphere } from "./bounds";
@@ -101,7 +101,8 @@ export function generateShader(
   // The picking pass: for :hover and :active, for the cursor over an object (decision 161), and
   // for the objects over which a gesture cannot move the camera (decision 176)
   // hover-distance(), hover-direction() (decision 215): the shader reads the object under the pointer
-  const pointed = readsPointer(everything);
+  const readers = pointerReaders(everything, keyframes);
+  const pointed = readers.size > 0;
   const picks = slots.length > 0 || pointed || sceneCursors(instances).length > 0 || sceneControls({}, instances)?.objects !== undefined;
   // uStart[]: when each state that starts an animation started it (decision 141)
   const triggers = sceneTriggers(everything);
@@ -421,8 +422,15 @@ export function generateShader(
   );
   // hover-distance(): where each object is at rest, and the object under the pointer, read once
   // per pixel before the values that measure from it (decision 215)
-  if (pointed) hoisted.values.unshift({ type: "vec3", name: "hoverPoint", expr: "hoverAt()" });
-  const animate = animateCode(hoisted, [pointed ? pointerCode(instances, keyframes, hoverOf) : "", lights?.positions ?? ""].filter(Boolean).join("\n\n"));
+  if (pointed)
+    hoisted.values.unshift(
+      { type: "vec3", name: "hoverPoint", expr: "hoverAt()" },
+      ...[...readers].sort((a, b) => a - b).flatMap((index) => [
+        { type: "float", name: `hoverDist${index}`, expr: `hoverDistance(restCenter${index}())` },
+        { type: "vec3", name: `hoverDir${index}`, expr: `hoverDirection(restCenter${index}())` },
+      ]),
+    );
+  const animate = animateCode(hoisted, [pointed ? pointerCode(instances, keyframes, hoverOf, hoisted) : "", lights?.positions ?? ""].filter(Boolean).join("\n\n"));
   const textures = textureCode(instances, keyframes, hoverOf);
   // filter on the scene (decision 83) and on objects (decision 84)
   const { objectFilter, filterLines, alpha, filterFunctions } = filterCode(instances, sceneStyles);

@@ -8,6 +8,7 @@ The 0.0.1 history was reconstructed from GitHub.
 
 ### Added
 
+- **Changelog**: the points of the cloud move aside around the one under the pointer, the nearest the most.
 - **`hover-distance()`, `hover-direction()`**: how far an object is from the object under the pointer, and which way. In `calc()`, they let the objects near the pointer move aside, grow or change color, the nearest the most: `translate: calc(var(--x) + hover-direction(x) * 0.5 * exp(-3 * hover-distance())) 0 0`.
 - **`:not()`**: with `:hover` inside. `cube:not(:hover)` styles every cube that is not under the mouse, all of them while nothing is, and `#cloud:not(:has(.point:hover)) .point` the points while none of them is hovered, with their `transition`.
 - **`:hover`**: the sizes of a shape. `sphere:hover { radius: 1; }` grows the sphere itself, and so do `size`, `height`, `thickness`, `corner-radius`, `depth` and `stroke-width`, with the `transition` of the object. `:active` changes them too.

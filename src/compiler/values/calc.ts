@@ -536,17 +536,17 @@ class Reader {
     const index = this.context?.index;
     if (!index)
       throw this.error(`${name}() goes in a rule that styles objects: it measures from the object to the one under the pointer`);
-    const center = `restCenter${index}()`;
+    // globals that animate() computes once per pixel, for each object that reads them
     if (name === "hover-distance") {
       this.expect(")", "hover-distance()");
-      return { value: NaN, unit: "", code: `hoverDistance(${center})`, name: "hover-distance()" };
+      return { value: NaN, unit: "", code: `hoverDist${index}`, name: "hover-distance()" };
     }
     const axis = this.peek();
     if (axis?.type !== "IDENT" || !["x", "y", "z"].includes(axis.value))
       throw this.error("hover-direction() takes an axis, like: hover-direction(x)");
     this.i++;
     this.expect(")", "hover-direction()");
-    return { value: NaN, unit: "", code: `hoverDirection(${center}).${axis.value}`, name: "hover-direction()" };
+    return { value: NaN, unit: "", code: `hoverDir${index}.${axis.value}`, name: "hover-direction()" };
   }
 
   private applyLive(name: string, args: Quantity[], strategy: string): Quantity {

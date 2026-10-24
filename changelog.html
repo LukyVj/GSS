@@ -349,7 +349,7 @@
               /* A cloud of 107 points that writes the number of each version
                  while that version crosses the page */
               @scene {
-                group#cloud { sphere.point * 107; }
+                group#cloud { group.slot * 107 { sphere.point; } }
               }
 
               scene {
@@ -369,7 +369,8 @@
                 animation: sway 8s ease-in-out infinite alternate;
               }
 
-              .point {
+              /* each slot carries its point through the versions */
+              .slot {
                 --i: sibling-index();
                 --k: calc((var(--i) - 0.5) / 107);
                 --a: calc(var(--i) * 137.508deg);
@@ -434,15 +435,43 @@
                    between two versions; the newest holds its number above the
                    versions (backwards), the oldest below them (forwards) */
                 translate: var(--scatter);
-                radius: 0.04;
-                color: hsl(calc(8 + var(--k) * 34) 95% 60%);
-                material: emissive(2.2);
                 animation: v8 1s ease-in-out backwards, v7 1s ease-in-out,
                   v6 1s ease-in-out, v5 1s ease-in-out, v4 1s ease-in-out,
                   v3 1s ease-in-out, v2 1s ease-in-out, v1 1s ease-in-out forwards;
                 animation-timeline: --unreleased, --v0-0-7, --v0-0-6,
                   --v0-0-5, --v0-0-4, --v0-0-3, --v0-0-2, --v0-0-1;
               }
+
+              /* the points near the one under the pointer move aside in their
+                 slot, the nearest the most */
+              .point {
+                --push: calc(0.18 * exp(-6 * hover-distance()));
+                translate: calc(hover-direction(x) * var(--push))
+                  calc(hover-direction(y) * var(--push)) calc(hover-direction(z) * var(--push));
+                radius: 0.04;
+                material: emissive(2.2);
+              }
+
+              /* the hue of a point follows the place of its slot: sibling-index()
+                 counts where it is read, so each step of 6 slots has its own */
+              .slot:nth-child(n + 1) .point { color: hsl(9.0 95% 60%); }
+              .slot:nth-child(n + 7) .point { color: hsl(10.9 95% 60%); }
+              .slot:nth-child(n + 13) .point { color: hsl(12.8 95% 60%); }
+              .slot:nth-child(n + 19) .point { color: hsl(14.7 95% 60%); }
+              .slot:nth-child(n + 25) .point { color: hsl(16.6 95% 60%); }
+              .slot:nth-child(n + 31) .point { color: hsl(18.5 95% 60%); }
+              .slot:nth-child(n + 37) .point { color: hsl(20.4 95% 60%); }
+              .slot:nth-child(n + 43) .point { color: hsl(22.3 95% 60%); }
+              .slot:nth-child(n + 49) .point { color: hsl(24.2 95% 60%); }
+              .slot:nth-child(n + 55) .point { color: hsl(26.1 95% 60%); }
+              .slot:nth-child(n + 61) .point { color: hsl(28.0 95% 60%); }
+              .slot:nth-child(n + 67) .point { color: hsl(29.9 95% 60%); }
+              .slot:nth-child(n + 73) .point { color: hsl(31.8 95% 60%); }
+              .slot:nth-child(n + 79) .point { color: hsl(33.7 95% 60%); }
+              .slot:nth-child(n + 85) .point { color: hsl(35.6 95% 60%); }
+              .slot:nth-child(n + 91) .point { color: hsl(37.6 95% 60%); }
+              .slot:nth-child(n + 97) .point { color: hsl(39.5 95% 60%); }
+              .slot:nth-child(n + 103) .point { color: hsl(41.2 95% 60%); }
 
               @keyframes sway {
                 from { rotate-y: -24deg; }
