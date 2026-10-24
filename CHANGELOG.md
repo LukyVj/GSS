@@ -14,6 +14,10 @@ The 0.0.1 history was reconstructed from GitHub.
 - **VS Code extension**: completion of property names and mixins. The editor extension completes property names: while you type, the properties the rule can take, with their syntax and description, and the mixins of the file after `@apply`, in a `.gss` file and in a `<script type="text/gss">`.
 - **Brand page**: the films of GSS, to play or to download. The films of GSS on the brand page: the teaser, the launch film and the films of 0.0.6 and 0.0.7, to play in place or to download in 16:9 or 9:16.
 
+### Fixed
+
+- **`filter`**: the text or the image of an object no longer stays blank under `bloom()` or `blur()`. With `bloom()` or `blur()` in the `filter` of the scene, the text of `content` or the image of `texture` on the last object could stay blank once the scene stopped moving: the image of the filter took its place. Each object now reads its own image, at every size of the canvas.
+
 ## [0.0.7] — 2026-10-23
 
 ### Added
