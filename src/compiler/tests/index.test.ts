@@ -42,6 +42,16 @@ describe("var()", () => {
     expect(shader).toContain("sdSphere(q, 4.0)"); // #b overrides it
   });
 
+  it("passes a group's variable as written: sibling-index() counts where var() is read, like CSS", () => {
+    // A cube, then a group of two spheres: with the index of the group, both
+    // spheres would get 2; each gets its own index inside the group
+    const shader = compileGSS(
+      "@scene { cube; group#g { sphere; sphere } } #g { --i: sibling-index(); } #g sphere { radius: calc(var(--i) * 0.25); }",
+    );
+    expect(shader).toContain("sdSphere(q, 0.25)");
+    expect(shader).toContain("sdSphere(q, 0.5)");
+  });
+
   it("does not leak a variable to a sibling", () => {
     expect(() =>
       compileGSS(

@@ -497,6 +497,8 @@ The position of the object among its siblings, from 1, like the CSS function: `c
 
 Siblings are the objects of the same `@scene` block or group. A group is a sibling too, and the count starts again inside each group. It means nothing in `scene { }` or in `@keyframes`, shared by every object.
 
+In a variable, it counts where the variable is read, like CSS: with `.row { --i: sibling-index(); }`, `var(--i)` in an object of `.row` gives the place of the object inside the row, not the place of the row. To move a whole row by its place, write it on the row itself: `.row { translate: 0 calc(sibling-index() * 0.6) 0; }` carries every object it holds.
+
 ### a ring of petals
 
 Twelve copies, each placed and turned 30° further than the one before.
