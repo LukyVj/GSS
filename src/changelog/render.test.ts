@@ -5,7 +5,7 @@ import { renderChangelog, prerenderChangelogHtml } from "./render";
 describe("the changelog page", () => {
   it("gives each version its title, its date and an anchor to link to", () => {
     const html = renderChangelog("## [0.0.7] — 2026-10-23\n\n### Added\n\n- One.\n\n## Unreleased\n");
-    expect(html).toContain('<section class="release" id="0.0.7">');
+    expect(html).toContain('<section class="release" id="0.0.7" style="view-timeline-name: --v0-0-7; view-timeline-inset: 40% 59%">');
     expect(html).toContain('<h2><a href="#0.0.7">0.0.7</a> <time datetime="2026-10-23">2026-10-23</time></h2>');
     expect(html).toContain("<h3>Added</h3>");
     expect(html).toContain('<ul>\n<li><div class="row"><span class="scope"></span><span class="what">One.</span></div></li>\n</ul>');
@@ -13,7 +13,7 @@ describe("the changelog page", () => {
 
   it("leaves out an empty Unreleased, and keeps one with changes", () => {
     expect(renderChangelog("## Unreleased\n\n## [0.0.7] — 2026-10-23\n")).not.toContain("Unreleased");
-    expect(renderChangelog("## Unreleased\n\n### Added\n\n- Soon.\n")).toContain('<section class="release" id="unreleased">');
+    expect(renderChangelog("## Unreleased\n\n### Added\n\n- Soon.\n")).toContain('<section class="release" id="unreleased" style="view-timeline-name: --unreleased; view-timeline-inset: 40% 59%">');
   });
 
   it("writes the inline Markdown of the changelog: code, links, bold, italic", () => {

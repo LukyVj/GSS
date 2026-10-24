@@ -4,6 +4,11 @@ import type { Range, RangeEdge, Timeline } from "../compiler/features/timeline";
 
 const clamp01 = (value: number) => Math.min(Math.max(value, 0), 1);
 
+// Outside its timeline, a progress is -1 before it and 2 after it: the shader applies the
+// animation there only when its fill mode holds a frame, like CSS (decision 210). Two fixed
+// values: a scene scrolled far away does not draw again for each pixel of scroll.
+const beyond = (value: number) => (value < 0 ? -1 : value > 1 ? 2 : value);
+
 // scroll(): where the scroll is, from 0 at the start to 1 at the end
 export function scrollProgress(position: number, scrollSize: number, clientSize: number): number {
   const range = scrollSize - clientSize;
@@ -18,7 +23,7 @@ export function viewProgress(
   portStart: number,
   portSize: number,
 ): number {
-  return clamp01((portStart + portSize - start) / (portSize + size));
+  return beyond((portStart + portSize - start) / (portSize + size));
 }
 
 // animation-range (decision 162): the progress inside a part of the timeline, like CSS.
@@ -40,8 +45,8 @@ export function rangeProgress(position: number, length: number, subject: number,
   };
   const start = at(range.start);
   const end = at(range.end);
-  if (end <= start) return position >= end ? 1 : 0;
-  return clamp01((position - start) / (end - start));
+  if (end <= start) return position >= end ? 2 : -1;
+  return beyond((position - start) / (end - start));
 }
 
 // scroll() with animation-range: the progress inside the range, from the scroll of the page
@@ -194,8 +199,8 @@ function progressOf(timeline: Timeline, canvas: HTMLCanvasElement, override: num
   if (timeline.type === "named") {
     const named = namedTimeline(timeline.name);
     // No element of the page declares it: the slider stands in for the scroll, as for
-    // view() of the scene; on a page, the animation shows its first frame
-    if (!named) return override !== null ? viewOf(canvas, true, timeline.range, override) : 0;
+    // view() of the scene; on a page, the timeline is inactive, as before it (decision 210)
+    if (!named) return override !== null ? viewOf(canvas, true, timeline.range, override) : -1;
     const vertical = isVertical(named);
     return named.kind === "scroll"
       ? scrollOf(named.element, vertical, timeline.range, override)
@@ -209,7 +214,7 @@ function progressOf(timeline: Timeline, canvas: HTMLCanvasElement, override: num
   return viewOf(canvas, vertical, timeline.range, override);
 }
 
-// How many vec4 uTimeline takes: one up to 4 timelines, one per 4 past them (decision 209)
+// How many vec4 uTimeline takes: one up to 4 timelines, one per 4 past them (decision 210)
 export const timelineVectors = (count: number) => Math.max(1, Math.ceil(count / 4));
 
 // uTimeline: one component per timeline; override: one progress for all (the slider)

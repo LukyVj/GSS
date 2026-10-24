@@ -33,9 +33,9 @@ describe("viewProgress", () => {
     expect(viewProgress(0, 100, 100, 400)).toBe(1);
   });
 
-  it("stays between 0 and 1", () => {
-    expect(viewProgress(2000, 200, 0, 800)).toBe(0);
-    expect(viewProgress(-900, 200, 0, 800)).toBe(1);
+  it("is -1 before the timeline and 2 after it, so that an animation can stop applying, like CSS", () => {
+    expect(viewProgress(2000, 200, 0, 800)).toBe(-1);
+    expect(viewProgress(-900, 200, 0, 800)).toBe(2);
   });
 });
 
@@ -119,14 +119,14 @@ describe("rangeProgress (animation-range)", () => {
     expect(view(150, edge("cover", 100, "px"), edge("cover", 200, "px"))).toBe(0.5);
   });
 
-  it("stays between 0 and 1 outside the range", () => {
-    expect(view(950, edge("entry", 0), edge("entry", 100))).toBe(1);
-    expect(view(10, edge("exit", 0), edge("exit", 100))).toBe(0);
+  it("is -1 before the range and 2 after it", () => {
+    expect(view(950, edge("entry", 0), edge("entry", 100))).toBe(2);
+    expect(view(10, edge("exit", 0), edge("exit", 100))).toBe(-1);
   });
 
-  it("is 1 past a range of no length", () => {
-    expect(view(300, edge("cover", 30), edge("cover", 30))).toBe(1);
-    expect(view(200, edge("cover", 30), edge("cover", 30))).toBe(0);
+  it("is after a range of no length once past it, before it otherwise", () => {
+    expect(view(300, edge("cover", 30), edge("cover", 30))).toBe(2);
+    expect(view(200, edge("cover", 30), edge("cover", 30))).toBe(-1);
   });
 });
 
@@ -136,7 +136,7 @@ describe("scrollRangeProgress (scroll() with animation-range)", () => {
 
   it("follows the scroll of the page", () => {
     expect(scrollRangeProgress(1000, 2000, 800, null, middle)).toBe(0.5);
-    expect(scrollRangeProgress(400, 2000, 800, null, middle)).toBe(0);
+    expect(scrollRangeProgress(400, 2000, 800, null, middle)).toBe(-1);
   });
 
   it("follows the slider of the playground over the length of the page", () => {
@@ -145,9 +145,9 @@ describe("scrollRangeProgress (scroll() with animation-range)", () => {
   });
 
   it("follows the slider where the page cannot scroll, as over one screen of scroll", () => {
-    expect(scrollRangeProgress(0, 0, 800, 0, middle)).toBe(0);
+    expect(scrollRangeProgress(0, 0, 800, 0, middle)).toBe(-1);
     expect(scrollRangeProgress(0, 0, 800, 0.5, middle)).toBe(0.5);
-    expect(scrollRangeProgress(0, 0, 800, 1, middle)).toBe(1);
+    expect(scrollRangeProgress(0, 0, 800, 1, middle)).toBe(2);
     expect(scrollRangeProgress(0, 0, 800, 0.25, { start: edge(100, "px"), end: edge(300, "px") })).toBe(0.5);
   });
 });

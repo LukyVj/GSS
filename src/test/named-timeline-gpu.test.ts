@@ -73,7 +73,7 @@ describe("animation-timeline: --name", () => {
     expect(await progress([{ type: "named", name: "--box" }], 0, 500)).toEqual([0.5]);
   });
 
-  it("shows the first frame while no element declares the name", async () => {
-    expect(await progress([{ type: "named", name: "--nowhere" }], 2000)).toEqual([0]);
+  it("is before the timeline while no element declares the name: the animation does not apply, like CSS", async () => {
+    expect(await progress([{ type: "named", name: "--nowhere" }], 2000)).toEqual([-1]);
   });
 });

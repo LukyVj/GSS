@@ -26,7 +26,7 @@ export type Timeline =
 const AXES: Axis[] = ["block", "inline", "x", "y"];
 const SCROLLERS = ["root", "nearest"];
 // The components of uTimeline: a vec4 up to 4 different timelines, an array of vec4 past 4
-// (decision 209), up to 16
+// (decision 210), up to 16
 export const TIMELINE_COMPONENTS = ["x", "y", "z", "w"];
 export const MAX_TIMELINES = 16;
 
@@ -176,7 +176,7 @@ export function timelineOf(styles: Styles): Timeline | null {
 // their component of uTimeline
 export function sceneTimelines(nodes: Styles[]): Timeline[] {
   const found = new Map<string, Timeline>();
-  // one timeline per animation of a list (decision 209)
+  // one timeline per animation of a list (decision 210)
   for (const styles of nodes.flatMap((node) => (node["animation"] ? animationStyles(node) : []))) {
     const value = styles["animation-timeline"] ?? styles["animation-range"] ?? styles["animation-range-start"] ?? styles["animation-range-end"];
     const name = styles["animation"]?.[0];

@@ -346,8 +346,8 @@
         <aside class="cloud" aria-hidden="true">
           <gss-scene controls="none">
             <script type="text/gss">
-              /* A cloud of 107 points that writes the number of each version,
-                 driven by the scroll of the page */
+              /* A cloud of 107 points that writes the number of each version
+                 while that version crosses the page */
               @scene {
                 group#cloud { sphere.point * 107; }
               }
@@ -427,11 +427,20 @@
                 --v1: calc((var(--hx) + var(--b1) * (var(--px) - var(--hx)) - 10) * 0.115)
                   calc((var(--hy) + var(--b1) * (var(--py) - var(--hy))) * 0.115) 0;
 
+                /* each version gathers the points into its number while it
+                   crosses a line at 40% of the window (the page names each
+                   version, view-timeline-name: --v0-0-7), and they scatter
+                   between two versions; the newest holds its number above the
+                   versions (backwards), the oldest below them (forwards) */
+                translate: var(--scatter);
                 radius: 0.04;
                 color: hsl(calc(8 + var(--k) * 34) 95% 60%);
                 material: emissive(2.2);
-                animation: morph 1s ease-in-out;
-                animation-timeline: scroll(root);
+                animation: v8 1s ease-in-out backwards, v7 1s ease-in-out,
+                  v6 1s ease-in-out, v5 1s ease-in-out, v4 1s ease-in-out,
+                  v3 1s ease-in-out, v2 1s ease-in-out, v1 1s ease-in-out forwards;
+                animation-timeline: --unreleased, --v0-0-7, --v0-0-6,
+                  --v0-0-5, --v0-0-4, --v0-0-3, --v0-0-2, --v0-0-1;
               }
 
               @keyframes sway {
@@ -439,24 +448,40 @@
                 to { rotate-y: 24deg; }
               }
 
-              /* One number per version, newest first: each holds while its
-                 version fills the page, and scatters into the next between them */
-              @keyframes morph {
-                0%, 3% { translate: var(--v8); }
-                5.5% { translate: var(--scatter); }
-                8%, 16% { translate: var(--v7); }
-                18.5% { translate: var(--scatter); }
-                21%, 38% { translate: var(--v6); }
-                41.5% { translate: var(--scatter); }
-                45%, 49% { translate: var(--v5); }
-                52% { translate: var(--scatter); }
-                55%, 59% { translate: var(--v4); }
-                62% { translate: var(--scatter); }
-                65%, 69% { translate: var(--v3); }
-                72% { translate: var(--scatter); }
-                75%, 84% { translate: var(--v2); }
-                87.5% { translate: var(--scatter); }
-                91%, 100% { translate: var(--v1); }
+              /* One number per version: it gathers as the version reaches the
+                 line, holds while it crosses, and scatters as it leaves; the
+                 first and the last hold it at the top and at the bottom */
+              @keyframes v8 {
+                0%, 85% { translate: var(--v8); }
+                100% { translate: var(--scatter); }
+              }
+              @keyframes v7 {
+                0%, 100% { translate: var(--scatter); }
+                15%, 85% { translate: var(--v7); }
+              }
+              @keyframes v6 {
+                0%, 100% { translate: var(--scatter); }
+                15%, 85% { translate: var(--v6); }
+              }
+              @keyframes v5 {
+                0%, 100% { translate: var(--scatter); }
+                15%, 85% { translate: var(--v5); }
+              }
+              @keyframes v4 {
+                0%, 100% { translate: var(--scatter); }
+                15%, 85% { translate: var(--v4); }
+              }
+              @keyframes v3 {
+                0%, 100% { translate: var(--scatter); }
+                15%, 85% { translate: var(--v3); }
+              }
+              @keyframes v2 {
+                0%, 100% { translate: var(--scatter); }
+                15%, 85% { translate: var(--v2); }
+              }
+              @keyframes v1 {
+                0% { translate: var(--scatter); }
+                15%, 100% { translate: var(--v1); }
               }
             </script>
           </gss-scene>

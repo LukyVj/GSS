@@ -91,7 +91,7 @@ export function splitList(value: Token[]): Token[][] {
 
 const LIST_PROPERTIES = ["animation", ...ANIMATION_LONGHANDS];
 
-// The styles of each animation of a list (decision 209): the item of the shorthand, and of
+// The styles of each animation of a list (decision 210): the item of the shorthand, and of
 // each longhand its item at the same place, the longhand repeated when its list is shorter,
 // like CSS. One set of styles per animation, none included; [] without an animation.
 export function animationStyles(styles: Styles): Styles[] {

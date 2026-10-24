@@ -104,7 +104,7 @@ class Lowering {
           const size = Number(this.take());
           if (name === "uProperties") this.properties = size; // @property (decision 105)
           else if (name === "uStart") this.starts = size; // decision 141
-          else if (name === "uTimeline") this.timelines = size; // past 4 timelines (decision 209)
+          else if (name === "uTimeline") this.timelines = size; // past 4 timelines (decision 210)
           else this.hover = size;
           this.expect("]");
         }

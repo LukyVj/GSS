@@ -128,13 +128,22 @@ function playback(spec: AnimationSpec, clock: string): {
   // scroll(), view(): the progress of the timeline is the whole animation, like CSS.
   // The duration and the delay do not count; infinite (the GSS default) plays once.
   if (spec.timeline) {
-    const at = timelineCode(spec.timeline, timelines);
+    const raw = timelineCode(spec.timeline, timelines);
+    // Outside its timeline (-1 before, 2 after, from the runtime), the animation applies only
+    // when its fill mode holds a frame, like CSS (decision 210). scroll() without a range never
+    // leaves 0 to 1: its code is the one GSS always wrote.
+    const bounded = spec.timeline.type === "scroll" && !spec.timeline.range;
+    const at = bounded ? raw : `clamp(${raw}, 0.0, 1.0)`;
+    const conditions: string[] = [];
+    if (!bounded && fill !== "backwards" && fill !== "both") conditions.push(`${raw} >= 0.0`);
+    if (!bounded && fill !== "forwards" && fill !== "both") conditions.push(`${raw} <= 1.0`);
+    const active = conditions.length > 0 ? conditions.join(" && ") : null;
     const n = iterations === Infinity ? 1 : iterations;
-    if (n === 1 && direction === "normal") return { progress: at, active: null, ends: true };
-    if (n === 1 && direction === "reverse") return { progress: `(1.0 - ${at})`, active: null, ends: true };
+    if (n === 1 && direction === "normal") return { progress: at, active, ends: true };
+    if (n === 1 && direction === "reverse") return { progress: `(1.0 - ${at})`, active, ends: true };
     return {
       progress: `playhead(${at} * ${glslFloat(n)}, 1.0, ${glslFloat(n)}, ${DIRECTION_NUMBERS[direction]})`,
-      active: null,
+      active,
       ends: true,
     };
   }
@@ -242,7 +251,7 @@ export function animatedValue(
   read = liveRead(property, read); // a variable set from JS (decision 105)
   const own = read(styles[property]);
   const animations = clock === "iTime" ? readAnimations(styles) : startedSpecs(styles);
-  // Each animation of the list plays over the value the ones before it give (decision 209):
+  // Each animation of the list plays over the value the ones before it give (decision 210):
   // the last one that changes the property wins while it plays, like CSS
   return animations.reduce((below, animation) => playedValue(animation, keyframes, property, read, clock, below), own);
 }

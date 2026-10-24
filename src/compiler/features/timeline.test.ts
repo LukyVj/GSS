@@ -67,7 +67,7 @@ describe("animation-timeline in the shader", () => {
     const compiled = compileScene(
       scene("cube { animation: spin 1s 2 alternate; animation-timeline: view(); }"),
     );
-    expect(compiled.shader).toContain("playhead(uTimeline.x * 2.0, 1.0, 2.0, 2)");
+    expect(compiled.shader).toContain("playhead(clamp(uTimeline.x, 0.0, 1.0) * 2.0, 1.0, 2.0, 2)");
     const reverse = compileScene(
       scene("cube { animation: spin 1s reverse; animation-timeline: scroll(); }"),
     );
@@ -235,5 +235,35 @@ describe("animation-timeline: --name, a timeline of the page, like CSS", () => {
   it("survives the formatter", () => {
     const source = scene("cube { animation: spin 1s; animation-timeline: --intro; }");
     expect(compileScene(formatGss(source)).shader).toBe(compileScene(source).shader);
+  });
+});
+
+describe("animation-fill-mode on a timeline, like CSS", () => {
+  const shader = (rules: string) => compileScene(scene(rules)).shader;
+
+  it("applies the animation only inside its timeline without a fill mode", () => {
+    const code = shader("cube { animation: spin 1s; animation-timeline: view(); }");
+    expect(code).toContain("(uTimeline.x >= 0.0 && uTimeline.x <= 1.0) ?");
+    expect(code).toContain("clamp(uTimeline.x, 0.0, 1.0)");
+  });
+
+  it("holds the first frame before it with backwards, the last after it with forwards, both with both", () => {
+    expect(shader("cube { animation: spin 1s backwards; animation-timeline: view(); }")).toContain("(uTimeline.x <= 1.0) ?");
+    expect(shader("cube { animation: spin 1s forwards; animation-timeline: view(); }")).toContain("(uTimeline.x >= 0.0) ?");
+    const both = shader("cube { animation: spin 1s both; animation-timeline: view(); }");
+    expect(both).not.toContain("uTimeline.x >= 0.0");
+    expect(both).toContain("clamp(uTimeline.x, 0.0, 1.0)");
+  });
+
+  it("leaves scroll() without a range as it was: its progress never leaves 0 to 1", () => {
+    const code = shader("cube { animation: spin 1s; animation-timeline: scroll(); }");
+    expect(code).not.toContain("clamp(uTimeline.x");
+    expect(code).not.toContain("uTimeline.x >= 0.0");
+  });
+
+  it("stops a scroll() with a range outside it", () => {
+    expect(shader("cube { animation: spin 1s; animation-timeline: scroll(); animation-range: 20% 80%; }")).toContain(
+      "(uTimeline.x >= 0.0 && uTimeline.x <= 1.0) ?",
+    );
   });
 });
