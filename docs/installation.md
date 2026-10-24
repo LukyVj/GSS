@@ -303,7 +303,7 @@ The animation plays like on `view()`: its duration and its delay do not count, i
 
 ### Several sections
 
-Each section takes a name of its own, `--intro`, `--pricing`, and each object of the scene follows the one its rule names. A scene follows up to 4 timelines, the ones of `scroll()` and `view()` included.
+Each section takes a name of its own, `--intro`, `--pricing`, and each object of the scene follows the one its rule names. One object can follow several sections, with a list of animations, one timeline each: `animation: intro 1s, pricing 1s; animation-timeline: --intro, --pricing;`. A scene follows up to 16 timelines, the ones of `scroll()` and `view()` included.
 
 ### Unlike CSS
 

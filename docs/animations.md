@@ -14,7 +14,7 @@ Plays a `@keyframes` animation on the object, like CSS. After its name come the 
 
 **A ball between its two frames, and the time that passes:** `from`, `to`, `0%`, `100%`
 
-- **Syntax:** `<keyframes-name> <time> [<easing>] [<time>] [<number> | infinite] [normal | reverse | alternate | alternate-reverse] [none | forwards | backwards | both]`
+- **Syntax:** `[<keyframes-name> <time> [<easing>] [<time>] [<number> | infinite] [normal | reverse | alternate | alternate-reverse] [none | forwards | backwards | both]]#`
 - **Initial value:** `none`
 - **Applies to:** the scene, objects and groups
 - **Animatable:** no
@@ -26,6 +26,7 @@ Plays a `@keyframes` animation on the object, like CSS. After its name come the 
 - **<number> | infinite:** How many times it plays: `1.5` stops halfway through the second time. `infinite` is the default.
 - **normal, reverse, alternate, alternate-reverse:** The direction: forward, backward, forward then backward, or backward first.
 - **none, forwards, backwards, both:** The fill mode: what the object shows outside the animation.
+- **,:** Several animations at once, one after each comma, each with its own settings: `animation: spin 4s linear, float 2s alternate`. When two of them change the same property, the last one of the list wins while it plays, from the value the ones before it give, like CSS.
 
 Unlike CSS, an animation loops forever unless it says how many times it plays.
 
@@ -125,6 +126,38 @@ sphere {
 }
 ```
 
+### two at once
+
+The cube turns all the time and jumps every 2 s: two animations, one after each comma.
+
+```css
+@scene {
+  cube;
+}
+
+cube {
+  translate: 0 0.5 0;
+  corner-radius: 0.1;
+  color: #3a7bff;
+  animation: turn 6s linear, hop 2s ease-in-out;
+}
+
+@keyframes turn {
+  to {
+    rotate-y: -1turn;
+  }
+}
+
+@keyframes hop {
+  0%, 60%, 100% {
+    translate: 0 0.5 0;
+  }
+  80% {
+    translate: 0 1.4 0;
+  }
+}
+```
+
 ### a drop, once
 
 After 0.5 s, one iteration; `both` shows the first frame before it and the last one after.
@@ -183,7 +216,7 @@ How long the animation waits before it starts, in `s` or `ms`; a negative delay 
 
 **One point per value of the property, each moved by it:** `0s`, `1s`, `-1s`
 
-- **Syntax:** `<time>`
+- **Syntax:** `<time>#`
 - **Initial value:** `0s`
 - **Applies to:** the scene, objects and groups
 - **Animatable:** no
@@ -220,7 +253,7 @@ The way the animation plays, like CSS. It wins over the direction written in `an
 
 **One point per value of the property, each moved by it:** `normal`, `reverse`, `alternate`, `alternate-reverse`
 
-- **Syntax:** `normal | reverse | alternate | alternate-reverse`
+- **Syntax:** `[normal | reverse | alternate | alternate-reverse]#`
 - **Initial value:** `normal`
 - **Applies to:** the scene, objects and groups
 - **Animatable:** no
@@ -264,7 +297,7 @@ The duration of one iteration of the animation, in `s` or `ms`. It wins over the
 
 **One point per value of the property, each moved by it:** `1s`, `2s`, `4s`
 
-- **Syntax:** `<time>`
+- **Syntax:** `<time>#`
 - **Initial value:** `0s`
 - **Applies to:** the scene, objects and groups
 - **Animatable:** no
@@ -301,7 +334,7 @@ What the object shows outside the animation, like CSS. It matters only with a de
 
 **One point per value of the property, each moved by it:** `none`, `forwards`, `backwards`, `both`
 
-- **Syntax:** `none | forwards | backwards | both`
+- **Syntax:** `[none | forwards | backwards | both]#`
 - **Initial value:** `none`
 - **Applies to:** the scene, objects and groups
 - **Animatable:** no
@@ -348,7 +381,7 @@ How many times the animation plays: a number, where `1.5` stops halfway through 
 
 **One point per value of the property, each moved by it:** `1`, `2`, `infinite`
 
-- **Syntax:** `<number> | infinite`
+- **Syntax:** `[<number> | infinite]#`
 - **Initial value:** `infinite`
 - **Applies to:** the scene, objects and groups
 - **Animatable:** no
@@ -385,7 +418,7 @@ The part of a scroll timeline the animation plays on, like CSS: `entry` while th
 
 **The scene crossing the window, and the part of the way the animation plays on:** `entry`, `contain`, `exit`, `start`, `end`
 
-- **Syntax:** `[ normal | <range-name> <percentage>? | <percentage> | <length> ]{1,2}`
+- **Syntax:** `[[ normal | <range-name> <percentage>? | <percentage> | <length> ]{1,2}]#`
 - **Initial value:** `normal`
 - **Applies to:** the scene, objects and groups
 - **Animatable:** no
@@ -464,7 +497,7 @@ Where on the timeline the animation ends, like CSS: the second half of `animatio
 
 **The scene crossing the window, and the part of the way the animation plays on:** `entry`, `contain`, `exit`, `start`, `end`
 
-- **Syntax:** `normal | <range-name> <percentage>? | <percentage> | <length>`
+- **Syntax:** `[normal | <range-name> <percentage>? | <percentage> | <length>]#`
 - **Initial value:** `normal`
 - **Applies to:** the scene, objects and groups
 - **Animatable:** no
@@ -502,7 +535,7 @@ Where on the timeline the animation starts, like CSS: the first half of `animati
 
 **The scene crossing the window, and the part of the way the animation plays on:** `entry`, `contain`, `exit`, `start`, `end`
 
-- **Syntax:** `normal | <range-name> <percentage>? | <percentage> | <length>`
+- **Syntax:** `[normal | <range-name> <percentage>? | <percentage> | <length>]#`
 - **Initial value:** `normal`
 - **Applies to:** the scene, objects and groups
 - **Animatable:** no
@@ -541,7 +574,7 @@ Drives the animation with the scroll of the page instead of time, like CSS scrol
 
 **A page that scrolls, and the animation where the scroll is:** `0%`, `100%`
 
-- **Syntax:** `auto | scroll([root | nearest] || [block | inline | x | y]) | view([block | inline | x | y]) | <dashed-ident>`
+- **Syntax:** `[auto | scroll([root | nearest] || [block | inline | x | y]) | view([block | inline | x | y]) | <dashed-ident>]#`
 - **Initial value:** `auto`
 - **Applies to:** the scene, objects and groups
 - **Animatable:** no
@@ -555,7 +588,7 @@ Drives the animation with the scroll of the page instead of time, like CSS scrol
 
 Write it after `animation`, which still needs a name and a duration: `animation: spin 1s linear; animation-timeline: scroll();`. Scrolling back plays the animation backward.
 
-The number of iterations and the direction still count, an animation without a count plays once along the scroll. A scene takes up to 4 different timelines. A name is looked for in the whole page, the first element that declares it wins: unlike CSS, the page needs no `timeline-scope`, the scene being drawn apart from the page. While no element declares it, the animation shows its first frame. The page Follow the page as it scrolls, under Installation, shows it live, with the CSS of the page to copy. In the playground, which does not scroll, a slider stands in for the scroll.
+The number of iterations and the direction still count, an animation without a count plays once along the scroll. A scene takes up to 16 different timelines, and an animation of a list its own: `animation: a 1s, b 1s; animation-timeline: --a, --b`. A name is looked for in the whole page, the first element that declares it wins: unlike CSS, the page needs no `timeline-scope`, the scene being drawn apart from the page. While no element declares it, the animation shows its first frame. The page Follow the page as it scrolls, under Installation, shows it live, with the CSS of the page to copy. In the playground, which does not scroll, a slider stands in for the scroll.
 
 ### turn with the page
 
@@ -654,7 +687,7 @@ The easing of each step of the animation, like CSS. It wins over the easing writ
 
 **The curve of the easing, and a ball that moves by it:** `time`, `progress`
 
-- **Syntax:** `<easing>`
+- **Syntax:** `<easing>#`
 - **Initial value:** `linear`
 - **Applies to:** the scene, objects and groups
 - **Animatable:** no
