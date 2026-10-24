@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { textOf } from "./text";
+import { SIZE, textOf } from "./text";
 import { elementId, needsWebGL, paintName, resolveImage } from "./textures";
-import { textSource } from "../compiler/features/content";
+import { digitsSource, LETTER_PIXELS, pieceSource, textSource } from "../compiler/features/content";
 import { gssModule } from "../vite/plugin";
 
 describe("the text of an object, among the images of the scene", () => {
@@ -10,6 +10,16 @@ describe("the text of an object, among the images of the scene", () => {
   it("is read back by the runtime: the text and its font", () => {
     expect(textOf(hello)).toEqual({ text: "hello", font: "italic 700 Georgia, serif", width: null, align: "left" });
     expect(textOf(textSource("hi", "normal 400 serif", 4, "center"))).toEqual({ text: "hi", font: "normal 400 serif", width: 4, align: "center" });
+  });
+
+  it("reads the pieces of a text with a number: its strings and the digits of its font", () => {
+    expect(textOf(pieceSource("item: ", "normal 400 serif"))).toEqual({ text: "item: ", font: "normal 400 serif", width: null, align: "left", kind: "piece" });
+    expect(textOf(digitsSource("normal 400 serif"))).toEqual({ text: "0123456789-.", font: "normal 400 serif", width: null, align: "left", kind: "digits" });
+    expect(textOf('content(["a","normal 400 serif",null,"left","other"])')).toBeNull();
+  });
+
+  it("draws the letters at the size the compiler counts lines of font-size in", () => {
+    expect(SIZE).toBe(LETTER_PIXELS);
   });
 
   it("keeps quotes, parentheses and line breaks of the text", () => {

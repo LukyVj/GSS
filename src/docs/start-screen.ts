@@ -12,7 +12,7 @@ import { groupEntries, qualified } from "./navigation";
 import { ALGOLIA, SUGGESTIONS_INDEX } from "./search";
 import { CONCEPTS } from "./concepts";
 import { VERSION } from "../version";
-import { compareVersions, newestVersion } from "./news";
+import { compareVersions, newestValue, newestVersion } from "./news";
 
 export { compareVersions };
 import { placePreview } from "./search-preview";
@@ -20,22 +20,23 @@ import { mountColumnResizers } from "./search-columns";
 import { trySearchExample } from "./search-try";
 import { navIcon } from "./nav-icons";
 
-export type DocEntry = { anchor: string; label: string; group: string; since?: string };
+export type DocEntry = { anchor: string; label: string; group: string; since?: string; updated?: string }; // updated: the newest version that gave it a value
 export type DocSection = { id: string; title: string; category: string; entries: DocEntry[] };
 export type StartPage = { anchor: string; label: string; group: string };
 export type News = { version: string; pages: StartPage[] };
 
 // The groups of the docs, in the order of the docs, each page named like the contents name it
 export function docSections(): DocSection[] {
-  const entries = [
+  const entries: { anchor: string; label: string; since?: string; updated?: string }[] = [
     ...[...GETTING_STARTED, ...INSTALLATION].map((entry) => ({ anchor: entry.anchor, label: entry.label, since: entry.since })),
-    ...AT_RULES.map((atRule) => ({ anchor: `at-${atRule.name}`, label: `@${atRule.name}`, since: atRule.since })),
-    ...SELECTORS.map((selector) => ({ anchor: selector.anchor, label: selector.name, since: selector.since })),
-    ...FUNCTIONS.map((fn) => ({ anchor: fn.anchor, label: fn.name, since: fn.since })),
-    ...SHAPE_DOCS.map((shape) => ({ anchor: `shape-${shape.name}`, label: shape.name, since: shape.since })),
-    ...PROPERTIES.map((property) => ({ anchor: property.name, label: property.name, since: property.since })),
+    ...AT_RULES.map((atRule) => ({ anchor: `at-${atRule.name}`, label: `@${atRule.name}`, since: atRule.since, updated: newestValue(atRule.values) })),
+    ...SELECTORS.map((selector) => ({ anchor: selector.anchor, label: selector.name, since: selector.since, updated: newestValue(selector.values) })),
+    ...FUNCTIONS.map((fn) => ({ anchor: fn.anchor, label: fn.name, since: fn.since, updated: newestValue(fn.values) })),
+    ...SHAPE_DOCS.map((shape) => ({ anchor: `shape-${shape.name}`, label: shape.name, since: shape.since, updated: newestValue(shape.values) })),
+    ...PROPERTIES.map((property) => ({ anchor: property.name, label: property.name, since: property.since, updated: newestValue(property.values) })),
   ];
   const since = new Map(entries.map((entry) => [entry.anchor, entry.since]));
+  const updated = new Map(entries.map((entry) => [entry.anchor, entry.updated]));
   return groupEntries(entries.map((entry) => ({ anchor: entry.anchor, label: qualified(entry.anchor, entry.label), html: "" }))).map(
     (group) => ({
       id: group.id,
@@ -43,7 +44,8 @@ export function docSections(): DocSection[] {
       category: group.category,
       entries: group.entries.map((entry) => {
         const version = since.get(entry.anchor);
-        return { anchor: entry.anchor, label: entry.label, group: group.title, ...(version ? { since: version } : {}) };
+        const value = updated.get(entry.anchor);
+        return { anchor: entry.anchor, label: entry.label, group: group.title, ...(version ? { since: version } : {}), ...(value ? { updated: value } : {}) };
       }),
     }),
   );
@@ -55,13 +57,14 @@ export function docEntries(): DocEntry[] {
 }
 
 
-// The pages of the newest version that added pages. A page of a version not published yet
-// (newer than the package) waits: the docs describe it, "New in" names it once it is out.
+// The pages of the newest version that added pages or values, and the older pages it gave a
+// value. A version not published yet (newer than the package) waits: the docs describe it,
+// "New in" names it once it is out.
 export function newestPages(entries: DocEntry[], published = VERSION): News | null {
-  const version = newestVersion(entries.map((entry) => entry.since), published);
+  const version = newestVersion(entries.flatMap((entry) => [entry.since, entry.updated]), published);
   if (!version) return null;
   const pages = entries
-    .filter((entry) => entry.since === version)
+    .filter((entry) => entry.since === version || entry.updated === version)
     .map(({ anchor, label, group }) => ({ anchor, label, group }));
   return { version, pages };
 }

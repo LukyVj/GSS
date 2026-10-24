@@ -2,7 +2,7 @@ import type { Token } from "../syntax/tokenizer";
 import { FACES, type Face, type Styles, type StyledInstance } from "../cascade/resolve";
 import { readFunction } from "../values/values";
 import { errorAt } from "../syntax/errors";
-import { textGroups } from "./text-layout";
+import { textGroups, textImages } from "./text-layout";
 import type { Keyframes } from "../syntax/ast";
 
 const EXAMPLE = 'texture: url("dirt.png");';
@@ -68,7 +68,7 @@ export function sceneTextures(
     // are checked on every object, even without content
     for (const texts of textGroups(instance, keyframes))
       texts.forEach((text, i) => {
-        if (text) add(text.source, instance.faceList[i]["content"] ?? instance.styles["content"] ?? []);
+        if (text) for (const image of textImages(text)) add(image, instance.faceList[i]["content"] ?? instance.styles["content"] ?? []);
       });
   }
   return [...files];

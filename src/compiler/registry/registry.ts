@@ -209,7 +209,7 @@ export const PROPERTIES: PropertyDef[] = [
     since: "0.0.1",
     appliesTo: "object",
     syntax:
-      "matte([<color>]) | metal([<color>,] [<roughness>]) | jelly([<color>,] [<density>]) | emissive([<color>,] [<strength>]) | iridescent([<color>,] [<strength>]) | gold | chrome | copper | silver | brass | aluminum | jelly | glass([<color>,] [<refraction-index>] [, [frosted | wavy | hammered | blurred] <frost>]) | glass | ice | emissive | iridescent",
+      "matte([<color>]) | metal([<color>,] [<roughness>]) | jelly([<color>,] [<density>]) | emissive([<color>,] [<strength>]) | iridescent([<color>,] [<strength>]) | toon([<color>,] [<bands>]) | gold | chrome | copper | silver | brass | aluminum | jelly | glass([<color>,] [<refraction-index>] [, [frosted | wavy | hammered | blurred] <frost>]) | glass | ice | emissive | iridescent | toon",
     initial: "matte()",
     description:
       "Sets how the surface of the object reacts to light. Without a color, a material uses the `color` property, like `currentColor` in CSS, so the color stays animatable; with its own, like `brass` or `metal(#3a7bff)`, it keeps it, even when `color` is a gradient. The color can also be a gradient: `metal(linear-gradient(#ffd27a, #ff5a36), 0.2)`.",
@@ -220,11 +220,13 @@ export const PROPERTIES: PropertyDef[] = [
       ["glass()", "See-through, bent by its refraction index, from 1 to 3 (1.5 by default: water is 1.33, diamond 2.4), then a frost from 0 to 1."],
       ["emissive()", "Gives its own light: a lamp, a screen, a neon. It is never darker than its color times its strength, from 0, none, to 4 (1 by default: its full color, even in the shade). It does not light the objects around it; with `bloom()` in the `filter` of the scene, it glows."],
       ["iridescent()", "A thin film, like a soap bubble or the back of a CD: its colors turn with the angle you see it at, most at the edges. Its strength goes from 0, none, to 1 (0.7 by default)."],
+      ["toon()", "Flat bands of light, like a cartoon: from half the color in the shade to the full color, with a highlight. Its number of bands is a whole number from 2 to 8 (3 by default).", "0.0.8"],
       ["frosted, wavy, hammered, blurred", "The style of the frost: white patches (the default), big waves, small bumps, a soft blur."],
       ["gold, chrome", "`metal(#d4af37, 0.2)` and `metal(#ffffff, 0.05)`."],
       ["copper, silver, brass, aluminum", "`metal(#c8784a, 0.25)`, `metal(#e3e4e6, 0.1)`, `metal(#c9a24d, 0.2)` and `metal(#c4c8cc, 0.35)`: the metals of everyday objects."],
       ["jelly, glass, ice", "`jelly()`, `glass()`, and `glass(#cfeaff, 1.31, frosted 0.25)`."],
       ["emissive, iridescent", "`emissive()` and `iridescent()`, with the color of `color`."],
+      ["toon", "`toon()`, with the color of `color`.", "0.0.8"],
     ],
     examples: [
       {
@@ -261,6 +263,11 @@ export const PROPERTIES: PropertyDef[] = [
         name: "iridescent()",
         text: "A dark sphere and a pale torus: their colors turn as they spin.",
         code: "@scene { sphere; torus; } sphere { translate: -0.8 0.7 0; radius: 0.6; color: #15161c; material: iridescent(0.9); } torus { translate: 0.9 0.7 0; radius: 0.45; thickness: 0.18; rotate-x: 70deg; color: #f4f1ea; material: iridescent; animation: spin 6s linear infinite; } @keyframes spin { to { rotate-y: 360deg; } }",
+      },
+      {
+        name: "toon()",
+        text: "`toon`, and `toon(5)` with more bands, beside a `matte()` sphere of the same color.",
+        code: "@scene { sphere#a; sphere#b; sphere#c; } sphere { radius: 0.55; color: #ff5a36; } #a { translate: -1.3 0.55 0; material: toon; } #b { translate: 0 0.55 0; material: toon(5); } #c { translate: 1.3 0.55 0; material: matte(); }",
       },
       {
         name: "glass()",
@@ -390,16 +397,17 @@ export const PROPERTIES: PropertyDef[] = [
     since: "0.0.7",
     appliesTo: "object",
     animatable: true,
-    syntax: "<string>+ | none",
+    syntax: "[ <string> | <number> ]+ | none",
     initial: "none",
     description:
       "Writes a text on the surface of the object, the way `content` gives a text to a `::before` in CSS. The text is painted over the color, the gradient or the `texture` of the object: it moves, turns and takes the light with it, and goes behind what stands in front of it.",
     values: [
       ["<string>", 'The text, between quotes. Several strings side by side are joined: `"3D" " text"`. `\\A` starts a new line, like CSS: `"one\\A two"`.'],
-      ["var(--name)", "A variable that holds a string."],
+      ["<number>", 'A number, joined to the strings around it: `"item " sibling-index()` writes `item 1`, `item 2`… Unlike CSS, where `content` takes no number. One number per text, on one line, written like CSS writes it: `0.5`, `-2`, six decimals at most.', "0.0.8"],
+      ["var(--name)", "A variable that holds a string or a number."],
       ["none", "No text: the default. `normal` is the same."],
     ],
-    details: "The text is as large as each face lets it be, or as `font-size` says. Unlike CSS, `content` goes on the object itself, not on a `::before`.",
+    details: "The text is as large as each face lets it be, or as `font-size` says. Unlike CSS, `content` goes on the object itself, not on a `::before`, and it takes a number.",
     more: "The text sits in the middle of each face, and keeps its proportions. Without `::face()`, every face of the object shows it, read from left to right on each; `::face()` gives a face a text of its own, or `none`, by its name or its number (`::face(3)`, `::face(odd)`). A cube and a plane write on their flat faces. A round shape (a sphere, a cylinder, a tube, a cone, a capsule, a torus) wraps the text around itself like a label on a can, on four sides around its axis, and lays it flat on its top and its bottom. A pyramid writes on its four slopes and its base, an octahedron on its eight triangles, upright. Any other shape takes the text of each side like a sticker, fading where its surface turns away. The font comes from `font-family`, `font-weight` and `font-style`, the size from `font-size`, the color from `text-color`, the side its lines lean to from `text-align`. An emoji keeps its own colors. On `:hover` and in `@keyframes` the text changes halfway, like a value of CSS that does not interpolate.",
     examples: [
       {
@@ -416,6 +424,11 @@ export const PROPERTIES: PropertyDef[] = [
         name: "around a can",
         text: "On a cylinder, the text wraps around the side like a label.",
         code: '@scene { cylinder; } scene { camera-angle: 25deg 15deg; } cylinder { translate: 0 0.9 0; radius: 0.6; height: 1.6; color: #e8443a; content: "SODA"; font-weight: bold; animation: turn 6s linear infinite; } @keyframes turn { to { rotate-y: 360deg; } }',
+      },
+      {
+        name: "numbered copies",
+        text: "Each copy writes its own number, from `sibling-index()`. The digits are drawn once, so a scene can number many copies.",
+        code: '@scene { cube * 8; } scene { camera-angle: 0deg 10deg; camera-distance: 6; } cube { size: 0.7 0.7 0.1; translate: calc(mod(sibling-index() - 1, 4) * 0.85 - 1.275) calc(1.4 - round(down, (sibling-index() - 1) / 4) * 0.85) 0; color: #1a1d2b; content: "n° " sibling-index(); font-size: 0.2; text-align: center; }',
       },
       {
         name: "a variable",

@@ -10,7 +10,7 @@ Every example of this page, to edit live: [gss-lang.dev/docs](https://www.gss-la
 
 ## Embedding a scene
 
-A GSS scene runs on any web page, in three ways. All three use the package `gss-lang@0.0.7`.
+A GSS scene runs on any web page, in three ways. All three use the package `gss-lang@0.0.8`.
 
 GSS is open source, under the Apache-2.0 license: its code is on [GitHub](https://github.com/LukyVj/GSS), where you can [report a bug](https://github.com/LukyVj/GSS/issues). Questions, ideas, a scene to show: say hi on X, [@GSS_lang](https://x.com/GSS_lang).
 
@@ -20,10 +20,10 @@ GSS is open source, under the Apache-2.0 license: its code is on [GitHub](https:
 
 ### A tag
 
-CDN · v0.0.7 · no build step
+CDN · v0.0.8 · no build step
 
 ```html
-<script type="module" src="https://cdn.jsdelivr.net/npm/gss-lang@0.0.7/lib/embed.js"></script>
+<script type="module" src="https://cdn.jsdelivr.net/npm/gss-lang@0.0.8/lib/embed.js"></script>
 
 <gss-scene src="logo.gss"></gss-scene>
 <gss-scene controls="none">
@@ -33,7 +33,7 @@ CDN · v0.0.7 · no build step
 
 ### A function
 
-npm install gss-lang@0.0.7
+npm install gss-lang@0.0.8
 
 ```js
 import { mount } from "gss-lang";
@@ -45,7 +45,7 @@ scene.destroy();
 
 ### A build step
 
-gss-lang@0.0.7 · compiled with Vite
+gss-lang@0.0.8 · compiled with Vite
 
 ```js
 // vite.config.ts
@@ -77,12 +77,12 @@ Once `<gss-scene>` fires `load`, its `scene` property gives the scene, to `pause
 
 ## Package (npm)
 
-Install `gss-lang@0.0.7` in your application. The package holds the compiler, the renderer and the TypeScript declarations.
+Install `gss-lang@0.0.8` in your application. The package holds the compiler, the renderer and the TypeScript declarations.
 
 **How it goes, from where it is written to what the scene shows:** `npm install gss-lang`, `mount(canvas, source)`, `a canvas of the page`
 
 ```sh
-npm install gss-lang@0.0.7
+npm install gss-lang@0.0.8
 ```
 
 ```js
@@ -106,7 +106,7 @@ The Vite plugin comes with the package. It compiles the `.gss` imports at build 
 **How it goes, from where it is written to what the scene shows:** `scene.gss`, `vite build`, `the scene, compiled`
 
 ```sh
-npm install gss-lang@0.0.7
+npm install gss-lang@0.0.8
 npm install --save-dev vite
 ```
 
@@ -127,12 +127,12 @@ With TypeScript, add `"gss-lang/client"` to `compilerOptions.types` in `tsconfig
 
 ## CDN (no build step)
 
-Load the browser module of `v0.0.7` from jsDelivr: no install, no bundler. The version is pinned, so an update never changes your scene unexpectedly.
+Load the browser module of `v0.0.8` from jsDelivr: no install, no bundler. The version is pinned, so an update never changes your scene unexpectedly.
 
 **How it goes, from where it is written to what the scene shows:** `<script src="embed.js">`, `<gss-scene>`, `the scene`
 
 ```html
-<script type="module" src="https://cdn.jsdelivr.net/npm/gss-lang@0.0.7/lib/embed.js"></script>
+<script type="module" src="https://cdn.jsdelivr.net/npm/gss-lang@0.0.8/lib/embed.js"></script>
 
 <gss-scene src="logo.gss"></gss-scene>
 <gss-scene controls="none">
@@ -140,7 +140,7 @@ Load the browser module of `v0.0.7` from jsDelivr: no install, no bundler. The v
 </gss-scene>
 ```
 
-The script defines `<gss-scene>`. Point its `src` to a `.gss` file, or write the GSS inline, as above. Serve the page over HTTP(S). The module: [https://cdn.jsdelivr.net/npm/gss-lang@0.0.7/lib/embed.js](https://cdn.jsdelivr.net/npm/gss-lang@0.0.7/lib/embed.js).
+The script defines `<gss-scene>`. Point its `src` to a `.gss` file, or write the GSS inline, as above. Serve the page over HTTP(S). The module: [https://cdn.jsdelivr.net/npm/gss-lang@0.0.8/lib/embed.js](https://cdn.jsdelivr.net/npm/gss-lang@0.0.8/lib/embed.js).
 
 To drive the scene from a script, see [Set variables from JavaScript](#set-variables).
 

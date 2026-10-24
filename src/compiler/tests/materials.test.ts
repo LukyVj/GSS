@@ -102,7 +102,7 @@ describe("material keywords", () => {
     expect(() =>
       compileGSS("@scene { sphere; } sphere { material: wood; }"),
     ).toThrow(
-      'Unknown material "wood". Available: matte(), metal(), jelly(), glass(), emissive(), iridescent(), gold, chrome, copper, silver, brass, aluminum, jelly, glass, ice, emissive, iridescent',
+      'Unknown material "wood". Available: matte(), metal(), jelly(), glass(), emissive(), iridescent(), toon(), gold, chrome, copper, silver, brass, aluminum, jelly, glass, ice, emissive, iridescent, toon',
     );
   });
 
@@ -337,3 +337,57 @@ describe("material: iridescent()", () => {
   });
 });
 
+
+// toon() (decision 202): flat bands of light, like a cartoon
+describe("material: toon()", () => {
+  it("writes the color and the number of bands, 3 by default", () => {
+    expect(materialOf("sphere { material: toon(#ff0000, 4); }")).toBe(
+      "if (id == 1.0) return toon(vec3(1.0, 0.0, 0.0), 4.0);  // sphere",
+    );
+    expect(materialOf("sphere { color: #00ff00; material: toon(); }")).toBe(
+      "if (id == 1.0) return toon(vec3(0.0, 1.0, 0.0), 3.0);  // sphere",
+    );
+    expect(materialOf("sphere { color: #00ff00; material: toon; }")).toBe(
+      "if (id == 1.0) return toon(vec3(0.0, 1.0, 0.0), 3.0);  // sphere",
+    );
+  });
+
+  it("rejects a number of bands outside [2, 8], or not whole", () => {
+    expect(() => compileGSS("@scene { sphere; } sphere { material: toon(1); }")).toThrow(
+      "toon(): bands expects a number between 2 and 8",
+    );
+    expect(() => compileGSS("@scene { sphere; } sphere { material: toon(9); }")).toThrow(
+      "toon(): bands expects a number between 2 and 8",
+    );
+    expect(() => compileGSS("@scene { sphere; } sphere { material: toon(2.5); }")).toThrow(
+      "toon(): bands expects a whole number",
+    );
+  });
+
+  it("is lit by shadeToon, only in the scenes that use it", () => {
+    const shader = compileGSS("@scene { sphere; } sphere { material: toon(); }");
+    expect(shader).toContain("const int TOON = 6;");
+    expect(shader).toContain("if (m.kind == TOON) col = shadeToon(p, n, rd, m);");
+    expect(shader).toContain("vec3 shadeToon(vec3 p, vec3 n, vec3 rd, Material m)");
+    expect(compileGSS("@scene { sphere; }")).not.toContain("TOON");
+  });
+
+  it("keeps the color in the shade, at half its strength, and smooths the edges of its bands", () => {
+    const shader = compileGSS("@scene { sphere; } sphere { material: toon; }");
+    expect(shader).toContain("mix(0.5, 1.0, ");
+    expect(shader).toContain("smoothstep(edge - TOON_EDGE, edge + TOON_EDGE, x)");
+  });
+
+  it("steps the light of every lamp, without the sun", () => {
+    const shader = compileGSS(
+      "@scene { sphere; light; } sphere { material: toon; } light { translate: 0 2 0; } scene { light: none; }",
+    );
+    expect(shader).toContain("vec3 light = diffuse(p, n, vec3(1.0));");
+    expect(shader).toContain("lightShine(p, r, ");
+    expect(shader).not.toContain("LIGHT_DIR");
+  });
+
+  it("is lowered to WGSL", () => {
+    expect(compileGSS("@scene { sphere; } sphere { material: toon; }", "wgsl")).toContain("fn g_shadeToon(");
+  });
+});
