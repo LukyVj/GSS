@@ -5,7 +5,7 @@ import { readAnimation } from "./animation";
 import { errorAt } from "../syntax/errors";
 import { add, div, hypot, largest, liveFlatSize, liveNumber, liveRadii, liveSize3, mul, type Num } from "../shader/codegen/live";
 import { shapeRadius } from "../shader/codegen/shapes";
-import { readAlign, readContent, readFont, readFontSize, textSource } from "./content";
+import { contentNumber, digitsSource, DIGITS, LETTER_PIXELS, pieceSource, readAlign, readContent, readFont, readFontSize, textSource, type Align } from "./content";
 
 // The full size of the object: what one image, or its text, covers
 export function objectBox(instance: StyledInstance): Num[] {
@@ -109,8 +109,49 @@ export function textBox(instance: StyledInstance): Num[] {
 }
 
 // The text of a face: its name among the images of the scene, and whether font-size sets
-// its size (sized) or the face does
-export type FaceText = { source: string; sized: boolean } | null;
+// its size (sized) or the face does. A text with a number (decision 203) is not one image:
+// its source only names it, and number says which images the shader puts end to end
+export type FaceText = { source: string; sized: boolean; number?: NumberText } | null;
+
+// A text with a number: the images of the strings before and after it (null: none), the
+// image of the digits of its font, and what the shader needs to write it: its characters
+// (code: their cells in the image of the digits, four bits each from the left, six in
+// each number), how many, and its layout (layout: the width of a line in pixels of the
+// digits and where the text goes in it, 0 to 1, with font-size; else 0, 0 and the room
+// around the text, in the same pixels)
+export type NumberText = {
+  before: string | null;
+  digits: string;
+  after: string | null;
+  code: [number, number];
+  count: number;
+  layout: [number, number, number];
+};
+
+const ALIGN_SHARE: Record<Align, number> = { left: 0, center: 0.5, right: 1 };
+
+function numberText(value: Parameters<typeof contentNumber>[0], font: string, width: number | null, align: Align): NumberText | undefined {
+  const number = contentNumber(value);
+  if (!number) return undefined;
+  const code: [number, number] = [0, 0];
+  [...number.number].forEach((character, i) => (code[i < 6 ? 0 : 1] += DIGITS.indexOf(character) * 16 ** (i % 6)));
+  return {
+    before: number.before ? pieceSource(number.before, font) : null,
+    digits: digitsSource(font),
+    after: number.after ? pieceSource(number.after, font) : null,
+    code,
+    count: number.number.length,
+    // the room around a text without font-size: 0.15 of its letters, as the runtime draws it
+    layout: width === null ? [0, 0, 0.15 * LETTER_PIXELS] : [Math.round(width * LETTER_PIXELS * 1000) / 1000, ALIGN_SHARE[align], 0],
+  };
+}
+
+// The images a text needs: its own, or the pieces of a text with a number
+export function textImages(text: NonNullable<FaceText>): string[] {
+  if (!text.number) return [text.source];
+  const { before, digits, after } = text.number;
+  return [before, digits, after].filter((image): image is string => image !== null);
+}
 
 // The text of each face, by number (faceList[0] is ::face(1)): its own content, or else
 // the object's (a face's none wins). With font-size, a line is as wide as the face: the
@@ -130,7 +171,8 @@ export function faceTexts(instance: StyledInstance): Texts {
   const names = shapeFaces(instance.tag);
   const box = size === null ? null : textBox(instance);
   return instance.faceList.map((styles, i) => {
-    const text = readContent(styles["content"] ?? instance.styles["content"]);
+    const value = styles["content"] ?? instance.styles["content"];
+    const text = readContent(value);
     if (text === null) return null;
     let width: number | null = null;
     if (size !== null) {
@@ -139,7 +181,8 @@ export function faceTexts(instance: StyledInstance): Texts {
         throw errorAt(instance.styles["font-size"], "font-size cannot go yet on an object whose size is set from JS");
       width = Math.round((across / size) * 1000) / 1000;
     }
-    return { source: textSource(text, font, width, align), sized: size !== null };
+    const number = numberText(value!, font, width, align);
+    return { source: textSource(text, font, width, align), sized: size !== null, ...(number && { number }) };
   });
 }
 
