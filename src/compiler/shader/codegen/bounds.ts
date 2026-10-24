@@ -105,7 +105,7 @@ function boxOfPoints(points: number[][]): { middle: number[]; reach: number } {
 
 // uHover[] of this node stays in [0, 1]: its transitions (rest, hovered and pressed)
 // never overshoot. n: the node, a group (decision 211) or the object itself (the last)
-function steadyTransitions(instance: StyledInstance, n: number): boolean {
+export function steadyTransitions(instance: StyledInstance, n: number): boolean {
   const states =
     n < instance.groups.length
       ? [instance.groupStyles[n], ...instance.groupHoverStates[n].map((state) => state.styles)]

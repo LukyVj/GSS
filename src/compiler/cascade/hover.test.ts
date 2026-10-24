@@ -346,9 +346,15 @@ describe("what a :hover rule can change", () => {
     ).not.toThrow();
   });
 
+  it("is the size of a shape too: radius, size, height, thickness…", () => {
+    expect(() =>
+      compile(`cube:hover { size: 2; corner-radius: 0.2; } sphere:hover { radius: 1; } cylinder:hover { height: 2; } torus:hover { thickness: 0.4; } prism:hover { depth: 1; } path:hover { stroke-width: 2; }`),
+    ).not.toThrow();
+  });
+
   it("is never a property that cannot be animated", () => {
-    expect(() => compile(`cube:hover { size: 2; }`)).toThrow(
-      '"size" cannot change on :hover. Animatable properties: ',
+    expect(() => compile(`cube:hover { texture-mapping: sphere; }`)).toThrow(
+      '"texture-mapping" cannot change on :hover. Animatable properties: ',
     );
     expect(() => compile(`#g:hover cube { material: gold; }`)).toThrow(
       '"material" cannot change on :hover',

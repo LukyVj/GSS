@@ -2939,11 +2939,12 @@ export const SELECTORS: SelectorDef[] = [
       ["sphere:hover + cube", "On an earlier sibling: the cube reacts to the sphere."],
       ["#letters:hover cube", "On a group: every cube of `#letters` reacts as soon as the mouse is over any object of the group, like hovering a child hovers its parent in CSS."],
       ["#g:has(sphere:hover)", "Inside `:has()`: hovering one object changes another."],
+      ["sphere:hover { radius: 1; }", "A size of the shape: the sphere itself grows, where `scale` grows the whole space of the object.", "0.0.8"],
       ["#g:hover { scale: 1.2; }", "On a group itself: hovering any object of `#g` grows the whole group from its center, every object with it.", "0.0.8"],
       ["cube:hover, cube:hover + cube", "Several rules, each waiting for its own objects: the cube under the mouse and the one after it change apart. When both apply to a cube, the most specific wins, like CSS.", "0.0.8"],
     ],
     details: "A `:hover` rule changes animatable properties only. On a group, it changes the group's transforms and its opacity, and the group carries every object it holds; to change their color, write `#g:hover cube`.",
-    more: "The `:hover` rules join the cascade like any other: `#a { color: blue; }` beats `cube:hover { color: red; }`, and a normal `!important` beats them all. The animatable properties are the transforms, `color`, `opacity`, `mask-image`, `offset-distance` and variables: never a face. It can also start an `animation`: it begins when the pointer arrives and plays to its end, pointer gone or not (see `:active`). Each rule waits for its own objects, like CSS: `cube:hover` applies when the cube itself is hovered, `cube:hover + cube` when the one before it is, and when both apply, the most specific wins.",
+    more: "The `:hover` rules join the cascade like any other: `#a { color: blue; }` beats `cube:hover { color: red; }`, and a normal `!important` beats them all. The animatable properties are the transforms, `color`, `opacity`, `mask-image`, `offset-distance` and variables, and the sizes of the shapes (`radius`, `size`, `height`, `thickness`…), which `@keyframes` cannot change: never a face. It can also start an `animation`: it begins when the pointer arrives and plays to its end, pointer gone or not (see `:active`). Each rule waits for its own objects, like CSS: `cube:hover` applies when the cube itself is hovered, `cube:hover + cube` when the one before it is, and when both apply, the most specific wins.",
     examples: [
       {
         name: "lift on hover",
