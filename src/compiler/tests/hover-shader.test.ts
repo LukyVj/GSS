@@ -203,6 +203,18 @@ describe("a hovered size in the shader", () => {
   });
 });
 
+// :not(:hover): a slot that is 1 when nothing, or something else, is hovered
+describe(":not(:hover) in the shader and the export", () => {
+  it("lists 0 among the triggers of its slot", () => {
+    expect(compileScene(`@scene { cube; sphere; } cube:not(:hover) { color: #ff0000; }`).hover).toEqual([[0, 2]]);
+  });
+
+  it("keeps the state on at rest in Shadertoy, where nothing is hovered", () => {
+    const exported = toShadertoy(compileScene(`@scene { cube; sphere; } cube:not(:hover) { color: #ff0000; } sphere:hover { color: #0000ff; }`));
+    expect(exported).toContain("const float uHover[2] = float[2](1.0, 0.0);");
+  });
+});
+
 describe("a hovered property in the shader", () => {
   it("mixes the color at rest and the hovered color", () => {
     const shader = compileGSS(`

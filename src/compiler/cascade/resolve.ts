@@ -194,10 +194,19 @@ function triggersOf(
 ): SceneInstance[] {
   const parts = [...(selector.ancestors ?? []), selector];
   const found = new Set<SceneInstance>();
+  // A :not() that waits for the pointer is also true when nothing is hovered (decision 214)
+  const inverted = parts.some((part) => (part.not ?? []).some((list) => list.some((inner) => needs(inner, state))));
   for (const path of matchingPaths(selector, node, scene, anchor)) {
-    let triggers = scene;
+    let triggers = inverted ? [NOTHING, ...scene.filter((other) => other.tag !== "light")] : scene;
     parts.forEach((part, i) => {
       const matched = path[i];
+      for (const list of part.not ?? []) {
+        // every object that would make one of its selectors true, at this node
+        const hovering = list
+          .filter((inner) => needs(inner, state) && matches(inner, matched, scene, anchor))
+          .flatMap((inner) => triggersOf(inner, matched, scene, anchor, state));
+        triggers = triggers.filter((other) => !hovering.includes(other));
+      }
       if (part[state]) {
         const allowed = hoveredBy(matched, scene);
         triggers = triggers.filter((other) => allowed.includes(other));
@@ -212,6 +221,9 @@ function triggersOf(
   }
   return [...found];
 }
+
+// Nothing under the pointer: the floor, the background, or the pointer away (id 0)
+const NOTHING: SceneInstance = { tag: "nothing", id: null, classes: [], index: 0, siblingIndex: 0, siblingCount: 0, groups: [] };
 
 // Hovering (or pressing) a group means hovering one of its drawable objects (a light
 // inside it is never drawn, decision 110).
@@ -476,10 +488,11 @@ function parseCompound(tokens: Token[]): SimpleSelector {
         if (parts.length === 0)
           throw errorAt(tokens, ":not() needs a selector, like: cube:not(.red)");
         const list = parts.map((part) => parseSelector(part));
-        if (list.some(needsPointer))
+        // :hover inside is a condition on the pointer, read by the triggers (decision 214)
+        if (list.some(needsActive))
           throw errorAt(
             tokens,
-            ":not() cannot hold :hover or :active yet: write the rule for the hovered state, and its opposite without :hover",
+            ":not() cannot hold :active yet: write the rule for the pressed state, and its opposite without :active",
           );
         if (list.some((inner) => inner.face !== undefined))
           throw errorAt(
@@ -712,9 +725,11 @@ function matchesCompound(
     !selector.structural.every((s) => matchesPosition(s, instance, scene))
   )
     return false;
+  // a selector that waits for the pointer is a condition on the triggers, not on the
+  // scene (decision 214)
   if (
     selector.not?.some((list) =>
-      list.some((inner) => matches(inner, instance, scene)),
+      list.some((inner) => !needsPointer(inner) && matches(inner, instance, scene)),
     )
   )
     return false;
@@ -799,7 +814,8 @@ function needs(selector: SimpleSelector, state: PointerState): boolean {
   return [selector, ...(selector.ancestors ?? [])].some(
     (part) =>
       part[state] === true ||
-      (part.has ?? []).some((inner) => needs(inner, state)),
+      (part.has ?? []).some((inner) => needs(inner, state)) ||
+      (part.not ?? []).some((list) => list.some((inner) => needs(inner, state))),
   );
 }
 

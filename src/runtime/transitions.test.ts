@@ -31,6 +31,11 @@ describe("createTransitions", () => {
     expect(slots.update(OFF, 10)[0]).toBe(0);
   });
 
+  it("starts from the state of each slot at rest: no glide when the page opens (decision 214)", () => {
+    const slots = createTransitions([{ enter: glide(1), leave: glide(1) }], Float32Array.of(1));
+    expect(slots.update(ON, 0)[0]).toBe(1);
+  });
+
   it("glides to 1 with the enter transition", () => {
     const slots = createTransitions([{ enter: glide(1), leave: null }]);
     expect(slots.update(ON, 1000)[0]).toBe(0);

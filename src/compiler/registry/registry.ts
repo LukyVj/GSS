@@ -3056,8 +3056,10 @@ export const SELECTORS: SelectorDef[] = [
       ["cube:not(:first-child, :last-child)", "The cubes in the middle."],
       ["group:not(:has(sphere))", "The groups without a sphere."],
       [":not(.a):not(.b)", "Several in a row."],
+      ["cube:not(:hover)", "Under the mouse or not: every cube that is not hovered, and all of them while nothing is.", "0.0.8"],
+      ["#cloud:not(:has(.point:hover)) .point", "The points of `#cloud` while none of them is hovered.", "0.0.8"],
     ],
-    details: "It weighs like the most specific selector of its list, like CSS: `cube:not(#hero)` beats `#hero` alone. It is read once, when the scene compiles: it cannot hold `:hover` or a face.",
+    details: "It weighs like the most specific selector of its list, like CSS: `cube:not(#hero)` beats `#hero` alone. It is read when the scene compiles, except `:hover` inside, read under the mouse; it cannot hold `:active` or a face.",
     examples: [
       {
         name: "every cube but the red ones",

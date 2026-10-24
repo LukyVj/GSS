@@ -140,6 +140,19 @@ it("a hovered sphere takes its hovered radius", async () => {
   for (const backend of ["gl", "gpu"] as const) expect(red(hovered[backend]), backend).toBeGreaterThan(red(rest[backend]) * 3);
 }, 60000);
 
+// :not(:hover) (decision 214): on at rest, nothing hovered; off under the mouse
+it("a :not(:hover) rule holds at rest and lets go under the mouse", async () => {
+  const source = `@scene { sphere; } scene { camera-angle: 0deg 0deg; camera-distance: 5; camera-target: 0 0 0; floor: none; }
+    sphere { radius: 1; color: red; transition: 0.5s; } sphere:not(:hover) { color: blue; }`;
+  const center = (36 * 96 + 48) * 4;
+  const rest = await render(source);
+  const hovered = await render(source, true);
+  for (const backend of ["gl", "gpu"] as const) {
+    expect(rest[backend][center + 2], `${backend} at rest`).toBeGreaterThan(rest[backend][center] + 30);
+    expect(hovered[backend][center], `${backend} hovered`).toBeGreaterThan(hovered[backend][center + 2] + 30);
+  }
+}, 60000);
+
 // A variable set from JS reaches the uniform, after the hover slots, on both backends
 it("setProperty() changes the scene without compiling again (decision 105)", async () => {
   const source = '@property --tint { syntax: "<color>"; inherits: false; initial-value: #ff0000; } @scene { sphere; } scene { camera-angle: 0deg 0deg; camera-distance: 5; camera-target: 0 0 0; floor: none; ambient: 1; } sphere { radius: 1; color: var(--tint); } sphere:hover { scale: 1.1; }';

@@ -1778,3 +1778,12 @@ A first version cut the light from 0 into steps, with a pinpoint highlight: its 
 **Why**: `scale` grows a shape with its corners, its stroke and its texture; a button whose corner rounds, a ring that thickens or a path whose stroke swells on hover need the size itself.
 **Accepted limits**: what reads the size at rest still does: the box of `transform-origin` in percent, the mapping of a texture and the faces of `content`. A path whose `stroke-width` changes is cut into segments as for a width set from JS, a hundredth of the default width.
 
+## 214. `:not()` holding `:hover`: a state on while nothing, or something else, is hovered
+
+**Decision** (roadmap 0.0.8, Oct. 24): `:not()` can hold a selector that waits for the mouse, like CSS: `cube:not(:hover)`, `#g:hover cube:not(:hover)`, `.wrap:not(:has(.point:hover)) .point`. Before, it was an error (decision 93).
+- **The triggers** (`triggersOf`): the part of a selector inside `:not()` that waits for `:hover` is no longer matched when the scene compiles; it removes, from the triggers of the rule, every object that would make it true at that node. The triggers of such a rule start from every object that can be hovered and **0**, nothing under the pointer (the floor, the background, the pointer away): a `:not(:hover)` rule is on while nothing is hovered, like CSS. A selector inside that cannot match the node puts no condition.
+- **The runtime**: unchanged, except where a slot starts: `createTransitions()` takes the value of each slot with nothing hovered, so a `:not(:hover)` state is on from the first frame instead of gliding in with its transition when the page opens. The Shadertoy export, where nothing is ever hovered, keeps these slots at 1.
+- A scene without `:hover` inside `:not()` compiles to the same shader as before (compared on every scene and registry example).
+**Why**: the opposite of a hover is the most natural way to write a resting state that the mouse interrupts: the points of the cloud of the changelog page that drift while none is hovered, a hint that fades once the mouse reaches the object.
+**Accepted limits**: `:active` inside `:not()` is still an error. `:nth-child(… of S)` still cannot hold `:hover`: the order of the objects is read once.
+

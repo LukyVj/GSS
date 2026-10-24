@@ -31,14 +31,14 @@ ${lines.join("\n")}
 `;
 }
 
-export function toShadertoy({ shader, camera, properties }: CompiledScene): string {
+export function toShadertoy({ shader, camera, properties, hover }: CompiledScene): string {
   const channels = channelDefines(shader);
   const body = shader
-    // 0. No picking in Shadertoy: every object stays at rest. Before step 1,
-    // which removes every uniform line
+    // 0. No picking in Shadertoy: nothing is hovered, so only the slots of :not(:hover) are
+    // on (decision 214). Before step 1, which removes every uniform line
     .replace(/^uniform float uHover\[(\d+)\];.*\n/m, (_, n) => {
-      const zeros = Array(Number(n)).fill("0.0").join(", ");
-      return `const float uHover[${n}] = float[${n}](${zeros}); // :hover needs the GSS runtime\n`;
+      const rest = Array.from({ length: Number(n) }, (_, i) => (hover[i]?.includes(0) ? "1.0" : "0.0")).join(", ");
+      return `const float uHover[${n}] = float[${n}](${rest}); // :hover needs the GSS runtime\n`;
     })
     .replace(/^uniform float uStart\[(\d+)\];.*\n/m, (_, n) => {
       const zeros = Array(Number(n)).fill("0.0").join(", ");
