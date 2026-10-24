@@ -8,6 +8,7 @@ The 0.0.1 history was reconstructed from GitHub.
 
 ### Added
 
+- **`material`**: `toon()`, flat bands of light, like a cartoon. `material: toon` shades an object in flat bands of light, like a cartoon or a cel-shaded game: from the shade to the full color, with a small sharp highlight. `toon(5)` gives it more bands (from 2 to 8, 3 by default), and `toon(#ff5a36)` a color of its own. It takes the sun, the lights of the scene and their shadows, like the other materials.
 - **Home page**: a section that thanks the contributors. The home page thanks the contributors: a section "Contributors" with the avatar and the name of each person whose pull request is in GSS, and what each pull request brought, linked to it. The footer links to it.
 - **Changelog**: a page for it on the site, `/changelog`. A page for the changelog, `/changelog`: every version, the newest first, each with its anchor (`/changelog#0.0.7`). Each change is one line that leads to its page in the docs. Beside it, a cloud of points drawn in GSS writes the number of each version as the page scrolls, and scatters between two versions. The version in the footer of every page opens it, where it opened npm.
 - **VS Code extension**: the GSS of an HTML page, colored. The editor extension colors GSS written in an HTML page: the content of a `<script type="text/gss">` is highlighted as GSS, the tag around it as HTML.

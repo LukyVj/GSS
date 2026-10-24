@@ -200,4 +200,16 @@ vec3 shadeIridescent(vec3 p, vec3 n, vec3 rd, Material m) {
   float shine = pow(max(dot(r, LIGHT_DIR), 0.0), 40.0) * 0.6;
   return mix(diffuse(n, m.color), diffuse(n, film) + 0.15 * film, amount) + shine;
 }`,
+
+  shadeToon: `// toon() (decision 202): flat bands of light, like a cartoon. All the light on the surface
+// (the ambient light, the sun and the lights of @scene, with their shadows) is cut into bands:
+// each one is flat, from the shade to the full color. A small highlight with a sharp edge.
+vec3 shadeToon(vec3 p, vec3 n, vec3 rd, Material m) {
+  vec3 light = diffuse(n, vec3(1.0));
+  float level = max(max(light.r, light.g), light.b);
+  float band = ceil(level * m.density) / m.density; // the top of the band the light falls in
+  vec3 r = reflect(rd, n);
+  vec3 shine = vec3(1.0) * pow(max(dot(r, LIGHT_DIR), 0.0), 60.0);
+  return m.color * light * (band / max(level, 1e-4)) + step(vec3(0.5), shine) * 0.6;
+}`,
 };
