@@ -3464,6 +3464,68 @@ export const FUNCTIONS: FunctionDef[] = [
     ],
   },
   {
+    name: "scroll()",
+    anchor: "fn-scroll",
+    figure: "scroll-timeline",
+    since: "0.0.3",
+    covers: [],
+    syntax: "scroll([root | nearest] || [block | inline | x | y])",
+    computed: "by the browser, each time the page scrolls",
+    description:
+      "A scroll progress timeline, like CSS: the scroll of a container, from its start (0%) to its end (100%), drives an animation instead of time. It is a value of `animation-timeline`.",
+    valuesTitle: "Arguments",
+    values: [
+      ["nearest", "The default: the closest scroll container around the scene."],
+      ["root", "The page itself."],
+      ["block, y", "The default: the vertical scroll."],
+      ["inline, x", "The horizontal scroll."],
+    ],
+    details: "The two arguments come in any order, each one at most once: `scroll(root)`, `scroll(x nearest)`. The whole scroll is the whole animation; scrolling back plays it backward.",
+    more: "The duration and the delay of the animation do not count, its count and its direction still do. `animation-range` plays it on a part of the scroll, in percentages or pixels: the named ranges belong to `view()`. In the playground, which does not scroll, a slider stands in for the scroll.",
+    examples: [
+      {
+        name: "the scroll of the page",
+        text: "The torus turns once from the top of the page to its bottom.",
+        code: "@scene { torus; } torus { translate: 0 0.8 0; radius: 0.6; thickness: 0.2; color: #ff5a36; animation: roll 1s linear; animation-timeline: scroll(root); } @keyframes roll { to { rotate-x: 360deg; } }",
+      },
+      {
+        name: "there and back",
+        text: "Two iterations, the second backward: the sphere goes up, then down, along one scroll.",
+        code: "@scene { sphere; } sphere { radius: 0.4; color: #3a7bff; animation: climb 1s ease-in-out 2 alternate; animation-timeline: scroll(); } @keyframes climb { from { translate: 0 0.4 0; } to { translate: 0 2 0; } }",
+      },
+    ],
+  },
+  {
+    name: "view()",
+    anchor: "fn-view",
+    figure: "range",
+    since: "0.0.3",
+    covers: [],
+    syntax: "view([block | inline | x | y])",
+    computed: "by the browser, each time the page scrolls",
+    description:
+      "A view progress timeline, like CSS: the way of the scene across its scroll container drives an animation instead of time, from 0% when it starts to enter to 100% when it has left. It is a value of `animation-timeline`.",
+    valuesTitle: "Arguments",
+    values: [
+      ["block, y", "The default: the scene crosses the container from the bottom to the top."],
+      ["inline, x", "The scene crosses it from one side to the other."],
+    ],
+    details: "`animation-range` plays the animation on a part of the way: `entry` while the scene comes in, `contain` while it is all in, `exit` while it leaves.",
+    more: "The scroll container is the closest one around the scene, or the page. The duration and the delay of the animation do not count, its count and its direction still do. Unlike CSS, `view()` takes no inset. In the playground, which does not scroll, a slider stands in for the scroll.",
+    examples: [
+      {
+        name: "across the page",
+        text: "The cube turns a full turn while the scene crosses the page.",
+        code: "@scene { cube; } cube { translate: 0 0.6 0; corner-radius: 0.1; color: #3ad16b; animation: spin 1s linear; animation-timeline: view(); } @keyframes spin { to { rotate-y: 360deg; } }",
+      },
+      {
+        name: "once it is in",
+        text: "The spheres gather while the scene comes in, then hold.",
+        code: "@scene { sphere * 3; } sphere { --x: calc(2 - sibling-index()); radius: 0.35; translate: 0 0.35 0; color: #ff5a36; animation: spread 1s ease-out; animation-timeline: view(); animation-range: entry; } @keyframes spread { from { translate: calc(var(--x) * 2) 1.6 0; } to { translate: var(--x) 0.35 0; } }",
+      },
+    ],
+  },
+  {
     name: "<gradient>",
     anchor: "fn-gradients",
     figure: "tile",
