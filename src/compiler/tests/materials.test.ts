@@ -372,6 +372,12 @@ describe("material: toon()", () => {
     expect(compileGSS("@scene { sphere; }")).not.toContain("TOON");
   });
 
+  it("keeps the color in the shade, at half its strength, and smooths the edges of its bands", () => {
+    const shader = compileGSS("@scene { sphere; } sphere { material: toon; }");
+    expect(shader).toContain("mix(0.5, 1.0, ");
+    expect(shader).toContain("smoothstep(edge - TOON_EDGE, edge + TOON_EDGE, x)");
+  });
+
   it("steps the light of every lamp, without the sun", () => {
     const shader = compileGSS(
       "@scene { sphere; light; } sphere { material: toon; } light { translate: 0 2 0; } scene { light: none; }",

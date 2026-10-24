@@ -201,15 +201,32 @@ vec3 shadeIridescent(vec3 p, vec3 n, vec3 rd, Material m) {
   return mix(diffuse(n, m.color), diffuse(n, film) + 0.15 * film, amount) + shine;
 }`,
 
-  shadeToon: `// toon() (decision 202): flat bands of light, like a cartoon. All the light on the surface
-// (the ambient light, the sun and the lights of @scene, with their shadows) is cut into bands:
-// each one is flat, from the shade to the full color. A small highlight with a sharp edge.
+  shadeToon: `// toon() (decision 202): flat bands of light, like a cartoon, the way three.js and the
+// cel-shaded games do it. All the light on the surface (the ambient light, the sun and the
+// lights of @scene, with their shadows) is cut into bands; the full color is reached at 80 %
+// of the light, so the object reads lit. The bands go from half the color in the shade to
+// all of it: a shade is never black. Each edge is smoothed over a small width of light (fwidth
+// is not allowed in a branch in WGSL). A wide highlight with a soft edge, on top.
+const float TOON_EDGE = 0.02;
+
 vec3 shadeToon(vec3 p, vec3 n, vec3 rd, Material m) {
   vec3 light = diffuse(n, vec3(1.0));
   float level = max(max(light.r, light.g), light.b);
-  float band = ceil(level * m.density) / m.density; // the top of the band the light falls in
+  float x = clamp(level / 0.8, 0.0, 1.0);
+  // 1. The band the light falls in, from 0 to bands - 1, each edge smoothed
+  float band = 0.0;
+  for (int k = 1; k < 8; k++) {
+    if (float(k) >= m.density) break;
+    float edge = float(k) / m.density;
+    band += smoothstep(edge - TOON_EDGE, edge + TOON_EDGE, x);
+  }
+  float tone = mix(0.5, 1.0, band / (m.density - 1.0));
+  // 2. The hue of the light (a colored light, a colored ambient light); fades out in the dark
+  vec3 tint = light / max(level, 0.05);
+  // 3. The highlight: a patch with a soft edge
   vec3 r = reflect(rd, n);
-  vec3 shine = vec3(1.0) * pow(max(dot(r, LIGHT_DIR), 0.0), 60.0);
-  return m.color * light * (band / max(level, 1e-4)) + step(vec3(0.5), shine) * 0.6;
+  vec3 shine = vec3(1.0) * pow(max(dot(r, LIGHT_DIR), 0.0), 20.0);
+  float spot = smoothstep(0.5 - TOON_EDGE * 5.0, 0.5 + TOON_EDGE * 5.0, max(max(shine.r, shine.g), shine.b));
+  return mix(m.color * tint * tone, vec3(1.0), spot * 0.5);
 }`,
 };
