@@ -77,9 +77,9 @@ function fakeGl() {
     log,
     syncs,
     // The GPU has drawn the pixel: red + 256 × green is the id
-    gpuDone: (red: number, green: number) => {
+    gpuDone: (red: number, green: number, blue = 0, alpha = 255) => {
       signaled = true;
-      gpuPixel = [red, green, 0, 255];
+      gpuPixel = [red, green, blue, alpha];
     },
   };
 }
@@ -113,6 +113,17 @@ describe("createPicker", () => {
     picker.request(() => {});
     fake.gpuDone(4, 1);
     expect(picker.poll()).toBe(260);
+  });
+
+  // hover-distance() (decision 217): the depth of the point under the pointer, blue + 256 × alpha
+  it("keeps the depth of the last pixel it gave", () => {
+    const fake = fakeGl();
+    const picker = createPicker(fake.gl);
+    expect(picker.depth()).toBeNull();
+    picker.request(() => {});
+    fake.gpuDone(4, 1, 0, 128);
+    picker.poll();
+    expect(picker.depth()).toBeCloseTo((128 * 256 / 65535) * 20);
   });
 
   it("gives each result once, and frees its fence", () => {

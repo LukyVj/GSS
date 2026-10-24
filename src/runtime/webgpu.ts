@@ -3,9 +3,9 @@ import type { AsyncView, BackendOptions } from "./backend";
 import { createClock } from "./clock";
 import { FLOOR, pixelRatio } from "./dpr";
 import { createDprPicker, viewDensity } from "./dpr-picker";
-import { pickPixel, pointerValues, createPress, decodeId, cursorAt, controlsAllow } from "./hover";
+import { pickPixel, pointerValues, createPress, decodeId, decodeDepth, cursorAt, controlsAllow } from "./hover";
 import { createTransitions } from "./transitions";
-import { createPointer } from "./pointer";
+import { createPointer, type PointerTarget } from "./pointer";
 import { createTriggers } from "./triggers";
 import { createScrollSlider, timelineValues, timelineVectors } from "./timeline";
 import { pickVariant, WINDOW_MEDIA } from "./media";
@@ -73,6 +73,7 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
   const properties = createProperties(); // @property: what the page set (decision 105)
   let transitions = createTransitions([]);
   let measured = createPointer(null); // where hover-distance() measures from (decision 216)
+  let aimed: PointerTarget | null = null; // the point under the mouse, as last read back (decision 217)
   let triggers = createTriggers([], 0); // the states that start an animation (decision 141)
   let settings: CompiledScene["camera"] | null = null;
   const camera = { yaw: 0, pitch: 0, dist: 8, dragging: false };
@@ -115,7 +116,7 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
   });
   on("pointerup", () => { camera.dragging = false; });
   on("pointercancel", () => { camera.dragging = false; });
-  on("pointerleave", () => { pointer = null; hovered = 0; pickGeneration++; });
+  on("pointerleave", () => { pointer = null; hovered = 0; aimed = null; pickGeneration++; });
 
   function image(file: string): GPUTexture {
     const url = resolveImage(file, options.base);
@@ -246,7 +247,7 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
     demand.forget(); // a new pipeline: its first frame is drawn
     properties.use(compiled.properties);
     probe?.shaderBuilt(performance.now() - start);
-    hovered = 0; press.reset(); pickGeneration++;
+    hovered = 0; aimed = null; press.reset(); pickGeneration++;
     slider?.show(compiled.timelines !== undefined);
     density?.restart(performance.now()); // its compile is not a slow frame
     transitions = createTransitions(compiled.transitions, pointerValues(compiled.hover, compiled.active, 0, 0));
@@ -304,8 +305,8 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
       if (values) v.set(values, after + timelineFloats);
       const startsAt = after + timelineFloats + (values?.length ?? 0); // 4 floats per property
       held.starts.forEach((value, i) => { v[startsAt + 4 * i] = value; });
-      // where hover-distance() measures from, after the starts (decisions 215, 216)
-      if (current.compiled.pointer) v.set(measured.update(hovered, now, reducedMotion), startsAt + 4 * (current.compiled.triggers?.length ?? 0));
+      // where hover-distance() measures from, after the starts (decisions 215 to 217)
+      if (current.compiled.pointer) v.set(measured.update(aimed, now, reducedMotion), startsAt + 4 * (current.compiled.triggers?.length ?? 0));
       // Render on demand (decision 134): the state of the last frame drawn, nothing to draw;
       // the mouse may still have moved over the frame on screen
       const state = Array.from(v);
@@ -325,7 +326,7 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
       bindings(current);
       if (drawing) device.queue.writeBuffer(current.uniforms, 0, v);
       const encoder = device.createCommandEncoder();
-      let picking = false;
+      let picking: [number, number] | null = null; // the pixel of the picking pass
       if (pick && pointer) {
         pickWanted = false;
         const pixel = pickPixel(pointer.x, pointer.y, canvas.getBoundingClientRect(), canvas.width, canvas.height);
@@ -334,8 +335,8 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
           device.queue.writeBuffer(current.pickUniforms, 0, v);
           draw(encoder, current.picking!, current.pickGroup!, pickTexture.createView());
           encoder.copyTextureToBuffer({ texture: pickTexture }, { buffer: readback, bytesPerRow: 256 }, [1, 1]);
-          picking = true; pickPending = true;
-        } else hovered = 0;
+          picking = pixel; pickPending = true;
+        } else { hovered = 0; aimed = null; }
       }
       if (drawing) {
         current.pipelines.forEach((p, i) => draw(encoder, p.pipeline, current.groups[i], i === current.pipelines.length - 1 ? context!.getCurrentTexture().createView() : current.images[i].createView(), i === current.pipelines.length - 1));
@@ -348,8 +349,13 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
       }
       if (picking) {
         const generation = pickGeneration;
+        const picked = picking;
         void readback.mapAsync(GPUMapMode.READ).then(() => {
-          if (!destroyed && generation === pickGeneration && pointer) { hovered = decodeId(new Uint8Array(readback.getMappedRange(), 0, 4)); press.picked(hovered); }
+          if (!destroyed && generation === pickGeneration && pointer) {
+            const read = new Uint8Array(readback.getMappedRange(), 0, 4);
+            hovered = decodeId(read); press.picked(hovered);
+            aimed = [picked[0], picked[1], decodeDepth(read)];
+          }
           readback.unmap();
         }).catch(error => { if (!destroyed) console.error("GSS WebGPU picking:", error); }).finally(() => { pickPending = false; });
       }

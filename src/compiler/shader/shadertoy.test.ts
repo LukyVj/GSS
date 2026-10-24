@@ -14,6 +14,12 @@ describe("toShadertoy", () => {
     expect(exported).not.toContain("out vec4 outColor;");
   });
 
+  // hover-distance() (decision 217): no pointer in Shadertoy, so very far
+  it("keeps uPointer, with no pointer", () => {
+    const pointed = toShadertoy(compileScene("@scene { sphere; } sphere { translate: calc(hover-direction(x)) 0 0; }"));
+    expect(pointed).toContain("const vec4 uPointer = vec4(0.0);");
+  });
+
   it("has a mainImage, and no main() or gl_FragCoord", () => {
     expect(exported).toContain("void mainImage(out vec4 outColor, in vec2 fragCoord) {");
     expect(exported).not.toContain("void main()");

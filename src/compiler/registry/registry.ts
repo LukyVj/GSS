@@ -4265,13 +4265,13 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
     syntax: "hover-distance() | hover-direction(x | y | z)",
     computed: "on the GPU, at every frame",
     description:
-      "How far the object is from the object under the pointer, and which way: `hover-distance()` in units of the scene, `hover-direction(x)` the part along x of the direction from the hovered object to this one, from -1 to 1. With `exp()`, the objects near the pointer move aside and the others stay.",
-    details: "Both measure between the centers of the objects, as placed with nothing under the pointer. With nothing hovered, `hover-distance()` is very large and `hover-direction()` is 0: a push in `exp(-1 * hover-distance())` fades away.",
-    more: "They go in a rule that styles objects, in the math of a value computed on the GPU: `translate`, the rotations, `scale`, `color`. The places include the animations and `:hover`. Write `-1 * hover-distance()`, not `-hover-distance()`: like CSS, a `-` stuck to a name is part of the name. With a `transition` on the objects that read them, they glide from one hovered object to the next, and fade in and out. Not yet: they measure from the center of the hovered object, not from the point under the pointer; a group, the scene and a `@keyframes` shared by several objects cannot read them.",
+      "How far the object is from the point under the pointer, and which way: `hover-distance()` in units of the scene, `hover-direction(x)` the part along x of the direction from that point to the object, from -1 to 1. With `exp()`, the objects near the pointer move aside.",
+    details: "The point is where the pointer meets an object or the floor; over the background, as far as the `camera-target`. With the pointer off the scene, `hover-distance()` is very large and `hover-direction()` 0: `exp(-1 * hover-distance())` fades away.",
+    more: "They go in a rule that styles objects, in the math of a value computed on the GPU: `translate`, the rotations, `scale`, `color`. The places include the animations and `:hover`. Write `-1 * hover-distance()`, not `-hover-distance()`: like CSS, a `-` stuck to a name is part of the name. With a `transition` on the objects that read them, the point glides after the pointer, and fades in and out as the pointer comes and goes. They measure to the center of each object, as placed with nothing under the pointer. Not yet: a group, the scene and a `@keyframes` shared by several objects cannot read them.",
     examples: [
       {
         name: "the points move aside",
-        text: "Hover a point: the points around it move away, the nearest the most.",
+        text: "Move the pointer along the row: the points around it move away, the nearest the most.",
         code: "@scene { sphere.p * 9; } .p { radius: 0.18; color: #ff5a36; translate: calc((sibling-index() - 5) * 0.5 + hover-direction(x) * 0.5 * exp(-3 * hover-distance())) 0.4 0; }",
       },
     ],

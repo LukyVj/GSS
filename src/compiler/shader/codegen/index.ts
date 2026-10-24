@@ -26,7 +26,7 @@ import type { Token } from "../../syntax/tokenizer";
 import { glslFloat, moreLines, round, section, used, label, vec3, type Hover } from "./glsl";
 import { EASINGS, MAP_HELPERS, MATERIALS, PATH_HELPERS, SHADE_CALLS, SHAPE_FUNCTIONS } from "./library";
 import { SHADING } from "./shading";
-import { MARCH_LOOP, PICK_OUTPUT, PICK_PIXEL, SURFACE, TEMPLATE } from "./template";
+import { MARCH_LOOP, PICK_DEPTH_OUTPUT, PICK_OUTPUT, PICK_PIXEL, SURFACE, TEMPLATE } from "./template";
 import { MASKED_MARCH_LOOP, SHELL, SKIN_MARCH_LOOP, holeNormal, holeNormals, maskCode, objectMask, skinFunction, type Masked } from "./masks";
 import { LAYERS, PAST_SURFACE, alphaFunction, colorFunction, objectAlpha, surfaceFunction, type Transparent } from "./transparency";
 import { BLENDED_LAYERS, blendFunctions, objectBlend, withInheritedBlendMode, type Blended } from "./mix-blend-mode";
@@ -420,17 +420,20 @@ export function generateShader(
       ...(blended.length > 0 && transparent.length > 0 && shadows === "soft" ? { seeThrough: "seeThrough" } : {}),
     },
   );
-  // hover-distance(): where each object is at rest, and the object under the pointer, read once
-  // per pixel before the values that measure from it (decision 215)
+  const cameraTarget = sceneStyles["camera-target"]
+    ? liveRead("translate", readTranslate)(sceneStyles["camera-target"]) // a target set from JS (decision 105)
+    : "vec3(0.0, 0.5, 0.0)";
+  // hover-distance(): where each object is at rest, and the point under the pointer (decision
+  // 217), read once per pixel before the values that measure from it (decision 215)
   if (pointed)
     hoisted.values.unshift(
-      { type: "vec3", name: "hoverPoint", expr: "mix(hoverAt(uPointer.y), hoverAt(uPointer.x), uPointer.z)" },
+      { type: "vec3", name: "hoverPoint", expr: "pointerPoint()" },
       ...[...readers].sort((a, b) => a - b).flatMap((index) => [
         { type: "float", name: `hoverDist${index}`, expr: `hoverDistance(restCenter${index}())` },
         { type: "vec3", name: `hoverDir${index}`, expr: `hoverDirection(restCenter${index}())` },
       ]),
     );
-  const animate = animateCode(hoisted, [pointed ? pointerCode(instances, keyframes, hoverOf, hoisted) : "", lights?.positions ?? ""].filter(Boolean).join("\n\n"));
+  const animate = animateCode(hoisted, [pointed ? pointerCode(instances, keyframes, hoverOf, hoisted, cameraTarget) : "", lights?.positions ?? ""].filter(Boolean).join("\n\n"));
   const textures = textureCode(instances, keyframes, hoverOf);
   // filter on the scene (decision 83) and on objects (decision 84)
   const { objectFilter, filterLines, alpha, filterFunctions } = filterCode(instances, sceneStyles);
@@ -567,12 +570,12 @@ export function generateShader(
           (picks
             ? `uniform float uHover[${Math.max(slots.length, 1)}]; // 0 at rest, 1 hovered
 uniform bool uPicking; // true: draw the id of the object under uPick, not its color
-uniform vec2 uPick;${pointed ? "\nuniform vec4 uPointer; // hover-distance(): the object under the pointer, the one before, how far it glided, how present (decision 216)" : ""}`
+uniform vec2 uPick;${pointed ? "\nuniform vec4 uPointer; // hover-distance(): the pixel under the pointer, how far along its ray, how present (decision 217)" : ""}`
             : ""),
       )
       .replace("/*@PICK_PIXEL*/", picks ? PICK_PIXEL : "")
       .replace("/*@PIXEL*/", picks ? "pixel" : "gl_FragCoord.xy")
-      .replace("/*@PICK_OUTPUT*/", picks ? PICK_OUTPUT : "")
+      .replace("/*@PICK_OUTPUT*/", pointed ? PICK_DEPTH_OUTPUT : picks ? PICK_OUTPUT : "")
       .replace(
         "/*@TEXTURES*/",
         section(
@@ -651,9 +654,7 @@ uniform vec2 uPick;${pointed ? "\nuniform vec4 uPointer; // hover-distance(): th
       .replace("/*@DIRECT*/", ambientCode ? `(1.0 - ${ambientCode})` : glslFloat(direct))
       .replace(
         "/*@CAMERA_TARGET*/",
-        sceneStyles["camera-target"]
-          ? liveRead("translate", readTranslate)(sceneStyles["camera-target"]) // a target set from JS (decision 105)
-          : "vec3(0.0, 0.5, 0.0)",
+        cameraTarget,
       )
       .replace(
         "const vec3 BACKGROUND = /*@BACKGROUND*/;",
