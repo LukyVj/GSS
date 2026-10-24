@@ -4191,6 +4191,7 @@ sphere { translate: 0.9 0.7 0; radius: 0.7; texture: paint(stripes); }`,
     description:
       "The position of the object among its siblings, from 1, like the CSS function: `cube * 12` makes 12 siblings numbered 1 to 12. With `calc()`, one rule gives each copy its own place, angle or size: no loop needed.",
     details: "Siblings are the objects of the same `@scene` block or group. A group is a sibling too, and the count starts again inside each group. It means nothing in `scene { }` or in `@keyframes`, shared by every object.",
+    more: "In a variable, it counts where the variable is read, like CSS: with `.row { --i: sibling-index(); }`, `var(--i)` in an object of `.row` gives the place of the object inside the row, not the place of the row. To move a whole row by its place, write it on the row itself: `.row { translate: 0 calc(sibling-index() * 0.6) 0; }` carries every object it holds.",
     examples: [
       {
         name: "a ring of petals",
