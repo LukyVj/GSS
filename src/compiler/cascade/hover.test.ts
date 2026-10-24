@@ -230,16 +230,47 @@ describe("the hover styles of an object", () => {
     expect(cube.hoverStyles.translate).toBeDefined();
   });
 
-  it("refuse a :hover rule that only styles groups, for now", () => {
-    expect(() =>
-      styled(`@scene { group#g { cube; } } #g:hover { translate: 0 1 0; }`),
-    ).toThrow(
-      "A :hover rule cannot style a group yet: style its objects, like #g:hover cube",
+  it("refuse what a group cannot change on :hover", () => {
+    expect(() => styled(`@scene { group#g { cube; } } #g:hover { --lift: 1; }`)).toThrow(
+      "A :hover rule on a group changes its transforms and its opacity: --lift does not reach its objects yet. Write #g:hover cube { --lift: …; }",
     );
-    // *:hover also matches the objects: fine, the groups just ignore it
+    expect(() => styled(`@scene { group#g { cube; } } #g:hover { color: #f00; }`)).toThrow(/color does not reach its objects yet/);
+    // *:hover also matches the objects: fine, the groups just ignore what is not theirs
     expect(() =>
       styled(`@scene { group#g { cube; } } *:hover { color: #f00; }`),
     ).not.toThrow();
+  });
+});
+
+// :hover on a group: the group moves, and carries what it holds
+describe("the hover states of a group", () => {
+  it("are the states of its :hover rules, hovered by any of its objects", () => {
+    const [cube, sphere] = styled(`
+      @scene { group#g { cube; sphere; } }
+      #g { translate: 0 0.5 0; }
+      #g:hover { scale: 1.5; }
+    `);
+    expect(cube.groupHoverStates).toEqual([[expect.objectContaining({ triggers: [1, 2] })]]);
+    expect(cube.groupHoverStates[0][0].styles.scale).toBeDefined();
+    expect(cube.groupHoverStates[0][0].styles.translate).toEqual(cube.groupStyles[0].translate);
+    // the objects of the group share its states
+    expect(sphere.groupHoverStates).toEqual(cube.groupHoverStates);
+    // the objects themselves are not hovered
+    expect(cube.hoverStates).toEqual([]);
+  });
+
+  it("follow :has(), like the objects", () => {
+    const [cube] = styled(`
+      @scene { group#g { cube; sphere; } }
+      #g:has(sphere:hover) { translate: 0 1 0; }
+    `);
+    expect(cube.groupHoverStates[0].map((state) => state.triggers)).toEqual([[2]]);
+  });
+
+  it("leave out the rules that change nothing a group takes, like *:hover { color }", () => {
+    const [cube] = styled(`@scene { group#g { cube; } } *:hover { color: #f00; }`);
+    expect(cube.groupHoverStates).toEqual([[]]);
+    expect(cube.hoverStates).toHaveLength(1);
   });
 });
 

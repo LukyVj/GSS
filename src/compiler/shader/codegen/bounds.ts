@@ -6,7 +6,7 @@ import type { Easing } from "../../values/easing";
 import { readTransition } from "../../features/transition";
 import { glslFloat, vec3, type Hover } from "./glsl";
 import { ROTATIONS, readRotation, readScale, readTranslate } from "./read";
-import { hoverValue } from "./animation";
+import { groupHover, hoverValue } from "./animation";
 import { offsetReach } from "./offset";
 import { objectBox, readOrigin } from "./origin";
 
@@ -103,10 +103,14 @@ function boxOfPoints(points: number[][]): { middle: number[]; reach: number } {
   };
 }
 
-// uHover[] of this object stays in [0, 1]: its transitions (rest, hovered and pressed)
-// never overshoot
-function steadyTransitions(instance: StyledInstance): boolean {
-  return [instance.styles, instance.hoverStyles, ...instance.hoverStates.map((state) => state.styles), instance.activeStyles].every((styles) => {
+// uHover[] of this node stays in [0, 1]: its transitions (rest, hovered and pressed)
+// never overshoot. n: the node, a group (decision 211) or the object itself (the last)
+function steadyTransitions(instance: StyledInstance, n: number): boolean {
+  const states =
+    n < instance.groups.length
+      ? [instance.groupStyles[n], ...instance.groupHoverStates[n].map((state) => state.styles)]
+      : [instance.styles, instance.hoverStyles, ...instance.hoverStates.map((state) => state.styles), instance.activeStyles];
+  return states.every((styles) => {
     const transition = readTransition(styles["transition"]);
     return !transition || stays01(transition.easing);
   });
@@ -125,10 +129,10 @@ export function objectSphere(
   let sphere: Sphere = { center: [0, 0, 0], radius };
   const nodes = [...instance.groupStyles, instance.styles];
   for (let n = nodes.length - 1; n >= 0; n--) {
-    const nodeHover = n === nodes.length - 1 ? hover : undefined;
+    const nodeHover = n === nodes.length - 1 ? hover : groupHover(instance, n);
     const value = (property: string, read: (value: Token[] | undefined) => string) =>
       hoverValue(nodes[n], keyframes, property, read, nodeHover);
-    const steady = !nodeHover || steadyTransitions(instance);
+    const steady = !nodeHover || steadyTransitions(instance, n);
     // A motion path, inside the node's scale: anywhere within its reach (decision 97)
     const reach = offsetReach(nodes[n], keyframes, nodeHover);
     if (reach === null) return null;

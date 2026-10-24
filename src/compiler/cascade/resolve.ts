@@ -22,6 +22,9 @@ export type StyledInstance = SceneInstance & {
   // One state per set of triggers, in the order of the cascade: the :hover rules that wait
   // for the same objects share it, and only they apply in it
   hoverStates: HoverState[];
+  // The hover states of each group, from the outside in like groupStyles: what a group
+  // changes on :hover moves every object it holds (decision 211)
+  groupHoverStates: HoverState[][];
   activeTriggers: number[]; // the objects that, pressed, put this one in its active state
   activeStyles: Styles; // pressed: the :active rules on top of the :hover ones
   // Whether the :active rules write an animation of their own: the press starts it
@@ -41,6 +44,10 @@ export type HoverState = {
   last: number;
   starts: boolean;
 };
+
+// What a :hover rule can change on a group: its transforms and its opacity, which it
+// passes to every object it holds (decision 211)
+const GROUP_HOVER = new Set(["translate", "rotate-x", "rotate-y", "rotate-z", "scale", "transform-origin", "offset-distance", "opacity", "transition"]);
 
 // The states the pointer gives: :hover (under the pointer) and :active (pressed)
 type PointerState = "hover" | "active";
@@ -863,12 +870,26 @@ export function resolveStyles(
     const stylesObjects = instances.some((instance) =>
       matches(selector, instance, instances),
     );
-    if (stylesGroups && !stylesObjects) {
-      const name = needsHover(selector) ? ":hover" : ":active";
+    if (stylesGroups && !stylesObjects && needsActive(selector)) {
       throw errorAt(
         rule.selector,
-        `A ${name} rule cannot style a group yet: style its objects, like #g${name} cube`,
+        "A :active rule cannot style a group yet: style its objects, like #g:active cube",
       );
+    }
+    if (stylesGroups && !stylesObjects) {
+      const written = rule.selector.map(tokenToText).join("").trim();
+      for (const declaration of rule.declarations) {
+        if (GROUP_HOVER.has(declaration.property)) continue;
+        if (declaration.property === "animation" || ANIMATION_LONGHANDS.includes(declaration.property))
+          throw errorAt(
+            declaration,
+            `A :hover rule on a group cannot start an animation yet: start it on its objects, like ${written} cube { animation: … }`,
+          );
+        throw errorAt(
+          declaration,
+          `A :hover rule on a group changes its transforms and its opacity: ${declaration.property} does not reach its objects yet. Write ${written} cube { ${declaration.property}: …; }`,
+        );
+      }
     }
   }
 
@@ -907,6 +928,19 @@ export function resolveStyles(
   const writes = (above: Styles, below: Styles) =>
     ["animation", ...ANIMATION_LONGHANDS].some((property) => above[property] !== below[property]);
 
+  // The hover states of a group, once per group: only the rules that change what a group
+  // takes (*:hover { color } styles its objects, not the group)
+  const groupStates = new Map<SceneInstance, HoverState[]>();
+  function groupHoverStates(group: SceneInstance): HoverState[] {
+    if (!groupStates.has(group)) {
+      const states = hoverStates(group, cascade(group)).filter((state) =>
+        Object.keys(state.ranks).some((property) => property !== "transition" && GROUP_HOVER.has(property)),
+      );
+      groupStates.set(group, states);
+    }
+    return groupStates.get(group)!;
+  }
+
   return instances.map((instance) => {
     const styles = cascade(instance);
     const hoverStyles = cascade(instance, undefined, "hover");
@@ -923,6 +957,7 @@ export function resolveStyles(
     hoverTriggers: [...new Set(states.flatMap((state) => state.triggers))].sort((a, b) => a - b),
     hoverStyles,
     hoverStates: states,
+    groupHoverStates: instance.groups.map(groupHoverStates),
     activeTriggers: [
       ...new Set(
         sortedRules

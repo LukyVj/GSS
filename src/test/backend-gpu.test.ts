@@ -111,6 +111,25 @@ it("hovering one object leaves the hover state of another one alone", async () =
   }
 }, 60000);
 
+// :hover on a group (decision 211): hovering #a scales #g from its center, so #b, beside
+// #a, moves outward with it
+it("a hovered group carries the objects it holds", async () => {
+  const source = `@scene { group#g { sphere#a; sphere#b; } } scene { camera-angle: 0deg 0deg; camera-distance: 5; camera-target: 0 0 0; floor: none; }
+    sphere { radius: 0.4; color: red; } #b { translate: 1.1 0 0; } #g:hover { scale: 1.4; }`;
+  const rest = await render(source);
+  const hovered = await render(source, true);
+  // where #b is, from left to right: the mean column of the red pixels right of the middle
+  const column = (pixels: number[]) => {
+    let sum = 0, count = 0;
+    for (let y = 0; y < 72; y++) for (let x = 60; x < 96; x++) {
+      const i = (y * 96 + x) * 4;
+      if (pixels[i] > pixels[i + 2] + 30) { sum += x; count++; }
+    }
+    return sum / count;
+  };
+  for (const backend of ["gl", "gpu"] as const) expect(column(hovered[backend]), backend).toBeGreaterThan(column(rest[backend]) + 3);
+}, 60000);
+
 // A variable set from JS reaches the uniform, after the hover slots, on both backends
 it("setProperty() changes the scene without compiling again (decision 105)", async () => {
   const source = '@property --tint { syntax: "<color>"; inherits: false; initial-value: #ff0000; } @scene { sphere; } scene { camera-angle: 0deg 0deg; camera-distance: 5; camera-target: 0 0 0; floor: none; ambient: 1; } sphere { radius: 1; color: var(--tint); } sphere:hover { scale: 1.1; }';

@@ -9,7 +9,7 @@ import { errorAt } from "../../syntax/errors";
 import { clampComputed } from "../../values/calc";
 import { readAngle } from "../../values/values";
 import { isGradient } from "../gradient";
-import { animatedValue, hoverValue } from "./animation";
+import { animatedValue, groupHover, hoverValue } from "./animation";
 import { glslFloat, label, round, type Hover } from "./glsl";
 import { hexToRgb } from "./read";
 import { forwardLines, hoist, type Hoisted } from "./transforms";
@@ -200,7 +200,7 @@ export function lightingCode(
     // The light itself, then its groups from the inside out
     const lines = [
       ...forwardLines(lamp.styles, keyframes, hover, hoisted, noBox),
-      ...[...lamp.groupStyles].reverse().flatMap((group) => forwardLines(group, keyframes, undefined, hoisted)),
+      ...lamp.groupStyles.map((group, g) => forwardLines(group, keyframes, groupHover(lamp, g), hoisted)).reverse().flat(),
     ];
     positions.push([`vec3 lightPosition${i}() {  // ${label(lamp)}`, "  vec3 v = vec3(0.0);", ...lines, "  return v;", "}"].join("\n"));
     hoisted.values.push({ type: "vec3", name: `light${i}`, expr: `lightPosition${i}()` });
