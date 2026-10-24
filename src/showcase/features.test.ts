@@ -55,6 +55,12 @@ describe("the notable features", () => {
     expect(new Set(names).size).toBe(names.length);
   });
 
+  it("lead scroll() and view() to their own pages", () => {
+    const anchorOf = (label: string) => NOTABLE.find((feature) => feature.label === label)!.anchor;
+    expect(anchorOf("scroll()")).toBe("fn-scroll");
+    expect(anchorOf("view()")).toBe("fn-view");
+  });
+
   it("are found in the scenes of the archive", () => {
     const found = new Set(ARCHIVE.flatMap((entry) => entry.features.map((feature) => feature.label)));
     for (const label of ["light", ":hover", ":active", "glass", "path", "prism", "lathe", "scroll()", "offset-path"]) {
