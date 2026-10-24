@@ -223,12 +223,13 @@ describe("hover-distance() and hover-direction()", () => {
     .p { radius: 0.3; translate: calc(sibling-index() - 2 + hover-direction(x) * 0.5 * exp(-2 * hover-distance())) 0 0; }
   `;
 
-  it("read the object under the pointer, uHovered, and the place of each object at rest", () => {
+  it("read the object under the pointer, uPointer, and the place of each object at rest", () => {
     const compiled = compileScene(cloud);
-    expect(compiled.pointer).toBe(true);
-    expect(compiled.shader).toContain("uniform float uHovered;");
-    expect(compiled.shader).toContain("hoverPoint = hoverAt();");
-    expect(compiled.shader).toContain("if (uHovered == 2.0) return restCenter2();");
+    expect(compiled.pointer).toEqual({ transition: null });
+    expect(compiled.shader).toContain("uniform vec4 uPointer;");
+    // the place glides from the object hovered before to the one hovered now (decision 216)
+    expect(compiled.shader).toContain("hoverPoint = mix(hoverAt(uPointer.y), hoverAt(uPointer.x), uPointer.z);");
+    expect(compiled.shader).toContain("if (id == 2.0) return restCenter2();");
     expect(compiled.shader).toContain("hoverDir1 = hoverDirection(restCenter1());");
     expect(compiled.shader).toContain("hoverDir1.x");
     // at rest, an object is where nothing under the pointer would put it
@@ -255,14 +256,19 @@ describe("hover-distance() and hover-direction()", () => {
       .p { --push: calc(hover-direction(x) * 0.3); --a: calc(sibling-index() + var(--push)) 0 0; animation: go 2s infinite; }
       @keyframes go { from { translate: var(--a); } to { translate: 0 1 0; } }
     `);
-    expect(compiled.pointer).toBe(true);
+    expect(compiled.pointer).toBeDefined();
     expect(compiled.shader).toContain("vec3 restCenter1() {");
+  });
+
+  it("glide with the transition of the objects that read them (decision 216)", () => {
+    const compiled = compileScene(`@scene { sphere * 2; } sphere { transition: 0.4s; translate: calc(hover-direction(x) * 0.3) 0 0; }`);
+    expect(compiled.pointer?.transition).toEqual(expect.objectContaining({ duration: 0.4 }));
   });
 
   it("leave a scene that does not use them as it was", () => {
     const compiled = compileScene(`@scene { cube; } cube:hover { scale: 2; }`);
     expect(compiled.pointer).toBeUndefined();
-    expect(compiled.shader).not.toContain("uHovered");
+    expect(compiled.shader).not.toContain("uPointer");
   });
 });
 

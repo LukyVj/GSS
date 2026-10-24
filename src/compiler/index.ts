@@ -2,7 +2,7 @@ import { tokenize } from "./syntax/tokenizer";
 import { parse } from "./syntax/parser";
 import { expandScene } from "./cascade/expand";
 import { resolveStyles, resolveSceneStyles, FACES, type Face } from "./cascade/resolve";
-import { activeSlots, generateShader, hoverSlots, readsPointer, sceneTriggers, type Trigger } from "./shader/codegen";
+import { activeSlots, generateShader, hoverSlots, pointerReaders, sceneTriggers, type Trigger } from "./shader/codegen";
 import { validateProperties, validateKeyframes } from "./cascade/validate";
 import { readCamera, type CameraSettings } from "./features/camera";
 import { resolveMath, type CalcContext } from "./values/calc";
@@ -101,8 +101,9 @@ export type CompiledScene = {
   // for each slot of uHover[] (hover, then active), how it glides to 1 (enter) and back to 0 (leave)
   transitions: { enter: Transition | null; leave: Transition | null }[];
   // hover-distance(), hover-direction() (decision 215): the shader reads the object under the
-  // pointer, uHovered. Absent when no value measures from it.
-  pointer?: true;
+  // pointer, uPointer, which glides with the transition of the objects that read it, the
+  // first one that sets one (decision 216). Absent when no value measures from it.
+  pointer?: { transition: Transition | null };
   // The states that start an animation (decision 141): the slot, its index in
   // uStart[], and how long the state holds in seconds (null: until the next start).
   // Absent when no state starts one.
@@ -378,6 +379,13 @@ function compileStylesheet(
   const cursors = errors.run(() => sceneCursors(drawn));
   const controls = errors.run(() => sceneControls(computedScene, drawn));
   const triggers = errors.run(() => sceneTriggers(styled));
+  // hover-distance() glides with the transition of the objects that read it (decision 216)
+  const readers = pointerReaders(styled, copies);
+  const pointer = errors.run(() =>
+    readers.size === 0
+      ? null
+      : { transition: styled.filter((instance) => readers.has(instance.index)).map((instance) => readTransition(instance.styles["transition"])).find(Boolean) ?? null },
+  );
   const timelines = errors.run(() =>
     sceneTimelines([computedScene, ...styled.flatMap((instance) => [...instance.groupStyles, instance.styles])]),
   );
@@ -409,7 +417,7 @@ function compileStylesheet(
     ...(timelines!.length > 0 ? { timelines } : {}),
     transitions: transitions!,
     ...(triggers!.length > 0 ? { triggers } : {}),
-    ...(readsPointer(styled, copies) ? { pointer: true as const } : {}),
+    ...(pointer ? { pointer } : {}),
   };
 }
 

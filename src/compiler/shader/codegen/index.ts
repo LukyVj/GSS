@@ -64,7 +64,7 @@ import { withStepsView } from "./debug";
 import { BOXED, objectOutline, outlineBlend, outlineFarCode, outlineFunctions, withOutlineBand, withOutlineFrames, withOutlineMarch, withOutlineShapes, type Outlined } from "./outline";
 
 export { activeSlots, hoverSlots, sceneTriggers, type Trigger } from "./animation";
-export { readsPointer } from "./transforms";
+export { pointerReaders } from "./transforms";
 export { shapeNames, shapeRadius } from "./shapes";
 
 export function generateShader(
@@ -424,7 +424,7 @@ export function generateShader(
   // per pixel before the values that measure from it (decision 215)
   if (pointed)
     hoisted.values.unshift(
-      { type: "vec3", name: "hoverPoint", expr: "hoverAt()" },
+      { type: "vec3", name: "hoverPoint", expr: "mix(hoverAt(uPointer.y), hoverAt(uPointer.x), uPointer.z)" },
       ...[...readers].sort((a, b) => a - b).flatMap((index) => [
         { type: "float", name: `hoverDist${index}`, expr: `hoverDistance(restCenter${index}())` },
         { type: "vec3", name: `hoverDir${index}`, expr: `hoverDirection(restCenter${index}())` },
@@ -567,7 +567,7 @@ export function generateShader(
           (picks
             ? `uniform float uHover[${Math.max(slots.length, 1)}]; // 0 at rest, 1 hovered
 uniform bool uPicking; // true: draw the id of the object under uPick, not its color
-uniform vec2 uPick;${pointed ? "\nuniform float uHovered; // the id of the object under the pointer, 0: none" : ""}`
+uniform vec2 uPick;${pointed ? "\nuniform vec4 uPointer; // hover-distance(): the object under the pointer, the one before, how far it glided, how present (decision 216)" : ""}`
             : ""),
       )
       .replace("/*@PICK_PIXEL*/", picks ? PICK_PIXEL : "")

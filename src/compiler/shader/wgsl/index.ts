@@ -138,7 +138,7 @@ class Lowering {
     return [
       // scroll() and view() (decision 96): after hover, so that no other offset moves;
       // @property (decision 105) after them
-      `struct GssUniforms {\n  resolutionTime: vec4<f32>,\n  cameraDistanceRatio: vec4<f32>,\n  pick: vec4<f32>,\n  hover: array<vec4<f32>, ${Math.max(1, this.hover)}>,\n${this.uniforms.has("uTimeline") ? `  timeline: ${this.timelines ? `array<vec4<f32>, ${this.timelines}>` : "vec4<f32>"},\n` : ""}${this.properties ? `  properties: array<vec4<f32>, ${this.properties}>,\n` : ""}${this.starts ? `  start: array<vec4<f32>, ${this.starts}>,\n` : ""}}`,
+      `struct GssUniforms {\n  resolutionTime: vec4<f32>,\n  cameraDistanceRatio: vec4<f32>,\n  pick: vec4<f32>,\n  hover: array<vec4<f32>, ${Math.max(1, this.hover)}>,\n${this.uniforms.has("uTimeline") ? `  timeline: ${this.timelines ? `array<vec4<f32>, ${this.timelines}>` : "vec4<f32>"},\n` : ""}${this.properties ? `  properties: array<vec4<f32>, ${this.properties}>,\n` : ""}${this.starts ? `  start: array<vec4<f32>, ${this.starts}>,\n` : ""}${this.uniforms.has("uPointer") ? "  pointer: vec4<f32>,\n" : ""}}`,
       "@group(0) @binding(0) var<uniform> gss: GssUniforms;",
       ...(textures.length ? ["@group(0) @binding(1) var gssSampler: sampler;"] : []),
       ...textures.map(([name], i) => `@group(0) @binding(${i + 2}) var ${nameOf(name)}: texture_2d<f32>;`),
@@ -273,7 +273,7 @@ class Lowering {
         const uniform: Record<string, string> = {
           iResolution: "gss.resolutionTime.xyz", iTime: "gss.resolutionTime.w",
           uCamera: "gss.cameraDistanceRatio.xy", uDist: "gss.cameraDistanceRatio.z", uRatio: "gss.cameraDistanceRatio.w",
-          uPick: "gss.pick.xy", uPicking: "(gss.pick.z != 0.0)", uHovered: "gss.pick.w", uHover: "gss.hover", uTimeline: "gss.timeline", uProperties: "gss.properties", uStart: "gss.start",
+          uPick: "gss.pick.xy", uPicking: "(gss.pick.z != 0.0)", uPointer: "gss.pointer", uHover: "gss.hover", uTimeline: "gss.timeline", uProperties: "gss.properties", uStart: "gss.start",
         };
         expr = { code: this.uniforms.has(token) ? uniform[token] ?? nameOf(token) : nameOf(token), type };
       }

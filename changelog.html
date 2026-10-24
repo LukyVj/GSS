@@ -445,6 +445,8 @@
                  slot, the nearest the most */
               .point {
                 --push: calc(0.18 * exp(-6 * hover-distance()));
+                /* they glide aside, from one hovered point to the next, and back */
+                transition: 0.45s ease-out;
                 translate: calc(hover-direction(x) * var(--push))
                   calc(hover-direction(y) * var(--push)) calc(hover-direction(z) * var(--push));
                 radius: 0.04;
