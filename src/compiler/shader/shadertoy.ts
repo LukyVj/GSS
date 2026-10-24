@@ -56,6 +56,8 @@ export function toShadertoy({ shader, camera, properties, hover }: CompiledScene
     })
     .replace(/^uniform bool uPicking;.*\n/m, "const bool uPicking = false;\n")
     .replace(/^uniform vec2 uPick;.*\n/m, "const vec2 uPick = vec2(0.0);\n")
+    // hover-distance() (decision 217): no pointer, so very far
+    .replace(/^uniform vec4 uPointer;.*\n/m, "const vec4 uPointer = vec4(0.0);\n")
     // 1. What Shadertoy already writes: the header, its uniforms, the output
     .replace(/^#version.*\n/m, "")
     .replace(/^precision .*\n/m, "")

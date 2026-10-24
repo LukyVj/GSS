@@ -178,12 +178,13 @@ export function pointerReaders(instances: StyledInstance[], keyframes: Keyframes
 
 // Where each object is with nothing under the pointer: its moves and its groups', from
 // the inside out, with what measures from the pointer left out (far away, no direction);
-// then the place of the object under the pointer, and the two measures
+// then the point under the pointer, and the two measures
 export function pointerCode(
   instances: StyledInstance[],
   keyframes: Keyframes[],
   hoverOf: (instance: StyledInstance) => Hover | undefined,
   hoisted: Hoisted,
+  cameraTarget: string,
 ): string {
   const shared: Hoisted = { ...hoisted, atRest: true }; // the same names and values
   const atRest = (line: string) => line.replace(/\bhoverDist\d+\b/g, "1000000.0").replace(/\bhoverDir\d+\b/g, "vec3(0.0)");
@@ -202,12 +203,17 @@ export function pointerCode(
   return [
     "// hover-distance(), hover-direction(): where each object is with nothing under the pointer",
     ...centers,
-    "vec3 hoverAt(float id) {",
-    ...instances.map((instance) => `  if (id == ${glslFloat(instance.index)}) return restCenter${instance.index}();`),
-    "  return vec3(0.0);",
+    // uPointer (decision 217): the pixel under the pointer (xy) and how far along its ray (z),
+    // through the camera of main(); the distance grows to nothing as the presence (w) fades
+    "vec3 pointerPoint() {",
+    "  vec2 uv = (uPointer.xy - 0.5 * iResolution.xy) / iResolution.y;",
+    `  vec3 target = ${cameraTarget};`,
+    "  vec3 ro = target + uDist * vec3(cos(uCamera.y) * sin(uCamera.x), sin(uCamera.y), cos(uCamera.y) * cos(uCamera.x));",
+    "  vec3 forward = normalize(target - ro);",
+    "  vec3 right = normalize(cross(forward, vec3(0.0, 1.0, 0.0)));",
+    "  vec3 rd = normalize(uv.x * right + uv.y * cross(right, forward) + 1.5 * forward);",
+    "  return ro + rd * uPointer.z;",
     "}",
-    // uPointer (decision 216): the place glides from the object before to the one now (z), and
-    // the distance grows to nothing as the presence (w) fades
     "float hoverDistance(vec3 c) {",
     "  return uPointer.w > 0.0 ? length(c - hoverPoint) / uPointer.w : 1000000.0;",
     "}",

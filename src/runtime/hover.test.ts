@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { pickPixel, decodeId, hoverValues, pointerValues, createPress, cursorAt, controlsAllow } from "./hover";
+import { pickPixel, decodeId, decodeDepth, hoverValues, pointerValues, createPress, cursorAt, controlsAllow } from "./hover";
 
 // Step 4b of :hover, the part without the GPU: where the mouse is, which object
 // the picking pass found, and what goes in uHover[].
@@ -31,6 +31,16 @@ describe("decodeId", () => {
 
   it("is 0 for the floor and the background: no object", () => {
     expect(decodeId(new Uint8Array([0, 0, 0, 255]))).toBe(0);
+  });
+});
+
+// hover-distance() (decision 217): the depth of the point under the pointer, blue + 256 × alpha,
+// from 0 to the far end of the march
+describe("decodeDepth", () => {
+  it("reads the depth the picking pass wrote: blue + 256 × alpha, out of 65535, times the far end", () => {
+    expect(decodeDepth(new Uint8Array([0, 0, 0, 0]))).toBe(0);
+    expect(decodeDepth(new Uint8Array([0, 0, 255, 255]))).toBe(20);
+    expect(decodeDepth(new Uint8Array([3, 0, 0, 128]))).toBeCloseTo((128 * 256 / 65535) * 20);
   });
 });
 

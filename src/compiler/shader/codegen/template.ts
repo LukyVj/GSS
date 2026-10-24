@@ -10,6 +10,17 @@ export const PICK_OUTPUT = `
     return;
   }`;
 
+// ...and, when hover-distance() measures from the point under the pointer (decision 217), how
+// far along the ray it is, blue + 256 × alpha: on the background, as far as the camera target
+export const PICK_DEPTH_OUTPUT = `
+  if (uPicking) {
+    float picked = t < MAX_DIST ? id : 0.0; // 0: the background
+    float depth = t < MAX_DIST ? t : max(dot(target - ro, rd), 0.0);
+    float depth16 = floor(clamp(depth / MAX_DIST, 0.0, 1.0) * 65535.0 + 0.5);
+    outColor = vec4(mod(picked, 256.0) / 255.0, floor(picked / 256.0) / 255.0, mod(depth16, 256.0) / 255.0, floor(depth16 / 256.0) / 255.0);
+    return;
+  }`;
+
 // The loop of march(): mask-image puts another in its place (masks.ts)
 export const MARCH_LOOP = `  for (int i = 0; i < 100; i++) {
     vec2 res = map(ro + rd * t);

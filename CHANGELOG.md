@@ -8,8 +8,8 @@ The 0.0.1 history was reconstructed from GitHub.
 
 ### Added
 
-- **Changelog**: the points of the cloud glide aside around the one under the pointer, the nearest the most.
-- **`hover-distance()`, `hover-direction()`**: how far an object is from the object under the pointer, and which way. In `calc()`, they let the objects near the pointer move aside, grow or change color, the nearest the most: `translate: calc(var(--x) + hover-direction(x) * 0.5 * exp(-3 * hover-distance())) 0 0`. They glide with the `transition` of the objects that read them.
+- **Changelog**: the points of the cloud glide aside wherever the pointer passes, the nearest the most.
+- **`hover-distance()`, `hover-direction()`**: how far an object is from the point under the pointer, and which way. In `calc()`, they let the objects near the pointer move aside, grow or change color, the nearest the most: `translate: calc(var(--x) + hover-direction(x) * 0.5 * exp(-3 * hover-distance())) 0 0`. The point is where the pointer meets an object or the floor, or, over the background, as far as the `camera-target`, so a cloud of small points reacts wherever the pointer passes. It glides with the `transition` of the objects that read them.
 - **`:not()`**: with `:hover` inside. `cube:not(:hover)` styles every cube that is not under the mouse, all of them while nothing is, and `#cloud:not(:has(.point:hover)) .point` the points while none of them is hovered, with their `transition`.
 - **`:hover`**: the sizes of a shape. `sphere:hover { radius: 1; }` grows the sphere itself, and so do `size`, `height`, `thickness`, `corner-radius`, `depth` and `stroke-width`, with the `transition` of the object. `:active` changes them too.
 - **`:hover`**: on a group itself. `#g:hover { scale: 1.2; }` moves, turns, scales or fades the whole group when any of its objects is hovered, and the group carries every object it holds, with its `transition`.

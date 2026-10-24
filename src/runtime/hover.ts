@@ -23,6 +23,13 @@ export function decodeId(pixel: Uint8Array): number {
   return pixel[0] + pixel[1] * 256;
 }
 
+// hover-distance() (decision 217): how far along the ray the point under the pointer is, blue +
+// 256 × alpha out of 65535, up to MAX_DIST of the shader, the far end of the march
+const MAX_DIST = 20;
+export function decodeDepth(pixel: Uint8Array): number {
+  return ((pixel[2] + pixel[3] * 256) / 65535) * MAX_DIST;
+}
+
 // uHover[]: 1 for each slot whose triggers include the object under the mouse
 export function hoverValues(hover: number[][], id: number): Float32Array {
   return Float32Array.from(hover, (triggers) =>

@@ -223,13 +223,15 @@ describe("hover-distance() and hover-direction()", () => {
     .p { radius: 0.3; translate: calc(sibling-index() - 2 + hover-direction(x) * 0.5 * exp(-2 * hover-distance())) 0 0; }
   `;
 
-  it("read the object under the pointer, uPointer, and the place of each object at rest", () => {
+  it("read the point under the pointer, uPointer, and the place of each object at rest", () => {
     const compiled = compileScene(cloud);
     expect(compiled.pointer).toEqual({ transition: null });
     expect(compiled.shader).toContain("uniform vec4 uPointer;");
-    // the place glides from the object hovered before to the one hovered now (decision 216)
-    expect(compiled.shader).toContain("hoverPoint = mix(hoverAt(uPointer.y), hoverAt(uPointer.x), uPointer.z);");
-    expect(compiled.shader).toContain("if (id == 2.0) return restCenter2();");
+    // the point under the pointer (decision 217): the ray of its pixel, as far as the picking
+    // pass found, through the camera of the scene
+    expect(compiled.shader).toContain("hoverPoint = pointerPoint();");
+    expect(compiled.shader).toMatch(/vec3 pointerPoint\(\) \{[^}]*uPointer\.xy - 0\.5 \* iResolution\.xy[^}]*vec3\(0\.0, 0\.5, 0\.0\)[^}]*return ro \+ rd \* uPointer\.z;/);
+    expect(compiled.shader).not.toContain("hoverAt(");
     expect(compiled.shader).toContain("hoverDir1 = hoverDirection(restCenter1());");
     expect(compiled.shader).toContain("hoverDir1.x");
     // at rest, an object is where nothing under the pointer would put it
@@ -265,10 +267,22 @@ describe("hover-distance() and hover-direction()", () => {
     expect(compiled.pointer?.transition).toEqual(expect.objectContaining({ duration: 0.4 }));
   });
 
+  // decision 217: the picking pass writes the depth of the point under the pointer too, blue
+  // + 256 × alpha; on the background, the depth of the camera target, across the ray
+  it("make the picking pass write the depth under the pointer", () => {
+    const shader = compileScene(cloud).shader;
+    expect(shader).toContain("float depth = t < MAX_DIST ? t : max(dot(target - ro, rd), 0.0);");
+    expect(shader).toContain("floor(depth16 / 256.0) / 255.0);");
+    // the camera target of the scene, in the ray of the pointer too
+    const aimed = compileScene(`${cloud} scene { camera-target: 1 2 3; }`).shader;
+    expect(aimed).toMatch(/vec3 pointerPoint\(\) \{[^}]*vec3\(1\.0, 2\.0, 3\.0\)/);
+  });
+
   it("leave a scene that does not use them as it was", () => {
     const compiled = compileScene(`@scene { cube; } cube:hover { scale: 2; }`);
     expect(compiled.pointer).toBeUndefined();
     expect(compiled.shader).not.toContain("uPointer");
+    expect(compiled.shader).not.toContain("depth16");
   });
 });
 
