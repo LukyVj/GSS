@@ -80,15 +80,31 @@ describe("what is new", () => {
     expect(docEntries().find((entry) => entry.anchor === "at-property-panel")?.since).toBe("0.0.5");
   });
 
-  it("is the 15 pages 0.0.7 added", () => {
-    const news = newestPages(docEntries())!;
+  it("is the 15 pages 0.0.7 added, and @property-panel it gave a value", () => {
+    const news = newestPages(docEntries(), "0.0.7")!;
     expect(news.version).toBe("0.0.7");
     expect(news.pages.map((page) => page.anchor).sort()).toEqual(
       [
-        "at-apply", "at-each", "at-for", "at-mixin", "content", "controls", "font-family", "font-size", "font-style",
-        "font-weight", "mix-blend-mode", "selector-attribute", "text-align", "text-color", "texture-mapping",
+        "at-apply", "at-each", "at-for", "at-mixin", "at-property-panel", "content", "controls", "font-family", "font-size",
+        "font-style", "font-weight", "mix-blend-mode", "selector-attribute", "text-align", "text-color", "texture-mapping",
       ].sort(),
     );
+  });
+
+  it("names content in 0.0.8, which gave it a number", () => {
+    const news = newestPages(docEntries(), "0.0.8")!;
+    expect(news.version).toBe("0.0.8");
+    expect(news.pages.map((page) => page.anchor)).toContain("content");
+    expect(news.pages.map((page) => page.anchor)).not.toContain("at-mixin");
+  });
+
+  it("takes a page whose value came with the newest version", () => {
+    const entries = [
+      { anchor: "a", label: "a", group: "A", since: "0.0.4" },
+      { anchor: "b", label: "b", group: "A", since: "0.0.3", updated: "0.0.5" },
+    ];
+    expect(newestPages(entries, "0.0.5")).toEqual({ version: "0.0.5", pages: [{ anchor: "b", label: "b", group: "A" }] });
+    expect(newestPages(entries, "0.0.4")).toEqual({ version: "0.0.4", pages: [{ anchor: "a", label: "a", group: "A" }] });
   });
 });
 

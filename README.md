@@ -82,14 +82,14 @@ The same pages, with every example to edit live: [gss-lang.dev/docs](https://www
 **A tag**, no build step:
 
 ```html
-<script type="module" src="https://cdn.jsdelivr.net/npm/gss-lang@0.0.7/lib/embed.js"></script>
+<script type="module" src="https://cdn.jsdelivr.net/npm/gss-lang@0.0.8/lib/embed.js"></script>
 <gss-scene src="logo.gss"></gss-scene>
 ```
 
 **npm**:
 
 ```sh
-npm install gss-lang@0.0.7
+npm install gss-lang@0.0.8
 ```
 
 ```js
@@ -120,7 +120,7 @@ WebGPU, TypeScript and the editor: see [Installation](https://github.com/LukyVj/
 
 ## Status
 
-0.0.7, early: the syntax may still change. See the [changelog](https://github.com/LukyVj/GSS/blob/main/CHANGELOG.md).
+0.0.8, early: the syntax may still change. See the [changelog](https://github.com/LukyVj/GSS/blob/main/CHANGELOG.md).
 
 ## Contribute
 

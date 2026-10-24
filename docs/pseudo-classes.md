@@ -22,10 +22,11 @@ A pseudo-class, like CSS: the rule applies while the mouse is over the object. W
 - **sphere:hover + cube:** On an earlier sibling: the cube reacts to the sphere.
 - **#letters:hover cube:** On a group: every cube of `#letters` reacts as soon as the mouse is over any object of the group, like hovering a child hovers its parent in CSS.
 - **#g:has(sphere:hover):** Inside `:has()`: hovering one object changes another.
+- **cube:hover, cube:hover + cube:** Several rules, each waiting for its own objects: the cube under the mouse and the one after it change apart. When both apply to a cube, the most specific wins, like CSS.
 
 A `:hover` rule changes animatable properties only, and it styles objects, not groups: write `#g:hover cube`, not `#g:hover { … }`.
 
-The `:hover` rules join the cascade like any other: `#a { color: blue; }` beats `cube:hover { color: red; }`, and a normal `!important` beats them all. The animatable properties are the transforms, `color`, `opacity`, `mask-image`, `offset-distance` and variables: never a face. It can also start an `animation`: it begins when the pointer arrives and plays to its end, pointer gone or not (see `:active`).
+The `:hover` rules join the cascade like any other: `#a { color: blue; }` beats `cube:hover { color: red; }`, and a normal `!important` beats them all. The animatable properties are the transforms, `color`, `opacity`, `mask-image`, `offset-distance` and variables: never a face. It can also start an `animation`: it begins when the pointer arrives and plays to its end, pointer gone or not (see `:active`). Each rule waits for its own objects, like CSS: `cube:hover` applies when the cube itself is hovered, `cube:hover + cube` when the one before it is, and when both apply, the most specific wins.
 
 ### lift on hover
 
@@ -96,6 +97,34 @@ The mouse over any letter lights up every letter of `#letters`.
 sphere {
   translate: -1.4 0.5 0;
   radius: 0.5;
+}
+```
+
+### hover and its neighbours
+
+The cube under the mouse grows the most; the cubes beside it grow a little.
+
+```css
+@scene {
+  cube * 5;
+}
+
+cube {
+  size: 0.5;
+  translate: calc((sibling-index() - 3) * 0.7) 0.4 0;
+  color: #e6e6e6;
+  transition: 0.2s;
+}
+
+cube:hover + cube,
+cube:has(+ cube:hover) {
+  scale: 1.2;
+  color: #ffb199;
+}
+
+cube:hover {
+  scale: 1.5;
+  color: #ff5a36;
 }
 ```
 
