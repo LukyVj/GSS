@@ -14,7 +14,7 @@ Sets how the surface of the object reacts to light. Without a color, a material 
 
 **What covers the surface, flat, then on an object:** `matte()`, `metal()`, `glass()`, `jelly()`, `emissive()`, `iridescent()`
 
-- **Syntax:** `matte([<color>]) | metal([<color>,] [<roughness>]) | jelly([<color>,] [<density>]) | emissive([<color>,] [<strength>]) | iridescent([<color>,] [<strength>]) | gold | chrome | copper | silver | brass | aluminum | jelly | glass([<color>,] [<refraction-index>] [, [frosted | wavy | hammered | blurred] <frost>]) | glass | ice | emissive | iridescent`
+- **Syntax:** `matte([<color>]) | metal([<color>,] [<roughness>]) | jelly([<color>,] [<density>]) | emissive([<color>,] [<strength>]) | iridescent([<color>,] [<strength>]) | toon([<color>,] [<bands>]) | gold | chrome | copper | silver | brass | aluminum | jelly | glass([<color>,] [<refraction-index>] [, [frosted | wavy | hammered | blurred] <frost>]) | glass | ice | emissive | iridescent | toon`
 - **Initial value:** `matte()`
 - **Applies to:** objects
 - **Animatable:** no
@@ -27,11 +27,13 @@ Sets how the surface of the object reacts to light. Without a color, a material 
 - **glass():** See-through, bent by its refraction index, from 1 to 3 (1.5 by default: water is 1.33, diamond 2.4), then a frost from 0 to 1.
 - **emissive():** Gives its own light: a lamp, a screen, a neon. It is never darker than its color times its strength, from 0, none, to 4 (1 by default: its full color, even in the shade). It does not light the objects around it; with `bloom()` in the `filter` of the scene, it glows.
 - **iridescent():** A thin film, like a soap bubble or the back of a CD: its colors turn with the angle you see it at, most at the edges. Its strength goes from 0, none, to 1 (0.7 by default).
+- **toon():** Flat bands of light, like a cartoon: from the shade to the full color, with a small sharp highlight. Its number of bands is a whole number from 2 to 8 (3 by default).
 - **frosted, wavy, hammered, blurred:** The style of the frost: white patches (the default), big waves, small bumps, a soft blur.
 - **gold, chrome:** `metal(#d4af37, 0.2)` and `metal(#ffffff, 0.05)`.
 - **copper, silver, brass, aluminum:** `metal(#c8784a, 0.25)`, `metal(#e3e4e6, 0.1)`, `metal(#c9a24d, 0.2)` and `metal(#c4c8cc, 0.35)`: the metals of everyday objects.
 - **jelly, glass, ice:** `jelly()`, `glass()`, and `glass(#cfeaff, 1.31, frosted 0.25)`.
 - **emissive, iridescent:** `emissive()` and `iridescent()`, with the color of `color`.
+- **toon:** `toon()`, with the color of `color`.
 
 ### matte()
 
@@ -227,6 +229,38 @@ torus {
   to {
     rotate-y: 360deg;
   }
+}
+```
+
+### toon()
+
+`toon`, and `toon(5)` with more bands, beside a `matte()` sphere of the same color.
+
+```css
+@scene {
+  sphere#a;
+  sphere#b;
+  sphere#c;
+}
+
+sphere {
+  radius: 0.55;
+  color: #ff5a36;
+}
+
+#a {
+  translate: -1.3 0.55 0;
+  material: toon;
+}
+
+#b {
+  translate: 0 0.55 0;
+  material: toon(5);
+}
+
+#c {
+  translate: 1.3 0.55 0;
+  material: matte();
 }
 ```
 

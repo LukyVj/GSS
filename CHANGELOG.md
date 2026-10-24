@@ -8,6 +8,7 @@ The 0.0.1 history was reconstructed from GitHub.
 
 ### Added
 
+- **`material`**: `toon()`, flat bands of light, like a cartoon. `material: toon` shades an object in flat bands of light, like a cartoon or a cel-shaded game: from the shade to the full color, with a small sharp highlight. `toon(5)` gives it more bands (from 2 to 8, 3 by default), and `toon(#ff5a36)` a color of its own. It takes the sun, the lights of the scene and their shadows, like the other materials.
 - **`content`**: a number among the strings, `"item: " sibling-index()`. `content` takes a number, joined to the strings around it like CSS joins strings: `content: "item: " sibling-index()` numbers each copy, `content: var(--i)` writes a variable that holds a number. The number is written like CSS writes it, at most six decimals. The digits of a font are drawn once, so a scene can number many copies (64 copies use 2 of its 16 images). Unlike CSS, where `content` takes no number. A text with a number holds on one line.
 - **Docs**: a page that a version gave a new value says "updated in". In the contents of the docs and the "New in" of the search, a page that the newest version gave a new value, like the number of `content`, says `updated in v0.0.8`, beside the pages it added, which say `new in v0.0.8`.
 - **Home page**: a section that thanks the contributors. The home page thanks the contributors: a section "Contributors" with the avatar and the name of each person whose pull request is in GSS, and what each pull request brought, linked to it. The footer links to it.
