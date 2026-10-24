@@ -58,14 +58,14 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
   let scene: Scene | null = null;
   let root: CompiledScene | null = null;
   let stopMedia = () => {};
-  // @gpu (decision 211): the frames say when the GPU is slow, and it stays so
-  const gpu = createGpu(options.gpu);
-  const media = withGpu(options.viewport?.(canvas) ?? WINDOW_MEDIA, gpu); // decision 165
   let hovered = 0;
   const press = createPress(); // :active (decision 95)
   const slider = options.scrollSlider ? createScrollSlider(canvas) : null; // decision 96
   const density = viewDensity(options); // decisions 120 and 142
-  const dprMenu = density && options.dprPicker ? createDprPicker(canvas, density) : null; // docs and playground only
+  // @gpu (decision 211): the frames say when the GPU is slow, and it stays so
+  const gpu = createGpu(options.gpu);
+  const media = withGpu(options.viewport?.(canvas) ?? WINDOW_MEDIA, gpu); // decision 165
+  const dprMenu = density && options.dprPicker ? createDprPicker(canvas, density, undefined, gpu) : null; // docs and playground only
   let lighter = false; // the scene has a version for a slow GPU: auto never draws it under 1
   const holdDpr = () => density?.floor(lighter && !gpu.slow ? 1 : FLOOR);
   let reducedMotion = false;
@@ -272,7 +272,7 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
     else clock.resume(now);
     if (settings && !camera.dragging) camera.yaw -= dt * settings.spin;
     const drawn = resize(); // not inside dprMenu?.(): it must run without the menu too
-    dprMenu?.update(drawn);
+    dprMenu?.update(drawn, lighter);
     if (scene) {
       // Too heavy for the computer: stop, and say so (decision 142)
       const heavy = !document.hidden && density?.frame(now);

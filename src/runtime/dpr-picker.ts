@@ -1,8 +1,11 @@
 import { createDensity, type Density, type DensityChoice } from "./dpr";
+import type { Gpu, GpuChoice } from "./gpu";
 
 // The dpr picker of the docs and the playground (decision 120): a small menu at the top
 // right of the render, a signal outline (styles/site.css, .gss-dpr). "auto" shows the
 // ratio it draws at. The choice holds for the whole site, in this browser.
+// @gpu (slow) (decision 211): for a scene with a lighter version, a gpu menu next to it shows
+// that version on demand ("slow"), or leaves it to the frames ("auto"). It holds for the render.
 
 const KEY = "gss-dpr";
 const RATIOS = [0.5, 1, 1.5, 2];
@@ -47,6 +50,7 @@ export function createDprPicker(
   canvas: HTMLCanvasElement,
   density: Density,
   screen = window.devicePixelRatio,
+  gpu?: Gpu,
 ) {
   const box = document.createElement("label");
   box.className = "gss-dpr";
@@ -71,19 +75,52 @@ export function createDprPicker(
   });
   box.append("dpr", select);
   canvas.after(box);
+  const gpuMenu = gpu ? createGpuMenu(gpu) : null;
+  if (gpuMenu) box.after(gpuMenu.box);
 
   let shown = "";
   return {
     // Each frame: the ratio drawn, next to auto; the place, at the top right of the render
-    // (a sibling of the canvas, placed from the same box, like the scroll slider)
-    update(ratio: number): void {
+    // (a sibling of the canvas, placed from the same box, like the scroll slider). lighter:
+    // the scene has a version for a slow GPU, and the gpu menu shows, left of the dpr.
+    update(ratio: number, lighter = false): void {
       const text = density.choice === "auto" ? `auto · ${label(ratio)}` : "auto";
       if (text !== shown) auto.textContent = shown = text;
-      box.style.left = `${canvas.offsetLeft + canvas.offsetWidth - box.offsetWidth - 8}px`;
+      const left = canvas.offsetLeft + canvas.offsetWidth - box.offsetWidth - 8;
+      box.style.left = `${left}px`;
       box.style.top = `${canvas.offsetTop + 8}px`;
+      gpuMenu?.update(lighter, left - 6, canvas.offsetTop + 8);
     },
     destroy(): void {
       box.remove();
+      gpuMenu?.box.remove();
+    },
+  };
+}
+
+// The gpu menu: auto (the frames decide, "auto · slow" once they did) or slow
+function createGpuMenu(gpu: Gpu) {
+  const box = document.createElement("label");
+  box.className = "gss-dpr gss-gpu";
+  box.title = "GPU: slow shows the lighter version of the scene, @gpu (slow)";
+  box.hidden = true;
+  const select = document.createElement("select");
+  select.setAttribute("aria-label", "GPU speed (@gpu)");
+  const auto = option("auto", "auto");
+  select.append(auto, option("slow", "slow"));
+  select.value = gpu.choice;
+  select.addEventListener("change", () => gpu.choose(select.value as GpuChoice));
+  box.append("gpu", select);
+  let shown = "";
+  return {
+    box,
+    update(lighter: boolean, right: number, top: number): void {
+      box.hidden = !lighter;
+      if (!lighter) return;
+      const text = gpu.choice === "auto" && gpu.slow ? "auto · slow" : "auto";
+      if (text !== shown) auto.textContent = shown = text;
+      box.style.left = `${right - box.offsetWidth}px`;
+      box.style.top = `${top}px`;
     },
   };
 }

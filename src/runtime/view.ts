@@ -137,15 +137,15 @@ export function createView(
   const press = createPress(); // :active: the object pressed, until the button goes up
   const slider = options.scrollSlider ? createScrollSlider(canvas) : null;
   const density = viewDensity(options); // decisions 120 and 142
-  const dprMenu = density && options.dprPicker ? createDprPicker(canvas, density) : null; // docs and playground only
+  // @gpu (decision 211): the frames say when the GPU is slow, and it stays so
+  const gpu = createGpu(options.gpu);
+  const dprMenu = density && options.dprPicker ? createDprPicker(canvas, density, undefined, gpu) : null; // docs and playground only
   let dpr: Dpr = "auto"; // the pixel density the scene asks for (scene { dpr })
   let transitions = createTransitions([]); // how each hover slot glides (transition)
   let triggers = createTriggers([], 0); // the states that start an animation (decision 141)
   let reducedMotion = false; // freeze(): transitions jump, like the animations stop
   let shown: CompiledScene | null = null; // the version on screen (@media)
   let stopMedia = () => {}; // stops listening to the @media queries of the scene
-  // @gpu (decision 211): the frames say when the GPU is slow, and it stays so
-  const gpu = createGpu(options.gpu);
   const media = withGpu(options.viewport?.(canvas) ?? WINDOW_MEDIA, gpu); // decision 165
   let lighter = false; // the scene has a version for a slow GPU: auto never draws it under 1
   const holdDpr = () => density?.floor(lighter && !gpu.slow ? 1 : FLOOR);
@@ -388,7 +388,7 @@ export function createView(
     if (settings && !camera.dragging) camera.yaw -= dt * settings.spin;
 
     const drawn = resize(); // not inside dprMenu?.(): it must run without the menu too
-    dprMenu?.update(drawn);
+    dprMenu?.update(drawn, lighter);
     gl!.viewport(0, 0, canvas.width, canvas.height);
 
     probe?.frameStart(now, canvas.width, canvas.height);

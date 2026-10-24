@@ -135,6 +135,24 @@ function media(): string {
   );
 }
 
+// @gpu (slow): the full scene while the frames keep up, a lighter one when they stay slow
+function gpu(): string {
+  const cell: Frame = { ...CELL, scale: 24, x: 66, y: 94 };
+  const spheres = (xs: number[], radius: number) =>
+    lines(floor(1.3, 0.55), cell) +
+    xs.map((x) => `<g class="floats" style="--rise: -5px">${lines(moved(ball(REST_VIEW, radius), [x, 0.7, 0]), cell)}</g>`).join("");
+  return (
+    cells(
+      "figure-steps",
+      [
+        ["keeps up", spheres([-0.85, 0, 0.85], 0.3)],
+        ["slow frames", `<g class="tinted">${spheres([-0.5, 0.5], 0.2)}</g>`],
+      ],
+      CELL,
+    ) + says("@gpu (slow) { scene { --n: 8; } }")
+  );
+}
+
 // --- @mixin and @apply: the code is written, a cube shows what it gives
 
 // A line of code, written: its words are the code of the page
@@ -256,6 +274,7 @@ const FLOWS: Record<string, (subject: string) => string> = {
   "fn-var": varFigure,
   "fn-if": ifFigure,
   "at-media": media,
+  "at-gpu": gpu,
   "at-mixin": mixin,
   "at-apply": apply,
   "selector-important": important,

@@ -224,6 +224,9 @@ body.gss-dark {
       color var(--gss-transition),
       border-color var(--gss-transition);
   }
+  .gss-gpu[hidden] {
+    display: none;
+  }
   .gss-dpr:hover {
     border-color: var(--gss-signal-hover);
     color: var(--gss-signal-hover);

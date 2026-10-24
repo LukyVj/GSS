@@ -37,7 +37,10 @@ export function debugRows(scene: Scene, backend: Backend = "webgl"): Row[] {
   const hover = scene.hover.length;
   const active = scene.active?.length ?? 0;
   const passes = scene.passes?.length ?? 0;
-  const queries = scene.media?.queries.length ?? 0;
+  // @gpu (decision 211): its conditions sit among the @media queries
+  const conditions = scene.media?.queries ?? [];
+  const lighter = conditions.some((query) => query.startsWith("@gpu "));
+  const queries = conditions.filter((query) => !query.startsWith("@gpu ")).length;
   return [
     { label: "objects", value: String(scene.objects) },
     { label: "lights", value: String(scene.lights ?? 0) },
@@ -47,6 +50,7 @@ export function debugRows(scene: Scene, backend: Backend = "webgl"): Row[] {
     ...(scene.timelines ? [{ label: "timelines", value: String(scene.timelines.length) }] : []),
     ...(passes > 0 ? [{ label: "filters", value: plural(passes, "pass", "passes") }] : []),
     ...(queries > 0 ? [{ label: "media", value: plural(queries, "query", "queries") }] : []),
+    ...(lighter ? [{ label: "gpu", value: "lighter version" }] : []),
     // the code the GPU runs (the shader row of the performance panel is its build time)
     backend === "webgpu" && scene.wgsl
       ? { label: "wgsl", value: `${lines(scene.wgsl)} lines` }
