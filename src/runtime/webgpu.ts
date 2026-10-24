@@ -247,7 +247,7 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
     hovered = 0; press.reset(); pickGeneration++;
     slider?.show(compiled.timelines !== undefined);
     density?.restart(performance.now()); // its compile is not a slow frame
-    transitions = createTransitions(compiled.transitions);
+    transitions = createTransitions(compiled.transitions, pointerValues(compiled.hover, compiled.active, 0, 0));
     triggers = createTriggers(compiled.triggers ?? [], compiled.transitions.length);
     if (resetCamera) {
       const next = compiled.camera;

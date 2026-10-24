@@ -8,6 +8,7 @@ The 0.0.1 history was reconstructed from GitHub.
 
 ### Added
 
+- **`:not()`**: with `:hover` inside. `cube:not(:hover)` styles every cube that is not under the mouse, all of them while nothing is, and `#cloud:not(:has(.point:hover)) .point` the points while none of them is hovered, with their `transition`.
 - **`:hover`**: the sizes of a shape. `sphere:hover { radius: 1; }` grows the sphere itself, and so do `size`, `height`, `thickness`, `corner-radius`, `depth` and `stroke-width`, with the `transition` of the object. `:active` changes them too.
 - **`:hover`**: on a group itself. `#g:hover { scale: 1.2; }` moves, turns, scales or fades the whole group when any of its objects is hovered, and the group carries every object it holds, with its `transition`.
 - **`material`**: `toon()`, flat bands of light, like a cartoon. `material: toon` shades an object in flat bands of light, like a cartoon or a cel-shaded game: from half the color in the shade to the full color, with a highlight. `toon(5)` gives it more bands (from 2 to 8, 3 by default), and `toon(#ff5a36)` a color of its own. It takes the sun, the lights of the scene and their shadows, like the other materials.

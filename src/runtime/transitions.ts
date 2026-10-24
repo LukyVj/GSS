@@ -13,9 +13,10 @@ type Glide = {
   transition: Transition;
 };
 
-export function createTransitions(pairs: Pair[]) {
-  const values = new Float32Array(pairs.length); // what the shader gets
-  const targets = new Float32Array(pairs.length); // 0 at rest, 1 hovered
+// rest: each slot when nothing is hovered, where it starts: 1 for a :not(:hover) (decision 214)
+export function createTransitions(pairs: Pair[], rest: ArrayLike<number> = new Float32Array(pairs.length)) {
+  const values = Float32Array.from(rest); // what the shader gets
+  const targets = Float32Array.from(rest); // 0 at rest, 1 hovered
   const glides: (Glide | null)[] = pairs.map(() => null);
 
   return {

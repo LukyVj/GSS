@@ -409,8 +409,10 @@ A pseudo-class, like CSS: the object matches when none of the selectors in the p
 - **cube:not(:first-child, :last-child):** The cubes in the middle.
 - **group:not(:has(sphere)):** The groups without a sphere.
 - **:not(.a):not(.b):** Several in a row.
+- **cube:not(:hover):** Under the mouse or not: every cube that is not hovered, and all of them while nothing is.
+- **#cloud:not(:has(.point:hover)) .point:** The points of `#cloud` while none of them is hovered.
 
-It weighs like the most specific selector of its list, like CSS: `cube:not(#hero)` beats `#hero` alone. It is read once, when the scene compiles: it cannot hold `:hover` or a face.
+It weighs like the most specific selector of its list, like CSS: `cube:not(#hero)` beats `#hero` alone. It is read when the scene compiles, except `:hover` inside, read under the mouse; it cannot hold `:active` or a face.
 
 ### every cube but the red ones
 

@@ -69,10 +69,8 @@ describe(":not()", () => {
     expect(b.styles.color).toEqual(tokenize("#00ff00"));
   });
 
-  it("refuses :hover inside for now", () => {
-    expect(() => selector("cube:not(:hover)")).toThrow(/:not\(\).*:hover/);
-    expect(() => selector("cube:not(#g:hover cube)")).toThrow(/:hover/);
-    expect(() => selector("cube:not(:has(sphere:hover))")).toThrow(/:hover/);
+  it("refuses :active inside for now", () => {
+    expect(() => selector("cube:not(:active)")).toThrow(/:not\(\) cannot hold :active yet/);
   });
 
   it("refuses an empty :not(), a face, a leading combinator", () => {
@@ -100,3 +98,31 @@ describe(":not()", () => {
     expect(compileScene(formatGss(source)).shader).toBe(compileScene(source).shader);
   });
 });
+
+// :not() holding :hover: its triggers are every object but the ones that would hover the
+// selector inside, and 0, nothing under the mouse (decision 214)
+describe(":not() with :hover inside", () => {
+  const states = (scene: string, rules: string) =>
+    Object.fromEntries(styled(scene, rules).map((o) => [o.id, o.hoverStates.map((state) => state.triggers)]));
+
+  it("is on while the object is not hovered, nothing hovered included", () => {
+    expect(states("cube#a; sphere#b;", "cube:not(:hover) { color: red; }")).toEqual({ a: [[0, 2]], b: [] });
+  });
+
+  it("reads :has() inside, from the group down", () => {
+    expect(
+      states("group#wrap { sphere#p1.point; sphere#p2.point; } cube#c;", "#wrap:not(:has(.point:hover)) .point { scale: 0.5; }"),
+    ).toEqual({ p1: [[0, 3]], p2: [[0, 3]], c: [] });
+  });
+
+  it("composes with :hover outside it: hovered, but not a given object", () => {
+    expect(
+      states("group#g { cube#a; sphere#b; }", "#g:hover cube:not(:hover) { color: red; }"),
+    ).toEqual({ a: [[2]], b: [] });
+  });
+
+  it("puts no condition when the selector inside cannot match the object", () => {
+    expect(states("cube#a; sphere#b;", "cube:not(.red:hover) { color: red; }")).toEqual({ a: [[0, 1, 2]], b: [] });
+  });
+});
+

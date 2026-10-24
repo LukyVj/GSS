@@ -22,7 +22,7 @@ describe(":active in a selector", () => {
   });
 
   it("is refused where :hover is refused", () => {
-    expect(() => selector("cube:not(:active)")).toThrow(/cannot hold :hover or :active/);
+    expect(() => selector("cube:not(:active)")).toThrow(/cannot hold :active/);
     expect(() => selector(":nth-child(1 of :active)")).toThrow(/cannot hold :hover or :active/);
   });
 });
