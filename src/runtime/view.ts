@@ -10,6 +10,7 @@ import type { Dpr } from "../compiler/features/dpr";
 import { pixelRatio } from "./dpr";
 import { createDprPicker, viewDensity } from "./dpr-picker";
 import { createTransitions } from "./transitions";
+import { createPointer } from "./pointer";
 import { createTriggers } from "./triggers";
 import { createScrollSlider, timelineValues } from "./timeline";
 import type { Timeline } from "../compiler/features/timeline";
@@ -106,7 +107,7 @@ type GpuScene = {
   uStart: WebGLUniformLocation | null; // the states that start an animation (decision 141)
   uPicking: WebGLUniformLocation | null;
   uPick: WebGLUniformLocation | null;
-  uHovered: WebGLUniformLocation | null; // the object under the pointer, for hover-distance() (decision 215)
+  uPointer: WebGLUniformLocation | null; // the object under the pointer, for hover-distance() (decisions 215, 216)
   uProperties: WebGLUniformLocation | null; // @property (decision 105)
   moves: boolean; // the image changes with time alone (decision 134)
   paints: PaintSet | null; // the textures its @paint draw (decision 151)
@@ -143,6 +144,7 @@ export function createView(
   const dprMenu = density && options.dprPicker ? createDprPicker(canvas, density, undefined, gpu) : null; // docs and playground only
   let dpr: Dpr = "auto"; // the pixel density the scene asks for (scene { dpr })
   let transitions = createTransitions([]); // how each hover slot glides (transition)
+  let measured = createPointer(null); // where hover-distance() measures from (decision 216)
   let triggers = createTriggers([], 0); // the states that start an animation (decision 141)
   let reducedMotion = false; // freeze(): transitions jump, like the animations stop
   let shown: CompiledScene | null = null; // the version on screen (@media)
@@ -229,7 +231,7 @@ export function createView(
       uStart: gl!.getUniformLocation(program, "uStart"),
       uPicking: gl!.getUniformLocation(program, "uPicking"),
       uPick: gl!.getUniformLocation(program, "uPick"),
-      uHovered: gl!.getUniformLocation(program, "uHovered"),
+      uPointer: gl!.getUniformLocation(program, "uPointer"),
       uProperties: gl!.getUniformLocation(program, "uProperties"),
     };
   }
@@ -409,9 +411,10 @@ export function createView(
       }
       // :hover: which object is under the mouse, then how far each slot has glided
       // cursor (decision 161) and controls on an object (decision 176) need the object under the mouse too
-      const hovers = scene.hover.length + (scene.active?.length ?? 0) > 0 || scene.uHovered !== null || shown?.cursors !== undefined || shown?.controls?.objects !== undefined;
+      const hovers = scene.hover.length + (scene.active?.length ?? 0) > 0 || scene.uPointer !== null || shown?.cursors !== undefined || shown?.controls?.objects !== undefined;
       const pixel = hovers ? pointerPixel() : null;
       let glides: Float32Array | null = null;
+      let measures: Float32Array | null = null; // uPointer (decision 216)
       let started: Float32Array | null = null; // uStart[]
       if (hovers) {
         const id = picker.poll(); // the answer to an earlier request, if it came back
@@ -428,6 +431,7 @@ export function createView(
         // A state that starts an animation holds until it ends (decision 141)
         const { targets, starts } = triggers.update(pointed, clock.seconds);
         glides = transitions.update(targets, now, reducedMotion);
+        if (scene.uPointer) measures = measured.update(hovered, now, reducedMotion);
         if (starts.length > 0) started = starts;
       }
       const values = properties.values();
@@ -448,7 +452,7 @@ export function createView(
         ...(values ?? []),
         ...(timeline ?? []),
         ...(glides ?? []),
-        scene.uHovered ? hovered : 0, // hover-distance() measures from it (decision 215)
+        ...(measures ?? []), // hover-distance() measures from it (decisions 215, 216)
         ...(scene.paints?.pointer ? paintMouse() : []), // a @paint that reads mouse
       ]);
       if (!changed && !measuring()) {
@@ -478,7 +482,7 @@ export function createView(
       if (hovers) {
         if (pixel) requestPick(scene, pixel);
         if (glides!.length > 0) gl!.uniform1fv(scene.uHover, glides!);
-        if (scene.uHovered) gl!.uniform1f(scene.uHovered, hovered);
+        if (measures) gl!.uniform4fv(scene.uPointer, measures);
         if (started) gl!.uniform1fv(scene.uStart, started);
       }
       if (post.active()) {
@@ -596,6 +600,7 @@ export function createView(
     dpr = compiled.dpr;
     density?.restart(performance.now()); // its compile is not a slow frame
     transitions = createTransitions(compiled.transitions, pointerValues(compiled.hover, compiled.active, 0, 0));
+    measured = createPointer(compiled.pointer?.transition ?? null);
     triggers = createTriggers(compiled.triggers ?? [], compiled.transitions.length);
     if (resetCamera) applyCameraSettings(compiled.camera);
   }

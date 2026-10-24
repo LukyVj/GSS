@@ -175,7 +175,6 @@ export function pointerReaders(instances: StyledInstance[], keyframes: Keyframes
       if (token.type === "EXPR") for (const [, index] of token.code.matchAll(POINTER)) found.add(Number(index));
   return found;
 }
-export const readsPointer = (instances: StyledInstance[], keyframes: Keyframes[] = []) => pointerReaders(instances, keyframes).size > 0;
 
 // Where each object is with nothing under the pointer: its moves and its groups', from
 // the inside out, with what measures from the pointer left out (far away, no direction);
@@ -203,16 +202,18 @@ export function pointerCode(
   return [
     "// hover-distance(), hover-direction(): where each object is with nothing under the pointer",
     ...centers,
-    "vec3 hoverAt() {",
-    ...instances.map((instance) => `  if (uHovered == ${glslFloat(instance.index)}) return restCenter${instance.index}();`),
+    "vec3 hoverAt(float id) {",
+    ...instances.map((instance) => `  if (id == ${glslFloat(instance.index)}) return restCenter${instance.index}();`),
     "  return vec3(0.0);",
     "}",
+    // uPointer (decision 216): the place glides from the object before to the one now (z), and
+    // the distance grows to nothing as the presence (w) fades
     "float hoverDistance(vec3 c) {",
-    "  return uHovered > 0.0 ? length(c - hoverPoint) : 1000000.0;",
+    "  return uPointer.w > 0.0 ? length(c - hoverPoint) / uPointer.w : 1000000.0;",
     "}",
     "vec3 hoverDirection(vec3 c) {",
     "  vec3 d = c - hoverPoint;",
-    "  return uHovered > 0.0 && dot(d, d) > 0.000001 ? normalize(d) : vec3(0.0);",
+    "  return uPointer.w > 0.0 && dot(d, d) > 0.000001 ? normalize(d) : vec3(0.0);",
     "}",
   ].join("\n");
 }

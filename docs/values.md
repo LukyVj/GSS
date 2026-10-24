@@ -222,7 +222,7 @@ How far the object is from the object under the pointer, and which way: `hover-d
 
 Both measure between the centers of the objects, as placed with nothing under the pointer. With nothing hovered, `hover-distance()` is very large and `hover-direction()` is 0: a push in `exp(-1 * hover-distance())` fades away.
 
-They go in a rule that styles objects, in the math of a value computed on the GPU: `translate`, the rotations, `scale`, `color`. The places include the animations and `:hover`. Write `-1 * hover-distance()`, not `-hover-distance()`: like CSS, a `-` stuck to a name is part of the name. Not yet: they measure from the center of the hovered object, not from the point under the pointer; they jump from one hovered object to the next, without a transition; a group, the scene and a `@keyframes` shared by several objects cannot read them.
+They go in a rule that styles objects, in the math of a value computed on the GPU: `translate`, the rotations, `scale`, `color`. The places include the animations and `:hover`. Write `-1 * hover-distance()`, not `-hover-distance()`: like CSS, a `-` stuck to a name is part of the name. With a `transition` on the objects that read them, they glide from one hovered object to the next, and fade in and out. Not yet: they measure from the center of the hovered object, not from the point under the pointer; a group, the scene and a `@keyframes` shared by several objects cannot read them.
 
 ### the points move aside
 

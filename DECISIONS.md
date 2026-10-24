@@ -1798,3 +1798,12 @@ A first version cut the light from 0 into steps, with a pinpoint highlight: its 
 **Why**: the cloud of the changelog page (Lucas, Oct. 23: "au hover, un radius se fasse autour du point concerné, que les autres s'échappent"). `:hover` and `:has(:hover)` say that something is hovered, not where; a distance and a direction let one rule make a falloff around it.
 **Accepted limits**: the center of the hovered object, not the point under the pointer (that would need the picking pass to return a position). The value jumps when the hovered object changes: no `transition`. Only objects: not a group, the scene or a shared `@keyframes`. Every object of the scene gets its `restCenter`, and an object whose size reads it measures at every step of the march.
 
+## 216. `hover-distance()` glides, with the `transition` of the objects that read it
+
+**Decision** (Lucas, Oct. 24, on the cloud of the changelog page: "ajoute de la transition lors des mouvements"): what `hover-distance()` and `hover-direction()` measure from no longer jumps. The place glides from the object hovered before to the one hovered now, and an object under the pointer fades in and out, with the `transition` of the objects that read them (the first one that sets one), like CSS glides a value that changes.
+- **The runtime** (`runtime/pointer.ts`, `createPointer()`): `uPointer` takes the place of `uHovered` (decision 215): the object now, the one before, how far the place glided from one to the other, and how present an object under the pointer is, the last two from 0 to 1, eased like a transition (`ease()`, decision 68). From nothing, the place starts where it arrives; when the pointer leaves, it stays on the last object while it fades. Under `prefers-reduced-motion`, it jumps. In WebGPU, `pointer` is a `vec4` after the starts of the uniform buffer.
+- **The shader**: `hoverPoint` is the mix of the two places; the distance is divided by the presence, so a falloff fades out by itself as it grows, and the direction stays.
+- `CompiledScene.pointer` gives the transition. A scene without these functions does not change.
+**Why**: one transition per scene for the pointer, where CSS would glide each value apart: the runtime keeps one place, not one per object, and the objects that read it share their `transition` in practice (a cloud of points).
+**Accepted limits**: several objects that read them with different transitions glide with the first one. A glide interrupted by a third object starts again from the object hovered just before.
+

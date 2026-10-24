@@ -5,6 +5,7 @@ import { FLOOR, pixelRatio } from "./dpr";
 import { createDprPicker, viewDensity } from "./dpr-picker";
 import { pickPixel, pointerValues, createPress, decodeId, cursorAt, controlsAllow } from "./hover";
 import { createTransitions } from "./transitions";
+import { createPointer } from "./pointer";
 import { createTriggers } from "./triggers";
 import { createScrollSlider, timelineValues, timelineVectors } from "./timeline";
 import { pickVariant, WINDOW_MEDIA } from "./media";
@@ -71,6 +72,7 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
   let reducedMotion = false;
   const properties = createProperties(); // @property: what the page set (decision 105)
   let transitions = createTransitions([]);
+  let measured = createPointer(null); // where hover-distance() measures from (decision 216)
   let triggers = createTriggers([], 0); // the states that start an animation (decision 141)
   let settings: CompiledScene["camera"] | null = null;
   const camera = { yaw: 0, pitch: 0, dist: 8, dragging: false };
@@ -205,7 +207,7 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
     const slots = compiled.hover.length + (compiled.active?.length ?? 0);
     // uTimeline goes after the hover slots (decision 96), uProperties after it (decision 105),
     // uStart after them (decision 141)
-    const size = 48 + 16 * Math.max(1, slots) + (compiled.timelines ? 16 * timelineVectors(compiled.timelines.length) : 0) + 16 * (compiled.properties?.length ?? 0) + 16 * (compiled.triggers?.length ?? 0);
+    const size = 48 + 16 * Math.max(1, slots) + (compiled.timelines ? 16 * timelineVectors(compiled.timelines.length) : 0) + 16 * (compiled.properties?.length ?? 0) + 16 * (compiled.triggers?.length ?? 0) + (compiled.pointer ? 16 : 0);
     if (size > device.limits.maxUniformBufferBindingSize) throw new Error("This scene exceeds the WebGPU device's uniform buffer limit");
     const layout = device.createBindGroupLayout({ entries: [
       { binding: 0, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform", minBindingSize: size } },
@@ -248,6 +250,7 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
     slider?.show(compiled.timelines !== undefined);
     density?.restart(performance.now()); // its compile is not a slow frame
     transitions = createTransitions(compiled.transitions, pointerValues(compiled.hover, compiled.active, 0, 0));
+    measured = createPointer(compiled.pointer?.transition ?? null);
     triggers = createTriggers(compiled.triggers ?? [], compiled.transitions.length);
     if (resetCamera) {
       const next = compiled.camera;
@@ -287,8 +290,7 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
       }
       const current = scene;
       const v = current.values;
-      // the last one: the object under the pointer, for hover-distance() (decision 215)
-      v.set([canvas.width, canvas.height, 1, clock.seconds, camera.yaw, camera.pitch, camera.dist, canvas.width / Math.max(canvas.clientWidth, 1), 0, 0, 0, current.compiled.pointer ? hovered : 0]);
+      v.set([canvas.width, canvas.height, 1, clock.seconds, camera.yaw, camera.pitch, camera.dist, canvas.width / Math.max(canvas.clientWidth, 1), 0, 0, 0, 0]);
       if (current.compiled.cursors) canvas.style.cursor = cursorAt(current.compiled.cursors, hovered, press.id);
       // A state that starts an animation holds until it ends (decision 141)
       const held = triggers.update(pointerValues(current.compiled.hover, current.compiled.active, hovered, press.id), clock.seconds);
@@ -302,6 +304,8 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
       if (values) v.set(values, after + timelineFloats);
       const startsAt = after + timelineFloats + (values?.length ?? 0); // 4 floats per property
       held.starts.forEach((value, i) => { v[startsAt + 4 * i] = value; });
+      // where hover-distance() measures from, after the starts (decisions 215, 216)
+      if (current.compiled.pointer) v.set(measured.update(hovered, now, reducedMotion), startsAt + 4 * (current.compiled.triggers?.length ?? 0));
       // Render on demand (decision 134): the state of the last frame drawn, nothing to draw;
       // the mouse may still have moved over the frame on screen
       const state = Array.from(v);
