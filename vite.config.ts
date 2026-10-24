@@ -32,6 +32,11 @@ export default defineConfig({
         extends: true,
         test: {
           name: "unit",
+          // Each test compiles scenes or renders the docs; alone the heaviest takes under a second,
+          // but the 5 s default measures the machine, not the code: with three `npm test` running
+          // at once (other sessions, an editor watcher), the watch scene took 37 s and twenty tests
+          // timed out. A test that truly hangs still fails, after a minute.
+          testTimeout: 60_000,
           exclude: [...configDefaults.exclude, ".claude/**", ".bench-worktrees/**", "**/*gpu.test.ts"],
         },
       },
