@@ -1262,7 +1262,7 @@ export const PROPERTIES: PropertyDef[] = [
     since: "0.0.3",
     appliesTo: "everywhere",
     syntax:
-      "auto | scroll([root | nearest] || [block | inline | x | y]) | view([block | inline | x | y])",
+      "auto | scroll([root | nearest] || [block | inline | x | y]) | view([block | inline | x | y]) | <dashed-ident>",
     initial: "auto",
     description:
       "Drives the animation with the scroll of the page instead of time, like CSS scroll-driven animations. The whole timeline is the whole animation, so the duration and the delay do not count.",
@@ -1270,9 +1270,10 @@ export const PROPERTIES: PropertyDef[] = [
       ["auto", "The default: the animation plays in time."],
       ["scroll()", "A scroll container, from its start (0%) to its end (100%): `nearest` (the default) is the closest one around the scene, `root` the page. The axis is `block` (the default), `inline`, `y` or `x`."],
       ["view()", "The scene crossing its scroll container: 0% when it enters at the bottom, 100% when it leaves at the top."],
+      ["<dashed-ident>", "A timeline that an element of the page names in its own CSS: `view-timeline-name: --intro` on a section follows that section crossing the page, like `view()` follows the scene; `scroll-timeline-name` follows the scroll of the element. The axis and the inset are the ones the page gives, `view-timeline-axis` and `view-timeline-inset`.", "0.0.8"],
     ],
     details: "Write it after `animation`, which still needs a name and a duration: `animation: spin 1s linear; animation-timeline: scroll();`. Scrolling back plays the animation backward.",
-    more: "The number of iterations and the direction still count, an animation without a count plays once along the scroll. A scene takes up to 4 different timelines. In the playground, which does not scroll, a slider stands in for the scroll.",
+    more: "The number of iterations and the direction still count, an animation without a count plays once along the scroll. A scene takes up to 4 different timelines. A name is looked for in the whole page, the first element that declares it wins: unlike CSS, the page needs no `timeline-scope`, the scene being drawn apart from the page. While no element declares it, the animation shows its first frame. The page Follow the page as it scrolls, under Installation, shows it live, with the CSS of the page to copy. In the playground, which does not scroll, a slider stands in for the scroll.",
     examples: [
       {
         name: "turn with the page",
@@ -1283,6 +1284,11 @@ export const PROPERTIES: PropertyDef[] = [
         name: "rise into view",
         text: "The spheres rise as the scene comes into view; the second one goes up and back.",
         code: "@scene { sphere * 3; } sphere { --x: calc(2 - sibling-index()); radius: 0.35; translate: var(--x) 0.35 0; color: #3a7bff; animation: rise 1s ease-out; animation-timeline: view(); } sphere:nth-child(2) { animation-iteration-count: 2; animation-direction: alternate; } @keyframes rise { to { translate: var(--x) 1.6 0; color: #3ad16b; } }",
+      },
+      {
+        name: "follow a section of the page",
+        text: "The page names its section in its own CSS, `#pricing { view-timeline-name: --pricing; }`: the ring turns while that section crosses the window, wherever the scene is. Here the slider stands in for it.",
+        code: "@scene { torus; } torus { translate: 0 0.8 0; radius: 0.6; thickness: 0.18; color: #ff5a36; animation: tilt 1s ease-in-out; animation-timeline: --pricing; animation-range: contain; } @keyframes tilt { from { rotate-x: 90deg; } to { rotate-x: 0deg; rotate-y: 180deg; } }",
       },
     ],
   },
@@ -3523,7 +3529,7 @@ export const FUNCTIONS: FunctionDef[] = [
       ["inline, x", "The horizontal scroll."],
     ],
     details: "The two arguments come in any order, each one at most once: `scroll(root)`, `scroll(x nearest)`. The whole scroll is the whole animation; scrolling back plays it backward.",
-    more: "The duration and the delay of the animation do not count, its count and its direction still do. `animation-range` plays it on a part of the scroll, in percentages or pixels: the named ranges belong to `view()`. In the playground, which does not scroll, a slider stands in for the scroll.",
+    more: "The duration and the delay of the animation do not count, its count and its direction still do. `animation-range` plays it on a part of the scroll, in percentages or pixels: the named ranges belong to `view()`. Another scroll container of the page can be named in its CSS, `scroll-timeline-name: --list`, and followed with `animation-timeline: --list`. In the playground, which does not scroll, a slider stands in for the scroll.",
     examples: [
       {
         name: "the scroll of the page",
@@ -3553,7 +3559,7 @@ export const FUNCTIONS: FunctionDef[] = [
       ["inline, x", "The scene crosses it from one side to the other."],
     ],
     details: "`animation-range` plays the animation on a part of the way: `entry` while the scene comes in, `contain` while it is all in, `exit` while it leaves.",
-    more: "The scroll container is the closest one around the scene, or the page. The duration and the delay of the animation do not count, its count and its direction still do. Unlike CSS, `view()` takes no inset. In the playground, which does not scroll, a slider stands in for the scroll.",
+    more: "The scroll container is the closest one around the scene, or the page. The duration and the delay of the animation do not count, its count and its direction still do. Unlike CSS, `view()` takes no inset. To follow an element of the page instead of the scene, give it a name in the CSS of the page, `view-timeline-name: --intro`, and write that name: `animation-timeline: --intro`; its `view-timeline-inset` counts. In the playground, which does not scroll, a slider stands in for the scroll.",
     examples: [
       {
         name: "across the page",

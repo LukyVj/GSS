@@ -19,6 +19,7 @@ describe("animation-timeline: reading scroll() and view()", () => {
     ["scroll(y nearest)", { type: "scroll", scroller: "nearest", axis: "y" }],
     ["view()", { type: "view", axis: "block" }],
     ["view(inline)", { type: "view", axis: "inline" }],
+    ["--intro", { type: "named", name: "--intro" }],
   ])("%s", (text, expected) => {
     expect(timeline(text)).toEqual(expected);
   });
@@ -30,7 +31,8 @@ describe("animation-timeline: reading scroll() and view()", () => {
     ["scroll(x y)", /one axis/],
     ["view(10%)", /inset/],
     ["view(root)", /block, inline, x or y/],
-    ["--my-timeline", /scroll\(\) or view\(\)/],
+    ["my-timeline", /scroll\(\), view\(\) or the name of a timeline/],
+    ["--a --b", /one timeline/],
     ["scroll() view()", /one timeline/],
   ])("refuses %s", (text, message) => {
     expect(() => timeline(text)).toThrow(message);
@@ -178,5 +180,51 @@ describe("animation-range: the part of the timeline the animation plays on, like
     expect(() => timelines("cube { animation: spin 1s; animation-timeline: view(); animation-range: middle; }")).toThrow(/animation-range expects/);
     expect(() => timelines("cube { animation: spin 1s; animation-timeline: view(); animation-range: entry 10% exit 90% cover; }")).toThrow(/animation-range expects/);
     expect(() => timelines("cube { animation: spin 1s; animation-range: entry; }")).toThrow(/animation-timeline/);
+  });
+});
+
+describe("animation-timeline: --name, a timeline of the page, like CSS", () => {
+  const compiled = (rules: string) => compileScene(scene(rules));
+
+  it("gives the name its own component of uTimeline, shared by the objects that use it", () => {
+    const result = compiled(
+      "cube { animation: spin 1s; animation-timeline: --intro; } sphere { animation: spin 1s; animation-timeline: --intro; }",
+    );
+    expect(result.timelines).toEqual([{ type: "named", name: "--intro" }]);
+    expect(result.shader).toContain("uTimeline.x");
+    expect(result.shader).not.toContain("uTimeline.y");
+  });
+
+  it("gives two names, and a name beside view(), two components", () => {
+    expect(
+      compiled("cube { animation: spin 1s; animation-timeline: --a; } sphere { animation: spin 1s; animation-timeline: --b; }").timelines,
+    ).toEqual([
+      { type: "named", name: "--a" },
+      { type: "named", name: "--b" },
+    ]);
+    expect(
+      compiled("cube { animation: spin 1s; animation-timeline: --a; } sphere { animation: spin 1s; animation-timeline: view(); }").timelines,
+    ).toHaveLength(2);
+  });
+
+  it("plays like view() in the shader: the same code on its own component", () => {
+    const named = compiled("cube { animation: spin 1s 2 alternate; animation-timeline: --intro; }").shader;
+    const view = compiled("cube { animation: spin 1s 2 alternate; animation-timeline: view(); }").shader;
+    expect(named).toBe(view);
+  });
+
+  it("takes the named ranges, which a view timeline of the page gives", () => {
+    expect(compiled("cube { animation: spin 1s; animation-timeline: --intro; animation-range: entry 20% exit; }").timelines).toEqual([
+      {
+        type: "named",
+        name: "--intro",
+        range: { start: { name: "entry", offset: 20, unit: "%" }, end: { name: "exit", offset: 100, unit: "%" } },
+      },
+    ]);
+  });
+
+  it("survives the formatter", () => {
+    const source = scene("cube { animation: spin 1s; animation-timeline: --intro; }");
+    expect(compileScene(formatGss(source)).shader).toBe(compileScene(source).shader);
   });
 });

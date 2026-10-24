@@ -254,6 +254,73 @@ const EDITOR_POCKET =
   `<span><a href="${MARKETPLACE_URL}">VS Code Marketplace</a> · <a href="${OPEN_VSX_URL}">Open VSX</a> for Cursor, VSCodium and Windsurf</span></p>` +
   `</div>`;
 
+// The live demo of "Follow the page": a scene that follows a section of a box that scrolls
+// beside it. Also checked by the tests: it compiles, on its timeline of the page.
+export const FOLLOW_SCENE = [
+  "@scene { torus; }",
+  "scene { camera-spin: none; floor: none; }",
+  "torus {",
+  "  translate: 0 0.9 0;",
+  "  radius: 0.6;",
+  "  thickness: 0.18;",
+  "  color: #3a7bff;",
+  "  animation: turn 1s ease-in-out;",
+  "  animation-timeline: --feature;",
+  "}",
+  "@keyframes turn {",
+  "  from { rotate-x: 90deg; }",
+  "  to { rotate-y: 360deg; color: #ff5a36; }",
+  "}",
+];
+const FOLLOW_SECTIONS = ["One", "Two", "Three", "Four", "Five"];
+
+const FOLLOW_HTML = `<style>
+  #feature { view-timeline-name: --feature; }
+</style>
+
+<section id="feature">…</section>
+
+<gss-scene>
+  <script type="text/gss">
+${indent(FOLLOW_SCENE, "    ")}
+  </script>
+</gss-scene>`;
+
+INSTALLATION.push({
+  anchor: "follow-the-page",
+  figure: "scroll-timeline",
+  label: "Follow the page as it scrolls",
+  since: "0.0.8",
+  paragraphs: [
+    'A scene can follow a part of the page: a section, a card, a list that scrolls. The page gives the part a name in its own CSS, as it would for a CSS scroll-driven animation, and the scene plays an animation along it with <a href="#animation-timeline"><code>animation-timeline</code></a>. Scroll the box: the ring turns while the section <em>Three</em> crosses it.',
+    `<div class="timeline-demo">` +
+      `<div class="timeline-demo-page" tabindex="0" aria-label="A page that scrolls">` +
+      FOLLOW_SECTIONS.map((name) =>
+        name === "Three"
+          ? `<section style="view-timeline-name: --feature" class="is-named">${name}<code>--feature</code></section>`
+          : `<section>${name}</section>`,
+      ).join("") +
+      `</div>` +
+      `<gss-scene controls="none"><script type="text/gss">\n${FOLLOW_SCENE.join("\n")}\n</script></gss-scene>` +
+      `</div>`,
+    "The CSS of the page names the section; the GSS of the scene writes that name instead of <code>view()</code>:",
+    `<pre><code class="html">${highlightCode("html", FOLLOW_HTML)}</code></pre>`,
+    "<h4>What the scene follows</h4>",
+    table([
+      ["view-timeline-name", "The section crossing its scroll container, the box around it or the window: the animation starts when its top edge comes in at the bottom, and ends when its bottom edge has left at the top. Like <code>view()</code>, but for the section instead of the scene."],
+      ["scroll-timeline-name", "The scroll of the element itself, from its top to its bottom: a list, a panel, a carousel. Like <code>scroll()</code>, for that element."],
+      ["view-timeline-axis, scroll-timeline-axis", "<code>block</code> (the default) for the vertical scroll, <code>inline</code> for the horizontal one, written in the CSS of the page beside the name."],
+      ["view-timeline-inset", "Takes pixels or a percentage off the top and the bottom of the scroll container: <code>view-timeline-inset: 20%</code> starts the animation when the section is a fifth of the way in."],
+    ]),
+    "The animation plays like on <code>view()</code>: its duration and its delay do not count, its number of iterations and its direction do, and <a href=\"#animation-range\"><code>animation-range</code></a> plays it on a part of the way, <code>animation-range: contain</code> while the section is all in view.",
+    "<h4>Several sections</h4>",
+    "Each section takes a name of its own, <code>--intro</code>, <code>--pricing</code>, and each object of the scene follows the one its rule names. A scene follows up to 4 timelines, the ones of <code>scroll()</code> and <code>view()</code> included.",
+    "<h4>Unlike CSS</h4>",
+    "CSS only lets an element follow a timeline named by itself or one of its ancestors, and asks for <code>timeline-scope</code> otherwise. The scene is drawn apart from the page, never inside the section: it looks for the name in the whole page, and takes the first element that has it. Give each section its own name.",
+    "While no element of the page has the name, the animation shows its first frame, where CSS would not play it at all. A page that adds its sections later is followed once they are there. In the playground and under the examples of these docs, where there is no such section, the slider over the render stands in for the scroll.",
+  ],
+});
+
 INSTALLATION.push({
   anchor: "editor-support",
   figure: "flow",
