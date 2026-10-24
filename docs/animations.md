@@ -541,7 +541,7 @@ Drives the animation with the scroll of the page instead of time, like CSS scrol
 
 **A page that scrolls, and the animation where the scroll is:** `0%`, `100%`
 
-- **Syntax:** `auto | scroll([root | nearest] || [block | inline | x | y]) | view([block | inline | x | y])`
+- **Syntax:** `auto | scroll([root | nearest] || [block | inline | x | y]) | view([block | inline | x | y]) | <dashed-ident>`
 - **Initial value:** `auto`
 - **Applies to:** the scene, objects and groups
 - **Animatable:** no
@@ -551,10 +551,11 @@ Drives the animation with the scroll of the page instead of time, like CSS scrol
 - **auto:** The default: the animation plays in time.
 - **scroll():** A scroll container, from its start (0%) to its end (100%): `nearest` (the default) is the closest one around the scene, `root` the page. The axis is `block` (the default), `inline`, `y` or `x`.
 - **view():** The scene crossing its scroll container: 0% when it enters at the bottom, 100% when it leaves at the top.
+- **<dashed-ident>:** A timeline that an element of the page names in its own CSS: `view-timeline-name: --intro` on a section follows that section crossing the page, like `view()` follows the scene; `scroll-timeline-name` follows the scroll of the element. The axis and the inset are the ones the page gives, `view-timeline-axis` and `view-timeline-inset`.
 
 Write it after `animation`, which still needs a name and a duration: `animation: spin 1s linear; animation-timeline: scroll();`. Scrolling back plays the animation backward.
 
-The number of iterations and the direction still count, an animation without a count plays once along the scroll. A scene takes up to 4 different timelines. In the playground, which does not scroll, a slider stands in for the scroll.
+The number of iterations and the direction still count, an animation without a count plays once along the scroll. A scene takes up to 4 different timelines. A name is looked for in the whole page, the first element that declares it wins: unlike CSS, the page needs no `timeline-scope`, the scene being drawn apart from the page. While no element declares it, the animation shows its first frame. In the playground, which does not scroll, a slider stands in for the scroll.
 
 ### turn with the page
 
@@ -611,6 +612,36 @@ sphere:nth-child(2) {
   to {
     translate: var(--x) 1.6 0;
     color: #3ad16b;
+  }
+}
+```
+
+### follow a section of the page
+
+The page names its section in its own CSS, `#pricing { view-timeline-name: --pricing; }`: the ring turns while that section crosses the window, wherever the scene is. Here the slider stands in for it.
+
+```css
+@scene {
+  torus;
+}
+
+torus {
+  translate: 0 0.8 0;
+  radius: 0.6;
+  thickness: 0.18;
+  color: #ff5a36;
+  animation: tilt 1s ease-in-out;
+  animation-timeline: --pricing;
+  animation-range: contain;
+}
+
+@keyframes tilt {
+  from {
+    rotate-x: 90deg;
+  }
+  to {
+    rotate-x: 0deg;
+    rotate-y: 180deg;
   }
 }
 ```

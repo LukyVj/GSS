@@ -18,7 +18,9 @@ export type Timeline =
   // the scroll of a scroll container: the page (root), or the nearest one around the scene
   | { type: "scroll"; scroller: "root" | "nearest"; axis: Axis; range?: Range }
   // the scene's canvas crossing its scroll container, from entering to leaving
-  | { type: "view"; axis: Axis; range?: Range };
+  | { type: "view"; axis: Axis; range?: Range }
+  // a timeline an element of the page declares, view-timeline-name or scroll-timeline-name
+  | { type: "named"; name: string; range?: Range };
 
 const AXES: Axis[] = ["block", "inline", "x", "y"];
 const SCROLLERS = ["root", "nearest"];
@@ -32,6 +34,11 @@ const isIdent = (token: Token | undefined, value: string) =>
 export function readTimeline(value: Token[]): Timeline | null {
   if (value.length === 1 && isIdent(value[0], "auto")) return null;
   const name = value[0];
+  // --name: a timeline of the page, found by the runtime
+  if (name?.type === "IDENT" && name.value.startsWith("--") && name.value.length > 2) {
+    if (value.length > 1) throw errorAt(value, "animation-timeline takes one timeline: scroll(), view() or the name of a timeline");
+    return { type: "named", name: name.value };
+  }
   const isCall =
     name?.type === "IDENT" &&
     (name.value === "scroll" || name.value === "view") &&
@@ -40,11 +47,11 @@ export function readTimeline(value: Token[]): Timeline | null {
   if (!isCall)
     throw errorAt(
       value,
-      "animation-timeline takes auto, scroll() or view(), like: animation-timeline: scroll();",
+      "animation-timeline takes auto, scroll(), view() or the name of a timeline of the page, like: animation-timeline: scroll(); or animation-timeline: --intro;",
     );
   const close = closingParen(value, 1);
   if (close !== value.length - 1)
-    throw errorAt(value, "animation-timeline takes one timeline: scroll() or view()");
+    throw errorAt(value, "animation-timeline takes one timeline: scroll(), view() or the name of a timeline");
   const args = value.slice(2, close);
   const type = name.value as "scroll" | "view";
 
@@ -166,7 +173,7 @@ export function sceneTimelines(nodes: Styles[]): Timeline[] {
     if (found.size === TIMELINE_COMPONENTS.length)
       throw errorAt(
         value,
-        `A scene takes up to ${TIMELINE_COMPONENTS.length} timelines: scroll() and view() with their scroller and axis`,
+        `A scene takes up to ${TIMELINE_COMPONENTS.length} timelines: scroll() and view() with their scroller and axis, and the names of timelines of the page`,
       );
     found.set(keyOf(timeline), timeline);
   }
