@@ -254,6 +254,7 @@ function compileStylesheet(
       ...instance.hoverStates.map((state) => state.styles),
       instance.activeStyles,
       ...instance.groupStyles,
+      ...instance.groupHoverStates.flat().map((state) => state.styles),
       ...FACES.map((face) => instance.faceStyles[face]),
       ...instance.faceList,
     ])
@@ -292,6 +293,13 @@ function compileStylesheet(
       activeStyles: computeNode(instance.activeStyles, activeVariables, instance),
       groupStyles: instance.groupStyles.map((styles, g) =>
         computeNode(styles, seenAt(g + 1), instance.groups[g]),
+      ),
+      // each hover state of a group with the variables of the group and its own rules
+      groupHoverStates: instance.groupHoverStates.map((states, g) =>
+        states.map((state) => ({
+          ...state,
+          styles: computeNode(state.styles, { ...seenAt(g), ...customProperties(state.styles) }, instance.groups[g]),
+        })),
       ),
       // The faces use the object's variables: cube::top { texture: var(--top); }
       faceStyles: Object.fromEntries(
@@ -353,9 +361,9 @@ function compileStylesheet(
   // Like CSS: the transition of the state the object goes to
   // Pressing takes the transition of :active, releasing the one of the hovered state
   const transitions = errors.run(() => [
-    ...hoverSlots(styled).map(({ instance, state }) => ({
+    ...hoverSlots(styled).map(({ state, rest }) => ({
       enter: readTransition(state.styles["transition"]),
-      leave: readTransition(instance.styles["transition"]),
+      leave: readTransition(rest["transition"]),
     })),
     ...activeSlots(styled).map((instance) => ({
       enter: readTransition(instance.activeStyles["transition"]),

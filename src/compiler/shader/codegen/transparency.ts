@@ -3,7 +3,7 @@ import type { Keyframes } from "../../syntax/ast";
 import type { StyledInstance } from "../../cascade/resolve";
 import { errorAt } from "../../syntax/errors";
 import { readSteps } from "../../features/filter";
-import { animatedValue, hoverValue } from "./animation";
+import { groupHover, hoverValue } from "./animation";
 import { glslFloat, label, round, type Hover } from "./glsl";
 import { valuesOf } from "./gradients";
 import { isLive } from "./live";
@@ -52,8 +52,10 @@ export function objectAlpha(instance: StyledInstance, keyframes: Keyframes[], ho
   const own = opaque(instance.styles, "opacity", readOpacity, hover)
     ? "1.0"
     : hoverValue(instance.styles, keyframes, "opacity", readOpacity, hover);
-  const groups = instance.groupStyles.map((styles) =>
-    opaque(styles, "opacity", readOpacity) ? "1.0" : animatedValue(styles, keyframes, "opacity", readOpacity),
+  const groups = instance.groupStyles.map((styles, g) =>
+    opaque(styles, "opacity", readOpacity, groupHover(instance, g))
+      ? "1.0"
+      : hoverValue(styles, keyframes, "opacity", readOpacity, groupHover(instance, g)),
   );
   // A color set from JS is opaque: its uniform has no alpha
   const values = valuesOf(instance.styles, keyframes, "color", hover);

@@ -3,7 +3,7 @@ import type { Keyframes } from "../../syntax/ast";
 import type { StyledInstance, Styles } from "../../cascade/resolve";
 import { glslFloat, label, type Hover } from "./glsl";
 import { ROTATIONS, readRotation, readScale, readTranslate } from "./read";
-import { hoverValue } from "./animation";
+import { groupHover, hoverValue } from "./animation";
 import { offsetForwardLines, offsetLines } from "./offset";
 import { objectBox, readOrigin, type Box } from "./origin";
 
@@ -78,7 +78,7 @@ export function originOf(
 }
 
 // The lines that move q into the space of one node (a group or an object)
-// hover: only for the object itself, never for its groups. box: the size of the object.
+// hover: the states of this node, an object or a group (decision 211). box: the size of the object.
 export function transformLines(
   styles: Styles,
   keyframes: Keyframes[],
@@ -141,7 +141,7 @@ export function spaceFunction(
     ...nodes.flatMap((styles, n) =>
       n === nodes.length - 1
         ? transformLines(styles, keyframes, hoverOf(instance), undefined, () => objectBox(instance))
-        : transformLines(styles, keyframes),
+        : transformLines(styles, keyframes, groupHover(instance, n)),
     ),
     "  return q;",
     "}",

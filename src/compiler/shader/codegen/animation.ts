@@ -2,6 +2,7 @@
 import type { Token } from "../../syntax/tokenizer";
 import type { Keyframes } from "../../syntax/ast";
 import type { HoverState, StyledInstance, Styles } from "../../cascade/resolve";
+import type { SceneInstance } from "../../cascade/expand";
 import { errorAt } from "../../syntax/errors";
 import { type Easing, stepsShape } from "../../values/easing";
 import { animationStyles, countsIterations, readAnimation, readAnimations, type AnimationSpec } from "../../features/animation";
@@ -9,11 +10,22 @@ import { timelineCode, type Timeline } from "../../features/timeline";
 import { glslFloat, round, type Hover, type HoverLayer } from "./glsl";
 import { liveRead } from "./properties";
 
-// The hover states, in scene order, the states of an object one after the other: each
-// one gets a slot in uHover[]
-export type HoverSlot = { instance: StyledInstance; state: HoverState };
+// The hover states, each with a slot in uHover[]: the states of the objects in scene
+// order, the states of an object one after the other, then the states of the groups
+// (decision 211), each group once, shared by its objects. rest: the styles the state
+// leaves for, where its leave transition is read.
+export type HoverSlot = { state: HoverState; rest: Styles } & (
+  | { instance: StyledInstance; group?: undefined }
+  | { group: SceneInstance; instance?: undefined }
+);
 export function hoverSlots(instances: StyledInstance[]): HoverSlot[] {
-  return instances.flatMap((instance) => instance.hoverStates.map((state) => ({ instance, state })));
+  const objects = instances.flatMap((instance) => instance.hoverStates.map((state) => ({ instance, state, rest: instance.styles })));
+  const groups = new Map<SceneInstance, HoverSlot[]>();
+  for (const instance of instances)
+    instance.groups.forEach((group, g) => {
+      if (!groups.has(group)) groups.set(group, instance.groupHoverStates[g].map((state) => ({ group, state, rest: instance.groupStyles[g] })));
+    });
+  return [...objects, ...[...groups.values()].flat()];
 }
 
 // The objects that can be pressed (:active): their slots come after the hover slots
@@ -28,7 +40,8 @@ export function sceneTriggers(instances: StyledInstance[]): Trigger[] {
   const hovers = hoverSlots(instances);
   const actives = activeSlots(instances);
   const started: { slot: number; hold: number | null }[] = [];
-  hovers.forEach(({ state }, slot) => {
+  hovers.forEach(({ state, group }, slot) => {
+    if (group) return; // a group starts no animation yet (decision 211)
     const specs = startedAnimation(state.styles, state.starts);
     if (specs.length > 0) started.push({ slot, hold: holdOf(specs) });
   });
@@ -101,6 +114,16 @@ export function holdOf(specs: AnimationSpec[]): number | null {
 }
 
 // The timelines of the scene being generated: scroll() and view() (decision 96)
+// The hover states of the groups of the scene being generated (decision 211): those of
+// the g-th group of an object, from the outside in
+let groupHovers: (instance: StyledInstance, g: number) => Hover | undefined = () => undefined;
+export function useGroupHovers(of: typeof groupHovers): void {
+  groupHovers = of;
+}
+export function groupHover(instance: StyledInstance, g: number): Hover | undefined {
+  return groupHovers(instance, g);
+}
+
 let timelines: Timeline[] = [];
 export function useTimelines(list: Timeline[]): void {
   timelines = list;

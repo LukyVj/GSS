@@ -37,7 +37,7 @@ import { backgroundCode, backgroundNeedsCamera, floorGradient, gradientCode, obj
 import { gradientMean } from "../gradient";
 import { BLEND_LIBRARY } from "./blend-library";
 import { readMaterial } from "./materials";
-import { activeSlots, hoverSlots, hoverValue, sceneTriggers, useTimelines } from "./animation";
+import { activeSlots, groupHover, hoverSlots, hoverValue, sceneTriggers, useGroupHovers, useTimelines } from "./animation";
 import { sceneTimelines, timelineUniform } from "../../features/timeline";
 import { offsetLines, offsetReach, useOffsetFunctions } from "./offset";
 import { animateCode, createHoisted, hoist, originOf, rotationLines, transformLines } from "./transforms";
@@ -128,6 +128,16 @@ export function generateShader(
     ];
     return layers.length > 0 ? layers : undefined;
   };
+  // The hover states of one group of an object, from the outside in (decision 211)
+  const groupHoverOf = (instance: StyledInstance, g: number): Hover | undefined => {
+    const layers: Hover = hovers.flatMap((slot, n) =>
+      slot.group === instance.groups[g]
+        ? [{ styles: slot.state.styles, slot: n, state: ":hover" as const, ranks: slot.state.ranks, last: slot.state.last }]
+        : [],
+    );
+    return layers.length > 0 ? layers : undefined;
+  };
+  useGroupHovers(groupHoverOf);
   const context: ShapeContext = { functions: new Map() };
   const hoisted = createHoisted(); // the animated values of map(): computed by animate()
   const spheres: (Sphere | null)[] = []; // each object's, for the sphere of the scene
@@ -203,7 +213,7 @@ export function generateShader(
     // Every node from the outside in: the groups, then the object itself
     const nodes = [...instance.groupStyles, instance.styles];
     // q was divided by every scale, so the distance is multiplied back by all of them
-    // :hover moves the object itself, the last node, never its groups
+    // :hover moves the object itself, the last node, and its groups (decision 211)
     const hover = hoverOf(instance);
     const last = nodes.length - 1;
     const scales = nodes.map((styles, n) =>
@@ -215,7 +225,7 @@ export function generateShader(
           keyframes,
           "scale",
           readScale,
-          n === last ? hover : undefined,
+          n === last ? hover : groupHover(instance, n),
         ),
       ),
     );
@@ -255,8 +265,8 @@ export function generateShader(
       ? `{ ${far ? `outlineFar = ${far}; ` : ""}float dOutline = ${measured}; ${far ? "outlineFar = 0.0; " : ""}res = ${combine}; outlineAt(dOutline, ${outline.offset}, ${outline.width}, ${glslFloat(instance.index)}); }`
       : `res = ${combine};`;
 
-    const groupLines = instance.groupStyles.flatMap((styles) =>
-      transformLines(styles, keyframes, undefined, hoisted),
+    const groupLines = instance.groupStyles.flatMap((styles, g) =>
+      transformLines(styles, keyframes, groupHover(instance, g), hoisted),
     );
     // transform-origin (decision 107): the bounding sphere is centered on it, so it needs
     // a point known at compile time
