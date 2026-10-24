@@ -30,6 +30,9 @@ export type View = {
   show(compiled: CompiledScene): Promise<void>;
   // Images drawn since the previous call, and over how many milliseconds (for "60 fps")
   sampleFrames(): { frames: number; ms: number };
+  // Where the camera is now, after the mouse and the spin: in radians, like CameraSettings
+  // (the debug panel of the playground, decision 204)
+  camera(): { yaw: number; pitch: number; distance: number };
   // Stops drawing (off screen) and starts again; the clock stops too. A scene too heavy for
   // the computer stops on its own and fires gss-too-heavy on the canvas (decision 142):
   // play() then draws it anyway, and it never stops on its own again.
@@ -598,6 +601,9 @@ export function createView(
           })
         : () => {};
       return linkedNow;
+    },
+    camera() {
+      return { yaw: camera.yaw, pitch: camera.pitch, distance: camera.dist };
     },
     sampleFrames() {
       const now = performance.now();

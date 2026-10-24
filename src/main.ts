@@ -16,10 +16,12 @@ import { toShadertoy } from "./compiler/shader/shadertoy";
 import { EXAMPLES, renderExampleOptions } from "./playground/examples";
 import { statusParts, fpsText } from "./runtime/status";
 import { mountSearch } from "./docs/search-box";
-import { profile, profileWebGPU, mountPanel } from "./profiler/panel";
+import { profile, profileWebGPU, mountPanel, perfRows, watchPerf, onDrawn } from "./profiler/panel";
 import { mountSplitter } from "./playground/splitter";
 import { mountVariablesPanel } from "./playground/variables-panel";
 import { mountViewChips } from "./playground/view-chips";
+import { mountDebugPanel } from "./playground/debug-panel";
+import { createStepsReader } from "./playground/steps-reader";
 
 mountSearch();
 
@@ -85,6 +87,7 @@ const renderer = await createRendererAsync(sceneCanvas, {
 // Without a GPU, nothing is drawn before the reader's click (decision 137); too heavy, the
 // scene stops and waits for one too (decision 142)
 renderGate(sceneCanvas, renderer);
+renderer.setDebug(true); // the axes and the grid of @debug-panel (decision 204)
 mountPanel($(".statusbar"));
 backendSelect.title = `Rendering with ${renderer.backend === "webgpu" ? "WebGPU" : "WebGL2"}`;
 $<HTMLCanvasElement>("#scene").addEventListener("gss-error", (event) => {
@@ -110,6 +113,18 @@ editor.onCompile((_code, compiled) => variables.update(compiled.properties, comp
 
 const chips = mountViewChips(document.body, { setView: renderer.setView, refresh: editor.refresh }, sceneCanvas);
 editor.onCompile((_code, compiled) => chips.update(compiled));
+
+// ----- The debug panel: the axes, the grid and the numbers of the scene (decision 204) -----
+
+const steps = createStepsReader(sceneCanvas);
+onDrawn(() => steps.drawn()); // view: steps, read back just after a frame
+const debug = mountDebugPanel(document.body, {
+  perf: { rows: perfRows, watch: watchPerf },
+  backend: renderer.backend,
+  camera: renderer.camera,
+  steps: steps.steps,
+});
+editor.onCompile((_code, compiled) => debug.update(compiled));
 
 // ----- The status bar: the numbers of the last compile, and the frame rate -----
 

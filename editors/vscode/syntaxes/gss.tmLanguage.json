@@ -16,6 +16,9 @@
       "include": "#at-property-panel"
     },
     {
+      "include": "#at-debug-panel"
+    },
+    {
       "include": "#at-property"
     },
     {
@@ -204,6 +207,27 @@
         },
         "0": {
           "name": "keyword.control.at-rule.property-panel.gss"
+        }
+      },
+      "end": "(?<=\\})",
+      "patterns": [
+        {
+          "include": "#comment"
+        },
+        {
+          "include": "#rule-block"
+        }
+      ]
+    },
+    "at-debug-panel": {
+      "comment": "@debug-panel { display: open; }",
+      "begin": "(@)(debug-panel)(?![\\w-])",
+      "beginCaptures": {
+        "1": {
+          "name": "punctuation.definition.keyword.gss"
+        },
+        "0": {
+          "name": "keyword.control.at-rule.debug-panel.gss"
         }
       },
       "end": "(?<=\\})",

@@ -209,7 +209,7 @@ export const PROPERTIES: PropertyDef[] = [
     since: "0.0.1",
     appliesTo: "object",
     syntax:
-      "matte([<color>]) | metal([<color>,] [<roughness>]) | jelly([<color>,] [<density>]) | emissive([<color>,] [<strength>]) | iridescent([<color>,] [<strength>]) | gold | chrome | copper | silver | brass | aluminum | jelly | glass([<color>,] [<refraction-index>] [, [frosted | wavy | hammered | blurred] <frost>]) | glass | ice | emissive | iridescent",
+      "matte([<color>]) | metal([<color>,] [<roughness>]) | jelly([<color>,] [<density>]) | emissive([<color>,] [<strength>]) | iridescent([<color>,] [<strength>]) | toon([<color>,] [<bands>]) | gold | chrome | copper | silver | brass | aluminum | jelly | glass([<color>,] [<refraction-index>] [, [frosted | wavy | hammered | blurred] <frost>]) | glass | ice | emissive | iridescent | toon",
     initial: "matte()",
     description:
       "Sets how the surface of the object reacts to light. Without a color, a material uses the `color` property, like `currentColor` in CSS, so the color stays animatable; with its own, like `brass` or `metal(#3a7bff)`, it keeps it, even when `color` is a gradient. The color can also be a gradient: `metal(linear-gradient(#ffd27a, #ff5a36), 0.2)`.",
@@ -220,11 +220,13 @@ export const PROPERTIES: PropertyDef[] = [
       ["glass()", "See-through, bent by its refraction index, from 1 to 3 (1.5 by default: water is 1.33, diamond 2.4), then a frost from 0 to 1."],
       ["emissive()", "Gives its own light: a lamp, a screen, a neon. It is never darker than its color times its strength, from 0, none, to 4 (1 by default: its full color, even in the shade). It does not light the objects around it; with `bloom()` in the `filter` of the scene, it glows."],
       ["iridescent()", "A thin film, like a soap bubble or the back of a CD: its colors turn with the angle you see it at, most at the edges. Its strength goes from 0, none, to 1 (0.7 by default)."],
+      ["toon()", "Flat bands of light, like a cartoon: from half the color in the shade to the full color, with a highlight. Its number of bands is a whole number from 2 to 8 (3 by default).", "0.0.8"],
       ["frosted, wavy, hammered, blurred", "The style of the frost: white patches (the default), big waves, small bumps, a soft blur."],
       ["gold, chrome", "`metal(#d4af37, 0.2)` and `metal(#ffffff, 0.05)`."],
       ["copper, silver, brass, aluminum", "`metal(#c8784a, 0.25)`, `metal(#e3e4e6, 0.1)`, `metal(#c9a24d, 0.2)` and `metal(#c4c8cc, 0.35)`: the metals of everyday objects."],
       ["jelly, glass, ice", "`jelly()`, `glass()`, and `glass(#cfeaff, 1.31, frosted 0.25)`."],
       ["emissive, iridescent", "`emissive()` and `iridescent()`, with the color of `color`."],
+      ["toon", "`toon()`, with the color of `color`.", "0.0.8"],
     ],
     examples: [
       {
@@ -261,6 +263,11 @@ export const PROPERTIES: PropertyDef[] = [
         name: "iridescent()",
         text: "A dark sphere and a pale torus: their colors turn as they spin.",
         code: "@scene { sphere; torus; } sphere { translate: -0.8 0.7 0; radius: 0.6; color: #15161c; material: iridescent(0.9); } torus { translate: 0.9 0.7 0; radius: 0.45; thickness: 0.18; rotate-x: 70deg; color: #f4f1ea; material: iridescent; animation: spin 6s linear infinite; } @keyframes spin { to { rotate-y: 360deg; } }",
+      },
+      {
+        name: "toon()",
+        text: "`toon`, and `toon(5)` with more bands, beside a `matte()` sphere of the same color.",
+        code: "@scene { sphere#a; sphere#b; sphere#c; } sphere { radius: 0.55; color: #ff5a36; } #a { translate: -1.3 0.55 0; material: toon; } #b { translate: 0 0.55 0; material: toon(5); } #c { translate: 1.3 0.55 0; material: matte(); }",
       },
       {
         name: "glass()",
@@ -2091,19 +2098,20 @@ export const PROPERTIES: PropertyDef[] = [
     figure: "scene",
     since: "0.0.5",
     appliesTo: "scene",
-    syntax: "shaded | distance",
+    syntax: "shaded | distance | steps",
     initial: "shaded",
     description:
-      "Shows the scene as it is lit, or with the isolines of its distance field over it: the distance to the nearest object, which the shader measures at every step of every ray.",
+      "Shows the scene as it is lit, with the isolines of its distance field over it, or with each pixel colored by the work it costs: the distance to the nearest object is what the shader measures at every step of every ray.",
     values: [
       ["shaded", "The scene, lit: the default."],
       ["distance", "The same scene, with a line every 0.25 units from the objects, fainter as it goes away. The lines lie on the plane that faces the camera through `camera-target`, and show where that plane is in front of the objects."],
+      ["steps", "Each pixel colored by how many times its rays measured the distance: dark blue for a few, then green, yellow, and red at 150 and over. The red parts are the ones that slow a scene down.", "0.0.8"],
     ],
     details: "The floor is left out of the distance: the lines go around the objects only.",
-    more: "Far from a `path`, a `prism` or a `lathe`, the distance is the one to its box, which the shader uses to skip it quickly, and the lines show that box. The lines are light on a dark scene and dark on a light one.",
+    more: "Far from a `path`, a `prism` or a `lathe`, the distance is the one to its box, which the shader uses to skip it quickly, and the lines show that box. The lines are light on a dark scene and dark on a light one. `steps` counts every measure of a pixel: the march of its ray, its normal, its shadows, its reflections and what shows through a transparent object. The rays that graze an object take the most steps, along its edges.",
     note: {
-      title: "Two chips switch it here.",
-      text: "In the playground and in the examples of these docs, the chips `view: shaded` and `view: distance` at the top left of the render switch the view, without touching the code; when the code changes its `view`, the code wins again. On your own site, the `view` of the scene applies.",
+      title: "Three chips switch it here.",
+      text: "In the playground and in the examples of these docs, the chips `view: shaded`, `view: distance` and `view: steps` at the top left of the render switch the view, without touching the code; when the code changes its `view`, the code wins again. On your own site, the `view` of the scene applies.",
     },
     examples: [
       {
@@ -2115,6 +2123,11 @@ export const PROPERTIES: PropertyDef[] = [
         name: "on a dark scene",
         text: "Without a floor, on a dark background: the lines of the field around two objects meet halfway.",
         code: "@scene { sphere; cube; } sphere { translate: -0.8 0.5 0; color: #ff5a36; } cube { translate: 0.8 0.5 0; color: #e8e6e1; } scene { view: distance; floor: none; background: #0a0a0c; }",
+      },
+      {
+        name: "what a scene costs",
+        text: "The edges of the torus and the ground near it take the most steps.",
+        code: "@scene { torus; } torus { translate: 0 0.6 0; rotate-x: 60deg; } scene { view: steps; }",
       },
     ],
   },
@@ -2316,6 +2329,36 @@ sphere { translate: 0 1 0; texture: paint(checks); }`,
     see: [
       { anchor: "at-property", label: "@property" },
       { anchor: "set-variables", label: "Set variables from JavaScript" },
+    ],
+  },
+  {
+    name: "debug-panel",
+    figure: "scene",
+    since: "0.0.8",
+    syntax: "@debug-panel { display: open | folded | none; }",
+    description:
+      "Shows the axes, their letters and a grid at the origin over the render, in the playground and in Try it, and a panel with everything known about the scene: where the camera is, what the scene holds, what each pixel costs, and how fast it draws.",
+    valuesTitle: "Descriptors",
+    values: [
+      ["display", "`open`, the default: the panel shows its numbers. `folded`: only its title, `debug`, which opens it; the axes and the grid stay. `none`: nothing, as without the rule."],
+    ],
+    details: "x in red, y in green, z in blue, each with its letter, one unit apart on the grid, fainter behind the objects. A page that embeds the scene shows neither the panel nor the axes.",
+    more: "The grid lies on the plane where the floor is, out to 10 units from the origin; its lines are light on a dark scene and dark on a light one. The panel gives the backend that draws the scene (WebGL2 or WebGPU), the camera as the `camera-angle` and `camera-distance` that put it where the mouse left it, ready to copy into the code, the objects, the point lights, the images used out of the 16 a scene can take, the variables, the states of `:hover` and `:active`, the scroll timelines, the passes of `filter`, the `@media` queries and the lines of the shader. With `view: steps`, it reads the render back: the mean and the max of the steps per pixel, and the share of pixels at 150 and over. In the playground, it adds the frames per second, the time of a frame on the GPU and on the CPU, the size of the render in pixels and the time the shader took to build, like the performance panel; while it is open, the scene draws every frame, so that the numbers measure it.",
+    examples: [
+      {
+        name: "the axes and the grid",
+        text: "A cube one unit to the right of the origin, along the red axis.",
+        code: "@debug-panel { display: open; } @scene { cube; } cube { translate: 1 0.5 0; size: 0.6; color: #ff5a36; }",
+      },
+      {
+        name: "folded, on a dark scene",
+        text: "The panel starts folded: its title opens it. The grid turns light on the dark background.",
+        code: "@debug-panel { display: folded; } @scene { sphere; torus; } scene { floor: none; background: #0a0a0c; } sphere { translate: 0 1 0; radius: 0.4; color: #e8e6e1; } torus { translate: 0 1 0; rotate-x: 90deg; color: #ff5a36; }",
+      },
+    ],
+    see: [
+      { anchor: "view", label: "view" },
+      { anchor: "at-property-panel", label: "@property-panel" },
     ],
   },
   {
@@ -3459,6 +3502,68 @@ export const FUNCTIONS: FunctionDef[] = [
         name: "step-start and step-end",
         text: "The same blink, jumping at the start or at the end.",
         code: "@scene { sphere#a; sphere#b; } sphere { radius: 0.4; } #a { translate: 0.8 0.5 0; color: #3a7bff; animation: blink 1s step-start; } #b { translate: -0.8 0.5 0; color: #3ad16b; animation: blink 1s step-end; } @keyframes blink { 50% { scale: 1.6; } }",
+      },
+    ],
+  },
+  {
+    name: "scroll()",
+    anchor: "fn-scroll",
+    figure: "scroll-timeline",
+    since: "0.0.3",
+    covers: [],
+    syntax: "scroll([root | nearest] || [block | inline | x | y])",
+    computed: "by the browser, each time the page scrolls",
+    description:
+      "A scroll progress timeline, like CSS: the scroll of a container, from its start (0%) to its end (100%), drives an animation instead of time. It is a value of `animation-timeline`.",
+    valuesTitle: "Arguments",
+    values: [
+      ["nearest", "The default: the closest scroll container around the scene."],
+      ["root", "The page itself."],
+      ["block, y", "The default: the vertical scroll."],
+      ["inline, x", "The horizontal scroll."],
+    ],
+    details: "The two arguments come in any order, each one at most once: `scroll(root)`, `scroll(x nearest)`. The whole scroll is the whole animation; scrolling back plays it backward.",
+    more: "The duration and the delay of the animation do not count, its count and its direction still do. `animation-range` plays it on a part of the scroll, in percentages or pixels: the named ranges belong to `view()`. In the playground, which does not scroll, a slider stands in for the scroll.",
+    examples: [
+      {
+        name: "the scroll of the page",
+        text: "The torus turns once from the top of the page to its bottom.",
+        code: "@scene { torus; } torus { translate: 0 0.8 0; radius: 0.6; thickness: 0.2; color: #ff5a36; animation: roll 1s linear; animation-timeline: scroll(root); } @keyframes roll { to { rotate-x: 360deg; } }",
+      },
+      {
+        name: "there and back",
+        text: "Two iterations, the second backward: the sphere goes up, then down, along one scroll.",
+        code: "@scene { sphere; } sphere { radius: 0.4; color: #3a7bff; animation: climb 1s ease-in-out 2 alternate; animation-timeline: scroll(); } @keyframes climb { from { translate: 0 0.4 0; } to { translate: 0 2 0; } }",
+      },
+    ],
+  },
+  {
+    name: "view()",
+    anchor: "fn-view",
+    figure: "range",
+    since: "0.0.3",
+    covers: [],
+    syntax: "view([block | inline | x | y])",
+    computed: "by the browser, each time the page scrolls",
+    description:
+      "A view progress timeline, like CSS: the way of the scene across its scroll container drives an animation instead of time, from 0% when it starts to enter to 100% when it has left. It is a value of `animation-timeline`.",
+    valuesTitle: "Arguments",
+    values: [
+      ["block, y", "The default: the scene crosses the container from the bottom to the top."],
+      ["inline, x", "The scene crosses it from one side to the other."],
+    ],
+    details: "`animation-range` plays the animation on a part of the way: `entry` while the scene comes in, `contain` while it is all in, `exit` while it leaves.",
+    more: "The scroll container is the closest one around the scene, or the page. The duration and the delay of the animation do not count, its count and its direction still do. Unlike CSS, `view()` takes no inset. In the playground, which does not scroll, a slider stands in for the scroll.",
+    examples: [
+      {
+        name: "across the page",
+        text: "The cube turns a full turn while the scene crosses the page.",
+        code: "@scene { cube; } cube { translate: 0 0.6 0; corner-radius: 0.1; color: #3ad16b; animation: spin 1s linear; animation-timeline: view(); } @keyframes spin { to { rotate-y: 360deg; } }",
+      },
+      {
+        name: "once it is in",
+        text: "The spheres gather while the scene comes in, then hold.",
+        code: "@scene { sphere * 3; } sphere { --x: calc(2 - sibling-index()); radius: 0.35; translate: 0 0.35 0; color: #ff5a36; animation: spread 1s ease-out; animation-timeline: view(); animation-range: entry; } @keyframes spread { from { translate: calc(var(--x) * 2) 1.6 0; } to { translate: var(--x) 0.35 0; } }",
       },
     ],
   },

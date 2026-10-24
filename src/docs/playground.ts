@@ -8,6 +8,8 @@ import { encodeCode } from "../runtime/share";
 import { formatGss } from "./format";
 import { mountVariablesPanel } from "../playground/variables-panel";
 import { mountViewChips } from "../playground/view-chips";
+import { mountDebugPanel } from "../playground/debug-panel";
+import { createStepsReader } from "../playground/steps-reader";
 
 // "Try it" opens a live editor under an example, or beside the search. Only one is open at
 // a time: browsers limit how many WebGL canvases a page can have.
@@ -42,7 +44,12 @@ function createPanel(code: string, html: string): { panel: HTMLElement; start():
     const canvas = panel.querySelector("canvas")!;
     canvas.innerHTML = html; // laid out inside the canvas, drawn on the object (decision 101)
     // @media reads the size of the render, like the result of CodePen (decision 165)
-    const renderer = createRenderer(canvas, { scrollSlider: true, dprPicker: true, viewport: elementMedia });
+    // A probe that only tells when a frame is drawn, for the steps of @debug-panel: it never
+    // asks for more frames than the scene needs (decision 204)
+    const steps = createStepsReader(canvas);
+    const probe = { frameStart() {}, drawStart() {}, drawEnd: () => steps.drawn(), shaderBuilt() {}, measuring: () => false };
+    const renderer = createRenderer(canvas, { scrollSlider: true, dprPicker: true, viewport: elementMedia, profile: () => probe });
+    renderer.setDebug(true); // the axes and the grid of @debug-panel (decision 204)
     const sleep = sleepOffscreen(canvas, renderer); // scrolled away: no frames, no GPU
     renderGate(canvas, sleep); // without a GPU, or too heavy: drawn on a click (decisions 137, 142)
     const editor = connectEditor(
@@ -63,18 +70,22 @@ function createPanel(code: string, html: string): { panel: HTMLElement; start():
       { setView: (view) => renderer.setView(view), refresh: () => editor.refresh() },
       canvas,
     );
+    // The numbers of the scene, with @debug-panel (decision 204)
+    const debug = mountDebugPanel(panel.querySelector(".playground-body")!, { backend: "webgl", camera: renderer.camera, steps: steps.steps });
 
     // The link carries the code as it is now, edits included
     const link = panel.querySelector<HTMLAnchorElement>(".open-playground")!;
     editor.onCompile(async (current, compiled) => {
       variables.update(compiled.properties, compiled.propertyPanel, compiled.propertyRanges);
       chips.update(compiled);
+      debug.update(compiled);
       link.href = `./playground.html${await encodeCode(current, html)}`; // the HTML goes too
     });
 
     return () => {
       editor.destroy();
       chips.destroy();
+      debug.destroy();
       sleep.stop();
       renderer.destroy();
     };

@@ -25,6 +25,8 @@ import {
 import { scenePaints, sceneTextures } from "./features/textures";
 import { readDpr, type Dpr } from "./features/dpr";
 import { readView, type View } from "./features/view";
+import { readDebugPanel, type DebugPanel } from "./features/debug-panel";
+import { withDebugOverlay } from "./shader/codegen/debug";
 import { isDisplayed } from "./features/visibility";
 import { sceneCursors, type ObjectCursor } from "./features/cursor";
 import { sceneControls, type SceneControls } from "./features/controls";
@@ -44,7 +46,8 @@ import {
 } from "./features/properties";
 
 // view: replaces the view of the scene in the shader, like the chips of the playground (decision 131)
-export type CompileOptions = { target?: "glsl" | "dual"; view?: View };
+// debug: draws the axes and the grid of @debug-panel, as the playground and Try it do (decision 204)
+export type CompileOptions = { target?: "glsl" | "dual"; view?: View; debug?: boolean };
 export type { Trigger };
 
 // Everything the runtime needs to display a scene
@@ -58,6 +61,7 @@ export type CompiledScene = {
   camera: CameraSettings;
   dpr: Dpr;
   objects: number; // instances drawn, for the status bar (decision 42)
+  lights?: number; // the point lights of @scene, for the debug panel (decision 204); absent when none
   textures: string[]; // the image files the runtime loads, once each
   hover: number[][]; // for each slot of uHover[], the ids that, hovered, set it to 1
   // :active (decision 95): for each slot after the hover slots, the ids that, pressed,
@@ -79,7 +83,10 @@ export type CompiledScene = {
   propertyRanges?: Record<string, PropertyRange>;
   // view (decision 131): the view the code asks for, absent when it is shaded. The shader
   // draws the view of the compile option instead, when there is one.
-  view?: "distance";
+  view?: "distance" | "steps";
+  // @debug-panel (decision 204): the playground and Try it show the axes, the grid and the
+  // numbers of the scene, the panel open or folded. Absent without the rule, or with display: none.
+  debugPanel?: DebugPanel;
   // @media: the queries, and the scene for every combination of them. variants[mask]
   // is the scene when the queries whose bit is set in mask match (bit 0: queries[0]).
   // The fields above are variants[0], the scene when none matches.
@@ -105,7 +112,7 @@ const MAX_QUERIES = 4;
 // A compile reports every error it finds, not only the first one (decision 86): every
 // error of the text first; once the text reads, every error of the values.
 export function compileScene(source: string, options: CompileOptions = {}): CompiledScene {
-  const compiled = compileSource(source, options.view);
+  const compiled = compileSource(source, options);
   if (options.target === "glsl") return compiled;
   const lower = (scene: CompiledScene): CompiledScene => ({
     ...scene,
@@ -118,7 +125,7 @@ export function compileScene(source: string, options: CompileOptions = {}): Comp
   };
 }
 
-function compileSource(source: string, view?: View): CompiledScene {
+function compileSource(source: string, options: CompileOptions): CompiledScene {
   const errors = new ErrorSink();
   const tokens = tokenize(source, errors);
   const stylesheet = parse(tokens, errors);
@@ -143,7 +150,7 @@ function compileSource(source: string, view?: View): CompiledScene {
       ...mediaQueriesOf(tokens),
     ]),
   ];
-  if (queries.length === 0) return compileStylesheet(stylesheet, new Set(), view);
+  if (queries.length === 0) return compileStylesheet(stylesheet, new Set(), options);
   if (queries.length > MAX_QUERIES) {
     const extra = stylesheet.rules.find(
       (rule) => rule.media === queries[MAX_QUERIES],
@@ -164,7 +171,7 @@ function compileSource(source: string, view?: View): CompiledScene {
         ),
       },
       new Set(queries.filter((_, n) => (mask & (1 << n)) !== 0)),
-      view,
+      options,
     )),
   );
   // The same error in several versions of the scene is reported once
@@ -177,7 +184,7 @@ function compileSource(source: string, view?: View): CompiledScene {
 function compileStylesheet(
   stylesheet: Stylesheet,
   media: Set<string> = new Set(),
-  viewOption?: View,
+  options: CompileOptions = {},
 ): CompiledScene {
   activeMedia = media;
   // Every error of this version; a part that fails is left out, and the rest goes on
@@ -197,6 +204,7 @@ function compileStylesheet(
   const registered = errors.run(() => registeredProperties(stylesheet, sceneStyles)) ?? [];
   const panel = errors.run(() => readPropertyPanel(stylesheet.panels));
   const ranges = errors.run(() => readPropertyRanges(stylesheet.panels, registered));
+  const debugPanel = errors.run(() => readDebugPanel(stylesheet.debugPanels));
   const live: Variables = Object.fromEntries(registered.map((p, i) => [p.name, [propertyToken(p, i)]]));
   const rootVariables = { ...customProperties(sceneStyles), ...live };
 
@@ -333,7 +341,9 @@ function compileStylesheet(
       ).passes,
   );
   const view = errors.run(() => readView(computedScene));
-  const shader = checkedShader(styled, computedScene, [...shared, ...copies], errors, registered.length, viewOption ?? view);
+  const viewed = checkedShader(styled, computedScene, [...shared, ...copies], errors, registered.length, options.view ?? view);
+  // The axes and the grid of @debug-panel, where the playground asks for them (decision 204)
+  const shader = viewed !== undefined && options.debug && debugPanel ? withDebugOverlay(viewed) : viewed;
   const camera = errors.run(() => readCamera(computedScene));
   const dpr = errors.run(() => readDpr(computedScene));
   // After the cascade and var(): the texture an object really ends up with
@@ -372,11 +382,13 @@ function compileStylesheet(
     ...(registered.length > 0 ? { properties: registered } : {}),
     ...(panel ? { propertyPanel: panel } : {}),
     ...(panel && ranges ? { propertyRanges: ranges } : {}),
-    ...(view === "distance" ? { view } : {}),
+    ...(view !== "shaded" ? { view } : {}),
+    ...(debugPanel ? { debugPanel } : {}),
     shader: shader!,
     camera: camera!,
     dpr: dpr!,
     objects: drawn.length,
+    ...(styled.length > drawn.length ? { lights: styled.length - drawn.length } : {}),
     textures: textures!,
     ...(paints!.length > 0 ? { paints } : {}),
     hover: hoverSlots(styled).map(({ state }) => state.triggers),

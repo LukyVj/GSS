@@ -13,7 +13,7 @@ New to GSS? Start with [Getting started](getting-started.md), then [Installation
 
 ## Language
 
-- [At-rules](at-rules.md): `@keyframes`, `@media`, `@paint`, `@property`, `@property-panel`, `@scene`, `@mixin`, `@apply`, `@for`, `@each`
+- [At-rules](at-rules.md): `@debug-panel`, `@keyframes`, `@media`, `@paint`, `@property`, `@property-panel`, `@scene`, `@mixin`, `@apply`, `@for`, `@each`
 - [Selectors](selectors.md): `<shape>`, `.class`, `#id`, `[attribute]`, `*`, `a, b`, `&`, `!important`
 - [Combinators](combinators.md): `a b`, `a > b`, `a + b`, `a ~ b`
 - [Pseudo-classes and cursor](pseudo-classes.md): `:hover`, `:active`, `:has()`, `:not()`, `:nth-child(), :nth-last-child()`, `:nth-of-type(), :nth-last-of-type()`, `:first-child, :last-child, :only-child`, `::face(), ::top, ::bottom`, `cursor`
@@ -42,6 +42,7 @@ New to GSS? Start with [Getting started](getting-started.md), then [Installation
 - [Transforms](transforms.md): `offset-distance`, `offset-path`, `offset-rotate`, `rotate-x`, `rotate-y`, `rotate-z`, `scale`, `transform-origin`, `translate`
 - [Animation and transitions](animations.md): `animation`, `animation-delay`, `animation-direction`, `animation-duration`, `animation-fill-mode`, `animation-iteration-count`, `animation-range`, `animation-range-end`, `animation-range-start`, `animation-timeline`, `animation-timing-function`, `transition`
 - [Easings](easings.md): `cubic-bezier()`, `linear()`, `steps()`
+- [Scroll timelines](timelines.md): `scroll()`, `view()`
 
 ## Scene
 

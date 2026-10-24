@@ -7,7 +7,7 @@ import type { Keyframes } from "../syntax/ast";
 
 const EXAMPLE = 'texture: url("dirt.png");';
 
-const MAX_IMAGES = 16; // WebGL2 guarantees 16 texture units
+export const MAX_IMAGES = 16; // WebGL2 guarantees 16 texture units
 
 // texture: url("dirt.png") → "dirt.png"; texture: element(#card) → "element(#card)", a slot
 // the runtime fills with a live image of that element of the page (decision 101)
