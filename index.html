@@ -354,6 +354,11 @@
       .pillar pre {
         margin-top: auto;
       }
+      /* A long line (the CDN tag) wraps rather than hides past the edge */
+      pre.wraps {
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+      }
       pre {
         margin: 0;
         padding: 16px 18px;
@@ -423,7 +428,12 @@
       }
       .demo-bar .stats {
         display: flex;
-        gap: 24px;
+        flex-wrap: wrap;
+        gap: 4px 24px;
+        padding: 8px 0;
+      }
+      .demo-bar .stats > * {
+        white-space: nowrap;
       }
       .demo-bar .stats > :first-child::before {
         content: "● ";
@@ -501,7 +511,7 @@
       }
       .contributors-list {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
         gap: 16px;
         margin: 8px 0 0;
         padding: 0;
@@ -590,7 +600,7 @@
         color: var(--gss-signal);
       }
 
-      /* ----- Smaller screens: the side padding goes 56 → 32 → 16px ----- */
+      /* ----- Smaller screens: the side padding goes 56 → 32 → 16px, cells included ----- */
       @media (max-width: 960px) {
         .wrap {
           padding: 0 32px;
@@ -671,6 +681,19 @@
         }
         .pillars .wrap {
           grid-template-columns: 1fr;
+        }
+        .pillar,
+        .pillar:first-child,
+        .pillar:last-child {
+          padding: 28px 16px;
+        }
+        .number,
+        .number:first-child {
+          padding: 24px 16px;
+        }
+        .actions .button {
+          flex: 1 1 100%;
+          justify-content: center;
         }
         footer .wrap {
           flex-direction: column;
@@ -866,7 +889,7 @@ cube { color: var(--accent); }</code></pre>
             <div class="eyebrow">No build step</div>
             <h2>CDN</h2>
             <p>Load the versioned browser module, then add a &lt;gss-scene&gt; to your page.</p>
-            <pre><code data-lang="html">&lt;script type="module" src="https://cdn.jsdelivr.net/npm/gss-lang@%GSS_VERSION%/lib/embed.js"&gt;&lt;/script&gt;</code></pre>
+            <pre class="wraps"><code data-lang="html">&lt;script type="module" src="https://cdn.jsdelivr.net/npm/gss-lang@%GSS_VERSION%/lib/embed.js"&gt;&lt;/script&gt;</code></pre>
             <a href="./docs.html#install-cdn">CDN setup →</a>
           </article>
         </div>
