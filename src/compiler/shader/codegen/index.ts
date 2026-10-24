@@ -41,7 +41,7 @@ import { readMaterial } from "./materials";
 import { activeSlots, groupHover, hoverSlots, hoverValue, sceneTriggers, useGroupHovers, useTimelines } from "./animation";
 import { sceneTimelines, timelineUniform } from "../../features/timeline";
 import { offsetLines, offsetReach, useOffsetFunctions } from "./offset";
-import { animateCode, createHoisted, hoist, originOf, rotationLines, transformLines } from "./transforms";
+import { animateCode, createHoisted, hoist, originOf, pointerCode, readsPointer, rotationLines, transformLines } from "./transforms";
 import { objectBox } from "./origin";
 import { fogCode } from "./fog";
 import { boundedMap, enclosing, objectSphere, sceneMiss, steadyTransitions, type Sphere } from "./bounds";
@@ -64,6 +64,7 @@ import { withStepsView } from "./debug";
 import { BOXED, objectOutline, outlineBlend, outlineFarCode, outlineFunctions, withOutlineBand, withOutlineFrames, withOutlineMarch, withOutlineShapes, type Outlined } from "./outline";
 
 export { activeSlots, hoverSlots, sceneTriggers, type Trigger } from "./animation";
+export { readsPointer } from "./transforms";
 export { shapeNames, shapeRadius } from "./shapes";
 
 export function generateShader(
@@ -99,7 +100,9 @@ export function generateShader(
   const slots = [...hovers, ...actives];
   // The picking pass: for :hover and :active, for the cursor over an object (decision 161), and
   // for the objects over which a gesture cannot move the camera (decision 176)
-  const picks = slots.length > 0 || sceneCursors(instances).length > 0 || sceneControls({}, instances)?.objects !== undefined;
+  // hover-distance(), hover-direction() (decision 215): the shader reads the object under the pointer
+  const pointed = readsPointer(everything);
+  const picks = slots.length > 0 || pointed || sceneCursors(instances).length > 0 || sceneControls({}, instances)?.objects !== undefined;
   // uStart[]: when each state that starts an animation started it (decision 141)
   const triggers = sceneTriggers(everything);
   // The hover and pressed states of one object, or undefined when it has neither
@@ -416,7 +419,10 @@ export function generateShader(
       ...(blended.length > 0 && transparent.length > 0 && shadows === "soft" ? { seeThrough: "seeThrough" } : {}),
     },
   );
-  const animate = animateCode(hoisted, lights?.positions ?? "");
+  // hover-distance(): where each object is at rest, and the object under the pointer, read once
+  // per pixel before the values that measure from it (decision 215)
+  if (pointed) hoisted.values.unshift({ type: "vec3", name: "hoverPoint", expr: "hoverAt()" });
+  const animate = animateCode(hoisted, [pointed ? pointerCode(instances, keyframes, hoverOf) : "", lights?.positions ?? ""].filter(Boolean).join("\n\n"));
   const textures = textureCode(instances, keyframes, hoverOf);
   // filter on the scene (decision 83) and on objects (decision 84)
   const { objectFilter, filterLines, alpha, filterFunctions } = filterCode(instances, sceneStyles);
@@ -553,7 +559,7 @@ export function generateShader(
           (picks
             ? `uniform float uHover[${Math.max(slots.length, 1)}]; // 0 at rest, 1 hovered
 uniform bool uPicking; // true: draw the id of the object under uPick, not its color
-uniform vec2 uPick;`
+uniform vec2 uPick;${pointed ? "\nuniform float uHovered; // the id of the object under the pointer, 0: none" : ""}`
             : ""),
       )
       .replace("/*@PICK_PIXEL*/", picks ? PICK_PIXEL : "")

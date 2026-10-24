@@ -215,6 +215,46 @@ describe(":not(:hover) in the shader and the export", () => {
   });
 });
 
+// hover-distance(), hover-direction() (decision 215): measured on the GPU from the object
+// under the pointer to this one, both where they are with nothing under the pointer
+describe("hover-distance() and hover-direction()", () => {
+  const cloud = `
+    @scene { group#c { sphere.p * 3; } }
+    .p { radius: 0.3; translate: calc(sibling-index() - 2 + hover-direction(x) * 0.5 * exp(-2 * hover-distance())) 0 0; }
+  `;
+
+  it("read the object under the pointer, uHovered, and the place of each object at rest", () => {
+    const compiled = compileScene(cloud);
+    expect(compiled.pointer).toBe(true);
+    expect(compiled.shader).toContain("uniform float uHovered;");
+    expect(compiled.shader).toContain("hoverPoint = hoverAt();");
+    expect(compiled.shader).toContain("if (uHovered == 2.0) return restCenter2();");
+    expect(compiled.shader).toContain("hoverDirection(restCenter1()).x");
+    // at rest, an object is where nothing under the pointer would put it
+    expect(compiled.shader).toMatch(/vec3 restCenter1\(\) \{[^}]*vec3\(0\.0\)\.x[^}]*1000000\.0/);
+  });
+
+  it("go anywhere the math goes on the GPU, like a color", () => {
+    const shader = compileGSS(`@scene { sphere * 2; } sphere { color: color-mix(in oklab, red, blue calc(100% * exp(-1 * hover-distance()))); }`);
+    expect(shader).toContain("hoverDistance(restCenter2())");
+  });
+
+  it("measure from an object, not a group or the scene", () => {
+    expect(() => compileScene(`@scene { group#g { cube; } } #g { translate: calc(hover-distance()) 0 0; }`)).toThrow(
+      "hover-distance() goes in a rule that styles objects",
+    );
+    expect(() => compileScene(`@scene { cube; } cube { translate: calc(hover-direction(w)) 0 0; }`)).toThrow(
+      "hover-direction() takes an axis, like: hover-direction(x)",
+    );
+  });
+
+  it("leave a scene that does not use them as it was", () => {
+    const compiled = compileScene(`@scene { cube; } cube:hover { scale: 2; }`);
+    expect(compiled.pointer).toBeUndefined();
+    expect(compiled.shader).not.toContain("uHovered");
+  });
+});
+
 describe("a hovered property in the shader", () => {
   it("mixes the color at rest and the hovered color", () => {
     const shader = compileGSS(`

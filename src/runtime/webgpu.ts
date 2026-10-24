@@ -224,7 +224,7 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
     const pipelines: Pipeline[] = [{ pipeline: await pipeline(compiled.wgsl, passes.length ? "rgba8unorm" : format), inputs: [], textures: compiled.textures }];
     for (const [i, pass] of passes.entries()) pipelines.push({ pipeline: await pipeline(pass.wgsl!, i === passes.length - 1 ? format : "rgba8unorm"), inputs: pass.inputs, textures: [] });
     // cursor (decision 161) needs the object under the mouse too
-    const picking = slots || compiled.cursors || compiled.controls?.objects ? await pipeline(compiled.wgsl, "rgba8unorm") : null;
+    const picking = slots || compiled.pointer || compiled.cursors || compiled.controls?.objects ? await pipeline(compiled.wgsl, "rgba8unorm") : null;
     return {
       compiled, layout, pipelines, picking,
       uniforms: device.createBuffer({ size, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST }),
@@ -287,7 +287,8 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
       }
       const current = scene;
       const v = current.values;
-      v.set([canvas.width, canvas.height, 1, clock.seconds, camera.yaw, camera.pitch, camera.dist, canvas.width / Math.max(canvas.clientWidth, 1), 0, 0, 0, 0]);
+      // the last one: the object under the pointer, for hover-distance() (decision 215)
+      v.set([canvas.width, canvas.height, 1, clock.seconds, camera.yaw, camera.pitch, camera.dist, canvas.width / Math.max(canvas.clientWidth, 1), 0, 0, 0, current.compiled.pointer ? hovered : 0]);
       if (current.compiled.cursors) canvas.style.cursor = cursorAt(current.compiled.cursors, hovered, press.id);
       // A state that starts an animation holds until it ends (decision 141)
       const held = triggers.update(pointerValues(current.compiled.hover, current.compiled.active, hovered, press.id), clock.seconds);

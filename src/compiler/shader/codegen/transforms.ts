@@ -21,7 +21,7 @@ export function createHoisted(): Hoisted {
 // The expression as it is when it is constant; otherwise the name of its global
 // (two objects with the same animation share it)
 export function hoist(hoisted: Hoisted | undefined, type: "float" | "vec3" | "vec4" | "mat2", expr: string): string {
-  if (!hoisted || !/\b(iTime|uHover|uTimeline|uProperties)\b/.test(expr)) return expr;
+  if (!hoisted || !/\b(iTime|uHover|uTimeline|uProperties|hoverDistance|hoverDirection)\b/.test(expr)) return expr;
   const key = `${type} ${expr}`;
   let name = hoisted.names.get(key);
   if (!name) {
@@ -147,3 +147,54 @@ export function spaceFunction(
     "}",
   ].join("\n");
 }
+
+// hover-distance(), hover-direction() (decision 215): does a value of the scene measure from
+// the object under the pointer?
+const POINTER = /\bhoverD(istance|irection)\(/;
+export function readsPointer(instances: StyledInstance[]): boolean {
+  return instances.some((instance) =>
+    [instance.styles, instance.hoverStyles, instance.activeStyles, ...instance.hoverStates.map((state) => state.styles), ...instance.groupStyles].some(
+      (styles) => Object.values(styles).some((value) => value.some((token) => token.type === "EXPR" && POINTER.test(token.code))),
+    ),
+  );
+}
+
+// Where each object is with nothing under the pointer: its moves and its groups', from
+// the inside out, with what measures from the pointer left out (far away, no direction);
+// then the place of the object under the pointer, and the two measures
+export function pointerCode(
+  instances: StyledInstance[],
+  keyframes: Keyframes[],
+  hoverOf: (instance: StyledInstance) => Hover | undefined,
+): string {
+  const atRest = (line: string) =>
+    line.replace(/hoverDistance\(restCenter\d+\(\)\)/g, "1000000.0").replace(/hoverDirection\(restCenter\d+\(\)\)/g, "vec3(0.0)");
+  const centers = instances.map((instance) =>
+    [
+      `vec3 restCenter${instance.index}() {  // ${label(instance)}`,
+      "  vec3 v = vec3(0.0);",
+      ...[
+        ...forwardLines(instance.styles, keyframes, hoverOf(instance), undefined, () => objectBox(instance)),
+        ...instance.groupStyles.map((group, g) => forwardLines(group, keyframes, groupHover(instance, g))).reverse().flat(),
+      ].map(atRest),
+      "  return v;",
+      "}",
+    ].join("\n"),
+  );
+  return [
+    "// hover-distance(), hover-direction(): where each object is with nothing under the pointer",
+    ...centers,
+    "vec3 hoverAt() {",
+    ...instances.map((instance) => `  if (uHovered == ${glslFloat(instance.index)}) return restCenter${instance.index}();`),
+    "  return vec3(0.0);",
+    "}",
+    "float hoverDistance(vec3 c) {",
+    "  return uHovered > 0.0 ? length(c - hoverPoint) : 1000000.0;",
+    "}",
+    "vec3 hoverDirection(vec3 c) {",
+    "  vec3 d = c - hoverPoint;",
+    "  return uHovered > 0.0 && dot(d, d) > 0.000001 ? normalize(d) : vec3(0.0);",
+    "}",
+  ].join("\n");
+}
+

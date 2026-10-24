@@ -106,6 +106,7 @@ type GpuScene = {
   uStart: WebGLUniformLocation | null; // the states that start an animation (decision 141)
   uPicking: WebGLUniformLocation | null;
   uPick: WebGLUniformLocation | null;
+  uHovered: WebGLUniformLocation | null; // the object under the pointer, for hover-distance() (decision 215)
   uProperties: WebGLUniformLocation | null; // @property (decision 105)
   moves: boolean; // the image changes with time alone (decision 134)
   paints: PaintSet | null; // the textures its @paint draw (decision 151)
@@ -228,6 +229,7 @@ export function createView(
       uStart: gl!.getUniformLocation(program, "uStart"),
       uPicking: gl!.getUniformLocation(program, "uPicking"),
       uPick: gl!.getUniformLocation(program, "uPick"),
+      uHovered: gl!.getUniformLocation(program, "uHovered"),
       uProperties: gl!.getUniformLocation(program, "uProperties"),
     };
   }
@@ -407,7 +409,7 @@ export function createView(
       }
       // :hover: which object is under the mouse, then how far each slot has glided
       // cursor (decision 161) and controls on an object (decision 176) need the object under the mouse too
-      const hovers = scene.hover.length + (scene.active?.length ?? 0) > 0 || shown?.cursors !== undefined || shown?.controls?.objects !== undefined;
+      const hovers = scene.hover.length + (scene.active?.length ?? 0) > 0 || scene.uHovered !== null || shown?.cursors !== undefined || shown?.controls?.objects !== undefined;
       const pixel = hovers ? pointerPixel() : null;
       let glides: Float32Array | null = null;
       let started: Float32Array | null = null; // uStart[]
@@ -446,6 +448,7 @@ export function createView(
         ...(values ?? []),
         ...(timeline ?? []),
         ...(glides ?? []),
+        scene.uHovered ? hovered : 0, // hover-distance() measures from it (decision 215)
         ...(scene.paints?.pointer ? paintMouse() : []), // a @paint that reads mouse
       ]);
       if (!changed && !measuring()) {
@@ -475,6 +478,7 @@ export function createView(
       if (hovers) {
         if (pixel) requestPick(scene, pixel);
         if (glides!.length > 0) gl!.uniform1fv(scene.uHover, glides!);
+        if (scene.uHovered) gl!.uniform1f(scene.uHovered, hovered);
         if (started) gl!.uniform1fv(scene.uStart, started);
       }
       if (post.active()) {
