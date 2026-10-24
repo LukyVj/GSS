@@ -8,6 +8,9 @@ The 0.0.1 history was reconstructed from GitHub.
 
 ### Added
 
+- **`:hover`, `:active`**: a group passes its color and its variables. `#g:hover { --lift: 0.3; color: #ff5a36; }` reaches the objects inside the group, like CSS passes them to the children: the objects that read the variable move, and those without a color of their own take it, each with its own `transition`. `:active` does the same.
+- **`:active`**: on a group itself. `#g:active { scale: 0.9; }` presses the whole group when any of its objects is pressed, every object with it, over its `:hover` state.
+- **`:not()`**: with `:active` inside. `cube:not(:active)` styles every cube that is not pressed, all of them while nothing is.
 - **Changelog**: the points of the cloud glide aside around the one under the pointer, the nearest the most.
 - **`hover-distance()`, `hover-direction()`**: how far an object is from the object under the pointer, and which way. In `calc()`, they let the objects near the pointer move aside, grow or change color, the nearest the most: `translate: calc(var(--x) + hover-direction(x) * 0.5 * exp(-3 * hover-distance())) 0 0`. They glide with the `transition` of the objects that read them.
 - **`:not()`**: with `:hover` inside. `cube:not(:hover)` styles every cube that is not under the mouse, all of them while nothing is, and `#cloud:not(:has(.point:hover)) .point` the points while none of them is hovered, with their `transition`.
@@ -30,6 +33,7 @@ The 0.0.1 history was reconstructed from GitHub.
 
 ### Changed
 
+- **`color`**: an object without a color takes the one of its closest group, like CSS. `#g { color: #ff5a36; }` colors the objects of the group that set no color of their own; until now it colored nothing. A `light` keeps its own.
 - **`animation-fill-mode`**: it counts on a scroll timeline, like CSS. Before a `view()` timeline or an `animation-range`, and past it, an animation applies only when its fill mode holds a frame: `backwards`, `forwards` or `both`. Until now GSS held the first and the last frame in any case; a scene that relies on it writes `both`, like `animation: rise 1s both`.
 - **Changelog**: the cloud of points follows each version of the page. The number of a version gathers while that version crosses the page, and scatters between two versions, wherever the version is and however long it is.
 

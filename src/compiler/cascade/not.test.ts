@@ -5,6 +5,7 @@ import { expandScene } from "./expand";
 import { parseSelector, resolveStyles, specificity } from "./resolve";
 import { compileScene } from "../index";
 import { formatGss } from "../../docs/format";
+import { toShadertoy } from "../shader/shadertoy";
 
 const selector = (text: string) => parseSelector(tokenize(text));
 function styled(scene: string, rules: string) {
@@ -69,10 +70,6 @@ describe(":not()", () => {
     expect(b.styles.color).toEqual(tokenize("#00ff00"));
   });
 
-  it("refuses :active inside for now", () => {
-    expect(() => selector("cube:not(:active)")).toThrow(/:not\(\) cannot hold :active yet/);
-  });
-
   it("refuses an empty :not(), a face, a leading combinator", () => {
     expect(() => selector("cube:not()")).toThrow(/:not\(\) needs a selector/);
     expect(() => selector("cube:not(cube::top)")).toThrow(/face/);
@@ -126,3 +123,41 @@ describe(":not() with :hover inside", () => {
   });
 });
 
+
+// :not() holding :active: a state of its own, on while nothing, or something else, is pressed
+describe(":not() with :active inside", () => {
+  const states = (scene: string, rules: string) =>
+    Object.fromEntries(styled(scene, rules).map((o) => [o.id, o.hoverStates.map((state) => [state.press ?? false, state.triggers])]));
+
+  it("is a state that follows the press, on while the object is not pressed", () => {
+    expect(states("cube#a; sphere#b;", "cube:not(:active) { color: red; }")).toEqual({ a: [[true, [0, 2]]], b: [] });
+  });
+
+  it("reads :has() inside, from the group down", () => {
+    expect(states("group#g { cube#a; sphere#b; } cone#c;", "#g:not(:has(:active)) cube { scale: 0.9; }")).toEqual({
+      a: [[true, [0, 3]]],
+      b: [],
+      c: [],
+    });
+  });
+
+  it("stays out of the pressed state", () => {
+    const [a] = styled("cube#a;", "cube { color: blue; } cube:not(:active) { color: red; } cube:active { scale: 0.9; }");
+    expect(a.activeStyles.color).toEqual(tokenize("blue"));
+    expect(a.activeTriggers).toEqual([1]);
+  });
+
+  it("cannot wait for :hover at the same time yet", () => {
+    expect(() => compileScene("@scene { cube; } cube:hover:not(:active) { color: red; }")).toThrow(
+      "A rule cannot wait for :hover and for :not(:active) at once yet: write cube:hover, and cube:active after it",
+    );
+  });
+
+  it("gives its state a slot among the pressed ones, on in the Shadertoy export", () => {
+    const compiled = compileScene("@scene { cube; sphere; } cube:not(:active) { color: #ff0000; } sphere:hover { color: #0000ff; }");
+    expect(compiled.hover).toEqual([[2]]);
+    expect(compiled.active).toEqual([[0, 2]]);
+    expect(compiled.shader).toContain("mix(vec3(0.9), vec3(1.0, 0.0, 0.0), uHover[1])");
+    expect(toShadertoy(compiled)).toContain("const float uHover[2] = float[2](0.0, 1.0);");
+  });
+});

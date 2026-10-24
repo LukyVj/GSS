@@ -138,7 +138,7 @@ describe("resolveStyles with groups", () => {
     expect(ball.groupStyles[0].scale).toEqual([{ type: "NUMBER", value: 2 }]);
   });
 
-  it("a rule of the group does not style its children (no inheritance yet)", () => {
+  it("a rule of the group does not style its children (its color and its variables are passed when computed)", () => {
     const [L] = resolveGSS("@scene { group#g { cube#L } } #g { color: #f00; }");
     expect(L.styles.color).toBeUndefined();
   });

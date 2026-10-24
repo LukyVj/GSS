@@ -31,7 +31,8 @@ export function hoverValues(hover: number[][], id: number): Float32Array {
 }
 
 // uHover[] with :active (decision 95): the hover slots, then the pressed slots, which
-// are 1 while their trigger is pressed (pressed: the id of the pressed object, 0: none)
+// are 1 while their trigger is pressed (pressed: the id of the pressed object, 0: none,
+// which the slots of :not(:active) list)
 export function pointerValues(
   hover: number[][],
   active: number[][] | undefined,
@@ -41,7 +42,7 @@ export function pointerValues(
   if (!active) return hoverValues(hover, hovered);
   return Float32Array.from([
     ...hoverValues(hover, hovered),
-    ...active.map((triggers) => (pressed !== 0 && triggers.includes(pressed) ? 1 : 0)),
+    ...active.map((triggers) => (triggers.includes(pressed) ? 1 : 0)),
   ]);
 }
 

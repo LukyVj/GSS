@@ -168,6 +168,7 @@ export const PROPERTIES: PropertyDef[] = [
       ["<gradient>", "`linear-gradient()`, `radial-gradient()` or `conic-gradient()`, painted on the object as seen from the front, and taken by every material."],
       ["noise()", "A noise cut in the object's own space, like a block of stone."],
       ["transparent", "A transparent color (`#ff000080`, `rgb(255 0 0 / 50%)`), or the transparent stops of a gradient, make the object transparent, like `opacity`."],
+      ["#g { color: … }", "On a group: the color of the objects inside it that set none, like CSS passes it to the children, at rest, on `:hover` and on `:active`. A `light` keeps its own.", "0.0.8"],
     ],
     details: "A gradient can be animated and changed by `:hover`, into another gradient of the same kind with as many colors. A color cannot change into a gradient.",
     more: "Each number of an animated gradient moves on its own. Through a variable, one number is enough: `linear-gradient(var(--angle), …)` turns when `@keyframes` changes `--angle`. On a point `light`, `color` is the color of its light: a plain color only.",
@@ -2941,10 +2942,11 @@ export const SELECTORS: SelectorDef[] = [
       ["#g:has(sphere:hover)", "Inside `:has()`: hovering one object changes another."],
       ["sphere:hover { radius: 1; }", "A size of the shape: the sphere itself grows, where `scale` grows the whole space of the object.", "0.0.8"],
       ["#g:hover { scale: 1.2; }", "On a group itself: hovering any object of `#g` grows the whole group from its center, every object with it.", "0.0.8"],
+      ["#g:hover { --lift: 1; color: red; }", "A variable or a color on a group: the objects inside it that read them change, like CSS passes them to the children. An object with a color of its own keeps it.", "0.0.8"],
       ["cube:hover, cube:hover + cube", "Several rules, each waiting for its own objects: the cube under the mouse and the one after it change apart. When both apply to a cube, the most specific wins, like CSS.", "0.0.8"],
     ],
-    details: "A `:hover` rule changes animatable properties only. On a group, it changes the group's transforms and its opacity, and the group carries every object it holds; to change their color, write `#g:hover cube`.",
-    more: "The `:hover` rules join the cascade like any other: `#a { color: blue; }` beats `cube:hover { color: red; }`, and a normal `!important` beats them all. The animatable properties are the transforms, `color`, `opacity`, `mask-image`, `offset-distance` and variables, and the sizes of the shapes (`radius`, `size`, `height`, `thickness`…), which `@keyframes` cannot change: never a face. It can also start an `animation`: it begins when the pointer arrives and plays to its end, pointer gone or not (see `:active`). Each rule waits for its own objects, like CSS: `cube:hover` applies when the cube itself is hovered, `cube:hover + cube` when the one before it is, and when both apply, the most specific wins. Not yet: on a group, a `:hover` rule cannot start an `animation` nor change a color or a variable (write `#g:hover cube`); `@keyframes` cannot change the sizes of the shapes; the size at rest still places `transform-origin` in percent, the mapping of a texture and the text of `content`.",
+    details: "A `:hover` rule changes animatable properties only. On a group, it changes the group's transforms and its opacity, and the group carries every object it holds; its color and its variables reach the objects inside it, like CSS.",
+    more: "The `:hover` rules join the cascade like any other: `#a { color: blue; }` beats `cube:hover { color: red; }`, and a normal `!important` beats them all. The animatable properties are the transforms, `color`, `opacity`, `mask-image`, `offset-distance` and variables, and the sizes of the shapes (`radius`, `size`, `height`, `thickness`…), which `@keyframes` cannot change: never a face. It can also start an `animation`: it begins when the pointer arrives and plays to its end, pointer gone or not (see `:active`). Each rule waits for its own objects, like CSS: `cube:hover` applies when the cube itself is hovered, `cube:hover + cube` when the one before it is, and when both apply, the most specific wins. Each object glides with its own `transition` toward the color or the variable a hovered group gives it. Not yet: on a group, a `:hover` rule cannot start an `animation` (write `#g:hover cube`); `@keyframes` cannot change the sizes of the shapes; the size at rest still places `transform-origin` in percent, the mapping of a texture and the text of `content`.",
     examples: [
       {
         name: "lift on hover",
@@ -2960,6 +2962,11 @@ export const SELECTORS: SelectorDef[] = [
         name: "hover a group itself",
         text: "The mouse over any object lifts and turns the whole group, the objects with it.",
         code: "@scene { group#lamp { cylinder#stand; sphere#bulb; } } #lamp { translate: 0 0.4 0; transition: 0.3s; } #stand { size: 0.15 0.8 0.15; color: #e6e6e6; } #bulb { translate: 0 0.6 0; radius: 0.35; color: #ffd166; } #lamp:hover { translate: 0 0.8 0; rotate-y: 30deg; }",
+      },
+      {
+        name: "a group passes a variable",
+        text: "Hovering any cube sets `--lift` and a color on the shelf: each cube rises by its place, and the two without a color of their own turn red.",
+        code: "@scene { group#shelf { cube * 3; } } #shelf { --lift: 0; } #shelf:hover { --lift: 0.3; color: #ff5a36; } cube { size: 0.6; translate: calc((sibling-index() - 2) * -0.9) calc(0.3 + var(--lift) * sibling-index()) 0; transition: 0.3s ease-out; } cube:last-child { color: #3a7bff; }",
       },
       {
         name: "hover and its neighbours",
@@ -2981,10 +2988,11 @@ export const SELECTORS: SelectorDef[] = [
       ["#button:active", "On the object pressed."],
       ["sphere:active + cube", "On an earlier sibling."],
       ["#g:active cube", "On a group: every cube of `#g` is pressed when any of its objects is."],
+      ["#g:active { scale: 0.9; }", "On a group itself: pressing any object of `#g` presses the whole group, every object with it.", "0.0.8"],
       ["#lamp:has(#switch:active) #bulb", "Inside `:has()`: press one object, change another."],
     ],
-    details: "Write `:active` after `:hover`: a pressed object is hovered too, and the later rule wins. Like `:hover`, it changes animatable properties only, and styles objects, not groups.",
-    more: "`cube:hover { scale: 1.1; } cube:active { scale: 0.95; }` grows under the mouse and sinks when clicked. With `transition`, pressing takes the transition of the `:active` rule, and releasing the one of the hovered state. An `animation` in a `:active` rule starts at the press and plays to its end, released or not, like a button that fires: once, unless it says how many times; the pressed state stays on until the animation ends, or for good with `forwards`, and the next press plays it again.",
+    details: "Write `:active` after `:hover`: a pressed object is hovered too, and the later rule wins. Like `:hover`, it changes animatable properties only, on an object or on a group.",
+    more: "On a group, it changes what `:hover` does: the group's transforms and its opacity, and the color and the variables that reach the objects inside it. `cube:hover { scale: 1.1; } cube:active { scale: 0.95; }` grows under the mouse and sinks when clicked. With `transition`, pressing takes the transition of the `:active` rule, and releasing the one of the hovered state. An `animation` in a `:active` rule starts at the press and plays to its end, released or not, like a button that fires: once, unless it says how many times; the pressed state stays on until the animation ends, or for good with `forwards`, and the next press plays it again.",
     examples: [
       {
         name: "a button that sinks when pressed",
@@ -2995,6 +3003,11 @@ export const SELECTORS: SelectorDef[] = [
         name: "a click starts an animation",
         text: "The press starts the fall, which plays to its end even once the button is up; `forwards` keeps the cube down, and the next click plays it again.",
         code: "@scene { cube; } cube { size: 0.6 1.6 0.6; translate: 0 0.8 0; color: #ff5a36; } cube:active { animation: topple 0.8s ease-in forwards; } @keyframes topple { to { rotate-z: -90deg; translate: -0.8 0.3 0; } }",
+      },
+      {
+        name: "press a group",
+        text: "Pressing any key sinks the whole keyboard and turns it red; it glides back up on release.",
+        code: "@scene { group#keys { cube * 3; } } #keys { translate: 0 0.3 0; transition: 0.25s ease-out; } #keys:hover { translate: 0 0.45 0; } #keys:active { scale: 0.9; color: #ff5a36; transition: 0.06s; } cube { size: 0.6 0.3 0.6; corner-radius: 0.08; translate: calc((sibling-index() - 2) * -0.8) 0 0; transition: 0.2s; }",
       },
       {
         name: "press one, move another",
@@ -3058,8 +3071,10 @@ export const SELECTORS: SelectorDef[] = [
       [":not(.a):not(.b)", "Several in a row."],
       ["cube:not(:hover)", "Under the mouse or not: every cube that is not hovered, and all of them while nothing is.", "0.0.8"],
       ["#cloud:not(:has(.point:hover)) .point", "The points of `#cloud` while none of them is hovered.", "0.0.8"],
+      ["cube:not(:active)", "Pressed or not: every cube that is not pressed, and all of them while nothing is.", "0.0.8"],
     ],
-    details: "It weighs like the most specific selector of its list, like CSS: `cube:not(#hero)` beats `#hero` alone. It is read when the scene compiles, except `:hover` inside, read under the mouse; it cannot hold `:active` or a face.",
+    details: "It weighs like the most specific selector of its list, like CSS: `cube:not(#hero)` beats `#hero` alone. It is read when the scene compiles, except `:hover` and `:active` inside, read under the pointer; it cannot hold a face.",
+    more: "With `:hover` or `:active` inside, the rule is on while nothing, or another object, is under the pointer or pressed, like CSS: `cube:not(:hover)` holds every cube from the start. Not yet: a rule that waits for `:hover` and for `:not(:active)` at once, like `cube:hover:not(:active)`; write `cube:hover`, then `cube:active` after it.",
     examples: [
       {
         name: "every cube but the red ones",
@@ -3070,6 +3085,11 @@ export const SELECTORS: SelectorDef[] = [
         name: "the ones in the middle",
         text: "The spheres between the first and the last turn blue.",
         code: "@scene { sphere * 6; } sphere { radius: 0.3; translate: calc((sibling-index() - 3.5) * -0.75) 0.4 0; color: #e6e6e6; } sphere:not(:first-child, :last-child) { color: #3a7bff; }",
+      },
+      {
+        name: "lit until pressed",
+        text: "The lamp is lit until the button is pressed, and lights again when it is released.",
+        code: "@scene { cube#button; sphere#lamp; } #button { size: 1 0.3 1; corner-radius: 0.1; translate: 0.7 0.15 0; color: #e6e6e6; } #button:active { translate: 0.7 0.08 0; } #lamp { radius: 0.4; translate: -0.8 0.5 0; color: #555555; transition: 0.3s; } #button:not(:active) + #lamp { color: #ffd27a; }",
       },
     ],
   },
