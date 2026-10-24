@@ -442,6 +442,17 @@
           }
         },
         {
+          "match": "(@)(gpu)\\b",
+          "captures": {
+            "1": {
+              "name": "punctuation.definition.keyword.gss"
+            },
+            "2": {
+              "name": "keyword.control.at-rule.gpu.gss"
+            }
+          }
+        },
+        {
           "match": "&",
           "name": "entity.name.tag.nesting.gss"
         },

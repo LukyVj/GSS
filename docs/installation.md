@@ -149,6 +149,7 @@ To drive the scene from a script, see [Set variables from JavaScript](#set-varia
 - **poster:** `poster="cover.jpg"` shows an image until the scene draws, like the poster of a `<video>`.
 - **No graphics card:** `<gss-scene>` shows its poster and a button, and draws the scene only when the reader asks. With `mount()`, `softwareRendering()`, from `gss-lang` or `gss-lang/runtime`, returns `true` on such a computer, to do the same.
 - **A weak graphics card:** The scene starts at a density of 0.5, then climbs to its `dpr` while the frames keep up.
+- **A lighter version:** A scene with [`@gpu (slow)`](at-rules.md#at-gpu) is never drawn under a density of 1: when its frames stay slow, it switches to its lighter version. `<gss-scene gpu="slow">` and `mount(canvas, scene, { gpu: "slow" })` show that version from the start.
 - **Still too slow:** The scene stops: `<gss-scene>` shows a button that draws it anyway, and `mount()` fires a `gss-too-heavy` event on the canvas, where `scene.play()` draws it anyway.
 - **adaptDpr: false:** `mount(canvas, scene, { adaptDpr: false })` keeps the `dpr` as written and never stops, for a capture or a benchmark.
 

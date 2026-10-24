@@ -79,15 +79,15 @@ function blockOf(prelude: Token[], parent: Block | undefined): Block {
   if (first?.type === "AT_KEYWORD" && first.value === "apply" && (parent?.kind === "rule" || parent?.kind === "frame"))
     return parent;
   if (parent?.kind === "rule") {
-    // Nesting: a rule inside a rule, or a @media that keeps the selector of the rule
-    if (first?.type === "AT_KEYWORD") return first.value === "media" ? parent : { kind: "unknown" };
+    // Nesting: a rule inside a rule, or a @media (or @gpu) that keeps the selector of the rule
+    if (first?.type === "AT_KEYWORD") return first.value === "media" || first.value === "gpu" ? parent : { kind: "unknown" };
     return first ? { kind: "rule", selector: nestSelector(parent.selector, prelude) } : { kind: "unknown" };
   }
   if (parent && parent.kind !== "media") return { kind: "unknown" };
   if (first?.type === "AT_KEYWORD") {
     if (first.value === "scene") return { kind: "scene" };
     if (first.value === "keyframes") return { kind: "keyframes" };
-    if (first.value === "media") return { kind: "media" };
+    if (first.value === "media" || first.value === "gpu") return { kind: "media" };
     if (first.value === "mixin" && !parent) return { kind: "mixin" };
     return { kind: "unknown" };
   }
