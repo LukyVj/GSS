@@ -48,8 +48,10 @@
     "dev": "vite",
     "build": "tsc && vite build && vite build -c vite.embed.config.ts",
     "preview": "vite preview",
-    "test": "vitest",
-    "test:gpu": "vitest run src/test/*gpu.test.ts",
+    "test": "vitest run --project unit",
+    "test:watch": "vitest --project unit",
+    "test:gpu": "vitest run --project gpu",
+    "test:all": "vitest run",
     "format": "node scripts/format-gss.mjs",
     "format:check": "node scripts/format-gss.mjs --check",
     "generate-vscode-extension": "cd editors/vscode && npm install && npm run package",
@@ -59,7 +61,7 @@
     "docs:github": "vitest run src/docs/github-docs.test.ts -u",
     "bench": "node scripts/bench.mjs run",
     "bench:compare": "node scripts/bench.mjs compare",
-    "prepublishOnly": "npm run build:lib && npx vitest run --exclude '**/*gpu.test.ts'"
+    "prepublishOnly": "npm run build:lib && npx vitest run --project unit"
   },
   "peerDependencies": {
     "vite": ">=5"

@@ -26,8 +26,30 @@ gss-lang.dev; npm package: `gss-lang`.
 
 ## Rules for every change
 
-- Tests first (watch them fail for the right reason), then the code. Then: `npx vitest run`
-  (GPU tests included: `src/test/gpu.test.ts`, Chromium), `npx tsc --noEmit -p .`, and `npm run build`.
+- Tests first (watch them fail for the right reason), then the code. Then the tests below,
+  `npx tsc --noEmit -p .`, and `npm run build`.
+- **Which tests** (Lucas's choice, Oct. 24): never the whole suite for a feature or a fix.
+  - While working: the test files of what you touch, and `npx vitest related <changed files> --run --project unit`.
+  - Before a merge: `npm test` (the `unit` group, every test Node runs alone, ~25 s), plus, if the
+    render or the shader changes, **only the GPU file of that area**, run alone:
+    `npm run test:gpu -- src/test/<file>`. A new GPU behavior gets its own `*-gpu.test.ts` there.
+  - The whole suite (`npm run test:all`, ~5 min, `wgsl-gpu` alone takes ~5): before a release
+    push, after a refactor of the code generator, or when Lucas asks.
+
+  | Change | GPU file |
+  | --- | --- |
+  | registry examples, showcase scenes, filters (do they compile in WebGL2) | `gpu.test.ts` |
+  | WGSL lowering / WebGPU backend | `wgsl-gpu.test.ts` (whole suite only), `backend-gpu.test.ts` |
+  | `:hover`, `:has()`, picking, `cursor` | `backend-gpu.test.ts`, `cursor-gpu.test.ts` |
+  | `controls`, camera gestures | `controls-gpu.test.ts` |
+  | `content`, text on faces | `content-gpu.test.ts` |
+  | `@paint`, `texture: paint()` | `paint-gpu.test.ts` |
+  | `texture-mapping`, `checker()` on the floor | `texture-mapping-gpu.test.ts`, `floor-pattern-gpu.test.ts` |
+  | materials and color | `material-color-gpu.test.ts` |
+  | `mix-blend-mode`, `outline`, `shape-rendering` | `mix-blend-mode-gpu.test.ts`, `outline-gpu.test.ts`, `shape-rendering-gpu.test.ts` |
+  | `@media`, named timelines, end of an animation | `media-gpu.test.ts`, `named-timeline-gpu.test.ts`, `visibility-gpu.test.ts` |
+  | slow GPU, no GPU, parallel compile, `@gpu` | `heavy-gpu.test.ts`, `software-gpu.test.ts`, `parallel-compile-gpu.test.ts`, `gpu-slow-gpu.test.ts` |
+  | reference studies | `reference-studies-gpu.test.ts` |
 - Every feature goes into the **registry** (`src/compiler/registry/registry.ts`): the docs, the
   playground examples, the autocompletion and the example tests are generated from it.
 - After a change to the registry or the guide of the docs: `npm run docs:github` (the docs on GitHub, `docs/`).
