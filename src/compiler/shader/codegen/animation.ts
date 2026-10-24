@@ -1,7 +1,7 @@
 // Animated values: @keyframes and :hover written as GLSL expressions of iTime and uHover[]
 import type { Token } from "../../syntax/tokenizer";
 import type { Keyframes } from "../../syntax/ast";
-import type { StyledInstance, Styles } from "../../cascade/resolve";
+import type { HoverState, StyledInstance, Styles } from "../../cascade/resolve";
 import { errorAt } from "../../syntax/errors";
 import { type Easing, stepsShape } from "../../values/easing";
 import { countsIterations, readAnimation, type AnimationSpec } from "../../features/animation";
@@ -9,9 +9,11 @@ import { timelineCode, type Timeline } from "../../features/timeline";
 import { glslFloat, round, type Hover, type HoverLayer } from "./glsl";
 import { liveRead } from "./properties";
 
-// The objects that can be hovered, in scene order: each one gets a slot in uHover[]
-export function hoverSlots(instances: StyledInstance[]): StyledInstance[] {
-  return instances.filter((instance) => instance.hoverTriggers.length > 0);
+// The hover states, in scene order, the states of an object one after the other: each
+// one gets a slot in uHover[]
+export type HoverSlot = { instance: StyledInstance; state: HoverState };
+export function hoverSlots(instances: StyledInstance[]): HoverSlot[] {
+  return instances.flatMap((instance) => instance.hoverStates.map((state) => ({ instance, state })));
 }
 
 // The objects that can be pressed (:active): their slots come after the hover slots
@@ -26,8 +28,8 @@ export function sceneTriggers(instances: StyledInstance[]): Trigger[] {
   const hovers = hoverSlots(instances);
   const actives = activeSlots(instances);
   const started: { slot: number; hold: number | null }[] = [];
-  hovers.forEach((instance, slot) => {
-    const spec = startedAnimation(instance.hoverStyles, instance.starts.hover);
+  hovers.forEach(({ state }, slot) => {
+    const spec = startedAnimation(state.styles, state.starts);
     if (spec) started.push({ slot, hold: holdOf(spec) });
   });
   actives.forEach((instance, i) => {
@@ -37,8 +39,9 @@ export function sceneTriggers(instances: StyledInstance[]): Trigger[] {
   return started.sort((a, b) => a.slot - b.slot).map((trigger, start) => ({ ...trigger, start }));
 }
 
-// A property at rest, or mixed with its hovered value when :hover changes it,
-// then with its pressed value when :active changes it further
+// A property at rest, or mixed with its value in each hover state that changes it, the
+// state whose declaration wins in the cascade last, then with its pressed value when
+// :active changes it further
 export function hoverValue(
   styles: Styles,
   keyframes: Keyframes[],
@@ -48,11 +51,19 @@ export function hoverValue(
 ): string {
   const rest = animatedValue(styles, keyframes, property, read);
   let value = rest;
-  let target = rest; // the value of the state below this layer
-  for (const layer of hover ?? []) {
+  const rank = (layer: HoverLayer) => layer.ranks?.[property] ?? layer.last ?? 0;
+  const states = (hover ?? []).filter((layer) => layer.state === ":hover").sort((a, b) => rank(a) - rank(b));
+  const hovered = states.map((layer) => animatedValue(layer.styles, keyframes, property, read, layerClock(layer)));
+  states.forEach((layer, n) => {
+    // a state that changes nothing is left out
+    if (hovered[n] !== rest) value = `mix(${value}, ${hovered[n]}, uHover[${layer.slot}])`;
+  });
+  for (const layer of (hover ?? []).filter((layer) => layer.state === ":active")) {
+    // under the pressed state: the hover state, or what every hover state gives together
+    const below =
+      states.length === 1 ? hovered[0] : states.length > 1 && layer.below ? animatedValue(layer.below, keyframes, property, read) : rest;
     const next = animatedValue(layer.styles, keyframes, property, read, layerClock(layer));
-    if (next !== target) value = `mix(${value}, ${next}, uHover[${layer.slot}])`;
-    target = next; // a layer that changes nothing more is left out
+    if (next !== below) value = `mix(${value}, ${next}, uHover[${layer.slot}])`;
   }
   return value;
 }

@@ -253,6 +253,7 @@ function compileStylesheet(
     for (const styles of [
       instance.styles,
       instance.hoverStyles,
+      ...instance.hoverStates.map((state) => state.styles),
       instance.activeStyles,
       ...instance.groupStyles,
       ...FACES.map((face) => instance.faceStyles[face]),
@@ -285,6 +286,11 @@ function compileStylesheet(
       ...instance,
       styles: computeNode(instance.styles, seenAt(levels.length - 1), instance),
       hoverStyles: computeNode(instance.hoverStyles, hoverVariables, instance),
+      // each hover state with the variables of its own rules
+      hoverStates: instance.hoverStates.map((state) => ({
+        ...state,
+        styles: computeNode(state.styles, { ...seenAt(levels.length - 2), ...customProperties(state.styles) }, instance),
+      })),
       activeStyles: computeNode(instance.activeStyles, activeVariables, instance),
       groupStyles: instance.groupStyles.map((styles, g) =>
         computeNode(styles, seenAt(g + 1), instance.groups[g]),
@@ -348,8 +354,8 @@ function compileStylesheet(
   // Like CSS: the transition of the state the object goes to
   // Pressing takes the transition of :active, releasing the one of the hovered state
   const transitions = errors.run(() => [
-    ...hoverSlots(styled).map((instance) => ({
-      enter: readTransition(instance.hoverStyles["transition"]),
+    ...hoverSlots(styled).map(({ instance, state }) => ({
+      enter: readTransition(state.styles["transition"]),
       leave: readTransition(instance.styles["transition"]),
     })),
     ...activeSlots(styled).map((instance) => ({
@@ -385,7 +391,7 @@ function compileStylesheet(
     ...(styled.length > drawn.length ? { lights: styled.length - drawn.length } : {}),
     textures: textures!,
     ...(paints!.length > 0 ? { paints } : {}),
-    hover: hoverSlots(styled).map((instance) => instance.hoverTriggers),
+    hover: hoverSlots(styled).map(({ state }) => state.triggers),
     ...(active.length > 0 ? { active } : {}),
     ...(cursors!.length > 0 ? { cursors } : {}),
     ...(controls ? { controls } : {}),

@@ -22,6 +22,7 @@ The 0.0.1 history was reconstructed from GitHub.
 
 ### Fixed
 
+- **`:hover`**: each rule keeps its own hover state. An object with several `:hover` rules that wait for different objects no longer takes all of them as soon as one is hovered: `.point:hover { scale: 2; }` scales the hovered point only, while `#cloud:has(.point:hover) .point { … }` moves every point. When several apply at once, the most specific wins, like CSS. The copies of `* n` no longer share their hover either.
 - **`filter`**: the text or the image of an object no longer stays blank under `bloom()` or `blur()`. With `bloom()` or `blur()` in the `filter` of the scene, the text of `content` or the image of `texture` on the last object could stay blank once the scene stopped moving: the image of the filter took its place. Each object now reads its own image, at every size of the canvas.
 
 ## [0.0.7] — 2026-10-23

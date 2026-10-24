@@ -207,7 +207,8 @@ export const textsKey = (texts: Texts) => JSON.stringify(texts.map((text) => tex
 // Every text the object can show, once each, the one at rest first: at rest, hovered,
 // pressed, then at each frame of their animations that sets a text property
 export function textGroups(instance: StyledInstance, keyframes: Keyframes[]): Texts[] {
-  const states = [instance.styles, instance.hoverStyles, instance.activeStyles];
+  // each hover state last: alone, it can show a text that every state together hides
+  const states = [instance.styles, instance.hoverStyles, instance.activeStyles, ...instance.hoverStates.map((state) => state.styles)];
   const all = states.map((styles) => textsIn(instance, styles));
   for (const styles of states) {
     const name = readAnimation(styles)?.name.value;

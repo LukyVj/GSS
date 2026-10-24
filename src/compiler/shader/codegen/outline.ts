@@ -90,7 +90,13 @@ function ownColor(color: Token[] | undefined): Token[] | undefined {
 export function withOutlineBand(instance: StyledInstance): StyledInstance {
   const styles = [instance.styles, instance.hoverStyles, instance.activeStyles];
   if (!styles.some(touches)) return instance;
-  return { ...instance, styles: withBand(instance.styles), hoverStyles: withBand(instance.hoverStyles), activeStyles: withBand(instance.activeStyles) };
+  return {
+    ...instance,
+    styles: withBand(instance.styles),
+    hoverStyles: withBand(instance.hoverStyles),
+    hoverStates: instance.hoverStates.map((state) => ({ ...state, styles: withBand(state.styles) })),
+    activeStyles: withBand(instance.activeStyles),
+  };
 }
 
 // A frame that changes the outline changes the width and the color the shader reads

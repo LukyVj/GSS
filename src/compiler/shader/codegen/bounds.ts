@@ -106,7 +106,7 @@ function boxOfPoints(points: number[][]): { middle: number[]; reach: number } {
 // uHover[] of this object stays in [0, 1]: its transitions (rest, hovered and pressed)
 // never overshoot
 function steadyTransitions(instance: StyledInstance): boolean {
-  return [instance.styles, instance.hoverStyles, instance.activeStyles].every((styles) => {
+  return [instance.styles, instance.hoverStyles, ...instance.hoverStates.map((state) => state.styles), instance.activeStyles].every((styles) => {
     const transition = readTransition(styles["transition"]);
     return !transition || stays01(transition.easing);
   });

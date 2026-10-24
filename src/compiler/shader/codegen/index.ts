@@ -103,17 +103,28 @@ export function generateShader(
   const triggers = sceneTriggers(everything);
   // The hover and pressed states of one object, or undefined when it has neither
   const hoverOf = (instance: StyledInstance): Hover | undefined => {
-    const hover = hovers.indexOf(instance);
     const active = actives.indexOf(instance);
     const startOf = (slot: number) => {
       const start = triggers.findIndex((trigger) => trigger.slot === slot);
       return start === -1 ? {} : { start };
     };
     const layers: Hover = [
-      ...(hover === -1 ? [] : [{ styles: instance.hoverStyles, slot: hover, state: ":hover" as const, ...startOf(hover) }]),
+      ...hovers.flatMap((slot, n) =>
+        slot.instance === instance
+          ? [{ styles: slot.state.styles, slot: n, state: ":hover" as const, ...startOf(n), ranks: slot.state.ranks, last: slot.state.last }]
+          : [],
+      ),
       ...(active === -1
         ? []
-        : [{ styles: instance.activeStyles, slot: hovers.length + active, state: ":active" as const, ...startOf(hovers.length + active) }]),
+        : [
+            {
+              styles: instance.activeStyles,
+              slot: hovers.length + active,
+              state: ":active" as const,
+              ...startOf(hovers.length + active),
+              below: instance.hoverStyles,
+            },
+          ]),
     ];
     return layers.length > 0 ? layers : undefined;
   };

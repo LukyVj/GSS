@@ -243,6 +243,66 @@ describe("the hover styles of an object", () => {
   });
 });
 
+// One hover state per kind of trigger: each set of triggers gets its own state, with
+// the :hover rules that wait for it, so that "I am hovered" and "another object of my
+// group is" stay apart
+describe("the hover states of an object", () => {
+  const states = (source: string, id: string) => styled(source).find((object) => object.id === id)!.hoverStates;
+
+  it("are one per set of triggers, in the order of the cascade", () => {
+    const [own, group] = states(
+      `@scene { group#g { cube#a; sphere#b; } }
+      cube:hover { scale: 2; }
+      #g:hover cube { translate: 0 1 0; }`,
+      "a",
+    );
+    expect(own.triggers).toEqual([1]);
+    expect(group.triggers).toEqual([1, 2]);
+  });
+
+  it("only apply their own :hover rules", () => {
+    const [own, group] = states(
+      `@scene { group#g { cube#a; sphere#b; } }
+      cube { translate: 0 0.5 0; }
+      cube:hover { scale: 2; }
+      #g:hover cube { translate: 0 1 0; }`,
+      "a",
+    );
+    expect(own.styles.scale).toBeDefined();
+    expect(own.styles.translate).toEqual([
+      expect.objectContaining({ value: 0 }),
+      expect.objectContaining({ value: 0.5 }),
+      expect.objectContaining({ value: 0 }),
+    ]);
+    expect(group.styles.scale).toBeUndefined();
+    expect(group.styles.translate?.[1]).toEqual(expect.objectContaining({ value: 1 }));
+  });
+
+  it("are shared by the rules that wait for the same objects", () => {
+    const list = states(
+      `@scene { cube#a; }
+      cube:hover { scale: 2; }
+      #a:hover { color: #f00; }`,
+      "a",
+    );
+    expect(list).toHaveLength(1);
+    expect(list[0].styles.scale).toBeDefined();
+    expect(list[0].styles.color).toBeDefined();
+  });
+
+  it("are one, the hover styles, with a single kind of trigger", () => {
+    const [cube] = styled(`@scene { cube; } cube:hover { scale: 2; }`);
+    expect(cube.hoverStates).toEqual([
+      expect.objectContaining({ triggers: [1], styles: cube.hoverStyles }),
+    ]);
+  });
+
+  it("are none without a :hover rule", () => {
+    const [cube] = styled(`@scene { cube; } cube { scale: 2; }`);
+    expect(cube.hoverStates).toEqual([]);
+  });
+});
+
 describe("what a :hover rule can change", () => {
   const compile = (source: string) =>
     validateProperties(parse(tokenize(source)).rules);

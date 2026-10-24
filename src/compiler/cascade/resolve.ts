@@ -17,13 +17,29 @@ export type StyledInstance = SceneInstance & {
   groupStyles: Styles[];
   faceStyles: Record<Face, Styles>; // what cube::face(front), cube::top… set
   faceList: Styles[]; // the faces by number: faceList[0] is ::face(1) (decision 190)
-  hoverTriggers: number[]; // the objects that, hovered, put this one in its hover state
-  hoverStyles: Styles;
+  hoverTriggers: number[]; // the objects that, hovered, put this one in one of its hover states
+  hoverStyles: Styles; // every :hover rule together: what the pressed state goes over
+  // One state per set of triggers, in the order of the cascade: the :hover rules that wait
+  // for the same objects share it, and only they apply in it
+  hoverStates: HoverState[];
   activeTriggers: number[]; // the objects that, pressed, put this one in its active state
   activeStyles: Styles; // pressed: the :active rules on top of the :hover ones
-  // Whether the :hover rules, then the :active ones, write an animation of their own:
-  // the state starts it (decision 141)
-  starts: { hover: boolean; active: boolean };
+  // Whether the :active rules write an animation of their own: the press starts it
+  // (decision 141). Each hover state says it for itself.
+  starts: { active: boolean };
+};
+
+// A hover state: its triggers, the cascade with its own :hover rules, where each property
+// comes from (the place in the cascade of the declaration that wins it, so that the
+// most specific state is mixed last; a property no rule of the state writes but that
+// changes, through a variable, takes the place of its last rule), and whether its rules
+// start an animation (decision 141)
+export type HoverState = {
+  triggers: number[];
+  styles: Styles;
+  ranks: Record<string, number>;
+  last: number;
+  starts: boolean;
 };
 
 // The states the pointer gives: :hover (under the pointer) and :active (pressed)
@@ -804,6 +820,7 @@ export function resolveStyles(
     instance: SceneInstance,
     face?: Face | number,
     state: "rest" | PointerState = "rest",
+    only?: Set<Rule>, // the :hover rules of one state, the others left out
   ): Styles {
     const names = shapeFaces(instance.tag);
     const styles: Styles = {};
@@ -812,6 +829,7 @@ export function resolveStyles(
         if (!matches(selector, instance, instances)) continue;
         if (needsHover(selector) && state === "rest") continue;
         if (needsActive(selector) && state !== "active") continue;
+        if (only && needsPointer(selector) && !only.has(rule)) continue;
         // a face rule styles its face, the other rules the object
         if ((selector.face === undefined) !== (face === undefined)) continue;
         if (typeof face === "string" && selector.face !== face) continue;
@@ -861,14 +879,39 @@ export function resolveStyles(
     for (const instance of instances) if (matches(selector, instance, instances)) checkFacePick(selector.face, instance.tag, rule.selector);
   }
 
+  // The hover states of an object: its :hover rules, grouped by the objects they wait for
+  function hoverStates(instance: SceneInstance, styles: Styles): HoverState[] {
+    const states = new Map<string, { triggers: number[]; rules: { rule: Rule; place: number }[] }>();
+    sortedRules.forEach(({ rule, selector }, place) => {
+      // cube:hover:active waits for the press
+      if (!needsHover(selector) || needsActive(selector) || !matches(selector, instance, instances)) return;
+      const triggers = [...new Set(drawn(rule, triggersOf(selector, instance, instances)).map((other) => other.index))].sort((a, b) => a - b);
+      if (triggers.length === 0) return; // nothing can hover it
+      const key = triggers.join(",");
+      if (!states.has(key)) states.set(key, { triggers, rules: [] });
+      states.get(key)!.rules.push({ rule, place });
+    });
+    return [...states.values()].map(({ triggers, rules }) => {
+      const own = cascade(instance, undefined, "hover", new Set(rules.map(({ rule }) => rule)));
+      const ranks: Record<string, number> = {};
+      for (const important of [false, true])
+        for (const { rule, place } of rules)
+          for (const declaration of rule.declarations)
+            if ((declaration.important ?? false) === important)
+              ranks[declaration.property] = (important ? sortedRules.length : 0) + place;
+      return { triggers, styles: own, ranks, last: Math.max(...Object.values(ranks), -1), starts: writes(own, styles) };
+    });
+  }
+  // A state writes its own animation when one of its rules sets it: the declaration
+  // is then another one than the state below (the same rule gives the same value)
+  const writes = (above: Styles, below: Styles) =>
+    ["animation", ...ANIMATION_LONGHANDS].some((property) => above[property] !== below[property]);
+
   return instances.map((instance) => {
     const styles = cascade(instance);
     const hoverStyles = cascade(instance, undefined, "hover");
     const activeStyles = cascade(instance, undefined, "active");
-    // A state writes its own animation when one of its rules sets it: the declaration
-    // is then another one than the state below (the same rule gives the same value)
-    const writes = (above: Styles, below: Styles) =>
-      ["animation", ...ANIMATION_LONGHANDS].some((property) => above[property] !== below[property]);
+    const states = hoverStates(instance, styles);
     return {
     ...instance,
     styles,
@@ -877,20 +920,9 @@ export function resolveStyles(
       FACES.map((face) => [face, names(instance).includes(face) ? cascade(instance, names(instance).indexOf(face) + 1) : cascade(instance, face)]),
     ) as Record<Face, Styles>,
     faceList: names(instance).map((_, n) => cascade(instance, n + 1)),
-    hoverTriggers: [
-      ...new Set(
-        sortedRules
-          .filter(
-            ({ selector }) =>
-              needsHover(selector) &&
-              !needsActive(selector) && // cube:hover:active waits for the press
-              matches(selector, instance, instances),
-          )
-          .flatMap(({ rule, selector }) => drawn(rule, triggersOf(selector, instance, instances)))
-          .map((other) => other.index),
-      ),
-    ].sort((a, b) => a - b),
+    hoverTriggers: [...new Set(states.flatMap((state) => state.triggers))].sort((a, b) => a - b),
     hoverStyles,
+    hoverStates: states,
     activeTriggers: [
       ...new Set(
         sortedRules
@@ -905,7 +937,7 @@ export function resolveStyles(
       ),
     ].sort((a, b) => a - b),
     activeStyles,
-    starts: { hover: writes(hoverStyles, styles), active: writes(activeStyles, hoverStyles) },
+    starts: { active: writes(activeStyles, hoverStyles) },
     };
   });
 }
