@@ -12,7 +12,9 @@ import { objectBox, readOrigin, type Box } from "./origin";
 // map() runs about 150 times per pixel (the march, the normal, the reflection):
 // such a value is computed once, in animate() at the start of main(), and map()
 // reads it from a global. Same arithmetic, moved: the image does not change.
-export type Hoisted = { names: Map<string, string>; values: { type: string; name: string; expr: string }[] };
+// atRest: a view for the places of hover-distance() (decision 215): a value that measures from
+// the pointer is written in place, the others are shared with map()
+export type Hoisted = { names: Map<string, string>; values: { type: string; name: string; expr: string }[]; atRest?: boolean };
 
 export function createHoisted(): Hoisted {
   return { names: new Map(), values: [] };
@@ -21,7 +23,8 @@ export function createHoisted(): Hoisted {
 // The expression as it is when it is constant; otherwise the name of its global
 // (two objects with the same animation share it)
 export function hoist(hoisted: Hoisted | undefined, type: "float" | "vec3" | "vec4" | "mat2", expr: string): string {
-  if (!hoisted || !/\b(iTime|uHover|uTimeline|uProperties|hoverDistance|hoverDirection)\b/.test(expr)) return expr;
+  if (!hoisted || !/\b(iTime|uHover|uTimeline|uProperties|hoverDist\d+|hoverDir\d+)\b/.test(expr)) return expr;
+  if (hoisted.atRest && MEASURES.test(expr)) return expr;
   const key = `${type} ${expr}`;
   let name = hoisted.names.get(key);
   if (!name) {
@@ -37,6 +40,9 @@ export function hoist(hoisted: Hoisted | undefined, type: "float" | "vec3" | "ve
 // @scene, decision 110).
 export function animateCode(hoisted: Hoisted, functions = ""): string {
   if (hoisted.values.length === 0) return "";
+  // what does not measure from the pointer first: the places of hover-distance() read it
+  // (decision 215); a scene without it keeps its order
+  const order = [...hoisted.values.filter((v) => !MEASURES.test(v.expr) && !POINTED.test(v.expr)), ...hoisted.values.filter((v) => MEASURES.test(v.expr) || POINTED.test(v.expr))];
   return [
     "// Animations and :hover: they depend on the time, not on the point, so",
     "// animate() computes them once per pixel, and map() reads them",
@@ -44,7 +50,7 @@ export function animateCode(hoisted: Hoisted, functions = ""): string {
     "",
     ...(functions ? [functions, ""] : []),
     "void animate() {",
-    ...hoisted.values.map(({ name, expr }) => `  ${name} = ${expr};`),
+    ...order.map(({ name, expr }) => `  ${name} = ${expr};`),
     "}",
   ].join("\n");
 }
@@ -148,16 +154,28 @@ export function spaceFunction(
   ].join("\n");
 }
 
-// hover-distance(), hover-direction() (decision 215): does a value of the scene measure from
-// the object under the pointer?
-const POINTER = /\bhoverD(istance|irection)\(/;
-export function readsPointer(instances: StyledInstance[]): boolean {
-  return instances.some((instance) =>
-    [instance.styles, instance.hoverStyles, instance.activeStyles, ...instance.hoverStates.map((state) => state.styles), ...instance.groupStyles].some(
-      (styles) => Object.values(styles).some((value) => value.some((token) => token.type === "EXPR" && POINTER.test(token.code))),
+// hover-distance(), hover-direction() (decision 215): the objects that measure from the object
+// under the pointer, by their number: hoverDist3, hoverDir3 in a value. In the styles, or in
+// the frames of an animation, which read it through the variables of the object that plays them
+const POINTER = /\bhoverDi(?:st|r)(\d+)\b/g;
+const MEASURES = /\bhoverDi(?:st|r)\d+\b/;
+const POINTED = /\b(hoverAt|hoverDistance|hoverDirection)\(/;
+export function pointerReaders(instances: StyledInstance[], keyframes: Keyframes[] = []): Set<number> {
+  const values = [
+    ...instances.flatMap((instance) =>
+      [instance.styles, instance.hoverStyles, instance.activeStyles, ...instance.hoverStates.map((state) => state.styles), ...instance.groupStyles].flatMap(
+        (styles) => Object.values(styles),
+      ),
     ),
-  );
+    ...keyframes.flatMap((animation) => animation.frames.flatMap((frame) => frame.declarations.map((d) => d.value))),
+  ];
+  const found = new Set<number>();
+  for (const value of values)
+    for (const token of value)
+      if (token.type === "EXPR") for (const [, index] of token.code.matchAll(POINTER)) found.add(Number(index));
+  return found;
 }
+export const readsPointer = (instances: StyledInstance[], keyframes: Keyframes[] = []) => pointerReaders(instances, keyframes).size > 0;
 
 // Where each object is with nothing under the pointer: its moves and its groups', from
 // the inside out, with what measures from the pointer left out (far away, no direction);
@@ -166,16 +184,17 @@ export function pointerCode(
   instances: StyledInstance[],
   keyframes: Keyframes[],
   hoverOf: (instance: StyledInstance) => Hover | undefined,
+  hoisted: Hoisted,
 ): string {
-  const atRest = (line: string) =>
-    line.replace(/hoverDistance\(restCenter\d+\(\)\)/g, "1000000.0").replace(/hoverDirection\(restCenter\d+\(\)\)/g, "vec3(0.0)");
+  const shared: Hoisted = { ...hoisted, atRest: true }; // the same names and values
+  const atRest = (line: string) => line.replace(/\bhoverDist\d+\b/g, "1000000.0").replace(/\bhoverDir\d+\b/g, "vec3(0.0)");
   const centers = instances.map((instance) =>
     [
       `vec3 restCenter${instance.index}() {  // ${label(instance)}`,
       "  vec3 v = vec3(0.0);",
       ...[
-        ...forwardLines(instance.styles, keyframes, hoverOf(instance), undefined, () => objectBox(instance)),
-        ...instance.groupStyles.map((group, g) => forwardLines(group, keyframes, groupHover(instance, g))).reverse().flat(),
+        ...forwardLines(instance.styles, keyframes, hoverOf(instance), shared, () => objectBox(instance)),
+        ...instance.groupStyles.map((group, g) => forwardLines(group, keyframes, groupHover(instance, g), shared)).reverse().flat(),
       ].map(atRest),
       "  return v;",
       "}",

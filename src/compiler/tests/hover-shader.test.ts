@@ -229,14 +229,15 @@ describe("hover-distance() and hover-direction()", () => {
     expect(compiled.shader).toContain("uniform float uHovered;");
     expect(compiled.shader).toContain("hoverPoint = hoverAt();");
     expect(compiled.shader).toContain("if (uHovered == 2.0) return restCenter2();");
-    expect(compiled.shader).toContain("hoverDirection(restCenter1()).x");
+    expect(compiled.shader).toContain("hoverDir1 = hoverDirection(restCenter1());");
+    expect(compiled.shader).toContain("hoverDir1.x");
     // at rest, an object is where nothing under the pointer would put it
     expect(compiled.shader).toMatch(/vec3 restCenter1\(\) \{[^}]*vec3\(0\.0\)\.x[^}]*1000000\.0/);
   });
 
   it("go anywhere the math goes on the GPU, like a color", () => {
     const shader = compileGSS(`@scene { sphere * 2; } sphere { color: color-mix(in oklab, red, blue calc(100% * exp(-1 * hover-distance()))); }`);
-    expect(shader).toContain("hoverDistance(restCenter2())");
+    expect(shader).toContain("hoverDist2 = hoverDistance(restCenter2());");
   });
 
   it("measure from an object, not a group or the scene", () => {
@@ -246,6 +247,16 @@ describe("hover-distance() and hover-direction()", () => {
     expect(() => compileScene(`@scene { cube; } cube { translate: calc(hover-direction(w)) 0 0; }`)).toThrow(
       "hover-direction() takes an axis, like: hover-direction(x)",
     );
+  });
+
+  it("go in the frames of an animation too, through the variables of the object", () => {
+    const compiled = compileScene(`
+      @scene { sphere.p * 2; }
+      .p { --push: calc(hover-direction(x) * 0.3); --a: calc(sibling-index() + var(--push)) 0 0; animation: go 2s infinite; }
+      @keyframes go { from { translate: var(--a); } to { translate: 0 1 0; } }
+    `);
+    expect(compiled.pointer).toBe(true);
+    expect(compiled.shader).toContain("vec3 restCenter1() {");
   });
 
   it("leave a scene that does not use them as it was", () => {

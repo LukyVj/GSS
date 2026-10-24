@@ -409,7 +409,7 @@ function compileStylesheet(
     ...(timelines!.length > 0 ? { timelines } : {}),
     transitions: transitions!,
     ...(triggers!.length > 0 ? { triggers } : {}),
-    ...(readsPointer(styled) ? { pointer: true as const } : {}),
+    ...(readsPointer(styled, copies) ? { pointer: true as const } : {}),
   };
 }
 
