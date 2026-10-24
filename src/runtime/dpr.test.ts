@@ -244,3 +244,74 @@ describe("createDensity: a scene starts light, and stops when too heavy (decisio
     expect(heavy).toBe(true);
   });
 });
+
+describe("createDensity: a GPU too slow for the scene, for @gpu (slow) (decision 212)", () => {
+  it("is not slow while the frames keep up", () => {
+    const density = createDensity("auto");
+    draw(density, 2, 60, 0, 10000);
+    expect(density.slow).toBe(false);
+  });
+
+  it("is not slow when a ratio of 1 or more keeps up: auto only draws lighter", () => {
+    const density = createDensity("auto");
+    draw(density, 2, (ratio) => (ratio > 1.25 ? 30 : 60), 0, 10000);
+    expect(density.slow).toBe(false);
+  });
+
+  it("with a lighter version to show, never draws under 1, and is slow after a second there", () => {
+    const fps = (ratio: number) => (ratio >= 1 ? 30 : 60);
+    const density = createDensity("auto");
+    density.floor(1);
+    const seen: number[] = [];
+    draw(density, 2, fps, 0, 900, seen);
+    expect(density.slow).toBe(false);
+    draw(density, 2, fps, 900, 3000, seen);
+    expect(density.slow).toBe(true);
+    expect(Math.min(...seen)).toBe(1);
+    // Without one, auto draws under 1, and keeps up there
+    const blurred = createDensity("auto");
+    draw(blurred, 2, fps, 0, 10000);
+    expect(blurred.slow).toBe(false);
+  });
+
+  it("a floor of 1 is the scene's ratio when the scene asks for less", () => {
+    const density = createDensity("auto");
+    density.floor(1);
+    expect(density.ratio(0.5, 2)).toBe(0.5);
+    draw(density, 0.5, 20, 0, 3000);
+    expect(density.slow).toBe(true);
+  });
+
+  it("is slow on a GPU that is slow even at the lowest ratio", () => {
+    const density = createDensity("auto");
+    draw(density, 2, 20, 0, 3000);
+    expect(density.slow).toBe(true);
+  });
+
+  it("is not slow for one slow moment, a page busy elsewhere", () => {
+    const density = warmed();
+    density.ratio(2, 2);
+    density.frame(2000);
+    density.frame(2600); // one frame of 0.6 s
+    draw(density, 2, 60, 2600, 10000);
+    expect(density.slow).toBe(false);
+  });
+
+  it("measures a fixed ratio too: slow when it would need to be under 1", () => {
+    const density = createDensity(1);
+    draw(density, 2, 30, 0, 3000);
+    expect(density.slow).toBe(true);
+    const sharp = createDensity(2);
+    draw(sharp, 2, 30, 0, 3000); // 1.5 would keep up
+    expect(sharp.slow).toBe(false);
+  });
+
+  it("stays slow, through fast frames, a new scene and a new choice", () => {
+    const density = createDensity("auto");
+    draw(density, 2, 20, 0, 3000);
+    density.restart(3000);
+    density.choose("auto");
+    draw(density, 2, 60, 3000, 10000);
+    expect(density.slow).toBe(true);
+  });
+});

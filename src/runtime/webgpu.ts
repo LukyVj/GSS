@@ -1,13 +1,14 @@
 import type { CompiledScene } from "../compiler";
 import type { AsyncView, BackendOptions } from "./backend";
 import { createClock } from "./clock";
-import { pixelRatio } from "./dpr";
+import { FLOOR, pixelRatio } from "./dpr";
 import { createDprPicker, viewDensity } from "./dpr-picker";
 import { pickPixel, pointerValues, createPress, decodeId, cursorAt, controlsAllow } from "./hover";
 import { createTransitions } from "./transitions";
 import { createTriggers } from "./triggers";
 import { createScrollSlider, timelineValues, timelineVectors } from "./timeline";
 import { pickVariant, WINDOW_MEDIA } from "./media";
+import { createGpu, usesGpu, withGpu } from "./gpu";
 import { elementId, paintName, resolveImage } from "./textures";
 import { drawText, textOf, whenFontArrives } from "./text";
 import { createProperties } from "./properties";
@@ -57,12 +58,16 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
   let scene: Scene | null = null;
   let root: CompiledScene | null = null;
   let stopMedia = () => {};
-  const media = options.viewport?.(canvas) ?? WINDOW_MEDIA; // decision 165
   let hovered = 0;
   const press = createPress(); // :active (decision 95)
   const slider = options.scrollSlider ? createScrollSlider(canvas) : null; // decision 96
   const density = viewDensity(options); // decisions 120 and 142
-  const dprMenu = density && options.dprPicker ? createDprPicker(canvas, density) : null; // docs and playground only
+  // @gpu (decision 212): the frames say when the GPU is slow, and it stays so
+  const gpu = createGpu(options.gpu);
+  const media = withGpu(options.viewport?.(canvas) ?? WINDOW_MEDIA, gpu); // decision 165
+  const dprMenu = density && options.dprPicker ? createDprPicker(canvas, density, undefined, gpu) : null; // docs and playground only
+  let lighter = false; // the scene has a version for a slow GPU: auto never draws it under 1
+  const holdDpr = () => density?.floor(lighter && !gpu.slow ? 1 : FLOOR);
   let reducedMotion = false;
   const properties = createProperties(); // @property: what the page set (decision 105)
   let transitions = createTransitions([]);
@@ -267,10 +272,14 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
     else clock.resume(now);
     if (settings && !camera.dragging) camera.yaw -= dt * settings.spin;
     const drawn = resize(); // not inside dprMenu?.(): it must run without the menu too
-    dprMenu?.update(drawn);
+    dprMenu?.update(drawn, lighter);
     if (scene) {
       // Too heavy for the computer: stop, and say so (decision 142)
-      if (!document.hidden && density?.frame(now)) {
+      const heavy = !document.hidden && density?.frame(now);
+      // @gpu (slow): the lighter version, before the notice (decision 212)
+      if (lighter && !gpu.slow && (heavy || density?.slow)) {
+        queueMicrotask(() => gpu.slowDown()); // after this frame
+      } else if (heavy) {
         playing = false;
         halted = true;
         canvas.dispatchEvent(new CustomEvent("gss-too-heavy"));
@@ -359,11 +368,14 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
       if (destroyed) throw new Error("This GSS view has been destroyed");
       const previous = root;
       root = compiled;
+      lighter = usesGpu(compiled);
+      holdDpr();
       try { await display(pickVariant(compiled, media.matches), true); }
       catch (error) { if (root === compiled) root = previous; throw error; }
       if (destroyed || root !== compiled) return;
       stopMedia();
       stopMedia = compiled.media ? media.watch(compiled.media.queries, () => {
+        holdDpr();
         const variant = pickVariant(compiled, media.matches);
         if (variant === scene?.compiled) return;
         void display(variant, false).catch(error => canvas.dispatchEvent(new CustomEvent("gss-error", { detail: error })));

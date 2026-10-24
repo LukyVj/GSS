@@ -54,6 +54,16 @@ describe("debugRows", () => {
   });
 });
 
+describe("debugRows with @gpu", () => {
+  it("says the scene has a lighter version, apart from its @media queries", () => {
+    const rows = (code: string) => Object.fromEntries(debugRows(compileScene(code), "webgl").map((row) => [row.label, row.value]));
+    const gpu = "@scene { cube; } @gpu (slow) { cube { color: green; } }";
+    expect(rows(gpu)).toMatchObject({ gpu: "lighter version" });
+    expect(rows(gpu).media).toBeUndefined();
+    expect(rows(gpu + " @media (max-width: 600px) { cube { color: red; } }")).toMatchObject({ gpu: "lighter version", media: "1 query" });
+  });
+});
+
 describe("cameraRows", () => {
   it("writes where the camera is as the GSS that puts it there", () => {
     expect(cameraRows({ yaw: Math.PI / 4, pitch: 0.4, distance: 8 })).toEqual([

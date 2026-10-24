@@ -106,7 +106,8 @@ export type CompiledScene = {
   triggers?: Trigger[];
 };
 
-// The most @media queries a scene can use: 2^4 = 16 versions of it are compiled
+// The most @media queries (and @gpu conditions, decision 212) a scene can use: 2^4 = 16
+// versions of it are compiled
 const MAX_QUERIES = 4;
 
 // GSS text → shader + camera settings, and a version per combination of @media
@@ -158,7 +159,7 @@ function compileSource(source: string, options: CompileOptions): CompiledScene {
     )!;
     throw errorAt(
       extra.selector,
-      `A scene takes at most ${MAX_QUERIES} different @media queries (here: ${queries.length}): GSS prepares a version of the scene for every combination`,
+      `A scene takes at most ${MAX_QUERIES} different @media queries and @gpu conditions (here: ${queries.length}): GSS prepares a version of the scene for every combination`,
     );
   }
   // Like CSS, a rule inside a matching @media joins the cascade where it is written

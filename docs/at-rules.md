@@ -23,7 +23,7 @@ Shows the axes, their letters and a grid at the origin over the render, in the p
 
 x in red, y in green, z in blue, each with its letter, one unit apart on the grid, fainter behind the objects. A page that embeds the scene shows neither the panel nor the axes.
 
-The grid lies on the plane where the floor is, out to 10 units from the origin; its lines are light on a dark scene and dark on a light one. The panel gives the backend that draws the scene (WebGL2 or WebGPU), the camera as the `camera-angle` and `camera-distance` that put it where the mouse left it, ready to copy into the code, the objects, the point lights, the images used out of the 16 a scene can take, the variables, the states of `:hover` and `:active`, the scroll timelines, the passes of `filter`, the `@media` queries and the lines of the shader. With `view: steps`, it reads the render back: the mean and the max of the steps per pixel, and the share of pixels at 150 and over. In the playground, it adds the frames per second, the time of a frame on the GPU and on the CPU, the size of the render in pixels and the time the shader took to build, like the performance panel; while it is open, the scene draws every frame, so that the numbers measure it.
+The grid lies on the plane where the floor is, out to 10 units from the origin; its lines are light on a dark scene and dark on a light one. The panel gives the backend that draws the scene (WebGL2 or WebGPU), the camera as the `camera-angle` and `camera-distance` that put it where the mouse left it, ready to copy into the code, the objects, the point lights, the images used out of the 16 a scene can take, the variables, the states of `:hover` and `:active`, the scroll timelines, the passes of `filter`, the `@media` queries, the lighter version of `@gpu` and the lines of the shader. With `view: steps`, it reads the render back: the mean and the max of the steps per pixel, and the share of pixels at 150 and over. In the playground, it adds the frames per second, the time of a frame on the GPU and on the CPU, the size of the render in pixels and the time the shader took to build, like the performance panel; while it is open, the scene draws every frame, so that the numbers measure it.
 
 ### the axes and the grid
 
@@ -74,6 +74,88 @@ torus {
   translate: 0 1 0;
   rotate-x: 90deg;
   color: #ff5a36;
+}
+```
+
+<a name="at-gpu"></a>
+
+## `@gpu`
+
+Applies rules only when the computer cannot draw the scene fast enough, for a lighter version of it: fewer objects, simpler effects, a smaller value for a variable. CSS has no such rule; GSS writes it like `@media`, and the scene changes the same way.
+
+**How it goes, from where it is written to what the scene shows:** `keeps up`, `slow frames`
+
+- **Syntax:** `@gpu [not] (slow) { <rule> … }`
+- **See also:** [@media](#at-media), [dpr](rendering.md#dpr)
+
+### Conditions
+
+- **(slow):** The frames stay slow even at a pixel density of 1, or the browser draws without a graphics card.
+- **not (slow):** The computer keeps up: rules for the full version only.
+
+The scene starts in its full version, never drawn under a `dpr` of 1. When the frames stay slow for a second, the lighter version takes its place until the page is closed. Without a graphics card, it starts lighter.
+
+No browser says how busy the graphics card is, so GSS watches its own frames: whatever slows them down, a weak card, another program, heat or a battery saver, the scene follows. The lighter version is ready in advance, like the versions of `@media`: the switch takes a frame or two, and the camera stays where it is. `@gpu` holds rules only, and counts among the 4 conditions of a scene with the `@media` queries; it cannot hold a `@media` or sit in one, for now. On a page, `<gss-scene gpu="slow">` and `mount(canvas, scene, { gpu: "slow" })` show the lighter version from the start. In the playground and in Try it, the gpu menu over the render switches between the two versions.
+
+### fewer objects
+
+On a slow computer, 8 spheres instead of 16, smaller and orange. Pick slow in the gpu menu over the render to see it.
+
+```css
+@scene {
+  sphere * 16;
+}
+
+scene {
+  --r: 0.3;
+  camera-distance: 7;
+}
+
+sphere {
+  radius: var(--r);
+  translate: calc(sibling-index() * 0.7 - 6) 0.5 0;
+  color: #3a7bff;
+}
+
+@gpu (slow) {
+  scene {
+    --r: 0.2;
+  }
+  sphere {
+    color: #ff5a36;
+  }
+  sphere:nth-child(n + 9) {
+    display: none;
+  }
+}
+```
+
+### simpler effects
+
+Soft shadows and glass when the computer keeps up; hard shadows and a plain color on a slow one.
+
+```css
+@scene {
+  sphere * 3;
+}
+
+scene {
+  shadows: hard;
+}
+
+sphere {
+  radius: 0.5;
+  translate: calc(sibling-index() * 1.2 - 2.4) 0.5 0;
+  color: #3a7bff;
+}
+
+@gpu not (slow) {
+  scene {
+    shadows: soft;
+  }
+  sphere {
+    material: glass(1.5, blurred 0.3);
+  }
 }
 ```
 

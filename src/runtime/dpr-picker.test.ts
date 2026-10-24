@@ -2,6 +2,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { createDensity } from "./dpr";
 import { createDprPicker, savedDpr } from "./dpr-picker";
+import { createGpu } from "./gpu";
 
 // The dpr picker over the docs' and the playground's renders (decision 120)
 
@@ -58,5 +59,52 @@ describe("the dpr picker", () => {
     const { box, ui } = picker(2);
     ui.destroy();
     expect(box.querySelector(".gss-dpr")).toBeNull();
+  });
+});
+
+// @gpu (slow) (decision 212): a second menu, next to the dpr, for a scene with a lighter version
+describe("the gpu menu", () => {
+  function withGpu() {
+    const box = document.createElement("div");
+    const canvas = document.createElement("canvas");
+    box.append(canvas);
+    const gpu = createGpu("auto", () => false);
+    const ui = createDprPicker(canvas, createDensity("auto"), 2, gpu);
+    const menu = () => box.querySelector<HTMLElement>(".gss-gpu")!;
+    return { box, gpu, ui, menu };
+  }
+
+  it("shows only for a scene with a lighter version", () => {
+    const { ui, menu } = withGpu();
+    ui.update(1);
+    expect(menu().hidden).toBe(true);
+    ui.update(1, true);
+    expect(menu().hidden).toBe(false);
+    expect(options(menu())).toEqual(["auto", "slow"]);
+  });
+
+  it("forces the lighter version, and gives it back to the frames", () => {
+    const { gpu, menu } = withGpu();
+    const select = menu().querySelector("select")!;
+    select.value = "slow";
+    select.dispatchEvent(new Event("change"));
+    expect(gpu.slow).toBe(true);
+    select.value = "auto";
+    select.dispatchEvent(new Event("change"));
+    expect(gpu.slow).toBe(false);
+  });
+
+  it("says when auto found the GPU slow", () => {
+    const { gpu, ui, menu } = withGpu();
+    gpu.slowDown();
+    ui.update(1, true);
+    expect(options(menu())[0]).toBe("auto · slow");
+  });
+
+  it("is not there without a GPU state, and leaves with the render", () => {
+    expect(picker(2).box.querySelector(".gss-gpu")).toBeNull();
+    const { box, ui } = withGpu();
+    ui.destroy();
+    expect(box.querySelector(".gss-gpu")).toBeNull();
   });
 });

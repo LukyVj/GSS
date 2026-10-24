@@ -140,6 +140,7 @@ INSTALLATION.push(
         ["poster", '<code>poster="cover.jpg"</code> shows an image until the scene draws, like the poster of a <code>&lt;video&gt;</code>.'],
         ["No graphics card", "<code>&lt;gss-scene&gt;</code> shows its poster and a button, and draws the scene only when the reader asks. With <code>mount()</code>, <code>softwareRendering()</code>, from <code>gss-lang</code> or <code>gss-lang/runtime</code>, returns <code>true</code> on such a computer, to do the same."],
         ["A weak graphics card", "The scene starts at a density of 0.5, then climbs to its <code>dpr</code> while the frames keep up."],
+        ["A lighter version", 'A scene with <a href="#at-gpu"><code>@gpu (slow)</code></a> is never drawn under a density of 1: when its frames stay slow, it switches to its lighter version. <code>&lt;gss-scene gpu="slow"&gt;</code> and <code>mount(canvas, scene, { gpu: "slow" })</code> show that version from the start.'],
         ["Still too slow", "The scene stops: <code>&lt;gss-scene&gt;</code> shows a button that draws it anyway, and <code>mount()</code> fires a <code>gss-too-heavy</code> event on the canvas, where <code>scene.play()</code> draws it anyway."],
         ["adaptDpr: false", "<code>mount(canvas, scene, { adaptDpr: false })</code> keeps the <code>dpr</code> as written and never stops, for a capture or a benchmark."],
       ]),
