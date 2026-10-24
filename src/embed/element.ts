@@ -154,7 +154,7 @@ export class GssSceneElement extends HTMLElement {
       const options = {
         base,
         controls: readControls(this.getAttribute("controls")),
-        gpu: readGpu(this.getAttribute("gpu")), // decision 211
+        gpu: readGpu(this.getAttribute("gpu")), // decision 212
       };
       const backend = this.getAttribute("backend");
       if (backend !== null && !["auto", "webgl", "webgpu"].includes(backend))

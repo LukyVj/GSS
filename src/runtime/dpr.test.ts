@@ -245,7 +245,7 @@ describe("createDensity: a scene starts light, and stops when too heavy (decisio
   });
 });
 
-describe("createDensity: a GPU too slow for the scene, for @gpu (slow) (decision 211)", () => {
+describe("createDensity: a GPU too slow for the scene, for @gpu (slow) (decision 212)", () => {
   it("is not slow while the frames keep up", () => {
     const density = createDensity("auto");
     draw(density, 2, 60, 0, 10000);

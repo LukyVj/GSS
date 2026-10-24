@@ -50,7 +50,7 @@ export type Rule = {
   media?: string;
 };
 
-// @gpu (decision 211): its conditions sit among the @media queries of a scene
+// @gpu (decision 212): its conditions sit among the @media queries of a scene
 export const GPU_EXAMPLE = "@gpu (slow) { scene { --n: 8; } }";
 export const isGpuCondition = (query: string): boolean => query.startsWith("@gpu ");
 

@@ -1,4 +1,4 @@
-// @gpu (slow) at run time (decision 211). The compiler keeps the conditions of @gpu among
+// @gpu (slow) at run time (decision 212). The compiler keeps the conditions of @gpu among
 // the @media queries of a scene, so a version of the scene is ready for a slow GPU; GSS
 // answers them instead of the browser. The GPU is slow when the frames stay slow at the
 // lowest ratio (dpr.ts), when the browser draws without a GPU (software.ts), or when the

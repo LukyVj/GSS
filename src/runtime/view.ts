@@ -73,7 +73,7 @@ export type ViewOptions = {
   // the docs, where the reader sizes the render, not the window. A function, so a page
   // that does not use it never downloads it.
   viewport?: (canvas: HTMLCanvasElement) => MediaViewport;
-  // @gpu (slow) (decision 211): "slow" shows the version of the scene for a slow GPU from the
+  // @gpu (slow) (decision 212): "slow" shows the version of the scene for a slow GPU from the
   // start, whatever the frames say; "auto" (default) waits for slow frames
   gpu?: GpuChoice;
 };
@@ -137,7 +137,7 @@ export function createView(
   const press = createPress(); // :active: the object pressed, until the button goes up
   const slider = options.scrollSlider ? createScrollSlider(canvas) : null;
   const density = viewDensity(options); // decisions 120 and 142
-  // @gpu (decision 211): the frames say when the GPU is slow, and it stays so
+  // @gpu (decision 212): the frames say when the GPU is slow, and it stays so
   const gpu = createGpu(options.gpu);
   const dprMenu = density && options.dprPicker ? createDprPicker(canvas, density, undefined, gpu) : null; // docs and playground only
   let dpr: Dpr = "auto"; // the pixel density the scene asks for (scene { dpr })
@@ -396,7 +396,7 @@ export function createView(
     if (scene) {
       // Too heavy for the computer: stop, and say so (decision 142)
       const heavy = !document.hidden && density?.frame(now);
-      // @gpu (slow): the lighter version, before the notice (decision 211)
+      // @gpu (slow): the lighter version, before the notice (decision 212)
       if (lighter && !gpu.slow && (heavy || density?.slow)) {
         queueMicrotask(() => gpu.slowDown()); // after this frame
       } else if (heavy) {

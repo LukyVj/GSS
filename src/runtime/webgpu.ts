@@ -62,7 +62,7 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
   const press = createPress(); // :active (decision 95)
   const slider = options.scrollSlider ? createScrollSlider(canvas) : null; // decision 96
   const density = viewDensity(options); // decisions 120 and 142
-  // @gpu (decision 211): the frames say when the GPU is slow, and it stays so
+  // @gpu (decision 212): the frames say when the GPU is slow, and it stays so
   const gpu = createGpu(options.gpu);
   const media = withGpu(options.viewport?.(canvas) ?? WINDOW_MEDIA, gpu); // decision 165
   const dprMenu = density && options.dprPicker ? createDprPicker(canvas, density, undefined, gpu) : null; // docs and playground only
@@ -276,7 +276,7 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
     if (scene) {
       // Too heavy for the computer: stop, and say so (decision 142)
       const heavy = !document.hidden && density?.frame(now);
-      // @gpu (slow): the lighter version, before the notice (decision 211)
+      // @gpu (slow): the lighter version, before the notice (decision 212)
       if (lighter && !gpu.slow && (heavy || density?.slow)) {
         queueMicrotask(() => gpu.slowDown()); // after this frame
       } else if (heavy) {

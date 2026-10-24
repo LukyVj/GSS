@@ -446,7 +446,7 @@ export function parse(input: Token[], errors?: ErrorSink): Stylesheet {
     return textOf(prelude);
   }
 
-  // The condition of a @gpu, as the runtime reads it (decision 211): "@gpu (slow)" or
+  // The condition of a @gpu, as the runtime reads it (decision 212): "@gpu (slow)" or
   // "@gpu not (slow)", kept with the @media queries of the scene
   function readGpuCondition(at: Token): string {
     const prelude: Token[] = [];

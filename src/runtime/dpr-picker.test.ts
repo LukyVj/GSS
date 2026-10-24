@@ -62,7 +62,7 @@ describe("the dpr picker", () => {
   });
 });
 
-// @gpu (slow) (decision 211): a second menu, next to the dpr, for a scene with a lighter version
+// @gpu (slow) (decision 212): a second menu, next to the dpr, for a scene with a lighter version
 describe("the gpu menu", () => {
   function withGpu() {
     const box = document.createElement("div");

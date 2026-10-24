@@ -19,7 +19,7 @@ export function pixelRatio(dpr: Dpr, screen: number): number {
 // the scene too heavy: frame() says so, and the view stops, until the reader asks to draw
 // anyway (insist()). The first frame after a new scene is not measured: it may wait for the
 // compile of its shader, which is not the GPU drawing.
-// @gpu (slow) (decision 211): a scene with a lighter version asks for a floor of 1, so auto
+// @gpu (slow) (decision 212): a scene with a lighter version asks for a floor of 1, so auto
 // never draws it under 1; more than a second of slow frames at the lowest ratio (with a ratio
 // chosen in the menu, frames that would need one under 1) makes the GPU slow, for good: the
 // view then shows the lighter version.

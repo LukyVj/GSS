@@ -4,7 +4,7 @@ import type { Gpu, GpuChoice } from "./gpu";
 // The dpr picker of the docs and the playground (decision 120): a small menu at the top
 // right of the render, a signal outline (styles/site.css, .gss-dpr). "auto" shows the
 // ratio it draws at. The choice holds for the whole site, in this browser.
-// @gpu (slow) (decision 211): for a scene with a lighter version, a gpu menu next to it shows
+// @gpu (slow) (decision 212): for a scene with a lighter version, a gpu menu next to it shows
 // that version on demand ("slow"), or leaves it to the frames ("auto"). It holds for the render.
 
 const KEY = "gss-dpr";

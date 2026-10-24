@@ -12,7 +12,7 @@ export function sourceUrl(src: string, page: string): string {
   return new URL(src, page).href;
 }
 
-// gpu (decision 211): "auto" by default, the frames say when the GPU is slow; "slow" shows
+// gpu (decision 212): "auto" by default, the frames say when the GPU is slow; "slow" shows
 // the version of the scene for a slow GPU, @gpu (slow), from the start
 export function readGpu(value: string | null): "auto" | "slow" {
   const choice = (value ?? "auto").trim().toLowerCase();

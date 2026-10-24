@@ -37,7 +37,7 @@ export function debugRows(scene: Scene, backend: Backend = "webgl"): Row[] {
   const hover = scene.hover.length;
   const active = scene.active?.length ?? 0;
   const passes = scene.passes?.length ?? 0;
-  // @gpu (decision 211): its conditions sit among the @media queries
+  // @gpu (decision 212): its conditions sit among the @media queries
   const conditions = scene.media?.queries ?? [];
   const lighter = conditions.some((query) => query.startsWith("@gpu "));
   const queries = conditions.filter((query) => !query.startsWith("@gpu ")).length;

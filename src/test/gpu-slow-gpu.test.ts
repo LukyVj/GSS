@@ -3,7 +3,7 @@ import { createServer, type ViteDevServer } from "vite";
 import { chromium, type Browser, type Page } from "playwright";
 import { compileScene } from "../compiler";
 
-// @gpu (slow) in the render (decision 211), in a real Chromium. SwiftShader draws WebGL on
+// @gpu (slow) in the render (decision 212), in a real Chromium. SwiftShader draws WebGL on
 // the CPU, which GSS reads as a machine without a GPU, slow from the start. The page /__gpu
 // hides it, so GSS sees a GPU and waits for the frames: on a large canvas, a heavy scene takes
 // about 400 ms a frame there, like a weak GPU on a big screen.

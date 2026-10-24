@@ -3,7 +3,7 @@ import { createGpu, usesGpu, withGpu } from "./gpu";
 import type { MediaViewport } from "./media";
 import type { CompiledScene } from "../compiler";
 
-// @gpu (slow) at run time (decision 211): GSS answers its conditions, the browser the
+// @gpu (slow) at run time (decision 212): GSS answers its conditions, the browser the
 // @media queries beside them
 
 const screen = (matching: string[]) => {

@@ -106,7 +106,7 @@ export type CompiledScene = {
   triggers?: Trigger[];
 };
 
-// The most @media queries (and @gpu conditions, decision 211) a scene can use: 2^4 = 16
+// The most @media queries (and @gpu conditions, decision 212) a scene can use: 2^4 = 16
 // versions of it are compiled
 const MAX_QUERIES = 4;
 
