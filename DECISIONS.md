@@ -1651,7 +1651,7 @@ The compiler of the package grew past its budget: `mount` goes from 97,000 to 98
 
 **Decision** (Lucas, Oct. 23: "on génère un blob, qui change de forme à chaque section… comme une nuée de points… et qui utilise la fonction scroll() de gss"): on wide screens, the right of the changelog page holds a GSS scene, sticky: 64 glowing spheres that take one shape per version (a sphere, a torus, a double helix, a cube of points, a disk of seeds, waves, a narrowing spiral, a seed) and change shape as the page scrolls, with `animation-timeline: scroll(root)`. The GSS is written in `changelog.html` itself, in a `<gss-scene>` (Lucas: "je voulais que dans le changelog.html, on écrive le GSS, pas qu'on le fasse en JS"): each shape is a variable of three values (`--sphere`, `--torus`…), and `@keyframes morph` holds each over the middle of the part of the scroll where its version is. Below 1024px the scene is not shown.
 **Why**: the changelog, one line per change, leaves the right of the page empty; a scene driven by the scroll shows GSS where the page talks about it.
-**Accepted limits**: the percentages of `@keyframes morph` are written by hand from the length of each version: a new version means new percentages and a new shape. `filter: bloom()` is left out: with it, the scene stays blank until the first scroll.
+**Accepted limits**: the percentages of `@keyframes morph` are written by hand from the length of each version: a new version means new percentages and a new shape. `filter: bloom()` was left out at first: with it, the scene stayed blank until the first scroll. Not seen again on Oct. 24, it is back: `bloom(0.7, 10px)`.
 
 ## 197. The editor extension colors the GSS of a page
 
