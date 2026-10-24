@@ -7,6 +7,7 @@ export type Stylesheet = {
   keyframes: Keyframes[]; // all the @keyframes blocks
   properties: PropertyRule[]; // the @property rules (decision 105)
   panels: PanelRule[]; // the @property-panel rules (decision 128)
+  debugPanels: PanelRule[]; // the @debug-panel rules (decision 204)
   paints: PaintRule[]; // the @paint rules (decision 151)
 };
 
@@ -18,9 +19,9 @@ export type PaintRule = {
   line?: number; // the line of its "{" in the file, set by the compiler (for the GLSL errors)
 };
 
-// @property-panel { display: open; }
+// @property-panel { display: open; }, @debug-panel { display: open; }
 export type PanelRule = {
-  at: Token; // the @property-panel keyword (for the errors)
+  at: Token; // the @property-panel or @debug-panel keyword (for the errors)
   descriptors: Declaration[];
 };
 

@@ -368,6 +368,7 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
         void display(variant, false).catch(error => canvas.dispatchEvent(new CustomEvent("gss-error", { detail: error })));
       }) : () => {};
     },
+    camera() { return { yaw: camera.yaw, pitch: camera.pitch, distance: camera.dist }; },
     sampleFrames() { const now = performance.now(); const result = { frames, ms: now - sampleStart }; frames = 0; sampleStart = now; return result; },
     pause() { playing = false; cancelAnimationFrame(frameId); },
     play() {

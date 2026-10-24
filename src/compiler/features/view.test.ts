@@ -57,9 +57,9 @@ describe("view", () => {
     expect(compiled.media!.variants[1].shader).toContain("isolines(");
   });
 
-  it("takes shaded or distance only, on the scene only", () => {
+  it("takes shaded, distance or steps only, on the scene only", () => {
     expect(() => compileGSS(`${SPHERE} scene { view: wireframe; }`)).toThrow(
-      "view expects shaded or distance, like: view: distance;",
+      "view expects shaded, distance or steps, like: view: distance;",
     );
     expect(() => compileGSS(`${SPHERE} sphere { view: distance; }`)).toThrow('"view" only applies to the scene');
   });

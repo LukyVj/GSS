@@ -262,7 +262,29 @@ function view(): string {
   const [square, disc] = [boxAt(50, 72, 22), discAt(84, 60, 24)];
   const distance = (x: number, y: number) => Math.min(square(x, y), disc(x, y));
   const rings = [7, 14, 21, 28].map((level, i) => `<g class="ripples" style="--i: ${i}">${path("guide", isolines(distance, level, AREA))}</g>`).join("");
-  return cells("figure-steps", [["view: shaded;", lines(solids, CELL)], ["view: distance;", path("edge", isolines(distance, 0, AREA)) + rings]], CELL);
+  // steps: the rays that graze an object take the most steps, around its edge
+  const steps = path("ghost", isolines(distance, 0, AREA)) + path("tint", isolines(distance, 3, AREA)) + path("guide", isolines(distance, 9, AREA));
+  return cells(
+    "figure-steps",
+    [["view: shaded;", lines(solids, CELL)], ["view: distance;", path("edge", isolines(distance, 0, AREA)) + rings], ["view: steps;", steps]],
+    CELL,
+  );
+}
+
+// @debug-panel: the axes and a grid at the origin, around the scene
+function debugPanel(): string {
+  const scene = lines(together(floor(1.4, 0.35), sphereAt(0.5, 0.4)), SCENE);
+  const axes = (
+    [
+      ["x", [1.6, 0, 0]],
+      ["y", [0, 1.6, 0]],
+      ["z", [0, 0, 1.6]],
+    ] as [string, Vec3][]
+  ).map(([name, end]) => {
+    const [x, y] = place(end, SCENE, REST_VIEW);
+    return path("tint", route(SCENE, [[0, 0, 0], end])) + text(x + 6, y + 4, name);
+  });
+  return stage(SCENE, scene + axes.join("")) + says("@debug-panel { display: open; }");
 }
 
 function operation(): string {
@@ -403,6 +425,7 @@ const SCENES: Record<string, (subject: string) => string> = {
   dpr,
   "shape-rendering": shapeRendering,
   view,
+  "at-debug-panel": debugPanel,
   operation,
   blend,
   opacity,

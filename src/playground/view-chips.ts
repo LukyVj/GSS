@@ -3,12 +3,12 @@ import type { CompiledScene } from "../compiler";
 import type { View } from "../compiler/features/view";
 
 // The chips of the view (decision 131): over the top-left corner of the render, in the
-// playground and in "Try it" of the docs, `view: shaded` and `view: distance` switch the view
+// playground and in "Try it" of the docs, `view: shaded`, `view: distance` and `view: steps` (decision 204) switch the view
 // without touching the code, like the dpr menu replaces the dpr of the scene. The choice holds
 // while the code compiles again with the same view; when the code changes its view, the code
 // wins again. Nothing is kept in the browser: the code says what is seen.
 
-const VIEWS: View[] = ["shaded", "distance"];
+const VIEWS: View[] = ["shaded", "distance", "steps"];
 // Narrower than this, the chips and the dpr menu do not fit on one row: the chips go under it
 const NARROW = 360;
 
@@ -59,10 +59,13 @@ export function mountViewChips(host: HTMLElement, target: ViewTarget, canvas?: H
       const next = compiled.view ?? "shaded";
       if (next !== code) {
         code = next;
-        // There are two views: the choice was the new one of the code, the shader is right
+        // The code wins. The choice was its new view: the shader is right; another view: the
+        // scene compiles again with the view of the code
         if (chosen !== null) {
+          const shown = chosen;
           chosen = null;
           target.setView(null);
+          if (shown !== next) target.refresh();
         }
       }
       show();

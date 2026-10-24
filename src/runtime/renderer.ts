@@ -4,20 +4,24 @@ import { createView, type View, type ViewOptions } from "./view";
 import { createViewAsync, type BackendOptions, type AsyncView } from "./backend";
 
 // setView: the view of the next compiles, over the view of the scene; null gives it back to
-// the code (the chips of the playground and the docs, decision 131)
-type Viewed = { setView(view: SceneView | null): void };
+// the code (the chips of the playground and the docs, decision 131). setDebug: the next compiles
+// draw the axes and the grid of @debug-panel (the playground and the docs, decision 204)
+type Viewed = { setView(view: SceneView | null): void; setDebug(debug: boolean): void };
 
 export type AsyncRenderer = AsyncView & Viewed & { load(source: string): Promise<CompiledScene> };
 
 export async function createRendererAsync(canvas: HTMLCanvasElement, options?: BackendOptions): Promise<AsyncRenderer> {
   const view = await createViewAsync(canvas, options);
   let chosen: SceneView | undefined;
+  let debug = false;
   return { ...view, async load(source) {
-    const compiled = compileScene(source, { view: chosen });
+    const compiled = compileScene(source, { view: chosen, debug });
     await view.show(compiled);
     return compiled;
   }, setView(next) {
     chosen = next ?? undefined;
+  }, setDebug(next) {
+    debug = next;
   } };
 }
 
@@ -36,16 +40,20 @@ export function createRenderer(
 ): Renderer {
   const view = createView(canvas, options);
   let chosen: SceneView | undefined;
+  let debug = false;
   return {
     ...view,
     load(source) {
-      const compiled = compileScene(source, { view: chosen }); // GSS errors
+      const compiled = compileScene(source, { view: chosen, debug }); // GSS errors
       // GLSL errors at once; a link error comes later, once the driver is done (decision 150)
       view.show(compiled).catch((error) => console.error(error));
       return compiled;
     },
     setView(next) {
       chosen = next ?? undefined;
+    },
+    setDebug(next) {
+      debug = next;
     },
   };
 }

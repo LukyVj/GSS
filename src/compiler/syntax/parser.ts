@@ -416,7 +416,7 @@ export function parse(input: Token[], errors?: ErrorSink): Stylesheet {
   // @media inside a rule: its declarations and rules go to the selectors of the rule
   function parseNestedAt(selectors: Token[][], outer?: string): Rule[] {
     const at = next();
-    if (at.type === "AT_KEYWORD" && ["scene", "keyframes", "property", "property-panel", "mixin"].includes(at.value as string))
+    if (at.type === "AT_KEYWORD" && ["scene", "keyframes", "property", "property-panel", "debug-panel", "mixin"].includes(at.value as string))
       throw errorAt(at, `@${at.value} goes outside the rules`);
     if (at.type === "AT_KEYWORD" && at.value === "contents") throw misplacedContents(at);
     if (at.type !== "AT_KEYWORD" || at.value !== "media")
@@ -478,7 +478,7 @@ export function parse(input: Token[], errors?: ErrorSink): Stylesheet {
       const token = peek();
       if (!token) throw errorAt(open, '@media never closed: "}" missing');
       const read = attempt(() => {
-        if (token.type === "AT_KEYWORD" && (token.value === "property-panel" || token.value === "mixin"))
+        if (token.type === "AT_KEYWORD" && (token.value === "property-panel" || token.value === "debug-panel" || token.value === "mixin"))
           throw errorAt(token, `@${token.value} goes outside the rules`);
         if (token.type === "AT_KEYWORD")
           throw errorAt(
@@ -494,7 +494,7 @@ export function parse(input: Token[], errors?: ErrorSink): Stylesheet {
   }
 
   // The whole file: a sequence of @scene and rules
-  const stylesheet: Stylesheet = { scene: [], rules: [], keyframes: [], properties: [], panels: [], paints: [] };
+  const stylesheet: Stylesheet = { scene: [], rules: [], keyframes: [], properties: [], panels: [], debugPanels: [], paints: [] };
 
   // One @scene, @keyframes, @media or rule
   function parseStatement(): void {
@@ -532,6 +532,11 @@ export function parse(input: Token[], errors?: ErrorSink): Stylesheet {
         if (!isPunct(peek(), "{"))
           throw errorAt(peek() ?? token, "@property-panel takes a block, like: @property-panel { display: open; }");
         stylesheet.panels.push({ at: token, descriptors: parseDeclarationBlock() });
+      } else if (token.value === "debug-panel") {
+        // @debug-panel { display: open; }: read in features/debug-panel.ts (decision 204)
+        if (!isPunct(peek(), "{"))
+          throw errorAt(peek() ?? token, "@debug-panel takes a block, like: @debug-panel { display: open; }");
+        stylesheet.debugPanels.push({ at: token, descriptors: parseDeclarationBlock() });
       } else if (token.value === "apply") {
         throw errorAt(token, "@apply goes inside a rule, like: cube { @apply --name; }");
       } else if (token.value === "contents") {
