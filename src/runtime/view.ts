@@ -323,10 +323,21 @@ export function createView(
       : null;
   }
 
+  // Each image on its own texture unit, and each uTextureN told which unit to read; again
+  // before each draw of the scene, as the passes of a filter bind their images on these units
+  function bindTextures(scene: GpuScene): void {
+    scene.textures.forEach((texture, i) => {
+      gl!.activeTexture(gl!.TEXTURE0 + i);
+      gl!.bindTexture(gl!.TEXTURE_2D, texture);
+      gl!.uniform1i(scene.uTextures[i], i);
+    });
+  }
+
   // :hover: asks which object is under the mouse. The picking pass is the scene
   // drawn on one pixel; picker.ts brings its id back later, without waiting.
   function requestPick(scene: GpuScene, pixel: [number, number]): void {
     const sent = picker.request(() => {
+      bindTextures(scene);
       gl!.uniform1i(scene.uPicking, 1);
       gl!.uniform2f(scene.uPick, pixel[0], pixel[1]);
       gl!.drawArrays(gl!.TRIANGLES, 0, 3);
@@ -442,12 +453,7 @@ export function createView(
       gl!.uniform1f(scene.uDist, camera.dist);
       if (values) gl!.uniform4fv(scene.uProperties, values);
       if (timeline) gl!.uniform4fv(scene.uTimeline, timeline);
-      // Each image on its own texture unit, and each uTextureN told which unit to read
-      scene.textures.forEach((texture, i) => {
-        gl!.activeTexture(gl!.TEXTURE0 + i);
-        gl!.bindTexture(gl!.TEXTURE_2D, texture);
-        gl!.uniform1i(scene!.uTextures[i], i);
-      });
+      bindTextures(scene);
       probe?.drawStart(); // before the picking: its pass costs GPU time too
       // :hover: the object under the mouse in this frame, then uHover[] for every slot
       if (hovers) {
@@ -458,8 +464,12 @@ export function createView(
       if (post.active()) {
         // filter: the scene into an image, then the passes; blur(4px) is 4 CSS pixels
         const ratio = canvas.width / Math.max(canvas.clientWidth, 1);
+        // The images of the scene bound again: the filter made its own on their units
         post.render(
-          () => gl!.drawArrays(gl!.TRIANGLES, 0, 3),
+          () => {
+            bindTextures(scene!);
+            gl!.drawArrays(gl!.TRIANGLES, 0, 3);
+          },
           canvas.width,
           canvas.height,
           clock.seconds,

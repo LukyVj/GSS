@@ -36,24 +36,37 @@ const scene = (rules: string, yaw = 0, pitch = 0) =>
 type Backend = "webgl" | "webgpu";
 
 // The colors of the canvas at a few points, given from its center in pixels (y up)
-async function pixels(source: string, points: [number, number][], backend: Backend = "webgl"): Promise<number[][]> {
-  return page.evaluate(async ({ compiled, points, backend }) => {
+// atRest: no profiler, which draws every frame: the scene is drawn once more at a new size, then rests
+async function pixels(source: string, points: [number, number][], backend: Backend = "webgl", atRest = false): Promise<number[][]> {
+  return page.evaluate(async ({ compiled, points, backend, atRest }) => {
     const canvas = document.createElement("canvas");
     canvas.style.cssText = "width:256px;height:192px;display:block";
     document.body.append(canvas);
     const probe = { frameStart() {}, drawStart() {}, drawEnd() {}, shaderBuilt() {} };
-    const view = await (window as any).__createViewAsync(canvas, { backend, adaptDpr: false, profile: () => probe, profileWebGPU: () => probe });
+    const profiler = atRest ? {} : { profile: () => probe, profileWebGPU: () => probe };
+    if (atRest) {
+      // The image drawn once stays on the canvas, to be read frames later
+      const getContext = canvas.getContext.bind(canvas) as (type: string, options?: object) => unknown;
+      (canvas as any).getContext = (type: string, options?: object) => getContext(type, { ...options, preserveDrawingBuffer: true });
+    }
+    const view = await (window as any).__createViewAsync(canvas, { backend, adaptDpr: false, ...profiler });
     if (view.backend !== backend) throw new Error(`drawn with ${view.backend}, not ${backend}`);
     view.freeze(true);
     await view.show(compiled);
-    await new Promise((resolve) => { let left = 6; const tick = () => --left ? requestAnimationFrame(tick) : resolve(0); requestAnimationFrame(tick); });
+    const frames = () => new Promise((resolve) => { let left = 6; const tick = () => --left ? requestAnimationFrame(tick) : resolve(0); requestAnimationFrame(tick); });
+    await frames();
+    if (atRest) {
+      // A new size, once the text is drawn: the filter makes new images, in the one frame drawn
+      canvas.style.width = "260px";
+      await frames();
+    }
     const copy = document.createElement("canvas"); copy.width = canvas.width; copy.height = canvas.height;
     const ctx = copy.getContext("2d")!; ctx.drawImage(canvas, 0, 0);
-    const scale = canvas.width / 256;
-    const read = points.map(([x, y]) => [...ctx.getImageData(Math.round((128 + x) * scale), Math.round((96 - y) * scale), 1, 1).data]);
+    const scale = canvas.width / canvas.clientWidth;
+    const read = points.map(([x, y]) => [...ctx.getImageData(Math.round((canvas.clientWidth / 2 + x) * scale), Math.round((96 - y) * scale), 1, 1).data]);
     view.destroy(); canvas.remove();
     return read;
-  }, { compiled: compileScene(source), points, backend });
+  }, { compiled: compileScene(source), points, backend, atRest });
 }
 
 const lit = (pixel: number[]) => pixel[0] > 150;
@@ -164,6 +177,13 @@ describe("content", () => {
     expect(lit((await pixels(source("1"), [[0, 0]]))[0])).toBe(true);
     expect(dark((await pixels(source("2"), [[0, 0]]))[0])).toBe(true);
     expect(lit((await pixels(source("odd"), [[0, 0]]))[0])).toBe(true);
+  }, 60000);
+
+  // bloom() on the scene makes its images after the text is bound, on its texture unit:
+  // a scene at rest, drawn once at a new size, must still read its text
+  it("is painted under a filter of the scene, on a scene at rest", async () => {
+    const source = scene('content: "█";').replace("camera-distance: 4;", "camera-distance: 4; filter: bloom(0.5, 4px);");
+    expect(lit((await pixels(source, [[0, 0]], "webgl", true))[0])).toBe(true);
   }, 60000);
 
   it("is drawn by WebGPU too", async () => {
