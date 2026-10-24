@@ -209,13 +209,16 @@ function progressOf(timeline: Timeline, canvas: HTMLCanvasElement, override: num
   return viewOf(canvas, vertical, timeline.range, override);
 }
 
+// How many vec4 uTimeline takes: one up to 4 timelines, one per 4 past them (decision 209)
+export const timelineVectors = (count: number) => Math.max(1, Math.ceil(count / 4));
+
 // uTimeline: one component per timeline; override: one progress for all (the slider)
 export function timelineValues(
   timelines: Timeline[],
   canvas: HTMLCanvasElement,
   override: number | null,
 ): Float32Array {
-  const values = new Float32Array(4);
+  const values = new Float32Array(4 * timelineVectors(timelines.length));
   timelines.forEach((timeline, i) => {
     values[i] = progressOf(timeline, canvas, override);
   });

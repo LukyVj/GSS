@@ -14,7 +14,7 @@ import { ErrorSink, errorAt, rememberSpan, spanOf } from "./syntax/errors";
 import { resolveVars, usesVariables, hasVar, type Variables } from "./cascade/vars";
 import { mediaQueriesOf, resolveIf } from "./values/conditionals";
 import { refuseInColor, resolveCurrentColor } from "./values/current-color";
-import { sceneTimelines, type Timeline } from "./features/timeline";
+import { sceneTimelines, timelineUniform, type Timeline } from "./features/timeline";
 import { PROPERTIES } from "./registry/core";
 import {
   type ColorScheme,
@@ -374,7 +374,7 @@ function compileStylesheet(
     ...(passes!.length > 0
       ? {
           passes: passes!.map((pass) =>
-            withProperties(pass, registered.length, hoverSlots(styled).length + active.length, timelines!.length > 0, triggers!.length),
+            withProperties(pass, registered.length, hoverSlots(styled).length + active.length, timelines!.length, triggers!.length),
           ),
         }
       : {}),
@@ -425,12 +425,12 @@ function checkedShader(
 // A pass of filter that reads a variable set from JS declares the uniforms of the scene
 // before it, in the same order: its WGSL then reads them where the scene writes them, in
 // the buffer they share (decision 105). The other passes stay as they were.
-function withProperties(pass: Pass, properties: number, slots: number, timeline: boolean, starts: number): Pass {
+function withProperties(pass: Pass, properties: number, slots: number, timelines: number, starts: number): Pass {
   if (!pass.shader.includes("uProperties")) return pass;
   const uniforms = [
     ...(starts > 0 ? [`uniform float uStart[${starts}];`] : []),
     ...(slots > 0 ? [`uniform float uHover[${slots}];`] : []),
-    ...(timeline ? ["uniform vec4 uTimeline;"] : []),
+    ...(timelines > 0 ? [timelineUniform(timelines)] : []),
     `uniform vec4 uProperties[${properties}]; // @property: the variables set from JS`,
   ];
   return { ...pass, shader: pass.shader.replace("uniform sampler2D uInput0;", `${uniforms.join("\n")}\nuniform sampler2D uInput0;`) };

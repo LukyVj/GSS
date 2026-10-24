@@ -38,7 +38,7 @@ import { gradientMean } from "../gradient";
 import { BLEND_LIBRARY } from "./blend-library";
 import { readMaterial } from "./materials";
 import { activeSlots, hoverSlots, hoverValue, sceneTriggers, useTimelines } from "./animation";
-import { sceneTimelines } from "../../features/timeline";
+import { sceneTimelines, timelineUniform } from "../../features/timeline";
 import { offsetLines, offsetReach, useOffsetFunctions } from "./offset";
 import { animateCode, createHoisted, hoist, originOf, rotationLines, transformLines } from "./transforms";
 import { objectBox } from "./origin";
@@ -517,7 +517,7 @@ export function generateShader(
       .replace(
         "/*@HOVER_UNIFORM*/",
         (timelines.length > 0
-          ? `uniform vec4 uTimeline; // scroll() and view(): the progress of each, 0 to 1${picks ? "\n" : ""}`
+          ? `${timelineUniform(timelines.length)} // scroll() and view(): the progress of each, 0 to 1${picks ? "\n" : ""}`
           : "") +
           (properties > 0
             ? `uniform vec4 uProperties[${properties}]; // @property: the variables set from JS${picks ? "\n" : ""}`

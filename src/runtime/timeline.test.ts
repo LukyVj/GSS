@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { scrollProgress, viewProgress, findScroller, rangeProgress, scrollRangeProgress, findNamedTimeline, insetOf } from "./timeline";
+import { scrollProgress, viewProgress, findScroller, rangeProgress, scrollRangeProgress, findNamedTimeline, insetOf, timelineValues } from "./timeline";
 import type { RangeEdge, RangeName } from "../compiler/features/timeline";
 
 describe("scrollProgress", () => {
@@ -206,5 +206,14 @@ describe("insetOf (view-timeline-inset)", () => {
 
   it("takes one value for both sides, like CSS", () => {
     expect(insetOf(["50px"], 800)).toEqual([50, 50]);
+  });
+});
+
+describe("timelineValues", () => {
+  it("sends one vec4 up to four timelines, and as many as needed past four", () => {
+    const view = { type: "view", axis: "block" } as const;
+    const canvas = {} as HTMLCanvasElement;
+    expect(timelineValues([view, view], canvas, 0.5)).toHaveLength(4);
+    expect([...timelineValues(Array(6).fill(view), canvas, 0.25)]).toEqual([0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0, 0]);
   });
 });

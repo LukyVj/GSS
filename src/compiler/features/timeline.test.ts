@@ -92,13 +92,22 @@ describe("animation-timeline in the shader", () => {
     expect(compiled.shader).not.toContain("uTimeline.z");
   });
 
-  it("takes at most four timelines", () => {
-    const rules = ["scroll(root)", "scroll(inline)", "view()", "view(inline)", "scroll(root inline)"]
-      .map((t, i) => `#o${i} { animation: spin 1s; animation-timeline: ${t}; }`)
-      .join(" ");
-    expect(() =>
-      compileScene(`@scene { cube#o0; cube#o1; cube#o2; cube#o3; cube#o4; } ${rules} ${spin}`),
-    ).toThrow(/4 timelines/);
+  it("keeps one vec4 up to four timelines, and takes an array of them past four, up to 16", () => {
+    const names = (n: number) => Array.from({ length: n }, (_, i) => `--t${i}`);
+    const scene = (n: number) =>
+      `@scene { sphere; } sphere { animation: ${names(n).map(() => "spin 1s").join(", ")}; animation-timeline: ${names(n).join(", ")}; } ${spin}`;
+    const four = compileScene(scene(4));
+    expect(four.shader).toContain("uniform vec4 uTimeline;");
+    expect(four.shader).toContain("uTimeline.w");
+    const six = compileScene(scene(6));
+    expect(six.timelines).toHaveLength(6);
+    expect(six.shader).toContain("uniform vec4 uTimeline[2];");
+    expect(six.shader).toContain("uTimeline[0].x");
+    expect(six.shader).toContain("uTimeline[1].y");
+    expect(six.wgsl).toContain("timeline: array<vec4<f32>, 2>");
+    expect(six.wgsl).toContain("gss.timeline[1].y");
+    expect(toShadertoy(six)).toContain("const vec4 uTimeline[2] = vec4[2](vec4(0.0), vec4(0.0));");
+    expect(() => compileScene(scene(17))).toThrow(/16 timelines/);
   });
 
   it("works on a group", () => {
