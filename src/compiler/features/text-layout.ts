@@ -1,7 +1,7 @@
 // content: where the text of an object goes, face by face, and how its lines are laid out
 import { FACES, missingFaceName, shapeFaces, type Styles, type StyledInstance } from "../cascade/resolve";
 import type { Keyframes } from "../syntax/ast";
-import { readAnimation } from "./animation";
+import { readAnimations } from "./animation";
 import { errorAt } from "../syntax/errors";
 import { add, div, hypot, largest, liveFlatSize, liveNumber, liveRadii, liveSize3, mul, type Num } from "../shader/codegen/live";
 import { shapeRadius } from "../shader/codegen/shapes";
@@ -211,11 +211,12 @@ export function textGroups(instance: StyledInstance, keyframes: Keyframes[]): Te
   const states = [instance.styles, instance.hoverStyles, instance.activeStyles, ...instance.hoverStates.map((state) => state.styles)];
   const all = states.map((styles) => textsIn(instance, styles));
   for (const styles of states) {
-    const name = readAnimation(styles)?.name.value;
-    const found = name === undefined ? undefined : keyframes.findLast((k) => k.name === name);
-    for (const frame of found?.frames ?? []) {
-      const set = frameStyles(instance, frame);
-      if (set) all.push(textsIn(instance, set));
+    for (const animation of readAnimations(styles)) {
+      const found = keyframes.findLast((k) => k.name === animation.name.value);
+      for (const frame of found?.frames ?? []) {
+        const set = frameStyles(instance, frame);
+        if (set) all.push(textsIn(instance, set));
+      }
     }
   }
   return [...new Map(all.map((texts) => [textsKey(texts), texts])).values()];

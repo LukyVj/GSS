@@ -9,11 +9,12 @@ import { resolveMath, type CalcContext } from "./values/calc";
 import type { StyledInstance, Styles } from "./cascade/resolve";
 import type { Declaration, Keyframes, Stylesheet } from "./syntax/ast";
 import type { Token } from "./syntax/tokenizer";
+import { splitList } from "./features/animation";
 import { ErrorSink, errorAt, rememberSpan, spanOf } from "./syntax/errors";
 import { resolveVars, usesVariables, hasVar, type Variables } from "./cascade/vars";
 import { mediaQueriesOf, resolveIf } from "./values/conditionals";
 import { refuseInColor, resolveCurrentColor } from "./values/current-color";
-import { sceneTimelines, type Timeline } from "./features/timeline";
+import { sceneTimelines, timelineUniform, type Timeline } from "./features/timeline";
 import { PROPERTIES } from "./registry/core";
 import {
   type ColorScheme,
@@ -223,20 +224,17 @@ function compileStylesheet(
         context,
       ),
     );
-    const copy = animateVariables(
-      styles,
-      variables,
-      context,
-      stylesheet.keyframes,
-      copies.length + 1,
-    );
-    if (!copy) return computed;
-    copies.push(copy.keyframes);
-    // The object plays its own copy: the rest of the animation (2s, alternate…) stays
-    return {
-      ...computed,
-      animation: [copy.name, ...computed["animation"].slice(1)],
-    };
+    return withCopies(styles, computed, (one) => {
+      const copy = animateVariables(
+        one,
+        variables,
+        context,
+        stylesheet.keyframes,
+        copies.length + 1,
+      );
+      if (copy) copies.push(copy.keyframes);
+      return copy;
+    });
   }
 
   // The cascade picks the values, then var() is replaced, then the math is computed
@@ -320,10 +318,11 @@ function compileStylesheet(
       );
       // The scene plays an animation too: its background, and its variables (decision 103)
       checkSceneAnimation(sceneStyles, stylesheet.keyframes);
-      const copy = animateVariables(sceneStyles, rootVariables, null, stylesheet.keyframes, copies.length + 1);
-      if (!copy) return computed;
-      copies.push(copy.keyframes);
-      return { ...computed, animation: [copy.name, ...computed["animation"].slice(1)] };
+      return withCopies(sceneStyles, computed, (one) => {
+        const copy = animateVariables(one, rootVariables, null, stylesheet.keyframes, copies.length + 1);
+        if (copy) copies.push(copy.keyframes);
+        return copy;
+      });
     }) ?? {};
   // @keyframes with variables are only played through their copies
   const shared = computeKeyframes(
@@ -375,7 +374,7 @@ function compileStylesheet(
     ...(passes!.length > 0
       ? {
           passes: passes!.map((pass) =>
-            withProperties(pass, registered.length, hoverSlots(styled).length + active.length, timelines!.length > 0, triggers!.length),
+            withProperties(pass, registered.length, hoverSlots(styled).length + active.length, timelines!.length, triggers!.length),
           ),
         }
       : {}),
@@ -426,12 +425,12 @@ function checkedShader(
 // A pass of filter that reads a variable set from JS declares the uniforms of the scene
 // before it, in the same order: its WGSL then reads them where the scene writes them, in
 // the buffer they share (decision 105). The other passes stay as they were.
-function withProperties(pass: Pass, properties: number, slots: number, timeline: boolean, starts: number): Pass {
+function withProperties(pass: Pass, properties: number, slots: number, timelines: number, starts: number): Pass {
   if (!pass.shader.includes("uProperties")) return pass;
   const uniforms = [
     ...(starts > 0 ? [`uniform float uStart[${starts}];`] : []),
     ...(slots > 0 ? [`uniform float uHover[${slots}];`] : []),
-    ...(timeline ? ["uniform vec4 uTimeline;"] : []),
+    ...(timelines > 0 ? [timelineUniform(timelines)] : []),
     `uniform vec4 uProperties[${properties}]; // @property: the variables set from JS`,
   ];
   return { ...pass, shader: pass.shader.replace("uniform sampler2D uInput0;", `${uniforms.join("\n")}\nuniform sampler2D uInput0;`) };
@@ -531,19 +530,39 @@ function usesVariablesIn(animation: Keyframes): boolean {
   );
 }
 
+// The object plays its own copy of each @keyframes of its list that uses variables: the rest
+// of each animation (2s, alternate…) stays. make: the copy for the styles of one animation.
+function withCopies(styles: Styles, computed: Styles, make: (one: Styles) => { name: Token } | null): Styles {
+  if (!styles["animation"] || !computed["animation"]) return computed;
+  const own = splitList(styles["animation"]);
+  const items = splitList(computed["animation"]);
+  let copied = false;
+  const named = items.map((item, i) => {
+    const copy = own[i] ? make({ ...styles, animation: own[i] }) : null;
+    if (!copy) return item;
+    copied = true;
+    return [copy.name, ...item.slice(1)];
+  });
+  if (!copied) return computed;
+  const comma: Token = { type: "PUNCT", value: "," };
+  return { ...computed, animation: named.flatMap((item, i) => (i === 0 ? item : [comma, ...item])) };
+}
+
 // On the scene, an animation changes the background, the fog, the sun and variables,
 // nothing else: the other properties of a frame belong to objects (decisions 103, 108, 110)
 function checkSceneAnimation(styles: Styles, keyframes: Keyframes[]): void {
-  const name = styles["animation"]?.[0];
-  if (name?.type !== "IDENT") return;
-  const found = keyframes.findLast((k) => k.name === name.value);
-  for (const frame of found?.frames ?? [])
-    for (const declaration of frame.declarations)
-      if (!["background", "fog", "light"].includes(declaration.property) && !declaration.property.startsWith("--"))
-        throw errorAt(
-          declaration,
-          `On the scene, an animation only changes background, fog, light and variables: ${declaration.property} is a property of objects (in @keyframes ${found!.name})`,
-        );
+  for (const item of styles["animation"] ? splitList(styles["animation"]) : []) {
+    const name = item[0];
+    if (name?.type !== "IDENT") continue;
+    const found = keyframes.findLast((k) => k.name === name.value);
+    for (const frame of found?.frames ?? [])
+      for (const declaration of frame.declarations)
+        if (!["background", "fog", "light"].includes(declaration.property) && !declaration.property.startsWith("--"))
+          throw errorAt(
+            declaration,
+            `On the scene, an animation only changes background, fog, light and variables: ${declaration.property} is a property of objects (in @keyframes ${found!.name})`,
+          );
+  }
 }
 
 // A @keyframes that sets or reads variables cannot be shared: its values depend on

@@ -41,6 +41,7 @@ class Lowering {
   private hover = 0;
   private properties = 0;
   private starts = 0; // uStart[]: the states that start an animation (decision 141)
+  private timelines = 0; // uTimeline[]: the vec4 of more than 4 timelines; 0: one vec4
   private serial = 0;
 
   constructor(source: string) {
@@ -103,6 +104,7 @@ class Lowering {
           const size = Number(this.take());
           if (name === "uProperties") this.properties = size; // @property (decision 105)
           else if (name === "uStart") this.starts = size; // decision 141
+          else if (name === "uTimeline") this.timelines = size; // past 4 timelines (decision 210)
           else this.hover = size;
           this.expect("]");
         }
@@ -136,7 +138,7 @@ class Lowering {
     return [
       // scroll() and view() (decision 96): after hover, so that no other offset moves;
       // @property (decision 105) after them
-      `struct GssUniforms {\n  resolutionTime: vec4<f32>,\n  cameraDistanceRatio: vec4<f32>,\n  pick: vec4<f32>,\n  hover: array<vec4<f32>, ${Math.max(1, this.hover)}>,\n${this.uniforms.has("uTimeline") ? "  timeline: vec4<f32>,\n" : ""}${this.properties ? `  properties: array<vec4<f32>, ${this.properties}>,\n` : ""}${this.starts ? `  start: array<vec4<f32>, ${this.starts}>,\n` : ""}}`,
+      `struct GssUniforms {\n  resolutionTime: vec4<f32>,\n  cameraDistanceRatio: vec4<f32>,\n  pick: vec4<f32>,\n  hover: array<vec4<f32>, ${Math.max(1, this.hover)}>,\n${this.uniforms.has("uTimeline") ? `  timeline: ${this.timelines ? `array<vec4<f32>, ${this.timelines}>` : "vec4<f32>"},\n` : ""}${this.properties ? `  properties: array<vec4<f32>, ${this.properties}>,\n` : ""}${this.starts ? `  start: array<vec4<f32>, ${this.starts}>,\n` : ""}}`,
       "@group(0) @binding(0) var<uniform> gss: GssUniforms;",
       ...(textures.length ? ["@group(0) @binding(1) var gssSampler: sampler;"] : []),
       ...textures.map(([name], i) => `@group(0) @binding(${i + 2}) var ${nameOf(name)}: texture_2d<f32>;`),

@@ -6,7 +6,7 @@ import { createDprPicker, viewDensity } from "./dpr-picker";
 import { pickPixel, pointerValues, createPress, decodeId, cursorAt, controlsAllow } from "./hover";
 import { createTransitions } from "./transitions";
 import { createTriggers } from "./triggers";
-import { createScrollSlider, timelineValues } from "./timeline";
+import { createScrollSlider, timelineValues, timelineVectors } from "./timeline";
 import { pickVariant, WINDOW_MEDIA } from "./media";
 import { elementId, paintName, resolveImage } from "./textures";
 import { drawText, textOf, whenFontArrives } from "./text";
@@ -200,7 +200,7 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
     const slots = compiled.hover.length + (compiled.active?.length ?? 0);
     // uTimeline goes after the hover slots (decision 96), uProperties after it (decision 105),
     // uStart after them (decision 141)
-    const size = 48 + 16 * Math.max(1, slots) + (compiled.timelines ? 16 : 0) + 16 * (compiled.properties?.length ?? 0) + 16 * (compiled.triggers?.length ?? 0);
+    const size = 48 + 16 * Math.max(1, slots) + (compiled.timelines ? 16 * timelineVectors(compiled.timelines.length) : 0) + 16 * (compiled.properties?.length ?? 0) + 16 * (compiled.triggers?.length ?? 0);
     if (size > device.limits.maxUniformBufferBindingSize) throw new Error("This scene exceeds the WebGPU device's uniform buffer limit");
     const layout = device.createBindGroupLayout({ entries: [
       { binding: 0, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform", minBindingSize: size } },
@@ -288,8 +288,9 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
       const after = 12 + 4 * Math.max(1, hover.length + (active?.length ?? 0));
       if (timelines) v.set(timelineValues(timelines, canvas, slider?.value() ?? null), after);
       const values = properties.values();
-      if (values) v.set(values, after + (timelines ? 4 : 0));
-      const startsAt = after + (timelines ? 4 : 0) + (values?.length ?? 0); // 4 floats per property
+      const timelineFloats = timelines ? 4 * timelineVectors(timelines.length) : 0;
+      if (values) v.set(values, after + timelineFloats);
+      const startsAt = after + timelineFloats + (values?.length ?? 0); // 4 floats per property
       held.starts.forEach((value, i) => { v[startsAt + 4 * i] = value; });
       // Render on demand (decision 134): the state of the last frame drawn, nothing to draw;
       // the mouse may still have moved over the frame on screen

@@ -1093,7 +1093,7 @@ export const PROPERTIES: PropertyDef[] = [
     since: "0.0.1",
     appliesTo: "everywhere",
     syntax:
-      "<keyframes-name> <time> [<easing>] [<time>] [<number> | infinite] [normal | reverse | alternate | alternate-reverse] [none | forwards | backwards | both]",
+      "[<keyframes-name> <time> [<easing>] [<time>] [<number> | infinite] [normal | reverse | alternate | alternate-reverse] [none | forwards | backwards | both]]#",
     initial: "none",
     description:
       "Plays a `@keyframes` animation on the object, like CSS. After its name come the duration, then if needed an easing, a delay, a number of iterations, a direction and a fill mode, in any order.",
@@ -1103,6 +1103,7 @@ export const PROPERTIES: PropertyDef[] = [
       ["<number> | infinite", "How many times it plays: `1.5` stops halfway through the second time. `infinite` is the default."],
       ["normal, reverse, alternate, alternate-reverse", "The direction: forward, backward, forward then backward, or backward first."],
       ["none, forwards, backwards, both", "The fill mode: what the object shows outside the animation."],
+      [",", "Several animations at once, one after each comma, each with its own settings: `animation: spin 4s linear, float 2s alternate`. When two of them change the same property, the last one of the list wins while it plays, from the value the ones before it give, like CSS.", "0.0.8"],
     ],
     details: "Unlike CSS, an animation loops forever unless it says how many times it plays.",
     more: "Each part also has a property of its own, like `animation-duration`, which wins over what `animation` says. On an object, it animates `translate`, the rotations, `scale`, `color` (a gradient too), `opacity`, `mask-image` and `offset-distance`; on a group, its transforms. On the scene, it animates the properties of the scene, like `background`, `light` or `fog`, and the variables they use: the objects do not follow the variables a scene animates. In a `:hover` or `:active` rule, the animation starts with the state and plays to its end, once unless it says how many times, like a button that fires: see `:active`.",
@@ -1128,6 +1129,11 @@ export const PROPERTIES: PropertyDef[] = [
         code: "@scene { sphere; } sphere { translate: 0 0.5 0; radius: 0.5; color: #ff5a36; animation: jump 1.2s cubic-bezier(0.3, -0.4, 0.7, 1.4) alternate; } @keyframes jump { to { translate: 0 2 0; } }",
       },
       {
+        name: "two at once",
+        text: "The cube turns all the time and jumps every 2 s: two animations, one after each comma.",
+        code: "@scene { cube; } cube { translate: 0 0.5 0; corner-radius: 0.1; color: #3a7bff; animation: turn 6s linear, hop 2s ease-in-out; } @keyframes turn { to { rotate-y: -1turn; } } @keyframes hop { 0%, 60%, 100% { translate: 0 0.5 0; } 80% { translate: 0 1.4 0; } }",
+      },
+      {
         name: "a drop, once",
         text: "After 0.5 s, one iteration; `both` shows the first frame before it and the last one after.",
         code: "@scene { cube; } cube { translate: 0 3 0; color: #ff5a36; animation: drop 1s ease-in 0.5s 1 both; } @keyframes drop { to { translate: 0 0.5 0; rotate-y: -90deg; } }",
@@ -1144,7 +1150,7 @@ export const PROPERTIES: PropertyDef[] = [
     figure: "lanes",
     since: "0.0.2",
     appliesTo: "everywhere",
-    syntax: "<time>",
+    syntax: "<time>#",
     initial: "0s",
     description:
       "The duration of one iteration of the animation, in `s` or `ms`. It wins over the duration written in `animation`.",
@@ -1160,7 +1166,7 @@ export const PROPERTIES: PropertyDef[] = [
     figure: "lanes",
     since: "0.0.2",
     appliesTo: "everywhere",
-    syntax: "<time>",
+    syntax: "<time>#",
     initial: "0s",
     description:
       "How long the animation waits before it starts, in `s` or `ms`; a negative delay starts it partway, as if it had begun earlier. It wins over the delay written in `animation`.",
@@ -1176,7 +1182,7 @@ export const PROPERTIES: PropertyDef[] = [
     figure: "lanes",
     since: "0.0.2",
     appliesTo: "everywhere",
-    syntax: "<number> | infinite",
+    syntax: "[<number> | infinite]#",
     initial: "infinite",
     description:
       "How many times the animation plays: a number, where `1.5` stops halfway through the second time, or `infinite`. Unlike CSS, where an animation plays once, a GSS animation loops forever by default. It wins over the count written in `animation`.",
@@ -1192,7 +1198,7 @@ export const PROPERTIES: PropertyDef[] = [
     figure: "lanes",
     since: "0.0.2",
     appliesTo: "everywhere",
-    syntax: "normal | reverse | alternate | alternate-reverse",
+    syntax: "[normal | reverse | alternate | alternate-reverse]#",
     initial: "normal",
     description:
       "The way the animation plays, like CSS. It wins over the direction written in `animation`.",
@@ -1214,16 +1220,17 @@ export const PROPERTIES: PropertyDef[] = [
     figure: "lanes",
     since: "0.0.2",
     appliesTo: "everywhere",
-    syntax: "none | forwards | backwards | both",
+    syntax: "[none | forwards | backwards | both]#",
     initial: "none",
     description:
-      "What the object shows outside the animation, like CSS. It matters only with a delay or a number of iterations.",
+      "What the object shows outside the animation, like CSS. It matters with a delay or a number of iterations, and on a scroll timeline, before and after it.",
     values: [
       ["none", "Its own value: the default."],
-      ["backwards", "The first frame, during the delay."],
-      ["forwards", "The last frame, once the animation is over."],
+      ["backwards", "The first frame, during the delay, or before its timeline or its `animation-range`."],
+      ["forwards", "The last frame, once the animation is over, or past its timeline or its range."],
       ["both", "The two."],
     ],
+    details: "On a scroll timeline, an animation without a fill mode applies only while its timeline runs, like CSS: write `both` to hold its first frame before and its last one after.",
     examples: [
       {
         name: "staying at the top",
@@ -1237,7 +1244,7 @@ export const PROPERTIES: PropertyDef[] = [
     figure: "easing",
     since: "0.0.2",
     appliesTo: "everywhere",
-    syntax: "<easing>",
+    syntax: "<easing>#",
     initial: "linear",
     description:
       "The easing of each step of the animation, like CSS. It wins over the easing written in `animation`.",
@@ -1262,7 +1269,7 @@ export const PROPERTIES: PropertyDef[] = [
     since: "0.0.3",
     appliesTo: "everywhere",
     syntax:
-      "auto | scroll([root | nearest] || [block | inline | x | y]) | view([block | inline | x | y]) | <dashed-ident>",
+      "[auto | scroll([root | nearest] || [block | inline | x | y]) | view([block | inline | x | y]) | <dashed-ident>]#",
     initial: "auto",
     description:
       "Drives the animation with the scroll of the page instead of time, like CSS scroll-driven animations. The whole timeline is the whole animation, so the duration and the delay do not count.",
@@ -1273,7 +1280,7 @@ export const PROPERTIES: PropertyDef[] = [
       ["<dashed-ident>", "A timeline that an element of the page names in its own CSS: `view-timeline-name: --intro` on a section follows that section crossing the page, like `view()` follows the scene; `scroll-timeline-name` follows the scroll of the element. The axis and the inset are the ones the page gives, `view-timeline-axis` and `view-timeline-inset`.", "0.0.8"],
     ],
     details: "Write it after `animation`, which still needs a name and a duration: `animation: spin 1s linear; animation-timeline: scroll();`. Scrolling back plays the animation backward.",
-    more: "The number of iterations and the direction still count, an animation without a count plays once along the scroll. A scene takes up to 4 different timelines. A name is looked for in the whole page, the first element that declares it wins: unlike CSS, the page needs no `timeline-scope`, the scene being drawn apart from the page. While no element declares it, the animation shows its first frame. The page Follow the page as it scrolls, under Installation, shows it live, with the CSS of the page to copy. In the playground, which does not scroll, a slider stands in for the scroll.",
+    more: "The number of iterations and the direction still count, an animation without a count plays once along the scroll. A scene takes up to 16 different timelines, and an animation of a list its own: `animation: a 1s, b 1s; animation-timeline: --a, --b`. A name is looked for in the whole page, the first element that declares it wins: unlike CSS, the page needs no `timeline-scope`, the scene being drawn apart from the page. While no element declares it, the animation does not apply, as before a timeline. The page Follow the page as it scrolls, under Installation, shows it live, with the CSS of the page to copy. In the playground, which does not scroll, a slider stands in for the scroll.",
     examples: [
       {
         name: "turn with the page",
@@ -1288,7 +1295,7 @@ export const PROPERTIES: PropertyDef[] = [
       {
         name: "follow a section of the page",
         text: "The page names its section in its own CSS, `#pricing { view-timeline-name: --pricing; }`: the ring turns while that section crosses the window, wherever the scene is. Here the slider stands in for it.",
-        code: "@scene { torus; } torus { translate: 0 0.8 0; radius: 0.6; thickness: 0.18; color: #ff5a36; animation: tilt 1s ease-in-out; animation-timeline: --pricing; animation-range: contain; } @keyframes tilt { from { rotate-x: 90deg; } to { rotate-x: 0deg; rotate-y: 180deg; } }",
+        code: "@scene { torus; } torus { translate: 0 0.8 0; radius: 0.6; thickness: 0.18; color: #ff5a36; animation: tilt 1s ease-in-out both; animation-timeline: --pricing; animation-range: contain; } @keyframes tilt { from { rotate-x: 90deg; } to { rotate-x: 0deg; rotate-y: 180deg; } }",
       },
     ],
   },
@@ -1297,7 +1304,7 @@ export const PROPERTIES: PropertyDef[] = [
     figure: "range",
     since: "0.0.6",
     appliesTo: "everywhere",
-    syntax: "[ normal | <range-name> <percentage>? | <percentage> | <length> ]{1,2}",
+    syntax: "[[ normal | <range-name> <percentage>? | <percentage> | <length> ]{1,2}]#",
     initial: "normal",
     description:
       "The part of a scroll timeline the animation plays on, like CSS: `entry` while the scene comes into view, `exit` while it leaves, or percentages of the whole scroll. It goes with `animation-timeline`.",
@@ -1310,18 +1317,18 @@ export const PROPERTIES: PropertyDef[] = [
       ["<percentage>", "A share of the named range before it, or of the whole timeline alone: `entry 50%`, `20% 80%`."],
       ["<length>", "Pixels from the start of the named range before it, or of the whole timeline: `100px`."],
     ],
-    details: "It takes a start, then an end: `entry 10% exit 90%`. Before the range the animation shows its first frame, past it its last.",
+    details: "It takes a start, then an end: `entry 10% exit 90%`. Outside the range the animation does not apply, like CSS: `both` holds its first frame before it and its last one after.",
     more: "A name alone is the whole of that range, `animation-range: entry`; a name alone at the end is its end, `contain exit`. `animation-range-start` and `animation-range-end` set one side each, and win over `animation-range` wherever they are written, like the other longhands of `animation`. The named ranges belong to `view()`: `scroll()` takes percentages and pixels. Unlike CSS, which ignores it there, a range on an animation that plays in time is an error. In the playground, which does not scroll, the slider over the render stands for one screen of scroll: `100px` is a hundred pixels of the height of the window.",
     examples: [
       {
         name: "rise while it comes in",
         text: "The spheres rise while the scene enters the page, then stay up.",
-        code: "@scene { sphere * 3; } sphere { --x: calc(2 - sibling-index()); radius: 0.35; translate: var(--x) 0.35 0; color: #3a7bff; animation: rise 1s ease-out; animation-timeline: view(); animation-range: entry; } @keyframes rise { to { translate: var(--x) 1.6 0; color: #3ad16b; } }",
+        code: "@scene { sphere * 3; } sphere { --x: calc(2 - sibling-index()); radius: 0.35; translate: var(--x) 0.35 0; color: #3a7bff; animation: rise 1s ease-out both; animation-timeline: view(); animation-range: entry; } @keyframes rise { to { translate: var(--x) 1.6 0; color: #3ad16b; } }",
       },
       {
         name: "the middle of the scroll",
         text: "The cube turns between 25% and 75% of the scroll of the page, and holds before and after.",
-        code: "@scene { cube; } cube { translate: 0 0.6 0; corner-radius: 0.1; color: #ff5a36; animation: turn 1s linear; animation-timeline: scroll(); animation-range: 25% 75%; } @keyframes turn { to { rotate-y: -360deg; } }",
+        code: "@scene { cube; } cube { translate: 0 0.6 0; corner-radius: 0.1; color: #ff5a36; animation: turn 1s linear; animation-timeline: scroll(); animation-range: 25% 75%; animation-fill-mode: both; } @keyframes turn { to { rotate-y: -360deg; } }",
       },
     ],
   },
@@ -1330,7 +1337,7 @@ export const PROPERTIES: PropertyDef[] = [
     figure: "range",
     since: "0.0.6",
     appliesTo: "everywhere",
-    syntax: "normal | <range-name> <percentage>? | <percentage> | <length>",
+    syntax: "[normal | <range-name> <percentage>? | <percentage> | <length>]#",
     initial: "normal",
     description:
       "Where on the timeline the animation starts, like CSS: the first half of `animation-range`. A name alone is the start of that range.",
@@ -1338,7 +1345,7 @@ export const PROPERTIES: PropertyDef[] = [
       {
         name: "from the middle of the entry",
         text: "The torus starts turning when half of the scene is in view.",
-        code: "@scene { torus; } torus { translate: 0 0.8 0; radius: 0.6; thickness: 0.2; color: #ff5a36; animation: tilt 1s; animation-timeline: view(); animation-range-start: entry 50%; } @keyframes tilt { to { rotate-x: 90deg; } }",
+        code: "@scene { torus; } torus { translate: 0 0.8 0; radius: 0.6; thickness: 0.2; color: #ff5a36; animation: tilt 1s; animation-timeline: view(); animation-range-start: entry 50%; animation-fill-mode: both; } @keyframes tilt { to { rotate-x: 90deg; } }",
       },
     ],
   },
@@ -1347,7 +1354,7 @@ export const PROPERTIES: PropertyDef[] = [
     figure: "range",
     since: "0.0.6",
     appliesTo: "everywhere",
-    syntax: "normal | <range-name> <percentage>? | <percentage> | <length>",
+    syntax: "[normal | <range-name> <percentage>? | <percentage> | <length>]#",
     initial: "normal",
     description:
       "Where on the timeline the animation ends, like CSS: the second half of `animation-range`. A name alone is the end of that range.",
@@ -1355,7 +1362,7 @@ export const PROPERTIES: PropertyDef[] = [
       {
         name: "done once it is in",
         text: "The cube grows until the scene is all in view.",
-        code: "@scene { cube; } cube { translate: 0 0.6 0; color: #3a7bff; scale: 0.3; animation: grow 1s ease-out; animation-timeline: view(); animation-range-end: entry; } @keyframes grow { to { scale: 1; } }",
+        code: "@scene { cube; } cube { translate: 0 0.6 0; color: #3a7bff; scale: 0.3; animation: grow 1s ease-out; animation-timeline: view(); animation-range-end: entry; animation-fill-mode: both; } @keyframes grow { to { scale: 1; } }",
       },
     ],
   },
@@ -3569,7 +3576,7 @@ export const FUNCTIONS: FunctionDef[] = [
       {
         name: "once it is in",
         text: "The spheres gather while the scene comes in, then hold.",
-        code: "@scene { sphere * 3; } sphere { --x: calc(2 - sibling-index()); radius: 0.35; translate: 0 0.35 0; color: #ff5a36; animation: spread 1s ease-out; animation-timeline: view(); animation-range: entry; } @keyframes spread { from { translate: calc(var(--x) * 2) 1.6 0; } to { translate: var(--x) 0.35 0; } }",
+        code: "@scene { sphere * 3; } sphere { --x: calc(2 - sibling-index()); radius: 0.35; translate: 0 0.35 0; color: #ff5a36; animation: spread 1s ease-out both; animation-timeline: view(); animation-range: entry; } @keyframes spread { from { translate: calc(var(--x) * 2) 1.6 0; } to { translate: var(--x) 0.35 0; } }",
       },
     ],
   },

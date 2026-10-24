@@ -5,6 +5,7 @@ import type { Token } from "../syntax/tokenizer";
 import { errorAt } from "../syntax/errors";
 import { closingParen } from "../values/calc";
 import type { Styles } from "../cascade/resolve";
+import { animationStyles } from "./animation";
 
 export type Axis = "block" | "inline" | "x" | "y";
 // animation-range (decision 162): the named ranges of view(), like CSS
@@ -24,8 +25,18 @@ export type Timeline =
 
 const AXES: Axis[] = ["block", "inline", "x", "y"];
 const SCROLLERS = ["root", "nearest"];
-// The components of uTimeline: a scene uses up to 4 different timelines
+// The components of uTimeline: a vec4 up to 4 different timelines, an array of vec4 past 4
+// (decision 210), up to 16
 export const TIMELINE_COMPONENTS = ["x", "y", "z", "w"];
+export const MAX_TIMELINES = 16;
+
+// How many vec4 the timelines take: 1 up to 4 (a plain vec4), then one per 4
+export const timelineVectors = (count: number) => Math.max(1, Math.ceil(count / 4));
+
+// The declaration of uTimeline: a vec4, as every scene had it, or an array of vec4
+export function timelineUniform(count: number): string {
+  return count <= TIMELINE_COMPONENTS.length ? "uniform vec4 uTimeline;" : `uniform vec4 uTimeline[${timelineVectors(count)}];`;
+}
 
 const isIdent = (token: Token | undefined, value: string) =>
   token?.type === "IDENT" && token.value === value;
@@ -165,15 +176,17 @@ export function timelineOf(styles: Styles): Timeline | null {
 // their component of uTimeline
 export function sceneTimelines(nodes: Styles[]): Timeline[] {
   const found = new Map<string, Timeline>();
-  for (const styles of nodes) {
+  // one timeline per animation of a list (decision 210)
+  for (const styles of nodes.flatMap((node) => (node["animation"] ? animationStyles(node) : []))) {
     const value = styles["animation-timeline"] ?? styles["animation-range"] ?? styles["animation-range-start"] ?? styles["animation-range-end"];
-    if (!value || !styles["animation"]) continue;
+    const name = styles["animation"]?.[0];
+    if (!value || (name?.type === "IDENT" && name.value === "none")) continue;
     const timeline = timelineOf(styles);
     if (!timeline || found.has(keyOf(timeline))) continue;
-    if (found.size === TIMELINE_COMPONENTS.length)
+    if (found.size === MAX_TIMELINES)
       throw errorAt(
         value,
-        `A scene takes up to ${TIMELINE_COMPONENTS.length} timelines: scroll() and view() with their scroller and axis, and the names of timelines of the page`,
+        `A scene takes up to ${MAX_TIMELINES} timelines: scroll() and view() with their scroller and axis, and the names of timelines of the page`,
       );
     found.set(keyOf(timeline), timeline);
   }
@@ -183,5 +196,6 @@ export function sceneTimelines(nodes: Styles[]): Timeline[] {
 // The GLSL of a timeline's progress: uTimeline.x, .y…
 export function timelineCode(timeline: Timeline, timelines: Timeline[]): string {
   const index = timelines.findIndex((t) => keyOf(t) === keyOf(timeline));
-  return `uTimeline.${TIMELINE_COMPONENTS[index]}`;
+  const component = TIMELINE_COMPONENTS[index % 4];
+  return timelines.length <= TIMELINE_COMPONENTS.length ? `uTimeline.${component}` : `uTimeline[${Math.floor(index / 4)}].${component}`;
 }

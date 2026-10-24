@@ -88,3 +88,43 @@ describe("animation controls in the shader", () => {
     ).toContain("playhead(iTime, 2.0, 1.0, 0)");
   });
 });
+
+describe("a list of animations in the shader, like CSS", () => {
+  const keyframes = "@keyframes up { to { translate: 0 2 0; } } @keyframes red { to { color: #ff0000; } } @keyframes left { to { translate: -1 1 0; } }";
+  const shader = (rules: string) => compileScene(`@scene { sphere; } sphere { translate: 0 1 0; ${rules} } ${keyframes}`).shader;
+
+  it("plays two animations of different properties together", () => {
+    const both = shader("animation: up 2s, red 3s;");
+    expect(both).toContain("fract(iTime / 2.0)");
+    expect(both).toContain("fract(iTime / 3.0)");
+  });
+
+  it("is the shader of the one animation when the list holds one", () => {
+    expect(shader("animation: up 2s;")).toBe(shader("animation: up 2s, none;"));
+  });
+
+  it("lets the last animation of a property win, from the value the ones before it give", () => {
+    // left starts from where up is, like CSS starts a missing 0% from the value under it
+    const code = shader("animation: up 2s, left 4s 1s 1;");
+    const up = code.indexOf("iTime / 2.0");
+    const left = code.indexOf("playhead(iTime - 1.0, 4.0");
+    expect(up).toBeGreaterThan(-1);
+    expect(left).toBeGreaterThan(-1);
+    // left starts from where up is, and outside its time gives way to up, not to the rest
+    const up2 = "mix(vec3(0.0, 1.0, 0.0), vec3(0.0, 2.0, 0.0), clamp((fract(iTime / 2.0) - 0.0) / 1.0, 0.0, 1.0))";
+    expect(code).toContain(`((iTime >= 1.0 && iTime < 5.0) ? mix(${up2}, vec3(-1.0, 1.0, 0.0), `);
+    expect(code).toContain(` : ${up2})`);
+  });
+
+  it("gives each animation of the list its own timeline", () => {
+    const compiled = compileScene(
+      `@scene { sphere; } sphere { animation: up 1s, red 1s; animation-timeline: --a, --b; } ${keyframes}`,
+    );
+    expect(compiled.timelines).toEqual([
+      { type: "named", name: "--a" },
+      { type: "named", name: "--b" },
+    ]);
+    expect(compiled.shader).toContain("uTimeline.x");
+    expect(compiled.shader).toContain("uTimeline.y");
+  });
+});

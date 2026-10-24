@@ -45,6 +45,10 @@ export function toShadertoy({ shader, camera, properties }: CompiledScene): stri
       return `const float uStart[${n}] = float[${n}](${zeros}); // a state starts an animation with the GSS runtime\n`;
     })
     .replace(/^uniform vec4 uTimeline;.*\n/m, "const vec4 uTimeline = vec4(0.0); // scroll() needs the GSS runtime: the start\n")
+    .replace(/^uniform vec4 uTimeline\[(\d+)\];.*\n/m, (_, n) => {
+      const zeros = Array(Number(n)).fill("vec4(0.0)").join(", ");
+      return `const vec4 uTimeline[${n}] = vec4[${n}](${zeros}); // scroll() needs the GSS runtime: the start\n`;
+    })
     // @property (decision 105): the variables keep their initial values
     .replace(/^uniform vec4 uProperties\[(\d+)\];.*\n/m, (_, n) => {
       const values = (properties ?? []).map((p) => `vec4(${p.initial.map(glslFloat).join(", ")})`).join(", ");

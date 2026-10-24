@@ -128,7 +128,11 @@ export function renderChangelog(markdown: string = changelog): string {
     if (line.startsWith("## ")) {
       finish();
       const { id, name, date } = releaseTitle(line);
-      head = `<section class="release" id="${escapeHtml(id)}">\n<h2><a href="#${escapeHtml(id)}">${escapeHtml(name)}</a>${date ? ` <time datetime="${escapeHtml(date)}">${escapeHtml(date)}</time>` : ""}</h2>`;
+      // A timeline of the page per version, for the cloud of points beside it to follow
+      // (animation-timeline: --v0-0-7): while the version crosses a line at 40% of the
+      // window. In the style attribute, read even where the browser does not know it.
+      const timeline = `--${/^\d/.test(id) ? "v" : ""}${id.replaceAll(".", "-")}`;
+      head = `<section class="release" id="${escapeHtml(id)}" style="view-timeline-name: ${escapeHtml(timeline)}; view-timeline-inset: 40% 59%">\n<h2><a href="#${escapeHtml(id)}">${escapeHtml(name)}</a>${date ? ` <time datetime="${escapeHtml(date)}">${escapeHtml(date)}</time>` : ""}</h2>`;
       body = [];
       continue;
     }
