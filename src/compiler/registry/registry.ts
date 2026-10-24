@@ -1273,7 +1273,7 @@ export const PROPERTIES: PropertyDef[] = [
       ["<dashed-ident>", "A timeline that an element of the page names in its own CSS: `view-timeline-name: --intro` on a section follows that section crossing the page, like `view()` follows the scene; `scroll-timeline-name` follows the scroll of the element. The axis and the inset are the ones the page gives, `view-timeline-axis` and `view-timeline-inset`.", "0.0.8"],
     ],
     details: "Write it after `animation`, which still needs a name and a duration: `animation: spin 1s linear; animation-timeline: scroll();`. Scrolling back plays the animation backward.",
-    more: "The number of iterations and the direction still count, an animation without a count plays once along the scroll. A scene takes up to 4 different timelines. A name is looked for in the whole page, the first element that declares it wins: unlike CSS, the page needs no `timeline-scope`, the scene being drawn apart from the page. While no element declares it, the animation shows its first frame. In the playground, which does not scroll, a slider stands in for the scroll.",
+    more: "The number of iterations and the direction still count, an animation without a count plays once along the scroll. A scene takes up to 4 different timelines. A name is looked for in the whole page, the first element that declares it wins: unlike CSS, the page needs no `timeline-scope`, the scene being drawn apart from the page. While no element declares it, the animation shows its first frame. The page Follow the page as it scrolls, under Installation, shows it live, with the CSS of the page to copy. In the playground, which does not scroll, a slider stands in for the scroll.",
     examples: [
       {
         name: "turn with the page",

@@ -555,7 +555,7 @@ Drives the animation with the scroll of the page instead of time, like CSS scrol
 
 Write it after `animation`, which still needs a name and a duration: `animation: spin 1s linear; animation-timeline: scroll();`. Scrolling back plays the animation backward.
 
-The number of iterations and the direction still count, an animation without a count plays once along the scroll. A scene takes up to 4 different timelines. A name is looked for in the whole page, the first element that declares it wins: unlike CSS, the page needs no `timeline-scope`, the scene being drawn apart from the page. While no element declares it, the animation shows its first frame. In the playground, which does not scroll, a slider stands in for the scroll.
+The number of iterations and the direction still count, an animation without a count plays once along the scroll. A scene takes up to 4 different timelines. A name is looked for in the whole page, the first element that declares it wins: unlike CSS, the page needs no `timeline-scope`, the scene being drawn apart from the page. While no element declares it, the animation shows its first frame. The page Follow the page as it scrolls, under Installation, shows it live, with the CSS of the page to copy. In the playground, which does not scroll, a slider stands in for the scroll.
 
 ### turn with the page
 
