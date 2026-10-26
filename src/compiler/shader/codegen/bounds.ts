@@ -9,6 +9,7 @@ import { ROTATIONS, readRotation, readScale, readTranslate } from "./read";
 import { groupHover, hoverValue } from "./animation";
 import { offsetReach } from "./offset";
 import { objectBox, readOrigin } from "./origin";
+import { rangeOf } from "./interval";
 
 // ----- The sphere around the whole scene -----
 // A ray that passes by it meets no object: march() then only has the floor left,
@@ -82,6 +83,18 @@ function anchors(expr: string, steadyHover: boolean): number[][] | null {
   return [numbers.length === 1 ? [numbers[0], numbers[0], numbers[0]] : numbers];
 }
 
+// The points of anchors(), or else the two corners of the range of the value (decision 219):
+// the GLSL GSS writes for an eased timeline, a ternary or hover-distance() keeps a box.
+// The anchors come first: a scene they bound keeps the sphere it had.
+function cornersOf(expr: string, steadyHover: boolean): number[][] | null {
+  const points = anchors(expr, steadyHover);
+  if (points) return points;
+  const range = rangeOf(expr, steadyHover);
+  if (!range || (range.low.length !== 1 && range.low.length !== 3)) return null;
+  const corner = (v: number[]) => (v.length === 1 ? [v[0], v[0], v[0]] : v);
+  return [corner(range.low), corner(range.high)];
+}
+
 export type Sphere = { center: number[]; radius: number };
 
 const length3 = (v: number[]) => Math.hypot(v[0], v[1], v[2]);
@@ -137,11 +150,12 @@ export function objectSphere(
     const reach = offsetReach(nodes[n], keyframes, nodeHover);
     if (reach === null) return null;
     if (reach > 0) sphere = { center: [0, 0, 0], radius: length3(sphere.center) + sphere.radius + reach };
-    const scales = anchors(value("scale", readScale), steady);
-    const translates = anchors(value("translate", readTranslate), steady);
+    const scales = cornersOf(value("scale", readScale), steady);
+    const translates = cornersOf(value("translate", readTranslate), steady);
     const size = n === nodes.length - 1 ? () => objectBox(instance) : undefined; // a group has no box
-    const origins = anchors(value("transform-origin", readOrigin(size)), steady);
+    const origins = cornersOf(value("transform-origin", readOrigin(size)), steady);
     if (!scales || !translates || !origins) return null;
+    if (scales.some((s) => s[0] < 0) && scales.some((s) => s[0] > 0)) scales.push([0, 0, 0]); // through 0: as small as 0
     // transform-origin (decision 107): to the origin, scale and rotate, then back
     const around = boxOfPoints(origins);
     const toOrigin = (sign: number) =>

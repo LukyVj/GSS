@@ -320,6 +320,7 @@ Measured with the bench at dpr 2 (M4 Pro, Oct. 1), GPU median, after decisions 7
 - [x] **Animations once per pixel**, in `animate()` (decision 75): L'Orrery 20.3 → 9.2 ms
 - [x] **A sphere around the whole scene** (decision 76): a ray that passes by it only meets the floor; todal −18 %, spiral −15 %
 - [x] **Bounds on whole groups**, one test per group of 3 objects or more (decision 77): macropad 16.6 → 4.0 ms, todal 19.4 → 3.9 ms
+- [x] **The bounds of animated values**, read by intervals (decision 219): timelines, `cubic-bezier()`, `hover-distance()` keep their spheres; the changelog cloud 278 → 33 ms in WebGL2, 417 → 32 ms in WebGPU (M4 Pro, 1600 × 1200)
 - [x] **A tree of spheres**, built by where the objects are, for every shape and without groups (decision 132): camera-cutaway 75 → under 20 ms, grass 26 → 5 ms, ripple and noise-atmosphere −60 %
 - Set aside: a mask of the objects each ray can meet (decision 133): faster on camera-cutaway and grass, slower on glass and shadows, and it moves edge pixels; kept on the branch `perf/ray-mask-experiment`
 - [x] **Render on demand** (decision 134): a frame is drawn only when what it shows can have changed; a still scene, or one at rest under the mouse, leaves the GPU idle
