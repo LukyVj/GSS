@@ -17,6 +17,7 @@ export const ENTRY_ORDER: Record<string, number> = {
   "install-cdn": -10,
   "set-variables": 0,
   "follow-the-page": 5,
+  "fast-scenes": 7,
   "editor-support": 10,
   // @mixin, then @apply, then the loops, after the other at-rules
   "at-mixin": 1,
@@ -65,7 +66,7 @@ export const ENTRY_ORDER: Record<string, number> = {
 };
 export const DOC_GROUPS: NavGroup[] = [
   { id: "getting-started", title: "Getting started", category: "Start here", order: 0, anchors: ["why-gss", "first-scene"] },
-  { id: "installation", title: "Installation", category: "Start here", order: 1, anchors: ["embedding", "install-package", "install-vite", "install-cdn", "set-variables", "follow-the-page", "editor-support"] },
+  { id: "installation", title: "Installation", category: "Start here", order: 1, anchors: ["embedding", "install-package", "install-vite", "install-cdn", "set-variables", "follow-the-page", "fast-scenes", "editor-support"] },
   { id: "at-rules", title: "At-rules", category: "Language", order: 10, anchors: ["at-scene", "at-media", "at-gpu", "at-keyframes", "at-property", "at-property-panel", "at-debug-panel", "at-paint", "at-mixin", "at-apply", "at-for", "at-each"] },
   { id: "selectors", title: "Selectors", category: "Language", order: 11, anchors: ["selector-type", "selector-class", "selector-id", "selector-attribute", "selector-universal", "selector-list", "selector-nesting", "selector-important"] },
   { id: "combinators", title: "Combinators", category: "Language", order: 12, anchors: ["selector-descendant", "selector-child", "selector-adjacent", "selector-sibling"] },

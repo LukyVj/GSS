@@ -312,6 +312,26 @@ CSS only lets an element follow a timeline named by itself or one of its ancesto
 
 Like CSS, the animation applies only while the section crosses: before and after, the object has its own value. `both` in `animation`, as in the demo, holds its first frame before and its last one after. While no element of the page has the name, the animation does not apply either. A page that adds its sections later is followed once they are there. In the playground and under the examples of these docs, where there is no such section, the slider over the render stands in for the scroll.
 
+<a name="fast-scenes"></a>
+
+## Keep a scene fast
+
+Each pixel sends a ray into the scene, and the ray measures how far the objects are at each of its steps. To save work, GSS puts the objects in spheres, alone or in groups that sit close together: a ray that passes far from a sphere skips all the objects inside it. A scene of many objects stays fast as long as GSS knows where its objects can be.
+
+**How it goes, from where it is written to what the scene shows:** `skipped`, `measured`
+
+### Objects that move
+
+An object that moves keeps its sphere, as large as the whole way it can travel: the values of its `@keyframes`, with any easing, on time or on a timeline of the page, `:hover` and its `transition`, `hover-distance()` and `hover-direction()`, motion paths. Objects that move a little keep small spheres and are skipped as often as objects at rest; an object that crosses the scene gets a sphere as large as the scene, and is measured by almost every ray.
+
+### What makes a scene slower
+
+- **A variable set from JavaScript:** A position read from an [`@property`](at-rules.md#at-property) can take any value: its object has no sphere, and every ray measures it at every step. That is the price of a value the page can change at any moment.
+- **A value that grows with time:** A position computed from the time without end, like `calc()` around a value that keeps growing, has no bound either. An animation that repeats stays bounded.
+- **Many objects that cross the scene:** Their spheres all cover the scene: keep the number of such objects low, or let them move less.
+
+To see where a scene spends its time, [`view: steps`](rendering.md#view) colors each pixel by the work it costs, and the scene lowers its [`dpr`](rendering.md#dpr) by itself when its frames get slow.
+
 <a name="editor-support"></a>
 
 ## Editor support

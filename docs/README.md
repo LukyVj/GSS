@@ -9,7 +9,7 @@ New to GSS? Start with [Getting started](getting-started.md), then [Installation
 ## Start here
 
 - [Getting started](getting-started.md): Why GSS, Your first scene
-- [Installation](installation.md): Embedding a scene, Package (npm), Vite plugin, CDN (no build step), Set variables from JavaScript, Follow the page as it scrolls, Editor support
+- [Installation](installation.md): Embedding a scene, Package (npm), Vite plugin, CDN (no build step), Set variables from JavaScript, Follow the page as it scrolls, Keep a scene fast, Editor support
 
 ## Language
 
