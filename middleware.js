@@ -1,11 +1,30 @@
 // Vercel Routing Middleware: staging.gss-lang.dev asks for a password before anything is
-// served; every other host passes through untouched. The password is the STAGING_PASSWORD
-// environment variable of the Vercel project, never in the code. Any user name is accepted.
+// served. The password is the STAGING_PASSWORD environment variable of the Vercel project,
+// never in the code. Any user name is accepted. On every host, a request that asks for
+// Markdown (Accept: text/markdown) gets the home page or the docs in Markdown.
 const STAGING_HOST = "staging.gss-lang.dev";
 
-export default function middleware(request) {
-  if ((request.headers.get("host") ?? "") !== STAGING_HOST) return;
+// The pages that have a Markdown version, written at build
+const MARKDOWN = { "/": "/index.md", "/docs": "/docs/README.md" };
 
+export default function middleware(request) {
+  if ((request.headers.get("host") ?? "") === STAGING_HOST) {
+    const refused = stagingRefusal(request);
+    if (refused) return refused;
+  }
+  return markdownRewrite(request);
+}
+
+// Serves the Markdown file in place of the page, at the same URL
+function markdownRewrite(request) {
+  if (!/(^|[,\s])text\/markdown\b/.test(request.headers.get("accept") ?? "")) return;
+  const url = new URL(request.url);
+  const markdown = MARKDOWN[url.pathname];
+  if (!markdown) return;
+  return new Response(null, { headers: { "x-middleware-rewrite": new URL(markdown, url).toString() } });
+}
+
+function stagingRefusal(request) {
   const password = process.env.STAGING_PASSWORD;
   // Without a password set, stay closed rather than open
   if (!password) return new Response("Staging is not configured.", { status: 503 });

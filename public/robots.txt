@@ -1,1 +1,6 @@
 # Algolia-Crawler-Verif: B9FF6D10B8359F36
+
+User-agent: *
+Allow: /
+
+Sitemap: https://www.gss-lang.dev/sitemap.xml
