@@ -323,6 +323,25 @@ INSTALLATION.push({
 });
 
 INSTALLATION.push({
+  anchor: "fast-scenes",
+  figure: "flow",
+  label: "Keep a scene fast",
+  since: "0.0.8",
+  paragraphs: [
+    "Each pixel sends a ray into the scene, and the ray measures how far the objects are at each of its steps. To save work, GSS puts the objects in spheres, alone or in groups that sit close together: a ray that passes far from a sphere skips all the objects inside it. A scene of many objects stays fast as long as GSS knows where its objects can be.",
+    "<h4>Objects that move</h4>",
+    "An object that moves keeps its sphere, as large as the whole way it can travel: the values of its <code>@keyframes</code>, with any easing, on time or on a timeline of the page, <code>:hover</code> and its <code>transition</code>, <code>hover-distance()</code> and <code>hover-direction()</code>, motion paths. Objects that move a little keep small spheres and are skipped as often as objects at rest; an object that crosses the scene gets a sphere as large as the scene, and is measured by almost every ray.",
+    "<h4>What makes a scene slower</h4>",
+    table([
+      ["A variable set from JavaScript", 'A position read from an <a href="#at-property"><code>@property</code></a> can take any value: its object has no sphere, and every ray measures it at every step. That is the price of a value the page can change at any moment.'],
+      ["A value that grows with time", "A position computed from the time without end, like <code>calc()</code> around a value that keeps growing, has no bound either. An animation that repeats stays bounded."],
+      ["Many objects that cross the scene", "Their spheres all cover the scene: keep the number of such objects low, or let them move less."],
+    ]),
+    'To see where a scene spends its time, <a href="#view"><code>view: steps</code></a> colors each pixel by the work it costs, and the scene lowers its <a href="#dpr"><code>dpr</code></a> by itself when its frames get slow.',
+  ],
+});
+
+INSTALLATION.push({
   anchor: "editor-support",
   figure: "flow",
   label: "Editor support",
