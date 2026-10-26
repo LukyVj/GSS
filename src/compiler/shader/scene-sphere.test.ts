@@ -84,19 +84,25 @@ describe("the sphere of the scene", () => {
     expect(sphereOf(bounce)).toBeNull();
   });
 
-  it("is not there when a keyframe easing can overshoot, or the time is not a plain segment", () => {
+  it("holds a keyframe easing that overshoots, as far as its handles, and an animation that switches off (decision 219)", () => {
     const overshoot = `
       @scene { sphere; }
       sphere { animation: rise 2s cubic-bezier(0.3, -0.4, 0.7, 1.4); }
       @keyframes rise { to { translate: 0 2 0; } }
     `;
-    expect(sphereOf(overshoot)).toBeNull();
+    const sphere = sphereOf(overshoot)!;
+    // translate y from 0 to 2, eased between -0.4 and 1.4: from -0.8 to 2.8
+    expect(sphere.center[1] - sphere.radius).toBeLessThanOrEqual(-0.8);
+    expect(sphere.center[1] + sphere.radius).toBeGreaterThanOrEqual(2.8);
     const delayed = `
       @scene { sphere; }
       sphere { animation: rise 2s 1s 2; }
       @keyframes rise { to { translate: 0 2 0; } }
     `;
-    expect(sphereOf(delayed)).toBeNull();
+    // on during its two iterations only: then the translate of the sphere, 0
+    const off = sphereOf(delayed)!;
+    expect(off.center[1] - off.radius).toBeLessThanOrEqual(0);
+    expect(off.center[1] + off.radius).toBeGreaterThanOrEqual(2);
   });
 
   it("is not there for an empty scene", () => {
