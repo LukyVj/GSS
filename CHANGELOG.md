@@ -8,6 +8,7 @@ The 0.0.1 history was reconstructed from GitHub.
 
 ### Added
 
+- **`transition`**: a transition per property, `scale 0.2s, color 1s`, like CSS. Each item of the list names the property it glides, or `all`, the default; when two name the same property, the last one wins, and a property the list does not name changes at once. The longhands `transition-property`, `transition-duration`, `transition-timing-function` and `transition-delay` win over what `transition` says. It works for `:hover`, `:active` and the states of a group, and `hover-distance()` glides with the transition of the property that reads it.
 - **Changelog**: the points of the cloud glide aside wherever the pointer passes, the nearest the most.
 - **`hover-distance()`, `hover-direction()`**: how far an object is from the point under the pointer, and which way. In `calc()`, they let the objects near the pointer move aside, grow or change color, the nearest the most: `translate: calc(var(--x) + hover-direction(x) * 0.5 * exp(-3 * hover-distance())) 0 0`. The point is where the pointer meets an object or the floor, or, over the background, as far as the `camera-target`, so a cloud of small points reacts wherever the pointer passes. It glides with the `transition` of the objects that read them.
 - **`:not()`**: with `:hover` inside. `cube:not(:hover)` styles every cube that is not under the mouse, all of them while nothing is, and `#cloud:not(:has(.point:hover)) .point` the points while none of them is hovered, with their `transition`.

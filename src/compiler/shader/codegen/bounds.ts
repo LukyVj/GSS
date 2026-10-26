@@ -3,7 +3,7 @@ import type { Token } from "../../syntax/tokenizer";
 import type { Keyframes } from "../../syntax/ast";
 import type { StyledInstance } from "../../cascade/resolve";
 import type { Easing } from "../../values/easing";
-import { readTransition } from "../../features/transition";
+import { readTransitions } from "../../features/transition";
 import { glslFloat, vec3, type Hover } from "./glsl";
 import { ROTATIONS, readRotation, readScale, readTranslate } from "./read";
 import { groupHover, hoverValue } from "./animation";
@@ -123,10 +123,9 @@ export function steadyTransitions(instance: StyledInstance, n: number): boolean 
     n < instance.groups.length
       ? [instance.groupStyles[n], ...instance.groupHoverStates[n].map((state) => state.styles)]
       : [instance.styles, instance.hoverStyles, ...instance.hoverStates.map((state) => state.styles), instance.activeStyles];
-  return states.every((styles) => {
-    const transition = readTransition(styles["transition"]);
-    return !transition || stays01(transition.easing);
-  });
+  return states.every((styles) =>
+    readTransitions(styles).every(({ transition }) => !transition || stays01(transition.easing)),
+  );
 }
 
 // One object's sphere in the scene, through its own transforms and its groups', from

@@ -40,7 +40,7 @@ New to GSS? Start with [Getting started](getting-started.md), then [Installation
 ## Motion
 
 - [Transforms](transforms.md): `offset-distance`, `offset-path`, `offset-rotate`, `rotate-x`, `rotate-y`, `rotate-z`, `scale`, `transform-origin`, `translate`
-- [Animation and transitions](animations.md): `animation`, `animation-delay`, `animation-direction`, `animation-duration`, `animation-fill-mode`, `animation-iteration-count`, `animation-range`, `animation-range-end`, `animation-range-start`, `animation-timeline`, `animation-timing-function`, `transition`
+- [Animation and transitions](animations.md): `animation`, `animation-delay`, `animation-direction`, `animation-duration`, `animation-fill-mode`, `animation-iteration-count`, `animation-range`, `animation-range-end`, `animation-range-start`, `animation-timeline`, `animation-timing-function`, `transition`, `transition-delay`, `transition-duration`, `transition-property`, `transition-timing-function`
 - [Easings](easings.md): `cubic-bezier()`, `linear()`, `steps()`
 - [Scroll timelines](timelines.md): `scroll()`, `view()`
 

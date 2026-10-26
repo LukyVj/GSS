@@ -31,13 +31,16 @@ ${lines.join("\n")}
 `;
 }
 
-export function toShadertoy({ shader, camera, properties, hover }: CompiledScene): string {
+export function toShadertoy({ shader, camera, properties, hover, active, channels: glides }: CompiledScene): string {
   const channels = channelDefines(shader);
   const body = shader
     // 0. No picking in Shadertoy: nothing is hovered, so only the slots of :not(:hover) are
     // on (decision 214). Before step 1, which removes every uniform line
     .replace(/^uniform float uHover\[(\d+)\];.*\n/m, (_, n) => {
-      const rest = Array.from({ length: Number(n) }, (_, i) => (hover[i]?.includes(0) ? "1.0" : "0.0")).join(", ");
+      // a number after the slots follows its slot (a transition per property)
+      const slots = hover.length + (active?.length ?? 0);
+      const slotOf = (i: number) => (i < slots ? i : (glides?.[i - slots]?.slot ?? i));
+      const rest = Array.from({ length: Number(n) }, (_, i) => (hover[slotOf(i)]?.includes(0) ? "1.0" : "0.0")).join(", ");
       return `const float uHover[${n}] = float[${n}](${rest}); // :hover needs the GSS runtime\n`;
     })
     .replace(/^uniform float uStart\[(\d+)\];.*\n/m, (_, n) => {

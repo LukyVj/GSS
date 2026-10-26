@@ -38,7 +38,7 @@ import { backgroundCode, backgroundNeedsCamera, floorGradient, gradientCode, obj
 import { gradientMean } from "../gradient";
 import { BLEND_LIBRARY } from "./blend-library";
 import { readMaterial } from "./materials";
-import { activeSlots, groupHover, hoverSlots, hoverValue, sceneTriggers, useGroupHovers, useTimelines } from "./animation";
+import { activeSlots, groupHover, hoverSlots, hoverValue, sceneTriggers, transitionChannels, useChannels, useGroupHovers, useTimelines } from "./animation";
 import { sceneTimelines, timelineUniform } from "../../features/timeline";
 import { offsetLines, offsetReach, useOffsetFunctions } from "./offset";
 import { animateCode, createHoisted, hoist, originOf, pointerCode, pointerReaders, rotationLines, transformLines } from "./transforms";
@@ -63,7 +63,7 @@ import { sceneControls } from "../../features/controls";
 import { withStepsView } from "./debug";
 import { BOXED, objectOutline, outlineBlend, outlineFarCode, outlineFunctions, withOutlineBand, withOutlineFrames, withOutlineMarch, withOutlineShapes, type Outlined } from "./outline";
 
-export { activeSlots, hoverSlots, sceneTriggers, type Trigger } from "./animation";
+export { activeSlots, hoverSlots, sceneTriggers, transitionChannels, type Trigger } from "./animation";
 export { pointerReaders } from "./transforms";
 export { shapeNames, shapeRadius } from "./shapes";
 
@@ -143,6 +143,9 @@ export function generateShader(
     return layers.length > 0 ? layers : undefined;
   };
   useGroupHovers(groupHoverOf);
+  // transition per property: the properties with another transition read their own number
+  const channels = transitionChannels(everything);
+  useChannels(channels.of);
   const context: ShapeContext = { functions: new Map() };
   const hoisted = createHoisted(); // the animated values of map(): computed by animate()
   const spheres: (Sphere | null)[] = []; // each object's, for the sphere of the scene
@@ -568,7 +571,7 @@ export function generateShader(
             ? `uniform float uStart[${triggers.length}]; // when each state that starts an animation started it (seconds of iTime)\n`
             : "") +
           (picks
-            ? `uniform float uHover[${Math.max(slots.length, 1)}]; // 0 at rest, 1 hovered
+            ? `uniform float uHover[${Math.max(slots.length + channels.parents.length, 1)}]; // 0 at rest, 1 hovered
 uniform bool uPicking; // true: draw the id of the object under uPick, not its color
 uniform vec2 uPick;${pointed ? "\nuniform vec4 uPointer; // hover-distance(): the pixel under the pointer, how far along its ray, how present (decision 217)" : ""}`
             : ""),

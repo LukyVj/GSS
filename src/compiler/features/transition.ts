@@ -154,11 +154,9 @@ export function transitionOf(entries: TransitionEntry[], property: string): Tran
   return null;
 }
 
-// The different transitions of a list, the first first: the ones a state glides with
-export function distinctTransitions(entries: TransitionEntry[]): (Transition | null)[] {
-  const found: (Transition | null)[] = [];
-  for (const { transition } of entries) if (!found.some((t) => sameTransition(t, transition))) found.push(transition);
-  return found;
+// The properties a list names, a shorthand as the properties it sets; all left out
+export function namedProperties(entries: TransitionEntry[]): string[] {
+  return entries.flatMap(({ property }) => (property === "all" ? [] : (SHORTHANDS[property] ?? [property])));
 }
 
 export function sameTransition(a: Transition | null, b: Transition | null): boolean {

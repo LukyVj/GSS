@@ -3,6 +3,7 @@ import { PROPERTIES, LIGHT_TAKES } from "../registry/core";
 import { parseSelector, isSceneSelector, needsHover, needsPointer } from "./resolve";
 import { ErrorSink, errorAt } from "../syntax/errors";
 import { ANIMATION_LONGHANDS } from "../features/animation";
+import { TRANSITION_LONGHANDS } from "../features/transition";
 
 // Throws if a rule uses a property that is not in the registry,
 // or a property that does not apply to what the rule targets.
@@ -48,10 +49,10 @@ function checkDeclaration(rule: Rule, declaration: Declaration): true {
     throw errorAt(declaration, `Unknown property "${declaration.property}"`);
   }
 
-  // transition, cursor and outline-style are not animated, but :hover can set them, like CSS; an animation
+  // transition and its longhands, cursor and outline-style are not animated, but :hover can set them, like CSS; an animation
   // in a :hover or :active rule starts when the state does (decision 141); the sizes of the
   // shapes change on :hover, not in @keyframes (decision 213)
-  if (hover && !property.animatable && !["transition", "cursor", "outline-style", ...HOVER_SIZES].includes(property.name) && !startsAnimation(property.name)) {
+  if (hover && !property.animatable && !["transition", ...TRANSITION_LONGHANDS, "cursor", "outline-style", ...HOVER_SIZES].includes(property.name) && !startsAnimation(property.name)) {
     const animatable = PROPERTIES.filter((p) => p.animatable).map((p) => p.name);
     throw errorAt(
       declaration,

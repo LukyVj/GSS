@@ -160,3 +160,41 @@ describe("transition in compileScene", () => {
     ).not.toThrow();
   });
 });
+
+describe("a transition per property in compileScene", () => {
+  const compiled = (rules: string) => compileScene(`@scene { cube#a; sphere; } ${rules}`);
+
+  it("keeps one number per state when every property glides alike, as before", () => {
+    const scene = compiled("#a { transition: 0.3s; } #a:hover { scale: 1.2; color: #3a7bff; }");
+    expect(scene.channels).toBeUndefined();
+    expect(scene.shader).toContain("uniform float uHover[1];");
+  });
+
+  it("gives each other transition of a state its number, read by its properties", () => {
+    const scene = compiled("#a { transition: scale 0.2s, color 1s ease-out; } #a:hover { scale: 1.2; color: #3a7bff; }");
+    expect(scene.transitions).toEqual([{ enter: null, leave: null }]); // what the list does not name: instant
+    expect(scene.channels?.map(({ slot, enter }) => [slot, enter?.duration])).toEqual([
+      [0, 0.2],
+      [0, 1],
+    ]);
+    expect(scene.shader).toContain("uniform float uHover[3];");
+    expect(scene.shader).toMatch(/mix\([^;]*1\.2[^;]*uHover\[1\]\)/);
+    expect(scene.shader).toMatch(/uHover\[2\]/);
+  });
+
+  it("reads the longhands, and the transition of :active", () => {
+    const scene = compiled(
+      "#a { transition-property: scale, color; transition-duration: 0.2s, 1s; } #a:hover { scale: 1.2; color: #3a7bff; } #a:active { scale: 0.9; transition-property: scale; transition-duration: 0.1s; }",
+    );
+    expect(scene.channels?.map(({ slot, enter }) => [slot, enter?.duration ?? null])).toEqual([
+      [0, 0.2],
+      [0, 1],
+      [1, 0.1],
+      [1, null], // pressed, color jumps; released, it glides back in 1 s
+    ]);
+  });
+
+  it("rejects an unknown property in a list", () => {
+    expect(() => compiled("#a { transition: scael 1s; } #a:hover { scale: 1.2; }")).toThrow('Unknown property "scael"');
+  });
+});

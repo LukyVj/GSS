@@ -205,7 +205,7 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
     if (!compiled.wgsl || compiled.passes?.some(p => !p.wgsl)) throw new Error("This scene has no WGSL target. Recompile it with compile(source) or the current GSS Vite plugin.");
     const count = Math.max(compiled.textures.length, compiled.passes?.length ? 3 : 0);
     if (count > device.limits.maxSampledTexturesPerShaderStage) throw new Error("This scene exceeds the WebGPU device's texture limit");
-    const slots = compiled.hover.length + (compiled.active?.length ?? 0);
+    const slots = compiled.hover.length + (compiled.active?.length ?? 0) + (compiled.channels?.length ?? 0); // with the numbers of a transition per property
     // uTimeline goes after the hover slots (decision 96), uProperties after it (decision 105),
     // uStart after them (decision 141)
     const size = 48 + 16 * Math.max(1, slots) + (compiled.timelines ? 16 * timelineVectors(compiled.timelines.length) : 0) + 16 * (compiled.properties?.length ?? 0) + 16 * (compiled.triggers?.length ?? 0) + (compiled.pointer ? 16 : 0);
@@ -250,7 +250,7 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
     hovered = 0; aimed = null; press.reset(); pickGeneration++;
     slider?.show(compiled.timelines !== undefined);
     density?.restart(performance.now()); // its compile is not a slow frame
-    transitions = createTransitions(compiled.transitions, pointerValues(compiled.hover, compiled.active, 0, 0));
+    transitions = createTransitions(compiled.transitions, pointerValues(compiled.hover, compiled.active, 0, 0), compiled.channels);
     measured = createPointer(compiled.pointer?.transition ?? null);
     triggers = createTriggers(compiled.triggers ?? [], compiled.transitions.length);
     if (resetCamera) {
@@ -297,8 +297,8 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
       const held = triggers.update(pointerValues(current.compiled.hover, current.compiled.active, hovered, press.id), clock.seconds);
       const targets = transitions.update(held.targets, now, reducedMotion);
       targets.forEach((value, i) => { v[12 + 4 * i] = value; });
-      const { timelines, hover, active } = current.compiled;
-      const after = 12 + 4 * Math.max(1, hover.length + (active?.length ?? 0));
+      const { timelines, hover, active, channels } = current.compiled;
+      const after = 12 + 4 * Math.max(1, hover.length + (active?.length ?? 0) + (channels?.length ?? 0));
       if (timelines) v.set(timelineValues(timelines, canvas, slider?.value() ?? null), after);
       const values = properties.values();
       const timelineFloats = timelines ? 4 * timelineVectors(timelines.length) : 0;

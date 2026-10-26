@@ -607,7 +607,7 @@ export function createView(
     slider?.show(compiled.timelines !== undefined);
     dpr = compiled.dpr;
     density?.restart(performance.now()); // its compile is not a slow frame
-    transitions = createTransitions(compiled.transitions, pointerValues(compiled.hover, compiled.active, 0, 0));
+    transitions = createTransitions(compiled.transitions, pointerValues(compiled.hover, compiled.active, 0, 0), compiled.channels);
     measured = createPointer(compiled.pointer?.transition ?? null);
     triggers = createTriggers(compiled.triggers ?? [], compiled.transitions.length);
     if (resetCamera) applyCameraSettings(compiled.camera);

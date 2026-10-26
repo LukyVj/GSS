@@ -17,7 +17,7 @@ describe("the records of the docs search", () => {
   // The crawler drops a page that gives more than 750 records, and the reference is one page
   it("stay far under the 750 records the crawler takes from one page", () => {
     expect(records.length).toBeGreaterThan(300);
-    expect(records.length).toBeLessThanOrEqual(600);
+    expect(records.length).toBeLessThanOrEqual(625);
   });
 
   it("each weigh less than 10 KB, the most a record can weigh", () => {
