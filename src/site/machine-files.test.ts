@@ -22,7 +22,11 @@ describe("the sitemap", () => {
 
   it("lists every page of the site by its canonical URL", () => {
     expect(sitemap).toMatch(/^<\?xml version="1.0" encoding="UTF-8"\?>/);
-    for (const page of SITE_PAGES) expect(sitemap).toContain(`<loc>https://www.gss-lang.dev${page}</loc>`);
+    for (const page of SITE_PAGES) {
+      expect(sitemap).toMatch(
+        new RegExp(`<loc>https://www.gss-lang.dev${page}</loc>\\n    <lastmod>\\d{4}-\\d{2}-\\d{2}</lastmod>`),
+      );
+    }
   });
 
   it("uses the canonical URL each page declares", async () => {

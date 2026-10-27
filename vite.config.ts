@@ -3,9 +3,9 @@ import { defineConfig } from "vite";
 import { configDefaults } from "vitest/config";
 import { prerenderSite } from "./src/vite/prerender-site.ts";
 
-// Seven pages: the home page (index.html), the editor (playground.html), the reference
+// Nine pages: the home page (index.html), the editor (playground.html), the reference
 // (docs.html), the marks (brand.html), the showcase (showcase.html), the changelog
-// (changelog.html) and what the site collects (privacy.html). Without this list, `vite build` only builds index.html.
+// (changelog.html), and about.html, contact.html and privacy.html. Without this list, `vite build` only builds index.html.
 // prerenderSite fills docs / home / showcase / brand / changelog HTML at build (and in dev) so they read without JS.
 export default defineConfig({
   plugins: [prerenderSite()],
@@ -19,6 +19,8 @@ export default defineConfig({
         showcase: "showcase.html",
         changelog: "changelog.html",
         privacy: "privacy.html",
+        about: "about.html",
+        contact: "contact.html",
       },
     },
   },

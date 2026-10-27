@@ -8,7 +8,7 @@ import { CDN_URL, VERSION } from "../version";
 const SITE = "https://www.gss-lang.dev";
 
 // Every page of the site, by its canonical path
-export const SITE_PAGES = ["/", "/docs", "/playground", "/showcase", "/brand", "/changelog", "/privacy"];
+export const SITE_PAGES = ["/", "/docs", "/playground", "/showcase", "/brand", "/changelog", "/about", "/contact", "/privacy"];
 
 const SUMMARY =
   "GSS writes 3D scenes in CSS: shapes declared in `@scene`, styled with selectors, the cascade and `@keyframes`, and compiled into one raymarching fragment shader for WebGL2 and WebGPU. No Three.js, no meshes.";
@@ -23,8 +23,12 @@ function docPages(): string[] {
   return [...docPage("README.md").matchAll(/^- \[[^\]]+\]\(([^)]+\.md)\)/gm)].map((m) => m[1]);
 }
 
+// lastmod: the day of the build, which publishes every page again
 function sitemapXml(): string {
-  const urls = SITE_PAGES.map((page) => `  <url>\n    <loc>${SITE}${page}</loc>\n  </url>`).join("\n");
+  const day = new Date().toISOString().slice(0, 10);
+  const urls = SITE_PAGES.map(
+    (page) => `  <url>\n    <loc>${SITE}${page}</loc>\n    <lastmod>${day}</lastmod>\n  </url>`,
+  ).join("\n");
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`;
 }
 
