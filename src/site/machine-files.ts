@@ -8,7 +8,7 @@ import { CDN_URL, VERSION } from "../version";
 const SITE = "https://www.gss-lang.dev";
 
 // Every page of the site, by its canonical path
-export const SITE_PAGES = ["/", "/docs", "/playground", "/showcase", "/brand", "/changelog"];
+export const SITE_PAGES = ["/", "/docs", "/playground", "/showcase", "/brand", "/changelog", "/privacy"];
 
 const SUMMARY =
   "GSS writes 3D scenes in CSS: shapes declared in `@scene`, styled with selectors, the cascade and `@keyframes`, and compiled into one raymarching fragment shader for WebGL2 and WebGPU. No Three.js, no meshes.";
