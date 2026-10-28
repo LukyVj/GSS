@@ -315,3 +315,50 @@ describe("createDensity: a GPU too slow for the scene, for @gpu (slow) (decision
     expect(density.slow).toBe(true);
   });
 });
+
+describe("createDensity: a start, a floor and a threshold of its own (decision 229)", () => {
+  it("starts where it is asked, and still follows the frame rate", () => {
+    const density = createDensity("auto", { start: 1 });
+    expect(density.ratio(2, 2)).toBe(1);
+    expect(draw(density, 2, 60, 0, 1200)).toBe(2);
+    expect(createDensity("auto", { start: 1 }).ratio(0.75, 2)).toBe(0.75); // never above the scene's
+  });
+
+  it("never draws under its floor, on a GPU that cannot keep up", () => {
+    const seen: number[] = [];
+    draw(createDensity("auto", { start: 1, min: 0.75 }), 2, 20, 0, 5000, seen);
+    expect(Math.min(...seen)).toBe(0.75);
+  });
+
+  it("starts at its floor when the start is under it", () => {
+    expect(createDensity("auto", { start: 0.5, min: 1 }).ratio(2, 2)).toBe(1);
+  });
+
+  it("goes back to its own floor when a lighter version stops holding 1", () => {
+    const density = createDensity("auto", { min: 0.75 });
+    density.floor(1);
+    density.floor(null);
+    const seen: number[] = [];
+    draw(density, 2, 20, 0, 5000, seen);
+    expect(Math.min(...seen)).toBe(0.75);
+  });
+
+  it("is too heavy under the frame rate it is given, over the time it is given", () => {
+    const density = createDensity("auto", { heavyFps: 20, heavySeconds: 1 });
+    let heavy = -1;
+    for (let t = 0; t < 5000 && heavy < 0; t += 1000 / 12) {
+      density.ratio(2, 2);
+      if (density.frame(t)) heavy = t;
+    }
+    expect(heavy).toBeGreaterThanOrEqual(1000);
+    expect(heavy).toBeLessThanOrEqual(2600);
+    // 12 fps is not too heavy with the threshold of 5
+    const plain = createDensity("auto");
+    let stopped = false;
+    for (let t = 0; t < 5000; t += 1000 / 12) {
+      plain.ratio(2, 2);
+      stopped ||= plain.frame(t);
+    }
+    expect(stopped).toBe(false);
+  });
+});

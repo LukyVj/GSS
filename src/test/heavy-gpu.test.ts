@@ -35,13 +35,13 @@ const moving = compileScene("@scene { sphere; } scene { background: #000; camera
 
 // Mounts a view on a canvas of this CSS size, then reports what happened over `ms`
 // Stops early once it is too heavy, or once it draws at `full` pixels wide
-async function watch(compiled: unknown, width: number, height: number, ms: number, full = Infinity) {
-  return page.evaluate(async ({ compiled, width, height, ms, full }) => {
+async function watch(compiled: unknown, width: number, height: number, ms: number, full = Infinity, options: object = {}) {
+  return page.evaluate(async ({ compiled, width, height, ms, full, options }) => {
     document.body.innerHTML = "";
     const canvas = document.createElement("canvas");
     canvas.style.cssText = `display:block;width:${width}px;height:${height}px`;
     document.body.append(canvas);
-    const view = (window as any).__createView(canvas, { controls: false });
+    const view = (window as any).__createView(canvas, { controls: false, ...options });
     const widths: number[] = [];
     let heavyAt = -1;
     const start = performance.now();
@@ -56,9 +56,10 @@ async function watch(compiled: unknown, width: number, height: number, ms: numbe
     const draw = gl.drawArrays.bind(gl);
     gl.drawArrays = (...args: Parameters<typeof draw>) => { draws++; draw(...args); };
     await new Promise(resolve => setTimeout(resolve, 600));
+    const stats = view.stats();
     view.destroy();
-    return { widths, heavyAt, drawsAfter: draws };
-  }, { compiled, width, height, ms, full });
+    return { widths, heavyAt, drawsAfter: draws, stats };
+  }, { compiled, width, height, ms, full, options });
 }
 
 describe("a scene on a GPU too slow for it (decision 142)", () => {
@@ -79,6 +80,19 @@ describe("a scene on a GPU too slow for it (decision 142)", () => {
     expect(widths.at(-1)).toBe(40);
     expect(heavyAt).toBe(-1);
   }, 30000);
+
+  it("starts where adaptDpr asks, and says its ratio in stats()", async () => {
+    const { widths, heavyAt, stats } = await watch(light, 40, 30, 3000, Infinity, { adaptDpr: { start: 1 } });
+    expect(widths[0]).toBe(40);
+    expect(heavyAt).toBe(-1);
+    expect(stats.ratio).toBe(1);
+  }, 30000);
+
+  it("never goes under the floor adaptDpr gives, and still stops when too heavy", async () => {
+    const { widths, heavyAt } = await watch(heavy, 1600, 1000, 50000, Infinity, { adaptDpr: { start: 1, min: 1 } });
+    expect(widths).toEqual([1600]);
+    expect(heavyAt).toBeGreaterThan(0);
+  }, 90000);
 
   it("stops, says so with gss-too-heavy, and draws nothing more", async () => {
     const { widths, heavyAt, drawsAfter } = await watch(heavy, 3200, 2000, 50000);

@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { describe, it, expect, beforeEach } from "vitest";
 import { createDensity } from "./dpr";
-import { createDprPicker, savedDpr } from "./dpr-picker";
+import { createDprPicker, savedDpr, viewDensity } from "./dpr-picker";
 import { createGpu } from "./gpu";
 
 // The dpr picker over the docs' and the playground's renders (decision 120)
@@ -106,5 +106,13 @@ describe("the gpu menu", () => {
     const { box, ui } = withGpu();
     ui.destroy();
     expect(box.querySelector(".gss-gpu")).toBeNull();
+  });
+});
+
+describe("viewDensity: adaptDpr as an object (decision 229)", () => {
+  it("passes its start and its floor, and the threshold of heavyThreshold", () => {
+    expect(viewDensity({ adaptDpr: { start: 1, min: 0.75 } })!.ratio(2, 2)).toBe(1);
+    expect(viewDensity({ adaptDpr: false, heavyThreshold: { fps: 20 } })).toBeNull();
+    expect(viewDensity({ heavyThreshold: { fps: 20, seconds: 1 } })!.ratio(2, 2)).toBe(0.5);
   });
 });

@@ -1894,3 +1894,15 @@ A first version cut the light from 0 into steps, with a pinpoint highlight: its 
 **Why**: the hero "Encre" stretched a 512 texture over a sphere that fills half the screen: each texel 3 to 4 pixels wide, steps in the ink, and the far side shimmering as it turns. Mipmaps change the image of a scene, so they are asked for, not given. The spec named the descriptors `size` and `filter`; `filter` is the word of the GPU (a texture filter) and lives inside `@paint`, away from the `filter` of the objects.
 **Accepted limits**: still WebGL2 only (a `@paint` on WebGPU waits for a GLSL to WGSL path, 0.0.9). No anisotropic filter, no `wrap`, no `format`, no `update` yet. The sphere mapping still picks a wrong mipmap at its seam, a thin line where `u` wraps. The highlighter colors the descriptors as GLSL.
 
+## 229. `adaptDpr: { start, min }`, `heavyThreshold`, `scene.stats()`
+
+**Decision** (Oct. 28, the "quality ceilings" spec, as 224): three options of the runtime, for a page that wants the best a computer can draw.
+- `adaptDpr: { start?, min? }`: where auto starts (0.5 by default) and the lowest it goes (0.5 by default); `true` and `false` mean what they meant. A start under the floor starts at the floor. `@gpu (slow)` still holds 1 while its lighter version waits, then gives back the floor of `adaptDpr` (`density.floor(null)`). The dpr menu of the docs and the playground takes them too.
+- `heavyThreshold: { fps, seconds? }`: a scene is too heavy under `fps` frames per second for `seconds` at its lowest ratio, where it waits for 5 over 1.5 s. A frame of 3 s still stops it at once. With `adaptDpr: false`, nothing stops the scene, as before (a capture, a benchmark).
+- `scene.stats()`, on `mount()` and `mountAsync()`: `{ fps, ratio }`, the frames of the last whole second (0 before) and the ratio of the last frame. A pause or a hidden page starts a new measure (`runtime/stats.ts`).
+- `heavy-gpu.test.ts`: a scene with `start: 1` draws its first frame at its full ratio and says it in `stats()`; with `min: 1`, a heavy scene never draws under 1 and still stops (both fail without the options).
+
+**Why**: the heroes of the showcase show a blurry first frame on every load, a screenshot or a Lighthouse capture included, and a strong GPU could not skip it without `adaptDpr: false`, which also drops the safety net. A floor of 0.5 is too low for letters; 45 fps at 1 is better for them. A hero at 12 fps is already broken: the page had to measure its own frames to lower its quality.
+**Different from the spec**: `adaptDpr: false` keeps never stopping the scene, as documented since 0.0.5 (the spec asked it to stop): a capture must never stop. No `step`, `max`, `upFps` or `downFps`: the steps of auto stay its own. No `gss-fps` event: `stats()` is read when the page wants it.
+**Accepted limits**: `<gss-scene>` takes none of them yet (attributes later). `stats()` has no time on the GPU (`gpuMs`).
+

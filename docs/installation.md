@@ -152,6 +152,9 @@ To drive the scene from a script, see [Set variables from JavaScript](#set-varia
 - **A lighter version:** A scene with [`@gpu (slow)`](at-rules.md#at-gpu) is never drawn under a density of 1: when its frames stay slow, it switches to its lighter version. `<gss-scene gpu="slow">` and `mount(canvas, scene, { gpu: "slow" })` show that version from the start.
 - **Still too slow:** The scene stops: `<gss-scene>` shows a button that draws it anyway, and `mount()` fires a `gss-too-heavy` event on the canvas, where `scene.play()` draws it anyway.
 - **adaptDpr: false:** `mount(canvas, scene, { adaptDpr: false })` keeps the `dpr` as written and never stops, for a capture or a benchmark.
+- **adaptDpr: { start, min }:** `mount(canvas, scene, { adaptDpr: { start: 1, min: 0.75 } })` starts at a density of 1 instead of 0.5, and never goes under 0.75: no blurry first frame on a strong graphics card, crisp shapes on a weak one. The scene still stops when it is too heavy.
+- **heavyThreshold:** `{ heavyThreshold: { fps: 20, seconds: 1 } }` stops the scene when it stays under 20 frames per second for a second at its lowest density, where the default waits for 5 frames per second over a second and a half.
+- **scene.stats():** Returns `{ fps, ratio }`: the frames of the last second, and the density the canvas draws at. A page can lower its own quality from it, like a lighter scene with `scene.update()`.
 
 <a name="set-variables"></a>
 

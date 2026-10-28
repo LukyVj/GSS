@@ -12,9 +12,16 @@ const RATIOS = [0.5, 1, 1.5, 2];
 
 // The density of a view (decision 142): the viewer's choice with the menu, auto without it;
 // none when the page asked for the scene's dpr as written (adaptDpr: false)
-export function viewDensity(options: { dprPicker?: boolean; adaptDpr?: boolean }): Density | null {
-  if (options.dprPicker) return createDensity(savedDpr());
-  return options.adaptDpr === false ? null : createDensity("auto");
+// adaptDpr: { start, min } and heavyThreshold: { fps, seconds } (decision 229)
+export type AdaptDpr = { start?: number; min?: number };
+export type HeavyThreshold = { fps: number; seconds?: number };
+
+export function viewDensity(options: { dprPicker?: boolean; adaptDpr?: boolean | AdaptDpr; heavyThreshold?: HeavyThreshold }): Density | null {
+  const adapt = typeof options.adaptDpr === "object" ? options.adaptDpr : {};
+  const heavy = options.heavyThreshold;
+  const tuning = { ...adapt, ...(heavy ? { heavyFps: heavy.fps, heavySeconds: heavy.seconds } : {}) };
+  if (options.dprPicker) return createDensity(savedDpr(), tuning);
+  return options.adaptDpr === false ? null : createDensity("auto", tuning);
 }
 
 // The viewer's last choice, auto when there is none (or storage is off)

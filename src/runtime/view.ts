@@ -8,7 +8,8 @@ import { createClock } from "./clock";
 import type { FrameProbe } from "../profiler/profiler";
 import type { Dpr } from "../compiler/features/dpr";
 import { pixelRatio } from "./dpr";
-import { createDprPicker, viewDensity } from "./dpr-picker";
+import { createDprPicker, viewDensity, type AdaptDpr, type HeavyThreshold } from "./dpr-picker";
+import { createStats, type Stats } from "./stats";
 import { createTransitions } from "./transitions";
 import { createPointer, type PointerTarget } from "./pointer";
 import { createTriggers } from "./triggers";
@@ -16,7 +17,6 @@ import { createScrollSlider, timelineValues } from "./timeline";
 import type { Timeline } from "../compiler/features/timeline";
 import { pickVariant, WINDOW_MEDIA, type MediaViewport } from "./media";
 import { createGpu, usesGpu, withGpu, type GpuChoice } from "./gpu";
-import { FLOOR } from "./dpr";
 import { createPost } from "./post";
 import { createProperties } from "./properties";
 import { createDemand, movesWithTime } from "./demand";
@@ -33,6 +33,8 @@ export type View = {
   show(compiled: CompiledScene): Promise<void>;
   // Images drawn since the previous call, and over how many milliseconds (for "60 fps")
   sampleFrames(): { frames: number; ms: number };
+  // The frame rate of the last second and the ratio drawn, for the page (decision 229)
+  stats(): Stats;
   // Where the camera is now, after the mouse and the spin: in radians, like CameraSettings
   // (the debug panel of the playground, decision 204)
   camera(): { yaw: number; pitch: number; distance: number };
@@ -67,8 +69,12 @@ export type ViewOptions = {
   dprPicker?: boolean;
   // true (default): the dpr starts light and follows the frame rate, and a scene too heavy
   // for the computer stops (decision 142). false: always the scene's dpr, never stopped,
-  // for a capture or a benchmark.
-  adaptDpr?: boolean;
+  // for a capture or a benchmark. { start, min } (decision 229): where it starts, 0.5 by
+  // default, and the lowest it goes, 0.5 by default.
+  adaptDpr?: boolean | AdaptDpr;
+  // When a scene is too heavy (decision 229): frames under fps (5 by default) for seconds
+  // (1.5 by default) at the lowest ratio
+  heavyThreshold?: HeavyThreshold;
   // Where @media reads its queries (decision 165): the window, like CSS (default), or, with
   // elementMedia from media.ts, the canvas, like the result of CodePen: the playground and
   // the docs, where the reader sizes the render, not the window. A function, so a page
@@ -139,6 +145,7 @@ export function createView(
   const press = createPress(); // :active: the object pressed, until the button goes up
   const slider = options.scrollSlider ? createScrollSlider(canvas) : null;
   const density = viewDensity(options); // decisions 120 and 142
+  const stats = createStats(); // scene.stats() (decision 229)
   // @gpu (decision 212): the frames say when the GPU is slow, and it stays so
   const gpu = createGpu(options.gpu);
   const dprMenu = density && options.dprPicker ? createDprPicker(canvas, density, undefined, gpu) : null; // docs and playground only
@@ -153,7 +160,7 @@ export function createView(
   let stopMedia = () => {}; // stops listening to the @media queries of the scene
   const media = withGpu(options.viewport?.(canvas) ?? WINDOW_MEDIA, gpu); // decision 165
   let lighter = false; // the scene has a version for a slow GPU: auto never draws it under 1
-  const holdDpr = () => density?.floor(lighter && !gpu.slow ? 1 : FLOOR);
+  const holdDpr = () => density?.floor(lighter && !gpu.slow ? 1 : null);
   const properties = createProperties(); // @property: what the page set (decision 105)
   const demand = createDemand(); // render on demand (decision 134)
   let pickWanted = false; // the pointer moved since the last picking pass
@@ -396,6 +403,7 @@ export function createView(
     if (settings && !camera.dragging) camera.yaw -= dt * settings.spin;
 
     const drawn = resize(); // not inside dprMenu?.(): it must run without the menu too
+    stats.frame(now, drawn);
     dprMenu?.update(drawn, lighter);
     gl!.viewport(0, 0, canvas.width, canvas.height);
 
@@ -517,6 +525,7 @@ export function createView(
   // Back on a hidden page: the time it was away is not a slow frame
   const onVisible = () => {
     if (!document.hidden) density?.resume(performance.now());
+    stats.resume();
   };
   document.addEventListener("visibilitychange", onVisible);
 
@@ -637,6 +646,7 @@ export function createView(
     camera() {
       return { yaw: camera.yaw, pitch: camera.pitch, distance: camera.dist };
     },
+    stats: () => stats.read(),
     sampleFrames() {
       const now = performance.now();
       const sample = { frames: framesSinceSample, ms: now - sampleStart };
@@ -655,6 +665,7 @@ export function createView(
       if (halted) density?.insist(); // drawn anyway: never stopped again
       halted = false;
       density?.resume(performance.now());
+      stats.resume();
       clock.resume(performance.now());
       frameId = requestAnimationFrame(frame);
     },

@@ -23,8 +23,12 @@ export function pixelRatio(dpr: Dpr, screen: number): number {
 // never draws it under 1; more than a second of slow frames at the lowest ratio (with a ratio
 // chosen in the menu, frames that would need one under 1) makes the GPU slow, for good: the
 // view then shows the lighter version.
+// adaptDpr: { start, min } and heavyThreshold (decision 229): where auto starts, the lowest
+// ratio it draws at, and the frames that make a scene too heavy. Each one missing keeps the
+// value below.
 export type DensityChoice = "auto" | number;
 export type Density = ReturnType<typeof createDensity>;
+export type DensityTuning = { start?: number; min?: number; heavyFps?: number; heavySeconds?: number };
 
 const WINDOW = 500; // ms of frames per measure
 const SETTLE = 500; // ms after a change or a new scene: not measured
@@ -51,10 +55,14 @@ const FROZEN_MS = 3000;
 const SLOW_MS = 1000;
 const SLOW_MEASURES = 2;
 
-export function createDensity(initial: DensityChoice) {
+export function createDensity(initial: DensityChoice, tuning: DensityTuning = {}) {
+  const base = tuning.min ?? FLOOR; // the floor of auto
+  const first = Math.max(tuning.start ?? FLOOR, base); // where auto starts
+  const stop = tuning.heavyFps ?? STOP;
+  const heavyMs = tuning.heavySeconds !== undefined ? tuning.heavySeconds * 1000 : HEAVY_MS;
   let choice = initial;
   let ceiling = 1; // the scene's ratio, as last drawn
-  let level: number | null = FLOOR; // auto: the ratio drawn now (null: the ceiling)
+  let level: number | null = first; // auto: the ratio drawn now (null: the ceiling)
   let warming = initial === "auto"; // auto, at the start: climbs fast
   let cap = Infinity; // auto: the lowest ratio that was too slow, not tried before `retryAt`
   let retryAt = -Infinity;
@@ -67,7 +75,7 @@ export function createDensity(initial: DensityChoice) {
   let slowMs = 0; // too heavy: how long, over how many measures
   let slowMeasures = 0;
   let insisted = false; // the reader asked to draw anyway
-  let lowest = FLOOR; // the floor of auto: 1 for a scene with a lighter version
+  let lowest = base; // the floor of auto: 1 for a scene with a lighter version
   let drawn = 1; // the ratio last returned
   let slowFor = 0; // slow, for @gpu (slow): how long, over how many measures
   let slowCount = 0;
@@ -94,14 +102,14 @@ export function createDensity(initial: DensityChoice) {
   // Frames this slow at the lowest ratio, for long enough: the scene is too heavy
   function heavy(fps: number, ms: number): boolean {
     const lowest = choice !== "auto" || current() <= floor();
-    if (insisted || fps >= STOP || !lowest) {
+    if (insisted || fps >= stop || !lowest) {
       slowMs = 0;
       slowMeasures = 0;
       return false;
     }
     slowMs += ms;
     slowMeasures++;
-    if (ms < FROZEN_MS && (slowMs < HEAVY_MS || slowMeasures < HEAVY_MEASURES)) return false;
+    if (ms < FROZEN_MS && (slowMs < heavyMs || slowMeasures < HEAVY_MEASURES)) return false;
     slowMs = 0;
     slowMeasures = 0;
     return true;
@@ -148,7 +156,7 @@ export function createDensity(initial: DensityChoice) {
     // The viewer's choice: auto starts again, light
     choose(next: DensityChoice): void {
       choice = next;
-      level = FLOOR;
+      level = first;
       warming = next === "auto";
       forget();
     },
@@ -193,9 +201,10 @@ export function createDensity(initial: DensityChoice) {
     insist(): void {
       insisted = true;
     },
-    // The lowest ratio auto draws at: 1 for a scene with a lighter version (@gpu), 0.5 otherwise
-    floor(ratio: number): void {
-      lowest = ratio;
+    // The lowest ratio auto draws at: 1 for a scene with a lighter version (@gpu); null: its
+    // own floor, 0.5 or the min of adaptDpr
+    floor(ratio: number | null): void {
+      lowest = ratio ?? base;
     },
     // The GPU could not keep up at the lowest ratio, for more than a second: true for good
     get slow(): boolean {

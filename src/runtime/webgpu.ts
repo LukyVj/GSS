@@ -1,8 +1,9 @@
 import type { CompiledScene } from "../compiler";
 import type { AsyncView, BackendOptions } from "./backend";
 import { createClock } from "./clock";
-import { FLOOR, pixelRatio } from "./dpr";
+import { pixelRatio } from "./dpr";
 import { createDprPicker, viewDensity } from "./dpr-picker";
+import { createStats } from "./stats";
 import { pickPixel, pointerValues, createPress, decodeId, decodeDepth, zoomed, cursorAt, controlsAllow } from "./hover";
 import { createTransitions } from "./transitions";
 import { createPointer, type PointerTarget } from "./pointer";
@@ -63,12 +64,13 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
   const press = createPress(); // :active (decision 95)
   const slider = options.scrollSlider ? createScrollSlider(canvas) : null; // decision 96
   const density = viewDensity(options); // decisions 120 and 142
+  const stats = createStats(); // scene.stats() (decision 229)
   // @gpu (decision 212): the frames say when the GPU is slow, and it stays so
   const gpu = createGpu(options.gpu);
   const media = withGpu(options.viewport?.(canvas) ?? WINDOW_MEDIA, gpu); // decision 165
   const dprMenu = density && options.dprPicker ? createDprPicker(canvas, density, undefined, gpu) : null; // docs and playground only
   let lighter = false; // the scene has a version for a slow GPU: auto never draws it under 1
-  const holdDpr = () => density?.floor(lighter && !gpu.slow ? 1 : FLOOR);
+  const holdDpr = () => density?.floor(lighter && !gpu.slow ? 1 : null);
   let reducedMotion = false;
   const properties = createProperties(); // @property: what the page set (decision 105)
   let transitions = createTransitions([]);
@@ -276,6 +278,7 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
     else clock.resume(now);
     if (settings && !camera.dragging) camera.yaw -= dt * settings.spin;
     const drawn = resize(); // not inside dprMenu?.(): it must run without the menu too
+    stats.frame(now, drawn);
     dprMenu?.update(drawn, lighter);
     if (scene) {
       // Too heavy for the computer: stop, and say so (decision 142)
@@ -371,6 +374,7 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
   // Back on a hidden page: the time it was away is not a slow frame
   const onVisible = () => {
     if (!document.hidden) density?.resume(performance.now());
+    stats.resume();
   };
   document.addEventListener("visibilitychange", onVisible);
   return {
@@ -393,6 +397,7 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
       }) : () => {};
     },
     camera() { return { yaw: camera.yaw, pitch: camera.pitch, distance: camera.dist }; },
+    stats: () => stats.read(),
     sampleFrames() { const now = performance.now(); const result = { frames, ms: now - sampleStart }; frames = 0; sampleStart = now; return result; },
     pause() { playing = false; cancelAnimationFrame(frameId); },
     play() {
@@ -401,6 +406,7 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
       if (halted) density?.insist(); // drawn anyway: never stopped again
       halted = false;
       density?.resume(performance.now());
+      stats.resume();
       clock.resume(performance.now());
       frameId = requestAnimationFrame(frame);
     },

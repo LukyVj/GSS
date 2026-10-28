@@ -173,7 +173,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
   - [x] `camera-fov` ✅ decision 226
   - [x] `ambient-occlusion` ✅ decision 227
   - [x] `@paint { size; filter: mipmap; }` (WebGL2) ✅ decision 228
-  - [ ] `adaptDpr: { start, min }`, a `heavyThreshold`, `scene.stats()`
+  - [x] `adaptDpr: { start, min }`, a `heavyThreshold`, `scene.stats()` ✅ decision 229
   - [ ] The bounds of the objects whose place depends on a variable set from JS (the 117 columns of the hero "Champ" have none)
   - [ ] `antialias: 2x | 4x` (rotated grid, in the shader)
   - For 0.0.9: `hit-precision: auto`, over-relaxation, FXAA and TAA, `dpr … supersample`, `@paint` on WebGPU, a `quality` shorthand with a tier media feature and `setQuality()`, glass seen through glass, `reflection-depth`, a blended color across `blend`, more `@media` queries and `@scene` inside `@media`.
