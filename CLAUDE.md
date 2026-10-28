@@ -46,6 +46,7 @@ gss-lang.dev; npm package: `gss-lang`.
   | `@paint`, `texture: paint()` | `paint-gpu.test.ts` |
   | `texture-mapping`, `checker()` on the floor | `texture-mapping-gpu.test.ts`, `floor-pattern-gpu.test.ts` |
   | materials and color | `material-color-gpu.test.ts` |
+  | `ambient-occlusion`, the quality properties of the scene | `ambient-occlusion-gpu.test.ts` |
   | `mix-blend-mode`, `outline`, `shape-rendering` | `mix-blend-mode-gpu.test.ts`, `outline-gpu.test.ts`, `shape-rendering-gpu.test.ts` |
   | `@media`, named timelines, end of an animation | `media-gpu.test.ts`, `named-timeline-gpu.test.ts`, `visibility-gpu.test.ts` |
   | slow GPU, no GPU, parallel compile, `@gpu` | `heavy-gpu.test.ts`, `software-gpu.test.ts`, `parallel-compile-gpu.test.ts`, `gpu-slow-gpu.test.ts` |

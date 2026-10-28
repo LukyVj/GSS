@@ -45,6 +45,7 @@ import { animateCode, createHoisted, hoist, originOf, pointerCode, pointerReader
 import { objectBox } from "./origin";
 import { fogCode } from "./fog";
 import { withFocal, withRaymarch } from "./raymarch";
+import { occludedAmbient, readAmbientOcclusion, withAmbientOcclusion } from "./ambient-occlusion";
 import { readFocal } from "../../features/camera";
 import { readRaymarch } from "../../features/raymarch";
 import { boundedMap, enclosing, objectSphere, sceneMiss, steadyTransitions, type Sphere } from "./bounds";
@@ -468,6 +469,7 @@ export function generateShader(
   // can follow an animation of the scene (decision 103)
   const background = backgroundCode(sceneStyles, keyframes);
   const raymarch = readRaymarch(sceneStyles); // decision 224
+  const occlusion = readAmbientOcclusion(sceneStyles["ambient-occlusion"]); // decision 227
   const fog = fogCode(sceneStyles, keyframes, raymarch.maxDistance); // off by default
   const materials = materialLines.join("\n");
   // One line in main() for each material the scene uses
@@ -655,7 +657,7 @@ uniform vec2 uPick;${pointed ? "\nuniform vec4 uPointer; // hover-distance(): th
           ? ""
           : (liveLight(sceneStyles["light"]) ?? `const vec3 LIGHT_DIR = ${vec3(readLight(sceneStyles["light"]))};`),
       )
-      .replace("/*@AMBIENT*/", ambientCode ?? glslFloat(ambient))
+      .replace("/*@AMBIENT*/", occludedAmbient(ambientCode ?? glslFloat(ambient), occlusion))
       .replace("/*@DIRECT*/", ambientCode ? `(1.0 - ${ambientCode})` : glslFloat(direct))
       .replace(
         "/*@CAMERA_TARGET*/",
@@ -717,7 +719,9 @@ uniform vec2 uPick;${pointed ? "\nuniform vec4 uPointer; // hover-distance(): th
   // Every light in the highlights of the materials too
   const relit = lights ? lights.rewrite(turned) : turned;
   // view: steps (decision 204): the calls of map() for each pixel, in color
-  const viewed = view === "steps" ? withStepsView(relit) : relit;
+  // ambient-occlusion (decision 227)
+  const occluded = withAmbientOcclusion(relit, occlusion);
+  const viewed = view === "steps" ? withStepsView(occluded) : occluded;
   // raymarch-steps, max-distance, hit-precision (decision 224), camera-fov (decision 226)
   return withFocal(withRaymarch(viewed, raymarch), readFocal(sceneStyles));
 }

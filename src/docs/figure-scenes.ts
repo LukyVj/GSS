@@ -103,6 +103,19 @@ function shadows(subject: string): string {
     `<path class="shade" style="opacity: ${opacity}" d="${route(frame, ringPoints([0.75, 0, -0.35], radius), true)}"/>`;
   const scene = (shadow: string) =>
     `<path class="lit-floor" d="${ground}"/>` + shadow + lines(floor(half, 0.7), frame) + `<g class="floats" style="--rise: -5px">${body(sphereAt(1.15, 0.45), frame)}</g>`;
+  // ambient-occlusion: a ball on the floor, which darkens around its foot, no shadow needed
+  if (subject === "ambient-occlusion") {
+    const resting = (dark: string) =>
+      `<path class="lit-floor" d="${ground}"/>` + dark + lines(floor(half, 0.7), frame) + body(sphereAt(0.45, 0.45), frame);
+    return cells(
+      "figure-steps",
+      [
+        ["ambient-occlusion: none;", resting("")],
+        ["ambient-occlusion: 1;", resting(`<path class="shade" style="opacity: 0.35" d="${route(frame, ringPoints([0, 0, 0], 0.5), true)}"/>` + `<path class="shade" style="opacity: 0.6" d="${route(frame, ringPoints([0, 0, 0], 0.3), true)}"/>`)],
+      ],
+      CELL,
+    );
+  }
   // shadow-softness: the same shadow, its penumbra narrower or wider
   if (subject === "shadow-softness")
     return cells(
@@ -467,6 +480,7 @@ const SCENES: Record<string, (subject: string) => string> = {
   ambient,
   shadows,
   "shadow-softness": shadows,
+  "ambient-occlusion": shadows,
   "shadow-steps": shadows,
   fog,
   floor: floorFigure,

@@ -1874,3 +1874,14 @@ A first version cut the light from 0 into steps, with a pinpoint highlight: its 
 **Why**: the heroes of the showcase wanted a telephoto view (rows of columns read better at 20 to 25 degrees) and could only move `camera-target` off center. A field of view is what every 3D tool calls it; CSS has `perspective`, a distance, which says something else.
 **Accepted limits**: not animatable yet (a dolly zoom needs it as a uniform). The amount of a `displace()` with a `noise()` in the background is still measured with the focal length of 1.5.
 
+## 227. `ambient-occlusion`: less ambient light where the objects close in
+
+**Decision** (Oct. 28, the "quality ceilings" spec, as 224): `scene { ambient-occlusion: none | <strength> [<radius>] [<samples>]; }`. Strength from 0 to 2 (1 is the usual look), radius from 0.05 to 5 units (0.5), samples from 2 to 16 (5). Initial `none`, which writes nothing.
+- **How**: Inigo Quilez's ambient occlusion. At the point main() shades (and at each surface along the ray with opacity), `calcAO(p, n)` measures the scene at `samples` points along the normal, from 0.01 to `radius`; each point closer to the scene than its own height darkens, the farther ones less (× 0.95 each). The result, `1 - strength × 1.8 × occ / (radius × samples)` clamped to [0, 1], is 1 in the open; 1.8 is the 3 of the original, for its radius of 0.12 and its 5 samples. It goes in a global `ao`, which multiplies the ambient term of `diffuse()` only (the template's, and the lights' `AMBIENT_LIGHT`): the sun and the lights keep their shadows. The floor is a surface like the others: it darkens under the objects, the main gain.
+- **Reflections**: `trace()` becomes `traceSeen()`, and a new `trace()` sets `ao` to 1 around it and gives it back: what a reflection or a refraction sees is lit without occlusion, as without shadows, and the surface that reflects keeps its own.
+- **Not occluded**: the materials that do not read `diffuse()` for their ambient light (jelly, the glow of emissive).
+- Written in the shader (the samples are a loop): a variable set from JS is refused, a `@media` can set its own. Every source compiles as before (391, GLSL and WGSL). `ambient-occlusion-gpu.test.ts` draws a cube on the floor with WebGL2 and WebGPU: the floor at its foot darkens, the floor far away and the top of the cube do not change; without the call of `calcAO()`, it fails.
+
+**Why**: the heroes looked pasted on their floor (the feet of the columns of "Champ", the letters of "Aube" in the sand), and raising `ambient` to brighten a scene flattened it more. Ambient occlusion is the cheapest gain of realism for a scene of distances. The name is the one of every 3D tool; CSS has none.
+**Accepted limits**: the cost is `samples` more measures of the scene on every pixel (5 samples, about 5 more steps); one value for the whole scene, no opt-out per object yet. The strength is not set from JS.
+

@@ -1711,6 +1711,34 @@ export const PROPERTIES: PropertyDef[] = [
     ],
   },
   {
+    name: "ambient-occlusion",
+    figure: "scene",
+    since: "0.0.8",
+    appliesTo: "scene",
+    syntax: "none | <number> <number>? <integer>?",
+    initial: "none",
+    description:
+      "Darkens the `ambient` light where the objects close in: the corners, the floor under an object, the gap between two close ones. A strength from 0 to 2, then a radius and a number of samples if needed.",
+    values: [
+      ["none", "No occlusion: the default."],
+      ["<number>", "The strength, from 0 to 2: 1 is the usual look."],
+      ["<number> <number>", "The strength, then the radius, from 0.05 to 5 units: how far around a point the objects count. 0.5 by default."],
+      ["<number> <number> <integer>", "The strength, the radius, then the samples, from 2 to 16: more are smoother and cost more. 5 by default."],
+    ],
+    details: "Objects stop looking pasted on the floor, and a brighter `ambient` keeps its depth. Only the ambient light is darkened: the sun and the lights keep their shadows.",
+    more: "Each sample measures the scene once more, on every pixel: 5 samples cost about as much as 5 steps of a ray. The reflections and the refractions are lit without it. The values are written in the shader: a variable set from JS cannot change them, and a `@media` can.",
+    examples: [
+      {
+        name: "objects that sit on the floor",
+        code: "@scene { cube * 3; sphere; } scene { ambient-occlusion: 1; ambient: 0.5; } cube { size: 0.7; translate: calc(sibling-index() * 0.72 - 1.44) 0.35 0; color: #e8e6e1; } sphere { radius: 0.45; translate: 0 0.45 0.9; color: #ff5a36; }",
+      },
+      {
+        name: "a wider, softer occlusion",
+        code: "@scene { cube * 2; } scene { ambient-occlusion: 0.8 1.5 8; ambient: 0.6; } cube { size: 1 2 1; translate: calc(sibling-index() * 1.3 - 1.95) 1 0; color: #3a7bff; }",
+      },
+    ],
+  },
+  {
     name: "camera-target",
     figure: "scene",
     since: "0.0.1",

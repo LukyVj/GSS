@@ -89,7 +89,7 @@ export const DOC_GROUPS: NavGroup[] = [
   { id: "easings", title: "Easings", category: "Motion", order: 42, anchors: ["fn-cubic-bezier", "fn-linear", "fn-steps"] },
   { id: "timelines", title: "Scroll timelines", category: "Motion", order: 43, anchors: ["fn-scroll", "fn-view"] },
   { id: "camera", title: "Camera", category: "Scene", order: 50, anchors: ["camera-target", "camera-distance", "camera-angle", "camera-fov", "camera-spin", "controls"] },
-  { id: "scene-properties", title: "Lighting and fog", category: "Scene", order: 51, anchors: ["light", "shape-light", "intensity", "ambient", "fog", "shadows", "shadow-softness", "shadow-steps"] },
+  { id: "scene-properties", title: "Lighting and fog", category: "Scene", order: 51, anchors: ["light", "shape-light", "intensity", "ambient", "ambient-occlusion", "fog", "shadows", "shadow-softness", "shadow-steps"] },
   { id: "rendering", title: "Rendering", category: "Scene", order: 52, anchors: ["dpr", "shape-rendering", "raymarch-steps", "max-distance", "hit-precision", "view"] },
 ];
 
