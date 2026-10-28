@@ -39,7 +39,7 @@ scene {
 
 ## `camera-distance`
 
-Sets the distance between the camera and its target at the start, from 3 to 15. The mouse wheel changes it.
+Sets the distance between the camera and its target at the start, from 3 to 15, or to 5 less than `max-distance`. The mouse wheel changes it, within the same range.
 
 - **Syntax:** `<number>`
 - **Initial value:** `8`

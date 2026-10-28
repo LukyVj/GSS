@@ -44,6 +44,8 @@ import { offsetLines, offsetReach, useOffsetFunctions } from "./offset";
 import { animateCode, createHoisted, hoist, originOf, pointerCode, pointerReaders, rotationLines, transformLines } from "./transforms";
 import { objectBox } from "./origin";
 import { fogCode } from "./fog";
+import { withRaymarch } from "./raymarch";
+import { readRaymarch } from "../../features/raymarch";
 import { boundedMap, enclosing, objectSphere, sceneMiss, steadyTransitions, type Sphere } from "./bounds";
 import { GRAIN } from "../../features/filter";
 import { filterCode } from "./filters";
@@ -463,7 +465,8 @@ export function generateShader(
   // A color is a constant; a gradient a function of the pixel (decision 81); either one
   // can follow an animation of the scene (decision 103)
   const background = backgroundCode(sceneStyles, keyframes);
-  const fog = fogCode(sceneStyles, keyframes); // off by default
+  const raymarch = readRaymarch(sceneStyles); // decision 224
+  const fog = fogCode(sceneStyles, keyframes, raymarch.maxDistance); // off by default
   const materials = materialLines.join("\n");
   // One line in main() for each material the scene uses
   const shadeCalls = Object.entries(SHADE_CALLS)
@@ -712,5 +715,7 @@ uniform vec2 uPick;${pointed ? "\nuniform vec4 uPointer; // hover-distance(): th
   // Every light in the highlights of the materials too
   const relit = lights ? lights.rewrite(turned) : turned;
   // view: steps (decision 204): the calls of map() for each pixel, in color
-  return view === "steps" ? withStepsView(relit) : relit;
+  const viewed = view === "steps" ? withStepsView(relit) : relit;
+  // raymarch-steps, max-distance, hit-precision (decision 224)
+  return withRaymarch(viewed, raymarch);
 }

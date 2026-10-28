@@ -248,6 +248,34 @@ const grid = (step: number) => path("ground", Array.from({ length: Math.floor(76
 const dpr = () => cells("figure-steps", [["dpr: 1;", grid(19) + path("tint", stairs(19))], ["dpr: 2;", grid(9.5) + path("tint", stairs(9.5))]], CELL);
 const shapeRendering = () => cells("figure-steps", [["shape-rendering: auto;", path("tint", stairs(9.5))], ["shape-rendering: geometricPrecision;", path("tint", smooth)]], CELL);
 
+// --- the march: the steps of a ray, how far it goes, how close is a hit
+
+// A ray from the top left that grazes the floor: each step as long as the distance to the floor
+const grazing = (steps: number) => {
+  const dots: string[] = [];
+  let x = 18;
+  for (let i = 0; i < steps && x < 116; i++) {
+    const y = 30 + (x - 18) * 0.62;
+    dots.push(`<circle class="dot" cx="${round(x)}" cy="${round(y)}" r="2.2"/>`);
+    x += Math.max((104 - y) * 0.9, 2.4);
+  }
+  return path("ground", "M14 104H118") + path("guide", "M18 30L118 92") + dots.join("");
+};
+const raymarchSteps = () => cells("figure-steps", [["raymarch-steps: 12;", grazing(12)], ["raymarch-steps: 100;", grazing(100)]], CELL);
+
+// The camera, a ray, and a row of objects: past the end of the scene, the background
+const farRow = (far: number) =>
+  `<circle class="dot" cx="16" cy="66" r="4"/>` +
+  path("guide", `M16 66H${16 + far}`) +
+  path("ghost", `M${16 + far} 30V102`) +
+  [44, 74, 104].map((x) => path(x < 16 + far ? "tint" : "ghost", `M${x} 56h12v20h-12Z`)).join("");
+const maxDistance = () => cells("figure-steps", [["max-distance: 20;", farRow(66)], ["max-distance: 60;", farRow(108)]], CELL);
+
+// A surface, and the band above it where a ray stops: narrower, the hit is closer
+const precision = (band: number) =>
+  path("ghost", `M18 ${88 - band}C46 ${70 - band} 86 ${70 - band} 114 ${88 - band}`) + path("tint", "M18 88C46 70 86 70 114 88") + path("guide", "M66 22V74") + `<circle class="dot" cx="66" cy="${round(74.5 - band)}" r="3"/>`;
+const hitPrecision = () => cells("figure-steps", [["hit-precision: 0.01;", precision(14)], ["hit-precision: 0.0002;", precision(2)]], CELL);
+
 // --- distances: what GSS measures to draw a scene, and what joins two objects
 
 const boxAt = (cx: number, cy: number, half: number) => (x: number, y: number) => {
@@ -424,6 +452,9 @@ const SCENES: Record<string, (subject: string) => string> = {
   controls,
   dpr,
   "shape-rendering": shapeRendering,
+  "raymarch-steps": raymarchSteps,
+  "max-distance": maxDistance,
+  "hit-precision": hitPrecision,
   view,
   "at-debug-panel": debugPanel,
   operation,

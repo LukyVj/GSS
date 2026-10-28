@@ -5,6 +5,7 @@ import { resolveStyles, resolveSceneStyles, FACES, type Face } from "./cascade/r
 import { activeSlots, generateShader, hoverSlots, pointerReaders, sceneTriggers, type Trigger } from "./shader/codegen";
 import { validateProperties, validateKeyframes } from "./cascade/validate";
 import { readCamera, type CameraSettings } from "./features/camera";
+import { RAYMARCH, readRaymarch } from "./features/raymarch";
 import { resolveMath, type CalcContext } from "./values/calc";
 import type { StyledInstance, Styles } from "./cascade/resolve";
 import type { Declaration, Keyframes, Stylesheet } from "./syntax/ast";
@@ -60,6 +61,9 @@ export type CompiledScene = {
   // written, with the line of their "{" in the file. Absent when no object uses one.
   paints?: { name: string; code: string; line: number }[];
   camera: CameraSettings;
+  // max-distance (decision 224): how far the scene draws, for the zoom of the wheel and the
+  // depth of hover-distance(). Absent at 20.
+  maxDistance?: number;
   dpr: Dpr;
   objects: number; // instances drawn, for the status bar (decision 42)
   lights?: number; // the point lights of @scene, for the debug panel (decision 204); absent when none
@@ -356,7 +360,8 @@ function compileStylesheet(
   const viewed = checkedShader(styled, computedScene, [...shared, ...copies], errors, registered.length, options.view ?? view);
   // The axes and the grid of @debug-panel, where the playground asks for them (decision 204)
   const shader = viewed !== undefined && options.debug && debugPanel ? withDebugOverlay(viewed) : viewed;
-  const camera = errors.run(() => readCamera(computedScene));
+  const raymarch = errors.run(() => readRaymarch(computedScene));
+  const camera = errors.run(() => readCamera(computedScene, raymarch?.maxDistance));
   const dpr = errors.run(() => readDpr(computedScene));
   // After the cascade and var(): the texture an object really ends up with
   const textures = errors.run(() => sceneTextures(drawn, [...shared, ...copies]));
@@ -405,6 +410,7 @@ function compileStylesheet(
     ...(debugPanel ? { debugPanel } : {}),
     shader: shader!,
     camera: camera!,
+    ...(raymarch!.maxDistance !== RAYMARCH.maxDistance ? { maxDistance: raymarch!.maxDistance } : {}),
     dpr: dpr!,
     objects: drawn.length,
     ...(styled.length > drawn.length ? { lights: styled.length - drawn.length } : {}),

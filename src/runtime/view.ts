@@ -2,7 +2,7 @@ import type { CameraSettings } from "../compiler/features/camera";
 import type { CompiledScene } from "../compiler";
 import { createTextureStore, paintName, resolveImage } from "./textures";
 import { createPaints, PAINT_SIZE, type PaintSet } from "./paint";
-import { pickPixel, pointerValues, createPress, cursorAt, controlsAllow } from "./hover";
+import { pickPixel, pointerValues, createPress, cursorAt, controlsAllow, zoomed } from "./hover";
 import { createPicker } from "./picker";
 import { createClock } from "./clock";
 import type { FrameProbe } from "../profiler/profiler";
@@ -276,8 +276,7 @@ export function createView(
       (e) => {
         if (!controlsAllow(shown?.controls, "zoom", hovered)) return; // the page scrolls
         e.preventDefault(); // zoom the scene, not the page
-        camera.dist += e.deltaY * 0.01;
-        camera.dist = Math.min(Math.max(camera.dist, 3), 15);
+        camera.dist = zoomed(camera.dist + e.deltaY * 0.01, shown?.maxDistance);
       },
       { passive: false },
     );
@@ -426,7 +425,7 @@ export function createView(
         if (id !== null && pointer) {
           hovered = id;
           press.picked(id);
-          if (asked) aimed = [asked[0], asked[1], picker.depth() ?? 0];
+          if (asked) aimed = [asked[0], asked[1], picker.depth(shown?.maxDistance) ?? 0];
         }
         if (!pixel) {
           hovered = 0; // outside the canvas: nothing is hovered, at once

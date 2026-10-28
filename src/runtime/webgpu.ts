@@ -3,7 +3,7 @@ import type { AsyncView, BackendOptions } from "./backend";
 import { createClock } from "./clock";
 import { FLOOR, pixelRatio } from "./dpr";
 import { createDprPicker, viewDensity } from "./dpr-picker";
-import { pickPixel, pointerValues, createPress, decodeId, decodeDepth, cursorAt, controlsAllow } from "./hover";
+import { pickPixel, pointerValues, createPress, decodeId, decodeDepth, zoomed, cursorAt, controlsAllow } from "./hover";
 import { createTransitions } from "./transitions";
 import { createPointer, type PointerTarget } from "./pointer";
 import { createTriggers } from "./triggers";
@@ -100,7 +100,7 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
   // scene { controls } (decision 176): the gestures the GSS lets move the camera
   if (options.controls !== false) {
     on("pointerdown", e => { if (scene?.compiled.controls?.orbit === false) return; camera.dragging = true; canvas.setPointerCapture(e.pointerId); });
-    on("wheel", e => { if (!controlsAllow(scene?.compiled.controls, "zoom", hovered)) return; e.preventDefault(); camera.dist = Math.min(Math.max(camera.dist + e.deltaY * 0.01, 3), 15); }, { passive: false });
+    on("wheel", e => { if (!controlsAllow(scene?.compiled.controls, "zoom", hovered)) return; e.preventDefault(); camera.dist = zoomed(camera.dist + e.deltaY * 0.01, scene?.compiled.maxDistance); }, { passive: false });
   }
   on("pointerdown", e => { pointer = { x: e.clientX, y: e.clientY }; pickWanted = true; press.down(hovered); });
   const unpress = () => press.up(); // released anywhere, like CSS
@@ -354,7 +354,7 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
           if (!destroyed && generation === pickGeneration && pointer) {
             const read = new Uint8Array(readback.getMappedRange(), 0, 4);
             hovered = decodeId(read); press.picked(hovered);
-            aimed = [picked[0], picked[1], decodeDepth(read)];
+            aimed = [picked[0], picked[1], decodeDepth(read, scene?.compiled.maxDistance)];
           }
           readback.unmap();
         }).catch(error => { if (!destroyed) console.error("GSS WebGPU picking:", error); }).finally(() => { pickPending = false; });

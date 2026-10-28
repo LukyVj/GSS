@@ -1734,7 +1734,7 @@ export const PROPERTIES: PropertyDef[] = [
     syntax: "<number>",
     initial: "8",
     description:
-      "Sets the distance between the camera and its target at the start, from 3 to 15. The mouse wheel changes it.",
+      "Sets the distance between the camera and its target at the start, from 3 to 15, or to 5 less than `max-distance`. The mouse wheel changes it, within the same range.",
     examples: [
       {
         name: "closer",
@@ -2103,6 +2103,66 @@ export const PROPERTIES: PropertyDef[] = [
         name: "smooth silhouettes",
         text: "The sphere keeps one ray per pixel; only its grazing edge gets partial coverage.",
         code: "@scene { sphere; } scene { shape-rendering: geometricPrecision; floor: none; } sphere { radius: 1; }",
+      },
+    ],
+  },
+  {
+    name: "raymarch-steps",
+    figure: "scene",
+    since: "0.0.8",
+    appliesTo: "scene",
+    syntax: "<integer>",
+    initial: "100",
+    description:
+      "Sets how many steps the ray of each pixel takes, at most, to find a surface, from 16 to 1024.",
+    details: "A ray that grazes a long floor, or runs along close objects, can run out of steps: a halo or a missing edge. More steps fix that, at a cost only on the rays that need them.",
+    more: "Each step measures the distance to the scene and moves the ray that far: most rays find their surface in a few dozen steps. With holes (`mask-image`) or transparent objects, the ray takes twice as many steps, to go through them. With `shape-rendering: geometricPrecision`, it takes 200 more along the silhouettes. The shadows keep their own steps. The value is written in the shader: a variable set from JS cannot change it, and a `@media` can.",
+    examples: [
+      {
+        name: "a long grazing floor",
+        text: "The ray along the floor, far away, needs more than 100 steps.",
+        code: "@scene { cube * 9; } scene { raymarch-steps: 300; max-distance: 60; camera-angle: 0deg 6deg; camera-distance: 12; floor: repeating-linear-gradient(90deg, #e8e6e1 0% 5%, #1a1d2b 5% 10%); } cube { size: 0.6; translate: 0 0.3 calc(sibling-index() * -5 + 4); color: #ff5a36; }",
+      },
+      {
+        name: "fewer steps on a phone",
+        code: "@scene { sphere; } sphere { translate: 0 0.8 0; } @media (max-width: 600px) { scene { raymarch-steps: 64; } }",
+      },
+    ],
+  },
+  {
+    name: "max-distance",
+    figure: "scene",
+    since: "0.0.8",
+    appliesTo: "scene",
+    syntax: "<number>",
+    initial: "20",
+    description:
+      "Sets how far from the camera the scene is drawn, from 10 to 500 units: past it, a ray sees the background.",
+    details: "A long floor, a horizon or objects far behind the target need more than 20. The camera can go back to 5 units short of it: up to 15 with the initial value, 55 with `max-distance: 60`.",
+    more: "The fog of `none` sits at this distance too. A ray that hits nothing goes all the way to `max-distance` before it gives up: a bigger value costs those rays more steps, and may need more `raymarch-steps`. The value is written in the shader: a variable set from JS cannot change it, and a `@media` can.",
+    examples: [
+      {
+        name: "a row that goes far",
+        text: "The cubes go back 40 units; with 20, the last ones would be cut off.",
+        code: "@scene { cube * 9; } scene { max-distance: 60; camera-angle: 20deg 12deg; camera-distance: 10; fog: 20 60; } cube { size: 1; translate: 0 0.5 calc(sibling-index() * -5 + 4); color: #ff5a36; }",
+      },
+    ],
+  },
+  {
+    name: "hit-precision",
+    figure: "scene",
+    since: "0.0.8",
+    appliesTo: "scene",
+    syntax: "<number>",
+    initial: "0.001",
+    description:
+      "Sets how close to a surface a ray must come to count as a hit, from 0.0001 to 0.01 units.",
+    details: "A smaller value finds the surfaces more exactly: a large, smooth object seen close up, at a high `dpr`, loses its faint bands. A larger one stops the rays sooner, in fewer steps.",
+    more: "The normals, which light the surfaces, are measured over the same distance. With `shape-rendering: geometricPrecision`, a hit is measured in pixels instead: only the normals follow `hit-precision`. The value is written in the shader: a variable set from JS cannot change it, and a `@media` can.",
+    examples: [
+      {
+        name: "a big sphere close up",
+        code: "@scene { sphere; } scene { hit-precision: 0.0002; camera-distance: 4; floor: none; } sphere { radius: 1.6; material: metal(#d4af37, 0.1); }",
       },
     ],
   },

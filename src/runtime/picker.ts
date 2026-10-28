@@ -11,7 +11,7 @@ export type Picker = {
   poll(): number | null;
   // How far along the ray the point under the mouse was, in the last pixel poll() read
   // (hover-distance(), decision 217), or null before any
-  depth(): number | null;
+  depth(maxDistance?: number): number | null;
   destroy(): void;
 };
 
@@ -64,8 +64,8 @@ export function createPicker(gl: WebGL2RenderingContext): Picker {
       return decodeId(pixel);
     },
 
-    depth() {
-      return read ? decodeDepth(pixel) : null;
+    depth(maxDistance?: number) {
+      return read ? decodeDepth(pixel, maxDistance) : null;
     },
 
     destroy() {

@@ -167,6 +167,16 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 - [x] ✅ decision 202: A `toon` material (Lucas, Oct. 24; set aside in 0.0.6), next to the others: flat bands of light instead of a smooth shading. Done: `toon([<color>,] [<bands>])`, 3 bands by default, with a sharp highlight.
 - [x] `@gpu (slow)` ✅ decision 212 (Lucas, Oct. 24: "savoir si le gpu est occupé, et faire une version simplifiée de la scène", "on part sur @gpu (slow), à sens unique, déclenché sous un dpr de 1"): rules for a slow computer, compiled as one more version of the scene with the `@media` ones. A scene with `@gpu` is never drawn under a `dpr` of 1; a second of slow frames there (or no GPU, or `gpu="slow"`) shows the lighter version, for good. A gpu menu next to the dpr menu forces it in the playground and Try it. Still to come, if needed: `@gpu` with `@media` nested, `if(gpu(slow))`.
 - [x] `@debug-panel` ✅ decision 204 (Lucas, Oct. 24: "un vrai mode de débug, avec les axes, des infos sur la perf"), over the render like `@property-panel`: the x, y, z axes and a grid at the origin, drawn in the playground and Try it only; a panel with the objects, the images out of 16 and the rows of the performance panel (fps, GPU time, shader build); `view: steps`, each pixel colored by its calls of `map()`, a third chip next to `view: distance`. Then the same day (Lucas: "le panneau doit donner le max d'infos", "les axes doivent être légendés"): the letters of the axes; the panel adds the backend, the camera as GSS, the lights, the variables, the states, the timelines, the filter passes, the media queries, the lines of the shader, and the mean and the max of the steps read back from the render.
+- Quality ceilings (Lucas, Oct. 28: the spec written while building the hero scenes, "invest time in it for 0.0.8"; every default keeps the shaders identical):
+  - [x] `raymarch-steps`, `max-distance`, `hit-precision`, and `camera-distance` up to `max-distance - 5` ✅ decision 224
+  - [ ] `shadow-softness`, `shadow-quality`
+  - [ ] `camera-fov`
+  - [ ] `ambient-occlusion`
+  - [ ] `@paint { size }`, with mipmaps (WebGL2)
+  - [ ] `adaptDpr: { start, min }`, a `heavyThreshold`, `scene.stats()`
+  - [ ] The bounds of the objects whose place depends on a variable set from JS (the 117 columns of the hero "Champ" have none)
+  - [ ] `antialias: 2x | 4x` (rotated grid, in the shader)
+  - For 0.0.9: `hit-precision: auto`, over-relaxation, FXAA and TAA, `dpr … supersample`, `@paint` on WebGPU, a `quality` shorthand with a tier media feature and `setQuality()`, glass seen through glass, `reflection-depth`, a blended color across `blend`, more `@media` queries and `@scene` inside `@media`.
 - [ ] At the release: the VS Code extension 0.6.0, with the GSS of a `<script type="text/gss">` colored in HTML (decision 197) and the autocompletion of property names and mixins, in `.gss` and in HTML (decision 198) (Lucas, Oct. 24: "on la sortira pour la 0.0.8"): bump `editors/vscode/package.json`, package the `.vsix`, upload it to the Marketplace and publish it on Open VSX.
 
 ## Release 0.0.7

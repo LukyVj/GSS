@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { pickPixel, decodeId, decodeDepth, hoverValues, pointerValues, createPress, cursorAt, controlsAllow } from "./hover";
+import { pickPixel, decodeId, decodeDepth, zoomed, hoverValues, pointerValues, createPress, cursorAt, controlsAllow } from "./hover";
 
 // Step 4b of :hover, the part without the GPU: where the mouse is, which object
 // the picking pass found, and what goes in uHover[].
@@ -41,6 +41,19 @@ describe("decodeDepth", () => {
     expect(decodeDepth(new Uint8Array([0, 0, 0, 0]))).toBe(0);
     expect(decodeDepth(new Uint8Array([0, 0, 255, 255]))).toBe(20);
     expect(decodeDepth(new Uint8Array([3, 0, 0, 128]))).toBeCloseTo((128 * 256 / 65535) * 20);
+  });
+
+  it("reads it up to the max-distance of the scene", () => {
+    expect(decodeDepth(new Uint8Array([0, 0, 255, 255]), 60)).toBe(60);
+  });
+});
+
+describe("zoomed", () => {
+  it("keeps the wheel between 3 and 5 units short of the end of the scene", () => {
+    expect(zoomed(1)).toBe(3);
+    expect(zoomed(18)).toBe(15);
+    expect(zoomed(18, 60)).toBe(18);
+    expect(zoomed(70, 60)).toBe(55);
   });
 });
 

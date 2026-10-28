@@ -48,4 +48,4 @@ New to GSS? Start with [Getting started](getting-started.md), then [Installation
 
 - [Camera](camera.md): `camera-angle`, `camera-distance`, `camera-spin`, `camera-target`, `controls`
 - [Lighting and fog](scene-properties.md): `light` (sun), `light` (point), `intensity`, `ambient`, `shadows`, `fog`
-- [Rendering](rendering.md): `dpr`, `shape-rendering`, `view`
+- [Rendering](rendering.md): `dpr`, `hit-precision`, `max-distance`, `raymarch-steps`, `shape-rendering`, `view`

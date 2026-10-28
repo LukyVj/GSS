@@ -62,6 +62,141 @@ scene {
 }
 ```
 
+<a name="hit-precision"></a>
+
+## `hit-precision`
+
+Sets how close to a surface a ray must come to count as a hit, from 0.0001 to 0.01 units.
+
+**What the property changes in the scene:** `hit-precision: 0.01;`, `hit-precision: 0.0002;`
+
+- **Syntax:** `<number>`
+- **Initial value:** `0.001`
+- **Applies to:** the scene
+- **Animatable:** no
+
+A smaller value finds the surfaces more exactly: a large, smooth object seen close up, at a high `dpr`, loses its faint bands. A larger one stops the rays sooner, in fewer steps.
+
+The normals, which light the surfaces, are measured over the same distance. With `shape-rendering: geometricPrecision`, a hit is measured in pixels instead: only the normals follow `hit-precision`. The value is written in the shader: a variable set from JS cannot change it, and a `@media` can.
+
+### a big sphere close up
+
+```css
+@scene {
+  sphere;
+}
+
+scene {
+  hit-precision: 0.0002;
+  camera-distance: 4;
+  floor: none;
+}
+
+sphere {
+  radius: 1.6;
+  material: metal(#d4af37, 0.1);
+}
+```
+
+<a name="max-distance"></a>
+
+## `max-distance`
+
+Sets how far from the camera the scene is drawn, from 10 to 500 units: past it, a ray sees the background.
+
+**What the property changes in the scene:** `max-distance: 20;`, `max-distance: 60;`
+
+- **Syntax:** `<number>`
+- **Initial value:** `20`
+- **Applies to:** the scene
+- **Animatable:** no
+
+A long floor, a horizon or objects far behind the target need more than 20. The camera can go back to 5 units short of it: up to 15 with the initial value, 55 with `max-distance: 60`.
+
+The fog of `none` sits at this distance too. A ray that hits nothing goes all the way to `max-distance` before it gives up: a bigger value costs those rays more steps, and may need more `raymarch-steps`. The value is written in the shader: a variable set from JS cannot change it, and a `@media` can.
+
+### a row that goes far
+
+The cubes go back 40 units; with 20, the last ones would be cut off.
+
+```css
+@scene {
+  cube * 9;
+}
+
+scene {
+  max-distance: 60;
+  camera-angle: 20deg 12deg;
+  camera-distance: 10;
+  fog: 20 60;
+}
+
+cube {
+  size: 1;
+  translate: 0 0.5 calc(sibling-index() * -5 + 4);
+  color: #ff5a36;
+}
+```
+
+<a name="raymarch-steps"></a>
+
+## `raymarch-steps`
+
+Sets how many steps the ray of each pixel takes, at most, to find a surface, from 16 to 1024.
+
+**What the property changes in the scene:** `raymarch-steps: 12;`, `raymarch-steps: 100;`
+
+- **Syntax:** `<integer>`
+- **Initial value:** `100`
+- **Applies to:** the scene
+- **Animatable:** no
+
+A ray that grazes a long floor, or runs along close objects, can run out of steps: a halo or a missing edge. More steps fix that, at a cost only on the rays that need them.
+
+Each step measures the distance to the scene and moves the ray that far: most rays find their surface in a few dozen steps. With holes (`mask-image`) or transparent objects, the ray takes twice as many steps, to go through them. With `shape-rendering: geometricPrecision`, it takes 200 more along the silhouettes. The shadows keep their own steps. The value is written in the shader: a variable set from JS cannot change it, and a `@media` can.
+
+### a long grazing floor
+
+The ray along the floor, far away, needs more than 100 steps.
+
+```css
+@scene {
+  cube * 9;
+}
+
+scene {
+  raymarch-steps: 300;
+  max-distance: 60;
+  camera-angle: 0deg 6deg;
+  camera-distance: 12;
+  floor: repeating-linear-gradient(90deg, #e8e6e1 0% 5%, #1a1d2b 5% 10%);
+}
+
+cube {
+  size: 0.6;
+  translate: 0 0.3 calc(sibling-index() * -5 + 4);
+  color: #ff5a36;
+}
+```
+
+### fewer steps on a phone
+
+```css
+@scene {
+  sphere;
+}
+
+sphere {
+  translate: 0 0.8 0;
+}
+
+@media (max-width: 600px) {
+  scene {
+    raymarch-steps: 64;
+  }
+}
+```
+
 <a name="shape-rendering"></a>
 
 ## `shape-rendering`

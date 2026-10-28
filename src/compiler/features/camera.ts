@@ -40,7 +40,11 @@ function readSpin(value: Token[] | undefined): number {
   return (2 * Math.PI) / seconds;
 }
 
-export function readCamera(sceneStyles: Styles): CameraSettings {
+// The farthest the camera goes: 5 units short of the end of the scene, so the target and
+// what is around it are drawn (decision 224); 15 with the max-distance of 20
+export const farthestCamera = (maxDistance = 20) => maxDistance - 5;
+
+export function readCamera(sceneStyles: Styles, maxDistance = 20): CameraSettings {
   // 1. The distance
   const distance = readNumber(
     sceneStyles["camera-distance"],
@@ -48,10 +52,11 @@ export function readCamera(sceneStyles: Styles): CameraSettings {
     8,
     true,
   );
-  if (distance < 3 || distance > 15) {
+  const farthest = farthestCamera(maxDistance);
+  if (distance < 3 || distance > farthest) {
     throw errorAt(
       sceneStyles["camera-distance"],
-      "camera-distance expects a number from 3 to 15, like: camera-distance: 8;",
+      `camera-distance expects a number from 3 to ${farthest}${maxDistance === 20 ? "" : " (5 less than max-distance)"}, like: camera-distance: 8;`,
     );
   }
 
