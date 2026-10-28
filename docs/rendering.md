@@ -6,6 +6,72 @@
 
 Every example of this page, to edit live: [gss-lang.dev/docs](https://www.gss-lang.dev/docs#rendering).
 
+<a name="antialias"></a>
+
+## `antialias`
+
+Casts several rays through each pixel and takes the mean of their colors: the edges of the objects, of the shadows and of the textures come out smooth, on any screen.
+
+**What the property changes in the scene:** `antialias: none;`, `antialias: 4x;`
+
+- **Syntax:** `none | 2x | 4x`
+- **Initial value:** `none`
+- **Applies to:** the scene
+- **Animatable:** no
+
+### Values
+
+- **none:** One ray per pixel: the default.
+- **2x:** Two rays, on a diagonal of the pixel: twice the work.
+- **4x:** Four rays, on a rotated grid: smooth in every direction, four times the work.
+
+A higher `dpr` cannot go past the density of the screen: on a screen of density 1, `antialias` is the way to smooth edges that crawl as the scene turns.
+
+Each ray costs a whole pixel: keep `none` or `2x` on a phone, or let a `@media` or a `@gpu (slow)` version set `none`. `shape-rendering: geometricPrecision` smooths the silhouettes only, for less. The hover still follows one ray, the one under the pointer. The value is written in the shader: a variable set from JS cannot change it.
+
+### thin bars that turn
+
+```css
+@scene {
+  cube * 7;
+}
+
+scene {
+  antialias: 4x;
+  dpr: 1;
+  camera-spin: 30s;
+}
+
+cube {
+  size: 0.08 1.6 0.6;
+  translate: calc(sibling-index() * 0.3 - 1.2) 0.8 0;
+  color: #1a1d2b;
+}
+```
+
+### none on a phone
+
+```css
+@scene {
+  torus;
+}
+
+scene {
+  antialias: 4x;
+}
+
+torus {
+  translate: 0 1 0;
+  rotate-x: 60deg;
+}
+
+@media (max-width: 600px) {
+  scene {
+    antialias: none;
+  }
+}
+```
+
 <a name="dpr"></a>
 
 ## `dpr`

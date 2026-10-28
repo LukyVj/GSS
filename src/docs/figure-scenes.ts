@@ -284,6 +284,8 @@ const stairs = (step: number) => {
 const grid = (step: number) => path("ground", Array.from({ length: Math.floor(76 / step) + 1 }, (_, i) => `M${28 + i * step} 28V104M28 ${28 + i * step}H104`).join(""));
 
 const dpr = () => cells("figure-steps", [["dpr: 1;", grid(19) + path("tint", stairs(19))], ["dpr: 2;", grid(9.5) + path("tint", stairs(9.5))]], CELL);
+// antialias: the steps of the edge, then the mean of 4 rays per pixel: grays along it
+const antialias = () => cells("figure-steps", [["antialias: none;", grid(9.5) + path("tint", stairs(9.5))], ["antialias: 4x;", grid(9.5) + path("tint", stairs(9.5)) + path("ghost", smooth)]], CELL);
 const shapeRendering = () => cells("figure-steps", [["shape-rendering: auto;", path("tint", stairs(9.5))], ["shape-rendering: geometricPrecision;", path("tint", smooth)]], CELL);
 
 // --- the march: the steps of a ray, how far it goes, how close is a hit
@@ -494,6 +496,7 @@ const SCENES: Record<string, (subject: string) => string> = {
   controls,
   dpr,
   "shape-rendering": shapeRendering,
+  antialias,
   "raymarch-steps": raymarchSteps,
   "max-distance": maxDistance,
   "hit-precision": hitPrecision,

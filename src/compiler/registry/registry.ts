@@ -2198,6 +2198,33 @@ export const PROPERTIES: PropertyDef[] = [
     ],
   },
   {
+    name: "antialias",
+    figure: "scene",
+    since: "0.0.8",
+    appliesTo: "scene",
+    syntax: "none | 2x | 4x",
+    initial: "none",
+    description:
+      "Casts several rays through each pixel and takes the mean of their colors: the edges of the objects, of the shadows and of the textures come out smooth, on any screen.",
+    values: [
+      ["none", "One ray per pixel: the default."],
+      ["2x", "Two rays, on a diagonal of the pixel: twice the work."],
+      ["4x", "Four rays, on a rotated grid: smooth in every direction, four times the work."],
+    ],
+    details: "A higher `dpr` cannot go past the density of the screen: on a screen of density 1, `antialias` is the way to smooth edges that crawl as the scene turns.",
+    more: "Each ray costs a whole pixel: keep `none` or `2x` on a phone, or let a `@media` or a `@gpu (slow)` version set `none`. `shape-rendering: geometricPrecision` smooths the silhouettes only, for less. The hover still follows one ray, the one under the pointer. The value is written in the shader: a variable set from JS cannot change it.",
+    examples: [
+      {
+        name: "thin bars that turn",
+        code: "@scene { cube * 7; } scene { antialias: 4x; dpr: 1; camera-spin: 30s; } cube { size: 0.08 1.6 0.6; translate: calc(sibling-index() * 0.3 - 1.2) 0.8 0; color: #1a1d2b; }",
+      },
+      {
+        name: "none on a phone",
+        code: "@scene { torus; } scene { antialias: 4x; } torus { translate: 0 1 0; rotate-x: 60deg; } @media (max-width: 600px) { scene { antialias: none; } }",
+      },
+    ],
+  },
+  {
     name: "raymarch-steps",
     figure: "scene",
     since: "0.0.8",

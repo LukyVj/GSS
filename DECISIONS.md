@@ -1915,3 +1915,11 @@ A first version cut the light from 0 into steps, with a pinpoint highlight: its 
 
 **Accepted limits**: an exponent that varies has no range, nor a negative base under a fractional exponent. The bounds hold the math of `pow()`; GLSL leaves `pow()` of a negative base undefined, which GSS writes as it is: a separate question.
 
+## 231. `antialias: none | 2x | 4x`: several rays per pixel
+
+**Decision** (Oct. 28, the "quality ceilings" spec, as 224): `scene { antialias: none | 2x | 4x; }`, initial `none`, which writes nothing. With `2x` or `4x`, `withAntialias()` (`codegen/antialias.ts`), the last step of the compile (after the debug panel), turns `main()` into `vec4 gssPixel(vec2 fragCoord)`: the color of the ray that starts at that point (`gl_FragCoord.xy` becomes `fragCoord`, the `outColor =` of the picking pass and of the end become `return`). The new `main()` runs `animate()` once, gives the picking pass its one ray (the pointer's), and takes the mean of 2 or 4 rays on a rotated grid (RGSS: (0.125, 0.375), (−0.375, 0.125), (0.375, −0.125), (−0.125, −0.375) of a pixel; `2x` the first and the last, a diagonal). The points are written one call each, no array: the WGSL lowering reads them as they are.
+- Every scene of `src/scenes/` and every registry example, with `antialias: 4x` added (534 shaders, `@media` versions included), compiles in WebGL2 and validates in WebGPU (SwiftShader). `antialias-gpu.test.ts` draws a white cube turned on black at dpr 1: no gray pixel with `none`, gray pixels along its edges with `2x` and `4x`, in WebGL2 and WebGPU (it fails when the 4 rays start at the same point). Without it, every source compiles as before.
+
+**Why**: on a screen of density 1 (most Windows laptops, external monitors), every edge has steps and crawls as the scene turns, and the only lever, `dpr`, stops at the density of the screen: a strong GPU could not buy quality. Rays in the shader need no new pass and work on both backends. The name is the one of WebGL's context attribute; CSS has none.
+**Not now**: FXAA and TAA (a post pass, a history), `dpr: … supersample`, for 0.0.9. **Accepted limits**: the cost is 2 or 4 whole pixels; a `filter` that reads its neighbours (blur, bloom) runs after, on the averaged image.
+

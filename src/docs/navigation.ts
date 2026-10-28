@@ -90,7 +90,7 @@ export const DOC_GROUPS: NavGroup[] = [
   { id: "timelines", title: "Scroll timelines", category: "Motion", order: 43, anchors: ["fn-scroll", "fn-view"] },
   { id: "camera", title: "Camera", category: "Scene", order: 50, anchors: ["camera-target", "camera-distance", "camera-angle", "camera-fov", "camera-spin", "controls"] },
   { id: "scene-properties", title: "Lighting and fog", category: "Scene", order: 51, anchors: ["light", "shape-light", "intensity", "ambient", "ambient-occlusion", "fog", "shadows", "shadow-softness", "shadow-steps"] },
-  { id: "rendering", title: "Rendering", category: "Scene", order: 52, anchors: ["dpr", "shape-rendering", "raymarch-steps", "max-distance", "hit-precision", "view"] },
+  { id: "rendering", title: "Rendering", category: "Scene", order: 52, anchors: ["dpr", "shape-rendering", "antialias", "raymarch-steps", "max-distance", "hit-precision", "view"] },
 ];
 
 // Two entries share a name (the sun is the light property, a point light is an element of

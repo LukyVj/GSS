@@ -175,7 +175,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
   - [x] `@paint { size; filter: mipmap; }` (WebGL2) ✅ decision 228
   - [x] `adaptDpr: { start, min }`, a `heavyThreshold`, `scene.stats()` ✅ decision 229
   - [x] The bounds of the objects whose place depends on a variable set from JS, through `pow()` (the 117 columns of the hero "Champ": 65–71 → 20 ms) ✅ decision 230
-  - [ ] `antialias: 2x | 4x` (rotated grid, in the shader)
+  - [x] `antialias: 2x | 4x` (rotated grid, in the shader) ✅ decision 231
   - For 0.0.9: `hit-precision: auto`, over-relaxation, FXAA and TAA, `dpr … supersample`, `@paint` on WebGPU, a `quality` shorthand with a tier media feature and `setQuality()`, glass seen through glass, `reflection-depth`, a blended color across `blend`, more `@media` queries and `@scene` inside `@media`.
 - [ ] At the release: the VS Code extension 0.6.0, with the GSS of a `<script type="text/gss">` colored in HTML (decision 197) and the autocompletion of property names and mixins, in `.gss` and in HTML (decision 198) (Lucas, Oct. 24: "on la sortira pour la 0.0.8"): bump `editors/vscode/package.json`, package the `.vsix`, upload it to the Marketplace and publish it on Open VSX.
 

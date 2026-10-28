@@ -30,6 +30,7 @@ import { readView, type View } from "./features/view";
 import { readDebugPanel, type DebugPanel } from "./features/debug-panel";
 import { withDebugOverlay } from "./shader/codegen/debug";
 import { withFocal } from "./shader/codegen/raymarch";
+import { readAntialias, withAntialias } from "./shader/codegen/antialias";
 import { isDisplayed } from "./features/visibility";
 import { sceneCursors, type ObjectCursor } from "./features/cursor";
 import { sceneControls, type SceneControls } from "./features/controls";
@@ -361,7 +362,10 @@ function compileStylesheet(
   const view = errors.run(() => readView(computedScene));
   const viewed = checkedShader(styled, computedScene, [...shared, ...copies], errors, registered.length, options.view ?? view);
   // The axes and the grid of @debug-panel, where the playground asks for them (decision 204)
-  const shader = viewed !== undefined && options.debug && debugPanel ? withFocal(withDebugOverlay(viewed), readFocal(computedScene)) : viewed;
+  const overlaid = viewed !== undefined && options.debug && debugPanel ? withFocal(withDebugOverlay(viewed), readFocal(computedScene)) : viewed;
+  // antialias (decision 231): last, around everything main() draws
+  const samples = errors.run(() => readAntialias(computedScene["antialias"]));
+  const shader = overlaid !== undefined && samples !== undefined ? withAntialias(overlaid, samples) : overlaid;
   const raymarch = errors.run(() => readRaymarch(computedScene));
   const camera = errors.run(() => readCamera(computedScene, raymarch?.maxDistance));
   const dpr = errors.run(() => readDpr(computedScene));
