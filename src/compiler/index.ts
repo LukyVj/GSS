@@ -24,7 +24,7 @@ import {
   resolveNamedColors,
   MATERIAL_FUNCTIONS,
 } from "./values/colors";
-import { scenePaints, sceneTextures } from "./features/textures";
+import { scenePaints, sceneTextures, type ScenePaint } from "./features/textures";
 import { readDpr, type Dpr } from "./features/dpr";
 import { readView, type View } from "./features/view";
 import { readDebugPanel, type DebugPanel } from "./features/debug-panel";
@@ -60,7 +60,8 @@ export type CompiledScene = {
   wgsl?: string;
   // @paint (decision 151): the fragment shaders the textures paint(name) come from, as
   // written, with the line of their "{" in the file. Absent when no object uses one.
-  paints?: { name: string; code: string; line: number }[];
+  // size and filter (decision 228): the size of the texture, and its mipmaps, when written
+  paints?: ScenePaint[];
   camera: CameraSettings;
   // max-distance (decision 224): how far the scene draws, for the zoom of the wheel and the
   // depth of hover-distance(). Absent at 20.
@@ -367,7 +368,7 @@ function compileStylesheet(
   // After the cascade and var(): the texture an object really ends up with
   const textures = errors.run(() => sceneTextures(drawn, [...shared, ...copies]));
   // @paint (decision 151): the shaders of paint(name), the last one of a name wins like CSS
-  const defined = new Map(stylesheet.paints.map((paint) => [String(paint.name.value), { code: String(paint.code.value), line: paint.line ?? 1 }]));
+  const defined = new Map(stylesheet.paints.map((paint) => [String(paint.name.value), { code: String(paint.code.value), line: paint.line ?? 1, at: paint.code }]));
   const paints = errors.run(() => scenePaints(drawn, defined));
   // Like CSS: the transition of the state the object goes to
   // Pressing takes the transition of :active, releasing the one of the hovered state

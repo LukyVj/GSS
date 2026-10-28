@@ -2,10 +2,11 @@
 // the object samples like an image. Each @paint has its own program: its names never meet
 // those of the scene's shader, and its errors stay its own.
 
-// The size of the texture a @paint draws, in pixels, for now
+// The size of the texture a @paint draws, in pixels, when it does not set its own (decision 228)
 export const PAINT_SIZE = 512;
 
-export type PaintSource = { name: string; code: string; line: number };
+// size and filter: mipmap (decision 228), when the @paint writes them
+export type PaintSource = { name: string; code: string; line: number; size?: [number, number]; mipmap?: true };
 
 // The giant triangle, in the GLSL of the fragment shader: a program takes one version
 const VERTEX_300 = `#version 300 es
@@ -60,6 +61,9 @@ type Painter = {
   program: WebGLProgram;
   texture: WebGLTexture;
   framebuffer: WebGLFramebuffer;
+  width: number;
+  height: number;
+  mipmap: boolean;
   time: Filled[];
   resolution: Filled[];
   mouse: Filled[];
@@ -71,8 +75,9 @@ export type PaintSet = {
   texture(name: string): WebGLTexture | undefined;
   readonly animated: boolean; // a shader reads time: it is drawn at every frame
   readonly pointer: boolean; // a shader reads mouse: it is drawn when the pointer moves
-  // Draws the textures that need it, before the scene samples them. mouse: in the pixels
-  // of the texture, from its bottom left. Leaves the framebuffer of the canvas bound.
+  // Draws the textures that need it, before the scene samples them. mouse: over the canvas,
+  // from 0 to 1, from its bottom left; each shader reads it in the pixels of its texture.
+  // Leaves the framebuffer of the canvas bound.
   draw(seconds: number, mouse: [number, number]): void;
   destroy(): void;
 };
@@ -137,19 +142,24 @@ export function createPaints(gl: WebGL2RenderingContext, restoreVertexArray: () 
       else if (RESOLUTION.has(info.name)) resolution.push(filled);
       else if (MOUSE.has(info.name)) mouse.push(filled);
     }
+    // Its size, never more than the GPU takes (decision 228)
+    const most = gl.getParameter(gl.MAX_TEXTURE_SIZE) as number;
+    const [width, height] = (paint.size ?? [PAINT_SIZE, PAINT_SIZE]).map((n) => Math.min(n, most));
+    const mipmap = paint.mipmap === true;
     const texture = gl.createTexture()!;
     gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, PAINT_SIZE, PAINT_SIZE, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-    // Like the images: clamped at the edges, smooth (textures.ts)
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+    // Like the images: clamped at the edges, smooth (textures.ts); with mipmaps, smooth from
+    // afar too, each level made again after each drawing
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, mipmap ? gl.LINEAR_MIPMAP_LINEAR : gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     const framebuffer = gl.createFramebuffer()!;
     gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    return { name: paint.name, program, texture, framebuffer, time, resolution, mouse, drawn: false };
+    return { name: paint.name, program, texture, framebuffer, width, height, mipmap, time, resolution, mouse, drawn: false };
   }
 
   // A value for a uniform of any float type: x, then y, the rest 0 (1 for the z of resolution)
@@ -191,14 +201,18 @@ export function createPaints(gl: WebGL2RenderingContext, restoreVertexArray: () 
           const due = painters.filter((p) => !p.drawn || p.time.length > 0 || (moved && p.mouse.length > 0));
           if (due.length === 0) return;
           gl.bindVertexArray(vertexArray);
-          gl.viewport(0, 0, PAINT_SIZE, PAINT_SIZE);
           for (const p of due) {
+            gl.viewport(0, 0, p.width, p.height);
             gl.bindFramebuffer(gl.FRAMEBUFFER, p.framebuffer);
             gl.useProgram(p.program);
             fill(p.time, seconds, 0);
-            fill(p.resolution, PAINT_SIZE, PAINT_SIZE, 1);
-            fill(p.mouse, mouse[0], mouse[1]);
+            fill(p.resolution, p.width, p.height, 1);
+            fill(p.mouse, mouse[0] * p.width, mouse[1] * p.height);
             gl.drawArrays(gl.TRIANGLES, 0, 3);
+            if (p.mipmap) {
+              gl.bindTexture(gl.TEXTURE_2D, p.texture);
+              gl.generateMipmap(gl.TEXTURE_2D);
+            }
             p.drawn = true;
           }
           gl.bindFramebuffer(gl.FRAMEBUFFER, null);

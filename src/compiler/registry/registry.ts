@@ -2401,16 +2401,18 @@ export const AT_RULES: AtRuleDef[] = [
     name: "paint",
     figure: "paint",
     since: "0.0.6",
-    syntax: "@paint <name> { <fragment shader> }",
+    syntax: "@paint <name> { [size: <length> <length>?;] [filter: linear | mipmap;] <fragment shader> }",
     description:
       "A texture drawn by a fragment shader, for `texture: paint(<name>)`: an image that comes from code, like `paint()` in CSS. The block is GLSL, the shader language of WebGL, written as it is for the web. WebGL2 only, for now: with WebGPU, the object keeps its color.",
-    valuesTitle: "Uniforms",
+    valuesTitle: "Descriptors and uniforms",
     values: [
+      ["size: <length> <length>?", "Written before the GLSL: the size of the texture, from `64px` to `4096px`, one length for a square, or a width and a height. `512px` by default. A big object seen close up needs more pixels.", "0.0.8"],
+      ["filter: linear | mipmap", "Written before the GLSL: `mipmap` keeps the texture smooth when it is seen small or from afar, where `linear`, the default, shimmers. It costs a little at each drawing.", "0.0.8"],
       ["time", "The time of the scene, in seconds, a `float`. `u_time` works too. A shader that reads it is drawn again at every frame; one that does not is drawn once."],
-      ["resolution", "The size of the texture in pixels, `vec2(512.0, 512.0)`. `u_resolution` works too."],
+      ["resolution", "The size of the texture in pixels, `vec2(512.0, 512.0)` by default: divide `gl_FragCoord` by it, and the shader works at any `size`. `u_resolution` works too."],
       ["mouse", "The pointer over the scene, in the pixels of the texture, from its bottom left like `gl_FragCoord`. `u_mouse` works too."],
     ],
-    details: "The block is a whole fragment shader, with its own `main()`: write `out vec4 color;` and set it. It is drawn into a texture of 512 by 512 pixels, which the object shows like an image.",
+    details: "The block is a whole fragment shader, with its own `main()`: write `out vec4 color;` and set it. It is drawn into a texture of 512 by 512 pixels, or its `size`, which the object shows like an image.",
     more: "The shader holds its uniforms, its functions and its `main()`. `gl_FragColor` works too, as in WebGL1, and GSS adds `#version 300 es` and a `precision` when the code has none. The texture goes on each face of the object, with `texture-size` and `image-rendering`. Each `@paint` runs on its own: its names never meet the rest of the scene, and an error in its GLSL names the `@paint` and its line in the file. A scene with `paint()` is drawn with WebGL2: `<gss-scene>`, `mountAsync()` and the playground pick it by themselves in `auto`; with WebGPU chosen, the object shows its `color` instead, and the console says why.",
     note: {
       title: "WebGL2 only, for now. GLSL, not CSS.",
@@ -2447,6 +2449,25 @@ cube { translate: 0 0.8 0; rotate-y: 30deg; texture: paint(rings); }`,
 }
 @scene { sphere; }
 sphere { translate: 0 1 0; texture: paint(checks); }`,
+      },
+      {
+        name: "a big texture, with mipmaps",
+        text: "A sphere that fills the view: 2048 pixels keep the bands sharp, and the mipmaps keep the far side smooth.",
+        code: `@paint marble {
+  size: 2048px;
+  filter: mipmap;
+  uniform vec2 resolution;
+  out vec4 color;
+
+  void main() {
+    vec2 uv = gl_FragCoord.xy / resolution;
+    float band = sin(uv.x * 60.0 + sin(uv.y * 12.0) * 3.0);
+    color = vec4(mix(vec3(0.1, 0.12, 0.2), vec3(0.92, 0.9, 0.86), smoothstep(-0.05, 0.05, band)), 1.0);
+  }
+}
+@scene { sphere; }
+scene { camera-distance: 4; floor: none; }
+sphere { radius: 1.3; texture: paint(marble); texture-mapping: sphere; }`,
       },
     ],
     see: [

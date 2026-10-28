@@ -1,7 +1,7 @@
 import type { CameraSettings } from "../compiler/features/camera";
 import type { CompiledScene } from "../compiler";
 import { createTextureStore, paintName, resolveImage } from "./textures";
-import { createPaints, PAINT_SIZE, type PaintSet } from "./paint";
+import { createPaints, type PaintSet } from "./paint";
 import { pickPixel, pointerValues, createPress, cursorAt, controlsAllow, zoomed } from "./hover";
 import { createPicker } from "./picker";
 import { createClock } from "./clock";
@@ -313,15 +313,15 @@ export function createView(
     pointer = null; // nothing is hovered any more
   });
 
-  // mouse in a @paint: the last pointer over the canvas, in the pixels of its texture, from
-  // the bottom left like gl_FragCoord (decision 151)
+  // mouse in a @paint: the last pointer over the canvas, from 0 to 1, from the bottom left
+  // like gl_FragCoord (decision 151); the paints read it in the pixels of their texture
   let paintPointer: [number, number] = [0, 0];
   function paintMouse(): [number, number] {
     if (pointer) {
       const box = canvas.getBoundingClientRect();
       paintPointer = [
-        ((pointer.x - box.left) / Math.max(box.width, 1)) * PAINT_SIZE,
-        (1 - (pointer.y - box.top) / Math.max(box.height, 1)) * PAINT_SIZE,
+        (pointer.x - box.left) / Math.max(box.width, 1),
+        1 - (pointer.y - box.top) / Math.max(box.height, 1),
       ];
     }
     return paintPointer;

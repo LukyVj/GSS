@@ -83,6 +83,27 @@ describe("texture: paint(name)", () => {
     expect(b).toBeGreaterThan(150);
   }, 60000);
 
+  it("draws at the size the @paint asks for, and fills resolution with it", async () => {
+    const code = `@paint fill {
+      size: 1024px 256px;
+      precision highp float;
+      uniform vec2 resolution;
+      out vec4 color;
+      void main() { color = vec4(resolution.x == 1024.0 ? 1.0 : 0.0, gl_FragCoord.y < 256.0 ? 1.0 : 0.0, resolution.y == 256.0 ? 1.0 : 0.0, 1.0); }
+    }`;
+    const [r, g, b] = await center(scene(code));
+    expect(r).toBeGreaterThan(150);
+    expect(g).toBeGreaterThan(150);
+    expect(b).toBeGreaterThan(150);
+  }, 60000);
+
+  it("makes its mipmaps after each drawing: with filter: mipmap, the texture is complete", async () => {
+    const [r, g, b] = await center(scene("@paint fill { size: 2048px; filter: mipmap; out vec4 color; void main() { color = vec4(0.0, 1.0, 0.0, 1.0); } }"));
+    expect(g).toBeGreaterThan(150);
+    expect(r).toBeLessThan(60);
+    expect(b).toBeLessThan(60);
+  }, 60000);
+
   it("draws a shader that reads time again as the time goes on", async () => {
     const [first, second] = await page.evaluate(async (compiled) => {
       const canvas = document.createElement("canvas");

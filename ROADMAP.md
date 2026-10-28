@@ -172,7 +172,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
   - [x] `shadow-softness`, `shadow-steps` ✅ decision 225
   - [x] `camera-fov` ✅ decision 226
   - [x] `ambient-occlusion` ✅ decision 227
-  - [ ] `@paint { size }`, with mipmaps (WebGL2)
+  - [x] `@paint { size; filter: mipmap; }` (WebGL2) ✅ decision 228
   - [ ] `adaptDpr: { start, min }`, a `heavyThreshold`, `scene.stats()`
   - [ ] The bounds of the objects whose place depends on a variable set from JS (the 117 columns of the hero "Champ" have none)
   - [ ] `antialias: 2x | 4x` (rotated grid, in the shader)
