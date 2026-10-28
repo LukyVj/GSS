@@ -46,6 +46,22 @@ const hull = (a: Range, b: Range): Range => each(a, b, (al, ah, bl, bh) => [Math
 
 class Bail extends Error {}
 
+// pow() of a constant exponent (decision 230): a whole one, the math of x^n, so an even power
+// is never negative (CSS pow() takes a negative base); another, a base never negative
+function power(base: Range, exponent: Range): Range {
+  if (size(exponent) !== 1 || exponent.low[0] !== exponent.high[0]) throw new Bail();
+  const n = exponent.low[0];
+  if (!Number.isInteger(n)) {
+    if (!base.low.every((l) => l >= 0)) throw new Bail();
+    return n >= 0 ? monotone((x) => x ** n)(base) : { low: base.high.map((h) => h ** n), high: base.low.map((l) => l ** n) };
+  }
+  if (n < 0) throw new Bail();
+  if (n % 2 === 1) return monotone((x) => x ** n)(base);
+  const low = base.low.map((l, i) => (l <= 0 && base.high[i] >= 0 ? 0 : Math.min(Math.abs(l), Math.abs(base.high[i])) ** n));
+  const high = base.low.map((l, i) => Math.max(Math.abs(l), Math.abs(base.high[i])) ** n);
+  return { low, high };
+}
+
 // The functions GSS writes in an animated value, by their range
 function call(name: string, args: Range[]): Range {
   const scalar = (n: number) => args.length === n;
@@ -74,6 +90,7 @@ function call(name: string, args: Range[]): Range {
     case "abs":
       return { low: args[0].low.map((l, i) => (l >= 0 ? l : args[0].high[i] <= 0 ? -args[0].high[i] : 0)), high: args[0].high.map((h, i) => Math.max(Math.abs(h), Math.abs(args[0].low[i]))) };
     case "exp": return monotone(Math.exp)(args[0]);
+    case "pow": return power(args[0], args[1]);
     case "sqrt": return args[0].low.every((l) => l >= 0) ? monotone(Math.sqrt)(args[0]) : unknown(size(args[0]));
     case "floor": return monotone(Math.floor)(args[0]);
     case "ceil": return monotone(Math.ceil)(args[0]);

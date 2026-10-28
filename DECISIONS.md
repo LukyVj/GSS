@@ -1906,3 +1906,12 @@ A first version cut the light from 0 into steps, with a pinpoint highlight: its 
 **Different from the spec**: `adaptDpr: false` keeps never stopping the scene, as documented since 0.0.5 (the spec asked it to stop): a capture must never stop. No `step`, `max`, `upFps` or `downFps`: the steps of auto stay its own. No `gss-fps` event: `stats()` is read when the page wants it.
 **Accepted limits**: `<gss-scene>` takes none of them yet (attributes later). `stats()` has no time on the GPU (`gpuMs`).
 
+## 230. The bounds read `pow()`: a bump around a point set from JS has a range
+
+**Decision** (Oct. 28, the "quality ceilings" spec, item S8): the interval arithmetic of decision 219 reads `pow()` of a constant exponent. A whole exponent is the math of x^n, as CSS `pow()` is: an even power is never negative, `[0, max(|low|, |high|)^n]` when the base can be either sign; an odd one keeps its order. Another exponent needs a base that is never negative. A variable set from JS still has no range, but what it goes through can give one: `exp(-(pow(x - var(--cx), 2) + pow(z - var(--cz), 2)) / 1.8)` lies in [0, 1] wherever the page puts `--cx` and `--cz`.
+**Why**: the spec said GSS had no culling; it has (the tree of spheres, decisions 77 and 132), but the hero "Champ" got none of it: its 117 columns rise in a bump around the pointer, `translate` reads `--cx` and `--cz` through `pow()` and `exp()`, and `pow()` stopped the reader, so no column had a sphere and every step of every ray measured all of them. Bounding every primitive on its own, as the spec proposed, was measured slower in decision 66: the tree is the right tool, it only needed the range.
+- **Measured** (Chromium, ANGLE Metal, M4 Pro, 1280 × 720, dpr 1, 40 frames): `champ.high` (117 columns, soft shadows) 65–71 → 20 ms a frame; `champ` (77) and `champ.low` stay at the 16.8 ms of the screen's refresh. Image: in SwiftShader, at 4 times and 4 places of `--cx`, `champ.high` is identical, `champ` and `champ.low` differ by 1 level in at most 23 of 230,400 channels (an exact tie between two objects, decision 132).
+- No scene of `src/scenes/` nor registry example changes its shader: only the three Champ scenes of the showcase do.
+
+**Accepted limits**: an exponent that varies has no range, nor a negative base under a fractional exponent. The bounds hold the math of `pow()`; GLSL leaves `pow()` of a negative base undefined, which GSS writes as it is: a separate question.
+

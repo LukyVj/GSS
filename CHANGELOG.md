@@ -36,6 +36,7 @@ The 0.0.1 history was reconstructed from GitHub.
 
 ### Changed
 
+- **Performance**: objects that move with a variable set from JS through `pow()` and `exp()`, like a bump that follows the pointer, are now skipped by the rays that pass far from them. A field of 117 columns that rise around the pointer draws in 20 ms instead of 65 to 71 on a laptop GPU, with the same image.
 - **Animations**: a scene whose objects move on a timeline of the page, with a `cubic-bezier()` easing or with `hover-distance()` draws faster, with the same image. The cloud of the changelog page draws about seven times faster.
 - **`animation-fill-mode`**: it counts on a scroll timeline, like CSS. Before a `view()` timeline or an `animation-range`, and past it, an animation applies only when its fill mode holds a frame: `backwards`, `forwards` or `both`. Until now GSS held the first and the last frame in any case; a scene that relies on it writes `both`, like `animation: rise 1s both`.
 - **Changelog**: the cloud of points follows each version of the page. The number of a version gathers while that version crosses the page, and scatters between two versions, wherever the version is and however long it is.

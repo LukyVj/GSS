@@ -37,3 +37,26 @@ describe("rangeOf(): the range of a value of the shader (decision 219)", () => {
     expect(rangeOf("1.0 / (iTime - 1.0)", false)).toBeNull();
   });
 });
+
+// pow() (decision 230): a variable set from JS has no range, but its square has one floor, and
+// the exp() of what is never positive stays in (0, 1]: the bump of the hero "Champ"
+describe("rangeOf(): pow(), and what a variable set from JS cannot push past", () => {
+  it("reads pow() of a whole exponent: an even one is never negative", () => {
+    expect(rangeOf("pow(-3.0, 2.0)", false)).toEqual({ low: [9], high: [9] });
+    expect(rangeOf("pow(clamp(iTime, 0.0, 2.0) - 1.0, 2.0)", false)).toEqual({ low: [0], high: [1] });
+    expect(rangeOf("pow(clamp(iTime, 0.0, 2.0) - 1.0, 3.0)", false)).toEqual({ low: [-1], high: [1] });
+    expect(rangeOf("pow(clamp(iTime, 0.0, 4.0), 0.5)", false)).toEqual({ low: [0], high: [2] });
+  });
+
+  it("bounds a bump around a point set from JS", () => {
+    const bump = "exp(((-1.0 * (pow((-2.8 - uProperties[0].x), 2.0) + pow((-2.1 - uProperties[1].x), 2.0))) / 1.8))";
+    expect(rangeOf(bump, false)).toEqual({ low: [0], high: [1] });
+    expect(rangeOf(`vec3(-2.8, (-1.42 + (${bump} * 1.7)), -2.1)`, false)).toEqual({ low: [-2.8, -1.42, -2.1], high: [-2.8, -1.42 + 1.7, -2.1] });
+  });
+
+  it("has no range for pow() of a base that can be negative and an exponent that is not whole", () => {
+    expect(rangeOf("pow(sin(iTime), 0.5)", false)).toBeNull();
+    expect(rangeOf("pow(2.0, iTime)", false)).toBeNull();
+    expect(rangeOf("pow(uProperties[0].x, 2.0)", false)).toBeNull(); // no end
+  });
+});
