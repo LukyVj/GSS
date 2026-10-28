@@ -1,5 +1,7 @@
 import type { Token } from "../../syntax/tokenizer";
 import { errorAt } from "../../syntax/errors";
+import { clampComputed } from "../../values/calc";
+import { glslFloat } from "./glsl";
 
 // shadows (decision 115): scene { shadows: none | hard | soft }. Each point that main()
 // shades sends a ray toward each light, the sun and the lights of @scene; an object on the
@@ -17,8 +19,30 @@ export function readShadows(value: Token[] | undefined): Shadows {
   throw errorAt(value, "shadows expects none, hard or soft, like: shadows: soft;");
 }
 
-// How sharp the penumbra of soft shadows is: higher is sharper
-const SOFTNESS = "12.0";
+// How sharp the penumbra of soft shadows is: higher is sharper. shadow-softness (decision 225)
+// divides it: 2 draws a penumbra twice as wide.
+const SHARPNESS = 12;
+
+// shadow-softness and shadow-steps (decision 225): the width of the penumbra, and the steps of
+// the ray toward a light (null, auto: 64, or 100 through holes and transparent objects)
+export type ShadowQuality = { softness: number; steps: number | null };
+
+export function readShadowQuality(softness: Token[] | undefined, steps: Token[] | undefined): ShadowQuality {
+  const one = (value: Token[]) => (value.length === 1 && value[0].type === "NUMBER" ? clampComputed(value[0], -Infinity) : NaN);
+  const quality: ShadowQuality = { softness: 1, steps: null };
+  if (softness) {
+    const n = one(softness);
+    if (!(n >= 0.1 && n <= 10)) throw errorAt(softness, "shadow-softness expects a number from 0.1 to 10, like: shadow-softness: 2;");
+    quality.softness = n;
+  }
+  if (steps && !(steps.length === 1 && steps[0].type === "IDENT" && steps[0].value === "auto")) {
+    const n = one(steps);
+    if (!(n >= 16 && n <= 512) || !Number.isInteger(n))
+      throw errorAt(steps, "shadow-steps expects auto or a whole number from 16 to 512, like: shadow-steps: 128;");
+    quality.steps = n;
+  }
+  return quality;
+}
 
 // shadow(): how much of a light reaches ro along rd, up to far, from 0 behind an object to 1.
 // holes: the scene has holes (mask-image), which let the light through; the objects with
@@ -26,9 +50,17 @@ const SOFTNESS = "12.0";
 // objects (opacity, decision 116), which let the light through tinted: shadow() gives a color.
 // seeThrough: the test of the objects the light goes through, which make no penumbra; with
 // blended objects (mix-blend-mode, decision 173), the skins are not all of them.
-export function shadowFunction(mode: "hard" | "soft", holes: boolean, transparent = false, seeThrough = "isSkin"): string {
+export function shadowFunction(
+  mode: "hard" | "soft",
+  holes: boolean,
+  transparent = false,
+  seeThrough = "isSkin",
+  quality: ShadowQuality = { softness: 1, steps: null },
+): string {
   const soft = mode === "soft";
-  if (transparent) return tintedShadow(soft, holes, seeThrough);
+  const SOFTNESS = glslFloat(+(SHARPNESS / quality.softness).toFixed(4));
+  const loop = (auto: number) => `  for (int i = 0; i < ${quality.steps ?? auto}; i++) {`;
+  if (transparent) return tintedShadow(soft, holes, seeThrough, SOFTNESS, loop(100));
   const head = soft
     ? [
         "// shadows: soft: how much of a light reaches ro along rd, up to far, from 0 behind an",
@@ -41,7 +73,7 @@ export function shadowFunction(mode: "hard" | "soft", holes: boolean, transparen
       "float shadow(vec3 ro, vec3 rd, float far) {",
       ...(soft ? ["  float lit = 1.0;"] : []),
       "  float t = 0.02;",
-      "  for (int i = 0; i < 64; i++) {",
+      loop(64),
       "    float h = map(ro + rd * t).x;",
       ...(soft
         ? [`    lit = min(lit, ${SOFTNESS} * h / t);`, "    t += clamp(h, 0.01, 0.5);", "    if (lit < 0.001 || t > far) break;"]
@@ -59,7 +91,7 @@ export function shadowFunction(mode: "hard" | "soft", holes: boolean, transparen
     "  float lit = 1.0;",
     "  float t = 0.02;",
     "  throughHoles = true;",
-    "  for (int i = 0; i < 100; i++) {",
+    loop(100),
     "    vec3 p = ro + rd * t;",
     "    vec2 res = map(p);",
     "    float h = abs(res.x);",
@@ -85,7 +117,7 @@ export function shadowFunction(mode: "hard" | "soft", holes: boolean, transparen
 // mix(1, color, a): a red glass at 50% casts a pink light. Close to opaque, the last tenth,
 // it lets less and less through, down to the black shadow of an opaque object. A surface is
 // crossed once: the light goes on until it leaves it. The penumbra comes from the solid objects.
-function tintedShadow(soft: boolean, holes: boolean, seeThrough: string): string {
+function tintedShadow(soft: boolean, holes: boolean, seeThrough: string, SOFTNESS: string, loop: string): string {
   return [
     soft
       ? "// shadows: soft: how much of a light reaches ro along rd, up to far, through the transparent\n// objects, which tint it; the penumbra grows with the distance to the object that casts it"
@@ -96,7 +128,7 @@ function tintedShadow(soft: boolean, holes: boolean, seeThrough: string): string
     "  float t = 0.02;",
     "  bool crossing = false;  // in a surface the light already went through",
     "  throughHoles = true;",
-    "  for (int i = 0; i < 100; i++) {",
+    loop,
     "    vec3 p = ro + rd * t;",
     "    vec2 res = map(p);",
     "    float h = abs(res.x);",

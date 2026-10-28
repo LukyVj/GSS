@@ -54,7 +54,7 @@ import { NOISE_LIBRARY } from "./noise-library";
 import { isLive, liveCode, liveNumber, withHoverSizes } from "./live";
 import { liveLight, liveRead } from "./properties";
 import { DIFFUSE, isLight, lightingCode, splitAmbient } from "./lights";
-import { readShadows } from "./shadows";
+import { readShadowQuality, readShadows } from "./shadows";
 import { ISOLINES, ISOLINES_CALL, withObjectsAlone } from "./view";
 import type { View } from "../../features/view";
 import { readShapeRendering } from "../../features/shape-rendering";
@@ -420,6 +420,7 @@ export function generateShader(
       transparent: transparent.length > 0,
       // An opaque blended object is a skin, but the light does not go through it: it keeps its penumbra
       ...(blended.length > 0 && transparent.length > 0 && shadows === "soft" ? { seeThrough: "seeThrough" } : {}),
+      quality: readShadowQuality(sceneStyles["shadow-softness"], sceneStyles["shadow-steps"]), // decision 225
     },
   );
   const cameraTarget = sceneStyles["camera-target"]

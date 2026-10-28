@@ -2050,6 +2050,46 @@ export const PROPERTIES: PropertyDef[] = [
     ],
   },
   {
+    name: "shadow-softness",
+    figure: "scene",
+    since: "0.0.8",
+    appliesTo: "scene",
+    syntax: "<number>",
+    initial: "1",
+    description:
+      "Sets how wide the penumbra of `shadows: soft` grows, from 0.1 to 10: 2 makes it twice as wide, 0.5 half as wide.",
+    details: "A low sun and tall objects cast long shadows: a wider penumbra keeps them soft far from the objects; a narrower one keeps them crisp near them. `shadows: hard` has no penumbra, and ignores it.",
+    more: "The value is written in the shader: a variable set from JS cannot change it, and a `@media` can.",
+    examples: [
+      {
+        name: "a wide penumbra",
+        code: "@scene { cube * 3; } scene { shadows: soft; shadow-softness: 3; light: -40deg 30deg; } cube { size: 0.4 1.6 0.4; translate: calc(sibling-index() * 1.2 - 2.4) 0.8 0; color: #ff5a36; }",
+      },
+    ],
+  },
+  {
+    name: "shadow-steps",
+    figure: "scene",
+    since: "0.0.8",
+    appliesTo: "scene",
+    syntax: "auto | <integer>",
+    initial: "auto",
+    description:
+      "Sets how many steps the ray toward a light takes, at most, to find what is in the way, from 16 to 512.",
+    values: [
+      ["auto", "64 steps, or 100 when the light goes through holes or transparent objects: the default."],
+      ["<integer>", "That many steps, for every shadow."],
+    ],
+    details: "A shadow that is too short, banded far from its object, or that misses a thin object in the way, needs more steps.",
+    more: "Each step costs as much as one step of the march of a pixel, on every pixel the light reaches. The value is written in the shader: a variable set from JS cannot change it, and a `@media` can.",
+    examples: [
+      {
+        name: "long shadows of a low sun",
+        code: "@scene { cube * 5; } scene { shadows: soft; shadow-steps: 160; light: -70deg 12deg; camera-distance: 10; } cube { size: 0.3 1.2 0.3; translate: calc(sibling-index() * 0.9 - 2.7) 0.6 0; color: #3a7bff; }",
+      },
+    ],
+  },
+  {
     name: "dpr",
     figure: "scene",
     since: "0.0.2",

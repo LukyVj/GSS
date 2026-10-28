@@ -169,7 +169,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 - [x] `@debug-panel` ✅ decision 204 (Lucas, Oct. 24: "un vrai mode de débug, avec les axes, des infos sur la perf"), over the render like `@property-panel`: the x, y, z axes and a grid at the origin, drawn in the playground and Try it only; a panel with the objects, the images out of 16 and the rows of the performance panel (fps, GPU time, shader build); `view: steps`, each pixel colored by its calls of `map()`, a third chip next to `view: distance`. Then the same day (Lucas: "le panneau doit donner le max d'infos", "les axes doivent être légendés"): the letters of the axes; the panel adds the backend, the camera as GSS, the lights, the variables, the states, the timelines, the filter passes, the media queries, the lines of the shader, and the mean and the max of the steps read back from the render.
 - Quality ceilings (Lucas, Oct. 28: the spec written while building the hero scenes, "invest time in it for 0.0.8"; every default keeps the shaders identical):
   - [x] `raymarch-steps`, `max-distance`, `hit-precision`, and `camera-distance` up to `max-distance - 5` ✅ decision 224
-  - [ ] `shadow-softness`, `shadow-quality`
+  - [x] `shadow-softness`, `shadow-steps` ✅ decision 225
   - [ ] `camera-fov`
   - [ ] `ambient-occlusion`
   - [ ] `@paint { size }`, with mipmaps (WebGL2)

@@ -1855,3 +1855,13 @@ A first version cut the light from 0 into steps, with a pinpoint highlight: its 
 **Why**: the hero showcase hit all three: a floor cut at 20 units behind a fog, halos where a ray grazing rows of close slabs ran out of its 100 steps, faint bands on a big sphere close up at a `dpr` of 2. Its authors generated `.high.gss` files by text substitution to get around them. The names say what they set; CSS has no such properties.
 **Accepted limits**: `hit-precision` is one number for the whole scene, not a size that grows with the distance and the pixel (`auto`, for later). The floor gradient keeps its square of 40 units (2 × 20): past 20 units, a floor gradient repeats its edge. A bigger `max-distance` makes the rays that hit nothing take more steps.
 
+## 225. `shadow-softness` and `shadow-steps`: the penumbra and the reach of the shadows
+
+**Decision** (Oct. 28, the same "quality ceilings" spec as 224): two properties of the scene tune `shadows`.
+- `shadow-softness: <number>` (0.1 to 10, initial 1): how wide the penumbra of `soft` grows. The shadow ray keeps `lit = min(lit, k * h / t)`, with k = 12 / softness: 2 draws a penumbra twice as wide, 0.5 half as wide. `hard` has none, and ignores it.
+- `shadow-steps: auto | <integer>` (16 to 512, initial `auto`): the steps of every shadow loop. `auto` keeps 64, and 100 through holes and transparent objects; a number sets all of them.
+- Both are written in the shader: a variable set from JS is refused, a `@media` can set its own. Without shadows, they change nothing. Every source compiles as before (391, GLSL and WGSL).
+
+**Why**: the hero "Aube" has letters lit by a low sun: their long shadows were too sharp near the letters and cut short far away, and only the three keywords of `shadows` could change them. The spec named them `shadow-softness` and `shadow-quality`: `shadow-steps` says what it sets, like `raymarch-steps`. A number where bigger is softer reads better than the sharpness `k` of the code, where bigger is sharper.
+**Accepted limits**: one softness for every light; the improved soft shadow of Inigo Quilez (2018), which removes the bands of a long penumbra, changes the image and waits for a version that can change it. The step toward the light stays clamped between 0.01 and 0.5: more steps reach farther.
+

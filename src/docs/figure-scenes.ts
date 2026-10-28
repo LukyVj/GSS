@@ -95,7 +95,7 @@ function ambient(): string {
 
 // shadows: the floor is in the light, and the shadow is where the light does not reach, dark.
 // A soft one fades toward its edge.
-function shadows(): string {
+function shadows(subject: string): string {
   const frame: Frame = { ...CELL, scale: 30, x: 62, y: 96 };
   const half = 1.4;
   const ground = route(frame, [[-half, 0, -half], [half, 0, -half], [half, 0, half], [-half, 0, half]], true);
@@ -103,6 +103,22 @@ function shadows(): string {
     `<path class="shade" style="opacity: ${opacity}" d="${route(frame, ringPoints([0.75, 0, -0.35], radius), true)}"/>`;
   const scene = (shadow: string) =>
     `<path class="lit-floor" d="${ground}"/>` + shadow + lines(floor(half, 0.7), frame) + `<g class="floats" style="--rise: -5px">${body(sphereAt(1.15, 0.45), frame)}</g>`;
+  // shadow-softness: the same shadow, its penumbra narrower or wider
+  if (subject === "shadow-softness")
+    return cells(
+      "figure-steps",
+      [
+        ["shadow-softness: 0.5;", scene(shade(0.52, 0.45) + shade(0.42))],
+        ["shadow-softness: 3;", scene(shade(0.8, 0.2) + shade(0.64, 0.4) + shade(0.48, 0.6) + shade(0.32))],
+      ],
+      CELL,
+    );
+  // shadow-steps: a ray toward the light that runs out of steps leaves the shadow short
+  if (subject === "shadow-steps") {
+    const cut = (reach: number) =>
+      `<path class="shade" d="${route(frame, [[0.45, 0, -0.1], [0.45 + reach, 0, -0.35], [0.45 + reach, 0, -0.6], [0.45, 0, -0.6]], true)}"/>`;
+    return cells("figure-steps", [["shadow-steps: 16;", scene(cut(0.35))], ["shadow-steps: 160;", scene(cut(0.85))]], CELL);
+  }
   return cells(
     "figure-steps",
     [
@@ -441,6 +457,8 @@ const SCENES: Record<string, (subject: string) => string> = {
   intensity,
   ambient,
   shadows,
+  "shadow-softness": shadows,
+  "shadow-steps": shadows,
   fog,
   floor: floorFigure,
   background,

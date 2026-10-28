@@ -522,6 +522,86 @@ scene {
 }
 ```
 
+<a name="shadow-softness"></a>
+
+## `shadow-softness`
+
+Sets how wide the penumbra of `shadows: soft` grows, from 0.1 to 10: 2 makes it twice as wide, 0.5 half as wide.
+
+**What the property changes in the scene:** `shadow-softness: 0.5;`, `shadow-softness: 3;`
+
+- **Syntax:** `<number>`
+- **Initial value:** `1`
+- **Applies to:** the scene
+- **Animatable:** no
+
+A low sun and tall objects cast long shadows: a wider penumbra keeps them soft far from the objects; a narrower one keeps them crisp near them. `shadows: hard` has no penumbra, and ignores it.
+
+The value is written in the shader: a variable set from JS cannot change it, and a `@media` can.
+
+### a wide penumbra
+
+```css
+@scene {
+  cube * 3;
+}
+
+scene {
+  shadows: soft;
+  shadow-softness: 3;
+  light: -40deg 30deg;
+}
+
+cube {
+  size: 0.4 1.6 0.4;
+  translate: calc(sibling-index() * 1.2 - 2.4) 0.8 0;
+  color: #ff5a36;
+}
+```
+
+<a name="shadow-steps"></a>
+
+## `shadow-steps`
+
+Sets how many steps the ray toward a light takes, at most, to find what is in the way, from 16 to 512.
+
+**What the property changes in the scene:** `shadow-steps: 16;`, `shadow-steps: 160;`
+
+- **Syntax:** `auto | <integer>`
+- **Initial value:** `auto`
+- **Applies to:** the scene
+- **Animatable:** no
+
+### Values
+
+- **auto:** 64 steps, or 100 when the light goes through holes or transparent objects: the default.
+- **<integer>:** That many steps, for every shadow.
+
+A shadow that is too short, banded far from its object, or that misses a thin object in the way, needs more steps.
+
+Each step costs as much as one step of the march of a pixel, on every pixel the light reaches. The value is written in the shader: a variable set from JS cannot change it, and a `@media` can.
+
+### long shadows of a low sun
+
+```css
+@scene {
+  cube * 5;
+}
+
+scene {
+  shadows: soft;
+  shadow-steps: 160;
+  light: -70deg 12deg;
+  camera-distance: 10;
+}
+
+cube {
+  size: 0.3 1.2 0.3;
+  translate: calc(sibling-index() * 0.9 - 2.7) 0.6 0;
+  color: #3a7bff;
+}
+```
+
 ---
 
 Next: [Rendering](rendering.md)
