@@ -4,7 +4,7 @@ import { expandScene } from "./cascade/expand";
 import { resolveStyles, resolveSceneStyles, FACES, type Face } from "./cascade/resolve";
 import { activeSlots, generateShader, hoverSlots, pointerReaders, sceneTriggers, type Trigger } from "./shader/codegen";
 import { validateProperties, validateKeyframes } from "./cascade/validate";
-import { readCamera, type CameraSettings } from "./features/camera";
+import { readCamera, readFocal, type CameraSettings } from "./features/camera";
 import { RAYMARCH, readRaymarch } from "./features/raymarch";
 import { resolveMath, type CalcContext } from "./values/calc";
 import type { StyledInstance, Styles } from "./cascade/resolve";
@@ -29,6 +29,7 @@ import { readDpr, type Dpr } from "./features/dpr";
 import { readView, type View } from "./features/view";
 import { readDebugPanel, type DebugPanel } from "./features/debug-panel";
 import { withDebugOverlay } from "./shader/codegen/debug";
+import { withFocal } from "./shader/codegen/raymarch";
 import { isDisplayed } from "./features/visibility";
 import { sceneCursors, type ObjectCursor } from "./features/cursor";
 import { sceneControls, type SceneControls } from "./features/controls";
@@ -359,7 +360,7 @@ function compileStylesheet(
   const view = errors.run(() => readView(computedScene));
   const viewed = checkedShader(styled, computedScene, [...shared, ...copies], errors, registered.length, options.view ?? view);
   // The axes and the grid of @debug-panel, where the playground asks for them (decision 204)
-  const shader = viewed !== undefined && options.debug && debugPanel ? withDebugOverlay(viewed) : viewed;
+  const shader = viewed !== undefined && options.debug && debugPanel ? withFocal(withDebugOverlay(viewed), readFocal(computedScene)) : viewed;
   const raymarch = errors.run(() => readRaymarch(computedScene));
   const camera = errors.run(() => readCamera(computedScene, raymarch?.maxDistance));
   const dpr = errors.run(() => readDpr(computedScene));

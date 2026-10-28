@@ -1865,3 +1865,12 @@ A first version cut the light from 0 into steps, with a pinpoint highlight: its 
 **Why**: the hero "Aube" has letters lit by a low sun: their long shadows were too sharp near the letters and cut short far away, and only the three keywords of `shadows` could change them. The spec named them `shadow-softness` and `shadow-quality`: `shadow-steps` says what it sets, like `raymarch-steps`. A number where bigger is softer reads better than the sharpness `k` of the code, where bigger is sharper.
 **Accepted limits**: one softness for every light; the improved soft shadow of Inigo Quilez (2018), which removes the bands of a long penumbra, changes the image and waits for a version that can change it. The step toward the light stays clamped between 0.01 and 0.5: more steps reach farther.
 
+## 226. `camera-fov`: how wide the camera sees
+
+**Decision** (Oct. 28, the "quality ceilings" spec, as 224): `scene { camera-fov: <angle>; }`, from `10deg` to `120deg`, the angle the camera sees from the top to the bottom of the canvas (a wide canvas sees more on the sides, like the vertical field of view of three.js). Initial `36.87deg`, the angle of the focal length of 1.5 that every ray had: 0.5 / tan(fov / 2), rounded to 4 decimals, gives 1.5 for it, and an angle that rounds to 1.5 keeps the shader as it was.
+- **Where the focal length goes**: `withFocal()` (`codegen/raymarch.ts`) replaces 1.5 wherever a ray goes through the camera (the ray of `main()`, the point under the pointer of `hover-distance()`, the background read through the canvas) or a pixel is measured (the pixel of `geometricPrecision`, of `view: distance` and of the debug panel, which is added after the shader and replaced again).
+- Written in the shader: a variable set from JS is refused, a `@media` can set its own. Every source compiles as before (391, GLSL and WGSL).
+
+**Why**: the heroes of the showcase wanted a telephoto view (rows of columns read better at 20 to 25 degrees) and could only move `camera-target` off center. A field of view is what every 3D tool calls it; CSS has `perspective`, a distance, which says something else.
+**Accepted limits**: not animatable yet (a dolly zoom needs it as a uniform). The amount of a `displace()` with a `noise()` in the background is still measured with the focal length of 1.5.
+

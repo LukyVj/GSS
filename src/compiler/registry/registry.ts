@@ -1759,6 +1759,29 @@ export const PROPERTIES: PropertyDef[] = [
     ],
   },
   {
+    name: "camera-fov",
+    figure: "scene",
+    since: "0.0.8",
+    appliesTo: "scene",
+    syntax: "<angle>",
+    initial: "36.87deg",
+    description:
+      "Sets how wide the camera sees, from the top to the bottom of the canvas, from `10deg` to `120deg`.",
+    details: "A narrow angle, like a telephoto lens, flattens the depth: rows pile up, a product reads without distortion. A wide one stretches the near objects and pushes the far ones away. Move the camera back with a narrow one.",
+    more: "The angle is measured from the top to the bottom of the canvas: a wide canvas sees more on the sides. The value is written in the shader: a variable set from JS cannot change it, and a `@media` can.",
+    examples: [
+      {
+        name: "a telephoto view",
+        text: "A narrow angle from far away: the rows look close together.",
+        code: "@scene { cube * 12; } scene { camera-fov: 14deg; camera-distance: 14; camera-angle: 30deg 18deg; } cube { size: 0.5; translate: calc(mod(sibling-index() - 1, 3) * 0.9 - 0.9) 0.25 calc(round(down, (sibling-index() - 1) / 3) * -1.2 + 1.8); color: #ff5a36; }",
+      },
+      {
+        name: "a wide angle, close up",
+        code: "@scene { cube * 12; } scene { camera-fov: 90deg; camera-distance: 3; camera-angle: 30deg 18deg; } cube { size: 0.5; translate: calc(mod(sibling-index() - 1, 3) * 0.9 - 0.9) 0.25 calc(round(down, (sibling-index() - 1) / 3) * -1.2 + 1.8); color: #ff5a36; }",
+      },
+    ],
+  },
+  {
     name: "camera-spin",
     figure: "scene",
     since: "0.0.1",

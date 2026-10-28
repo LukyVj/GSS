@@ -44,7 +44,8 @@ import { offsetLines, offsetReach, useOffsetFunctions } from "./offset";
 import { animateCode, createHoisted, hoist, originOf, pointerCode, pointerReaders, rotationLines, transformLines } from "./transforms";
 import { objectBox } from "./origin";
 import { fogCode } from "./fog";
-import { withRaymarch } from "./raymarch";
+import { withFocal, withRaymarch } from "./raymarch";
+import { readFocal } from "../../features/camera";
 import { readRaymarch } from "../../features/raymarch";
 import { boundedMap, enclosing, objectSphere, sceneMiss, steadyTransitions, type Sphere } from "./bounds";
 import { GRAIN } from "../../features/filter";
@@ -717,6 +718,6 @@ uniform vec2 uPick;${pointed ? "\nuniform vec4 uPointer; // hover-distance(): th
   const relit = lights ? lights.rewrite(turned) : turned;
   // view: steps (decision 204): the calls of map() for each pixel, in color
   const viewed = view === "steps" ? withStepsView(relit) : relit;
-  // raymarch-steps, max-distance, hit-precision (decision 224)
-  return withRaymarch(viewed, raymarch);
+  // raymarch-steps, max-distance, hit-precision (decision 224), camera-fov (decision 226)
+  return withFocal(withRaymarch(viewed, raymarch), readFocal(sceneStyles));
 }

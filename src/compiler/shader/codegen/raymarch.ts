@@ -1,5 +1,6 @@
 import { RAYMARCH, type Raymarch } from "../../features/raymarch";
 import { glslFloat } from "./glsl";
+import { FOCAL } from "../../features/camera";
 
 // raymarch-steps, max-distance and hit-precision (decision 224). The shader is written with
 // the initial values (100 steps, 20 units, 0.001); another value replaces them in the finished
@@ -55,4 +56,21 @@ function marchWith(body: string, steps: number, precision: number): string {
 function loopSteps(n: number, steps: number): number {
   if (n === 100 || n === 200) return (n / 100) * steps;
   return ((n - 200) / 100) * steps + 200;
+}
+
+// camera-fov (decision 226): the focal length of the camera, 1.5 in the shader as written,
+// wherever a ray goes through the camera (main(), the point under the pointer, the background
+// seen through the canvas) or a pixel is measured (geometricPrecision, view: distance, the
+// debug panel). Replaced only for another focal length, like the constants of the march.
+const FOCAL_PLACES: [string, (f: string) => string][] = [
+  ["+ 1.5 * forward);", (f) => `+ ${f} * forward);`],
+  ["1.5 * d / z * size.y", (f) => `${f} * d / z * size.y`],
+  ["(1.5 * iResolution.y)", (f) => `(${f} * iResolution.y)`],
+  ["* 1.5 / depth", (f) => `* ${f} / depth`],
+];
+
+export function withFocal(shader: string, focal: number): string {
+  if (focal === FOCAL) return shader;
+  const f = glslFloat(focal);
+  return FOCAL_PLACES.reduce((out, [from, to]) => out.replaceAll(from, to(f)), shader);
 }

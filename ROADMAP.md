@@ -170,7 +170,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 - Quality ceilings (Lucas, Oct. 28: the spec written while building the hero scenes, "invest time in it for 0.0.8"; every default keeps the shaders identical):
   - [x] `raymarch-steps`, `max-distance`, `hit-precision`, and `camera-distance` up to `max-distance - 5` ✅ decision 224
   - [x] `shadow-softness`, `shadow-steps` ✅ decision 225
-  - [ ] `camera-fov`
+  - [x] `camera-fov` ✅ decision 226
   - [ ] `ambient-occlusion`
   - [ ] `@paint { size }`, with mipmaps (WebGL2)
   - [ ] `adaptDpr: { start, min }`, a `heavyThreshold`, `scene.stats()`

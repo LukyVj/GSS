@@ -225,6 +225,15 @@ function camera(subject: string): string {
     const way = [eyeAt(40, 25, 1.3), eyeAt(40, 25, 3)];
     return stage(VIEW, base + path("guide", route(VIEW, [TARGET, way[1]])) + travel(way, "fixed")) + between("camera-distance: 4;", "camera-distance: 12;", "3.6s");
   }
+  // camera-fov: from the eye, the two edges of what it sees, narrow then wide
+  if (subject === "camera-fov") {
+    const seen = (half: number) => {
+      // Past the target, 1.4 times as far from the eye, up and down by half the height seen there
+      const at = (sign: number): Vec3 => [eye[0] * -0.4, eye[1] * -0.4 + TARGET[1] * 1.4 + sign * half, eye[2] * -0.4];
+      return path("tint", route(VIEW, [at(1), eye, at(-1)]));
+    };
+    return stage(VIEW, base + dotAt(VIEW, eye, "edge") + fade(seen(0.25), true) + fade(seen(0.9))) + between("camera-fov: 20deg;", "camera-fov: 70deg;");
+  }
   if (subject === "camera-target") {
     const other: Vec3 = [0, 1.5, 0];
     const look = (target: Vec3) => path("tint", route(VIEW, [eye, target])) + dotAt(VIEW, target);
@@ -466,6 +475,7 @@ const SCENES: Record<string, (subject: string) => string> = {
   "camera-target": camera,
   "camera-distance": camera,
   "camera-angle": camera,
+  "camera-fov": camera,
   "camera-spin": camera,
   controls,
   dpr,
