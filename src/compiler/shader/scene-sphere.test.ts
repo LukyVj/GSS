@@ -95,6 +95,19 @@ describe("the sphere of the scene", () => {
     expect(holds(bounce, [0, -1, 0], 0.5)).toBe(true);
   });
 
+  it("holds a group pressed with a transition that overshoots (decisions 218 and 234)", () => {
+    const pressed = "@scene { group#g { sphere; } } #g:active { translate: 0 4 0; transition: 0.4s cubic-bezier(0.3, 1.6, 0.6, 1); }";
+    expect(holds(pressed, [0, 10, 0], 0.5)).toBe(true);
+    expect(holds(pressed, [0, -6, 0], 0.5)).toBe(true);
+  });
+
+  it("holds an overshoot written in a longhand or in a list per property (decisions 220 and 234)", () => {
+    const longhand = "@scene { sphere; } sphere { transition-duration: 0.4s; transition-timing-function: cubic-bezier(0.3, 1.6, 0.6, 1); } sphere:hover { translate: 0 4 0; }";
+    expect(holds(longhand, [0, 10, 0], 0.5)).toBe(true);
+    const list = "@scene { sphere; } sphere { transition: color 1s, translate 0.4s cubic-bezier(0.3, 1.6, 0.6, 1); } sphere:hover { translate: 0 4 0; }";
+    expect(holds(list, [0, 10, 0], 0.5)).toBe(true);
+  });
+
   it("is not there when a transition undershoots, or overshoots by 1 or more: uHover[] can grow at each turn", () => {
     const under = "@scene { sphere; } sphere { transition: 0.4s cubic-bezier(0.3, -0.4, 0.6, 1); } sphere:hover { translate: 0 4 0; }";
     expect(sphereOf(under)).toBeNull();

@@ -38,7 +38,7 @@ import { backgroundCode, backgroundNeedsCamera, floorGradient, gradientCode, obj
 import { gradientMean } from "../gradient";
 import { BLEND_LIBRARY } from "./blend-library";
 import { readMaterial } from "./materials";
-import { activeSlots, groupHover, hoverSlots, hoverValue, sceneTriggers, useGroupHovers, useTimelines } from "./animation";
+import { activeSlots, groupHover, hoverSlots, hoverValue, sceneTriggers, transitionChannels, useChannels, useGroupHovers, useTimelines } from "./animation";
 import { sceneTimelines, timelineUniform } from "../../features/timeline";
 import { offsetLines, offsetReach, useOffsetFunctions } from "./offset";
 import { animateCode, createHoisted, hoist, originOf, pointerCode, pointerReaders, rotationLines, transformLines } from "./transforms";
@@ -68,7 +68,7 @@ import { sceneControls } from "../../features/controls";
 import { withStepsView } from "./debug";
 import { BOXED, objectOutline, outlineBlend, outlineFarCode, outlineFunctions, withOutlineBand, withOutlineFrames, withOutlineMarch, withOutlineShapes, type Outlined } from "./outline";
 
-export { activeSlots, hoverSlots, sceneTriggers, type Trigger } from "./animation";
+export { activeSlots, hoverSlots, sceneTriggers, transitionChannels, type Trigger } from "./animation";
 export { pointerReaders } from "./transforms";
 export { shapeNames, shapeRadius } from "./shapes";
 
@@ -119,43 +119,38 @@ export function generateShader(
   const picks = slots.length > 0 || pointed || sceneCursors(instances).length > 0 || sceneControls({}, instances)?.objects !== undefined;
   // uStart[]: when each state that starts an animation started it (decision 141)
   const triggers = sceneTriggers(everything);
-  // The hover and pressed states of one object, or undefined when it has neither
-  const hoverOf = (instance: StyledInstance): Hover | undefined => {
-    const active = actives.indexOf(instance);
+  // The hover and pressed states of one object or one group, or undefined when it has neither:
+  // its hover states, its states of :not(:active), whose slots follow the press (decision 218),
+  // then its pressed state
+  const layersOf = (of: (slot: { instance?: StyledInstance; group?: StyledInstance["groups"][number] }) => boolean): Hover | undefined => {
     const startOf = (slot: number) => {
       const start = triggers.findIndex((trigger) => trigger.slot === slot);
       return start === -1 ? {} : { start };
     };
     const layers: Hover = [
       ...hovers.flatMap((slot, n) =>
-        slot.instance === instance
+        of(slot)
           ? [{ styles: slot.state.styles, slot: n, state: ":hover" as const, ...startOf(n), ranks: slot.state.ranks, last: slot.state.last }]
           : [],
       ),
-      ...(active === -1
-        ? []
-        : [
-            {
-              styles: instance.activeStyles,
-              slot: hovers.length + active,
-              state: ":active" as const,
-              ...startOf(hovers.length + active),
-              below: instance.hoverStyles,
-            },
-          ]),
+      ...actives.flatMap((slot, i): Hover => {
+        if (!of(slot)) return [];
+        const n = hovers.length + i;
+        return slot.state
+          ? [{ styles: slot.styles, slot: n, state: ":hover" as const, ...startOf(n), ranks: slot.state.ranks, last: slot.state.last, press: true }]
+          : [{ styles: slot.styles, slot: n, state: ":active" as const, ...startOf(n), below: slot.below }];
+      }),
     ];
     return layers.length > 0 ? layers : undefined;
   };
+  const hoverOf = (instance: StyledInstance): Hover | undefined => layersOf((slot) => slot.instance === instance);
   // The hover states of one group of an object, from the outside in (decision 211)
-  const groupHoverOf = (instance: StyledInstance, g: number): Hover | undefined => {
-    const layers: Hover = hovers.flatMap((slot, n) =>
-      slot.group === instance.groups[g]
-        ? [{ styles: slot.state.styles, slot: n, state: ":hover" as const, ranks: slot.state.ranks, last: slot.state.last }]
-        : [],
-    );
-    return layers.length > 0 ? layers : undefined;
-  };
+  const groupHoverOf = (instance: StyledInstance, g: number): Hover | undefined =>
+    layersOf((slot) => slot.group !== undefined && slot.group === instance.groups[g]);
   useGroupHovers(groupHoverOf);
+  // transition per property: the properties with another transition read their own number
+  const channels = transitionChannels(everything);
+  useChannels(channels.of);
   const context: ShapeContext = { functions: new Map() };
   const hoisted = createHoisted(); // the animated values of map(): computed by animate()
   const spheres: (Sphere | null)[] = []; // each object's, for the sphere of the scene
@@ -593,7 +588,7 @@ export function generateShader(
             ? `uniform float uStart[${triggers.length}]; // when each state that starts an animation started it (seconds of iTime)\n`
             : "") +
           (picks
-            ? `uniform float uHover[${Math.max(slots.length, 1)}]; // 0 at rest, 1 hovered
+            ? `uniform float uHover[${Math.max(slots.length + channels.parents.length, 1)}]; // 0 at rest, 1 hovered
 uniform bool uPicking; // true: draw the id of the object under uPick, not its color
 uniform vec2 uPick;${pointed ? "\nuniform vec4 uPointer; // hover-distance(): the pixel under the pointer, how far along its ray, how present (decision 217)" : ""}`
             : ""),

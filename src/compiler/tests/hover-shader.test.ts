@@ -161,6 +161,43 @@ describe("a hovered group in the shader", () => {
     ).toThrow("A :hover rule on a group cannot start an animation yet: start it on its objects, like #g:hover cube { animation: … }");
   });
 
+  it("passes its variables to the objects that read them, with their own transition", () => {
+    const compiled = compileScene(`
+      @scene { group#g { cube; sphere; } }
+      #g:hover { --lift: 1; }
+      cube { translate: 0 var(--lift, 0) 0; transition: 0.3s; }
+    `);
+    expect(compiled.hover).toEqual([[1, 2]]);
+    expect(compiled.transitions).toEqual([{ enter: expect.objectContaining({ duration: 0.3 }), leave: expect.objectContaining({ duration: 0.3 }) }]);
+    expect(mapPart(compiled.shader, "cube")).toContain("q -= mix(vec3(0.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0), uHover[0]);");
+    expect(mapPart(compiled.shader, "sphere")).not.toContain("uHover");
+  });
+
+  it("gives way to a closer group that sets the same variable, like CSS", () => {
+    const compiled = compileScene(`
+      @scene { group#outer { group#inner { cube; } } }
+      #outer:hover { --lift: 1; }
+      #inner { --lift: 0.5; }
+      cube { translate: 0 var(--lift, 0) 0; }
+    `);
+    expect(mapPart(compiled.shader, "cube")).toContain("q -= vec3(0.0, 0.5, 0.0);");
+  });
+
+  it("passes its variables to a group inside it that reads them", () => {
+    const compiled = compileScene(`
+      @scene { group#outer { group#inner { cube; } } }
+      #outer:hover { --lift: 1; }
+      #inner { translate: 0 var(--lift, 0) 0; }
+    `);
+    expect(compiled.hover).toEqual([[1]]);
+    expect(mapPart(compiled.shader, "cube")).toContain("q -= mix(vec3(0.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0), uHover[0]);");
+  });
+
+  it("passes its color to the objects without one", () => {
+    const shader = compileGSS(`@scene { group#g { cube; } } #g { color: #0000ff; } #g:hover { color: #ff0000; }`);
+    expect(materialLine(shader, 1)).toContain("mix(vec3(0.0, 0.0, 1.0), vec3(1.0, 0.0, 0.0), uHover[0])");
+  });
+
   it("leaves the shader of a scene without group :hover as it was", () => {
     const shader = compileGSS(`@scene { group#g { cube; } } #g:hover cube { scale: 1.5; }`);
     expect(shader).toContain("uniform float uHover[1];");

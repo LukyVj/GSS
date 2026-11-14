@@ -23,6 +23,7 @@ Sets the base color of the surface of the object: a hex color (`#ff5a36`), `rgb(
 - **<gradient>:** `linear-gradient()`, `radial-gradient()` or `conic-gradient()`, painted on the object as seen from the front, and taken by every material.
 - **noise():** A noise cut in the object's own space, like a block of stone.
 - **transparent:** A transparent color (`#ff000080`, `rgb(255 0 0 / 50%)`), or the transparent stops of a gradient, make the object transparent, like `opacity`.
+- **#g { color: … }:** On a group: the color of the objects inside it that set none, like CSS passes it to the children, at rest, on `:hover` and on `:active`. A `light` keeps its own.
 
 A gradient can be animated and changed by `:hover`, into another gradient of the same kind with as many colors. A color cannot change into a gradient.
 

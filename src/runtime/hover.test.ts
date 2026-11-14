@@ -89,6 +89,11 @@ describe("pointerValues", () => {
     expect([...pointerValues(hover, active, 1, 2)]).toEqual([1, 0, 1]);
   });
 
+  it("turns on the slots of :not(:active) while nothing is pressed (id 0)", () => {
+    expect([...pointerValues([], [[0, 2]], 0, 0)]).toEqual([1]);
+    expect([...pointerValues([], [[0, 2]], 1, 1)]).toEqual([0]);
+  });
+
   it("is hoverValues without :active", () => {
     expect([...pointerValues(hover, undefined, 1, 0)]).toEqual([...hoverValues(hover, 1)]);
   });

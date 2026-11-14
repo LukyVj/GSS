@@ -734,11 +734,11 @@ sphere {
 
 ## `transition`
 
-Glides the object to its `:hover` state and back, instead of jumping, like CSS. One transition covers every property that `:hover` changes on the object.
+Glides the object to its `:hover` state and back, instead of jumping, like CSS. Without a property, the transition covers every property that `:hover` changes; with one, only that property.
 
 **A cube that answers the pointer:** `no transition`, `transition: 0.4s`
 
-- **Syntax:** `none | [all] <time> [<easing>] [<time>]`
+- **Syntax:** `none | [[all | <property>] <time> [<easing>] [<time>]]#`
 - **Initial value:** `none`
 - **Applies to:** objects
 - **Animatable:** no
@@ -747,8 +747,12 @@ Glides the object to its `:hover` state and back, instead of jumping, like CSS. 
 
 - **<time>:** The first time is the duration, the second one the delay.
 - **<easing>:** `ease` by default, or any easing: a keyword, `cubic-bezier()`, `linear()` or `steps()`.
+- **<property>:** The property the transition glides, like `scale` or `color`; `all`, the default, glides every one. A shorthand like `outline` glides the properties it sets.
+- **,:** A transition per property, one after each comma: `transition: scale 0.2s, color 1s`. When two of them name the same property, the last one wins, so `all` comes first. A property the list does not name changes at once, like CSS.
 
 Like CSS, the object enters `:hover` with the transition of its `:hover` rule, if it has one, and leaves it with the transition written at rest. Leaving halfway goes back from where it is, in the time already spent.
+
+Each part also has a property of its own, like `transition-duration`, which wins over what `transition` says. `hover-distance()` and `hover-direction()` glide with the transition of the property that reads them.
 
 ### a hover that glides
 
@@ -791,6 +795,159 @@ sphere {
 sphere:hover {
   translate: calc(2.7 - sibling-index() * 0.9) 1.4 0;
   transition: 0.4s ease-out;
+}
+```
+
+### a transition per property
+
+The cube grows quickly, and takes a second to change color.
+
+```css
+@scene {
+  cube;
+}
+
+cube {
+  translate: 0 0.5 0;
+  color: #ff5a36;
+  transition: scale 0.2s ease-out, color 1s;
+}
+
+cube:hover {
+  scale: 1.3;
+  color: #3a7bff;
+}
+```
+
+<a name="transition-delay"></a>
+
+## `transition-delay`
+
+How long each transition waits before it starts, in `s` or `ms`; a negative delay starts it partway. It wins over the delay written in `transition`.
+
+**A cube that answers the pointer:** `hover`
+
+- **Syntax:** `<time>#`
+- **Initial value:** `0s`
+- **Applies to:** objects
+- **Animatable:** no
+
+### the color follows
+
+```css
+@scene {
+  cube;
+}
+
+cube {
+  translate: 0 0.5 0;
+  color: #ff5a36;
+  transition: scale 0.3s, color 0.3s;
+  transition-delay: 0s, 0.3s;
+}
+
+cube:hover {
+  scale: 1.3;
+  color: #3a7bff;
+}
+```
+
+<a name="transition-duration"></a>
+
+## `transition-duration`
+
+How long each transition takes, in `s` or `ms`. It wins over the duration written in `transition`; a shorter list starts again from its first value.
+
+**A cube that answers the pointer:** `hover`
+
+- **Syntax:** `<time>#`
+- **Initial value:** `0s`
+- **Applies to:** objects
+- **Animatable:** no
+
+### 1 s instead of 0.2 s
+
+```css
+@scene {
+  cube;
+}
+
+cube {
+  translate: 0 0.5 0;
+  color: #ff5a36;
+  transition: 0.2s;
+  transition-duration: 1s;
+}
+
+cube:hover {
+  scale: 1.3;
+  color: #3a7bff;
+}
+```
+
+<a name="transition-property"></a>
+
+## `transition-property`
+
+The properties the transitions glide, one per transition of the list. It wins over the properties written in `transition`, and its length sets how many transitions there are, like CSS.
+
+**A cube that answers the pointer:** `hover`
+
+- **Syntax:** `none | [all | <property>]#`
+- **Initial value:** `all`
+- **Applies to:** objects
+- **Animatable:** no
+
+### two properties, two durations
+
+```css
+@scene {
+  cube;
+}
+
+cube {
+  translate: 0 0.5 0;
+  color: #ff5a36;
+  transition-property: scale, color;
+  transition-duration: 0.2s, 1s;
+}
+
+cube:hover {
+  scale: 1.3;
+  color: #3a7bff;
+}
+```
+
+<a name="transition-timing-function"></a>
+
+## `transition-timing-function`
+
+The easing of each transition: a keyword, `cubic-bezier()`, `linear()` or `steps()`. It wins over the easing written in `transition`.
+
+**A cube that answers the pointer:** `hover`
+
+- **Syntax:** `<easing>#`
+- **Initial value:** `ease`
+- **Applies to:** objects
+- **Animatable:** no
+
+### a linear glide
+
+```css
+@scene {
+  cube;
+}
+
+cube {
+  translate: 0 0.5 0;
+  color: #ff5a36;
+  transition: 1s;
+  transition-timing-function: linear;
+}
+
+cube:hover {
+  scale: 1.3;
+  color: #3a7bff;
 }
 ```
 

@@ -14,6 +14,7 @@ export type HoverLayer = {
   ranks?: Record<string, number>;
   last?: number;
   below?: Styles;
+  press?: boolean; // a state of :not(:active): mixed like a hover state, its slot follows the press
 };
 // The layers mixed over the rest state: hovered, then pressed (decision 95)
 export type Hover = HoverLayer[];
