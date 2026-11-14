@@ -119,42 +119,34 @@ export function generateShader(
   const picks = slots.length > 0 || pointed || sceneCursors(instances).length > 0 || sceneControls({}, instances)?.objects !== undefined;
   // uStart[]: when each state that starts an animation started it (decision 141)
   const triggers = sceneTriggers(everything);
-  // The hover and pressed states of one object, or undefined when it has neither
-  const hoverOf = (instance: StyledInstance): Hover | undefined => {
-    const active = actives.indexOf(instance);
+  // The hover and pressed states of one object or one group, or undefined when it has neither:
+  // its hover states, its states of :not(:active), whose slots follow the press (decision 218),
+  // then its pressed state
+  const layersOf = (of: (slot: { instance?: StyledInstance; group?: StyledInstance["groups"][number] }) => boolean): Hover | undefined => {
     const startOf = (slot: number) => {
       const start = triggers.findIndex((trigger) => trigger.slot === slot);
       return start === -1 ? {} : { start };
     };
     const layers: Hover = [
       ...hovers.flatMap((slot, n) =>
-        slot.instance === instance
+        of(slot)
           ? [{ styles: slot.state.styles, slot: n, state: ":hover" as const, ...startOf(n), ranks: slot.state.ranks, last: slot.state.last }]
           : [],
       ),
-      ...(active === -1
-        ? []
-        : [
-            {
-              styles: instance.activeStyles,
-              slot: hovers.length + active,
-              state: ":active" as const,
-              ...startOf(hovers.length + active),
-              below: instance.hoverStyles,
-            },
-          ]),
+      ...actives.flatMap((slot, i): Hover => {
+        if (!of(slot)) return [];
+        const n = hovers.length + i;
+        return slot.state
+          ? [{ styles: slot.styles, slot: n, state: ":hover" as const, ...startOf(n), ranks: slot.state.ranks, last: slot.state.last, press: true }]
+          : [{ styles: slot.styles, slot: n, state: ":active" as const, ...startOf(n), below: slot.below }];
+      }),
     ];
     return layers.length > 0 ? layers : undefined;
   };
+  const hoverOf = (instance: StyledInstance): Hover | undefined => layersOf((slot) => slot.instance === instance);
   // The hover states of one group of an object, from the outside in (decision 211)
-  const groupHoverOf = (instance: StyledInstance, g: number): Hover | undefined => {
-    const layers: Hover = hovers.flatMap((slot, n) =>
-      slot.group === instance.groups[g]
-        ? [{ styles: slot.state.styles, slot: n, state: ":hover" as const, ranks: slot.state.ranks, last: slot.state.last }]
-        : [],
-    );
-    return layers.length > 0 ? layers : undefined;
-  };
+  const groupHoverOf = (instance: StyledInstance, g: number): Hover | undefined =>
+    layersOf((slot) => slot.group !== undefined && slot.group === instance.groups[g]);
   useGroupHovers(groupHoverOf);
   const context: ShapeContext = { functions: new Map() };
   const hoisted = createHoisted(); // the animated values of map(): computed by animate()

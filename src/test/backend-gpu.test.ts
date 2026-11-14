@@ -23,8 +23,8 @@ beforeAll(async () => {
 }, 60000);
 afterAll(async () => { await browser?.close(); await server?.close(); });
 
-async function render(source: string, hover = false, set?: [string, string], html = "") {
-  return page.evaluate(async ({ compiled, hover, set, html }) => {
+async function render(source: string, hover = false, set?: [string, string], html = "", press = false) {
+  return page.evaluate(async ({ compiled, hover, set, html, press }) => {
     const createViewAsync = (window as any).__createViewAsync;
     async function capture(backend: string) {
       const canvas = document.createElement("canvas");
@@ -42,19 +42,27 @@ async function render(source: string, hover = false, set?: [string, string], htm
         const box = canvas.getBoundingClientRect();
         canvas.dispatchEvent(new PointerEvent("pointermove", { clientX: box.left + 48, clientY: box.top + 36 }));
       }
-      await new Promise<void>(resolve => {
-        let left = hover ? 12 : 3;
+      const frames = (count: number) => new Promise<void>(resolve => {
+        let left = count;
         const tick = () => --left ? requestAnimationFrame(tick) : resolve();
         requestAnimationFrame(tick);
       });
+      await frames(hover ? 12 : 3);
+      // :active: pressed on the object the picking pass found under the pointer
+      if (press) {
+        const box = canvas.getBoundingClientRect();
+        canvas.dispatchEvent(new PointerEvent("pointerdown", { clientX: box.left + 48, clientY: box.top + 36 }));
+        await frames(12);
+      }
       const copy = document.createElement("canvas"); copy.width = canvas.width; copy.height = canvas.height;
       const ctx = copy.getContext("2d")!; ctx.drawImage(canvas, 0, 0);
       const pixels = [...ctx.getImageData(0, 0, copy.width, copy.height).data];
       view.destroy(); canvas.remove();
+      if (press) window.dispatchEvent(new PointerEvent("pointerup"));
       return pixels;
     }
     return { gl: await capture("webgl"), gpu: await capture("webgpu") };
-  }, { compiled: compileScene(source), hover, set, html });
+  }, { compiled: compileScene(source), hover, set, html, press });
 }
 const cases: [string, string, boolean?][] = [
   ["matte and camera", "@scene { sphere; } sphere { color: red; translate: 0 1 0; }"],
@@ -150,6 +158,50 @@ it("a :not(:hover) rule holds at rest and lets go under the mouse", async () => 
   for (const backend of ["gl", "gpu"] as const) {
     expect(rest[backend][center + 2], `${backend} at rest`).toBeGreaterThan(rest[backend][center] + 30);
     expect(hovered[backend][center], `${backend} hovered`).toBeGreaterThan(hovered[backend][center + 2] + 30);
+  }
+}, 60000);
+
+// The hover chain on groups (decision 218): a hovered group passes its color to the objects
+// that set none
+it("a hovered group passes its color to its objects", async () => {
+  const source = `@scene { group#g { sphere; } } scene { camera-angle: 0deg 0deg; camera-distance: 5; camera-target: 0 0 0; floor: none; }
+    sphere { radius: 1; } #g { color: red; } #g:hover { color: blue; }`;
+  const center = (36 * 96 + 48) * 4;
+  const rest = await render(source);
+  const hovered = await render(source, true);
+  for (const backend of ["gl", "gpu"] as const) {
+    expect(rest[backend][center], `${backend} at rest`).toBeGreaterThan(rest[backend][center + 2] + 30);
+    expect(hovered[backend][center + 2], `${backend} hovered`).toBeGreaterThan(hovered[backend][center] + 30);
+  }
+}, 60000);
+
+// :active on a group (decision 218): pressing #a scales #g from its center, so #b moves outward
+it("a pressed group carries the objects it holds", async () => {
+  const source = `@scene { group#g { sphere#a; sphere#b; } } scene { camera-angle: 0deg 0deg; camera-distance: 5; camera-target: 0 0 0; floor: none; }
+    sphere { radius: 0.4; color: red; } #b { translate: 1.1 0 0; } #g:active { scale: 1.4; }`;
+  const column = (pixels: number[]) => {
+    let sum = 0, count = 0;
+    for (let y = 0; y < 72; y++) for (let x = 60; x < 96; x++) {
+      const i = (y * 96 + x) * 4;
+      if (pixels[i] > pixels[i + 2] + 30) { sum += x; count++; }
+    }
+    return sum / count;
+  };
+  const hovered = await render(source, true);
+  const pressed = await render(source, true, undefined, "", true);
+  for (const backend of ["gl", "gpu"] as const) expect(column(pressed[backend]), backend).toBeGreaterThan(column(hovered[backend]) + 3);
+}, 60000);
+
+// :not(:active) (decision 218): on while nothing is pressed, off while the object is
+it("a :not(:active) rule holds until the object is pressed", async () => {
+  const source = `@scene { sphere; } scene { camera-angle: 0deg 0deg; camera-distance: 5; camera-target: 0 0 0; floor: none; }
+    sphere { radius: 1; color: red; } sphere:not(:active) { color: blue; }`;
+  const center = (36 * 96 + 48) * 4;
+  const hovered = await render(source, true);
+  const pressed = await render(source, true, undefined, "", true);
+  for (const backend of ["gl", "gpu"] as const) {
+    expect(hovered[backend][center + 2], `${backend} not pressed`).toBeGreaterThan(hovered[backend][center] + 30);
+    expect(pressed[backend][center], `${backend} pressed`).toBeGreaterThan(pressed[backend][center + 2] + 30);
   }
 }, 60000);
 

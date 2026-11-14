@@ -122,7 +122,7 @@ function boxOfPoints(points: number[][]): { middle: number[]; reach: number } {
 export function steadyTransitions(instance: StyledInstance, n: number): boolean {
   const states =
     n < instance.groups.length
-      ? [instance.groupStyles[n], ...instance.groupHoverStates[n].map((state) => state.styles)]
+      ? [instance.groupStyles[n], ...instance.groupHoverStates[n].map((state) => state.styles), ...(instance.groupActiveStates[n] ? [instance.groupActiveStates[n]!.styles] : [])]
       : [instance.styles, instance.hoverStyles, ...instance.hoverStates.map((state) => state.styles), instance.activeStyles];
   return states.every((styles) => {
     const transition = readTransition(styles["transition"]);

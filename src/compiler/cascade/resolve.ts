@@ -3,6 +3,7 @@ import { errorAt } from "../syntax/errors";
 import { ANIMATION_LONGHANDS } from "../features/animation";
 import { spaceBetween } from "../syntax/nesting";
 import { closingParen } from "../values/calc";
+import { usesVariables, type Variables } from "./vars";
 import type { Token } from "../syntax/tokenizer";
 import { sceneNodes, type SceneInstance } from "./expand";
 
@@ -25,8 +26,14 @@ export type StyledInstance = SceneInstance & {
   // The hover states of each group, from the outside in like groupStyles: what a group
   // changes on :hover moves every object it holds (decision 211)
   groupHoverStates: HoverState[][];
+  // The pressed state of each group, from the outside in, or null (decision 218)
+  groupActiveStates: (PressedState | null)[];
   activeTriggers: number[]; // the objects that, pressed, put this one in its active state
   activeStyles: Styles; // pressed: the :active rules on top of the :hover ones
+  // The groups in the pressed state and in hoverStyles, when they pass variables or a color
+  // to this object (decision 218)
+  activeGroups?: Styles[];
+  hoverGroups?: Styles[];
   // Whether the :active rules write an animation of their own: the press starts it
   // (decision 141). Each hover state says it for itself.
   starts: { active: boolean };
@@ -37,17 +44,28 @@ export type StyledInstance = SceneInstance & {
 // most specific state is mixed last; a property no rule of the state writes but that
 // changes, through a variable, takes the place of its last rule), and whether its rules
 // start an animation (decision 141)
+// groups: the groups of the node in this state, from the outside in, when one of their rules
+// passes variables or a color down to it (decision 218); press: the slot follows the press,
+// not the pointer, for :active inside :not() (decision 218)
 export type HoverState = {
   triggers: number[];
   styles: Styles;
   ranks: Record<string, number>;
   last: number;
   starts: boolean;
+  groups?: Styles[];
+  press?: true;
 };
+
+// A group pressed (decision 218): the objects that press it, its cascade with the :hover and
+// :active rules, and the cascade with the :hover rules only, which the press goes over
+export type PressedState = { triggers: number[]; styles: Styles; below: Styles; groups?: Styles[] };
 
 // What a :hover rule can change on a group: its transforms and its opacity, which it
 // passes to every object it holds (decision 211)
 const GROUP_HOVER = new Set(["translate", "rotate-x", "rotate-y", "rotate-z", "scale", "transform-origin", "offset-distance", "opacity", "transition"]);
+// What a group passes to the objects it holds, like CSS: its color and its variables
+const inherited = (property: string) => property === "color" || property.startsWith("--");
 
 // The states the pointer gives: :hover (under the pointer) and :active (pressed)
 type PointerState = "hover" | "active";
@@ -487,13 +505,9 @@ function parseCompound(tokens: Token[]): SimpleSelector {
         const parts = splitAtCommas(tokens.slice(i + 3, close));
         if (parts.length === 0)
           throw errorAt(tokens, ":not() needs a selector, like: cube:not(.red)");
+        // :hover or :active inside is a condition on the pointer, read by the triggers
+        // (decisions 214 and 218)
         const list = parts.map((part) => parseSelector(part));
-        // :hover inside is a condition on the pointer, read by the triggers (decision 214)
-        if (list.some(needsActive))
-          throw errorAt(
-            tokens,
-            ":not() cannot hold :active yet: write the rule for the pressed state, and its opposite without :active",
-          );
         if (list.some((inner) => inner.face !== undefined))
           throw errorAt(
             tokens,
@@ -810,6 +824,15 @@ export function needsPointer(selector: SimpleSelector): boolean {
   return needsHover(selector) || needsActive(selector);
 }
 
+// Does it wait for a press outside :not()? cube:active, #g:has(sphere:active) cube. The
+// other rules that need :active hold it in a :not(): a state of their own (decision 218)
+export function presses(selector: SimpleSelector): boolean {
+  return [selector, ...(selector.ancestors ?? [])].some(
+    (part) => part.active === true || (part.has ?? []).some(presses),
+  );
+}
+const released = (selector: SimpleSelector) => needsActive(selector) && !presses(selector);
+
 function needs(selector: SimpleSelector, state: PointerState): boolean {
   return [selector, ...(selector.ancestors ?? [])].some(
     (part) =>
@@ -853,6 +876,7 @@ export function resolveStyles(
         if (needsHover(selector) && state === "rest") continue;
         if (needsActive(selector) && state !== "active") continue;
         if (only && needsPointer(selector) && !only.has(rule)) continue;
+        if (!only && released(selector)) continue; // :not(:active): a state of its own
         // a face rule styles its face, the other rules the object
         if ((selector.face === undefined) !== (face === undefined)) continue;
         if (typeof face === "string" && selector.face !== face) continue;
@@ -880,30 +904,31 @@ export function resolveStyles(
   const groups = [...new Set(instances.flatMap((instance) => instance.groups))];
   for (const { rule, selector } of sortedRules) {
     if (!needsPointer(selector)) continue;
+    const written = rule.selector.map(tokenToText).join("").trim();
+    // one slot follows the pointer, another the press: a rule cannot wait for both
+    if (released(selector) && needsHover(selector))
+      throw errorAt(
+        rule.selector,
+        `A rule cannot wait for :hover and for :not(:active) at once yet: write ${written.replace(/:not\([^)]*\)/g, "")}, and ${written.replace(/:not\([^)]*\)/g, "").replace(":hover", ":active")} after it`,
+      );
     const stylesGroups = groups.some((group) =>
       matches(selector, group, instances),
     );
     const stylesObjects = instances.some((instance) =>
       matches(selector, instance, instances),
     );
-    if (stylesGroups && !stylesObjects && needsActive(selector)) {
-      throw errorAt(
-        rule.selector,
-        "A :active rule cannot style a group yet: style its objects, like #g:active cube",
-      );
-    }
     if (stylesGroups && !stylesObjects) {
-      const written = rule.selector.map(tokenToText).join("").trim();
+      const state = presses(selector) ? ":active" : ":hover";
       for (const declaration of rule.declarations) {
-        if (GROUP_HOVER.has(declaration.property)) continue;
+        if (GROUP_HOVER.has(declaration.property) || inherited(declaration.property)) continue;
         if (declaration.property === "animation" || ANIMATION_LONGHANDS.includes(declaration.property))
           throw errorAt(
             declaration,
-            `A :hover rule on a group cannot start an animation yet: start it on its objects, like ${written} cube { animation: … }`,
+            `A ${state} rule on a group cannot start an animation yet: start it on its objects, like ${written} cube { animation: … }`,
           );
         throw errorAt(
           declaration,
-          `A :hover rule on a group changes its transforms and its opacity: ${declaration.property} does not reach its objects yet. Write ${written} cube { ${declaration.property}: …; }`,
+          `A ${state} rule on a group changes its transforms, its opacity, its color and its variables: ${declaration.property} does not reach its objects. Write ${written} cube { ${declaration.property}: …; }`,
         );
       }
     }
@@ -916,27 +941,83 @@ export function resolveStyles(
     for (const instance of instances) if (matches(selector, instance, instances)) checkFacePick(selector.face, instance.tag, rule.selector);
   }
 
-  // The hover states of an object: its :hover rules, grouped by the objects they wait for
-  function hoverStates(instance: SceneInstance, styles: Styles): HoverState[] {
-    const states = new Map<string, { triggers: number[]; rules: { rule: Rule; place: number }[] }>();
-    sortedRules.forEach(({ rule, selector }, place) => {
-      // cube:hover:active waits for the press
-      if (!needsHover(selector) || needsActive(selector) || !matches(selector, instance, instances)) return;
-      const triggers = [...new Set(drawn(rule, triggersOf(selector, instance, instances)).map((other) => other.index))].sort((a, b) => a - b);
-      if (triggers.length === 0) return; // nothing can hover it
+  // Every variable the rules set, all its values together: enough to follow a variable
+  // through another one, to know whether a node reads what a group passes (decision 218)
+  const everyVariable: Variables = {};
+  for (const { rule } of sortedRules)
+    for (const declaration of rule.declarations)
+      if (declaration.property.startsWith("--"))
+        everyVariable[declaration.property] = [...(everyVariable[declaration.property] ?? []), ...declaration.value];
+
+  // Does one of the values of a node use one of these variables? A group only reads them in
+  // what it takes (decision 211)
+  function readsVariables(node: SceneInstance, names: Set<string>): boolean {
+    if (names.size === 0) return false;
+    const group = node.tag === "group";
+    return sortedRules.some(
+      ({ rule, selector }) =>
+        matches(selector, node, instances) &&
+        rule.declarations.some(
+          (declaration) => (!group || GROUP_HOVER.has(declaration.property)) && usesVariables(declaration.value, names, everyVariable),
+        ),
+    );
+  }
+  const variablesOf = (rule: Rule) =>
+    new Set(rule.declarations.map((declaration) => declaration.property).filter((property) => property.startsWith("--")));
+  // Does a node read what a rule of one of its groups passes down, like CSS: a variable one
+  // of its values uses, or the color, for an object that sets none, not a light (decision 218)
+  const reads = (node: SceneInstance, rule: Rule) =>
+    (node.tag !== "group" &&
+      node.tag !== "light" &&
+      rule.declarations.some((declaration) => declaration.property === "color") &&
+      cascade(node)["color"] === undefined) ||
+    readsVariables(node, variablesOf(rule));
+  // Does a :hover or :active rule of one of the node's groups pass it something?
+  const passedDown = (node: SceneInstance, rule: Rule, selector: SimpleSelector) =>
+    node.groups.some((group) => matches(selector, group, instances)) && reads(node, rule);
+
+  // The hover states of a node: its :hover rules, grouped by the objects they wait for, with
+  // the rules of its groups that pass it something (decision 218). press: the states of
+  // :active inside :not(), whose slots follow the press (decision 218)
+  function hoverStates(instance: SceneInstance, styles: Styles, press = false): HoverState[] {
+    const state: PointerState = press ? "active" : "hover";
+    type Entry = { triggers: number[]; rules: { rule: Rule; place: number }[]; passed: { rule: Rule; place: number; g: number }[] };
+    const states = new Map<string, Entry>();
+    const entry = (rule: Rule, selector: SimpleSelector, node: SceneInstance): Entry | undefined => {
+      const triggers = [...new Set(drawn(rule, triggersOf(selector, node, instances, undefined, state)).map((other) => other.index))].sort((a, b) => a - b);
+      if (triggers.length === 0) return undefined; // nothing can hover it
       const key = triggers.join(",");
-      if (!states.has(key)) states.set(key, { triggers, rules: [] });
-      states.get(key)!.rules.push({ rule, place });
+      if (!states.has(key)) states.set(key, { triggers, rules: [], passed: [] });
+      return states.get(key)!;
+    };
+    sortedRules.forEach(({ rule, selector }, place) => {
+      // cube:hover:active waits for the press, and :not(:active) for its release
+      if (press ? !released(selector) : !needsHover(selector) || needsActive(selector)) return;
+      if (matches(selector, instance, instances)) entry(rule, selector, instance)?.rules.push({ rule, place });
+      instance.groups.forEach((group, g) => {
+        if (matches(selector, group, instances) && reads(instance, rule)) entry(rule, selector, group)?.passed.push({ rule, place, g });
+      });
     });
-    return [...states.values()].map(({ triggers, rules }) => {
-      const own = cascade(instance, undefined, "hover", new Set(rules.map(({ rule }) => rule)));
+    return [...states.values()].map(({ triggers, rules, passed }) => {
+      const own = cascade(instance, undefined, state, new Set(rules.map(({ rule }) => rule)));
       const ranks: Record<string, number> = {};
       for (const important of [false, true])
         for (const { rule, place } of rules)
           for (const declaration of rule.declarations)
             if ((declaration.important ?? false) === important)
               ranks[declaration.property] = (important ? sortedRules.length : 0) + place;
-      return { triggers, styles: own, ranks, last: Math.max(...Object.values(ranks), -1), starts: writes(own, styles) };
+      const groups = instance.groups.map((group, g) =>
+        cascade(group, undefined, state, new Set(passed.filter((rule) => rule.g === g).map(({ rule }) => rule))),
+      );
+      return {
+        triggers,
+        styles: own,
+        ranks,
+        last: Math.max(...Object.values(ranks), ...passed.map(({ place }) => place), -1),
+        starts: writes(own, styles),
+        ...(passed.length > 0 ? { groups } : {}),
+        ...(press ? { press: true as const } : {}),
+      };
     });
   }
   // A state writes its own animation when one of its rules sets it: the declaration
@@ -944,17 +1025,55 @@ export function resolveStyles(
   const writes = (above: Styles, below: Styles) =>
     ["animation", ...ANIMATION_LONGHANDS].some((property) => above[property] !== below[property]);
 
+  // Does a state change what a group takes: its transforms and its opacity, or a variable
+  // they read, its own or one its groups pass it (decision 218)
+  const changesGroup = (group: SceneInstance, ranks: Record<string, number>, passed: boolean) =>
+    passed ||
+    Object.keys(ranks).some((property) => property !== "transition" && GROUP_HOVER.has(property)) ||
+    readsVariables(group, new Set(Object.keys(ranks).filter((property) => property.startsWith("--"))));
+
   // The hover states of a group, once per group: only the rules that change what a group
-  // takes (*:hover { color } styles its objects, not the group)
+  // takes (*:hover { color } styles its objects, not the group); then the states of
+  // :not(:active), which follow the press
   const groupStates = new Map<SceneInstance, HoverState[]>();
   function groupHoverStates(group: SceneInstance): HoverState[] {
     if (!groupStates.has(group)) {
-      const states = hoverStates(group, cascade(group)).filter((state) =>
-        Object.keys(state.ranks).some((property) => property !== "transition" && GROUP_HOVER.has(property)),
+      const rest = cascade(group);
+      const states = [...hoverStates(group, rest), ...hoverStates(group, rest, true)].filter((state) =>
+        changesGroup(group, state.ranks, state.groups !== undefined),
       );
       groupStates.set(group, states);
     }
     return groupStates.get(group)!;
+  }
+
+  // The pressed state of a group (decision 218), once per group: its :active rules, and those
+  // of its groups that pass it a variable, all together like the pressed state of an object
+  const pressedGroups = new Map<SceneInstance, PressedState | null>();
+  function groupActiveState(group: SceneInstance): PressedState | null {
+    if (!pressedGroups.has(group)) {
+      const own = sortedRules.filter(({ selector }) => presses(selector) && matches(selector, group, instances));
+      const passing = sortedRules.filter(({ rule, selector }) => presses(selector) && passedDown(group, rule, selector));
+      const ranks = Object.fromEntries(own.flatMap(({ rule }) => rule.declarations.map((declaration) => [declaration.property, 0])));
+      if (!changesGroup(group, ranks, passing.length > 0)) pressedGroups.set(group, null);
+      else {
+        const triggers = [
+          ...own.flatMap(({ rule, selector }) => drawn(rule, triggersOf(selector, group, instances, undefined, "active"))),
+          ...passing.flatMap(({ rule, selector }) =>
+            group.groups
+              .filter((outer) => matches(selector, outer, instances))
+              .flatMap((outer) => drawn(rule, triggersOf(selector, outer, instances, undefined, "active"))),
+          ),
+        ].map((other) => other.index);
+        pressedGroups.set(group, {
+          triggers: [...new Set(triggers)].sort((a, b) => a - b),
+          styles: cascade(group, undefined, "active"),
+          below: cascade(group, undefined, "hover"),
+          ...(passing.length > 0 ? { groups: group.groups.map((outer) => cascade(outer, undefined, "active")) } : {}),
+        });
+      }
+    }
+    return pressedGroups.get(group)!;
   }
 
   return instances.map((instance) => {
@@ -962,6 +1081,26 @@ export function resolveStyles(
     const hoverStyles = cascade(instance, undefined, "hover");
     const activeStyles = cascade(instance, undefined, "active");
     const states = hoverStates(instance, styles);
+    const pressStates = hoverStates(instance, styles, true);
+    // Its groups pass it variables or a color on :hover or :active: the cascades of its
+    // groups in those states go with its own (decision 218)
+    const passed = sortedRules.some(
+      ({ rule, selector }) => needsPointer(selector) && !released(selector) && passedDown(instance, rule, selector),
+    );
+    // The objects that press it: its own :active rules, and those of its groups that pass it something
+    const pressing = sortedRules.filter(({ selector }) => presses(selector));
+    const activeTriggers = [
+      ...pressing
+        .filter(({ selector }) => matches(selector, instance, instances))
+        .flatMap(({ rule, selector }) => drawn(rule, triggersOf(selector, instance, instances, undefined, "active"))),
+      ...pressing
+        .filter(({ rule, selector }) => passedDown(instance, rule, selector))
+        .flatMap(({ rule, selector }) =>
+          instance.groups
+            .filter((group) => matches(selector, group, instances))
+            .flatMap((group) => drawn(rule, triggersOf(selector, group, instances, undefined, "active"))),
+        ),
+    ].map((other) => other.index);
     return {
     ...instance,
     styles,
@@ -972,22 +1111,17 @@ export function resolveStyles(
     faceList: names(instance).map((_, n) => cascade(instance, n + 1)),
     hoverTriggers: [...new Set(states.flatMap((state) => state.triggers))].sort((a, b) => a - b),
     hoverStyles,
-    hoverStates: states,
+    hoverStates: [...states, ...pressStates],
     groupHoverStates: instance.groups.map(groupHoverStates),
-    activeTriggers: [
-      ...new Set(
-        sortedRules
-          .filter(
-            ({ selector }) =>
-              needsActive(selector) && matches(selector, instance, instances),
-          )
-          .flatMap(({ rule, selector }) =>
-            drawn(rule, triggersOf(selector, instance, instances, undefined, "active")),
-          )
-          .map((other) => other.index),
-      ),
-    ].sort((a, b) => a - b),
+    groupActiveStates: instance.groups.map(groupActiveState),
+    activeTriggers: [...new Set(activeTriggers)].sort((a, b) => a - b),
     activeStyles,
+    ...(passed
+      ? {
+          hoverGroups: instance.groups.map((group) => cascade(group, undefined, "hover")),
+          activeGroups: instance.groups.map((group) => cascade(group, undefined, "active")),
+        }
+      : {}),
     starts: { active: writes(activeStyles, hoverStyles) },
     };
   });
