@@ -304,6 +304,26 @@ describe("material: emissive()", () => {
     expect(compileGSS("@scene { sphere; }")).not.toContain("EMISSIVE");
   });
 
+  // decision 232: a reflection, and what shows through glass, see its light too
+  it("glows in the reflections and through glass, with its own light", () => {
+    const traceOf = (shader: string) => shader.slice(shader.indexOf("vec3 trace(vec3 ro, vec3 rd) {"), shader.indexOf("\n}\n", shader.indexOf("vec3 trace(vec3 ro, vec3 rd) {")));
+    const mirror = compileGSS("@scene { sphere; cube; } sphere { material: emissive(#ff5a36, 2); } cube { translate: 2 0.5 0; material: chrome; }");
+    expect(mirror).toContain("vec3 traceGlow(float id, vec3 lit) {");
+    expect(traceOf(mirror)).toContain("return traceGlow(hit.y, diffuse(n, getMaterial(hit.y).color));  // its color, lit");
+    expect(mirror.indexOf("vec3 traceGlow(")).toBeLessThan(mirror.indexOf("vec3 trace(vec3 ro, vec3 rd) {"));
+    // With a filter on an object, the glow is filtered with the rest
+    const filtered = compileGSS("@scene { sphere; cube; } sphere { material: emissive(); filter: hue-rotate(90deg); } cube { translate: 2 0.5 0; material: chrome; }");
+    expect(traceOf(filtered)).toContain("return objectFilter(hit.y, traceGlow(hit.y, diffuse(");
+    // With shadows, lights and a gradient, the same
+    const lit = compileGSS("@scene { sphere; cube; light; } scene { shadows: soft; } sphere { material: emissive(); color: linear-gradient(red, blue); } cube { translate: 2 0.5 0; material: chrome; } light { translate: 0 3 0; }");
+    expect(traceOf(lit)).toContain("traceGlow(hit.y, diffuseOpen(p, n, gradientColor(");
+  });
+
+  it("keeps the reflections as they were in a scene without emissive(), or without reflections", () => {
+    expect(compileGSS("@scene { sphere; cube; } cube { translate: 2 0.5 0; material: chrome; }")).not.toContain("traceGlow");
+    expect(compileGSS("@scene { sphere; } sphere { material: emissive(); }")).not.toContain("traceGlow");
+  });
+
   it("takes a named color as its first argument", () => {
     expect(materialOf("sphere { material: emissive(red, 1); }")).toBe(
       materialOf("sphere { material: emissive(#ff0000, 1); }"),

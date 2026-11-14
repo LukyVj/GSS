@@ -1923,3 +1923,11 @@ A first version cut the light from 0 into steps, with a pinpoint highlight: its 
 **Why**: on a screen of density 1 (most Windows laptops, external monitors), every edge has steps and crawls as the scene turns, and the only lever, `dpr`, stops at the density of the screen: a strong GPU could not buy quality. Rays in the shader need no new pass and work on both backends. The name is the one of WebGL's context attribute; CSS has none.
 **Not now**: FXAA and TAA (a post pass, a history), `dpr: … supersample`, for 0.0.9. **Accepted limits**: the cost is 2 or 4 whole pixels; a `filter` that reads its neighbours (blur, bloom) runs after, on the averaged image.
 
+## 232. `emissive()` glows in the reflections and through glass
+
+**Decision** (Lucas, Nov. 14: "fais briller emissive", to the question of Oct. 28 on the spec's item S4): what a ray of `trace()` sees of an emissive object is never darker than its own light, as `main()` shows it: `traceGlow(hit.y, lit)` returns `max(lit, color × strength)` for an `EMISSIVE` material. `trace()` serves the reflections of metal and glass and what shows through glass, so a neon now shines in a chrome sphere and behind a pane. The glow goes inside the filter of the object (`objectFilter(hit.y, traceGlow(…))`), as in `main()`. A scene without `emissive()`, or without reflections, keeps its shader.
+- **What changes**: 5 of the 404 sources, the scenes with an emissive object and a metal or a glass: `bubble-works`, `lighthouse`, `midnight-arcade`, and the hero "Obsidienne" (both tiers). No registry example changed; one is added, a neon in a chrome sphere. `material-color-gpu.test.ts` draws a chrome sphere with an emissive cube behind the camera, seen only in the mirror: it differs from the same cube in matte (it does not without `traceGlow`).
+
+**Why**: Obsidienne's ember slabs did not glow in the slabs around them: a lamp in a mirror looked switched off. Lucas accepted the change of image.
+**Accepted limits**: still one bounce: a reflection of a reflection sees the emissive object as before. It still lights nothing around it.
+

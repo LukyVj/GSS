@@ -71,6 +71,14 @@ export { activeSlots, hoverSlots, sceneTriggers, type Trigger } from "./animatio
 export { pointerReaders } from "./transforms";
 export { shapeNames, shapeRadius } from "./shapes";
 
+// What a reflection sees of an emissive object: its own light, as main() shows it (decision 232)
+const TRACE_HEAD = "// What a ray sees, with diffuse lighting only.";
+const TRACE_GLOW = `// emissive(): what a ray sees of it is never darker than its own light, as in main()
+vec3 traceGlow(float id, vec3 lit) {
+  Material m = getMaterial(id);
+  return m.kind == EMISSIVE ? max(lit, m.color * m.density) : lit;
+}`;
+
 export function generateShader(
   everything: StyledInstance[], // the objects, and the lights of @scene (decision 110)
   sceneStyles: Styles = {},
@@ -473,6 +481,8 @@ export function generateShader(
   const fog = fogCode(sceneStyles, keyframes, raymarch.maxDistance); // off by default
   const materials = materialLines.join("\n");
   // One line in main() for each material the scene uses
+  // emissive() in the scene: the reflections see its light (decision 232)
+  const glows = materials.includes("emissive(");
   const shadeCalls = Object.entries(SHADE_CALLS)
     .filter(([kind]) => materials.includes(kind + "("))
     .map(([, line]) => line)
@@ -688,11 +698,16 @@ uniform vec2 uPick;${pointed ? "\nuniform vec4 uPointer; // hover-distance(): th
       .replace(MARCH_LOOP, masked.length > 0 ? MASKED_MARCH_LOOP : stacked ? SKIN_MARCH_LOOP : MARCH_LOOP)
       .replace("/*@SURFACE_FILTER*/", surfaceInFunction && filterLines.includes(objectLine) ? objectLine : "")
       .replace("  outColor = vec4(col, 1.0);\n}", `${edgeBlend}${lineBlend}${finalLines}${distanceView ? ISOLINES_CALL : ""}  outColor = vec4(col, ${alpha});\n}`)
-      // Reflections see the filters of the objects they meet
+      // Reflections see the light of an emissive object (decision 232), and the filters of the
+      // objects they meet
       .replace(
         /return (diffuse\(n, .*\));  \/\/ its color, lit/,
-        objectFilter ? "return objectFilter(hit.y, $1);  // its color, lit, filtered" : "return $1;  // its color, lit",
+        (_, seen: string) => {
+          const glowing = glows ? `traceGlow(hit.y, ${seen})` : seen;
+          return objectFilter ? `return objectFilter(hit.y, ${glowing});  // its color, lit, filtered` : `return ${glowing};  // its color, lit`;
+        },
       )
+      .replace(TRACE_HEAD, glows ? `${TRACE_GLOW}\n\n${TRACE_HEAD}` : TRACE_HEAD)
       // The animations of this pixel, computed once before anything calls map()
       .replace(
         "void main() {",

@@ -25,7 +25,7 @@ Sets how the surface of the object reacts to light. Without a color, a material 
 - **metal():** Reflects the scene. Its roughness goes from 0, a mirror, to 1, brushed metal (0.2 by default).
 - **jelly():** Lets the light through its thin parts, like a gummy candy. Its density goes from 0, clear, to 1, deep (0.5 by default).
 - **glass():** See-through, bent by its refraction index, from 1 to 3 (1.5 by default: water is 1.33, diamond 2.4), then a frost from 0 to 1.
-- **emissive():** Gives its own light: a lamp, a screen, a neon. It is never darker than its color times its strength, from 0, none, to 4 (1 by default: its full color, even in the shade). It does not light the objects around it; with `bloom()` in the `filter` of the scene, it glows.
+- **emissive():** Gives its own light: a lamp, a screen, a neon. It is never darker than its color times its strength, from 0, none, to 4 (1 by default: its full color, even in the shade). It does not light the objects around it, but a metal or a glass shows its light; with `bloom()` in the `filter` of the scene, it glows.
 - **iridescent():** A thin film, like a soap bubble or the back of a CD: its colors turn with the angle you see it at, most at the edges. Its strength goes from 0, none, to 1 (0.7 by default).
 - **toon():** Flat bands of light, like a cartoon: from half the color in the shade to the full color, with a highlight. Its number of bands is a whole number from 2 to 8 (3 by default).
 - **frosted, wavy, hammered, blurred:** The style of the frost: white patches (the default), big waves, small bumps, a soft blur.
@@ -195,6 +195,35 @@ scene {
   translate: 0.8 0.6 0;
   radius: 0.55;
   material: emissive(#3a7bff, 0.5);
+}
+```
+
+### emissive() in a mirror
+
+A chrome sphere shows the neon beside it with its own light.
+
+```css
+@scene {
+  cube#neon;
+  sphere#mirror;
+}
+
+scene {
+  background: #07080c;
+  ambient: 0.2;
+  floor: #15161c;
+}
+
+#neon {
+  translate: -1 0.8 0;
+  size: 0.15 1.4 0.15;
+  material: emissive(#ff5a36, 1.5);
+}
+
+#mirror {
+  translate: 0.4 0.6 0;
+  radius: 0.6;
+  material: chrome;
 }
 ```
 
