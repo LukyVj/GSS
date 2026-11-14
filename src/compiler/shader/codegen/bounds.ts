@@ -3,7 +3,7 @@ import type { Token } from "../../syntax/tokenizer";
 import type { Keyframes } from "../../syntax/ast";
 import type { StyledInstance } from "../../cascade/resolve";
 import type { Easing } from "../../values/easing";
-import { readTransition } from "../../features/transition";
+import { readTransitions } from "../../features/transition";
 import { glslFloat, vec3, type Hover } from "./glsl";
 import { ROTATIONS, readRotation, readScale, readTranslate } from "./read";
 import { groupHover, hoverValue } from "./animation";
@@ -124,10 +124,9 @@ export function steadyTransitions(instance: StyledInstance, n: number): boolean 
     n < instance.groups.length
       ? [instance.groupStyles[n], ...instance.groupHoverStates[n].map((state) => state.styles), ...(instance.groupActiveStates[n] ? [instance.groupActiveStates[n]!.styles] : [])]
       : [instance.styles, instance.hoverStyles, ...instance.hoverStates.map((state) => state.styles), instance.activeStyles];
-  return states.every((styles) => {
-    const transition = readTransition(styles["transition"]);
-    return !transition || stays01(transition.easing);
-  });
+  return states.every((styles) =>
+    readTransitions(styles).every(({ transition }) => !transition || stays01(transition.easing)),
+  );
 }
 
 // The range of uHover[] of this node when its transitions overshoot (decision 234). A glide
@@ -140,12 +139,11 @@ export function steadyTransitions(instance: StyledInstance, n: number): boolean 
 export function hoverRange(instance: StyledInstance, n: number): HoverRange {
   const states =
     n < instance.groups.length
-      ? [instance.groupStyles[n], ...instance.groupHoverStates[n].map((state) => state.styles)]
+      ? [instance.groupStyles[n], ...instance.groupHoverStates[n].map((state) => state.styles), ...(instance.groupActiveStates[n] ? [instance.groupActiveStates[n]!.styles] : [])]
       : [instance.styles, instance.hoverStyles, ...instance.hoverStates.map((state) => state.styles), instance.activeStyles];
   let low = 0;
   let high = 1;
-  for (const styles of states) {
-    const transition = readTransition(styles["transition"]);
+  for (const { transition } of states.flatMap((styles) => readTransitions(styles))) {
     if (!transition || transition.easing.type === "steps") continue;
     const easing = transition.easing;
     const outputs = easing.type === "cubic-bezier" ? [easing.y1, easing.y2] : easing.points.map((p) => p.output);

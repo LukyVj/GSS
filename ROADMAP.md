@@ -69,7 +69,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 | Patterns     | `checker(<scale> [at x y z], a, b)`, `stripes(<scale> [x \| y \| z] [at …], a, b)`: like `noise()`, in the object's space, wherever a gradient goes (dec. 155) |                                                                              
 | Combinations | `operation: union \| subtract \| intersect`, `blend` (smooth union)                                                                                                                                                                                 | 18, 19                          |
 | Animation    | `animation`; animatable: `translate`, `rotate-*`, `scale`, `transform-origin`, `color` (a gradient too), `mask-image`, `mix-blend-mode` (discrete), `offset-distance`, the `intensity` of a light (also what `:hover` can change); on the scene, `background`, `fog` and `light` | 24, 62, 102, 103, 107, 108, 110 |
-| Transition   | `transition: 0.3s ease-out`, one per object; easings: keywords, `cubic-bezier()`, `linear()`                                                                                                                                                        | 68                              |
+| Transition   | `transition: scale 0.2s, color 1s ease-out`, one per property (decision 220), and its longhands; easings: keywords, `cubic-bezier()`, `linear()`                                                                                                                                                        | 68                              |
 
 ### Materials
 
@@ -168,6 +168,7 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 - [x] ✅ decision 202: A `toon` material (Lucas, Oct. 24; set aside in 0.0.6), next to the others: flat bands of light instead of a smooth shading. Done: `toon([<color>,] [<bands>])`, 3 bands by default, with a sharp highlight.
 - [x] `@gpu (slow)` ✅ decision 212 (Lucas, Oct. 24: "savoir si le gpu est occupé, et faire une version simplifiée de la scène", "on part sur @gpu (slow), à sens unique, déclenché sous un dpr de 1"): rules for a slow computer, compiled as one more version of the scene with the `@media` ones. A scene with `@gpu` is never drawn under a `dpr` of 1; a second of slow frames there (or no GPU, or `gpu="slow"`) shows the lighter version, for good. A gpu menu next to the dpr menu forces it in the playground and Try it. Still to come, if needed: `@gpu` with `@media` nested, `if(gpu(slow))`.
 - [x] `@debug-panel` ✅ decision 204 (Lucas, Oct. 24: "un vrai mode de débug, avec les axes, des infos sur la perf"), over the render like `@property-panel`: the x, y, z axes and a grid at the origin, drawn in the playground and Try it only; a panel with the objects, the images out of 16 and the rows of the performance panel (fps, GPU time, shader build); `view: steps`, each pixel colored by its calls of `map()`, a third chip next to `view: distance`. Then the same day (Lucas: "le panneau doit donner le max d'infos", "les axes doivent être légendés"): the letters of the axes; the panel adds the backend, the camera as GSS, the lights, the variables, the states, the timelines, the filter passes, the media queries, the lines of the shader, and the mean and the max of the steps read back from the render.
+- [x] A transition per property ✅ decision 220: `transition: scale 0.2s, color 1s`, the last item that names a property wins, an unnamed property changes at once; the longhands `transition-property`, `-duration`, `-timing-function`, `-delay`; `:hover`, `:active` and groups; `hover-distance()` glides with the item of the property that reads it. One more float in `uHover[]` per other transition of a state; every existing shader unchanged.
 - Quality ceilings (Lucas, Oct. 28: the spec written while building the hero scenes, "invest time in it for 0.0.8"; every default keeps the shaders identical):
   - [x] `raymarch-steps`, `max-distance`, `hit-precision`, and `camera-distance` up to `max-distance - 5` ✅ decision 224
   - [x] `shadow-softness`, `shadow-steps` ✅ decision 225
@@ -287,7 +288,7 @@ Done from the list of Oct. 1: ~~`filter`~~ ✅ (decisions 83, 84), ~~motion path
 5. [x] Animation controls ✅ decision 70: delay, iteration count, direction, fill mode, and the six longhands
 6. [x] `@media` ✅ decision 71: any media query the browser knows (width, orientation, `prefers-color-scheme`, `prefers-reduced-motion`…), up to 4 per scene
 7. [x] Selectors / nesting: combinators `>` `+` `~` ✅ decision 73 (including relative selectors in `:has()`); nested style rules with `&` ✅ decision 106
-8. [x] `:hover` ✅ decision 62 (picking pass → `uHover[]`), `transition` ✅ decision 68 (one per object; per-property lists later), `:has()` ✅ decision 69 (`#g:has(sphere:hover) cube`, any selector inside)
+8. [x] `:hover` ✅ decision 62 (picking pass → `uHover[]`), `transition` ✅ decision 68 (one per object; per property ✅ decision 220), `:has()` ✅ decision 69 (`#g:has(sphere:hover) cube`, any selector inside)
 9. [x] `transform-origin` ✅ decision 107
 10. [x] Fog ✅ decision 108
 11. [x] `sibling-index()` + `sibling-count()` (decision 52)

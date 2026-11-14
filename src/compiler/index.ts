@@ -2,7 +2,7 @@ import { tokenize } from "./syntax/tokenizer";
 import { parse } from "./syntax/parser";
 import { expandScene } from "./cascade/expand";
 import { resolveStyles, resolveSceneStyles, FACES, type Face } from "./cascade/resolve";
-import { activeSlots, generateShader, hoverSlots, pointerReaders, sceneTriggers, type Trigger } from "./shader/codegen";
+import { activeSlots, generateShader, hoverSlots, pointerReaders, sceneTriggers, transitionChannels, type Trigger } from "./shader/codegen";
 import { validateProperties, validateKeyframes } from "./cascade/validate";
 import { readCamera, readFocal, type CameraSettings } from "./features/camera";
 import { RAYMARCH, readRaymarch } from "./features/raymarch";
@@ -34,7 +34,7 @@ import { readAntialias, withAntialias } from "./shader/codegen/antialias";
 import { isDisplayed } from "./features/visibility";
 import { sceneCursors, type ObjectCursor } from "./features/cursor";
 import { sceneControls, type SceneControls } from "./features/controls";
-import { readTransition, type Transition } from "./features/transition";
+import { readTransitions, transitionOf, type Transition } from "./features/transition";
 import { buildPasses, FILTER_FUNCTIONS, objectFilters, readSceneSteps, type Pass } from "./features/filter";
 import { generateWGSL } from "./shader/wgsl";
 import { GRADIENT_FUNCTIONS } from "./shader/gradient";
@@ -107,6 +107,10 @@ export type CompiledScene = {
   controls?: SceneControls;
   // for each slot of uHover[] (hover, then active), how it glides to 1 (enter) and back to 0 (leave)
   transitions: { enter: Transition | null; leave: Transition | null }[];
+  // A transition per property: the numbers of uHover[] after the slots, each for the
+  // properties of a slot that glide with another transition, with its slot to follow.
+  // Absent when every state glides all its properties with one transition.
+  channels?: { slot: number; enter: Transition | null; leave: Transition | null }[];
   // hover-distance(), hover-direction() (decision 215): the shader reads the object under the
   // pointer, uPointer, which glides with the transition of the objects that read it, the
   // first one that sets one (decision 216). Absent when no value measures from it.
@@ -392,28 +396,20 @@ function compileStylesheet(
   // @paint (decision 151): the shaders of paint(name), the last one of a name wins like CSS
   const defined = new Map(stylesheet.paints.map((paint) => [String(paint.name.value), { code: String(paint.code.value), line: paint.line ?? 1, at: paint.code }]));
   const paints = errors.run(() => scenePaints(drawn, defined));
-  // Like CSS: the transition of the state the object goes to
+  // Like CSS: the transition of the state the object goes to, for each property
   // Pressing takes the transition of :active, releasing the one of the hovered state
-  const transitions = errors.run(() => [
-    ...hoverSlots(styled).map(({ state, rest }) => ({
-      enter: readTransition(state.styles["transition"]),
-      leave: readTransition(rest["transition"]),
-    })),
-    ...activeSlots(styled).map(({ styles, leave }) => ({
-      enter: readTransition(styles["transition"]),
-      leave: readTransition(leave["transition"]),
-    })),
-  ]);
+  const glides = errors.run(() => transitionChannels(styled));
+  const slotCount = hoverSlots(styled).length + activeSlots(styled).length;
+  const transitions = glides?.pairs.slice(0, slotCount);
+  const channels = glides?.parents.map((slot, i) => ({ slot, ...glides.pairs[slotCount + i] })) ?? [];
   const active = activeSlots(styled).map(({ triggers }) => triggers);
   const cursors = errors.run(() => sceneCursors(drawn));
   const controls = errors.run(() => sceneControls(computedScene, drawn));
   const triggers = errors.run(() => sceneTriggers(styled));
-  // hover-distance() glides with the transition of the objects that read it (decision 216)
+  // hover-distance() glides with the transition of the property that reads it (decision 216)
   const readers = pointerReaders(styled, copies);
   const pointer = errors.run(() =>
-    readers.size === 0
-      ? null
-      : { transition: styled.filter((instance) => readers.has(instance.index)).map((instance) => readTransition(instance.styles["transition"])).find(Boolean) ?? null },
+    readers.size === 0 ? null : { transition: styled.filter((instance) => readers.has(instance.index)).map(pointerTransition).find(Boolean) ?? null },
   );
   const timelines = errors.run(() =>
     sceneTimelines([computedScene, ...styled.flatMap((instance) => [...instance.groupStyles, instance.styles])]),
@@ -423,7 +419,7 @@ function compileStylesheet(
     ...(passes!.length > 0
       ? {
           passes: passes!.map((pass) =>
-            withProperties(pass, registered.length, hoverSlots(styled).length + active.length, timelines!.length, triggers!.length),
+            withProperties(pass, registered.length, hoverSlots(styled).length + active.length + channels.length, timelines!.length, triggers!.length),
           ),
         }
       : {}),
@@ -446,6 +442,7 @@ function compileStylesheet(
     ...(controls ? { controls } : {}),
     ...(timelines!.length > 0 ? { timelines } : {}),
     transitions: transitions!,
+    ...(channels.length > 0 ? { channels } : {}),
     ...(triggers!.length > 0 ? { triggers } : {}),
     ...(pointer ? { pointer } : {}),
   };
@@ -774,4 +771,14 @@ function computeColors(styles: Styles): Styles {
 export function compileGSS(source: string, target: "glsl" | "wgsl" = "glsl"): string {
   const scene = compileScene(source, { target: target === "glsl" ? "glsl" : "dual" });
   return target === "wgsl" ? scene.wgsl! : scene.shader;
+}
+
+// The transition of the first property of an object that measures from the pointer
+// (decision 216): hover-distance() glides with it; read elsewhere (a state, @keyframes),
+// with the transition of every property. null: none.
+function pointerTransition(instance: StyledInstance): Transition | null {
+  const entries = readTransitions(instance.styles);
+  for (const [property, value] of Object.entries(instance.styles))
+    if (value.some((token) => token.type === "EXPR" && /\bhoverDi(?:st|r)\d+\b/.test(token.code))) return transitionOf(entries, property);
+  return transitionOf(entries, "");
 }

@@ -9,6 +9,7 @@ import { animationStyles, countsIterations, readAnimation, readAnimations, type 
 import { timelineCode, type Timeline } from "../../features/timeline";
 import { glslFloat, round, type Hover, type HoverLayer } from "./glsl";
 import { liveRead } from "./properties";
+import { namedProperties, readTransitions, sameTransition, transitionOf, type Transition } from "../../features/transition";
 
 // The hover states, each with a slot in uHover[]: the states of the objects in scene
 // order, the states of an object one after the other, then the states of the groups
@@ -58,6 +59,67 @@ export function activeSlots(instances: StyledInstance[]): ActiveSlot[] {
   return [...objects, ...[...groups.values()].filter((slot) => slot !== null), ...released];
 }
 
+// How a slot of uHover[] glides: the transition to its state (enter), and back (leave)
+export type TransitionPair = { enter: Transition | null; leave: Transition | null };
+
+// The styles each slot enters and leaves, like CSS the transition of the state the object
+// goes to: a hover state and the styles it leaves for, then a pressed state and the
+// hover styles it leaves for (decision 95)
+function slotStyles(instances: StyledInstance[]): { enter: Styles; leave: Styles }[] {
+  return [
+    ...hoverSlots(instances).map(({ state, rest }) => ({ enter: state.styles, leave: rest })),
+    ...activeSlots(instances).map(({ styles, leave }) => ({ enter: styles, leave })),
+  ];
+}
+
+// The numbers of uHover[]: one per slot, then one more for each other transition of a
+// slot, slot after slot. A property glides with the number of its transition; the ones
+// no item names, with the slot's. pairs: how each number glides; parents: the slot of
+// each number after the slots.
+export type Channels = { pairs: TransitionPair[]; parents: number[]; of: (slot: number, property: string) => number };
+export function transitionChannels(instances: StyledInstance[]): Channels {
+  const slots = slotStyles(instances).map(({ enter, leave }) => {
+    const into = readTransitions(enter);
+    const out = readTransitions(leave);
+    const pairOf = (property: string): TransitionPair => ({ enter: transitionOf(into, property), leave: transitionOf(out, property) });
+    const pairs = [pairOf("")]; // "": a property no item names
+    for (const property of namedProperties([...into, ...out])) {
+      const pair = pairOf(property);
+      if (!pairs.some((other) => samePair(other, pair))) pairs.push(pair);
+    }
+    return { pairs, pairOf };
+  });
+  const pairs = slots.map((slot) => slot.pairs[0]);
+  const parents: number[] = [];
+  const firsts = slots.map((slot, n) => {
+    const first = slots.length + parents.length; // where the other numbers of this slot start
+    for (const pair of slot.pairs.slice(1)) {
+      pairs.push(pair);
+      parents.push(n);
+    }
+    return first;
+  });
+  return {
+    pairs,
+    parents,
+    of(slot, property) {
+      const one = slots[slot];
+      if (!one || one.pairs.length === 1) return slot;
+      const pair = one.pairOf(property);
+      const n = one.pairs.findIndex((other) => samePair(other, pair));
+      return n === 0 ? slot : firsts[slot] + n - 1;
+    },
+  };
+}
+
+const samePair = (a: TransitionPair, b: TransitionPair) => sameTransition(a.enter, b.enter) && sameTransition(a.leave, b.leave);
+
+// The numbers of the scene being generated: which one each property of a slot reads
+let channels: (slot: number, property: string) => number = (slot) => slot;
+export function useChannels(of: typeof channels): void {
+  channels = of;
+}
+
 // The states that start an animation (decision 141), in slot order: the slot, its
 // index in uStart[], and how long it holds (null: until the next start)
 export type Trigger = { slot: number; start: number; hold: number | null };
@@ -96,7 +158,7 @@ export function hoverValue(
   const hovered = states.map((layer) => animatedValue(layer.styles, keyframes, property, read, layerClock(layer)));
   states.forEach((layer, n) => {
     // a state that changes nothing is left out
-    if (hovered[n] !== rest) value = `mix(${value}, ${hovered[n]}, uHover[${layer.slot}])`;
+    if (hovered[n] !== rest) value = `mix(${value}, ${hovered[n]}, uHover[${channels(layer.slot, property)}])`;
   });
   const pointed = states.flatMap((layer, n) => (layer.press ? [] : [hovered[n]]));
   for (const layer of (hover ?? []).filter((layer) => layer.state === ":active")) {
@@ -104,7 +166,7 @@ export function hoverValue(
     const below =
       pointed.length === 1 ? pointed[0] : pointed.length > 1 && layer.below ? animatedValue(layer.below, keyframes, property, read) : rest;
     const next = animatedValue(layer.styles, keyframes, property, read, layerClock(layer));
-    if (next !== below) value = `mix(${value}, ${next}, uHover[${layer.slot}])`;
+    if (next !== below) value = `mix(${value}, ${next}, uHover[${channels(layer.slot, property)}])`;
   }
   return value;
 }

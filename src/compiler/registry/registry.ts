@@ -1071,15 +1071,18 @@ export const PROPERTIES: PropertyDef[] = [
     figure: "hover",
     since: "0.0.2",
     appliesTo: "object",
-    syntax: "none | [all] <time> [<easing>] [<time>]",
+    syntax: "none | [[all | <property>] <time> [<easing>] [<time>]]#",
     initial: "none",
     description:
-      "Glides the object to its `:hover` state and back, instead of jumping, like CSS. One transition covers every property that `:hover` changes on the object.",
+      "Glides the object to its `:hover` state and back, instead of jumping, like CSS. Without a property, the transition covers every property that `:hover` changes; with one, only that property.",
     values: [
       ["<time>", "The first time is the duration, the second one the delay."],
       ["<easing>", "`ease` by default, or any easing: a keyword, `cubic-bezier()`, `linear()` or `steps()`."],
+      ["<property>", "The property the transition glides, like `scale` or `color`; `all`, the default, glides every one. A shorthand like `outline` glides the properties it sets.", "0.0.8"],
+      [",", "A transition per property, one after each comma: `transition: scale 0.2s, color 1s`. When two of them name the same property, the last one wins, so `all` comes first. A property the list does not name changes at once, like CSS.", "0.0.8"],
     ],
     details: "Like CSS, the object enters `:hover` with the transition of its `:hover` rule, if it has one, and leaves it with the transition written at rest. Leaving halfway goes back from where it is, in the time already spent.",
+    more: "Each part also has a property of its own, like `transition-duration`, which wins over what `transition` says. `hover-distance()` and `hover-direction()` glide with the transition of the property that reads them.",
     examples: [
       {
         name: "a hover that glides",
@@ -1090,6 +1093,75 @@ export const PROPERTIES: PropertyDef[] = [
         name: "one way in, another out",
         text: "The spheres rise quickly with `ease-out`, and fall back with an overshoot.",
         code: "@scene { sphere * 5; } sphere { radius: 0.35; translate: calc(2.7 - sibling-index() * 0.9) 0.4 0; color: #3ad16b; transition: 0.8s cubic-bezier(0.3, -0.4, 0.7, 1.4); } sphere:hover { translate: calc(2.7 - sibling-index() * 0.9) 1.4 0; transition: 0.4s ease-out; }",
+      },
+      {
+        name: "a transition per property",
+        text: "The cube grows quickly, and takes a second to change color.",
+        code: "@scene { cube; } cube { translate: 0 0.5 0; color: #ff5a36; transition: scale 0.2s ease-out, color 1s; } cube:hover { scale: 1.3; color: #3a7bff; }",
+      },
+    ],
+  },
+  {
+    name: "transition-property",
+    figure: "hover",
+    since: "0.0.8",
+    appliesTo: "object",
+    syntax: "none | [all | <property>]#",
+    initial: "all",
+    description:
+      "The properties the transitions glide, one per transition of the list. It wins over the properties written in `transition`, and its length sets how many transitions there are, like CSS.",
+    examples: [
+      {
+        name: "two properties, two durations",
+        code: "@scene { cube; } cube { translate: 0 0.5 0; color: #ff5a36; transition-property: scale, color; transition-duration: 0.2s, 1s; } cube:hover { scale: 1.3; color: #3a7bff; }",
+      },
+    ],
+  },
+  {
+    name: "transition-duration",
+    figure: "hover",
+    since: "0.0.8",
+    appliesTo: "object",
+    syntax: "<time>#",
+    initial: "0s",
+    description:
+      "How long each transition takes, in `s` or `ms`. It wins over the duration written in `transition`; a shorter list starts again from its first value.",
+    examples: [
+      {
+        name: "1 s instead of 0.2 s",
+        code: "@scene { cube; } cube { translate: 0 0.5 0; color: #ff5a36; transition: 0.2s; transition-duration: 1s; } cube:hover { scale: 1.3; color: #3a7bff; }",
+      },
+    ],
+  },
+  {
+    name: "transition-timing-function",
+    figure: "hover",
+    since: "0.0.8",
+    appliesTo: "object",
+    syntax: "<easing>#",
+    initial: "ease",
+    description:
+      "The easing of each transition: a keyword, `cubic-bezier()`, `linear()` or `steps()`. It wins over the easing written in `transition`.",
+    examples: [
+      {
+        name: "a linear glide",
+        code: "@scene { cube; } cube { translate: 0 0.5 0; color: #ff5a36; transition: 1s; transition-timing-function: linear; } cube:hover { scale: 1.3; color: #3a7bff; }",
+      },
+    ],
+  },
+  {
+    name: "transition-delay",
+    figure: "hover",
+    since: "0.0.8",
+    appliesTo: "object",
+    syntax: "<time>#",
+    initial: "0s",
+    description:
+      "How long each transition waits before it starts, in `s` or `ms`; a negative delay starts it partway. It wins over the delay written in `transition`.",
+    examples: [
+      {
+        name: "the color follows",
+        code: "@scene { cube; } cube { translate: 0 0.5 0; color: #ff5a36; transition: scale 0.3s, color 0.3s; transition-delay: 0s, 0.3s; } cube:hover { scale: 1.3; color: #3a7bff; }",
       },
     ],
   },
@@ -3667,6 +3739,10 @@ export const SHAPE_DOCS: ShapeDef[] = [
       "rotate-z",
       "transform-origin",
       "transition",
+      "transition-property",
+      "transition-duration",
+      "transition-timing-function",
+      "transition-delay",
       "animation",
       "animation-duration",
       "animation-delay",
