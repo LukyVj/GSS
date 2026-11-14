@@ -142,3 +142,20 @@ describe("outline of a path, a prism or a lathe: measured from the shape, not fr
     expect(shader).not.toContain("outlineFar");
   });
 });
+
+describe("outline: the bounding spheres of an outline that changes", () => {
+  const pieces = (rule: string) =>
+    compileGSS(`@scene { cube * 4; } cube { translate: calc(sibling-index() * 1.5) 0.5 0; outline: 0 solid red; outline-offset: 0.03; ${rule} } cube:hover { outline-width: 0.025; }`);
+
+  it("keep the spheres when the width glides on :hover without overshooting: the widest line counts", () => {
+    const shader = pieces("transition: 0.2s;");
+    expect(shader).toContain("objects close together: one test for all");
+    // the sphere of the scene holds the widest line: 0.025 + 0.03 past each cube
+    expect(shader).toContain("A ray that passes by the sphere around every object");
+  });
+
+  it("keep them when the transition overshoots, wider; lose them when it undershoots", () => {
+    expect(pieces("transition: 0.2s cubic-bezier(0.3, 1.8, 0.6, 1);")).toContain("objects close together");
+    expect(pieces("transition: 0.2s cubic-bezier(0.3, -0.4, 0.6, 1);")).not.toContain("objects close together");
+  });
+});

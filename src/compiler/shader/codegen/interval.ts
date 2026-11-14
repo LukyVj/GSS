@@ -6,7 +6,10 @@
 
 export type Range = { low: number[]; high: number[] };
 
-type Uniforms = { steadyHover: boolean };
+// hover: the range of uHover[] (decision 234): [0, 1] when the transitions never overshoot,
+// wider when they overshoot without undershooting, null when nothing bounds it
+export type HoverRange = [number, number] | null;
+type Uniforms = { hover: HoverRange };
 
 const constant = (values: number[]): Range => ({ low: values, high: [...values] });
 const unknown = (size: number): Range => ({ low: Array(size).fill(-Infinity), high: Array(size).fill(Infinity) });
@@ -195,7 +198,8 @@ class Reader {
     }
     if (token === "uHover" && this.peek() === "[") {
       this.take(); this.take(); this.expect("]");
-      return this.uniforms.steadyHover ? { low: [0], high: [1] } : unknown(1);
+      const hover = this.uniforms.hover;
+      return hover ? { low: [hover[0]], high: [hover[1]] } : unknown(1);
     }
     return variable(token);
   }
@@ -218,9 +222,10 @@ class Reader {
 
 // The range of a value, or null when it is not known: some component unbounded, or GLSL
 // this reader does not know
-export function rangeOf(expr: string, steadyHover: boolean): Range | null {
+export function rangeOf(expr: string, steadyHover: boolean | HoverRange): Range | null {
+  const hover: HoverRange = steadyHover === true ? [0, 1] : steadyHover === false ? null : steadyHover;
   try {
-    const range = new Reader(expr, { steadyHover }).read();
+    const range = new Reader(expr, { hover }).read();
     return [...range.low, ...range.high].every(Number.isFinite) ? range : null;
   } catch (error) {
     if (error instanceof Bail) return null;

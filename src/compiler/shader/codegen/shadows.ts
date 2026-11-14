@@ -50,12 +50,18 @@ export function readShadowQuality(softness: Token[] | undefined, steps: Token[] 
 // objects (opacity, decision 116), which let the light through tinted: shadow() gives a color.
 // seeThrough: the test of the objects the light goes through, which make no penumbra; with
 // blended objects (mix-blend-mode, decision 173), the skins are not all of them.
+// bound: the sphere around every object (decision 76), and whether there is a floor (y = 0).
+// Once the rest of the ray cannot come near enough to an object or to the floor to darken it
+// more, the ray stops: the light is what it would have been at the end (decision 233).
+export type ShadowBound = { center: number[]; radius: number; floor: boolean };
+
 export function shadowFunction(
   mode: "hard" | "soft",
   holes: boolean,
   transparent = false,
   seeThrough = "isSkin",
   quality: ShadowQuality = { softness: 1, steps: null },
+  bound: ShadowBound | null = null,
 ): string {
   const soft = mode === "soft";
   const SOFTNESS = glslFloat(+(SHARPNESS / quality.softness).toFixed(4));
@@ -73,11 +79,13 @@ export function shadowFunction(
       "float shadow(vec3 ro, vec3 rd, float far) {",
       ...(soft ? ["  float lit = 1.0;"] : []),
       "  float t = 0.02;",
+      ...(bound ? boundHead(bound, soft, SOFTNESS) : []),
       loop(64),
       "    float h = map(ro + rd * t).x;",
       ...(soft
         ? [`    lit = min(lit, ${SOFTNESS} * h / t);`, "    t += clamp(h, 0.01, 0.5);", "    if (lit < 0.001 || t > far) break;"]
         : ["    if (h < 0.001) return 0.0;", "    t += h;", "    if (t > far) break;"]),
+      ...(bound ? boundStep(soft, SOFTNESS, bound.floor) : []),
       "  }",
       soft ? "  return clamp(lit, 0.0, 1.0);" : "  return 1.0;",
       "}",
@@ -111,6 +119,44 @@ export function shadowFunction(
     "}",
   ].join("\n");
 }
+
+// The end of a ray toward a light, past every object (decision 233). Each point the loop
+// measures is at most far along the ray, and map() there is at least its distance to the
+// sphere around every object (the tree of spheres rests on it too) or its height above the
+// floor. soft: lit only goes down where SOFTNESS * h / t < lit; the rest of the ray comes no
+// nearer to the center of the sphere than near, so h / t >= (near - radius) / far for the
+// objects, and >= ro.y / far + rd.y for the floor (y = ro.y + rd.y * t). Once both bounds are
+// above lit, with a margin for the rounding of 32-bit floats, nothing left can lower it: the
+// loop stops with the value it would have ended with. hard: once the rest of the ray stays
+// further than 0.001 from the objects and the floor, nothing can stop the light.
+function boundHead(bound: ShadowBound, soft: boolean, SOFTNESS: string): string[] {
+  const r = Math.ceil((bound.radius + 0.0001) * 10000) / 10000; // rounded up, and the center rounded: never smaller
+  const lines = [
+    "  // Past the sphere around every object, the rest of the ray cannot darken it more",
+    `  vec3 shadowCenter = ${vec3Of(bound.center)};`,
+    `  float shadowRadius = ${glslFloat(r)};`,
+  ];
+  if (soft)
+    lines.push(
+      bound.floor
+        ? `  float floorLeft = ro.y >= 0.0 ? ${SOFTNESS} * (ro.y / far + rd.y) : -1.0;`
+        : "  float floorLeft = 1e10;",
+    );
+  return lines;
+}
+
+function boundStep(soft: boolean, SOFTNESS: string, floor: boolean): string[] {
+  return [
+    "    vec3 fromCenter = ro + rd * t - shadowCenter;",
+    "    float along = dot(fromCenter, rd);",
+    "    float near = along >= 0.0 ? length(fromCenter) : sqrt(max(dot(fromCenter, fromCenter) - along * along, 0.0));",
+    soft
+      ? `    if (min(${SOFTNESS} * (near - shadowRadius) / far, floorLeft) * 0.999 - 0.00001 > lit) break;`
+      : `    if (near - shadowRadius > 0.002${floor ? " && rd.y >= 0.0 && ro.y + rd.y * t > 0.002" : ""}) break;`,
+  ];
+}
+
+const vec3Of = (v: number[]) => `vec3(${v.map((c) => glslFloat(Math.round(c * 10000) / 10000)).join(", ")})`;
 
 // shadow() through transparent objects (decision 116), like stained glass: each surface the
 // light crosses lets through what it does not cover, and tints what it covers with its color,

@@ -48,7 +48,8 @@ import { withFocal, withRaymarch } from "./raymarch";
 import { occludedAmbient, readAmbientOcclusion, withAmbientOcclusion } from "./ambient-occlusion";
 import { readFocal } from "../../features/camera";
 import { readRaymarch } from "../../features/raymarch";
-import { boundedMap, enclosing, objectSphere, sceneMiss, steadyTransitions, type Sphere } from "./bounds";
+import { boundedMap, enclosing, hoverRange, objectSphere, sceneMiss, steadyTransitions, type Sphere } from "./bounds";
+import type { HoverRange } from "./interval";
 import { GRAIN } from "../../features/filter";
 import { filterCode } from "./filters";
 import { COLOR_LIBRARY } from "./color-library";
@@ -208,7 +209,12 @@ export function generateShader(
   // outline (decision 163): the objects that draw a line around their silhouette
   const outlines = new Map<StyledInstance, Outlined>();
   for (const instance of mapped) {
-    const outline = objectOutline(instance, keyframes, hoverOf(instance), hoisted);
+    // Its outline's widest reach (decision 234): over the ranges of uHover[] of the object and its groups.
+    // Not for a skin (holes, opacity, mix-blend-mode): the march goes through it, measured slower
+    const outlineRange = skins.has(instance) ? null : [...instance.groups.keys(), instance.groups.length]
+      .map((n): HoverRange => (steadyTransitions(instance, n) ? [0, 1] : hoverRange(instance, n)))
+      .reduce((all, r) => (all && r ? [Math.min(all[0], r[0]), Math.max(all[1], r[1])] : null), [0, 1] as HoverRange);
+    const outline = objectOutline(instance, keyframes, hoverOf(instance), hoisted, outlineRange);
     if (outline) outlines.set(instance, outline);
   }
 
@@ -236,7 +242,7 @@ export function generateShader(
         : Math.max(...(radii as number[]));
     // An outline reaches past the surface: its bounding spheres grow with it
     const outline = outlines.get(instance);
-    const shapeRadius = ownRadius === null || !outline ? ownRadius : outline.reach === null ? null : ownRadius + outline.reach;
+    const shapeRadius = ownRadius === null || !outline ? ownRadius : outline.bound === null ? null : ownRadius + outline.bound;
     // A motion path takes the shape away from the object's origin (decision 97)
     const reach = offsetReach(instance.styles, keyframes, hoverOf(instance));
     const radius = shapeRadius === null || reach === null ? null : shapeRadius + reach;
@@ -431,6 +437,8 @@ export function generateShader(
       // An opaque blended object is a skin, but the light does not go through it: it keeps its penumbra
       ...(blended.length > 0 && transparent.length > 0 && shadows === "soft" ? { seeThrough: "seeThrough" } : {}),
       quality: readShadowQuality(sceneStyles["shadow-softness"], sceneStyles["shadow-steps"]), // decision 225
+      // The rays toward the lights stop once past every object (decision 233)
+      bound: scene ? { center: scene.center, radius: sceneRadius, floor: hasFloor } : null,
     },
   );
   const cameraTarget = sceneStyles["camera-target"]
