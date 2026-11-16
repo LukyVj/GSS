@@ -3,7 +3,8 @@ import { createServer } from "vite";
 import { VERSION } from "../version.ts";
 
 // Injects docs / home / showcase / brand / changelog HTML at transformIndexHtml so those pages are
-// readable without JS. Playground stays client-rendered.
+// readable without JS. Playground stays client-rendered. Also writes the files for crawlers and
+// language models (sitemap.xml, llms.txt, the docs and the home page in Markdown), served in dev too.
 // Modules are loaded through Vite SSR (supports `.gss?raw`) rather than imported
 // into vite.config, which would pull the whole app into the config bundle.
 
@@ -22,6 +23,11 @@ export function prerenderSite(): Plugin {
     return server.ssrLoadModule(id) as Promise<T>;
   }
 
+  async function machineFiles(): Promise<Map<string, string>> {
+    const files = await load<{ machineFiles: () => Map<string, string> }>("/src/site/machine-files.ts");
+    return files.machineFiles();
+  }
+
   return {
     name: "gss-prerender",
     configResolved(config) {
@@ -29,6 +35,15 @@ export function prerenderSite(): Plugin {
     },
     configureServer(server) {
       dev = server;
+      server.middlewares.use(async (req, res, next) => {
+        const path = (req.url ?? "").split("?")[0].replace(/^\//, "");
+        if (!/^(sitemap\.xml|llms(-full)?\.txt|index\.md|docs\/[\w-]+\.md)$/.test(path)) return next();
+        const source = (await machineFiles()).get(path);
+        if (source === undefined) return next();
+        const type = path.endsWith(".xml") ? "application/xml" : path.endsWith(".md") ? "text/markdown" : "text/plain";
+        res.setHeader("Content-Type", `${type}; charset=utf-8`);
+        res.end(source);
+      });
     },
     async buildStart() {
       if (dev) return;
@@ -40,6 +55,9 @@ export function prerenderSite(): Plugin {
       });
     },
     async buildEnd() {
+      if (build) {
+        for (const [fileName, source] of await machineFiles()) this.emitFile({ type: "asset", fileName, source });
+      }
       await build?.close();
       build = undefined;
     },

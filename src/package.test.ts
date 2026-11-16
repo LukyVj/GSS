@@ -13,9 +13,9 @@ const license = files["../LICENSE"] ?? "";
 const libConfig = files["../vite.lib.config.ts"] ?? "";
 
 describe("the npm package", () => {
-  it("can be published, as 0.0.7", () => {
+  it("can be published, as 0.0.8", () => {
     expect(pkg.private).toBeFalsy();
-    expect(pkg.version).toBe("0.0.7");
+    expect(pkg.version).toBe("0.0.8");
   });
 
   it("keeps the lockfile, README and CDN entry in sync", () => {

@@ -67,4 +67,23 @@ describe("the VS Code grammar", () => {
     expect(block.indexOf("#at-loop")).toBeGreaterThan(-1);
     expect(block.indexOf("#at-loop")).toBeLessThan(block.indexOf("#nested-rule"));
   });
+
+  it("colors the GSS of a <script type=\"text/gss\"> in an HTML page, and only that script", () => {
+    const manifest = JSON.parse(readFileSync(new URL("../../editors/vscode/package.json", import.meta.url), "utf8"));
+    const entry = manifest.contributes.grammars.find((g: { injectTo?: string[] }) => g.injectTo);
+    expect(entry.injectTo).toContain("text.html.basic");
+    expect(entry.embeddedLanguages["meta.embedded.block.gss"]).toBe("gss");
+    const injection = JSON.parse(readFileSync(new URL(`../../editors/vscode/${entry.path}`, import.meta.url), "utf8"));
+    expect(injection.scopeName).toBe(entry.scopeName);
+    const script = injection.repository["gss-script"];
+    // JavaScript has no (?i:…) group: the test writes the tag name in lowercase
+    const opens = (tag: string) => new RegExp(script.begin.replace("(?i:script)", "script"), "y").test(tag);
+    expect(opens('<script type="text/gss">')).toBe(true);
+    expect(opens("<script type='text/gss'>")).toBe(true);
+    expect(opens('<script id="s" type="text/gss" defer>')).toBe(true);
+    expect(opens('<script type="module">')).toBe(false);
+    expect(opens('<script type="text/gss-like">')).toBe(false);
+    expect(opens("<script>")).toBe(false);
+    expect(script.patterns[1].patterns[0].include).toBe("source.gss");
+  });
 });

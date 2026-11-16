@@ -211,6 +211,35 @@ A curve drawn with all four.
 }
 ```
 
+<a name="fn-hover-distance"></a>
+
+## `hover-distance(), hover-direction()`
+
+How far the object is from the point under the pointer, and which way: `hover-distance()` in units of the scene, `hover-direction(x)` the part along x of the direction from that point to the object, from -1 to 1. With `exp()`, the objects near the pointer move aside.
+
+- **Syntax:** `hover-distance() | hover-direction(x | y | z)`
+- **Computed:** on the GPU, at every frame
+
+The point is where the pointer meets an object or the floor; over the background, as far as the `camera-target`. With the pointer off the scene, `hover-distance()` is very large and `hover-direction()` 0: `exp(-1 * hover-distance())` fades away.
+
+They go in a rule that styles objects, in the math of a value computed on the GPU: `translate`, the rotations, `scale`, `color`. The places include the animations and `:hover`. Write `-1 * hover-distance()`, not `-hover-distance()`: like CSS, a `-` stuck to a name is part of the name. With a `transition` on the objects that read them, the point glides after the pointer, and fades in and out as the pointer comes and goes. They measure to the center of each object, as placed with nothing under the pointer. Not yet: a group, the scene and a `@keyframes` shared by several objects cannot read them.
+
+### the points move aside
+
+Move the pointer along the row: the points around it move away, the nearest the most.
+
+```css
+@scene {
+  sphere.p * 9;
+}
+
+.p {
+  radius: 0.18;
+  color: #ff5a36;
+  translate: calc((sibling-index() - 5) * 0.5 + hover-direction(x) * 0.5 * exp(-3 * hover-distance())) 0.4 0;
+}
+```
+
 <a name="fn-exponential"></a>
 
 ## `hypot(), log(), exp()`
@@ -496,6 +525,8 @@ The position of the object among its siblings, from 1, like the CSS function: `c
 - **Computed:** at compile time, once per object
 
 Siblings are the objects of the same `@scene` block or group. A group is a sibling too, and the count starts again inside each group. It means nothing in `scene { }` or in `@keyframes`, shared by every object.
+
+In a variable, it counts where the variable is read, like CSS: with `.row { --i: sibling-index(); }`, `var(--i)` in an object of `.row` gives the place of the object inside the row, not the place of the row. To move a whole row by its place, write it on the row itself: `.row { translate: 0 calc(sibling-index() * 0.6) 0; }` carries every object it holds.
 
 ### a ring of petals
 

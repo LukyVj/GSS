@@ -4,7 +4,7 @@ import type { Keyframes } from "../../syntax/ast";
 import { FACES, shapeFaces, type Face, type StyledInstance } from "../../cascade/resolve";
 import { readMapping, readRendering, readTexture, sceneTextures } from "../../features/textures";
 import { readFontSize, TEXT_COLOR } from "../../features/content";
-import { frameStyles, objectBox, short, textGroups, textRoom, textsIn, textsKey, type FaceText, type Texts } from "../../features/text-layout";
+import { frameStyles, objectBox, short, textGroups, textRoom, textsIn, textsKey, type FaceText, type NumberText, type Texts } from "../../features/text-layout";
 import type { Styles } from "../../cascade/resolve";
 import { hoverValue } from "./animation";
 import { glslFloat, label, round, type Hover } from "./glsl";
@@ -85,6 +85,64 @@ const TEXT_AT = `vec3 textAt(sampler2D image, vec2 uv, vec2 face, vec3 color, ve
   float plain = clamp(dot(light.rgb - dark.rgb, vec3(0.3333)), 0.0, 1.0);             // 1: a letter, 0: an emoji
   return mix(color, mix(dark.rgb, ink, plain), light.a * inside.x * inside.y);
 }`;
+
+// content with a number (decision 203): one piece of it, an image drawn twice like a text,
+// read at st with the gradients of st on the screen. The pieces are read by hand, so the
+// image is read with the gradients of the whole text: no line where two pieces meet
+const TEXT_PIECE = `vec3 textPiece(sampler2D image, vec2 st, vec2 dx, vec2 dy, vec3 color, vec3 ink) {
+  vec2 copy = vec2(1.0, 0.5);                                                         // one copy is half the image
+  vec4 light = textureGrad(image, vec2(st.x, 0.5 + 0.5 * st.y), dx * copy, dy * copy); // the copy in white
+  vec4 dark = textureGrad(image, vec2(st.x, 0.5 * st.y), dx * copy, dy * copy);       // the copy in black
+  float plain = clamp(dot(light.rgb - dark.rgb, vec3(0.3333)), 0.0, 1.0);             // 1: a letter, 0: an emoji
+  return mix(color, mix(dark.rgb, ink, plain), light.a);
+}`;
+
+// content with a number: the string before it, its characters, the string after it, end
+// to end on one line, like textAt() with one image. digits: 0123456789-. in twelve cells
+// of one width; before and after are drawn at the height of the digits (sides: 1 there is
+// a string before, 2 after, 3 both). number: the cells of the characters, four bits each
+// from the left, six in x and six in y, then how many (z) and sides (w). place: the width
+// of a line in pixels of the digits and where the text goes in it (font-size); else 0, 0
+// and the room around the text
+const TEXT_NUMBER = `vec3 textNumber(sampler2D before, sampler2D digits, sampler2D after, vec4 number, vec3 place, vec2 uv, vec2 face, vec3 color, vec3 ink, float zoom) {
+  vec2 cells = vec2(textureSize(digits, 0)) * vec2(1.0, 0.5);                         // one copy of the digits, in pixels
+  float line = cells.y;
+  float cell = cells.x / 12.0;
+  vec2 first = vec2(textureSize(before, 0)) * vec2(1.0, 0.5);
+  vec2 last = vec2(textureSize(after, 0)) * vec2(1.0, 0.5);
+  float wb = mod(number.w, 2.0) > 0.5 ? first.x * line / first.y : 0.0;              // the strings, at the height of the digits
+  float wa = number.w > 1.5 ? last.x * line / last.y : 0.0;
+  float wd = number.z * cell;
+  float total = wb + wd + wa;
+  vec2 box = place.x > 0.0 ? vec2(place.x, line) : vec2(total, line) + 2.0 * place.z;
+  float scale = zoom > 0.0 ? zoom * face.x / box.x : min(face.x / box.x, face.y / box.y);
+  vec2 at = uv / scale + 0.5 * box;                                                   // in pixels, from the bottom left
+  vec2 dx = dFdx(at);
+  vec2 dy = dFdy(at);
+  float x = at.x - (place.x > 0.0 ? place.y * (box.x - total) : place.z);         // from the start of the text
+  float y = (at.y - 0.5 * (box.y - line)) / line;
+  if (x < 0.0 || x > total || y < 0.0 || y > 1.0) return color;                      // nothing around the text
+  if (x < wb) return textPiece(before, vec2(x / wb, y), vec2(dx.x / wb, dx.y / line), vec2(dy.x / wb, dy.y / line), color, ink);
+  if (x >= wb + wd) return textPiece(after, vec2((x - wb - wd) / wa, y), vec2(dx.x / wa, dx.y / line), vec2(dy.x / wa, dy.y / line), color, ink);
+  float k = floor((x - wb) / cell);                                                   // the character x is on
+  float code = k < 5.5 ? number.x : number.y;
+  float shift = mod(k, 6.0);                                                          // code / 16^shift, exactly
+  code = floor(code / (shift > 0.5 ? 16.0 : 1.0));
+  code = floor(code / (shift > 1.5 ? 16.0 : 1.0));
+  code = floor(code / (shift > 2.5 ? 16.0 : 1.0));
+  code = floor(code / (shift > 3.5 ? 16.0 : 1.0));
+  code = floor(code / (shift > 4.5 ? 16.0 : 1.0));
+  float u = (mod(code, 16.0) * cell + x - wb - k * cell) / cells.x;                   // in its cell of the digits
+  return textPiece(digits, vec2(u, y), vec2(dx.x / cells.x, dx.y / line), vec2(dy.x / cells.x, dy.y / line), color, ink);
+}`;
+
+// The functions of the texts for a text with a number: the same, with the images of its
+// pieces and how to write it instead of one image
+const numbered = (code: string) =>
+  code
+    .replace(/^vec3 text(\w+)\(sampler2D image,/, "vec3 number$1(sampler2D before, sampler2D digits, sampler2D after, vec4 number, vec3 place,")
+    .replace(/textAt\(image, /g, "textNumber(before, digits, after, number, place, ")
+    .replace(/text(Label|Facet)\(image, /g, "number$1(before, digits, after, number, place, ");
 
 // content on a flat face that is not a side of a box (a triangle of an octahedron, a slope
 // of a pyramid): the text lies in its plane, around its middle, upright (its top toward +y,
@@ -254,12 +312,15 @@ export function textureCode(
     const facet = room.facet;
     const write = (text: FaceText) => {
       if (!text) return "color";
-      const image = `uTexture${files.indexOf(text.source)}`;
+      const number = text.number;
+      // a text with a number: the images of its pieces and how to write it (decision 203)
+      const image = number ? numberImages(number, files) : `uTexture${files.indexOf(text.source)}`;
+      const name = (fn: string) => (number ? fn.replace(/^text/, "number") : fn);
       const end = `color, ${ink}, ${text.sized ? zoom : "0.0"})`;
       if (facet?.shape === "octahedron")
-        return `textFacet(${image}, q, normalize(sign(ln)), sign(ln) * ${g(short(div(facet.r, 3)))}, vec2(${g(room.box[0])}, ${g(room.box[1])}), ${end}`;
-      if (facet?.shape === "pyramid") return `textPyramid(${image}, q, vec3(${facet.size.map(g).join(", ")}), ${end}`;
-      return `${room.sticker ? "textSticker" : "textLabel"}(${image}, ${at}, ln, vec3(${room.box.map(g).join(", ")}), ${end}`;
+        return `${name("textFacet")}(${image}, q, normalize(sign(ln)), sign(ln) * ${g(short(div(facet.r, 3)))}, vec2(${g(room.box[0])}, ${g(room.box[1])}), ${end}`;
+      if (facet?.shape === "pyramid") return `${name("textPyramid")}(${image}, q, vec3(${facet.size.map(g).join(", ")}), ${end}`;
+      return `${name(room.sticker ? "textSticker" : "textLabel")}(${image}, ${at}, ln, vec3(${room.box.map(g).join(", ")}), ${end}`;
     };
     // The texts of the faces: the one most faces share is written last, the others face by
     // face. faceOf() gives the face of a shape seen from six sides (its own numbers); a
@@ -343,6 +404,11 @@ export function textureCode(
       ...(branches.join("\n").includes("textPyramid(") ? [TEXT_PYRAMID] : []),
       ...(branches.join("\n").includes("textSticker(") ? [TEXT_STICKER] : []),
       ...(branches.join("\n").includes("wrapped(") ? [WRAPPED] : []),
+      ...(/number(Label|Sticker|Facet|Pyramid)\(/.test(branches.join("\n")) ? [TEXT_PIECE, TEXT_NUMBER] : []),
+      ...(branches.join("\n").includes("numberLabel(") || branches.join("\n").includes("numberSticker(") ? [numbered(TEXT_LABEL)] : []),
+      ...(/number(Facet|Pyramid)\(/.test(branches.join("\n")) ? [numbered(TEXT_FACET)] : []),
+      ...(branches.join("\n").includes("numberPyramid(") ? [numbered(TEXT_PYRAMID)] : []),
+      ...(branches.join("\n").includes("numberSticker(") ? [numbered(TEXT_STICKER)] : []),
       ...(branches.join("\n").includes("textInk(") ? [TEXT_INK] : []),
       ...(branches.join("\n").includes("faceOf(") ? [FACE_OF] : []),
       ...(branches.join("\n").includes("octahedronFace(") ? [OCTAHEDRON_FACE] : []),
@@ -351,4 +417,13 @@ export function textureCode(
     ].join("\n\n"),
     call: "    m.color = textureColor(id, p, n, m.color);",
   };
+}
+
+// The images of a text with a number and how to write it, for numberLabel() and the others:
+// before, digits, after (the digits again where there is no string), number, place
+function numberImages(number: NumberText, files: string[]): string {
+  const digits = `uTexture${files.indexOf(number.digits)}`;
+  const piece = (image: string | null) => (image === null ? digits : `uTexture${files.indexOf(image)}`);
+  const sides = (number.before === null ? 0 : 1) + (number.after === null ? 0 : 2);
+  return `${piece(number.before)}, ${digits}, ${piece(number.after)}, vec4(${[...number.code, number.count, sides].map(glslFloat).join(", ")}), vec3(${number.layout.map(glslFloat).join(", ")})`;
 }

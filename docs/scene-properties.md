@@ -123,7 +123,7 @@ scene {
 
 Not a shape: a point of light, which draws nothing. Its `color` is the color of its light (white by default), and `intensity` how much light it gives, on top of the sun and the `ambient` light of the scene.
 
-- **Takes:** [`display`](masks.md#display), [`color`](colors.md#color), [`intensity`](#intensity), [`translate`](transforms.md#translate), [`rotate-x`](transforms.md#rotate-x), [`rotate-y`](transforms.md#rotate-y), [`rotate-z`](transforms.md#rotate-z), [`transform-origin`](transforms.md#transform-origin), [`transition`](animations.md#transition), [`animation`](animations.md#animation), [`animation-duration`](animations.md#animation-duration), [`animation-delay`](animations.md#animation-delay), [`animation-iteration-count`](animations.md#animation-iteration-count), [`animation-direction`](animations.md#animation-direction), [`animation-fill-mode`](animations.md#animation-fill-mode), [`animation-timing-function`](animations.md#animation-timing-function), [`animation-timeline`](animations.md#animation-timeline), [`animation-range`](animations.md#animation-range), [`animation-range-start`](animations.md#animation-range-start), [`animation-range-end`](animations.md#animation-range-end), [`offset-path`](transforms.md#offset-path), [`offset-distance`](transforms.md#offset-distance), [`offset-rotate`](transforms.md#offset-rotate)
+- **Takes:** [`display`](masks.md#display), [`color`](colors.md#color), [`intensity`](#intensity), [`translate`](transforms.md#translate), [`rotate-x`](transforms.md#rotate-x), [`rotate-y`](transforms.md#rotate-y), [`rotate-z`](transforms.md#rotate-z), [`transform-origin`](transforms.md#transform-origin), [`transition`](animations.md#transition), [`transition-property`](animations.md#transition-property), [`transition-duration`](animations.md#transition-duration), [`transition-timing-function`](animations.md#transition-timing-function), [`transition-delay`](animations.md#transition-delay), [`animation`](animations.md#animation), [`animation-duration`](animations.md#animation-duration), [`animation-delay`](animations.md#animation-delay), [`animation-iteration-count`](animations.md#animation-iteration-count), [`animation-direction`](animations.md#animation-direction), [`animation-fill-mode`](animations.md#animation-fill-mode), [`animation-timing-function`](animations.md#animation-timing-function), [`animation-timeline`](animations.md#animation-timeline), [`animation-range`](animations.md#animation-range), [`animation-range-start`](animations.md#animation-range-start), [`animation-range-end`](animations.md#animation-range-end), [`offset-path`](transforms.md#offset-path), [`offset-distance`](transforms.md#offset-distance), [`offset-rotate`](transforms.md#offset-rotate)
 
 A light moves like an object, and is never drawn: to see the bulb, put a shape at its place. A scene takes 8 lights at most.
 
@@ -519,6 +519,155 @@ scene {
   to {
     fog: 1 7;
   }
+}
+```
+
+<a name="ambient-occlusion"></a>
+
+## `ambient-occlusion`
+
+Darkens the `ambient` light where the objects close in: the corners, the floor under an object, the gap between two close ones. A strength from 0 to 2, then a radius and a number of samples if needed.
+
+**What the property changes in the scene:** `ambient-occlusion: none;`, `ambient-occlusion: 1;`
+
+- **Syntax:** `none | <number> <number>? <integer>?`
+- **Initial value:** `none`
+- **Applies to:** the scene
+- **Animatable:** no
+
+### Values
+
+- **none:** No occlusion: the default.
+- **<number>:** The strength, from 0 to 2: 1 is the usual look.
+- **<number> <number>:** The strength, then the radius, from 0.05 to 5 units: how far around a point the objects count. 0.5 by default.
+- **<number> <number> <integer>:** The strength, the radius, then the samples, from 2 to 16: more are smoother and cost more. 5 by default.
+
+Objects stop looking pasted on the floor, and a brighter `ambient` keeps its depth. Only the ambient light is darkened: the sun and the lights keep their shadows.
+
+Each sample measures the scene once more, on every pixel: 5 samples cost about as much as 5 steps of a ray. The reflections and the refractions are lit without it. The values are written in the shader: a variable set from JS cannot change them, and a `@media` can.
+
+### objects that sit on the floor
+
+```css
+@scene {
+  cube * 3;
+  sphere;
+}
+
+scene {
+  ambient-occlusion: 1;
+  ambient: 0.5;
+}
+
+cube {
+  size: 0.7;
+  translate: calc(sibling-index() * 0.72 - 1.44) 0.35 0;
+  color: #e8e6e1;
+}
+
+sphere {
+  radius: 0.45;
+  translate: 0 0.45 0.9;
+  color: #ff5a36;
+}
+```
+
+### a wider, softer occlusion
+
+```css
+@scene {
+  cube * 2;
+}
+
+scene {
+  ambient-occlusion: 0.8 1.5 8;
+  ambient: 0.6;
+}
+
+cube {
+  size: 1 2 1;
+  translate: calc(sibling-index() * 1.3 - 1.95) 1 0;
+  color: #3a7bff;
+}
+```
+
+<a name="shadow-softness"></a>
+
+## `shadow-softness`
+
+Sets how wide the penumbra of `shadows: soft` grows, from 0.1 to 10: 2 makes it twice as wide, 0.5 half as wide.
+
+**What the property changes in the scene:** `shadow-softness: 0.5;`, `shadow-softness: 3;`
+
+- **Syntax:** `<number>`
+- **Initial value:** `1`
+- **Applies to:** the scene
+- **Animatable:** no
+
+A low sun and tall objects cast long shadows: a wider penumbra keeps them soft far from the objects; a narrower one keeps them crisp near them. `shadows: hard` has no penumbra, and ignores it.
+
+The value is written in the shader: a variable set from JS cannot change it, and a `@media` can.
+
+### a wide penumbra
+
+```css
+@scene {
+  cube * 3;
+}
+
+scene {
+  shadows: soft;
+  shadow-softness: 3;
+  light: -40deg 30deg;
+}
+
+cube {
+  size: 0.4 1.6 0.4;
+  translate: calc(sibling-index() * 1.2 - 2.4) 0.8 0;
+  color: #ff5a36;
+}
+```
+
+<a name="shadow-steps"></a>
+
+## `shadow-steps`
+
+Sets how many steps the ray toward a light takes, at most, to find what is in the way, from 16 to 512.
+
+**What the property changes in the scene:** `shadow-steps: 16;`, `shadow-steps: 160;`
+
+- **Syntax:** `auto | <integer>`
+- **Initial value:** `auto`
+- **Applies to:** the scene
+- **Animatable:** no
+
+### Values
+
+- **auto:** 64 steps, or 100 when the light goes through holes or transparent objects: the default.
+- **<integer>:** That many steps, for every shadow.
+
+A shadow that is too short, banded far from its object, or that misses a thin object in the way, needs more steps.
+
+Each step costs as much as one step of the march of a pixel, on every pixel the light reaches. The value is written in the shader: a variable set from JS cannot change it, and a `@media` can.
+
+### long shadows of a low sun
+
+```css
+@scene {
+  cube * 5;
+}
+
+scene {
+  shadows: soft;
+  shadow-steps: 160;
+  light: -70deg 12deg;
+  camera-distance: 10;
+}
+
+cube {
+  size: 0.3 1.2 0.3;
+  translate: calc(sibling-index() * 0.9 - 2.7) 0.6 0;
+  color: #3a7bff;
 }
 ```
 

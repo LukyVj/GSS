@@ -3,12 +3,13 @@ import type { Token } from "../../syntax/tokenizer";
 import type { Keyframes } from "../../syntax/ast";
 import type { StyledInstance } from "../../cascade/resolve";
 import type { Easing } from "../../values/easing";
-import { readTransition } from "../../features/transition";
+import { readTransitions } from "../../features/transition";
 import { glslFloat, vec3, type Hover } from "./glsl";
 import { ROTATIONS, readRotation, readScale, readTranslate } from "./read";
-import { hoverValue } from "./animation";
+import { groupHover, hoverValue } from "./animation";
 import { offsetReach } from "./offset";
 import { objectBox, readOrigin } from "./origin";
+import { rangeOf, type HoverRange } from "./interval";
 
 // ----- The sphere around the whole scene -----
 // A ray that passes by it meets no object: march() then only has the floor left,
@@ -82,6 +83,19 @@ function anchors(expr: string, steadyHover: boolean): number[][] | null {
   return [numbers.length === 1 ? [numbers[0], numbers[0], numbers[0]] : numbers];
 }
 
+// The points of anchors(), or else the two corners of the range of the value (decision 219):
+// the GLSL GSS writes for an eased timeline, a ternary or hover-distance() keeps a box.
+// The anchors come first: a scene they bound keeps the sphere it had.
+// hover: the range of uHover[] when it can leave [0, 1] (decision 234), read by rangeOf() alone
+function cornersOf(expr: string, steadyHover: boolean, hover: HoverRange = steadyHover ? [0, 1] : null): number[][] | null {
+  const points = anchors(expr, steadyHover);
+  if (points) return points;
+  const range = rangeOf(expr, hover);
+  if (!range || (range.low.length !== 1 && range.low.length !== 3)) return null;
+  const corner = (v: number[]) => (v.length === 1 ? [v[0], v[0], v[0]] : v);
+  return [corner(range.low), corner(range.high)];
+}
+
 export type Sphere = { center: number[]; radius: number };
 
 const length3 = (v: number[]) => Math.hypot(v[0], v[1], v[2]);
@@ -103,13 +117,44 @@ function boxOfPoints(points: number[][]): { middle: number[]; reach: number } {
   };
 }
 
-// uHover[] of this object stays in [0, 1]: its transitions (rest, hovered and pressed)
-// never overshoot
-function steadyTransitions(instance: StyledInstance): boolean {
-  return [instance.styles, instance.hoverStyles, instance.activeStyles].every((styles) => {
-    const transition = readTransition(styles["transition"]);
-    return !transition || stays01(transition.easing);
-  });
+// uHover[] of this node stays in [0, 1]: its transitions (rest, hovered and pressed)
+// never overshoot. n: the node, a group (decision 211) or the object itself (the last)
+export function steadyTransitions(instance: StyledInstance, n: number): boolean {
+  const states =
+    n < instance.groups.length
+      ? [instance.groupStyles[n], ...instance.groupHoverStates[n].map((state) => state.styles), ...(instance.groupActiveStates[n] ? [instance.groupActiveStates[n]!.styles] : [])]
+      : [instance.styles, instance.hoverStyles, ...instance.hoverStates.map((state) => state.styles), instance.activeStyles];
+  return states.every((styles) =>
+    readTransitions(styles).every(({ transition }) => !transition || stays01(transition.easing)),
+  );
+}
+
+// The range of uHover[] of this node when its transitions overshoot (decision 234). A glide
+// starts from where the value is: v + (target - v) e, with e the easing's output, in [0, E].
+// With no undershoot (no output below 0) and E < 2, the interval [L, H] with
+// H = E / (1 - a²), L = -a E / (1 - a²), a = E - 1, holds every glide that starts in it (toward 1:
+// at most L + (1 - L) E = H; toward 0: at least H (1 - E) = L), and the rest (0 or 1) is in it:
+// however often the pointer comes and goes, the value stays in it. null: an undershoot, or an
+// overshoot of 2 or more, which can grow at each turn.
+export function hoverRange(instance: StyledInstance, n: number): HoverRange {
+  const states =
+    n < instance.groups.length
+      ? [instance.groupStyles[n], ...instance.groupHoverStates[n].map((state) => state.styles), ...(instance.groupActiveStates[n] ? [instance.groupActiveStates[n]!.styles] : [])]
+      : [instance.styles, instance.hoverStyles, ...instance.hoverStates.map((state) => state.styles), instance.activeStyles];
+  let low = 0;
+  let high = 1;
+  for (const { transition } of states.flatMap((styles) => readTransitions(styles))) {
+    if (!transition || transition.easing.type === "steps") continue;
+    const easing = transition.easing;
+    const outputs = easing.type === "cubic-bezier" ? [easing.y1, easing.y2] : easing.points.map((p) => p.output);
+    low = Math.min(low, ...outputs);
+    high = Math.max(high, ...outputs);
+  }
+  if (low < 0) return null;
+  const a = high - 1;
+  if (a >= 1) return null;
+  if (a === 0) return [0, 1];
+  return [(-a * high) / (1 - a * a), high / (1 - a * a)];
 }
 
 // One object's sphere in the scene, through its own transforms and its groups', from
@@ -125,19 +170,21 @@ export function objectSphere(
   let sphere: Sphere = { center: [0, 0, 0], radius };
   const nodes = [...instance.groupStyles, instance.styles];
   for (let n = nodes.length - 1; n >= 0; n--) {
-    const nodeHover = n === nodes.length - 1 ? hover : undefined;
+    const nodeHover = n === nodes.length - 1 ? hover : groupHover(instance, n);
     const value = (property: string, read: (value: Token[] | undefined) => string) =>
       hoverValue(nodes[n], keyframes, property, read, nodeHover);
-    const steady = !nodeHover || steadyTransitions(instance);
+    const steady = !nodeHover || steadyTransitions(instance, n);
+    const range: HoverRange = steady ? [0, 1] : hoverRange(instance, n);
     // A motion path, inside the node's scale: anywhere within its reach (decision 97)
     const reach = offsetReach(nodes[n], keyframes, nodeHover);
     if (reach === null) return null;
     if (reach > 0) sphere = { center: [0, 0, 0], radius: length3(sphere.center) + sphere.radius + reach };
-    const scales = anchors(value("scale", readScale), steady);
-    const translates = anchors(value("translate", readTranslate), steady);
+    const scales = cornersOf(value("scale", readScale), steady, range);
+    const translates = cornersOf(value("translate", readTranslate), steady, range);
     const size = n === nodes.length - 1 ? () => objectBox(instance) : undefined; // a group has no box
-    const origins = anchors(value("transform-origin", readOrigin(size)), steady);
+    const origins = cornersOf(value("transform-origin", readOrigin(size)), steady, range);
     if (!scales || !translates || !origins) return null;
+    if (scales.some((s) => s[0] < 0) && scales.some((s) => s[0] > 0)) scales.push([0, 0, 0]); // through 0: as small as 0
     // transform-origin (decision 107): to the origin, scale and rotate, then back
     const around = boxOfPoints(origins);
     const toOrigin = (sign: number) =>

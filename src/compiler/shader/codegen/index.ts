@@ -15,42 +15,49 @@
 //   gradients.ts   gradients in the background and on objects (decisions 81, 82), animated (102, 103)
 //   filters.ts     filter on the scene and on objects (decisions 83, 84)
 //   view.ts        view: distance, the isolines of the distance field (decision 131)
+//   debug.ts       @debug-panel, its axes and its grid, and view: steps (decision 204)
 //   mix-blend-mode.ts  mix-blend-mode, objects blended with what is behind them (decision 173)
 import type { Keyframes } from "../../syntax/ast";
 import type { StyledInstance, Styles } from "../../cascade/resolve";
 import { errorAt } from "../../syntax/errors";
 import { readNumber } from "../../values/values";
 import { sceneTextures } from "../../features/textures";
+import type { Token } from "../../syntax/tokenizer";
 import { glslFloat, moreLines, round, section, used, label, vec3, type Hover } from "./glsl";
 import { EASINGS, MAP_HELPERS, MATERIALS, PATH_HELPERS, SHADE_CALLS, SHAPE_FUNCTIONS } from "./library";
 import { SHADING } from "./shading";
-import { MARCH_LOOP, PICK_OUTPUT, PICK_PIXEL, SURFACE, TEMPLATE } from "./template";
+import { MARCH_LOOP, PICK_DEPTH_OUTPUT, PICK_OUTPUT, PICK_PIXEL, SURFACE, TEMPLATE } from "./template";
 import { MASKED_MARCH_LOOP, SHELL, SKIN_MARCH_LOOP, holeNormal, holeNormals, maskCode, objectMask, skinFunction, type Masked } from "./masks";
 import { LAYERS, PAST_SURFACE, alphaFunction, colorFunction, objectAlpha, surfaceFunction, type Transparent } from "./transparency";
 import { BLENDED_LAYERS, blendFunctions, objectBlend, withInheritedBlendMode, type Blended } from "./mix-blend-mode";
 import { readColor, readLight, readScale, readSurfaceColor, readTranslate } from "./read";
 import { readOperation, SMOOTH } from "./operations";
-import { BOUNDED, SHAPES, type ShapeContext } from "./shapes";
+import { BOUNDED, SHAPES, shapeRadius as radiusOf, type ShapeContext } from "./shapes";
 import { textureCode } from "./textures";
 import { backgroundCode, backgroundNeedsCamera, floorGradient, gradientCode, objectGradient, paintsTransparent, type Painted } from "./gradients";
 import { gradientMean } from "../gradient";
 import { BLEND_LIBRARY } from "./blend-library";
 import { readMaterial } from "./materials";
-import { activeSlots, hoverSlots, hoverValue, sceneTriggers, useTimelines } from "./animation";
-import { sceneTimelines } from "../../features/timeline";
+import { activeSlots, groupHover, hoverSlots, hoverValue, sceneTriggers, transitionChannels, useChannels, useGroupHovers, useTimelines } from "./animation";
+import { sceneTimelines, timelineUniform } from "../../features/timeline";
 import { offsetLines, offsetReach, useOffsetFunctions } from "./offset";
-import { animateCode, createHoisted, hoist, originOf, rotationLines, transformLines } from "./transforms";
+import { animateCode, createHoisted, hoist, originOf, pointerCode, pointerReaders, rotationLines, transformLines } from "./transforms";
 import { objectBox } from "./origin";
 import { fogCode } from "./fog";
-import { boundedMap, enclosing, objectSphere, sceneMiss, type Sphere } from "./bounds";
+import { withFocal, withRaymarch } from "./raymarch";
+import { occludedAmbient, readAmbientOcclusion, withAmbientOcclusion } from "./ambient-occlusion";
+import { readFocal } from "../../features/camera";
+import { readRaymarch } from "../../features/raymarch";
+import { boundedMap, enclosing, hoverRange, objectSphere, sceneMiss, steadyTransitions, type Sphere } from "./bounds";
+import type { HoverRange } from "./interval";
 import { GRAIN } from "../../features/filter";
 import { filterCode } from "./filters";
 import { COLOR_LIBRARY } from "./color-library";
 import { NOISE_LIBRARY } from "./noise-library";
-import { isLive, liveCode, liveNumber } from "./live";
+import { isLive, liveCode, liveNumber, withHoverSizes } from "./live";
 import { liveLight, liveRead } from "./properties";
 import { DIFFUSE, isLight, lightingCode, splitAmbient } from "./lights";
-import { readShadows } from "./shadows";
+import { readShadowQuality, readShadows } from "./shadows";
 import { ISOLINES, ISOLINES_CALL, withObjectsAlone } from "./view";
 import type { View } from "../../features/view";
 import { readShapeRendering } from "../../features/shape-rendering";
@@ -58,17 +65,27 @@ import { EXACT_DISTANCE, exactShapes, precisionMarch } from "./shape-rendering";
 import { readVisibility, withInheritedVisibility } from "../../features/visibility";
 import { sceneCursors } from "../../features/cursor";
 import { sceneControls } from "../../features/controls";
+import { withStepsView } from "./debug";
 import { BOXED, objectOutline, outlineBlend, outlineFarCode, outlineFunctions, withOutlineBand, withOutlineFrames, withOutlineMarch, withOutlineShapes, type Outlined } from "./outline";
 
-export { activeSlots, hoverSlots, sceneTriggers, type Trigger } from "./animation";
+export { activeSlots, hoverSlots, sceneTriggers, transitionChannels, type Trigger } from "./animation";
+export { pointerReaders } from "./transforms";
 export { shapeNames, shapeRadius } from "./shapes";
+
+// What a reflection sees of an emissive object: its own light, as main() shows it (decision 232)
+const TRACE_HEAD = "// What a ray sees, with diffuse lighting only.";
+const TRACE_GLOW = `// emissive(): what a ray sees of it is never darker than its own light, as in main()
+vec3 traceGlow(float id, vec3 lit) {
+  Material m = getMaterial(id);
+  return m.kind == EMISSIVE ? max(lit, m.color * m.density) : lit;
+}`;
 
 export function generateShader(
   everything: StyledInstance[], // the objects, and the lights of @scene (decision 110)
   sceneStyles: Styles = {},
   keyframes: Keyframes[] = [],
   properties = 0, // the variables registered with @property: uProperties[] (decision 105)
-  view: View = "shaded", // distance: the isolines of the distance to the objects (decision 131)
+  view: View = "shaded", // distance: the isolines of the distance to the objects (decision 131); steps (decision 204)
 ): string {
   // visibility is inherited from the groups, like CSS (decision 160)
   everything = everything.map(withInheritedVisibility);
@@ -96,25 +113,44 @@ export function generateShader(
   const slots = [...hovers, ...actives];
   // The picking pass: for :hover and :active, for the cursor over an object (decision 161), and
   // for the objects over which a gesture cannot move the camera (decision 176)
-  const picks = slots.length > 0 || sceneCursors(instances).length > 0 || sceneControls({}, instances)?.objects !== undefined;
+  // hover-distance(), hover-direction() (decision 215): the shader reads the object under the pointer
+  const readers = pointerReaders(everything, keyframes);
+  const pointed = readers.size > 0;
+  const picks = slots.length > 0 || pointed || sceneCursors(instances).length > 0 || sceneControls({}, instances)?.objects !== undefined;
   // uStart[]: when each state that starts an animation started it (decision 141)
   const triggers = sceneTriggers(everything);
-  // The hover and pressed states of one object, or undefined when it has neither
-  const hoverOf = (instance: StyledInstance): Hover | undefined => {
-    const hover = hovers.indexOf(instance);
-    const active = actives.indexOf(instance);
+  // The hover and pressed states of one object or one group, or undefined when it has neither:
+  // its hover states, its states of :not(:active), whose slots follow the press (decision 218),
+  // then its pressed state
+  const layersOf = (of: (slot: { instance?: StyledInstance; group?: StyledInstance["groups"][number] }) => boolean): Hover | undefined => {
     const startOf = (slot: number) => {
       const start = triggers.findIndex((trigger) => trigger.slot === slot);
       return start === -1 ? {} : { start };
     };
     const layers: Hover = [
-      ...(hover === -1 ? [] : [{ styles: instance.hoverStyles, slot: hover, state: ":hover" as const, ...startOf(hover) }]),
-      ...(active === -1
-        ? []
-        : [{ styles: instance.activeStyles, slot: hovers.length + active, state: ":active" as const, ...startOf(hovers.length + active) }]),
+      ...hovers.flatMap((slot, n) =>
+        of(slot)
+          ? [{ styles: slot.state.styles, slot: n, state: ":hover" as const, ...startOf(n), ranks: slot.state.ranks, last: slot.state.last }]
+          : [],
+      ),
+      ...actives.flatMap((slot, i): Hover => {
+        if (!of(slot)) return [];
+        const n = hovers.length + i;
+        return slot.state
+          ? [{ styles: slot.styles, slot: n, state: ":hover" as const, ...startOf(n), ranks: slot.state.ranks, last: slot.state.last, press: true }]
+          : [{ styles: slot.styles, slot: n, state: ":active" as const, ...startOf(n), below: slot.below }];
+      }),
     ];
     return layers.length > 0 ? layers : undefined;
   };
+  const hoverOf = (instance: StyledInstance): Hover | undefined => layersOf((slot) => slot.instance === instance);
+  // The hover states of one group of an object, from the outside in (decision 211)
+  const groupHoverOf = (instance: StyledInstance, g: number): Hover | undefined =>
+    layersOf((slot) => slot.group !== undefined && slot.group === instance.groups[g]);
+  useGroupHovers(groupHoverOf);
+  // transition per property: the properties with another transition read their own number
+  const channels = transitionChannels(everything);
+  useChannels(channels.of);
   const context: ShapeContext = { functions: new Map() };
   const hoisted = createHoisted(); // the animated values of map(): computed by animate()
   const spheres: (Sphere | null)[] = []; // each object's, for the sphere of the scene
@@ -168,7 +204,12 @@ export function generateShader(
   // outline (decision 163): the objects that draw a line around their silhouette
   const outlines = new Map<StyledInstance, Outlined>();
   for (const instance of mapped) {
-    const outline = objectOutline(instance, keyframes, hoverOf(instance), hoisted);
+    // Its outline's widest reach (decision 234): over the ranges of uHover[] of the object and its groups.
+    // Not for a skin (holes, opacity, mix-blend-mode): the march goes through it, measured slower
+    const outlineRange = skins.has(instance) ? null : [...instance.groups.keys(), instance.groups.length]
+      .map((n): HoverRange => (steadyTransitions(instance, n) ? [0, 1] : hoverRange(instance, n)))
+      .reduce((all, r) => (all && r ? [Math.min(all[0], r[0]), Math.max(all[1], r[1])] : null), [0, 1] as HoverRange);
+    const outline = objectOutline(instance, keyframes, hoverOf(instance), hoisted, outlineRange);
     if (outline) outlines.set(instance, outline);
   }
 
@@ -179,10 +220,24 @@ export function generateShader(
         `Unknown object: "${instance.tag}". Available: ${Object.keys(SHAPES).join(", ")}`,
       );
     }
-    const { code: shapeCode, radius: ownRadius } = shape(instance.styles, context);
+    // The sizes :hover changes are mixed into the shape (decision 213); its bounding sphere
+    // holds the largest of its states, when the transitions never overshoot
+    const states = hoverOf(instance);
+    const sizes = states
+      ? (property: string, read: (value: Token[] | undefined) => number) => {
+          const value = hoverValue(instance.styles, keyframes, property, (v) => glslFloat(read(v)), states);
+          return value === glslFloat(read(instance.styles[property])) ? null : value;
+        }
+      : null;
+    const { code: shapeCode, radius: shapeBound } = withHoverSizes(sizes, () => shape(instance.styles, context));
+    const radii = states ? [instance.styles, ...states.map((layer) => layer.styles)].map((styles) => radiusOf(instance.tag, styles)) : [];
+    const ownRadius =
+      shapeBound !== null || !states || radii.some((r) => r === null) || !steadyTransitions(instance, instance.groups.length)
+        ? shapeBound
+        : Math.max(...(radii as number[]));
     // An outline reaches past the surface: its bounding spheres grow with it
     const outline = outlines.get(instance);
-    const shapeRadius = ownRadius === null || !outline ? ownRadius : outline.reach === null ? null : ownRadius + outline.reach;
+    const shapeRadius = ownRadius === null || !outline ? ownRadius : outline.bound === null ? null : ownRadius + outline.bound;
     // A motion path takes the shape away from the object's origin (decision 97)
     const reach = offsetReach(instance.styles, keyframes, hoverOf(instance));
     const radius = shapeRadius === null || reach === null ? null : shapeRadius + reach;
@@ -190,7 +245,7 @@ export function generateShader(
     // Every node from the outside in: the groups, then the object itself
     const nodes = [...instance.groupStyles, instance.styles];
     // q was divided by every scale, so the distance is multiplied back by all of them
-    // :hover moves the object itself, the last node, never its groups
+    // :hover moves the object itself, the last node, and its groups (decision 211)
     const hover = hoverOf(instance);
     const last = nodes.length - 1;
     const scales = nodes.map((styles, n) =>
@@ -202,7 +257,7 @@ export function generateShader(
           keyframes,
           "scale",
           readScale,
-          n === last ? hover : undefined,
+          n === last ? hover : groupHover(instance, n),
         ),
       ),
     );
@@ -242,8 +297,8 @@ export function generateShader(
       ? `{ ${far ? `outlineFar = ${far}; ` : ""}float dOutline = ${measured}; ${far ? "outlineFar = 0.0; " : ""}res = ${combine}; outlineAt(dOutline, ${outline.offset}, ${outline.width}, ${glslFloat(instance.index)}); }`
       : `res = ${combine};`;
 
-    const groupLines = instance.groupStyles.flatMap((styles) =>
-      transformLines(styles, keyframes, undefined, hoisted),
+    const groupLines = instance.groupStyles.flatMap((styles, g) =>
+      transformLines(styles, keyframes, groupHover(instance, g), hoisted),
     );
     // transform-origin (decision 107): the bounding sphere is centered on it, so it needs
     // a point known at compile time
@@ -376,9 +431,25 @@ export function generateShader(
       transparent: transparent.length > 0,
       // An opaque blended object is a skin, but the light does not go through it: it keeps its penumbra
       ...(blended.length > 0 && transparent.length > 0 && shadows === "soft" ? { seeThrough: "seeThrough" } : {}),
+      quality: readShadowQuality(sceneStyles["shadow-softness"], sceneStyles["shadow-steps"]), // decision 225
+      // The rays toward the lights stop once past every object (decision 233)
+      bound: scene ? { center: scene.center, radius: sceneRadius, floor: hasFloor } : null,
     },
   );
-  const animate = animateCode(hoisted, lights?.positions ?? "");
+  const cameraTarget = sceneStyles["camera-target"]
+    ? liveRead("translate", readTranslate)(sceneStyles["camera-target"]) // a target set from JS (decision 105)
+    : "vec3(0.0, 0.5, 0.0)";
+  // hover-distance(): where each object is at rest, and the point under the pointer (decision
+  // 217), read once per pixel before the values that measure from it (decision 215)
+  if (pointed)
+    hoisted.values.unshift(
+      { type: "vec3", name: "hoverPoint", expr: "pointerPoint()" },
+      ...[...readers].sort((a, b) => a - b).flatMap((index) => [
+        { type: "float", name: `hoverDist${index}`, expr: `hoverDistance(restCenter${index}())` },
+        { type: "vec3", name: `hoverDir${index}`, expr: `hoverDirection(restCenter${index}())` },
+      ]),
+    );
+  const animate = animateCode(hoisted, [pointed ? pointerCode(instances, keyframes, hoverOf, hoisted, cameraTarget) : "", lights?.positions ?? ""].filter(Boolean).join("\n\n"));
   const textures = textureCode(instances, keyframes, hoverOf);
   // filter on the scene (decision 83) and on objects (decision 84)
   const { objectFilter, filterLines, alpha, filterFunctions } = filterCode(instances, sceneStyles);
@@ -408,9 +479,13 @@ export function generateShader(
   // A color is a constant; a gradient a function of the pixel (decision 81); either one
   // can follow an animation of the scene (decision 103)
   const background = backgroundCode(sceneStyles, keyframes);
-  const fog = fogCode(sceneStyles, keyframes); // off by default
+  const raymarch = readRaymarch(sceneStyles); // decision 224
+  const occlusion = readAmbientOcclusion(sceneStyles["ambient-occlusion"]); // decision 227
+  const fog = fogCode(sceneStyles, keyframes, raymarch.maxDistance); // off by default
   const materials = materialLines.join("\n");
   // One line in main() for each material the scene uses
+  // emissive() in the scene: the reflections see its light (decision 232)
+  const glows = materials.includes("emissive(");
   const shadeCalls = Object.entries(SHADE_CALLS)
     .filter(([kind]) => materials.includes(kind + "("))
     .map(([, line]) => line)
@@ -504,7 +579,7 @@ export function generateShader(
       .replace(
         "/*@HOVER_UNIFORM*/",
         (timelines.length > 0
-          ? `uniform vec4 uTimeline; // scroll() and view(): the progress of each, 0 to 1${picks ? "\n" : ""}`
+          ? `${timelineUniform(timelines.length)} // scroll() and view(): the progress of each, 0 to 1${picks ? "\n" : ""}`
           : "") +
           (properties > 0
             ? `uniform vec4 uProperties[${properties}]; // @property: the variables set from JS${picks ? "\n" : ""}`
@@ -513,14 +588,14 @@ export function generateShader(
             ? `uniform float uStart[${triggers.length}]; // when each state that starts an animation started it (seconds of iTime)\n`
             : "") +
           (picks
-            ? `uniform float uHover[${Math.max(slots.length, 1)}]; // 0 at rest, 1 hovered
+            ? `uniform float uHover[${Math.max(slots.length + channels.parents.length, 1)}]; // 0 at rest, 1 hovered
 uniform bool uPicking; // true: draw the id of the object under uPick, not its color
-uniform vec2 uPick;`
+uniform vec2 uPick;${pointed ? "\nuniform vec4 uPointer; // hover-distance(): the pixel under the pointer, how far along its ray, how present (decision 217)" : ""}`
             : ""),
       )
       .replace("/*@PICK_PIXEL*/", picks ? PICK_PIXEL : "")
       .replace("/*@PIXEL*/", picks ? "pixel" : "gl_FragCoord.xy")
-      .replace("/*@PICK_OUTPUT*/", picks ? PICK_OUTPUT : "")
+      .replace("/*@PICK_OUTPUT*/", pointed ? PICK_DEPTH_OUTPUT : picks ? PICK_OUTPUT : "")
       .replace(
         "/*@TEXTURES*/",
         section(
@@ -595,13 +670,11 @@ uniform vec2 uPick;`
           ? ""
           : (liveLight(sceneStyles["light"]) ?? `const vec3 LIGHT_DIR = ${vec3(readLight(sceneStyles["light"]))};`),
       )
-      .replace("/*@AMBIENT*/", ambientCode ?? glslFloat(ambient))
+      .replace("/*@AMBIENT*/", occludedAmbient(ambientCode ?? glslFloat(ambient), occlusion))
       .replace("/*@DIRECT*/", ambientCode ? `(1.0 - ${ambientCode})` : glslFloat(direct))
       .replace(
         "/*@CAMERA_TARGET*/",
-        sceneStyles["camera-target"]
-          ? liveRead("translate", readTranslate)(sceneStyles["camera-target"]) // a target set from JS (decision 105)
-          : "vec3(0.0, 0.5, 0.0)",
+        cameraTarget,
       )
       .replace(
         "const vec3 BACKGROUND = /*@BACKGROUND*/;",
@@ -628,11 +701,16 @@ uniform vec2 uPick;`
       .replace(MARCH_LOOP, masked.length > 0 ? MASKED_MARCH_LOOP : stacked ? SKIN_MARCH_LOOP : MARCH_LOOP)
       .replace("/*@SURFACE_FILTER*/", surfaceInFunction && filterLines.includes(objectLine) ? objectLine : "")
       .replace("  outColor = vec4(col, 1.0);\n}", `${edgeBlend}${lineBlend}${finalLines}${distanceView ? ISOLINES_CALL : ""}  outColor = vec4(col, ${alpha});\n}`)
-      // Reflections see the filters of the objects they meet
+      // Reflections see the light of an emissive object (decision 232), and the filters of the
+      // objects they meet
       .replace(
         /return (diffuse\(n, .*\));  \/\/ its color, lit/,
-        objectFilter ? "return objectFilter(hit.y, $1);  // its color, lit, filtered" : "return $1;  // its color, lit",
+        (_, seen: string) => {
+          const glowing = glows ? `traceGlow(hit.y, ${seen})` : seen;
+          return objectFilter ? `return objectFilter(hit.y, ${glowing});  // its color, lit, filtered` : `return ${glowing};  // its color, lit`;
+        },
       )
+      .replace(TRACE_HEAD, glows ? `${TRACE_GLOW}\n\n${TRACE_HEAD}` : TRACE_HEAD)
       // The animations of this pixel, computed once before anything calls map()
       .replace(
         "void main() {",
@@ -657,5 +735,11 @@ uniform vec2 uPick;`
   // The normals of a scene with holes (decision 113)
   const turned = skins.size > 0 ? holeNormals(outlined) : outlined;
   // Every light in the highlights of the materials too
-  return lights ? lights.rewrite(turned) : turned;
+  const relit = lights ? lights.rewrite(turned) : turned;
+  // view: steps (decision 204): the calls of map() for each pixel, in color
+  // ambient-occlusion (decision 227)
+  const occluded = withAmbientOcclusion(relit, occlusion);
+  const viewed = view === "steps" ? withStepsView(occluded) : occluded;
+  // raymarch-steps, max-distance, hit-precision (decision 224), camera-fov (decision 226)
+  return withFocal(withRaymarch(viewed, raymarch), readFocal(sceneStyles));
 }

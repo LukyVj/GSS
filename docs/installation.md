@@ -10,7 +10,7 @@ Every example of this page, to edit live: [gss-lang.dev/docs](https://www.gss-la
 
 ## Embedding a scene
 
-A GSS scene runs on any web page, in three ways. All three use the package `gss-lang@0.0.7`.
+A GSS scene runs on any web page, in three ways. All three use the package `gss-lang@0.0.8`.
 
 GSS is open source, under the Apache-2.0 license: its code is on [GitHub](https://github.com/LukyVj/GSS), where you can [report a bug](https://github.com/LukyVj/GSS/issues). Questions, ideas, a scene to show: say hi on X, [@GSS_lang](https://x.com/GSS_lang).
 
@@ -20,10 +20,10 @@ GSS is open source, under the Apache-2.0 license: its code is on [GitHub](https:
 
 ### A tag
 
-CDN · v0.0.7 · no build step
+CDN · v0.0.8 · no build step
 
 ```html
-<script type="module" src="https://cdn.jsdelivr.net/npm/gss-lang@0.0.7/lib/embed.js"></script>
+<script type="module" src="https://cdn.jsdelivr.net/npm/gss-lang@0.0.8/lib/embed.js"></script>
 
 <gss-scene src="logo.gss"></gss-scene>
 <gss-scene controls="none">
@@ -33,7 +33,7 @@ CDN · v0.0.7 · no build step
 
 ### A function
 
-npm install gss-lang@0.0.7
+npm install gss-lang@0.0.8
 
 ```js
 import { mount } from "gss-lang";
@@ -45,7 +45,7 @@ scene.destroy();
 
 ### A build step
 
-gss-lang@0.0.7 · compiled with Vite
+gss-lang@0.0.8 · compiled with Vite
 
 ```js
 // vite.config.ts
@@ -77,12 +77,12 @@ Once `<gss-scene>` fires `load`, its `scene` property gives the scene, to `pause
 
 ## Package (npm)
 
-Install `gss-lang@0.0.7` in your application. The package holds the compiler, the renderer and the TypeScript declarations.
+Install `gss-lang@0.0.8` in your application. The package holds the compiler, the renderer and the TypeScript declarations.
 
 **How it goes, from where it is written to what the scene shows:** `npm install gss-lang`, `mount(canvas, source)`, `a canvas of the page`
 
 ```sh
-npm install gss-lang@0.0.7
+npm install gss-lang@0.0.8
 ```
 
 ```js
@@ -106,7 +106,7 @@ The Vite plugin comes with the package. It compiles the `.gss` imports at build 
 **How it goes, from where it is written to what the scene shows:** `scene.gss`, `vite build`, `the scene, compiled`
 
 ```sh
-npm install gss-lang@0.0.7
+npm install gss-lang@0.0.8
 npm install --save-dev vite
 ```
 
@@ -127,12 +127,12 @@ With TypeScript, add `"gss-lang/client"` to `compilerOptions.types` in `tsconfig
 
 ## CDN (no build step)
 
-Load the browser module of `v0.0.7` from jsDelivr: no install, no bundler. The version is pinned, so an update never changes your scene unexpectedly.
+Load the browser module of `v0.0.8` from jsDelivr: no install, no bundler. The version is pinned, so an update never changes your scene unexpectedly.
 
 **How it goes, from where it is written to what the scene shows:** `<script src="embed.js">`, `<gss-scene>`, `the scene`
 
 ```html
-<script type="module" src="https://cdn.jsdelivr.net/npm/gss-lang@0.0.7/lib/embed.js"></script>
+<script type="module" src="https://cdn.jsdelivr.net/npm/gss-lang@0.0.8/lib/embed.js"></script>
 
 <gss-scene src="logo.gss"></gss-scene>
 <gss-scene controls="none">
@@ -140,7 +140,7 @@ Load the browser module of `v0.0.7` from jsDelivr: no install, no bundler. The v
 </gss-scene>
 ```
 
-The script defines `<gss-scene>`. Point its `src` to a `.gss` file, or write the GSS inline, as above. Serve the page over HTTP(S). The module: [https://cdn.jsdelivr.net/npm/gss-lang@0.0.7/lib/embed.js](https://cdn.jsdelivr.net/npm/gss-lang@0.0.7/lib/embed.js).
+The script defines `<gss-scene>`. Point its `src` to a `.gss` file, or write the GSS inline, as above. Serve the page over HTTP(S). The module: [https://cdn.jsdelivr.net/npm/gss-lang@0.0.8/lib/embed.js](https://cdn.jsdelivr.net/npm/gss-lang@0.0.8/lib/embed.js).
 
 To drive the scene from a script, see [Set variables from JavaScript](#set-variables).
 
@@ -149,8 +149,12 @@ To drive the scene from a script, see [Set variables from JavaScript](#set-varia
 - **poster:** `poster="cover.jpg"` shows an image until the scene draws, like the poster of a `<video>`.
 - **No graphics card:** `<gss-scene>` shows its poster and a button, and draws the scene only when the reader asks. With `mount()`, `softwareRendering()`, from `gss-lang` or `gss-lang/runtime`, returns `true` on such a computer, to do the same.
 - **A weak graphics card:** The scene starts at a density of 0.5, then climbs to its `dpr` while the frames keep up.
+- **A lighter version:** A scene with [`@gpu (slow)`](at-rules.md#at-gpu) is never drawn under a density of 1: when its frames stay slow, it switches to its lighter version. `<gss-scene gpu="slow">` and `mount(canvas, scene, { gpu: "slow" })` show that version from the start.
 - **Still too slow:** The scene stops: `<gss-scene>` shows a button that draws it anyway, and `mount()` fires a `gss-too-heavy` event on the canvas, where `scene.play()` draws it anyway.
 - **adaptDpr: false:** `mount(canvas, scene, { adaptDpr: false })` keeps the `dpr` as written and never stops, for a capture or a benchmark.
+- **adaptDpr: { start, min }:** `mount(canvas, scene, { adaptDpr: { start: 1, min: 0.75 } })` starts at a density of 1 instead of 0.5, and never goes under 0.75: no blurry first frame on a strong graphics card, crisp shapes on a weak one. The scene still stops when it is too heavy.
+- **heavyThreshold:** `{ heavyThreshold: { fps: 20, seconds: 1 } }` stops the scene when it stays under 20 frames per second for a second at its lowest density, where the default waits for 5 frames per second over a second and a half.
+- **scene.stats():** Returns `{ fps, ratio }`: the frames of the last second, and the density the canvas draws at. A page can lower its own quality from it, like a lighter scene with `scene.update()`.
 
 <a name="set-variables"></a>
 
@@ -238,6 +242,99 @@ The `scene` property of the element is the scene, with the same methods. It is `
 
 The element fires `"load"` again each time it starts a new scene: a new `src`, `controls` or `backend`, or the element moved in the page. A new scene starts from its start values, so the listener sets yours again.
 
+<a name="follow-the-page"></a>
+
+## Follow the page as it scrolls
+
+A scene can follow a part of the page: a section, a card, a list that scrolls. The page gives the part a name in its own CSS, as it would for a CSS scroll-driven animation, and the scene plays an animation along it with [`animation-timeline`](animations.md#animation-timeline). Scroll the box: the ring turns while the section *Three* crosses it.
+
+**A page that scrolls, and the animation where the scroll is:** `0%`, `100%`
+
+`--feature`
+
+@scene { torus; }
+scene { camera-spin: none; floor: none; }
+torus {
+  translate: 0 0.9 0;
+  radius: 0.6;
+  thickness: 0.18;
+  color: #3a7bff;
+  animation: turn 1s ease-in-out both;
+  animation-timeline: --feature;
+}
+@keyframes turn {
+  from { rotate-x: 90deg; }
+  to { rotate-y: 360deg; color: #ff5a36; }
+}
+
+The CSS of the page names the section; the GSS of the scene writes that name instead of `view()`:
+
+```html
+<style>
+  #feature { view-timeline-name: --feature; }
+</style>
+
+<section id="feature">…</section>
+
+<gss-scene>
+  <script type="text/gss">
+    @scene { torus; }
+    scene { camera-spin: none; floor: none; }
+    torus {
+      translate: 0 0.9 0;
+      radius: 0.6;
+      thickness: 0.18;
+      color: #3a7bff;
+      animation: turn 1s ease-in-out both;
+      animation-timeline: --feature;
+    }
+    @keyframes turn {
+      from { rotate-x: 90deg; }
+      to { rotate-y: 360deg; color: #ff5a36; }
+    }
+  </script>
+</gss-scene>
+```
+
+### What the scene follows
+
+- **view-timeline-name:** The section crossing its scroll container, the box around it or the window: the animation starts when its top edge comes in at the bottom, and ends when its bottom edge has left at the top. Like `view()`, but for the section instead of the scene.
+- **scroll-timeline-name:** The scroll of the element itself, from its top to its bottom: a list, a panel, a carousel. Like `scroll()`, for that element.
+- **view-timeline-axis, scroll-timeline-axis:** `block` (the default) for the vertical scroll, `inline` for the horizontal one, written in the CSS of the page beside the name.
+- **view-timeline-inset:** Takes pixels or a percentage off the top and the bottom of the scroll container: `view-timeline-inset: 20%` starts the animation when the section is a fifth of the way in.
+
+The animation plays like on `view()`: its duration and its delay do not count, its number of iterations and its direction do, and [`animation-range`](animations.md#animation-range) plays it on a part of the way, `animation-range: contain` while the section is all in view.
+
+### Several sections
+
+Each section takes a name of its own, `--intro`, `--pricing`, and each object of the scene follows the one its rule names. One object can follow several sections, with a list of animations, one timeline each: `animation: intro 1s, pricing 1s; animation-timeline: --intro, --pricing;`. A scene follows up to 16 timelines, the ones of `scroll()` and `view()` included.
+
+### Unlike CSS
+
+CSS only lets an element follow a timeline named by itself or one of its ancestors, and asks for `timeline-scope` otherwise. The scene is drawn apart from the page, never inside the section: it looks for the name in the whole page, and takes the first element that has it. Give each section its own name.
+
+Like CSS, the animation applies only while the section crosses: before and after, the object has its own value. `both` in `animation`, as in the demo, holds its first frame before and its last one after. While no element of the page has the name, the animation does not apply either. A page that adds its sections later is followed once they are there. In the playground and under the examples of these docs, where there is no such section, the slider over the render stands in for the scroll.
+
+<a name="fast-scenes"></a>
+
+## Keep a scene fast
+
+Each pixel sends a ray into the scene, and the ray measures how far the objects are at each of its steps. To save work, GSS puts the objects in spheres, alone or in groups that sit close together: a ray that passes far from a sphere skips all the objects inside it. A scene of many objects stays fast as long as GSS knows where its objects can be.
+
+**How it goes, from where it is written to what the scene shows:** `skipped`, `measured`
+
+### Objects that move
+
+An object that moves keeps its sphere, as large as the whole way it can travel: the values of its `@keyframes`, with any easing, on time or on a timeline of the page, `:hover` and its `transition`, `hover-distance()` and `hover-direction()`, motion paths. Objects that move a little keep small spheres and are skipped as often as objects at rest; an object that crosses the scene gets a sphere as large as the scene, and is measured by almost every ray.
+
+### What makes a scene slower
+
+- **A variable set from JavaScript:** A position read from an [`@property`](at-rules.md#at-property) can take any value: its object has no sphere, and every ray measures it at every step. That is the price of a value the page can change at any moment.
+- **A value that grows with time:** A position computed from the time without end, like `calc()` around a value that keeps growing, has no bound either. An animation that repeats stays bounded.
+- **Many objects that cross the scene:** Their spheres all cover the scene: keep the number of such objects low, or let them move less.
+
+To see where a scene spends its time, [`view: steps`](rendering.md#view) colors each pixel by the work it costs, and the scene lowers its [`dpr`](rendering.md#dpr) by itself when its frames get slow.
+
 <a name="editor-support"></a>
 
 ## Editor support
@@ -247,6 +344,8 @@ The GSS extension colors and formats `.gss` files in VS Code and in the editors 
 **How it goes, from where it is written to what the scene shows:** `1`, `2`, `3`, `4`, `5`, `6`, `7`
 
 - **Highlighting:** Selectors, properties, values, colors, numbers and units, the at-rules, nested rules and `&`.
+- **Autocompletion:** While you type a property name, the properties the rule can take, with their syntax and description; after `@apply`, the mixins of the file.
+- **GSS in HTML:** The GSS of a `<script type="text/gss">` is colored and completed like a `.gss` file.
 - **Formatting:** *Format Document*, or saving the file, writes the code in the style of these docs: one shape per line in `@scene`, one declaration per line, two-space indentation, comments kept.
 - **File icon:** `.gss` files get the GSS icon in the explorer.
 

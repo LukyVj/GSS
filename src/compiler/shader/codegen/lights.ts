@@ -9,11 +9,11 @@ import { errorAt } from "../../syntax/errors";
 import { clampComputed } from "../../values/calc";
 import { readAngle } from "../../values/values";
 import { isGradient } from "../gradient";
-import { animatedValue, hoverValue } from "./animation";
+import { animatedValue, groupHover, hoverValue } from "./animation";
 import { glslFloat, label, round, type Hover } from "./glsl";
 import { hexToRgb } from "./read";
 import { forwardLines, hoist, type Hoisted } from "./transforms";
-import { shadowFunction, type Shadows } from "./shadows";
+import { shadowFunction, type ShadowBound, type ShadowQuality, type Shadows } from "./shadows";
 
 export const MAX_LIGHTS = 8;
 export const isLight = (instance: { tag: string }) => instance.tag === "light";
@@ -161,7 +161,7 @@ export function lightingCode(
   // shadows (decision 115): none, hard or soft, and whether the scene has holes to let light
   // through, or transparent objects to let it through tinted (decision 116); seeThrough: the
   // test of the objects the light goes through, isSkin() unless some skins blend (decision 173)
-  shadows: { mode: Shadows; holes: boolean; transparent?: boolean; seeThrough?: string } = { mode: null, holes: false },
+  shadows: { mode: Shadows; holes: boolean; transparent?: boolean; seeThrough?: string; quality?: ShadowQuality; bound?: ShadowBound | null } = { mode: null, holes: false },
 ): Lighting | null {
   if (lamps.length > MAX_LIGHTS)
     throw errorAt(undefined, `A scene has ${MAX_LIGHTS} lights at most: this one has ${lamps.length}`);
@@ -200,7 +200,7 @@ export function lightingCode(
     // The light itself, then its groups from the inside out
     const lines = [
       ...forwardLines(lamp.styles, keyframes, hover, hoisted, noBox),
-      ...[...lamp.groupStyles].reverse().flatMap((group) => forwardLines(group, keyframes, undefined, hoisted)),
+      ...lamp.groupStyles.map((group, g) => forwardLines(group, keyframes, groupHover(lamp, g), hoisted)).reverse().flat(),
     ];
     positions.push([`vec3 lightPosition${i}() {  // ${label(lamp)}`, "  vec3 v = vec3(0.0);", ...lines, "  return v;", "}"].join("\n"));
     hoisted.values.push({ type: "vec3", name: `light${i}`, expr: `lightPosition${i}()` });
@@ -240,7 +240,7 @@ export function lightingCode(
           ...(sun ? [shadows.transparent ? "vec3 sunLit = vec3(1.0);" : "float sunLit = 1.0;"] : []),
           ...lamps.map((_, i) => (shadows.transparent ? `vec3 lit${i} = vec3(1.0);` : `float lit${i} = 1.0;`)),
           "",
-          shadowFunction(shadows.mode!, shadows.holes, shadows.transparent, shadows.seeThrough),
+          shadowFunction(shadows.mode!, shadows.holes, shadows.transparent, shadows.seeThrough, shadows.quality, shadows.bound ?? null),
           "",
           "// Each light seen from p, through the objects on the way: main() calls it once",
           "void castShadows(vec3 p, vec3 n) {",

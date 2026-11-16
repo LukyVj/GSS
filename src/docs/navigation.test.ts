@@ -39,6 +39,12 @@ describe("documentation navigation", () => {
     expect(DOC_GROUPS.find((g) => g.id === "values")!.anchors).toContain("fn-calc");
     expect(anchorsOf("color-functions")).not.toContain("fn-calc");
   });
+  it("gives scroll() and view() a group of their own, after the easings", () => {
+    const timelines = DOC_GROUPS.find((g) => g.id === "timelines")!;
+    expect(timelines.anchors).toEqual(["fn-scroll", "fn-view"]);
+    expect(timelines.category).toBe("Motion");
+    expect(timelines.order).toBeGreaterThan(DOC_GROUPS.find((g) => g.id === "easings")!.order);
+  });
   it("splits the selectors: the selectors, the combinators, the pseudo-classes", () => {
     const anchorsOf = (id: string) => DOC_GROUPS.find((g) => g.id === id)!.anchors;
     expect(anchorsOf("selectors")).toEqual(expect.arrayContaining(["selector-type", "selector-nesting", "selector-important"]));

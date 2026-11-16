@@ -124,7 +124,7 @@ describe("@media: the compiled scene", () => {
       .map((n) => `@media (min-width: ${n}px) { sphere { scale: ${n}; } }`)
       .join(" ");
     expect(() => compileScene(SCENE + blocks)).toThrow(
-      "at most 4 different @media queries",
+      "at most 4 different @media queries and @gpu conditions",
     );
   });
 });

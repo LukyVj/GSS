@@ -18,9 +18,9 @@ const ERROR =
 // starts and where it ends
 type Parts = { color: string; start: string; end: string };
 
-// none: a fog that starts and ends where the scene ends (MAX_DIST): nothing is in it, and an
-// animation can move it into a real fog
-const NONE: Parts = { color: "BACKGROUND", start: "20.0", end: "20.0" };
+// none: a fog that starts and ends where the scene ends (MAX_DIST, max-distance): nothing is in
+// it, and an animation can move it into a real fog
+const none = (far: string): Parts => ({ color: "BACKGROUND", start: far, end: far });
 
 const isColor = (token: Token | undefined) =>
   token?.type === "HASH" || (token?.type === "EXPR" && token.syntax === "color");
@@ -34,8 +34,8 @@ function distance(token: Token, value: Token[]): { glsl: string; n: number | nul
   return { glsl: glslFloat(n), n };
 }
 
-function readFog(value: Token[] | undefined): Parts {
-  if (!value || (value.length === 1 && value[0].type === "IDENT" && value[0].value === "none")) return NONE;
+function readFog(value: Token[] | undefined, far: string): Parts {
+  if (!value || (value.length === 1 && value[0].type === "IDENT" && value[0].value === "none")) return none(far);
   // The color, first or last
   const first = isColor(value[0]);
   const last = !first && value.length > 1 && isColor(value[value.length - 1]);
@@ -56,10 +56,12 @@ const known = (glsl: string) => (/^-?\d+(\.\d+)?$/.test(glsl) ? Number(glsl) : n
 
 // fogAmount(), and the line of main() that mixes the fog in; null without fog. The fog
 // follows the animation of the scene and the variables set from JS.
-export function fogCode(styles: Styles, keyframes: Keyframes[]): { functions: string; line: string } | null {
+export function fogCode(styles: Styles, keyframes: Keyframes[], maxDistance = 20): { functions: string; line: string } | null {
+  const far = glslFloat(maxDistance);
   const [color, start, end] = (["color", "start", "end"] as const).map((part) =>
-    animatedValue(styles, keyframes, "fog", (value) => readFog(value)[part]),
+    animatedValue(styles, keyframes, "fog", (value) => readFog(value, far)[part]),
   );
+  const NONE = none(far);
   if (color === NONE.color && start === NONE.start && end === NONE.end) return null; // none, and it never moves
   const [a, b] = [known(start), known(end)];
   const ramp =

@@ -1,6 +1,6 @@
 // Editorial structure only: content remains in the registry. Lower order comes
 // first; entries with no override sort alphabetically. Anchors remain stable.
-export type NavEntry = { anchor: string; label: string; html: string; order?: number; since?: string };
+export type NavEntry = { anchor: string; label: string; html: string; order?: number; since?: string; updated?: string };
 export type NavGroup = {
   id: string;
   title: string;
@@ -16,6 +16,8 @@ export const ENTRY_ORDER: Record<string, number> = {
   "install-vite": -20,
   "install-cdn": -10,
   "set-variables": 0,
+  "follow-the-page": 5,
+  "fast-scenes": 7,
   "editor-support": 10,
   // @mixin, then @apply, then the loops, after the other at-rules
   "at-mixin": 1,
@@ -64,13 +66,13 @@ export const ENTRY_ORDER: Record<string, number> = {
 };
 export const DOC_GROUPS: NavGroup[] = [
   { id: "getting-started", title: "Getting started", category: "Start here", order: 0, anchors: ["why-gss", "first-scene"] },
-  { id: "installation", title: "Installation", category: "Start here", order: 1, anchors: ["embedding", "install-package", "install-vite", "install-cdn", "set-variables", "editor-support"] },
-  { id: "at-rules", title: "At-rules", category: "Language", order: 10, anchors: ["at-scene", "at-media", "at-keyframes", "at-property", "at-property-panel", "at-paint", "at-mixin", "at-apply", "at-for", "at-each"] },
+  { id: "installation", title: "Installation", category: "Start here", order: 1, anchors: ["embedding", "install-package", "install-vite", "install-cdn", "set-variables", "follow-the-page", "fast-scenes", "editor-support"] },
+  { id: "at-rules", title: "At-rules", category: "Language", order: 10, anchors: ["at-scene", "at-media", "at-gpu", "at-keyframes", "at-property", "at-property-panel", "at-debug-panel", "at-paint", "at-mixin", "at-apply", "at-for", "at-each"] },
   { id: "selectors", title: "Selectors", category: "Language", order: 11, anchors: ["selector-type", "selector-class", "selector-id", "selector-attribute", "selector-universal", "selector-list", "selector-nesting", "selector-important"] },
   { id: "combinators", title: "Combinators", category: "Language", order: 12, anchors: ["selector-descendant", "selector-child", "selector-adjacent", "selector-sibling"] },
   { id: "pseudo-classes", title: "Pseudo-classes and cursor", category: "Language", order: 13, anchors: ["selector-hover", "selector-active", "selector-has", "selector-not", "selector-nth-child", "selector-nth-of-type", "selector-first-child", "selector-face", "cursor"] },
   { id: "variables-conditions", title: "Variables and conditions", category: "Language", order: 14, anchors: ["fn-var", "fn-if"] },
-  { id: "values", title: "Math", category: "Language", order: 15, anchors: ["fn-calc", "fn-trig", "fn-inverse-trig", "fn-min-max-clamp", "fn-abs-sqrt-pow", "fn-stepped", "fn-exponential", "fn-progress", "fn-random", "fn-sibling-index", "fn-sibling-count"] },
+  { id: "values", title: "Math", category: "Language", order: 15, anchors: ["fn-calc", "fn-trig", "fn-inverse-trig", "fn-min-max-clamp", "fn-abs-sqrt-pow", "fn-stepped", "fn-exponential", "fn-progress", "fn-random", "fn-sibling-index", "fn-sibling-count", "fn-hover-distance"] },
   { id: "shapes", title: "Shapes and groups", category: "Structure", order: 20, anchors: ["shape-cube", "shape-sphere", "shape-torus", "shape-cylinder", "shape-cone", "shape-capsule", "shape-plane", "shape-path", "shape-prism", "shape-lathe", "shape-pyramid", "shape-octahedron", "shape-tube", "shape-group"] },
   { id: "object-properties", title: "Geometry", category: "Structure", order: 21, anchors: ["size", "radius", "height", "depth", "thickness", "corner-radius", "d", "view-box", "stroke-width"] },
   { id: "combinations", title: "Combinations", category: "Structure", order: 22, anchors: ["operation", "blend"] },
@@ -83,11 +85,12 @@ export const DOC_GROUPS: NavGroup[] = [
   { id: "filters", title: "Filters", category: "Appearance", order: 35, anchors: ["filter"] },
   { id: "masks", title: "Visibility, opacity, outlines and masks", category: "Appearance", order: 36, anchors: ["display", "visibility", "opacity", "outline", "outline-width", "outline-style", "outline-color", "outline-offset", "mask-image", "mask-mode"] },
   { id: "transforms", title: "Transforms", category: "Motion", order: 40, anchors: ["translate", "rotate-x", "rotate-y", "rotate-z", "scale", "transform-origin", "offset-path", "offset-distance", "offset-rotate"] },
-  { id: "animations", title: "Animation and transitions", category: "Motion", order: 41, anchors: ["animation", "animation-duration", "animation-delay", "animation-iteration-count", "animation-direction", "animation-fill-mode", "animation-timing-function", "animation-timeline", "animation-range", "animation-range-start", "animation-range-end", "transition"] },
+  { id: "animations", title: "Animation and transitions", category: "Motion", order: 41, anchors: ["animation", "animation-duration", "animation-delay", "animation-iteration-count", "animation-direction", "animation-fill-mode", "animation-timing-function", "animation-timeline", "animation-range", "animation-range-start", "animation-range-end", "transition", "transition-property", "transition-duration", "transition-timing-function", "transition-delay"] },
   { id: "easings", title: "Easings", category: "Motion", order: 42, anchors: ["fn-cubic-bezier", "fn-linear", "fn-steps"] },
-  { id: "camera", title: "Camera", category: "Scene", order: 50, anchors: ["camera-target", "camera-distance", "camera-angle", "camera-spin", "controls"] },
-  { id: "scene-properties", title: "Lighting and fog", category: "Scene", order: 51, anchors: ["light", "shape-light", "intensity", "ambient", "fog", "shadows"] },
-  { id: "rendering", title: "Rendering", category: "Scene", order: 52, anchors: ["dpr", "shape-rendering", "view"] },
+  { id: "timelines", title: "Scroll timelines", category: "Motion", order: 43, anchors: ["fn-scroll", "fn-view"] },
+  { id: "camera", title: "Camera", category: "Scene", order: 50, anchors: ["camera-target", "camera-distance", "camera-angle", "camera-fov", "camera-spin", "controls"] },
+  { id: "scene-properties", title: "Lighting and fog", category: "Scene", order: 51, anchors: ["light", "shape-light", "intensity", "ambient", "ambient-occlusion", "fog", "shadows", "shadow-softness", "shadow-steps"] },
+  { id: "rendering", title: "Rendering", category: "Scene", order: 52, anchors: ["dpr", "shape-rendering", "antialias", "raymarch-steps", "max-distance", "hit-precision", "view"] },
 ];
 
 // Two entries share a name (the sun is the light property, a point light is an element of

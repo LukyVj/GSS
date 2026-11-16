@@ -9,16 +9,16 @@ New to GSS? Start with [Getting started](getting-started.md), then [Installation
 ## Start here
 
 - [Getting started](getting-started.md): Why GSS, Your first scene
-- [Installation](installation.md): Embedding a scene, Package (npm), Vite plugin, CDN (no build step), Set variables from JavaScript, Editor support
+- [Installation](installation.md): Embedding a scene, Package (npm), Vite plugin, CDN (no build step), Set variables from JavaScript, Follow the page as it scrolls, Keep a scene fast, Editor support
 
 ## Language
 
-- [At-rules](at-rules.md): `@keyframes`, `@media`, `@paint`, `@property`, `@property-panel`, `@scene`, `@mixin`, `@apply`, `@for`, `@each`
+- [At-rules](at-rules.md): `@debug-panel`, `@gpu`, `@keyframes`, `@media`, `@paint`, `@property`, `@property-panel`, `@scene`, `@mixin`, `@apply`, `@for`, `@each`
 - [Selectors](selectors.md): `<shape>`, `.class`, `#id`, `[attribute]`, `*`, `a, b`, `&`, `!important`
 - [Combinators](combinators.md): `a b`, `a > b`, `a + b`, `a ~ b`
 - [Pseudo-classes and cursor](pseudo-classes.md): `:hover`, `:active`, `:has()`, `:not()`, `:nth-child(), :nth-last-child()`, `:nth-of-type(), :nth-last-of-type()`, `:first-child, :last-child, :only-child`, `::face(), ::top, ::bottom`, `cursor`
 - [Variables and conditions](variables-conditions.md): `if()`, `var()`
-- [Math](values.md): `calc()`, `abs(), sqrt(), pow()`, `asin(), acos(), atan(), atan2()`, `hypot(), log(), exp()`, `min(), max(), clamp()`, `progress()`, `random()`, `sibling-count()`, `sibling-index()`, `sign(), round(), mod(), rem()`, `sin(), cos(), tan()`
+- [Math](values.md): `calc()`, `abs(), sqrt(), pow()`, `asin(), acos(), atan(), atan2()`, `hover-distance(), hover-direction()`, `hypot(), log(), exp()`, `min(), max(), clamp()`, `progress()`, `random()`, `sibling-count()`, `sibling-index()`, `sign(), round(), mod(), rem()`, `sin(), cos(), tan()`
 
 ## Structure
 
@@ -40,11 +40,12 @@ New to GSS? Start with [Getting started](getting-started.md), then [Installation
 ## Motion
 
 - [Transforms](transforms.md): `offset-distance`, `offset-path`, `offset-rotate`, `rotate-x`, `rotate-y`, `rotate-z`, `scale`, `transform-origin`, `translate`
-- [Animation and transitions](animations.md): `animation`, `animation-delay`, `animation-direction`, `animation-duration`, `animation-fill-mode`, `animation-iteration-count`, `animation-range`, `animation-range-end`, `animation-range-start`, `animation-timeline`, `animation-timing-function`, `transition`
+- [Animation and transitions](animations.md): `animation`, `animation-delay`, `animation-direction`, `animation-duration`, `animation-fill-mode`, `animation-iteration-count`, `animation-range`, `animation-range-end`, `animation-range-start`, `animation-timeline`, `animation-timing-function`, `transition`, `transition-delay`, `transition-duration`, `transition-property`, `transition-timing-function`
 - [Easings](easings.md): `cubic-bezier()`, `linear()`, `steps()`
+- [Scroll timelines](timelines.md): `scroll()`, `view()`
 
 ## Scene
 
-- [Camera](camera.md): `camera-angle`, `camera-distance`, `camera-spin`, `camera-target`, `controls`
-- [Lighting and fog](scene-properties.md): `light` (sun), `light` (point), `intensity`, `ambient`, `shadows`, `fog`
-- [Rendering](rendering.md): `dpr`, `shape-rendering`, `view`
+- [Camera](camera.md): `camera-angle`, `camera-distance`, `camera-fov`, `camera-spin`, `camera-target`, `controls`
+- [Lighting and fog](scene-properties.md): `light` (sun), `light` (point), `intensity`, `ambient`, `shadows`, `fog`, `ambient-occlusion`, `shadow-softness`, `shadow-steps`
+- [Rendering](rendering.md): `antialias`, `dpr`, `hit-precision`, `max-distance`, `raymarch-steps`, `shape-rendering`, `view`

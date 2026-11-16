@@ -4,12 +4,11 @@ import { compileGSS } from "../compiler";
 import { STUDIES } from "../showcase/content";
 
 describe("playground examples", () => {
-  // The studies are heavy scenes: more than the 5 s default while other runs share the machine
   it("all compile", () => {
     for (const example of EXAMPLES) {
       expect(() => compileGSS(example.code), example.name).not.toThrow();
     }
-  }, 30000);
+  });
 
   it("have unique names", () => {
     const names = EXAMPLES.map((example) => example.name);

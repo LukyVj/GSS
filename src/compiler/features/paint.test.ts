@@ -72,3 +72,45 @@ describe("@paint", () => {
     );
   });
 });
+
+// size and filter (decision 228): written before the GLSL of the block, like the descriptors
+// of an at-rule of CSS
+describe("@paint size and filter", () => {
+  const paintOf = (head: string) =>
+    compileScene(`@paint fill {${head}
+  out vec4 color;
+  void main() { color = vec4(1.0); }
+} @scene { cube; } cube { texture: paint(fill); }`).paints![0];
+
+  it("keeps a paint without them as it was", () => {
+    const paint = paintOf("");
+    expect(paint).not.toHaveProperty("size");
+    expect(paint).not.toHaveProperty("mipmap");
+  });
+
+  it("reads a square size, or a width and a height, in pixels", () => {
+    expect(paintOf("\n  size: 2048px;").size).toEqual([2048, 2048]);
+    expect(paintOf("\n  size: 1024px 512px;").size).toEqual([1024, 512]);
+  });
+
+  it("reads filter: mipmap, and linear as the default", () => {
+    expect(paintOf("\n  filter: mipmap;").mipmap).toBe(true);
+    expect(paintOf("\n  filter: linear;")).not.toHaveProperty("mipmap");
+  });
+
+  it("hands the GLSL on without them, on the same lines, so its errors keep their line", () => {
+    const paint = paintOf("\n  size: 2048px;\n  filter: mipmap;");
+    expect(paint.code).not.toContain("size");
+    expect(paint.code).not.toContain("mipmap");
+    expect(paint.code.split("\n").length).toBe(paintOf("\n\n").code.split("\n").length);
+    expect(paint.code).toContain("out vec4 color;");
+  });
+
+  it("refuses a size out of range, without px, or another descriptor", () => {
+    expect(() => paintOf("\n  size: 32px;")).toThrow("@paint fill: size expects one or two lengths from 64px to 4096px, like: size: 1024px;");
+    expect(() => paintOf("\n  size: 8192px;")).toThrow("size expects one or two lengths");
+    expect(() => paintOf("\n  size: 1024;")).toThrow("size expects one or two lengths");
+    expect(() => paintOf("\n  filter: nearest;")).toThrow("@paint fill: filter expects linear or mipmap, like: filter: mipmap;");
+    expect(() => paintOf("\n  wrap: repeat;")).toThrow("@paint fill takes size and filter before its GLSL, like: @paint fill { size: 1024px; void main() { … } }");
+  });
+});

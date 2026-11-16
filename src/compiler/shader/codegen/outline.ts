@@ -14,6 +14,7 @@ import { glslFloat, label, type Hover } from "./glsl";
 import { hoverValue } from "./animation";
 import { readSurfaceColor } from "./read";
 import { hoist, type Hoisted } from "./transforms";
+import { rangeOf, type HoverRange } from "./interval";
 
 // The styles of CSS outline-style, numbered for main(): auto is the browser's own line, solid in GSS
 const STYLES = ["none", "solid", "auto", "dashed", "dotted", "double", "groove", "ridge", "inset", "outset"];
@@ -90,7 +91,13 @@ function ownColor(color: Token[] | undefined): Token[] | undefined {
 export function withOutlineBand(instance: StyledInstance): StyledInstance {
   const styles = [instance.styles, instance.hoverStyles, instance.activeStyles];
   if (!styles.some(touches)) return instance;
-  return { ...instance, styles: withBand(instance.styles), hoverStyles: withBand(instance.hoverStyles), activeStyles: withBand(instance.activeStyles) };
+  return {
+    ...instance,
+    styles: withBand(instance.styles),
+    hoverStyles: withBand(instance.hoverStyles),
+    hoverStates: instance.hoverStates.map((state) => ({ ...state, styles: withBand(state.styles) })),
+    activeStyles: withBand(instance.activeStyles),
+  };
 }
 
 // A frame that changes the outline changes the width and the color the shader reads
@@ -123,7 +130,10 @@ const readOffset = (value: Token[] | undefined) => {
 
 // style: a number of STYLE_NUMBERS (0: a plain line). center and size: where the object is,
 // and how far around it, for the dashes and dots, filled by the code generator
-export type Outlined = { width: string; offset: string; color: string; reach: number | null; style: number; center?: string; size?: number };
+// bound: the farthest its line can reach, at any moment and in any state of :hover, for the
+// bounding spheres alone (decision 234): the reach when it is known, else the top of the range
+// of its width and offset
+export type Outlined = { width: string; offset: string; color: string; reach: number | null; bound: number | null; style: number; center?: string; size?: number };
 
 // The outline of each object that draws one, in GLSL. reach: how far its line goes past its
 // surface, when it is known at compile time (for the bounding spheres)
@@ -132,6 +142,7 @@ export function objectOutline(
   keyframes: Keyframes[],
   hover: Hover | undefined,
   hoisted: Hoisted,
+  hoverRange: HoverRange = null, // the range of uHover[] of the object and its groups (decision 234)
 ): Outlined | null {
   if (![instance.styles, instance.hoverStyles, instance.activeStyles].some((styles) => styles[BAND])) return null;
   const width = hoverValue(instance.styles, keyframes, BAND, readBand, hover);
@@ -139,6 +150,9 @@ export function objectOutline(
   const offset = hoverValue(instance.styles, keyframes, "outline-offset", readOffset, hover);
   const color = hoverValue(instance.styles, keyframes, COLOR, (value) => readSurfaceColor(value ?? [{ type: "HASH", value: "000000" }]), hover);
   const known = [width, offset].every((value) => /^-?\d+(\.\d+)?$/.test(value));
+  const reach = known ? Math.max(0, Number(width) + Number(offset)) : null;
+  const [widths, offsets] = [rangeOf(width, hoverRange), rangeOf(offset, hoverRange)];
+  const bound = reach ?? (widths && offsets && widths.high.length === 1 && offsets.high.length === 1 ? Math.max(0, widths.high[0] + offsets.high[0]) : null);
   // The style at rest, or the one of :hover, then :active, when there is none at rest
   const kind = [instance.styles, instance.hoverStyles, instance.activeStyles].find((styles) => styles[KIND])?.[KIND]?.[0];
   return {
@@ -146,7 +160,8 @@ export function objectOutline(
     width: hoist(hoisted, "float", width),
     offset: hoist(hoisted, "float", offset),
     color,
-    reach: known ? Math.max(0, Number(width) + Number(offset)) : null,
+    reach,
+    bound,
   };
 }
 

@@ -68,3 +68,13 @@ describe("a material with its own color over a gradient in color", () => {
     expect(await difference("material: metal(0.2); color: stripes(3, #ff5a36, white);", "material: metal(0.2); color: #ff5a36;")).toBeGreaterThan(5);
   }, 60000);
 });
+
+// emissive() in a reflection (decision 232): a chrome sphere shows an emissive cube behind the
+// camera, which the camera only sees in the mirror. Lit like matte before, it now shows its light.
+describe("emissive() seen in a mirror", () => {
+  const mirror = (cube: string) =>
+    `material: chrome; } scene { background: #08080c; ambient: 0.1; light: 0deg 80deg; } @scene { cube#behind; } #behind { translate: 0 0 6; size: 4; ${cube}`;
+  it("shows its own light, not the light of a matte object", async () => {
+    expect(await difference(mirror("material: emissive(#ff5a36, 2);"), mirror("color: #ff5a36;"))).toBeGreaterThan(3);
+  }, 60000);
+});

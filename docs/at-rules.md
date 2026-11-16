@@ -6,6 +6,159 @@
 
 Every example of this page, to edit live: [gss-lang.dev/docs](https://www.gss-lang.dev/docs#at-rules).
 
+<a name="at-debug-panel"></a>
+
+## `@debug-panel`
+
+Shows the axes, their letters and a grid at the origin over the render, in the playground and in Try it, and a panel with everything known about the scene: where the camera is, what the scene holds, what each pixel costs, and how fast it draws.
+
+**What the property changes in the scene:** `x`, `y`, `z`
+
+- **Syntax:** `@debug-panel { display: open | folded | none; }`
+- **See also:** [view](rendering.md#view), [@property-panel](#at-property-panel)
+
+### Descriptors
+
+- **display:** `open`, the default: the panel shows its numbers. `folded`: only its title, `debug`, which opens it; the axes and the grid stay. `none`: nothing, as without the rule.
+
+x in red, y in green, z in blue, each with its letter, one unit apart on the grid, fainter behind the objects. A page that embeds the scene shows neither the panel nor the axes.
+
+The grid lies on the plane where the floor is, out to 10 units from the origin; its lines are light on a dark scene and dark on a light one. The panel gives the backend that draws the scene (WebGL2 or WebGPU), the camera as the `camera-angle` and `camera-distance` that put it where the mouse left it, ready to copy into the code, the objects, the point lights, the images used out of the 16 a scene can take, the variables, the states of `:hover` and `:active`, the scroll timelines, the passes of `filter`, the `@media` queries, the lighter version of `@gpu` and the lines of the shader. With `view: steps`, it reads the render back: the mean and the max of the steps per pixel, and the share of pixels at 150 and over. In the playground, it adds the frames per second, the time of a frame on the GPU and on the CPU, the size of the render in pixels and the time the shader took to build, like the performance panel; while it is open, the scene draws every frame, so that the numbers measure it.
+
+### the axes and the grid
+
+A cube one unit to the right of the origin, along the red axis.
+
+```css
+@debug-panel {
+  display: open;
+}
+
+@scene {
+  cube;
+}
+
+cube {
+  translate: 1 0.5 0;
+  size: 0.6;
+  color: #ff5a36;
+}
+```
+
+### folded, on a dark scene
+
+The panel starts folded: its title opens it. The grid turns light on the dark background.
+
+```css
+@debug-panel {
+  display: folded;
+}
+
+@scene {
+  sphere;
+  torus;
+}
+
+scene {
+  floor: none;
+  background: #0a0a0c;
+}
+
+sphere {
+  translate: 0 1 0;
+  radius: 0.4;
+  color: #e8e6e1;
+}
+
+torus {
+  translate: 0 1 0;
+  rotate-x: 90deg;
+  color: #ff5a36;
+}
+```
+
+<a name="at-gpu"></a>
+
+## `@gpu`
+
+Applies rules only when the computer cannot draw the scene fast enough, for a lighter version of it: fewer objects, simpler effects, a smaller value for a variable. CSS has no such rule; GSS writes it like `@media`, and the scene changes the same way.
+
+**How it goes, from where it is written to what the scene shows:** `keeps up`, `slow frames`
+
+- **Syntax:** `@gpu [not] (slow) { <rule> … }`
+- **See also:** [@media](#at-media), [dpr](rendering.md#dpr)
+
+### Conditions
+
+- **(slow):** The frames stay slow even at a pixel density of 1, or the browser draws without a graphics card.
+- **not (slow):** The computer keeps up: rules for the full version only.
+
+The scene starts in its full version, never drawn under a `dpr` of 1. When the frames stay slow for a second, the lighter version takes its place until the page is closed. Without a graphics card, it starts lighter.
+
+No browser says how busy the graphics card is, so GSS watches its own frames: whatever slows them down, a weak card, another program, heat or a battery saver, the scene follows. The lighter version is ready in advance, like the versions of `@media`: the switch takes a frame or two, and the camera stays where it is. `@gpu` holds rules only, and counts among the 4 conditions of a scene with the `@media` queries; it cannot hold a `@media` or sit in one, for now. On a page, `<gss-scene gpu="slow">` and `mount(canvas, scene, { gpu: "slow" })` show the lighter version from the start. In the playground and in Try it, the gpu menu over the render switches between the two versions.
+
+### fewer objects
+
+On a slow computer, 8 spheres instead of 16, smaller and orange. Pick slow in the gpu menu over the render to see it.
+
+```css
+@scene {
+  sphere * 16;
+}
+
+scene {
+  --r: 0.3;
+  camera-distance: 7;
+}
+
+sphere {
+  radius: var(--r);
+  translate: calc(sibling-index() * 0.7 - 6) 0.5 0;
+  color: #3a7bff;
+}
+
+@gpu (slow) {
+  scene {
+    --r: 0.2;
+  }
+  sphere {
+    color: #ff5a36;
+  }
+  sphere:nth-child(n + 9) {
+    display: none;
+  }
+}
+```
+
+### simpler effects
+
+Soft shadows and glass when the computer keeps up; hard shadows and a plain color on a slow one.
+
+```css
+@scene {
+  sphere * 3;
+}
+
+scene {
+  shadows: hard;
+}
+
+sphere {
+  radius: 0.5;
+  translate: calc(sibling-index() * 1.2 - 2.4) 0.5 0;
+  color: #3a7bff;
+}
+
+@gpu not (slow) {
+  scene {
+    shadows: soft;
+  }
+  sphere {
+    material: glass(1.5, blurred 0.3);
+  }
+}
+```
+
 <a name="at-keyframes"></a>
 
 ## `@keyframes`
@@ -187,16 +340,18 @@ A texture drawn by a fragment shader, for `texture: paint(<name>)`: an image tha
 
 **From the shader to the faces of the object:** `@paint rings { … }`, `512 × 512 px`, `texture: paint(rings);`
 
-- **Syntax:** `@paint <name> { <fragment shader> }`
+- **Syntax:** `@paint <name> { [size: <length> <length>?;] [filter: linear | mipmap;] <fragment shader> }`
 - **See also:** [paint()](textures.md#fn-paint), [texture](textures.md#texture)
 
-### Uniforms
+### Descriptors and uniforms
 
+- **size: <length> <length>?:** Written before the GLSL: the size of the texture, from `64px` to `4096px`, one length for a square, or a width and a height. `512px` by default. A big object seen close up needs more pixels.
+- **filter: linear | mipmap:** Written before the GLSL: `mipmap` keeps the texture smooth when it is seen small or from afar, where `linear`, the default, shimmers. It costs a little at each drawing.
 - **time:** The time of the scene, in seconds, a `float`. `u_time` works too. A shader that reads it is drawn again at every frame; one that does not is drawn once.
-- **resolution:** The size of the texture in pixels, `vec2(512.0, 512.0)`. `u_resolution` works too.
+- **resolution:** The size of the texture in pixels, `vec2(512.0, 512.0)` by default: divide `gl_FragCoord` by it, and the shader works at any `size`. `u_resolution` works too.
 - **mouse:** The pointer over the scene, in the pixels of the texture, from its bottom left like `gl_FragCoord`. `u_mouse` works too.
 
-The block is a whole fragment shader, with its own `main()`: write `out vec4 color;` and set it. It is drawn into a texture of 512 by 512 pixels, which the object shows like an image.
+The block is a whole fragment shader, with its own `main()`: write `out vec4 color;` and set it. It is drawn into a texture of 512 by 512 pixels, or its `size`, which the object shows like an image.
 
 The shader holds its uniforms, its functions and its `main()`. `gl_FragColor` works too, as in WebGL1, and GSS adds `#version 300 es` and a `precision` when the code has none. The texture goes on each face of the object, with `texture-size` and `image-rendering`. Each `@paint` runs on its own: its names never meet the rest of the scene, and an error in its GLSL names the `@paint` and its line in the file. A scene with `paint()` is drawn with WebGL2: `<gss-scene>`, `mountAsync()` and the playground pick it by themselves in `auto`; with WebGPU chosen, the object shows its `color` instead, and the console says why.
 
@@ -249,6 +404,40 @@ Without `time`, the shader is drawn once, and the texture stays.
 sphere {
   translate: 0 1 0;
   texture: paint(checks);
+}
+```
+
+### a big texture, with mipmaps
+
+A sphere that fills the view: 2048 pixels keep the bands sharp, and the mipmaps keep the far side smooth.
+
+```css
+@paint marble {
+  size: 2048px;
+  filter: mipmap;
+  uniform vec2 resolution;
+  out vec4 color;
+
+  void main() {
+    vec2 uv = gl_FragCoord.xy / resolution;
+    float band = sin(uv.x * 60.0 + sin(uv.y * 12.0) * 3.0);
+    color = vec4(mix(vec3(0.1, 0.12, 0.2), vec3(0.92, 0.9, 0.86), smoothstep(-0.05, 0.05, band)), 1.0);
+  }
+}
+
+@scene {
+  sphere;
+}
+
+scene {
+  camera-distance: 4;
+  floor: none;
+}
+
+sphere {
+  radius: 1.3;
+  texture: paint(marble);
+  texture-mapping: sphere;
 }
 ```
 

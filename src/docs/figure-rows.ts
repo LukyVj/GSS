@@ -86,6 +86,12 @@ const ROWS: Record<string, Row> = {
     code: "cube { opacity: progress(sibling-index(), 1, sibling-count()); }",
     items: copies("cube", 5, (i) => ({ label: String((i - 1) / 4), fade: 0.15 + ((i - 1) / 4) * 0.85 })),
   },
+  "fn-hover-distance": {
+    code: "sphere { translate: 0 calc(0.6 * exp(-1 * hover-distance())) 0; }",
+    items: copies("sphere", 5, (i) =>
+      i === 3 ? { lit: true, label: "hovered" } : { label: String(Math.abs(i - 3)), lift: Math.round(22 * Math.exp(-Math.abs(i - 3) + 1)) },
+    ),
+  },
   "fn-random": {
     code: "cube { translate: 0 random(0, 1) 0; }",
     items: [0.31, 0.92, 0.08, 0.64, 0.47, 0.77].map((value) => one("cube", { label: String(value), lift: Math.round(value * 40) })),

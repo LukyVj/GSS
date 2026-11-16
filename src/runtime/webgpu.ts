@@ -3,11 +3,14 @@ import type { AsyncView, BackendOptions } from "./backend";
 import { createClock } from "./clock";
 import { pixelRatio } from "./dpr";
 import { createDprPicker, viewDensity } from "./dpr-picker";
-import { pickPixel, pointerValues, createPress, decodeId, cursorAt, controlsAllow } from "./hover";
+import { createStats } from "./stats";
+import { pickPixel, pointerValues, createPress, decodeId, decodeDepth, zoomed, cursorAt, controlsAllow } from "./hover";
 import { createTransitions } from "./transitions";
+import { createPointer, type PointerTarget } from "./pointer";
 import { createTriggers } from "./triggers";
-import { createScrollSlider, timelineValues } from "./timeline";
+import { createScrollSlider, timelineValues, timelineVectors } from "./timeline";
 import { pickVariant, WINDOW_MEDIA } from "./media";
+import { createGpu, usesGpu, withGpu } from "./gpu";
 import { elementId, paintName, resolveImage } from "./textures";
 import { drawText, textOf, whenFontArrives } from "./text";
 import { createProperties } from "./properties";
@@ -57,15 +60,22 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
   let scene: Scene | null = null;
   let root: CompiledScene | null = null;
   let stopMedia = () => {};
-  const media = options.viewport?.(canvas) ?? WINDOW_MEDIA; // decision 165
   let hovered = 0;
   const press = createPress(); // :active (decision 95)
   const slider = options.scrollSlider ? createScrollSlider(canvas) : null; // decision 96
   const density = viewDensity(options); // decisions 120 and 142
-  const dprMenu = density && options.dprPicker ? createDprPicker(canvas, density) : null; // docs and playground only
+  const stats = createStats(); // scene.stats() (decision 229)
+  // @gpu (decision 212): the frames say when the GPU is slow, and it stays so
+  const gpu = createGpu(options.gpu);
+  const media = withGpu(options.viewport?.(canvas) ?? WINDOW_MEDIA, gpu); // decision 165
+  const dprMenu = density && options.dprPicker ? createDprPicker(canvas, density, undefined, gpu) : null; // docs and playground only
+  let lighter = false; // the scene has a version for a slow GPU: auto never draws it under 1
+  const holdDpr = () => density?.floor(lighter && !gpu.slow ? 1 : null);
   let reducedMotion = false;
   const properties = createProperties(); // @property: what the page set (decision 105)
   let transitions = createTransitions([]);
+  let measured = createPointer(null); // where hover-distance() measures from (decision 216)
+  let aimed: PointerTarget | null = null; // the point under the mouse, as last read back (decision 217)
   let triggers = createTriggers([], 0); // the states that start an animation (decision 141)
   let settings: CompiledScene["camera"] | null = null;
   const camera = { yaw: 0, pitch: 0, dist: 8, dragging: false };
@@ -92,7 +102,7 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
   // scene { controls } (decision 176): the gestures the GSS lets move the camera
   if (options.controls !== false) {
     on("pointerdown", e => { if (scene?.compiled.controls?.orbit === false) return; camera.dragging = true; canvas.setPointerCapture(e.pointerId); });
-    on("wheel", e => { if (!controlsAllow(scene?.compiled.controls, "zoom", hovered)) return; e.preventDefault(); camera.dist = Math.min(Math.max(camera.dist + e.deltaY * 0.01, 3), 15); }, { passive: false });
+    on("wheel", e => { if (!controlsAllow(scene?.compiled.controls, "zoom", hovered)) return; e.preventDefault(); camera.dist = zoomed(camera.dist + e.deltaY * 0.01, scene?.compiled.maxDistance); }, { passive: false });
   }
   on("pointerdown", e => { pointer = { x: e.clientX, y: e.clientY }; pickWanted = true; press.down(hovered); });
   const unpress = () => press.up(); // released anywhere, like CSS
@@ -108,7 +118,7 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
   });
   on("pointerup", () => { camera.dragging = false; });
   on("pointercancel", () => { camera.dragging = false; });
-  on("pointerleave", () => { pointer = null; hovered = 0; pickGeneration++; });
+  on("pointerleave", () => { pointer = null; hovered = 0; aimed = null; pickGeneration++; });
 
   function image(file: string): GPUTexture {
     const url = resolveImage(file, options.base);
@@ -197,10 +207,10 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
     if (!compiled.wgsl || compiled.passes?.some(p => !p.wgsl)) throw new Error("This scene has no WGSL target. Recompile it with compile(source) or the current GSS Vite plugin.");
     const count = Math.max(compiled.textures.length, compiled.passes?.length ? 3 : 0);
     if (count > device.limits.maxSampledTexturesPerShaderStage) throw new Error("This scene exceeds the WebGPU device's texture limit");
-    const slots = compiled.hover.length + (compiled.active?.length ?? 0);
+    const slots = compiled.hover.length + (compiled.active?.length ?? 0) + (compiled.channels?.length ?? 0); // with the numbers of a transition per property
     // uTimeline goes after the hover slots (decision 96), uProperties after it (decision 105),
     // uStart after them (decision 141)
-    const size = 48 + 16 * Math.max(1, slots) + (compiled.timelines ? 16 : 0) + 16 * (compiled.properties?.length ?? 0) + 16 * (compiled.triggers?.length ?? 0);
+    const size = 48 + 16 * Math.max(1, slots) + (compiled.timelines ? 16 * timelineVectors(compiled.timelines.length) : 0) + 16 * (compiled.properties?.length ?? 0) + 16 * (compiled.triggers?.length ?? 0) + (compiled.pointer ? 16 : 0);
     if (size > device.limits.maxUniformBufferBindingSize) throw new Error("This scene exceeds the WebGPU device's uniform buffer limit");
     const layout = device.createBindGroupLayout({ entries: [
       { binding: 0, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform", minBindingSize: size } },
@@ -219,7 +229,7 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
     const pipelines: Pipeline[] = [{ pipeline: await pipeline(compiled.wgsl, passes.length ? "rgba8unorm" : format), inputs: [], textures: compiled.textures }];
     for (const [i, pass] of passes.entries()) pipelines.push({ pipeline: await pipeline(pass.wgsl!, i === passes.length - 1 ? format : "rgba8unorm"), inputs: pass.inputs, textures: [] });
     // cursor (decision 161) needs the object under the mouse too
-    const picking = slots || compiled.cursors || compiled.controls?.objects ? await pipeline(compiled.wgsl, "rgba8unorm") : null;
+    const picking = slots || compiled.pointer || compiled.cursors || compiled.controls?.objects ? await pipeline(compiled.wgsl, "rgba8unorm") : null;
     return {
       compiled, layout, pipelines, picking,
       uniforms: device.createBuffer({ size, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST }),
@@ -239,10 +249,11 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
     demand.forget(); // a new pipeline: its first frame is drawn
     properties.use(compiled.properties);
     probe?.shaderBuilt(performance.now() - start);
-    hovered = 0; press.reset(); pickGeneration++;
+    hovered = 0; aimed = null; press.reset(); pickGeneration++;
     slider?.show(compiled.timelines !== undefined);
     density?.restart(performance.now()); // its compile is not a slow frame
-    transitions = createTransitions(compiled.transitions);
+    transitions = createTransitions(compiled.transitions, pointerValues(compiled.hover, compiled.active, 0, 0), compiled.channels);
+    measured = createPointer(compiled.pointer?.transition ?? null);
     triggers = createTriggers(compiled.triggers ?? [], compiled.transitions.length);
     if (resetCamera) {
       const next = compiled.camera;
@@ -267,10 +278,15 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
     else clock.resume(now);
     if (settings && !camera.dragging) camera.yaw -= dt * settings.spin;
     const drawn = resize(); // not inside dprMenu?.(): it must run without the menu too
-    dprMenu?.update(drawn);
+    stats.frame(now, drawn);
+    dprMenu?.update(drawn, lighter);
     if (scene) {
       // Too heavy for the computer: stop, and say so (decision 142)
-      if (!document.hidden && density?.frame(now)) {
+      const heavy = !document.hidden && density?.frame(now);
+      // @gpu (slow): the lighter version, before the notice (decision 212)
+      if (lighter && !gpu.slow && (heavy || density?.slow)) {
+        queueMicrotask(() => gpu.slowDown()); // after this frame
+      } else if (heavy) {
         playing = false;
         halted = true;
         canvas.dispatchEvent(new CustomEvent("gss-too-heavy"));
@@ -284,13 +300,16 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
       const held = triggers.update(pointerValues(current.compiled.hover, current.compiled.active, hovered, press.id), clock.seconds);
       const targets = transitions.update(held.targets, now, reducedMotion);
       targets.forEach((value, i) => { v[12 + 4 * i] = value; });
-      const { timelines, hover, active } = current.compiled;
-      const after = 12 + 4 * Math.max(1, hover.length + (active?.length ?? 0));
+      const { timelines, hover, active, channels } = current.compiled;
+      const after = 12 + 4 * Math.max(1, hover.length + (active?.length ?? 0) + (channels?.length ?? 0));
       if (timelines) v.set(timelineValues(timelines, canvas, slider?.value() ?? null), after);
       const values = properties.values();
-      if (values) v.set(values, after + (timelines ? 4 : 0));
-      const startsAt = after + (timelines ? 4 : 0) + (values?.length ?? 0); // 4 floats per property
+      const timelineFloats = timelines ? 4 * timelineVectors(timelines.length) : 0;
+      if (values) v.set(values, after + timelineFloats);
+      const startsAt = after + timelineFloats + (values?.length ?? 0); // 4 floats per property
       held.starts.forEach((value, i) => { v[startsAt + 4 * i] = value; });
+      // where hover-distance() measures from, after the starts (decisions 215 to 217)
+      if (current.compiled.pointer) v.set(measured.update(aimed, now, reducedMotion), startsAt + 4 * (current.compiled.triggers?.length ?? 0));
       // Render on demand (decision 134): the state of the last frame drawn, nothing to draw;
       // the mouse may still have moved over the frame on screen
       const state = Array.from(v);
@@ -310,7 +329,7 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
       bindings(current);
       if (drawing) device.queue.writeBuffer(current.uniforms, 0, v);
       const encoder = device.createCommandEncoder();
-      let picking = false;
+      let picking: [number, number] | null = null; // the pixel of the picking pass
       if (pick && pointer) {
         pickWanted = false;
         const pixel = pickPixel(pointer.x, pointer.y, canvas.getBoundingClientRect(), canvas.width, canvas.height);
@@ -319,8 +338,8 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
           device.queue.writeBuffer(current.pickUniforms, 0, v);
           draw(encoder, current.picking!, current.pickGroup!, pickTexture.createView());
           encoder.copyTextureToBuffer({ texture: pickTexture }, { buffer: readback, bytesPerRow: 256 }, [1, 1]);
-          picking = true; pickPending = true;
-        } else hovered = 0;
+          picking = pixel; pickPending = true;
+        } else { hovered = 0; aimed = null; }
       }
       if (drawing) {
         current.pipelines.forEach((p, i) => draw(encoder, p.pipeline, current.groups[i], i === current.pipelines.length - 1 ? context!.getCurrentTexture().createView() : current.images[i].createView(), i === current.pipelines.length - 1));
@@ -333,8 +352,13 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
       }
       if (picking) {
         const generation = pickGeneration;
+        const picked = picking;
         void readback.mapAsync(GPUMapMode.READ).then(() => {
-          if (!destroyed && generation === pickGeneration && pointer) { hovered = decodeId(new Uint8Array(readback.getMappedRange(), 0, 4)); press.picked(hovered); }
+          if (!destroyed && generation === pickGeneration && pointer) {
+            const read = new Uint8Array(readback.getMappedRange(), 0, 4);
+            hovered = decodeId(read); press.picked(hovered);
+            aimed = [picked[0], picked[1], decodeDepth(read, scene?.compiled.maxDistance)];
+          }
           readback.unmap();
         }).catch(error => { if (!destroyed) console.error("GSS WebGPU picking:", error); }).finally(() => { pickPending = false; });
       }
@@ -350,6 +374,7 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
   // Back on a hidden page: the time it was away is not a slow frame
   const onVisible = () => {
     if (!document.hidden) density?.resume(performance.now());
+    stats.resume();
   };
   document.addEventListener("visibilitychange", onVisible);
   return {
@@ -358,16 +383,21 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
       if (destroyed) throw new Error("This GSS view has been destroyed");
       const previous = root;
       root = compiled;
+      lighter = usesGpu(compiled);
+      holdDpr();
       try { await display(pickVariant(compiled, media.matches), true); }
       catch (error) { if (root === compiled) root = previous; throw error; }
       if (destroyed || root !== compiled) return;
       stopMedia();
       stopMedia = compiled.media ? media.watch(compiled.media.queries, () => {
+        holdDpr();
         const variant = pickVariant(compiled, media.matches);
         if (variant === scene?.compiled) return;
         void display(variant, false).catch(error => canvas.dispatchEvent(new CustomEvent("gss-error", { detail: error })));
       }) : () => {};
     },
+    camera() { return { yaw: camera.yaw, pitch: camera.pitch, distance: camera.dist }; },
+    stats: () => stats.read(),
     sampleFrames() { const now = performance.now(); const result = { frames, ms: now - sampleStart }; frames = 0; sampleStart = now; return result; },
     pause() { playing = false; cancelAnimationFrame(frameId); },
     play() {
@@ -376,6 +406,7 @@ export function createWebGPUView(canvas: HTMLCanvasElement, device: GPUDevice, o
       if (halted) density?.insist(); // drawn anyway: never stopped again
       halted = false;
       density?.resume(performance.now());
+      stats.resume();
       clock.resume(performance.now());
       frameId = requestAnimationFrame(frame);
     },

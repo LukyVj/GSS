@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { tokenize } from "../syntax/tokenizer";
-import { readAlign, readContent, readFont, readFontSize, textSource } from "./content";
+import { digitsSource, pieceSource, readAlign, readContent, readFont, readFontSize, textSource, writeNumber } from "./content";
 import { compileGSS, compileScene } from "../index";
 
 // The text of one generated GLSL function, from its signature to its closing brace
@@ -29,7 +29,6 @@ describe("readContent", () => {
 
   it("explains a value that is not a string", () => {
     expect(() => readContent(tokenize("hello"))).toThrow(/content expects a string, like: content: "hello";/);
-    expect(() => readContent(tokenize("12"))).toThrow(/content expects a string/);
     expect(() => readContent(tokenize('"a", "b"'))).toThrow(/content expects a string/);
   });
 });
@@ -364,5 +363,92 @@ describe("content in the shader", () => {
     const scene = compileScene('@scene { cube; } cube { content: "hello"; }');
     expect(scene.wgsl).toContain("fn g_textLabel(");
     expect(scene.wgsl).toContain("textureDimensions(");
+  });
+});
+
+describe("content with a number", () => {
+  const font = "normal 400 sans-serif";
+  const textureColor = (source: string) => glslFunction(compileGSS(source), "vec3 textureColor(");
+
+  it("joins a number to its strings, like a string", () => {
+    expect(readContent(tokenize('"item: " 3'))).toBe("item: 3");
+    expect(readContent(tokenize("12"))).toBe("12");
+    expect(readContent(tokenize('-2 " °C"'))).toBe("-2 °C");
+  });
+
+  it("writes the number as CSS does: six decimals at most, no zeros at the end", () => {
+    expect(writeNumber(3)).toBe("3");
+    expect(writeNumber(0.1 + 0.2)).toBe("0.3");
+    expect(writeNumber(1.23456789)).toBe("1.234568");
+    expect(writeNumber(-0)).toBe("0");
+  });
+
+  it("explains a unit, two numbers, a line break and a number too long", () => {
+    expect(() => readContent(tokenize('"a" 2px'))).toThrow(/content shows a number without a unit, like: content: "item: " 3; \(not 2px\)/);
+    expect(() => readContent(tokenize('1 "/" 2'))).toThrow(/content shows one number at most/);
+    expect(() => readContent(tokenize('"a\\A b" 1'))).toThrow(/content with a number holds on one line/);
+    expect(() => readContent(tokenize("1234567890123"))).toThrow(/content shows a number of 12 characters at most/);
+  });
+
+  it("reads var(), sibling-index() and calc()", () => {
+    expect(compileScene("@scene { cube; } cube { --i: 3; content: var(--i); }").textures).toEqual([digitsSource(font)]);
+    expect(compileScene('@scene { cube; } cube { content: "n" calc(sibling-index() * 10); }').textures).toEqual([pieceSource("n", font), digitsSource(font)]);
+  });
+
+  it("draws the strings once and the digits once per font: 64 numbered copies need two images", () => {
+    const scene = compileScene('@scene { cube * 64; } cube { content: "item: " sibling-index(); }');
+    expect(scene.textures).toEqual([pieceSource("item: ", font), digitsSource(font)]);
+    const bold = compileScene('@scene { cube * 2; } cube { content: sibling-index() " pts"; } cube:nth-child(2) { font-weight: bold; }');
+    expect(bold.textures).toEqual([digitsSource(font), pieceSource(" pts", font), digitsSource("normal 700 sans-serif"), pieceSource(" pts", "normal 700 sans-serif")]);
+  });
+
+  it("gives the shader the characters of each object, four bits each from the left", () => {
+    const shader = textureColor('@scene { cube * 12; } cube { content: "item: " sibling-index(); }');
+    // "1": cell 1, one character, a string before (1)
+    expect(shader).toContain("return numberLabel(uTexture0, uTexture1, uTexture1, vec4(1.0, 0.0, 1.0, 1.0), vec3(0.0, 0.0, 24.0), q, ln, vec3(1.0, 1.0, 1.0), color, textInk(color), 0.0);");
+    // "12": 1 + 2 * 16
+    expect(shader).toContain("vec4(33.0, 0.0, 2.0, 1.0)");
+    // "-0.25" after nothing, before " %" (2): - . are the cells 10 and 11; seven characters go on in y
+    expect(textureColor('@scene { cube; } cube { content: -0.25 " %"; }')).toContain(
+      `numberLabel(uTexture0, uTexture0, uTexture1, vec4(${10 + 0 * 16 + 11 * 256 + 2 * 4096 + 5 * 65536}.0, 0.0, 5.0, 2.0)`,
+    );
+    expect(textureColor('@scene { cube; } cube { content: 1234567; }')).toContain("vec4(6636321.0, 7.0, 7.0, 0.0)");
+  });
+
+  it("lays the text on a line of font-size, where text-align puts it", () => {
+    const shader = textureColor('@scene { cube; } cube { size: 2; content: "n" 1; font-size: 0.5; text-align: center; }');
+    expect(shader).toContain("vec3(640.0, 0.5, 0.0), q, ln, vec3(2.0, 2.0, 2.0), color, textInk(color), 1.0);"); // 4 letters of 160 pixels
+  });
+
+  it("goes on every shape, like a text", () => {
+    expect(textureColor('@scene { sphere; } sphere { content: 1; }')).toContain("return numberLabel(uTexture0, uTexture0, uTexture0, vec4(1.0, 0.0, 1.0, 0.0), vec3(0.0, 0.0, 24.0), wrapped(q, ln, ");
+    expect(textureColor('@scene { octahedron; } octahedron { content: 8; }')).toContain("return numberFacet(uTexture0, ");
+    expect(textureColor('@scene { pyramid; } pyramid { content: 4; }')).toContain("return numberPyramid(uTexture0, ");
+    expect(textureColor('@scene { prism; } prism { d: path("M0 0 L1 0 L0.5 1 Z"); content: 3; }')).toContain("return numberSticker(uTexture0, ");
+    const shader = compileGSS('@scene { pyramid; prism; } pyramid { content: 4; } prism { d: path("M0 0 L1 0 L0.5 1 Z"); content: 3; }');
+    expect(shader).toContain("vec3 numberFacet(sampler2D before, sampler2D digits, sampler2D after, vec4 number, vec3 place, vec3 q, vec3 normal, vec3 middle, vec2 room, vec3 color, vec3 ink, float zoom) {");
+    expect(shader).toContain("return numberFacet(before, digits, after, number, place, q, vec3(0.0, -1.0, 0.0), ");
+    expect(shader).toContain("return textNumber(before, digits, after, number, place, uv, face, color, ink, zoom);");
+    expect(shader).toContain("numberLabel(before, digits, after, number, place, q, n, box, color, ink, zoom)");
+    expect(shader).not.toContain("textAt(");
+  });
+
+  it("changes with :hover, like a text", () => {
+    const shader = textureColor('@scene { cube; } cube { content: 1; } cube:hover { content: 2; }');
+    expect(shader).toContain("if (text0 > 0.5) {");
+    expect(shader).toContain("vec4(1.0, 0.0, 1.0, 0.0)");
+    expect(shader).toContain("vec4(2.0, 0.0, 1.0, 0.0)");
+  });
+
+  it("leaves a text without a number as it was", () => {
+    const shader = compileGSS('@scene { cube; } cube { content: "12"; }');
+    expect(shader).toContain("return textLabel(uTexture0, ");
+    expect(shader).not.toContain("textNumber(");
+  });
+
+  it("compiles to WGSL, the images read at their full size", () => {
+    const wgsl = compileScene('@scene { cube; } cube { content: "n" 1; }', { target: "dual" }).wgsl!;
+    expect(wgsl).toContain("fn g_textNumber(");
+    expect(wgsl).not.toMatch(/dpdx|textureGrad/);
   });
 });

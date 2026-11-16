@@ -94,7 +94,7 @@ export function scrollTimeline(): string {
   return stage(frame, page + timeline) + says("animation-timeline: scroll();");
 }
 
-// animation-range and its two halves. The way of view() has three parts: the scene comes into
+// animation-range and its two halves, and view(), the whole way. The way of view() has three parts: the scene comes into
 // the page, is all in it, goes out of it. Each part is drawn as the page with the scene at
 // that part; the ones the animation plays on are in signal, over the range, and the end of
 // the range the property sets is named in signal.
@@ -103,6 +103,7 @@ const RANGES: Record<string, { code: string; from: number; to: number; sets: ("s
   "animation-range": { code: "animation-range: entry;", from: 0, to: 1, sets: ["start", "end"] },
   "animation-range-start": { code: "animation-range-start: contain;", from: 1, to: 3, sets: ["start"] },
   "animation-range-end": { code: "animation-range-end: contain;", from: 0, to: 2, sets: ["end"] },
+  "fn-view": { code: "animation-timeline: view();", from: 0, to: 3, sets: ["start", "end"] },
 };
 
 export function range(subject: string): string {

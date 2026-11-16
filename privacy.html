@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>GSS — Privacy</title>
+    <meta
+      name="description"
+      content="What gss-lang.dev collects when you visit it: no cookies, anonymous visit counts, and the services a page calls."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="GSS" />
+    <meta property="og:url" content="https://www.gss-lang.dev/privacy" />
+    <meta property="og:title" content="GSS — Privacy" />
+    <meta
+      property="og:description"
+      content="What gss-lang.dev collects when you visit it: no cookies, anonymous visit counts, and the services a page calls."
+    />
+    <meta
+      property="og:image"
+      content="https://www.gss-lang.dev/marks/social-logo.png"
+    />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="The GSS logo, drawn in GSS: two braces around an orange sphere"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@GSS_lang" />
+    <link rel="canonical" href="https://www.gss-lang.dev/privacy" />
+    <link rel="stylesheet" href="/src/styles/site.css" />
+    <style>
+      /* The privacy page: what the site collects, and who serves what */
+      main {
+        box-sizing: border-box;
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 0 56px 96px;
+      }
+      .intro {
+        padding: 96px 0 40px;
+        max-width: 720px;
+      }
+      .eyebrow {
+        margin: 0 0 16px;
+      }
+      h1 {
+        margin: 0 0 24px;
+        font: 800 clamp(40px, 6vw, 68px) / 1.02 var(--gss-font-display);
+        letter-spacing: -0.05em;
+      }
+      .lead {
+        line-height: 1.5;
+      }
+      .policy {
+        max-width: 720px;
+      }
+      .policy section {
+        padding: 32px 0;
+        border-top: 1px solid var(--gss-line);
+      }
+      .policy h2 {
+        margin: 0 0 12px;
+        font: 800 24px / 1.15 var(--gss-font-display);
+        letter-spacing: -0.03em;
+      }
+      .policy p,
+      .policy li {
+        color: var(--gss-ash);
+        line-height: 1.6;
+      }
+      .policy code {
+        font-family: var(--gss-font-code);
+        font-size: 0.9em;
+        color: var(--gss-bone);
+      }
+      .lead a,
+      .policy a {
+        color: var(--gss-bone);
+      }
+      .lead a:hover,
+      .policy a:hover {
+        color: var(--gss-signal);
+      }
+      .site-footer {
+        border-top: 1px solid var(--gss-line);
+        margin-top: 96px;
+      }
+      .site-footer .in {
+        box-sizing: border-box;
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 28px 56px;
+        display: flex;
+        justify-content: space-between;
+        gap: 24px;
+        font: 13px var(--gss-font-code);
+        color: var(--gss-dim);
+      }
+      .site-footer nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 24px;
+      }
+      .site-footer nav a {
+        color: var(--gss-ash);
+      }
+      .site-footer .in {
+        flex-wrap: wrap;
+      }
+      .site-footer .contact {
+        flex-basis: 100%;
+        margin: 0;
+        color: var(--gss-ash);
+      }
+      .site-footer .contact a {
+        color: var(--gss-bone);
+      }
+      .site-footer .contact a:hover {
+        color: var(--gss-signal);
+      }
+
+      @media (max-width: 1024px) {
+        main {
+          padding: 0 32px 72px;
+        }
+        .site-footer {
+          margin-top: 72px;
+        }
+        .site-footer .in {
+          padding: 24px 32px;
+        }
+      }
+      @media (max-width: 640px) {
+        main {
+          padding: 0 16px 56px;
+        }
+        .intro {
+          padding: 56px 0 24px;
+        }
+        .topbar nav a[href="./showcase.html"] {
+          display: none;
+        }
+        .site-footer {
+          margin-top: 56px;
+        }
+        .site-footer .in {
+          padding: 24px 16px;
+          flex-direction: column;
+          gap: 14px;
+        }
+        .site-footer nav {
+          gap: 10px 18px;
+        }
+      }
+    </style>
+    <script
+      defer
+      src="https://cloud.umami.is/script.js"
+      data-website-id="89b55a0a-cc5f-44e3-9d29-1db01ff93bc9"
+    ></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="mark" href="./" aria-label="GSS home"
+        >{<span class="dot"></span>}</a
+      >
+      <span class="crumb">/</span>
+      <span>privacy</span>
+      <span class="spacer"></span>
+      <nav aria-label="Main">
+        <a href="./playground.html">playground</a>
+        <a href="./docs.html">docs</a>
+        <a href="./showcase.html">showcase</a>
+        <a class="github" href="https://github.com/LukyVj/GSS"
+          ><svg viewBox="0 0 16 16" aria-hidden="true">
+            <path
+              d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"
+            />
+          </svg>
+          <span>github</span>
+        </a>
+        <a
+          class="x"
+          href="https://x.com/GSS_lang"
+          aria-label="GSS on X, @GSS_lang"
+          ><svg viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"
+            />
+          </svg>
+          <span>@GSS_lang</span>
+        </a>
+      </nav>
+    </header>
+
+
+    <main>
+      <div class="intro">
+        <p class="eyebrow">Privacy</p>
+        <h1>What this site keeps.</h1>
+        <p class="lead">
+          No account, no cookies, no advertising. The site counts its visits
+          without knowing who you are, and a few pages call other services,
+          listed here.
+        </p>
+      </div>
+      <div class="policy">
+        <section>
+          <h2>Visit counts</h2>
+          <p>
+            Every page loads <a href="https://umami.is">Umami</a>, which counts
+            the pages seen, where the visit came from, the browser, the
+            country and the size of the screen. It sets no cookie and keeps no
+            profile of a visitor. It also counts a few actions: sharing a scene
+            from the playground, opening an example, trying an example of the
+            docs. A blocker of trackers stops it, and the site works the same.
+          </p>
+        </section>
+        <section>
+          <h2>Search in the docs</h2>
+          <p>
+            The search of the docs is <a href="https://docsearch.algolia.com">Algolia DocSearch</a>:
+            what you type is sent to Algolia to find the pages. Your recent
+            searches stay in your browser.
+          </p>
+        </section>
+        <section>
+          <h2>What stays in your browser</h2>
+          <p>
+            The site remembers a few choices in the <code>localStorage</code>
+            of your browser, never sent anywhere: the width of the panels of
+            the playground and of the search, the resolution of the scenes,
+            whether the profiler is open, the view of the showcase. Clearing
+            the data of the site in your browser forgets them.
+          </p>
+        </section>
+        <section>
+          <h2>Other services</h2>
+          <ul>
+            <li>
+              The site is hosted by <a href="https://vercel.com">Vercel</a>,
+              whose servers log each request, like any web server.
+            </li>
+            <li>
+              The avatars of the contributors, on the home page, come from
+              GitHub.
+            </li>
+            <li>
+              The films of the brand page come from
+              <code>media.gss-lang.dev</code>, on Cloudflare, and load only
+              when you play one.
+            </li>
+          </ul>
+        </section>
+        <section>
+          <h2>Questions</h2>
+          <p>
+            Ask on X, <a href="https://x.com/GSS_lang">@GSS_lang</a>, or
+            <a href="https://github.com/LukyVj/GSS/issues">open an issue</a>
+            on GitHub.
+          </p>
+        </section>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <div class="in">
+        <span
+          >GSS — GPU Style Sheets. CSS for 3D scenes, compiled to a
+          shader.</span
+        >
+        <nav aria-label="Footer">
+          <a
+            href="./changelog.html#%GSS_VERSION%"
+            aria-label="GSS version %GSS_VERSION%, what changed"
+            >v%GSS_VERSION%</a
+          >
+          <a href="https://github.com/LukyVj/GSS">github</a>
+          <a href="https://x.com/GSS_lang">@GSS_lang</a>
+          <a href="./docs.html#installation">installation</a>
+          <a href="./playground.html">playground</a>
+          <a href="./docs.html">docs</a>
+          <a href="./showcase.html">showcase</a>
+          <a href="./brand.html">brand</a>
+          <a href="./about.html">about</a>
+          <a href="./contact.html">contact</a>
+          <a href="./privacy.html">privacy</a>
+        </nav>
+        <p class="contact">
+          Questions, ideas, a scene to show? Say hi on X,
+          <a href="https://x.com/GSS_lang">@GSS_lang</a>, or
+          <a href="https://github.com/LukyVj/GSS/issues">open an issue</a> on
+          GitHub.
+        </p>
+      </div>
+  </body>
+</html>

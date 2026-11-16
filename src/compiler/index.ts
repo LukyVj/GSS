@@ -2,18 +2,20 @@ import { tokenize } from "./syntax/tokenizer";
 import { parse } from "./syntax/parser";
 import { expandScene } from "./cascade/expand";
 import { resolveStyles, resolveSceneStyles, FACES, type Face } from "./cascade/resolve";
-import { activeSlots, generateShader, hoverSlots, sceneTriggers, type Trigger } from "./shader/codegen";
+import { activeSlots, generateShader, hoverSlots, pointerReaders, sceneTriggers, transitionChannels, type Trigger } from "./shader/codegen";
 import { validateProperties, validateKeyframes } from "./cascade/validate";
-import { readCamera, type CameraSettings } from "./features/camera";
+import { readCamera, readFocal, type CameraSettings } from "./features/camera";
+import { RAYMARCH, readRaymarch } from "./features/raymarch";
 import { resolveMath, type CalcContext } from "./values/calc";
 import type { StyledInstance, Styles } from "./cascade/resolve";
 import type { Declaration, Keyframes, Stylesheet } from "./syntax/ast";
 import type { Token } from "./syntax/tokenizer";
+import { splitList } from "./features/animation";
 import { ErrorSink, errorAt, rememberSpan, spanOf } from "./syntax/errors";
 import { resolveVars, usesVariables, hasVar, type Variables } from "./cascade/vars";
 import { mediaQueriesOf, resolveIf } from "./values/conditionals";
 import { refuseInColor, resolveCurrentColor } from "./values/current-color";
-import { sceneTimelines, type Timeline } from "./features/timeline";
+import { sceneTimelines, timelineUniform, type Timeline } from "./features/timeline";
 import { PROPERTIES } from "./registry/core";
 import {
   type ColorScheme,
@@ -22,13 +24,17 @@ import {
   resolveNamedColors,
   MATERIAL_FUNCTIONS,
 } from "./values/colors";
-import { scenePaints, sceneTextures } from "./features/textures";
+import { scenePaints, sceneTextures, type ScenePaint } from "./features/textures";
 import { readDpr, type Dpr } from "./features/dpr";
 import { readView, type View } from "./features/view";
+import { readDebugPanel, type DebugPanel } from "./features/debug-panel";
+import { withDebugOverlay } from "./shader/codegen/debug";
+import { withFocal } from "./shader/codegen/raymarch";
+import { readAntialias, withAntialias } from "./shader/codegen/antialias";
 import { isDisplayed } from "./features/visibility";
 import { sceneCursors, type ObjectCursor } from "./features/cursor";
 import { sceneControls, type SceneControls } from "./features/controls";
-import { readTransition, type Transition } from "./features/transition";
+import { readTransitions, transitionOf, type Transition } from "./features/transition";
 import { buildPasses, FILTER_FUNCTIONS, objectFilters, readSceneSteps, type Pass } from "./features/filter";
 import { generateWGSL } from "./shader/wgsl";
 import { GRADIENT_FUNCTIONS } from "./shader/gradient";
@@ -44,7 +50,8 @@ import {
 } from "./features/properties";
 
 // view: replaces the view of the scene in the shader, like the chips of the playground (decision 131)
-export type CompileOptions = { target?: "glsl" | "dual"; view?: View };
+// debug: draws the axes and the grid of @debug-panel, as the playground and Try it do (decision 204)
+export type CompileOptions = { target?: "glsl" | "dual"; view?: View; debug?: boolean };
 export type { Trigger };
 
 // Everything the runtime needs to display a scene
@@ -54,10 +61,15 @@ export type CompiledScene = {
   wgsl?: string;
   // @paint (decision 151): the fragment shaders the textures paint(name) come from, as
   // written, with the line of their "{" in the file. Absent when no object uses one.
-  paints?: { name: string; code: string; line: number }[];
+  // size and filter (decision 228): the size of the texture, and its mipmaps, when written
+  paints?: ScenePaint[];
   camera: CameraSettings;
+  // max-distance (decision 224): how far the scene draws, for the zoom of the wheel and the
+  // depth of hover-distance(). Absent at 20.
+  maxDistance?: number;
   dpr: Dpr;
   objects: number; // instances drawn, for the status bar (decision 42)
+  lights?: number; // the point lights of @scene, for the debug panel (decision 204); absent when none
   textures: string[]; // the image files the runtime loads, once each
   hover: number[][]; // for each slot of uHover[], the ids that, hovered, set it to 1
   // :active (decision 95): for each slot after the hover slots, the ids that, pressed,
@@ -79,7 +91,10 @@ export type CompiledScene = {
   propertyRanges?: Record<string, PropertyRange>;
   // view (decision 131): the view the code asks for, absent when it is shaded. The shader
   // draws the view of the compile option instead, when there is one.
-  view?: "distance";
+  view?: "distance" | "steps";
+  // @debug-panel (decision 204): the playground and Try it show the axes, the grid and the
+  // numbers of the scene, the panel open or folded. Absent without the rule, or with display: none.
+  debugPanel?: DebugPanel;
   // @media: the queries, and the scene for every combination of them. variants[mask]
   // is the scene when the queries whose bit is set in mask match (bit 0: queries[0]).
   // The fields above are variants[0], the scene when none matches.
@@ -92,20 +107,29 @@ export type CompiledScene = {
   controls?: SceneControls;
   // for each slot of uHover[] (hover, then active), how it glides to 1 (enter) and back to 0 (leave)
   transitions: { enter: Transition | null; leave: Transition | null }[];
+  // A transition per property: the numbers of uHover[] after the slots, each for the
+  // properties of a slot that glide with another transition, with its slot to follow.
+  // Absent when every state glides all its properties with one transition.
+  channels?: { slot: number; enter: Transition | null; leave: Transition | null }[];
+  // hover-distance(), hover-direction() (decision 215): the shader reads the object under the
+  // pointer, uPointer, which glides with the transition of the objects that read it, the
+  // first one that sets one (decision 216). Absent when no value measures from it.
+  pointer?: { transition: Transition | null };
   // The states that start an animation (decision 141): the slot, its index in
   // uStart[], and how long the state holds in seconds (null: until the next start).
   // Absent when no state starts one.
   triggers?: Trigger[];
 };
 
-// The most @media queries a scene can use: 2^4 = 16 versions of it are compiled
+// The most @media queries (and @gpu conditions, decision 212) a scene can use: 2^4 = 16
+// versions of it are compiled
 const MAX_QUERIES = 4;
 
 // GSS text → shader + camera settings, and a version per combination of @media
 // A compile reports every error it finds, not only the first one (decision 86): every
 // error of the text first; once the text reads, every error of the values.
 export function compileScene(source: string, options: CompileOptions = {}): CompiledScene {
-  const compiled = compileSource(source, options.view);
+  const compiled = compileSource(source, options);
   if (options.target === "glsl") return compiled;
   const lower = (scene: CompiledScene): CompiledScene => ({
     ...scene,
@@ -118,7 +142,7 @@ export function compileScene(source: string, options: CompileOptions = {}): Comp
   };
 }
 
-function compileSource(source: string, view?: View): CompiledScene {
+function compileSource(source: string, options: CompileOptions): CompiledScene {
   const errors = new ErrorSink();
   const tokens = tokenize(source, errors);
   const stylesheet = parse(tokens, errors);
@@ -143,14 +167,14 @@ function compileSource(source: string, view?: View): CompiledScene {
       ...mediaQueriesOf(tokens),
     ]),
   ];
-  if (queries.length === 0) return compileStylesheet(stylesheet, new Set(), view);
+  if (queries.length === 0) return compileStylesheet(stylesheet, new Set(), options);
   if (queries.length > MAX_QUERIES) {
     const extra = stylesheet.rules.find(
       (rule) => rule.media === queries[MAX_QUERIES],
     )!;
     throw errorAt(
       extra.selector,
-      `A scene takes at most ${MAX_QUERIES} different @media queries (here: ${queries.length}): GSS prepares a version of the scene for every combination`,
+      `A scene takes at most ${MAX_QUERIES} different @media queries and @gpu conditions (here: ${queries.length}): GSS prepares a version of the scene for every combination`,
     );
   }
   // Like CSS, a rule inside a matching @media joins the cascade where it is written
@@ -164,7 +188,7 @@ function compileSource(source: string, view?: View): CompiledScene {
         ),
       },
       new Set(queries.filter((_, n) => (mask & (1 << n)) !== 0)),
-      view,
+      options,
     )),
   );
   // The same error in several versions of the scene is reported once
@@ -177,7 +201,7 @@ function compileSource(source: string, view?: View): CompiledScene {
 function compileStylesheet(
   stylesheet: Stylesheet,
   media: Set<string> = new Set(),
-  viewOption?: View,
+  options: CompileOptions = {},
 ): CompiledScene {
   activeMedia = media;
   // Every error of this version; a part that fails is left out, and the rest goes on
@@ -197,6 +221,7 @@ function compileStylesheet(
   const registered = errors.run(() => registeredProperties(stylesheet, sceneStyles)) ?? [];
   const panel = errors.run(() => readPropertyPanel(stylesheet.panels));
   const ranges = errors.run(() => readPropertyRanges(stylesheet.panels, registered));
+  const debugPanel = errors.run(() => readDebugPanel(stylesheet.debugPanels));
   const live: Variables = Object.fromEntries(registered.map((p, i) => [p.name, [propertyToken(p, i)]]));
   const rootVariables = { ...customProperties(sceneStyles), ...live };
 
@@ -215,20 +240,17 @@ function compileStylesheet(
         context,
       ),
     );
-    const copy = animateVariables(
-      styles,
-      variables,
-      context,
-      stylesheet.keyframes,
-      copies.length + 1,
-    );
-    if (!copy) return computed;
-    copies.push(copy.keyframes);
-    // The object plays its own copy: the rest of the animation (2s, alternate…) stays
-    return {
-      ...computed,
-      animation: [copy.name, ...computed["animation"].slice(1)],
-    };
+    return withCopies(styles, computed, (one) => {
+      const copy = animateVariables(
+        one,
+        variables,
+        context,
+        stylesheet.keyframes,
+        copies.length + 1,
+      );
+      if (copy) copies.push(copy.keyframes);
+      return copy;
+    });
   }
 
   // The cascade picks the values, then var() is replaced, then the math is computed
@@ -245,41 +267,73 @@ function compileStylesheet(
     for (const styles of [
       instance.styles,
       instance.hoverStyles,
+      ...instance.hoverStates.map((state) => state.styles),
       instance.activeStyles,
       ...instance.groupStyles,
+      ...instance.groupHoverStates.flat().map((state) => state.styles),
+      ...instance.groupActiveStates.flatMap((state) => (state ? [state.styles] : [])),
       ...FACES.map((face) => instance.faceStyles[face]),
       ...instance.faceList,
     ])
       for (const name of Object.keys(live)) if (styles[name]) throw oneValue(name, styles[name]);
-    // Level 0 = the scene, 1… = the groups from the outside in, last = the object
-    const levels = [
+    // Level 0 = the scene, 1… = the groups from the outside in, last = the object. In a
+    // state, the groups that pass something in it take their cascade of that state (decision 218)
+    const levelsIn = (groups?: Styles[]) => [
       rootVariables,
-      ...instance.groupStyles.map(customProperties),
+      ...instance.groupStyles.map((styles, g) => customProperties(groups?.[g] ?? styles)),
       customProperties(instance.styles),
     ];
+    const levels = levelsIn();
     // The variables seen at level n: every level from 0 to n, the closest one wins
-    const seenAt = (n: number): Variables =>
-      Object.assign({}, ...levels.slice(0, n + 1));
+    const seenIn = (groups: Styles[] | undefined, n: number): Variables =>
+      Object.assign({}, ...levelsIn(groups).slice(0, n + 1));
+    const seenAt = (n: number): Variables => seenIn(undefined, n);
 
-    // The hover state has its own variables, cube:hover { --c: red; },
-    // on top of what the scene and the groups give
-    const hoverVariables: Variables = {
-      ...seenAt(levels.length - 2),
-      ...customProperties(instance.hoverStyles),
+    // Like CSS, an object without a color takes the one of its closest group, computed on the
+    // group with its variables (decision 218), at rest or in a state. The color alone: the
+    // rest of a group is computed once, below, in its place
+    const colorsIn = (groups?: Styles[]) =>
+      (groups ?? instance.groupStyles).map((styles, g) =>
+        styles["color"] ? computeNode({ color: styles["color"] }, seenIn(groups, g + 1), instance.groups[g]) : {},
+      );
+    const restColors = colorsIn();
+    // A light keeps its own: its color is the color of its light, not of a surface
+    const withColor = (styles: Styles, colors: Styles[]): Styles => {
+      if (styles["color"] || instance.tag === "light") return styles;
+      const color = colors.findLast((group) => group["color"])?.["color"];
+      return color ? { ...styles, color } : styles;
     };
-    // Pressed: the :active rules on top of the :hover ones, with their variables
-    const activeVariables: Variables = {
-      ...seenAt(levels.length - 2),
-      ...customProperties(instance.activeStyles),
-    };
+    // An object's styles in a state: its own variables on top of what the scene and its
+    // groups give in that state, cube:hover { --c: red; }
+    const computeState = (styles: Styles, groups?: Styles[]) =>
+      computeNode(
+        withColor(styles, groups ? colorsIn(groups) : restColors),
+        { ...seenIn(groups, levels.length - 2), ...customProperties(styles) },
+        instance,
+      );
+    // A group's styles in a state: the variables of its own groups in that state, and of its rules
+    const computeGroupState = (styles: Styles, g: number, groups?: Styles[]) =>
+      computeNode(styles, { ...seenIn(groups, g), ...customProperties(styles) }, instance.groups[g]);
 
     return {
       ...instance,
-      styles: computeNode(instance.styles, seenAt(levels.length - 1), instance),
-      hoverStyles: computeNode(instance.hoverStyles, hoverVariables, instance),
-      activeStyles: computeNode(instance.activeStyles, activeVariables, instance),
-      groupStyles: instance.groupStyles.map((styles, g) =>
-        computeNode(styles, seenAt(g + 1), instance.groups[g]),
+      styles: computeNode(withColor(instance.styles, restColors), seenAt(levels.length - 1), instance),
+      hoverStyles: computeState(instance.hoverStyles, instance.hoverGroups),
+      // each hover state with the variables of its own rules
+      hoverStates: instance.hoverStates.map((state) => ({ ...state, styles: computeState(state.styles, state.groups) })),
+      // Pressed: the :active rules on top of the :hover ones, with their variables
+      activeStyles: computeState(instance.activeStyles, instance.activeGroups),
+      groupStyles: instance.groupStyles.map((styles, g) => computeNode(styles, seenAt(g + 1), instance.groups[g])),
+      // each hover state of a group with the variables of the group and its own rules
+      groupHoverStates: instance.groupHoverStates.map((states, g) =>
+        states.map((state) => ({ ...state, styles: computeGroupState(state.styles, g, state.groups) })),
+      ),
+      groupActiveStates: instance.groupActiveStates.map((state, g) =>
+        state && {
+          ...state,
+          styles: computeGroupState(state.styles, g, state.groups),
+          below: computeGroupState(state.below, g),
+        },
       ),
       // The faces use the object's variables: cube::top { texture: var(--top); }
       faceStyles: Object.fromEntries(
@@ -306,10 +360,11 @@ function compileStylesheet(
       );
       // The scene plays an animation too: its background, and its variables (decision 103)
       checkSceneAnimation(sceneStyles, stylesheet.keyframes);
-      const copy = animateVariables(sceneStyles, rootVariables, null, stylesheet.keyframes, copies.length + 1);
-      if (!copy) return computed;
-      copies.push(copy.keyframes);
-      return { ...computed, animation: [copy.name, ...computed["animation"].slice(1)] };
+      return withCopies(sceneStyles, computed, (one) => {
+        const copy = animateVariables(one, rootVariables, null, stylesheet.keyframes, copies.length + 1);
+        if (copy) copies.push(copy.keyframes);
+        return copy;
+      });
     }) ?? {};
   // @keyframes with variables are only played through their copies
   const shared = computeKeyframes(
@@ -327,30 +382,35 @@ function compileStylesheet(
       ).passes,
   );
   const view = errors.run(() => readView(computedScene));
-  const shader = checkedShader(styled, computedScene, [...shared, ...copies], errors, registered.length, viewOption ?? view);
-  const camera = errors.run(() => readCamera(computedScene));
+  const viewed = checkedShader(styled, computedScene, [...shared, ...copies], errors, registered.length, options.view ?? view);
+  // The axes and the grid of @debug-panel, where the playground asks for them (decision 204)
+  const overlaid = viewed !== undefined && options.debug && debugPanel ? withFocal(withDebugOverlay(viewed), readFocal(computedScene)) : viewed;
+  // antialias (decision 231): last, around everything main() draws
+  const samples = errors.run(() => readAntialias(computedScene["antialias"]));
+  const shader = overlaid !== undefined && samples !== undefined ? withAntialias(overlaid, samples) : overlaid;
+  const raymarch = errors.run(() => readRaymarch(computedScene));
+  const camera = errors.run(() => readCamera(computedScene, raymarch?.maxDistance));
   const dpr = errors.run(() => readDpr(computedScene));
   // After the cascade and var(): the texture an object really ends up with
   const textures = errors.run(() => sceneTextures(drawn, [...shared, ...copies]));
   // @paint (decision 151): the shaders of paint(name), the last one of a name wins like CSS
-  const defined = new Map(stylesheet.paints.map((paint) => [String(paint.name.value), { code: String(paint.code.value), line: paint.line ?? 1 }]));
+  const defined = new Map(stylesheet.paints.map((paint) => [String(paint.name.value), { code: String(paint.code.value), line: paint.line ?? 1, at: paint.code }]));
   const paints = errors.run(() => scenePaints(drawn, defined));
-  // Like CSS: the transition of the state the object goes to
+  // Like CSS: the transition of the state the object goes to, for each property
   // Pressing takes the transition of :active, releasing the one of the hovered state
-  const transitions = errors.run(() => [
-    ...hoverSlots(styled).map((instance) => ({
-      enter: readTransition(instance.hoverStyles["transition"]),
-      leave: readTransition(instance.styles["transition"]),
-    })),
-    ...activeSlots(styled).map((instance) => ({
-      enter: readTransition(instance.activeStyles["transition"]),
-      leave: readTransition(instance.hoverStyles["transition"]),
-    })),
-  ]);
-  const active = activeSlots(styled).map((instance) => instance.activeTriggers);
+  const glides = errors.run(() => transitionChannels(styled));
+  const slotCount = hoverSlots(styled).length + activeSlots(styled).length;
+  const transitions = glides?.pairs.slice(0, slotCount);
+  const channels = glides?.parents.map((slot, i) => ({ slot, ...glides.pairs[slotCount + i] })) ?? [];
+  const active = activeSlots(styled).map(({ triggers }) => triggers);
   const cursors = errors.run(() => sceneCursors(drawn));
   const controls = errors.run(() => sceneControls(computedScene, drawn));
   const triggers = errors.run(() => sceneTriggers(styled));
+  // hover-distance() glides with the transition of the property that reads it (decision 216)
+  const readers = pointerReaders(styled, copies);
+  const pointer = errors.run(() =>
+    readers.size === 0 ? null : { transition: styled.filter((instance) => readers.has(instance.index)).map(pointerTransition).find(Boolean) ?? null },
+  );
   const timelines = errors.run(() =>
     sceneTimelines([computedScene, ...styled.flatMap((instance) => [...instance.groupStyles, instance.styles])]),
   );
@@ -359,27 +419,32 @@ function compileStylesheet(
     ...(passes!.length > 0
       ? {
           passes: passes!.map((pass) =>
-            withProperties(pass, registered.length, hoverSlots(styled).length + active.length, timelines!.length > 0, triggers!.length),
+            withProperties(pass, registered.length, hoverSlots(styled).length + active.length + channels.length, timelines!.length, triggers!.length),
           ),
         }
       : {}),
     ...(registered.length > 0 ? { properties: registered } : {}),
     ...(panel ? { propertyPanel: panel } : {}),
     ...(panel && ranges ? { propertyRanges: ranges } : {}),
-    ...(view === "distance" ? { view } : {}),
+    ...(view !== "shaded" ? { view } : {}),
+    ...(debugPanel ? { debugPanel } : {}),
     shader: shader!,
     camera: camera!,
+    ...(raymarch!.maxDistance !== RAYMARCH.maxDistance ? { maxDistance: raymarch!.maxDistance } : {}),
     dpr: dpr!,
     objects: drawn.length,
+    ...(styled.length > drawn.length ? { lights: styled.length - drawn.length } : {}),
     textures: textures!,
     ...(paints!.length > 0 ? { paints } : {}),
-    hover: hoverSlots(styled).map((instance) => instance.hoverTriggers),
+    hover: hoverSlots(styled).map(({ state }) => state.triggers),
     ...(active.length > 0 ? { active } : {}),
     ...(cursors!.length > 0 ? { cursors } : {}),
     ...(controls ? { controls } : {}),
     ...(timelines!.length > 0 ? { timelines } : {}),
     transitions: transitions!,
+    ...(channels.length > 0 ? { channels } : {}),
     ...(triggers!.length > 0 ? { triggers } : {}),
+    ...(pointer ? { pointer } : {}),
   };
 }
 
@@ -408,12 +473,12 @@ function checkedShader(
 // A pass of filter that reads a variable set from JS declares the uniforms of the scene
 // before it, in the same order: its WGSL then reads them where the scene writes them, in
 // the buffer they share (decision 105). The other passes stay as they were.
-function withProperties(pass: Pass, properties: number, slots: number, timeline: boolean, starts: number): Pass {
+function withProperties(pass: Pass, properties: number, slots: number, timelines: number, starts: number): Pass {
   if (!pass.shader.includes("uProperties")) return pass;
   const uniforms = [
     ...(starts > 0 ? [`uniform float uStart[${starts}];`] : []),
     ...(slots > 0 ? [`uniform float uHover[${slots}];`] : []),
-    ...(timeline ? ["uniform vec4 uTimeline;"] : []),
+    ...(timelines > 0 ? [timelineUniform(timelines)] : []),
     `uniform vec4 uProperties[${properties}]; // @property: the variables set from JS`,
   ];
   return { ...pass, shader: pass.shader.replace("uniform sampler2D uInput0;", `${uniforms.join("\n")}\nuniform sampler2D uInput0;`) };
@@ -481,7 +546,10 @@ function refuseLive(property: string, value: Token[]): void {
   if (!LIVE_PROPERTIES.includes(property))
     throw errorAt(
       value,
-      `${token.value} is set from JS, and ${property} is read when the scene compiles. A variable set from JS can go in ${LIVE_PROPERTIES.slice(0, -1).join(", ")} and ${LIVE_PROPERTIES.at(-1)}`,
+      // a variable set from JS, or hover-distance() (decision 215): both are known on the GPU only
+      String(token.value).endsWith("()")
+        ? `${token.value} is measured on the GPU, and ${property} is read when the scene compiles. It can go in ${LIVE_PROPERTIES.slice(0, -1).join(", ")} and ${LIVE_PROPERTIES.at(-1)}`
+        : `${token.value} is set from JS, and ${property} is read when the scene compiles. A variable set from JS can go in ${LIVE_PROPERTIES.slice(0, -1).join(", ")} and ${LIVE_PROPERTIES.at(-1)}`,
     );
 }
 
@@ -513,19 +581,39 @@ function usesVariablesIn(animation: Keyframes): boolean {
   );
 }
 
+// The object plays its own copy of each @keyframes of its list that uses variables: the rest
+// of each animation (2s, alternate…) stays. make: the copy for the styles of one animation.
+function withCopies(styles: Styles, computed: Styles, make: (one: Styles) => { name: Token } | null): Styles {
+  if (!styles["animation"] || !computed["animation"]) return computed;
+  const own = splitList(styles["animation"]);
+  const items = splitList(computed["animation"]);
+  let copied = false;
+  const named = items.map((item, i) => {
+    const copy = own[i] ? make({ ...styles, animation: own[i] }) : null;
+    if (!copy) return item;
+    copied = true;
+    return [copy.name, ...item.slice(1)];
+  });
+  if (!copied) return computed;
+  const comma: Token = { type: "PUNCT", value: "," };
+  return { ...computed, animation: named.flatMap((item, i) => (i === 0 ? item : [comma, ...item])) };
+}
+
 // On the scene, an animation changes the background, the fog, the sun and variables,
 // nothing else: the other properties of a frame belong to objects (decisions 103, 108, 110)
 function checkSceneAnimation(styles: Styles, keyframes: Keyframes[]): void {
-  const name = styles["animation"]?.[0];
-  if (name?.type !== "IDENT") return;
-  const found = keyframes.findLast((k) => k.name === name.value);
-  for (const frame of found?.frames ?? [])
-    for (const declaration of frame.declarations)
-      if (!["background", "fog", "light"].includes(declaration.property) && !declaration.property.startsWith("--"))
-        throw errorAt(
-          declaration,
-          `On the scene, an animation only changes background, fog, light and variables: ${declaration.property} is a property of objects (in @keyframes ${found!.name})`,
-        );
+  for (const item of styles["animation"] ? splitList(styles["animation"]) : []) {
+    const name = item[0];
+    if (name?.type !== "IDENT") continue;
+    const found = keyframes.findLast((k) => k.name === name.value);
+    for (const frame of found?.frames ?? [])
+      for (const declaration of frame.declarations)
+        if (!["background", "fog", "light"].includes(declaration.property) && !declaration.property.startsWith("--"))
+          throw errorAt(
+            declaration,
+            `On the scene, an animation only changes background, fog, light and variables: ${declaration.property} is a property of objects (in @keyframes ${found!.name})`,
+          );
+  }
 }
 
 // A @keyframes that sets or reads variables cannot be shared: its values depend on
@@ -683,4 +771,14 @@ function computeColors(styles: Styles): Styles {
 export function compileGSS(source: string, target: "glsl" | "wgsl" = "glsl"): string {
   const scene = compileScene(source, { target: target === "glsl" ? "glsl" : "dual" });
   return target === "wgsl" ? scene.wgsl! : scene.shader;
+}
+
+// The transition of the first property of an object that measures from the pointer
+// (decision 216): hover-distance() glides with it; read elsewhere (a state, @keyframes),
+// with the transition of every property. null: none.
+function pointerTransition(instance: StyledInstance): Transition | null {
+  const entries = readTransitions(instance.styles);
+  for (const [property, value] of Object.entries(instance.styles))
+    if (value.some((token) => token.type === "EXPR" && /\bhoverDi(?:st|r)\d+\b/.test(token.code))) return transitionOf(entries, property);
+  return transitionOf(entries, "");
 }

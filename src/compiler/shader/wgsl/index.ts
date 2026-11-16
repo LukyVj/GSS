@@ -41,6 +41,7 @@ class Lowering {
   private hover = 0;
   private properties = 0;
   private starts = 0; // uStart[]: the states that start an animation (decision 141)
+  private timelines = 0; // uTimeline[]: the vec4 of more than 4 timelines; 0: one vec4
   private serial = 0;
 
   constructor(source: string) {
@@ -103,6 +104,7 @@ class Lowering {
           const size = Number(this.take());
           if (name === "uProperties") this.properties = size; // @property (decision 105)
           else if (name === "uStart") this.starts = size; // decision 141
+          else if (name === "uTimeline") this.timelines = size; // past 4 timelines (decision 210)
           else this.hover = size;
           this.expect("]");
         }
@@ -136,7 +138,7 @@ class Lowering {
     return [
       // scroll() and view() (decision 96): after hover, so that no other offset moves;
       // @property (decision 105) after them
-      `struct GssUniforms {\n  resolutionTime: vec4<f32>,\n  cameraDistanceRatio: vec4<f32>,\n  pick: vec4<f32>,\n  hover: array<vec4<f32>, ${Math.max(1, this.hover)}>,\n${this.uniforms.has("uTimeline") ? "  timeline: vec4<f32>,\n" : ""}${this.properties ? `  properties: array<vec4<f32>, ${this.properties}>,\n` : ""}${this.starts ? `  start: array<vec4<f32>, ${this.starts}>,\n` : ""}}`,
+      `struct GssUniforms {\n  resolutionTime: vec4<f32>,\n  cameraDistanceRatio: vec4<f32>,\n  pick: vec4<f32>,\n  hover: array<vec4<f32>, ${Math.max(1, this.hover)}>,\n${this.uniforms.has("uTimeline") ? `  timeline: ${this.timelines ? `array<vec4<f32>, ${this.timelines}>` : "vec4<f32>"},\n` : ""}${this.properties ? `  properties: array<vec4<f32>, ${this.properties}>,\n` : ""}${this.starts ? `  start: array<vec4<f32>, ${this.starts}>,\n` : ""}${this.uniforms.has("uPointer") ? "  pointer: vec4<f32>,\n" : ""}}`,
       "@group(0) @binding(0) var<uniform> gss: GssUniforms;",
       ...(textures.length ? ["@group(0) @binding(1) var gssSampler: sampler;"] : []),
       ...textures.map(([name], i) => `@group(0) @binding(${i + 2}) var ${nameOf(name)}: texture_2d<f32>;`),
@@ -271,7 +273,7 @@ class Lowering {
         const uniform: Record<string, string> = {
           iResolution: "gss.resolutionTime.xyz", iTime: "gss.resolutionTime.w",
           uCamera: "gss.cameraDistanceRatio.xy", uDist: "gss.cameraDistanceRatio.z", uRatio: "gss.cameraDistanceRatio.w",
-          uPick: "gss.pick.xy", uPicking: "(gss.pick.z != 0.0)", uHover: "gss.hover", uTimeline: "gss.timeline", uProperties: "gss.properties", uStart: "gss.start",
+          uPick: "gss.pick.xy", uPicking: "(gss.pick.z != 0.0)", uPointer: "gss.pointer", uHover: "gss.hover", uTimeline: "gss.timeline", uProperties: "gss.properties", uStart: "gss.start",
         };
         expr = { code: this.uniforms.has(token) ? uniform[token] ?? nameOf(token) : nameOf(token), type };
       }
@@ -332,6 +334,11 @@ class Lowering {
       const uv = args[0].code.startsWith("g_uInput") ? `vec2<f32>(${args[1].code}.x, 1.0 - ${args[1].code}.y)` : args[1].code;
       return { code: `textureSampleLevel(${args[0].code}, gssSampler, ${uv}, 0.0)`, type: "vec4<f32>" };
     }
+    // The images of WebGPU are read at their full size (level 0, like texture() above): the
+    // gradients of textureGrad() are not needed, and a derivative would need uniform control
+    // flow, which the branches of textureColor() are not. dFdx() and dFdy() feed only them
+    if (name === "textureGrad") return { code: `textureSampleLevel(${args[0].code}, gssSampler, ${args[1].code}, 0.0)`, type: "vec4<f32>" };
+    if (name === "dFdx" || name === "dFdy") return { code: `${args[0].type}()`, type: args[0].type };
     if (name === "textureSize") return { code: `vec2<i32>(textureDimensions(${codes()}))`, type: "vec2<i32>" };
     if (name === "texelFetch") {
       const coord = args[0].code.startsWith("g_uInput")

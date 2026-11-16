@@ -23,6 +23,18 @@ export function decodeId(pixel: Uint8Array): number {
   return pixel[0] + pixel[1] * 256;
 }
 
+// hover-distance() (decision 217): how far along the ray the point under the pointer is, blue +
+// 256 × alpha out of 65535, up to MAX_DIST of the shader, the far end of the march: 20, or the
+// max-distance of the scene (decision 224)
+export function decodeDepth(pixel: Uint8Array, maxDistance = 20): number {
+  return ((pixel[2] + pixel[3] * 256) / 65535) * maxDistance;
+}
+
+// The zoom of the wheel: from 3 to 5 units short of the end of the scene (decision 224)
+export function zoomed(distance: number, maxDistance = 20): number {
+  return Math.min(Math.max(distance, 3), maxDistance - 5);
+}
+
 // uHover[]: 1 for each slot whose triggers include the object under the mouse
 export function hoverValues(hover: number[][], id: number): Float32Array {
   return Float32Array.from(hover, (triggers) =>
@@ -31,7 +43,8 @@ export function hoverValues(hover: number[][], id: number): Float32Array {
 }
 
 // uHover[] with :active (decision 95): the hover slots, then the pressed slots, which
-// are 1 while their trigger is pressed (pressed: the id of the pressed object, 0: none)
+// are 1 while their trigger is pressed (pressed: the id of the pressed object, 0: none,
+// which the slots of :not(:active) list)
 export function pointerValues(
   hover: number[][],
   active: number[][] | undefined,
@@ -41,7 +54,7 @@ export function pointerValues(
   if (!active) return hoverValues(hover, hovered);
   return Float32Array.from([
     ...hoverValues(hover, hovered),
-    ...active.map((triggers) => (pressed !== 0 && triggers.includes(pressed) ? 1 : 0)),
+    ...active.map((triggers) => (triggers.includes(pressed) ? 1 : 0)),
   ]);
 }
 

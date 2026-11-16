@@ -22,6 +22,22 @@ describe("var()", () => {
     ).toContain("sdSphere(q, 2.0)");
   });
 
+  it("inherits the color of the closest group, computed on the group, like CSS", () => {
+    const shader = compileGSS(
+      "@scene { group#outer { group#inner { cube; cube; } sphere; } } #outer { color: #ff0000; } #inner { color: hsl(calc(sibling-index() * 120) 100% 50%); } cube:last-child { color: #0000ff; }",
+    );
+    // the first cube takes the color of #inner, the second place of #outer: green
+    expect(shader).toContain("vec3(0.0, 1.0, 0.0)");
+    expect(shader).toContain("vec3(0.0, 0.0, 1.0)");
+    expect(shader).toContain("vec3(1.0, 0.0, 0.0)");
+  });
+
+  it("leaves the color of a light to the light", () => {
+    const shader = compileGSS("@scene { group#lamp { sphere; light; } } #lamp { color: #ff0000; } light { translate: 0 2 0; }");
+    expect(shader).not.toMatch(/vec3\(1\.0, 0\.0, 0\.0\)[^\n]*light|light[^\n]*vec3\(1\.0, 0\.0, 0\.0\)/);
+    expect(shader).toBe(compileGSS("@scene { group#lamp { sphere; light; } } #lamp { color: #ff0000; } sphere { color: #ff0000; } light { translate: 0 2 0; }"));
+  });
+
   it("inherits a variable from a group", () => {
     expect(
       compileGSS(
@@ -40,6 +56,16 @@ describe("var()", () => {
     const shader = compileGSS(source);
     expect(shader).toContain("sdSphere(q, 2.0)"); // #a gets the group's value
     expect(shader).toContain("sdSphere(q, 4.0)"); // #b overrides it
+  });
+
+  it("passes a group's variable as written: sibling-index() counts where var() is read, like CSS", () => {
+    // A cube, then a group of two spheres: with the index of the group, both
+    // spheres would get 2; each gets its own index inside the group
+    const shader = compileGSS(
+      "@scene { cube; group#g { sphere; sphere } } #g { --i: sibling-index(); } #g sphere { radius: calc(var(--i) * 0.25); }",
+    );
+    expect(shader).toContain("sdSphere(q, 0.25)");
+    expect(shader).toContain("sdSphere(q, 0.5)");
   });
 
   it("does not leak a variable to a sibling", () => {

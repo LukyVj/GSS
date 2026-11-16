@@ -1,19 +1,22 @@
 import type { CameraSettings } from "../compiler/features/camera";
 import type { CompiledScene } from "../compiler";
 import { createTextureStore, paintName, resolveImage } from "./textures";
-import { createPaints, PAINT_SIZE, type PaintSet } from "./paint";
-import { pickPixel, pointerValues, createPress, cursorAt, controlsAllow } from "./hover";
+import { createPaints, type PaintSet } from "./paint";
+import { pickPixel, pointerValues, createPress, cursorAt, controlsAllow, zoomed } from "./hover";
 import { createPicker } from "./picker";
 import { createClock } from "./clock";
 import type { FrameProbe } from "../profiler/profiler";
 import type { Dpr } from "../compiler/features/dpr";
 import { pixelRatio } from "./dpr";
-import { createDprPicker, viewDensity } from "./dpr-picker";
+import { createDprPicker, viewDensity, type AdaptDpr, type HeavyThreshold } from "./dpr-picker";
+import { createStats, type Stats } from "./stats";
 import { createTransitions } from "./transitions";
+import { createPointer, type PointerTarget } from "./pointer";
 import { createTriggers } from "./triggers";
 import { createScrollSlider, timelineValues } from "./timeline";
 import type { Timeline } from "../compiler/features/timeline";
 import { pickVariant, WINDOW_MEDIA, type MediaViewport } from "./media";
+import { createGpu, usesGpu, withGpu, type GpuChoice } from "./gpu";
 import { createPost } from "./post";
 import { createProperties } from "./properties";
 import { createDemand, movesWithTime } from "./demand";
@@ -30,6 +33,11 @@ export type View = {
   show(compiled: CompiledScene): Promise<void>;
   // Images drawn since the previous call, and over how many milliseconds (for "60 fps")
   sampleFrames(): { frames: number; ms: number };
+  // The frame rate of the last second and the ratio drawn, for the page (decision 229)
+  stats(): Stats;
+  // Where the camera is now, after the mouse and the spin: in radians, like CameraSettings
+  // (the debug panel of the playground, decision 204)
+  camera(): { yaw: number; pitch: number; distance: number };
   // Stops drawing (off screen) and starts again; the clock stops too. A scene too heavy for
   // the computer stops on its own and fires gss-too-heavy on the canvas (decision 142):
   // play() then draws it anyway, and it never stops on its own again.
@@ -61,13 +69,20 @@ export type ViewOptions = {
   dprPicker?: boolean;
   // true (default): the dpr starts light and follows the frame rate, and a scene too heavy
   // for the computer stops (decision 142). false: always the scene's dpr, never stopped,
-  // for a capture or a benchmark.
-  adaptDpr?: boolean;
+  // for a capture or a benchmark. { start, min } (decision 229): where it starts, 0.5 by
+  // default, and the lowest it goes, 0.5 by default.
+  adaptDpr?: boolean | AdaptDpr;
+  // When a scene is too heavy (decision 229): frames under fps (5 by default) for seconds
+  // (1.5 by default) at the lowest ratio
+  heavyThreshold?: HeavyThreshold;
   // Where @media reads its queries (decision 165): the window, like CSS (default), or, with
   // elementMedia from media.ts, the canvas, like the result of CodePen: the playground and
   // the docs, where the reader sizes the render, not the window. A function, so a page
   // that does not use it never downloads it.
   viewport?: (canvas: HTMLCanvasElement) => MediaViewport;
+  // @gpu (slow) (decision 212): "slow" shows the version of the scene for a slow GPU from the
+  // start, whatever the frames say; "auto" (default) waits for slow frames
+  gpu?: GpuChoice;
 };
 
 // The vertex shader: a giant triangle that covers the whole canvas.
@@ -98,6 +113,7 @@ type GpuScene = {
   uStart: WebGLUniformLocation | null; // the states that start an animation (decision 141)
   uPicking: WebGLUniformLocation | null;
   uPick: WebGLUniformLocation | null;
+  uPointer: WebGLUniformLocation | null; // the object under the pointer, for hover-distance() (decisions 215, 216)
   uProperties: WebGLUniformLocation | null; // @property (decision 105)
   moves: boolean; // the image changes with time alone (decision 134)
   paints: PaintSet | null; // the textures its @paint draw (decision 151)
@@ -129,14 +145,22 @@ export function createView(
   const press = createPress(); // :active: the object pressed, until the button goes up
   const slider = options.scrollSlider ? createScrollSlider(canvas) : null;
   const density = viewDensity(options); // decisions 120 and 142
-  const dprMenu = density && options.dprPicker ? createDprPicker(canvas, density) : null; // docs and playground only
+  const stats = createStats(); // scene.stats() (decision 229)
+  // @gpu (decision 212): the frames say when the GPU is slow, and it stays so
+  const gpu = createGpu(options.gpu);
+  const dprMenu = density && options.dprPicker ? createDprPicker(canvas, density, undefined, gpu) : null; // docs and playground only
   let dpr: Dpr = "auto"; // the pixel density the scene asks for (scene { dpr })
   let transitions = createTransitions([]); // how each hover slot glides (transition)
+  let measured = createPointer(null); // where hover-distance() measures from (decision 216)
+  let asked: [number, number] | null = null; // the pixel of the picking pass on its way
+  let aimed: PointerTarget | null = null; // the point under the mouse, as last read back (decision 217)
   let triggers = createTriggers([], 0); // the states that start an animation (decision 141)
   let reducedMotion = false; // freeze(): transitions jump, like the animations stop
   let shown: CompiledScene | null = null; // the version on screen (@media)
   let stopMedia = () => {}; // stops listening to the @media queries of the scene
-  const media = options.viewport?.(canvas) ?? WINDOW_MEDIA; // decision 165
+  const media = withGpu(options.viewport?.(canvas) ?? WINDOW_MEDIA, gpu); // decision 165
+  let lighter = false; // the scene has a version for a slow GPU: auto never draws it under 1
+  const holdDpr = () => density?.floor(lighter && !gpu.slow ? 1 : null);
   const properties = createProperties(); // @property: what the page set (decision 105)
   const demand = createDemand(); // render on demand (decision 134)
   let pickWanted = false; // the pointer moved since the last picking pass
@@ -216,6 +240,7 @@ export function createView(
       uStart: gl!.getUniformLocation(program, "uStart"),
       uPicking: gl!.getUniformLocation(program, "uPicking"),
       uPick: gl!.getUniformLocation(program, "uPick"),
+      uPointer: gl!.getUniformLocation(program, "uPointer"),
       uProperties: gl!.getUniformLocation(program, "uProperties"),
     };
   }
@@ -258,8 +283,7 @@ export function createView(
       (e) => {
         if (!controlsAllow(shown?.controls, "zoom", hovered)) return; // the page scrolls
         e.preventDefault(); // zoom the scene, not the page
-        camera.dist += e.deltaY * 0.01;
-        camera.dist = Math.min(Math.max(camera.dist, 3), 15);
+        camera.dist = zoomed(camera.dist + e.deltaY * 0.01, shown?.maxDistance);
       },
       { passive: false },
     );
@@ -296,15 +320,15 @@ export function createView(
     pointer = null; // nothing is hovered any more
   });
 
-  // mouse in a @paint: the last pointer over the canvas, in the pixels of its texture, from
-  // the bottom left like gl_FragCoord (decision 151)
+  // mouse in a @paint: the last pointer over the canvas, from 0 to 1, from the bottom left
+  // like gl_FragCoord (decision 151); the paints read it in the pixels of their texture
   let paintPointer: [number, number] = [0, 0];
   function paintMouse(): [number, number] {
     if (pointer) {
       const box = canvas.getBoundingClientRect();
       paintPointer = [
-        ((pointer.x - box.left) / Math.max(box.width, 1)) * PAINT_SIZE,
-        (1 - (pointer.y - box.top) / Math.max(box.height, 1)) * PAINT_SIZE,
+        (pointer.x - box.left) / Math.max(box.width, 1),
+        1 - (pointer.y - box.top) / Math.max(box.height, 1),
       ];
     }
     return paintPointer;
@@ -323,16 +347,30 @@ export function createView(
       : null;
   }
 
+  // Each image on its own texture unit, and each uTextureN told which unit to read; again
+  // before each draw of the scene, as the passes of a filter bind their images on these units
+  function bindTextures(scene: GpuScene): void {
+    scene.textures.forEach((texture, i) => {
+      gl!.activeTexture(gl!.TEXTURE0 + i);
+      gl!.bindTexture(gl!.TEXTURE_2D, texture);
+      gl!.uniform1i(scene.uTextures[i], i);
+    });
+  }
+
   // :hover: asks which object is under the mouse. The picking pass is the scene
   // drawn on one pixel; picker.ts brings its id back later, without waiting.
   function requestPick(scene: GpuScene, pixel: [number, number]): void {
     const sent = picker.request(() => {
+      bindTextures(scene);
       gl!.uniform1i(scene.uPicking, 1);
       gl!.uniform2f(scene.uPick, pixel[0], pixel[1]);
       gl!.drawArrays(gl!.TRIANGLES, 0, 3);
       gl!.uniform1i(scene.uPicking, 0);
     });
-    if (sent) pickWanted = false;
+    if (sent) {
+      pickWanted = false;
+      asked = pixel;
+    }
     gl!.viewport(0, 0, canvas.width, canvas.height); // the picker drew on 1×1
   }
 
@@ -365,14 +403,19 @@ export function createView(
     if (settings && !camera.dragging) camera.yaw -= dt * settings.spin;
 
     const drawn = resize(); // not inside dprMenu?.(): it must run without the menu too
-    dprMenu?.update(drawn);
+    stats.frame(now, drawn);
+    dprMenu?.update(drawn, lighter);
     gl!.viewport(0, 0, canvas.width, canvas.height);
 
     probe?.frameStart(now, canvas.width, canvas.height);
 
     if (scene) {
       // Too heavy for the computer: stop, and say so (decision 142)
-      if (!document.hidden && density?.frame(now)) {
+      const heavy = !document.hidden && density?.frame(now);
+      // @gpu (slow): the lighter version, before the notice (decision 212)
+      if (lighter && !gpu.slow && (heavy || density?.slow)) {
+        queueMicrotask(() => gpu.slowDown()); // after this frame
+      } else if (heavy) {
         playing = false;
         halted = true;
         canvas.dispatchEvent(new CustomEvent("gss-too-heavy"));
@@ -380,18 +423,21 @@ export function createView(
       }
       // :hover: which object is under the mouse, then how far each slot has glided
       // cursor (decision 161) and controls on an object (decision 176) need the object under the mouse too
-      const hovers = scene.hover.length + (scene.active?.length ?? 0) > 0 || shown?.cursors !== undefined || shown?.controls?.objects !== undefined;
+      const hovers = scene.hover.length + (scene.active?.length ?? 0) > 0 || scene.uPointer !== null || shown?.cursors !== undefined || shown?.controls?.objects !== undefined;
       const pixel = hovers ? pointerPixel() : null;
       let glides: Float32Array | null = null;
+      let measures: Float32Array | null = null; // uPointer (decision 216)
       let started: Float32Array | null = null; // uStart[]
       if (hovers) {
         const id = picker.poll(); // the answer to an earlier request, if it came back
         if (id !== null && pointer) {
           hovered = id;
           press.picked(id);
+          if (asked) aimed = [asked[0], asked[1], picker.depth(shown?.maxDistance) ?? 0];
         }
         if (!pixel) {
           hovered = 0; // outside the canvas: nothing is hovered, at once
+          aimed = null;
           pickWanted = false;
         }
         if (shown?.cursors) canvas.style.cursor = cursorAt(shown.cursors, hovered, press.id);
@@ -399,6 +445,7 @@ export function createView(
         // A state that starts an animation holds until it ends (decision 141)
         const { targets, starts } = triggers.update(pointed, clock.seconds);
         glides = transitions.update(targets, now, reducedMotion);
+        if (scene.uPointer) measures = measured.update(aimed, now, reducedMotion);
         if (starts.length > 0) started = starts;
       }
       const values = properties.values();
@@ -419,6 +466,7 @@ export function createView(
         ...(values ?? []),
         ...(timeline ?? []),
         ...(glides ?? []),
+        ...(measures ?? []), // hover-distance() measures from it (decisions 215 to 217)
         ...(scene.paints?.pointer ? paintMouse() : []), // a @paint that reads mouse
       ]);
       if (!changed && !measuring()) {
@@ -442,24 +490,24 @@ export function createView(
       gl!.uniform1f(scene.uDist, camera.dist);
       if (values) gl!.uniform4fv(scene.uProperties, values);
       if (timeline) gl!.uniform4fv(scene.uTimeline, timeline);
-      // Each image on its own texture unit, and each uTextureN told which unit to read
-      scene.textures.forEach((texture, i) => {
-        gl!.activeTexture(gl!.TEXTURE0 + i);
-        gl!.bindTexture(gl!.TEXTURE_2D, texture);
-        gl!.uniform1i(scene!.uTextures[i], i);
-      });
+      bindTextures(scene);
       probe?.drawStart(); // before the picking: its pass costs GPU time too
       // :hover: the object under the mouse in this frame, then uHover[] for every slot
       if (hovers) {
         if (pixel) requestPick(scene, pixel);
         if (glides!.length > 0) gl!.uniform1fv(scene.uHover, glides!);
+        if (measures) gl!.uniform4fv(scene.uPointer, measures);
         if (started) gl!.uniform1fv(scene.uStart, started);
       }
       if (post.active()) {
         // filter: the scene into an image, then the passes; blur(4px) is 4 CSS pixels
         const ratio = canvas.width / Math.max(canvas.clientWidth, 1);
+        // The images of the scene bound again: the filter made its own on their units
         post.render(
-          () => gl!.drawArrays(gl!.TRIANGLES, 0, 3),
+          () => {
+            bindTextures(scene!);
+            gl!.drawArrays(gl!.TRIANGLES, 0, 3);
+          },
           canvas.width,
           canvas.height,
           clock.seconds,
@@ -477,6 +525,7 @@ export function createView(
   // Back on a hidden page: the time it was away is not a slow frame
   const onVisible = () => {
     if (!document.hidden) density?.resume(performance.now());
+    stats.resume();
   };
   document.addEventListener("visibilitychange", onVisible);
 
@@ -561,11 +610,13 @@ export function createView(
     demand.forget(); // a new shader: its first frame is drawn
     properties.use(compiled.properties);
     hovered = 0; // the ids belong to the new scene now
+    aimed = null;
     press.reset();
     slider?.show(compiled.timelines !== undefined);
     dpr = compiled.dpr;
     density?.restart(performance.now()); // its compile is not a slow frame
-    transitions = createTransitions(compiled.transitions);
+    transitions = createTransitions(compiled.transitions, pointerValues(compiled.hover, compiled.active, 0, 0), compiled.channels);
+    measured = createPointer(compiled.pointer?.transition ?? null);
     triggers = createTriggers(compiled.triggers ?? [], compiled.transitions.length);
     if (resetCamera) applyCameraSettings(compiled.camera);
   }
@@ -574,10 +625,13 @@ export function createView(
     show(compiled) {
       // @media: the version for the screen now, then another one when it changes,
       // keeping the camera where the mouse left it
+      lighter = usesGpu(compiled);
+      holdDpr();
       const linkedNow = display(pickVariant(compiled, media.matches), true); // GLSL errors
       stopMedia();
       stopMedia = compiled.media
         ? media.watch(compiled.media.queries, () => {
+            holdDpr();
             const next = pickVariant(compiled, media.matches);
             if (next === shown) return;
             try {
@@ -589,6 +643,10 @@ export function createView(
         : () => {};
       return linkedNow;
     },
+    camera() {
+      return { yaw: camera.yaw, pitch: camera.pitch, distance: camera.dist };
+    },
+    stats: () => stats.read(),
     sampleFrames() {
       const now = performance.now();
       const sample = { frames: framesSinceSample, ms: now - sampleStart };
@@ -607,6 +665,7 @@ export function createView(
       if (halted) density?.insist(); // drawn anyway: never stopped again
       halted = false;
       density?.resume(performance.now());
+      stats.resume();
       clock.resume(performance.now());
       frameId = requestAnimationFrame(frame);
     },

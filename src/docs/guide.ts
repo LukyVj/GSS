@@ -140,8 +140,12 @@ INSTALLATION.push(
         ["poster", '<code>poster="cover.jpg"</code> shows an image until the scene draws, like the poster of a <code>&lt;video&gt;</code>.'],
         ["No graphics card", "<code>&lt;gss-scene&gt;</code> shows its poster and a button, and draws the scene only when the reader asks. With <code>mount()</code>, <code>softwareRendering()</code>, from <code>gss-lang</code> or <code>gss-lang/runtime</code>, returns <code>true</code> on such a computer, to do the same."],
         ["A weak graphics card", "The scene starts at a density of 0.5, then climbs to its <code>dpr</code> while the frames keep up."],
+        ["A lighter version", 'A scene with <a href="#at-gpu"><code>@gpu (slow)</code></a> is never drawn under a density of 1: when its frames stay slow, it switches to its lighter version. <code>&lt;gss-scene gpu="slow"&gt;</code> and <code>mount(canvas, scene, { gpu: "slow" })</code> show that version from the start.'],
         ["Still too slow", "The scene stops: <code>&lt;gss-scene&gt;</code> shows a button that draws it anyway, and <code>mount()</code> fires a <code>gss-too-heavy</code> event on the canvas, where <code>scene.play()</code> draws it anyway."],
         ["adaptDpr: false", "<code>mount(canvas, scene, { adaptDpr: false })</code> keeps the <code>dpr</code> as written and never stops, for a capture or a benchmark."],
+        ["adaptDpr: { start, min }", "<code>mount(canvas, scene, { adaptDpr: { start: 1, min: 0.75 } })</code> starts at a density of 1 instead of 0.5, and never goes under 0.75: no blurry first frame on a strong graphics card, crisp shapes on a weak one. The scene still stops when it is too heavy."],
+        ["heavyThreshold", "<code>{ heavyThreshold: { fps: 20, seconds: 1 } }</code> stops the scene when it stays under 20 frames per second for a second at its lowest density, where the default waits for 5 frames per second over a second and a half."],
+        ["scene.stats()", "Returns <code>{ fps, ratio }</code>: the frames of the last second, and the density the canvas draws at. A page can lower its own quality from it, like a lighter scene with <code>scene.update()</code>."],
       ]),
     ],
   },
@@ -254,6 +258,92 @@ const EDITOR_POCKET =
   `<span><a href="${MARKETPLACE_URL}">VS Code Marketplace</a> · <a href="${OPEN_VSX_URL}">Open VSX</a> for Cursor, VSCodium and Windsurf</span></p>` +
   `</div>`;
 
+// The live demo of "Follow the page": a scene that follows a section of a box that scrolls
+// beside it. Also checked by the tests: it compiles, on its timeline of the page.
+export const FOLLOW_SCENE = [
+  "@scene { torus; }",
+  "scene { camera-spin: none; floor: none; }",
+  "torus {",
+  "  translate: 0 0.9 0;",
+  "  radius: 0.6;",
+  "  thickness: 0.18;",
+  "  color: #3a7bff;",
+  "  animation: turn 1s ease-in-out both;",
+  "  animation-timeline: --feature;",
+  "}",
+  "@keyframes turn {",
+  "  from { rotate-x: 90deg; }",
+  "  to { rotate-y: 360deg; color: #ff5a36; }",
+  "}",
+];
+const FOLLOW_SECTIONS = ["One", "Two", "Three", "Four", "Five"];
+
+const FOLLOW_HTML = `<style>
+  #feature { view-timeline-name: --feature; }
+</style>
+
+<section id="feature">…</section>
+
+<gss-scene>
+  <script type="text/gss">
+${indent(FOLLOW_SCENE, "    ")}
+  </script>
+</gss-scene>`;
+
+INSTALLATION.push({
+  anchor: "follow-the-page",
+  figure: "scroll-timeline",
+  label: "Follow the page as it scrolls",
+  since: "0.0.8",
+  paragraphs: [
+    'A scene can follow a part of the page: a section, a card, a list that scrolls. The page gives the part a name in its own CSS, as it would for a CSS scroll-driven animation, and the scene plays an animation along it with <a href="#animation-timeline"><code>animation-timeline</code></a>. Scroll the box: the ring turns while the section <em>Three</em> crosses it.',
+    `<div class="timeline-demo">` +
+      `<div class="timeline-demo-page" tabindex="0" aria-label="A page that scrolls">` +
+      FOLLOW_SECTIONS.map((name) =>
+        name === "Three"
+          ? `<section style="view-timeline-name: --feature" class="is-named">${name}<code>--feature</code></section>`
+          : `<section>${name}</section>`,
+      ).join("") +
+      `</div>` +
+      `<gss-scene controls="none"><script type="text/gss">\n${FOLLOW_SCENE.join("\n")}\n</script></gss-scene>` +
+      `</div>`,
+    "The CSS of the page names the section; the GSS of the scene writes that name instead of <code>view()</code>:",
+    `<pre><code class="html">${highlightCode("html", FOLLOW_HTML)}</code></pre>`,
+    "<h4>What the scene follows</h4>",
+    table([
+      ["view-timeline-name", "The section crossing its scroll container, the box around it or the window: the animation starts when its top edge comes in at the bottom, and ends when its bottom edge has left at the top. Like <code>view()</code>, but for the section instead of the scene."],
+      ["scroll-timeline-name", "The scroll of the element itself, from its top to its bottom: a list, a panel, a carousel. Like <code>scroll()</code>, for that element."],
+      ["view-timeline-axis, scroll-timeline-axis", "<code>block</code> (the default) for the vertical scroll, <code>inline</code> for the horizontal one, written in the CSS of the page beside the name."],
+      ["view-timeline-inset", "Takes pixels or a percentage off the top and the bottom of the scroll container: <code>view-timeline-inset: 20%</code> starts the animation when the section is a fifth of the way in."],
+    ]),
+    "The animation plays like on <code>view()</code>: its duration and its delay do not count, its number of iterations and its direction do, and <a href=\"#animation-range\"><code>animation-range</code></a> plays it on a part of the way, <code>animation-range: contain</code> while the section is all in view.",
+    "<h4>Several sections</h4>",
+    "Each section takes a name of its own, <code>--intro</code>, <code>--pricing</code>, and each object of the scene follows the one its rule names. One object can follow several sections, with a list of animations, one timeline each: <code>animation: intro 1s, pricing 1s; animation-timeline: --intro, --pricing;</code>. A scene follows up to 16 timelines, the ones of <code>scroll()</code> and <code>view()</code> included.",
+    "<h4>Unlike CSS</h4>",
+    "CSS only lets an element follow a timeline named by itself or one of its ancestors, and asks for <code>timeline-scope</code> otherwise. The scene is drawn apart from the page, never inside the section: it looks for the name in the whole page, and takes the first element that has it. Give each section its own name.",
+    "Like CSS, the animation applies only while the section crosses: before and after, the object has its own value. <code>both</code> in <code>animation</code>, as in the demo, holds its first frame before and its last one after. While no element of the page has the name, the animation does not apply either. A page that adds its sections later is followed once they are there. In the playground and under the examples of these docs, where there is no such section, the slider over the render stands in for the scroll.",
+  ],
+});
+
+INSTALLATION.push({
+  anchor: "fast-scenes",
+  figure: "flow",
+  label: "Keep a scene fast",
+  since: "0.0.8",
+  paragraphs: [
+    "Each pixel sends a ray into the scene, and the ray measures how far the objects are at each of its steps. To save work, GSS puts the objects in spheres, alone or in groups that sit close together: a ray that passes far from a sphere skips all the objects inside it. A scene of many objects stays fast as long as GSS knows where its objects can be.",
+    "<h4>Objects that move</h4>",
+    "An object that moves keeps its sphere, as large as the whole way it can travel: the values of its <code>@keyframes</code>, with any easing, on time or on a timeline of the page, <code>:hover</code> and its <code>transition</code>, <code>hover-distance()</code> and <code>hover-direction()</code>, motion paths. Objects that move a little keep small spheres and are skipped as often as objects at rest; an object that crosses the scene gets a sphere as large as the scene, and is measured by almost every ray.",
+    "<h4>What makes a scene slower</h4>",
+    table([
+      ["A variable set from JavaScript", 'A position read from an <a href="#at-property"><code>@property</code></a> can take any value: its object has no sphere, and every ray measures it at every step. That is the price of a value the page can change at any moment.'],
+      ["A value that grows with time", "A position computed from the time without end, like <code>calc()</code> around a value that keeps growing, has no bound either. An animation that repeats stays bounded."],
+      ["Many objects that cross the scene", "Their spheres all cover the scene: keep the number of such objects low, or let them move less."],
+    ]),
+    'To see where a scene spends its time, <a href="#view"><code>view: steps</code></a> colors each pixel by the work it costs, and the scene lowers its <a href="#dpr"><code>dpr</code></a> by itself when its frames get slow.',
+  ],
+});
+
 INSTALLATION.push({
   anchor: "editor-support",
   figure: "flow",
@@ -264,6 +354,8 @@ INSTALLATION.push({
     EDITOR_POCKET,
     table([
       ["Highlighting", "Selectors, properties, values, colors, numbers and units, the at-rules, nested rules and <code>&amp;</code>."],
+      ["Autocompletion", "While you type a property name, the properties the rule can take, with their syntax and description; after <code>@apply</code>, the mixins of the file."],
+      ["GSS in HTML", "The GSS of a <code>&lt;script type=\"text/gss\"&gt;</code> is colored and completed like a <code>.gss</code> file."],
       ["Formatting", "<em>Format Document</em>, or saving the file, writes the code in the style of these docs: one shape per line in <code>@scene</code>, one declaration per line, two-space indentation, comments kept."],
       ["File icon", "<code>.gss</code> files get the GSS icon in the explorer."],
     ]),

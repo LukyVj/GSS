@@ -7,18 +7,20 @@ import type { RegisteredProperty } from "../compiler/features/properties";
 const calls: string[] = [];
 let registered: RegisteredProperty[] | undefined;
 let display: "open" | "folded" | undefined;
+let debugPanel: "open" | "folded" | undefined;
 vi.mock("../runtime/renderer", () => ({
   createRenderer: () => ({
     setProperty: (name: string, value: string) => void calls.push(`set ${name} ${value}`),
     removeProperty: (name: string) => void calls.push(`remove ${name}`),
     setView: (view: string | null) => void calls.push(`view ${view}`),
+    setDebug: (debug: boolean) => void calls.push(`debug ${debug}`),
     destroy: () => {},
   }),
 }));
 vi.mock("../runtime/editor", () => ({
   connectEditor: (_elements: unknown, _renderer: unknown, code: string) => ({
-    onCompile: (listener: (code: string, compiled: { properties?: RegisteredProperty[]; propertyPanel?: string }) => void) =>
-      listener(code, { properties: registered, propertyPanel: display }),
+    onCompile: (listener: (code: string, compiled: object) => void) =>
+      listener(code, { properties: registered, propertyPanel: display, debugPanel, objects: 1, textures: [], hover: [], shader: "void main() {}" }),
     refresh: () => void calls.push("refresh"),
     destroy: () => {},
   }),
@@ -45,6 +47,7 @@ describe("Try it", () => {
     calls.length = 0;
     registered = undefined;
     display = undefined;
+    debugPanel = undefined;
   });
 
   it("shows the panel of variables over the render of a scene that asks for it", () => {
@@ -56,7 +59,7 @@ describe("Try it", () => {
     const slider = panel.querySelector<HTMLInputElement>('[data-variable="--lift"] input[type="range"]')!;
     slider.value = "1.5";
     slider.dispatchEvent(new Event("input"));
-    expect(calls).toEqual(["set --lift 1.5"]);
+    expect(calls).toEqual(["debug true", "set --lift 1.5"]);
   });
 
   it("keeps it hidden for a scene without @property-panel", () => {
@@ -77,7 +80,8 @@ describe("Try it", () => {
   it("shows the chips of the view over the render: they compile the scene again in the view chosen", () => {
     example("@scene { sphere; }").querySelector("button")!.click();
     const chips = [...document.querySelectorAll<HTMLButtonElement>(".playground-body .view-chip")];
-    expect(chips.map((chip) => chip.textContent)).toEqual(["view: shaded", "view: distance"]);
+    expect(chips.map((chip) => chip.textContent)).toEqual(["view: shaded", "view: distance", "view: steps"]);
+    calls.length = 0;
     chips[1].click();
     expect(calls).toEqual(["view distance", "refresh"]);
   });
@@ -87,5 +91,17 @@ describe("Try it", () => {
     button.click();
     button.click();
     expect(document.querySelector(".view-chips")).toBeNull();
+  });
+
+  it("draws the axes and the grid of @debug-panel, and shows its panel over the render (decision 204)", () => {
+    debugPanel = "open";
+    const button = example("@debug-panel { display: open; } @scene { sphere; }").querySelector("button")!;
+    button.click();
+    expect(calls).toContain("debug true");
+    const panel = document.querySelector<HTMLElement>(".playground-body .debug-panel")!;
+    expect(panel.hidden).toBe(false);
+    expect(panel.textContent).toContain("objects1");
+    button.click();
+    expect(document.querySelector(".debug-panel")).toBeNull();
   });
 });

@@ -13,15 +13,27 @@ type Glide = {
   transition: Transition;
 };
 
-export function createTransitions(pairs: Pair[]) {
-  const values = new Float32Array(pairs.length); // what the shader gets
-  const targets = new Float32Array(pairs.length); // 0 at rest, 1 hovered
+// rest: each slot when nothing is hovered, where it starts: 1 for a :not(:hover) (decision 214)
+// channels: the numbers after the slots, for the properties of a slot that glide with
+// another transition; each goes where its slot goes
+export function createTransitions(
+  slots: Pair[],
+  rest: ArrayLike<number> = new Float32Array(slots.length),
+  channels: (Pair & { slot: number })[] = [],
+) {
+  const pairs = [...slots, ...channels];
+  const slotOf = (i: number) => (i < slots.length ? i : channels[i - slots.length].slot);
+  const values = Float32Array.from(pairs, (_, i) => rest[slotOf(i)] ?? 0); // what the shader gets
+  const targets = Float32Array.from(values); // 0 at rest, 1 hovered
   const glides: (Glide | null)[] = pairs.map(() => null);
+  const wanted = new Float32Array(pairs.length);
 
   return {
     // targets: 0 or 1 for each slot (hoverValues); now: in ms;
     // instant: jump, when motion is reduced (prefers-reduced-motion)
-    update(next: Float32Array, now: number, instant = false): Float32Array {
+    update(slotTargets: Float32Array, now: number, instant = false): Float32Array {
+      for (let i = 0; i < pairs.length; i++) wanted[i] = slotTargets[slotOf(i)] ?? 0;
+      const next = wanted;
       pairs.forEach((pair, i) => {
         // 1. A new target: start from where the value is
         if (next[i] !== targets[i]) {

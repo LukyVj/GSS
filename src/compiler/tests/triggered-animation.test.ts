@@ -20,7 +20,7 @@ describe("an animation started by a state", () => {
   });
 
   it("still refuses a property that cannot change on :active", () => {
-    expect(() => compileScene("@scene { cube; } cube:active { size: 2; }")).toThrow(/cannot change on :active/);
+    expect(() => compileScene("@scene { cube; } cube:active { material: gold; }")).toThrow(/cannot change on :active/);
   });
 
   it("plays from the start time of its slot: uStart[], and iTime - uStart[k]", () => {

@@ -19,6 +19,7 @@ describe("animation-timeline: reading scroll() and view()", () => {
     ["scroll(y nearest)", { type: "scroll", scroller: "nearest", axis: "y" }],
     ["view()", { type: "view", axis: "block" }],
     ["view(inline)", { type: "view", axis: "inline" }],
+    ["--intro", { type: "named", name: "--intro" }],
   ])("%s", (text, expected) => {
     expect(timeline(text)).toEqual(expected);
   });
@@ -30,7 +31,8 @@ describe("animation-timeline: reading scroll() and view()", () => {
     ["scroll(x y)", /one axis/],
     ["view(10%)", /inset/],
     ["view(root)", /block, inline, x or y/],
-    ["--my-timeline", /scroll\(\) or view\(\)/],
+    ["my-timeline", /scroll\(\), view\(\) or the name of a timeline/],
+    ["--a --b", /one timeline/],
     ["scroll() view()", /one timeline/],
   ])("refuses %s", (text, message) => {
     expect(() => timeline(text)).toThrow(message);
@@ -65,7 +67,7 @@ describe("animation-timeline in the shader", () => {
     const compiled = compileScene(
       scene("cube { animation: spin 1s 2 alternate; animation-timeline: view(); }"),
     );
-    expect(compiled.shader).toContain("playhead(uTimeline.x * 2.0, 1.0, 2.0, 2)");
+    expect(compiled.shader).toContain("playhead(clamp(uTimeline.x, 0.0, 1.0) * 2.0, 1.0, 2.0, 2)");
     const reverse = compileScene(
       scene("cube { animation: spin 1s reverse; animation-timeline: scroll(); }"),
     );
@@ -90,13 +92,22 @@ describe("animation-timeline in the shader", () => {
     expect(compiled.shader).not.toContain("uTimeline.z");
   });
 
-  it("takes at most four timelines", () => {
-    const rules = ["scroll(root)", "scroll(inline)", "view()", "view(inline)", "scroll(root inline)"]
-      .map((t, i) => `#o${i} { animation: spin 1s; animation-timeline: ${t}; }`)
-      .join(" ");
-    expect(() =>
-      compileScene(`@scene { cube#o0; cube#o1; cube#o2; cube#o3; cube#o4; } ${rules} ${spin}`),
-    ).toThrow(/4 timelines/);
+  it("keeps one vec4 up to four timelines, and takes an array of them past four, up to 16", () => {
+    const names = (n: number) => Array.from({ length: n }, (_, i) => `--t${i}`);
+    const scene = (n: number) =>
+      `@scene { sphere; } sphere { animation: ${names(n).map(() => "spin 1s").join(", ")}; animation-timeline: ${names(n).join(", ")}; } ${spin}`;
+    const four = compileScene(scene(4));
+    expect(four.shader).toContain("uniform vec4 uTimeline;");
+    expect(four.shader).toContain("uTimeline.w");
+    const six = compileScene(scene(6));
+    expect(six.timelines).toHaveLength(6);
+    expect(six.shader).toContain("uniform vec4 uTimeline[2];");
+    expect(six.shader).toContain("uTimeline[0].x");
+    expect(six.shader).toContain("uTimeline[1].y");
+    expect(six.wgsl).toContain("timeline: array<vec4<f32>, 2>");
+    expect(six.wgsl).toContain("gss.timeline[1].y");
+    expect(toShadertoy(six)).toContain("const vec4 uTimeline[2] = vec4[2](vec4(0.0), vec4(0.0));");
+    expect(() => compileScene(scene(17))).toThrow(/16 timelines/);
   });
 
   it("works on a group", () => {
@@ -178,5 +189,81 @@ describe("animation-range: the part of the timeline the animation plays on, like
     expect(() => timelines("cube { animation: spin 1s; animation-timeline: view(); animation-range: middle; }")).toThrow(/animation-range expects/);
     expect(() => timelines("cube { animation: spin 1s; animation-timeline: view(); animation-range: entry 10% exit 90% cover; }")).toThrow(/animation-range expects/);
     expect(() => timelines("cube { animation: spin 1s; animation-range: entry; }")).toThrow(/animation-timeline/);
+  });
+});
+
+describe("animation-timeline: --name, a timeline of the page, like CSS", () => {
+  const compiled = (rules: string) => compileScene(scene(rules));
+
+  it("gives the name its own component of uTimeline, shared by the objects that use it", () => {
+    const result = compiled(
+      "cube { animation: spin 1s; animation-timeline: --intro; } sphere { animation: spin 1s; animation-timeline: --intro; }",
+    );
+    expect(result.timelines).toEqual([{ type: "named", name: "--intro" }]);
+    expect(result.shader).toContain("uTimeline.x");
+    expect(result.shader).not.toContain("uTimeline.y");
+  });
+
+  it("gives two names, and a name beside view(), two components", () => {
+    expect(
+      compiled("cube { animation: spin 1s; animation-timeline: --a; } sphere { animation: spin 1s; animation-timeline: --b; }").timelines,
+    ).toEqual([
+      { type: "named", name: "--a" },
+      { type: "named", name: "--b" },
+    ]);
+    expect(
+      compiled("cube { animation: spin 1s; animation-timeline: --a; } sphere { animation: spin 1s; animation-timeline: view(); }").timelines,
+    ).toHaveLength(2);
+  });
+
+  it("plays like view() in the shader: the same code on its own component", () => {
+    const named = compiled("cube { animation: spin 1s 2 alternate; animation-timeline: --intro; }").shader;
+    const view = compiled("cube { animation: spin 1s 2 alternate; animation-timeline: view(); }").shader;
+    expect(named).toBe(view);
+  });
+
+  it("takes the named ranges, which a view timeline of the page gives", () => {
+    expect(compiled("cube { animation: spin 1s; animation-timeline: --intro; animation-range: entry 20% exit; }").timelines).toEqual([
+      {
+        type: "named",
+        name: "--intro",
+        range: { start: { name: "entry", offset: 20, unit: "%" }, end: { name: "exit", offset: 100, unit: "%" } },
+      },
+    ]);
+  });
+
+  it("survives the formatter", () => {
+    const source = scene("cube { animation: spin 1s; animation-timeline: --intro; }");
+    expect(compileScene(formatGss(source)).shader).toBe(compileScene(source).shader);
+  });
+});
+
+describe("animation-fill-mode on a timeline, like CSS", () => {
+  const shader = (rules: string) => compileScene(scene(rules)).shader;
+
+  it("applies the animation only inside its timeline without a fill mode", () => {
+    const code = shader("cube { animation: spin 1s; animation-timeline: view(); }");
+    expect(code).toContain("(uTimeline.x >= 0.0 && uTimeline.x <= 1.0) ?");
+    expect(code).toContain("clamp(uTimeline.x, 0.0, 1.0)");
+  });
+
+  it("holds the first frame before it with backwards, the last after it with forwards, both with both", () => {
+    expect(shader("cube { animation: spin 1s backwards; animation-timeline: view(); }")).toContain("(uTimeline.x <= 1.0) ?");
+    expect(shader("cube { animation: spin 1s forwards; animation-timeline: view(); }")).toContain("(uTimeline.x >= 0.0) ?");
+    const both = shader("cube { animation: spin 1s both; animation-timeline: view(); }");
+    expect(both).not.toContain("uTimeline.x >= 0.0");
+    expect(both).toContain("clamp(uTimeline.x, 0.0, 1.0)");
+  });
+
+  it("leaves scroll() without a range as it was: its progress never leaves 0 to 1", () => {
+    const code = shader("cube { animation: spin 1s; animation-timeline: scroll(); }");
+    expect(code).not.toContain("clamp(uTimeline.x");
+    expect(code).not.toContain("uTimeline.x >= 0.0");
+  });
+
+  it("stops a scroll() with a range outside it", () => {
+    expect(shader("cube { animation: spin 1s; animation-timeline: scroll(); animation-range: 20% 80%; }")).toContain(
+      "(uTimeline.x >= 0.0 && uTimeline.x <= 1.0) ?",
+    );
   });
 });

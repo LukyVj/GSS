@@ -7,6 +7,7 @@ export type Stylesheet = {
   keyframes: Keyframes[]; // all the @keyframes blocks
   properties: PropertyRule[]; // the @property rules (decision 105)
   panels: PanelRule[]; // the @property-panel rules (decision 128)
+  debugPanels: PanelRule[]; // the @debug-panel rules (decision 204)
   paints: PaintRule[]; // the @paint rules (decision 151)
 };
 
@@ -18,9 +19,9 @@ export type PaintRule = {
   line?: number; // the line of its "{" in the file, set by the compiler (for the GLSL errors)
 };
 
-// @property-panel { display: open; }
+// @property-panel { display: open; }, @debug-panel { display: open; }
 export type PanelRule = {
-  at: Token; // the @property-panel keyword (for the errors)
+  at: Token; // the @property-panel or @debug-panel keyword (for the errors)
   descriptors: Declaration[];
 };
 
@@ -44,8 +45,14 @@ export type SceneElement = {
 export type Rule = {
   selector: Token[]; // for now, we keep the raw tokens
   declarations: Declaration[];
-  media?: string; // inside @media (max-width: 600px) { … }: the query, as text
+  // inside @media (max-width: 600px) { … }: the query, as text; inside @gpu (slow) { … }:
+  // "@gpu (slow)" or "@gpu not (slow)", which the runtime reads instead of the browser
+  media?: string;
 };
+
+// @gpu (decision 212): its conditions sit among the @media queries of a scene
+export const GPU_EXAMPLE = "@gpu (slow) { scene { --n: 8; } }";
+export const isGpuCondition = (query: string): boolean => query.startsWith("@gpu ");
 
 // A declaration: radius: 1 0.28;
 export type Declaration = {

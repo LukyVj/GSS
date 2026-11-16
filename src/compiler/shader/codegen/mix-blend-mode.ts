@@ -38,6 +38,7 @@ export function withInheritedBlendMode(instance: StyledInstance): StyledInstance
     ...instance,
     styles: inherit(instance.styles),
     hoverStyles: inherit(instance.hoverStyles),
+    hoverStates: instance.hoverStates.map((state) => ({ ...state, styles: inherit(state.styles) })),
     activeStyles: inherit(instance.activeStyles),
   };
 }

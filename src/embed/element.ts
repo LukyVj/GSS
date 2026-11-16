@@ -1,5 +1,5 @@
 import { mountAsync, type EmbeddedScene, type AsyncEmbeddedScene } from "./index";
-import { readControls, sourceUrl } from "./options";
+import { readControls, readGpu, sourceUrl } from "./options";
 import { softwareRendering } from "./runtime";
 import { HEAVY_NOTICE, SOFTWARE_NOTICE, SOFTWARE_PLAY } from "../runtime/software";
 
@@ -44,7 +44,7 @@ const STYLE = `
 `;
 
 export class GssSceneElement extends HTMLElement {
-  static observedAttributes = ["src", "controls", "backend", "poster"];
+  static observedAttributes = ["src", "controls", "backend", "poster", "gpu"];
 
   #canvas: HTMLCanvasElement;
   #error: HTMLPreElement;
@@ -154,6 +154,7 @@ export class GssSceneElement extends HTMLElement {
       const options = {
         base,
         controls: readControls(this.getAttribute("controls")),
+        gpu: readGpu(this.getAttribute("gpu")), // decision 212
       };
       const backend = this.getAttribute("backend");
       if (backend !== null && !["auto", "webgl", "webgpu"].includes(backend))

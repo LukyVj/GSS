@@ -1,0 +1,96 @@
+/* The debug panel, over the bottom-left corner of the render: in the playground (the panel of
+   variables takes the top-left corner, the performance panel the top-right one) and in "Try it"
+   of the docs (playground-panel.css places it). */
+
+@import "../styles/tokens.css";
+
+.debug-panel {
+  grid-area: scene; /* same cell as the canvas, drawn above it */
+  align-self: end;
+  justify-self: start;
+  z-index: 1;
+  margin: 12px 12px 44px; /* over the slider of scroll(), at the bottom */
+  width: min(280px, calc(100% - 24px));
+  box-sizing: border-box;
+  background: rgb(10 10 12 / 0.86); /* --gss-void, the scene shows through a little */
+  border: 1px solid var(--gss-isoline);
+  border-radius: var(--gss-radius-control);
+  font: 400 11px/1.6 var(--gss-font-code);
+  color: var(--gss-bone);
+}
+.debug-panel[hidden] {
+  display: none;
+}
+
+/* The title folds the list, like the panel of variables */
+.debug-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 28px;
+  padding: 0 12px;
+  border: 0;
+  background: none;
+  color: var(--gss-dim);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: color var(--gss-transition);
+}
+.debug-toggle::before {
+  content: "";
+  width: 0;
+  height: 0;
+  border-left: 4px solid currentColor;
+  border-top: 3.5px solid transparent;
+  border-bottom: 3.5px solid transparent;
+  transition: transform var(--gss-transition);
+}
+.debug-toggle[aria-expanded="true"]::before {
+  transform: rotate(90deg);
+}
+.debug-toggle:hover {
+  color: var(--gss-bone);
+}
+.debug-toggle:focus-visible {
+  outline: 1px solid var(--gss-signal);
+  outline-offset: -1px;
+}
+
+.debug-list {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 16px;
+  margin: 0;
+  padding: 0 12px 10px;
+}
+.debug-list[hidden] {
+  display: none;
+}
+.debug-list dt {
+  color: var(--gss-dim);
+}
+.debug-list dd {
+  margin: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums; /* numbers do not jump as they change */
+}
+.debug-list dd.missing {
+  color: var(--gss-ash);
+}
+/* Over budget: the line to look at first */
+.debug-list dd.warning {
+  color: var(--gss-signal);
+}
+
+/* The colors of the axes the shader draws (src/compiler/shader/codegen/debug.ts) */
+.debug-axis-x {
+  color: rgb(242 69 64);
+}
+.debug-axis-y {
+  color: rgb(92 204 92);
+}
+.debug-axis-z {
+  color: rgb(77 140 255);
+}

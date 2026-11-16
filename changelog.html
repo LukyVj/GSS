@@ -67,8 +67,23 @@
       .changelog a:hover {
         color: var(--gss-signal);
       }
-      .changelog {
-        max-width: 760px;
+      /* The changelog on the left, the cloud of points on the right, held in view */
+      .log {
+        display: grid;
+        grid-template-columns: minmax(0, 760px) minmax(0, 1fr);
+        gap: 56px;
+      }
+      .cloud {
+        position: sticky;
+        top: 72px;
+        height: calc(100vh - 96px);
+        margin-top: 48px;
+        align-self: start;
+      }
+      .cloud gss-scene {
+        display: block;
+        width: 100%;
+        height: 100%;
       }
       .release {
         padding: 40px 0;
@@ -105,34 +120,82 @@
         font-size: 15px;
         line-height: 1.6;
       }
+      /* Each change is one line: the element it is about, then its first sentence */
       .release ul {
+        list-style: none;
         margin: 0;
-        padding-left: 20px;
+        padding: 0;
+        border-top: 1px solid var(--gss-line);
       }
-      .release li + li {
-        margin-top: 10px;
+      .release li {
+        margin: 0;
+        border-bottom: 1px solid var(--gss-line);
       }
-      /* A change shows its first sentence; the rest unfolds on a click */
-      .release summary {
-        cursor: pointer;
+      .release .row {
+        display: grid;
+        grid-template-columns: 168px minmax(0, 1fr) 20px;
+        gap: 16px;
+        align-items: baseline;
+        padding: 12px 8px;
         list-style: none;
       }
-      .release summary::-webkit-details-marker {
-        display: none;
+      /* A line whose element has a page in the docs leads there */
+      .release a.row {
+        color: inherit;
+        text-decoration: none;
+        transition: background var(--gss-transition);
       }
-      .release summary::after {
-        content: " more";
-        font: 12px var(--gss-font-code);
+      .release a.row:hover {
+        background: var(--gss-surface);
+      }
+      .release a.row:focus-visible {
+        outline: 1px solid var(--gss-signal);
+        outline-offset: -1px;
+      }
+      .release .scope {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font: 600 12px / 1.6 var(--gss-font-code);
+        color: var(--gss-bone);
+      }
+      .release .scope code {
+        font-size: inherit;
+      }
+      .release .what {
+        color: var(--gss-ash);
+        font-size: 15px;
+        line-height: 1.5;
+      }
+      .release a.row .what {
+        color: var(--gss-bone);
+      }
+      /* The code of a sentence: a small box, a bone wash with a gutter hairline, so it stands
+         out from the sentence even where the sentence is bone */
+      .release .what code {
+        padding: 1px 5px;
+        border: 1px solid var(--gss-gutter);
+        border-radius: var(--gss-radius-control);
+        background: rgb(232 230 225 / 0.08);
+        font-size: 0.86em;
+        color: var(--gss-bone);
+        box-decoration-break: clone;
+        -webkit-box-decoration-break: clone;
+      }
+      .release a.row:hover .what code {
+        background: rgb(232 230 225 / 0.12);
+      }
+      .release .go {
+        justify-self: end;
+        font: 13px var(--gss-font-code);
         color: var(--gss-dim);
+        transition:
+          color var(--gss-transition),
+          transform var(--gss-transition);
       }
-      .release details[open] summary::after {
-        content: " less";
-      }
-      .release summary:hover::after {
+      .release a.row:hover .go {
         color: var(--gss-signal);
-      }
-      .release details p {
-        margin: 6px 0 0;
+        transform: translateX(2px);
       }
 
       .site-footer {
@@ -175,6 +238,12 @@
 
       /* ----- Smaller screens: the side padding goes 56 → 32 → 16px ----- */
       @media (max-width: 1024px) {
+        .log {
+          display: block;
+        }
+        .cloud {
+          display: none;
+        }
         main {
           padding: 0 32px 72px;
         }
@@ -195,6 +264,14 @@
         .release h2 {
           font-size: 26px;
         }
+        .release .row {
+          grid-template-columns: minmax(0, 1fr) 20px;
+          gap: 4px 12px;
+        }
+        .release .scope {
+          grid-column: 1 / -1;
+        }
+
         .topbar nav a[href="./showcase.html"] {
           display: none;
         }
@@ -229,22 +306,217 @@
         <a href="./playground.html">playground</a>
         <a href="./docs.html">docs</a>
         <a href="./showcase.html">showcase</a>
-        <a class="github" href="https://github.com/LukyVj/GSS"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg><span>github</span></a>
-        <a class="x" href="https://x.com/GSS_lang" aria-label="GSS on X, @GSS_lang"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg><span>@GSS_lang</span></a>
+        <a class="github" href="https://github.com/LukyVj/GSS"
+          ><svg viewBox="0 0 16 16" aria-hidden="true">
+            <path
+              d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"
+            />
+          </svg>
+          <span>github</span>
+        </a>
+        <a
+          class="x"
+          href="https://x.com/GSS_lang"
+          aria-label="GSS on X, @GSS_lang"
+          ><svg viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"
+            />
+          </svg>
+          <span>@GSS_lang</span>
+        </a>
       </nav>
     </header>
 
     <main>
-      <div class="intro">
-        <p class="eyebrow">Changelog</p>
-        <h1>What changed in GSS.</h1>
-        <p class="lead">
-          Every version, the newest first: what it added, what it changed and what it fixed.
-          The package is on <a href="https://www.npmjs.com/package/gss-lang">npm</a>, the code on
-          <a href="https://github.com/LukyVj/GSS">GitHub</a>.
-        </p>
+      <div class="log">
+        <div class="text">
+          <div class="intro">
+            <p class="eyebrow">Changelog</p>
+            <h1>What changed in GSS.</h1>
+            <p class="lead">
+              Every version, the newest first: what it added, what it changed
+              and what it fixed. The package is on
+              <a href="https://www.npmjs.com/package/gss-lang">npm</a>, the code
+              on <a href="https://github.com/LukyVj/GSS">GitHub</a>.
+            </p>
+          </div>
+          <div class="changelog" id="changelog"></div>
+        </div>
+        <aside class="cloud" aria-hidden="true">
+          <gss-scene controls="none">
+            <script type="text/gss">
+              /* A cloud of 107 points that writes the number of each version
+                 while that version crosses the page */
+              @scene {
+                group#cloud { group.slot * 107 { sphere.point; } }
+              }
+
+              scene {
+                background: #0a0a0c;
+                floor: none;
+                ambient: 0.35;
+                light: -30deg 50deg;
+                camera-target: 0 0 0;
+                camera-distance: 10;
+                camera-angle: 0deg 0deg;
+                camera-spin: none;
+                controls: none;
+              }
+
+              #cloud {
+                animation: sway 8s ease-in-out infinite alternate;
+              }
+
+              /* each slot carries its point through the versions */
+              .slot {
+                --i: sibling-index();
+                --k: calc((var(--i) - 0.5) / 107);
+                --a: calc(var(--i) * 137.508deg);
+                --y: calc(1 - 2 * var(--k));
+                --r: sqrt(1 - pow(var(--y), 2));
+                /* between two versions, the points scatter on a sphere */
+                --scatter: calc(cos(var(--a)) * var(--r) * 1.6)
+                  calc(var(--y) * 1.6) calc(sin(var(--a)) * var(--r) * 1.6);
+
+                /* "0.0.8": three digits of 5 × 7 dots and two periods, on a grid
+                   of 21 columns. The first 105 points are the cells of the digits:
+                   --dig is the digit, --cell its cell (row by row, from the top) */
+                --dig: round(down, calc((var(--i) - 1) / 35));
+                --cell: mod(var(--i) - 1, 35);
+                --col: mod(var(--cell), 5);
+                --row: round(down, calc(var(--cell) / 5));
+                /* the last 2 are the periods, at columns 6 and 14 */
+                --dot: clamp(0, var(--i) - 105, 1);
+                --dx: calc(6 + mod(var(--i), 2) * 8);
+                /* where the point sits when its cell is lit, and where it hides
+                   when it is not: behind the bottom middle cell, lit in every digit */
+                --px: calc((1 - var(--dot)) * (var(--dig) * 8 + var(--col)) + var(--dot) * var(--dx));
+                --py: calc((1 - var(--dot)) * (3 - var(--row)) - var(--dot) * 3);
+                --hx: calc((1 - var(--dot)) * (var(--dig) * 8 + 2) + var(--dot) * var(--dx));
+                --hy: -3;
+
+                /* each digit is 35 bits, one per cell, kept in two numbers: the
+                   first 4 rows (20 bits), then the last 3 (--hi is 1). The first
+                   two digits are a 0, the last one (--last is 1) the digit of the
+                   version */
+                --last: clamp(0, var(--dig) - 1, 1);
+                --hi: clamp(0, var(--cell) - 19, 1);
+                --bit: calc(var(--cell) - 20 * var(--hi));
+                --b8: mod(round(down, calc((575022 + var(--last) * -98304 + var(--hi) * -560125 + var(--hi) * var(--last) * 98304) / pow(2, var(--bit)))), 2);
+                --b7: mod(round(down, calc((575022 + var(--last) * -435215 + var(--hi) * -560125 + var(--hi) * var(--last) * 424546) / pow(2, var(--bit)))), 2);
+                --b6: mod(round(down, calc((575022 + var(--last) * -82402 + var(--hi) * -560125 + var(--hi) * var(--last) * 82402) / pow(2, var(--bit)))), 2);
+                --b5: mod(round(down, calc((575022 + var(--last) * -35311 + var(--hi) * -560125 + var(--hi) * var(--last) * 35310) / pow(2, var(--bit)))), 2);
+                --b4: mod(round(down, calc((575022 + var(--last) * -269478 + var(--hi) * -560125 + var(--hi) * var(--last) * 283540) / pow(2, var(--bit)))), 2);
+                --b3: mod(round(down, calc((575022 + var(--last) * -164864 + var(--hi) * -560125 + var(--hi) * var(--last) * 164863) / pow(2, var(--bit)))), 2);
+                --b2: mod(round(down, calc((575022 + var(--last) * -295936 + var(--hi) * -560125 + var(--hi) * var(--last) * 312851) / pow(2, var(--bit)))), 2);
+                --b1: mod(round(down, calc((575022 + var(--last) * -439658 + var(--hi) * -560125 + var(--hi) * var(--last) * 439229) / pow(2, var(--bit)))), 2);
+                --v8: calc((var(--hx) + var(--b8) * (var(--px) - var(--hx)) - 10) * 0.115)
+                  calc((var(--hy) + var(--b8) * (var(--py) - var(--hy))) * 0.115) 0;
+                --v7: calc((var(--hx) + var(--b7) * (var(--px) - var(--hx)) - 10) * 0.115)
+                  calc((var(--hy) + var(--b7) * (var(--py) - var(--hy))) * 0.115) 0;
+                --v6: calc((var(--hx) + var(--b6) * (var(--px) - var(--hx)) - 10) * 0.115)
+                  calc((var(--hy) + var(--b6) * (var(--py) - var(--hy))) * 0.115) 0;
+                --v5: calc((var(--hx) + var(--b5) * (var(--px) - var(--hx)) - 10) * 0.115)
+                  calc((var(--hy) + var(--b5) * (var(--py) - var(--hy))) * 0.115) 0;
+                --v4: calc((var(--hx) + var(--b4) * (var(--px) - var(--hx)) - 10) * 0.115)
+                  calc((var(--hy) + var(--b4) * (var(--py) - var(--hy))) * 0.115) 0;
+                --v3: calc((var(--hx) + var(--b3) * (var(--px) - var(--hx)) - 10) * 0.115)
+                  calc((var(--hy) + var(--b3) * (var(--py) - var(--hy))) * 0.115) 0;
+                --v2: calc((var(--hx) + var(--b2) * (var(--px) - var(--hx)) - 10) * 0.115)
+                  calc((var(--hy) + var(--b2) * (var(--py) - var(--hy))) * 0.115) 0;
+                --v1: calc((var(--hx) + var(--b1) * (var(--px) - var(--hx)) - 10) * 0.115)
+                  calc((var(--hy) + var(--b1) * (var(--py) - var(--hy))) * 0.115) 0;
+
+                /* each version gathers the points into its number while it
+                   crosses a line at 40% of the window (the page names each
+                   version, view-timeline-name: --v0-0-7), and they scatter
+                   between two versions; the newest holds its number above the
+                   versions (backwards), the oldest below them (forwards) */
+                translate: var(--scatter);
+                animation: v8 1s ease-in-out backwards, v7 1s ease-in-out,
+                  v6 1s ease-in-out, v5 1s ease-in-out, v4 1s ease-in-out,
+                  v3 1s ease-in-out, v2 1s ease-in-out, v1 1s ease-in-out forwards;
+                animation-timeline: --unreleased, --v0-0-7, --v0-0-6,
+                  --v0-0-5, --v0-0-4, --v0-0-3, --v0-0-2, --v0-0-1;
+              }
+
+              /* the points near the pointer move aside in their slot, the
+                 nearest the most */
+              .point {
+                --push: calc(0.18 * exp(-6 * hover-distance()));
+                /* they glide aside as the pointer passes, and back */
+                transition: 0.45s ease-out;
+                translate: calc(hover-direction(x) * var(--push))
+                  calc(hover-direction(y) * var(--push)) calc(hover-direction(z) * var(--push));
+                radius: 0.04;
+              }
+
+              /* the hue of a point follows the place of its slot: sibling-index()
+                 counts where it is read, so each step of 6 slots has its own */
+              .slot:nth-child(n + 1) .point { color: hsl(9.0 95% 60%); }
+              .slot:nth-child(n + 7) .point { color: hsl(10.9 95% 60%); }
+              .slot:nth-child(n + 13) .point { color: hsl(12.8 95% 60%); }
+              .slot:nth-child(n + 19) .point { color: hsl(14.7 95% 60%); }
+              .slot:nth-child(n + 25) .point { color: hsl(16.6 95% 60%); }
+              .slot:nth-child(n + 31) .point { color: hsl(18.5 95% 60%); }
+              .slot:nth-child(n + 37) .point { color: hsl(20.4 95% 60%); }
+              .slot:nth-child(n + 43) .point { color: hsl(22.3 95% 60%); }
+              .slot:nth-child(n + 49) .point { color: hsl(24.2 95% 60%); }
+              .slot:nth-child(n + 55) .point { color: hsl(26.1 95% 60%); }
+              .slot:nth-child(n + 61) .point { color: hsl(28.0 95% 60%); }
+              .slot:nth-child(n + 67) .point { color: hsl(29.9 95% 60%); }
+              .slot:nth-child(n + 73) .point { color: hsl(31.8 95% 60%); }
+              .slot:nth-child(n + 79) .point { color: hsl(33.7 95% 60%); }
+              .slot:nth-child(n + 85) .point { color: hsl(35.6 95% 60%); }
+              .slot:nth-child(n + 91) .point { color: hsl(37.6 95% 60%); }
+              .slot:nth-child(n + 97) .point { color: hsl(39.5 95% 60%); }
+              .slot:nth-child(n + 103) .point { color: hsl(41.2 95% 60%); }
+
+              @keyframes sway {
+                from { rotate-y: -24deg; }
+                to { rotate-y: 24deg; }
+              }
+
+              /* One number per version: it gathers as the version reaches the
+                 line, holds while it crosses, and scatters as it leaves; the
+                 first and the last hold it at the top and at the bottom */
+              @keyframes v8 {
+                0%, 85% { translate: var(--v8); }
+                100% { translate: var(--scatter); }
+              }
+              @keyframes v7 {
+                0%, 100% { translate: var(--scatter); }
+                15%, 85% { translate: var(--v7); }
+              }
+              @keyframes v6 {
+                0%, 100% { translate: var(--scatter); }
+                15%, 85% { translate: var(--v6); }
+              }
+              @keyframes v5 {
+                0%, 100% { translate: var(--scatter); }
+                15%, 85% { translate: var(--v5); }
+              }
+              @keyframes v4 {
+                0%, 100% { translate: var(--scatter); }
+                15%, 85% { translate: var(--v4); }
+              }
+              @keyframes v3 {
+                0%, 100% { translate: var(--scatter); }
+                15%, 85% { translate: var(--v3); }
+              }
+              @keyframes v2 {
+                0%, 100% { translate: var(--scatter); }
+                15%, 85% { translate: var(--v2); }
+              }
+              @keyframes v1 {
+                0% { translate: var(--scatter); }
+                15%, 100% { translate: var(--v1); }
+              }
+            </script>
+          </gss-scene>
+        </aside>
       </div>
-      <div class="changelog" id="changelog"></div>
     </main>
 
     <footer class="site-footer">
@@ -254,7 +526,11 @@
           shader.</span
         >
         <nav aria-label="Footer">
-          <a href="./changelog.html#%GSS_VERSION%" aria-label="GSS version %GSS_VERSION%, what changed">v%GSS_VERSION%</a>
+          <a
+            href="./changelog.html#%GSS_VERSION%"
+            aria-label="GSS version %GSS_VERSION%, what changed"
+            >v%GSS_VERSION%</a
+          >
           <a href="https://github.com/LukyVj/GSS">github</a>
           <a href="https://x.com/GSS_lang">@GSS_lang</a>
           <a href="./docs.html#installation">installation</a>
@@ -262,9 +538,18 @@
           <a href="./docs.html">docs</a>
           <a href="./showcase.html">showcase</a>
           <a href="./brand.html">brand</a>
+          <a href="./about.html">about</a>
+          <a href="./contact.html">contact</a>
+          <a href="./privacy.html">privacy</a>
         </nav>
-        <p class="contact">Questions, ideas, a scene to show? Say hi on X, <a href="https://x.com/GSS_lang">@GSS_lang</a>, or <a href="https://github.com/LukyVj/GSS/issues">open an issue</a> on GitHub.</p>
+        <p class="contact">
+          Questions, ideas, a scene to show? Say hi on X,
+          <a href="https://x.com/GSS_lang">@GSS_lang</a>, or
+          <a href="https://github.com/LukyVj/GSS/issues">open an issue</a> on
+          GitHub.
+        </p>
       </div>
     </footer>
+    <script type="module" src="/src/changelog/main.ts"></script>
   </body>
 </html>

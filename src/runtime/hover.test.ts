@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { pickPixel, decodeId, hoverValues, pointerValues, createPress, cursorAt, controlsAllow } from "./hover";
+import { pickPixel, decodeId, decodeDepth, zoomed, hoverValues, pointerValues, createPress, cursorAt, controlsAllow } from "./hover";
 
 // Step 4b of :hover, the part without the GPU: where the mouse is, which object
 // the picking pass found, and what goes in uHover[].
@@ -34,6 +34,29 @@ describe("decodeId", () => {
   });
 });
 
+// hover-distance() (decision 217): the depth of the point under the pointer, blue + 256 × alpha,
+// from 0 to the far end of the march
+describe("decodeDepth", () => {
+  it("reads the depth the picking pass wrote: blue + 256 × alpha, out of 65535, times the far end", () => {
+    expect(decodeDepth(new Uint8Array([0, 0, 0, 0]))).toBe(0);
+    expect(decodeDepth(new Uint8Array([0, 0, 255, 255]))).toBe(20);
+    expect(decodeDepth(new Uint8Array([3, 0, 0, 128]))).toBeCloseTo((128 * 256 / 65535) * 20);
+  });
+
+  it("reads it up to the max-distance of the scene", () => {
+    expect(decodeDepth(new Uint8Array([0, 0, 255, 255]), 60)).toBe(60);
+  });
+});
+
+describe("zoomed", () => {
+  it("keeps the wheel between 3 and 5 units short of the end of the scene", () => {
+    expect(zoomed(1)).toBe(3);
+    expect(zoomed(18)).toBe(15);
+    expect(zoomed(18, 60)).toBe(18);
+    expect(zoomed(70, 60)).toBe(55);
+  });
+});
+
 describe("hoverValues", () => {
   // slot 0: #a (id 1) with cube:hover; slot 1: an object of #g (ids 2 and 3) with #g:hover cube
   const hover = [[1], [2, 3]];
@@ -64,6 +87,11 @@ describe("pointerValues", () => {
 
   it("presses the object pressed, even when the pointer has left it, like CSS", () => {
     expect([...pointerValues(hover, active, 1, 2)]).toEqual([1, 0, 1]);
+  });
+
+  it("turns on the slots of :not(:active) while nothing is pressed (id 0)", () => {
+    expect([...pointerValues([], [[0, 2]], 0, 0)]).toEqual([1]);
+    expect([...pointerValues([], [[0, 2]], 1, 1)]).toEqual([0]);
   });
 
   it("is hoverValues without :active", () => {

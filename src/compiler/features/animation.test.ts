@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { tokenize } from "../syntax/tokenizer";
-import { readAnimation } from "./animation";
+import { readAnimation, readAnimations } from "./animation";
 import type { Styles } from "../cascade/resolve";
 
 // Styles from "property: value" pairs, as the cascade gives them
@@ -114,5 +114,49 @@ describe("readAnimation: the longhands", () => {
     expect(() => read("float 2s", { "animation-delay": "2" })).toThrow(
       "animation-delay expects",
     );
+  });
+});
+
+describe("readAnimations: a list of animations, like CSS", () => {
+  const list = (animation: string, more: Record<string, string> = {}) => readAnimations(styles({ animation, ...more }));
+
+  it("reads one animation per comma, each with its own settings", () => {
+    const [a, b] = list("spin 2s linear, float 1s 0.5s 3 alternate");
+    expect(a).toMatchObject({ name: { value: "spin" }, duration: 2, iterations: Infinity });
+    expect(b).toMatchObject({ name: { value: "float" }, duration: 1, delay: 0.5, iterations: 3, direction: "alternate" });
+  });
+
+  it("keeps the commas inside an easing", () => {
+    const animations = list("spin 2s cubic-bezier(0.1, 0.7, 1, 0.1), float 1s");
+    expect(animations.map((a) => a.name.value)).toEqual(["spin", "float"]);
+    expect(animations[0].easing).toMatchObject({ type: "cubic-bezier", x1: 0.1, y2: 0.1 });
+  });
+
+  it("gives each animation its value of a longhand, the list repeated when it is shorter", () => {
+    const animations = list("a 1s, b 1s, c 1s", { "animation-direction": "reverse, alternate" });
+    expect(animations.map((a) => a.direction)).toEqual(["reverse", "alternate", "reverse"]);
+  });
+
+  it("reads one timeline per animation", () => {
+    const animations = list("a 1s, b 1s", { "animation-timeline": "--one, view()" });
+    expect(animations.map((a) => a.timeline)).toEqual([
+      { type: "named", name: "--one" },
+      { type: "view", axis: "block" },
+    ]);
+  });
+
+  it("reads one range per animation", () => {
+    const [a, b] = list("a 1s, b 1s", { "animation-timeline": "view()", "animation-range": "entry, exit" });
+    expect(a.timeline).toMatchObject({ range: { start: { name: "entry" } } });
+    expect(b.timeline).toMatchObject({ range: { start: { name: "exit" } } });
+  });
+
+  it("leaves out none, like an animation-name of none in CSS", () => {
+    expect(list("none, b 1s").map((a) => a.name.value)).toEqual(["b"]);
+    expect(list("none")).toEqual([]);
+  });
+
+  it("refuses an empty animation in the list", () => {
+    expect(() => list("a 1s, , b 1s")).toThrow(/animation needs/);
   });
 });

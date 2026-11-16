@@ -102,7 +102,7 @@ describe("material keywords", () => {
     expect(() =>
       compileGSS("@scene { sphere; } sphere { material: wood; }"),
     ).toThrow(
-      'Unknown material "wood". Available: matte(), metal(), jelly(), glass(), emissive(), iridescent(), gold, chrome, copper, silver, brass, aluminum, jelly, glass, ice, emissive, iridescent',
+      'Unknown material "wood". Available: matte(), metal(), jelly(), glass(), emissive(), iridescent(), toon(), gold, chrome, copper, silver, brass, aluminum, jelly, glass, ice, emissive, iridescent, toon',
     );
   });
 
@@ -304,6 +304,26 @@ describe("material: emissive()", () => {
     expect(compileGSS("@scene { sphere; }")).not.toContain("EMISSIVE");
   });
 
+  // decision 232: a reflection, and what shows through glass, see its light too
+  it("glows in the reflections and through glass, with its own light", () => {
+    const traceOf = (shader: string) => shader.slice(shader.indexOf("vec3 trace(vec3 ro, vec3 rd) {"), shader.indexOf("\n}\n", shader.indexOf("vec3 trace(vec3 ro, vec3 rd) {")));
+    const mirror = compileGSS("@scene { sphere; cube; } sphere { material: emissive(#ff5a36, 2); } cube { translate: 2 0.5 0; material: chrome; }");
+    expect(mirror).toContain("vec3 traceGlow(float id, vec3 lit) {");
+    expect(traceOf(mirror)).toContain("return traceGlow(hit.y, diffuse(n, getMaterial(hit.y).color));  // its color, lit");
+    expect(mirror.indexOf("vec3 traceGlow(")).toBeLessThan(mirror.indexOf("vec3 trace(vec3 ro, vec3 rd) {"));
+    // With a filter on an object, the glow is filtered with the rest
+    const filtered = compileGSS("@scene { sphere; cube; } sphere { material: emissive(); filter: hue-rotate(90deg); } cube { translate: 2 0.5 0; material: chrome; }");
+    expect(traceOf(filtered)).toContain("return objectFilter(hit.y, traceGlow(hit.y, diffuse(");
+    // With shadows, lights and a gradient, the same
+    const lit = compileGSS("@scene { sphere; cube; light; } scene { shadows: soft; } sphere { material: emissive(); color: linear-gradient(red, blue); } cube { translate: 2 0.5 0; material: chrome; } light { translate: 0 3 0; }");
+    expect(traceOf(lit)).toContain("traceGlow(hit.y, diffuseOpen(p, n, gradientColor(");
+  });
+
+  it("keeps the reflections as they were in a scene without emissive(), or without reflections", () => {
+    expect(compileGSS("@scene { sphere; cube; } cube { translate: 2 0.5 0; material: chrome; }")).not.toContain("traceGlow");
+    expect(compileGSS("@scene { sphere; } sphere { material: emissive(); }")).not.toContain("traceGlow");
+  });
+
   it("takes a named color as its first argument", () => {
     expect(materialOf("sphere { material: emissive(red, 1); }")).toBe(
       materialOf("sphere { material: emissive(#ff0000, 1); }"),
@@ -337,3 +357,57 @@ describe("material: iridescent()", () => {
   });
 });
 
+
+// toon() (decision 202): flat bands of light, like a cartoon
+describe("material: toon()", () => {
+  it("writes the color and the number of bands, 3 by default", () => {
+    expect(materialOf("sphere { material: toon(#ff0000, 4); }")).toBe(
+      "if (id == 1.0) return toon(vec3(1.0, 0.0, 0.0), 4.0);  // sphere",
+    );
+    expect(materialOf("sphere { color: #00ff00; material: toon(); }")).toBe(
+      "if (id == 1.0) return toon(vec3(0.0, 1.0, 0.0), 3.0);  // sphere",
+    );
+    expect(materialOf("sphere { color: #00ff00; material: toon; }")).toBe(
+      "if (id == 1.0) return toon(vec3(0.0, 1.0, 0.0), 3.0);  // sphere",
+    );
+  });
+
+  it("rejects a number of bands outside [2, 8], or not whole", () => {
+    expect(() => compileGSS("@scene { sphere; } sphere { material: toon(1); }")).toThrow(
+      "toon(): bands expects a number between 2 and 8",
+    );
+    expect(() => compileGSS("@scene { sphere; } sphere { material: toon(9); }")).toThrow(
+      "toon(): bands expects a number between 2 and 8",
+    );
+    expect(() => compileGSS("@scene { sphere; } sphere { material: toon(2.5); }")).toThrow(
+      "toon(): bands expects a whole number",
+    );
+  });
+
+  it("is lit by shadeToon, only in the scenes that use it", () => {
+    const shader = compileGSS("@scene { sphere; } sphere { material: toon(); }");
+    expect(shader).toContain("const int TOON = 6;");
+    expect(shader).toContain("if (m.kind == TOON) col = shadeToon(p, n, rd, m);");
+    expect(shader).toContain("vec3 shadeToon(vec3 p, vec3 n, vec3 rd, Material m)");
+    expect(compileGSS("@scene { sphere; }")).not.toContain("TOON");
+  });
+
+  it("keeps the color in the shade, at half its strength, and smooths the edges of its bands", () => {
+    const shader = compileGSS("@scene { sphere; } sphere { material: toon; }");
+    expect(shader).toContain("mix(0.5, 1.0, ");
+    expect(shader).toContain("smoothstep(edge - TOON_EDGE, edge + TOON_EDGE, x)");
+  });
+
+  it("steps the light of every lamp, without the sun", () => {
+    const shader = compileGSS(
+      "@scene { sphere; light; } sphere { material: toon; } light { translate: 0 2 0; } scene { light: none; }",
+    );
+    expect(shader).toContain("vec3 light = diffuse(p, n, vec3(1.0));");
+    expect(shader).toContain("lightShine(p, r, ");
+    expect(shader).not.toContain("LIGHT_DIR");
+  });
+
+  it("is lowered to WGSL", () => {
+    expect(compileGSS("@scene { sphere; } sphere { material: toon; }", "wgsl")).toContain("fn g_shadeToon(");
+  });
+});

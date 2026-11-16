@@ -40,7 +40,11 @@ function readSpin(value: Token[] | undefined): number {
   return (2 * Math.PI) / seconds;
 }
 
-export function readCamera(sceneStyles: Styles): CameraSettings {
+// The farthest the camera goes: 5 units short of the end of the scene, so the target and
+// what is around it are drawn (decision 224); 15 with the max-distance of 20
+export const farthestCamera = (maxDistance = 20) => maxDistance - 5;
+
+export function readCamera(sceneStyles: Styles, maxDistance = 20): CameraSettings {
   // 1. The distance
   const distance = readNumber(
     sceneStyles["camera-distance"],
@@ -48,10 +52,11 @@ export function readCamera(sceneStyles: Styles): CameraSettings {
     8,
     true,
   );
-  if (distance < 3 || distance > 15) {
+  const farthest = farthestCamera(maxDistance);
+  if (distance < 3 || distance > farthest) {
     throw errorAt(
       sceneStyles["camera-distance"],
-      "camera-distance expects a number from 3 to 15, like: camera-distance: 8;",
+      `camera-distance expects a number from 3 to ${farthest}${maxDistance === 20 ? "" : " (5 less than max-distance)"}, like: camera-distance: 8;`,
     );
   }
 
@@ -82,3 +87,19 @@ export function readCamera(sceneStyles: Styles): CameraSettings {
 
   return { distance, yaw, pitch, spin };
 }
+
+// camera-fov (decision 226): the angle the camera sees from the top to the bottom of the
+// canvas, as the focal length of its rays, rounded to 4 decimals. 1.5 since the first version,
+// about 36.87deg: an angle that rounds to it keeps the shader as it was.
+export const FOCAL = 1.5;
+
+export function readFocal(sceneStyles: Styles): number {
+  const value = sceneStyles["camera-fov"];
+  if (!value) return FOCAL;
+  const error = "camera-fov expects an angle from 10deg to 120deg, like: camera-fov: 50deg;";
+  if (value.length !== 1 || value[0].type !== "DIMENSION") throw errorAt(value, error);
+  const angle = readAngle(value);
+  if (!(angle >= (10 * Math.PI) / 180 - 1e-9 && angle <= (120 * Math.PI) / 180 + 1e-9)) throw errorAt(value, error);
+  return +(0.5 / Math.tan(angle / 2)).toFixed(4);
+}
+

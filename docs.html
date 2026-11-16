@@ -30,6 +30,7 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@GSS_lang" />
     <link rel="canonical" href="https://www.gss-lang.dev/docs" />
+    <link rel="alternate" type="text/markdown" href="/docs/README.md" />
     <link rel="stylesheet" href="/src/styles/site.css" />
     <style>
       /* The look comes from DESIGN.md; the values from src/styles/tokens.css.
@@ -1787,6 +1788,52 @@
         font-variant-numeric: tabular-nums;
       }
 
+      /* ----- "Follow the page": a box that scrolls, and the scene that follows one of its sections ----- */
+      .timeline-demo {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        margin: 0 0 28px;
+        border: 1px solid var(--gss-line);
+        background: var(--gss-surface);
+      }
+      .timeline-demo-page {
+        height: 240px;
+        overflow-y: auto;
+        border-right: 1px solid var(--gss-line);
+        overscroll-behavior: contain;
+      }
+      .timeline-demo-page section {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 130px;
+        padding: 0 18px;
+        border-bottom: 1px solid var(--gss-line);
+        font: 600 15px var(--gss-font-display);
+        color: var(--gss-ash);
+      }
+      .timeline-demo-page section.is-named {
+        color: var(--gss-bone);
+        background: var(--gss-void);
+      }
+      .timeline-demo-page section code {
+        font: 12px var(--gss-font-code);
+        color: var(--gss-signal);
+      }
+      .timeline-demo gss-scene {
+        height: 240px;
+        background: var(--gss-void);
+      }
+      @media (max-width: 560px) {
+        .timeline-demo {
+          grid-template-columns: 1fr;
+        }
+        .timeline-demo-page {
+          border-right: 0;
+          border-bottom: 1px solid var(--gss-line);
+        }
+      }
+
       /* ----- "Editor support": the marks of VS Code and Cursor in a pocket ----- */
       .editor-pocket {
         display: flex;
@@ -2020,6 +2067,9 @@
       · <a href="#installation">installation</a>
       · <a href="https://github.com/LukyVj/GSS">github</a>
       · <a href="https://x.com/GSS_lang">@GSS_lang</a>
+      · <a href="./about.html">about</a>
+      · <a href="./contact.html">contact</a>
+      · <a href="./privacy.html">privacy</a>
       <span class="contact">Questions, ideas, a scene to show? Say hi on X, <a href="https://x.com/GSS_lang">@GSS_lang</a>, or <a href="https://github.com/LukyVj/GSS/issues">open an issue</a> on GitHub.</span>
     </footer>
     <!-- First paint: one entry (hash or the first). enablePages takes over once the module runs.

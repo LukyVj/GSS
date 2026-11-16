@@ -52,6 +52,277 @@ describe("the hover slots of a scene", () => {
   });
 });
 
+// One hover state per kind of trigger: an object hovered itself and an object whose
+// group is hovered are two states, each with its slot
+describe("the hover states of an object in the shader", () => {
+  const cloud = `
+    @scene { group#cloud { sphere.point * 3; } }
+    .point:hover { scale: 2; }
+    #cloud:has(.point:hover) .point { translate: 0 1 0; }
+  `;
+
+  it("give each state its own slot, the states of an object one after the other", () => {
+    const compiled = compileScene(cloud);
+    expect(compiled.hover).toEqual([[1], [1, 2, 3], [2], [1, 2, 3], [3], [1, 2, 3]]);
+    expect(compiled.shader).toContain("uniform float uHover[6];");
+    expect(compiled.transitions).toHaveLength(6);
+  });
+
+  it("mix each property with the slot of the state that changes it", () => {
+    const part = mapPart(compileGSS(cloud), "sphere.point");
+    // hovering another point moves this one, but only hovering it scales it
+    expect(part).toContain("q -= mix(vec3(0.0), vec3(0.0, 1.0, 0.0), uHover[1]);");
+    expect(part).toContain("q /= mix(1.0, 2.0, uHover[0]);");
+  });
+
+  it("let the more specific rule win when both states are on, like CSS", () => {
+    const shader = compileGSS(`
+      @scene { group#g { cube; sphere; } }
+      #g:hover cube { scale: 3; }
+      cube:hover { scale: 2; }
+    `);
+    expect(mapPart(shader, "cube")).toContain("q /= mix(mix(1.0, 2.0, uHover[0]), 3.0, uHover[1]);");
+    // !important wins over a more specific rule: its state is mixed last
+    const important = compileGSS(`
+      @scene { group#g { cube; sphere; } }
+      #g:hover cube { scale: 3; }
+      cube:hover { scale: 2 !important; }
+    `);
+    expect(mapPart(important, "cube")).toContain("q /= mix(mix(1.0, 3.0, uHover[1]), 2.0, uHover[0]);");
+  });
+
+  it("take the transition of their own rules", () => {
+    const compiled = compileScene(`
+      @scene { group#g { cube; sphere; } }
+      cube:hover { scale: 2; }
+      #g:hover cube { translate: 0 1 0; transition: 0.5s; }
+    `);
+    expect(compiled.transitions[0].enter).toBeNull();
+    expect(compiled.transitions[1].enter).toEqual(expect.objectContaining({ duration: 0.5 }));
+  });
+
+  it("stay under the pressed state, which only mixes what :active changes", () => {
+    const shader = compileGSS(`
+      @scene { group#g { cube; sphere; } }
+      cube:hover { scale: 2; }
+      #g:hover cube { translate: 0 1 0; }
+      cube:active { scale: 3; }
+    `);
+    const part = mapPart(shader, "cube");
+    expect(part).toContain("q -= mix(vec3(0.0), vec3(0.0, 1.0, 0.0), uHover[1]);");
+    expect(part).toContain("q /= mix(mix(1.0, 2.0, uHover[0]), 3.0, uHover[2]);");
+  });
+});
+
+// :hover on a group: one slot per state of the group, after the slots of the objects,
+// shared by every object of the group
+describe("a hovered group in the shader", () => {
+  const scene = `
+    @scene { group#g { cube; sphere; } }
+    #g { transition: 0.4s; }
+    #g:hover { scale: 1.5; translate: 0 1 0; }
+  `;
+
+  it("gives the group one slot, hovered by any of its objects", () => {
+    const compiled = compileScene(scene);
+    expect(compiled.hover).toEqual([[1, 2]]);
+    expect(compiled.transitions).toEqual([
+      { enter: expect.objectContaining({ duration: 0.4 }), leave: expect.objectContaining({ duration: 0.4 }) },
+    ]);
+  });
+
+  it("moves every object of the group with that slot", () => {
+    const shader = compileGSS(scene);
+    for (const label of ["cube", "sphere"]) {
+      const part = mapPart(shader, label);
+      expect(part).toContain("q -= mix(vec3(0.0), vec3(0.0, 1.0, 0.0), uHover[0]);");
+      expect(part).toContain("q /= mix(1.0, 1.5, uHover[0]);");
+    }
+  });
+
+  it("puts the group slots after the slots of the objects", () => {
+    const compiled = compileScene(`
+      @scene { group#g { cube; sphere; } }
+      #g:hover { scale: 1.5; }
+      cube:hover { color: #ff0000; }
+    `);
+    expect(compiled.hover).toEqual([[1], [1, 2]]);
+    expect(mapPart(compiled.shader, "cube")).toContain("mix(1.0, 1.5, uHover[1])");
+  });
+
+  it("fades the group's opacity", () => {
+    const shader = compileGSS(`@scene { group#g { cube; } } #g:hover { opacity: 0.5; }`);
+    expect(shader).toContain("mix(1.0, 0.5, uHover[0])");
+  });
+
+  it("cannot start an animation yet", () => {
+    expect(() =>
+      compileScene(`@scene { group#g { cube; } } #g:hover { animation: spin 1s; } @keyframes spin { to { rotate-y: 90deg; } }`),
+    ).toThrow("A :hover rule on a group cannot start an animation yet: start it on its objects, like #g:hover cube { animation: … }");
+  });
+
+  it("passes its variables to the objects that read them, with their own transition", () => {
+    const compiled = compileScene(`
+      @scene { group#g { cube; sphere; } }
+      #g:hover { --lift: 1; }
+      cube { translate: 0 var(--lift, 0) 0; transition: 0.3s; }
+    `);
+    expect(compiled.hover).toEqual([[1, 2]]);
+    expect(compiled.transitions).toEqual([{ enter: expect.objectContaining({ duration: 0.3 }), leave: expect.objectContaining({ duration: 0.3 }) }]);
+    expect(mapPart(compiled.shader, "cube")).toContain("q -= mix(vec3(0.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0), uHover[0]);");
+    expect(mapPart(compiled.shader, "sphere")).not.toContain("uHover");
+  });
+
+  it("gives way to a closer group that sets the same variable, like CSS", () => {
+    const compiled = compileScene(`
+      @scene { group#outer { group#inner { cube; } } }
+      #outer:hover { --lift: 1; }
+      #inner { --lift: 0.5; }
+      cube { translate: 0 var(--lift, 0) 0; }
+    `);
+    expect(mapPart(compiled.shader, "cube")).toContain("q -= vec3(0.0, 0.5, 0.0);");
+  });
+
+  it("passes its variables to a group inside it that reads them", () => {
+    const compiled = compileScene(`
+      @scene { group#outer { group#inner { cube; } } }
+      #outer:hover { --lift: 1; }
+      #inner { translate: 0 var(--lift, 0) 0; }
+    `);
+    expect(compiled.hover).toEqual([[1]]);
+    expect(mapPart(compiled.shader, "cube")).toContain("q -= mix(vec3(0.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0), uHover[0]);");
+  });
+
+  it("passes its color to the objects without one", () => {
+    const shader = compileGSS(`@scene { group#g { cube; } } #g { color: #0000ff; } #g:hover { color: #ff0000; }`);
+    expect(materialLine(shader, 1)).toContain("mix(vec3(0.0, 0.0, 1.0), vec3(1.0, 0.0, 0.0), uHover[0])");
+  });
+
+  it("leaves the shader of a scene without group :hover as it was", () => {
+    const shader = compileGSS(`@scene { group#g { cube; } } #g:hover cube { scale: 1.5; }`);
+    expect(shader).toContain("uniform float uHover[1];");
+  });
+});
+
+// The sizes of the shapes on :hover: each number of the shape is mixed like the rest
+describe("a hovered size in the shader", () => {
+  it("mixes the radius of a sphere", () => {
+    const shader = compileGSS(`@scene { sphere; } sphere { radius: 0.5; } sphere:hover { radius: 1; }`);
+    expect(mapPart(shader, "sphere")).toContain("sdSphere(q, mix(0.5, 1.0, uHover[0]))");
+  });
+
+  it("starts from the size of the shape when the object does not set one", () => {
+    const shader = compileGSS(`@scene { torus; } torus:hover { radius: 1.5; }`);
+    expect(mapPart(shader, "torus")).toContain("mix(1.0, 1.5, uHover[0])");
+  });
+
+  it("mixes each number of a size", () => {
+    const part = mapPart(compileGSS(`@scene { cube; } cube { size: 1; } cube:hover { size: 1 2 1; }`), "cube");
+    expect(part).toContain("mix(1.0, 2.0, uHover[0])");
+    expect(part).toContain("vec3(0.5, ");
+    // the radius of a cone, bottom and top
+    const cone = mapPart(compileGSS(`@scene { cone; } cone:hover { radius: 0.5 0.3; }`), "cone");
+    expect(cone).toContain("mix(0.0, 0.3, uHover[0])");
+  });
+
+  it("keeps the shader of a size that does not change", () => {
+    const shader = compileGSS(`@scene { sphere; } sphere { radius: 0.7; } sphere:hover { color: #ff0000; }`);
+    expect(mapPart(shader, "sphere")).toContain("sdSphere(q, 0.7)");
+  });
+
+  it("keeps the bounding sphere of a path, around its largest size", () => {
+    const rest = compileGSS(`@scene { path; } path { d: path("M0 0 L10 0"); view-box: 0 0 10 10; stroke-width: 1; }`);
+    const hovered = compileGSS(`@scene { path; } path { d: path("M0 0 L10 0"); view-box: 0 0 10 10; stroke-width: 1; } path:hover { stroke-width: 2; }`);
+    // the test of the sphere stays: length(q) - R
+    const bound = (shader: string) => /length\(q\) - [\d.]+/.test(shader);
+    expect(bound(rest)).toBe(true);
+    expect(bound(hovered)).toBe(true);
+  });
+});
+
+// :not(:hover): a slot that is 1 when nothing, or something else, is hovered
+describe(":not(:hover) in the shader and the export", () => {
+  it("lists 0 among the triggers of its slot", () => {
+    expect(compileScene(`@scene { cube; sphere; } cube:not(:hover) { color: #ff0000; }`).hover).toEqual([[0, 2]]);
+  });
+
+  it("keeps the state on at rest in Shadertoy, where nothing is hovered", () => {
+    const exported = toShadertoy(compileScene(`@scene { cube; sphere; } cube:not(:hover) { color: #ff0000; } sphere:hover { color: #0000ff; }`));
+    expect(exported).toContain("const float uHover[2] = float[2](1.0, 0.0);");
+  });
+});
+
+// hover-distance(), hover-direction() (decision 215): measured on the GPU from the object
+// under the pointer to this one, both where they are with nothing under the pointer
+describe("hover-distance() and hover-direction()", () => {
+  const cloud = `
+    @scene { group#c { sphere.p * 3; } }
+    .p { radius: 0.3; translate: calc(sibling-index() - 2 + hover-direction(x) * 0.5 * exp(-2 * hover-distance())) 0 0; }
+  `;
+
+  it("read the point under the pointer, uPointer, and the place of each object at rest", () => {
+    const compiled = compileScene(cloud);
+    expect(compiled.pointer).toEqual({ transition: null });
+    expect(compiled.shader).toContain("uniform vec4 uPointer;");
+    // the point under the pointer (decision 217): the ray of its pixel, as far as the picking
+    // pass found, through the camera of the scene
+    expect(compiled.shader).toContain("hoverPoint = pointerPoint();");
+    expect(compiled.shader).toMatch(/vec3 pointerPoint\(\) \{[^}]*uPointer\.xy - 0\.5 \* iResolution\.xy[^}]*vec3\(0\.0, 0\.5, 0\.0\)[^}]*return ro \+ rd \* uPointer\.z;/);
+    expect(compiled.shader).not.toContain("hoverAt(");
+    expect(compiled.shader).toContain("hoverDir1 = hoverDirection(restCenter1());");
+    expect(compiled.shader).toContain("hoverDir1.x");
+    // at rest, an object is where nothing under the pointer would put it
+    expect(compiled.shader).toMatch(/vec3 restCenter1\(\) \{[^}]*vec3\(0\.0\)\.x[^}]*1000000\.0/);
+  });
+
+  it("go anywhere the math goes on the GPU, like a color", () => {
+    const shader = compileGSS(`@scene { sphere * 2; } sphere { color: color-mix(in oklab, red, blue calc(100% * exp(-1 * hover-distance()))); }`);
+    expect(shader).toContain("hoverDist2 = hoverDistance(restCenter2());");
+  });
+
+  it("measure from an object, not a group or the scene", () => {
+    expect(() => compileScene(`@scene { group#g { cube; } } #g { translate: calc(hover-distance()) 0 0; }`)).toThrow(
+      "hover-distance() goes in a rule that styles objects",
+    );
+    expect(() => compileScene(`@scene { cube; } cube { translate: calc(hover-direction(w)) 0 0; }`)).toThrow(
+      "hover-direction() takes an axis, like: hover-direction(x)",
+    );
+  });
+
+  it("go in the frames of an animation too, through the variables of the object", () => {
+    const compiled = compileScene(`
+      @scene { sphere.p * 2; }
+      .p { --push: calc(hover-direction(x) * 0.3); --a: calc(sibling-index() + var(--push)) 0 0; animation: go 2s infinite; }
+      @keyframes go { from { translate: var(--a); } to { translate: 0 1 0; } }
+    `);
+    expect(compiled.pointer).toBeDefined();
+    expect(compiled.shader).toContain("vec3 restCenter1() {");
+  });
+
+  it("glide with the transition of the objects that read them (decision 216)", () => {
+    const compiled = compileScene(`@scene { sphere * 2; } sphere { transition: 0.4s; translate: calc(hover-direction(x) * 0.3) 0 0; }`);
+    expect(compiled.pointer?.transition).toEqual(expect.objectContaining({ duration: 0.4 }));
+  });
+
+  // decision 217: the picking pass writes the depth of the point under the pointer too, blue
+  // + 256 × alpha; on the background, the depth of the camera target, across the ray
+  it("make the picking pass write the depth under the pointer", () => {
+    const shader = compileScene(cloud).shader;
+    expect(shader).toContain("float depth = t < MAX_DIST ? t : max(dot(target - ro, rd), 0.0);");
+    expect(shader).toContain("floor(depth16 / 256.0) / 255.0);");
+    // the camera target of the scene, in the ray of the pointer too
+    const aimed = compileScene(`${cloud} scene { camera-target: 1 2 3; }`).shader;
+    expect(aimed).toMatch(/vec3 pointerPoint\(\) \{[^}]*vec3\(1\.0, 2\.0, 3\.0\)/);
+  });
+
+  it("leave a scene that does not use them as it was", () => {
+    const compiled = compileScene(`@scene { cube; } cube:hover { scale: 2; }`);
+    expect(compiled.pointer).toBeUndefined();
+    expect(compiled.shader).not.toContain("uPointer");
+    expect(compiled.shader).not.toContain("depth16");
+  });
+});
+
 describe("a hovered property in the shader", () => {
   it("mixes the color at rest and the hovered color", () => {
     const shader = compileGSS(`

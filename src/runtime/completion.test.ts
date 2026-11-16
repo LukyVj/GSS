@@ -85,6 +85,11 @@ describe("only the properties the rule can take", () => {
     expect(names).not.toContain("material");
   });
 
+  it("a rule inside @gpu, at the top or nested", () => {
+    expect(suggest("@gpu (slow) { scene { d| } }")!.names).toContain("dpr");
+    expect(suggest("scene { @gpu (slow) { d| } }")!.names).toContain("dpr");
+  });
+
   it("a rule inside @media", () => {
     expect(suggest("@media (max-width: 600px) { scene { d| } }")!.names).toContain("dpr");
   });

@@ -83,26 +83,51 @@ describe("texture: paint(name)", () => {
     expect(b).toBeGreaterThan(150);
   }, 60000);
 
+  it("draws at the size the @paint asks for, and fills resolution with it", async () => {
+    const code = `@paint fill {
+      size: 1024px 256px;
+      precision highp float;
+      uniform vec2 resolution;
+      out vec4 color;
+      void main() { color = vec4(resolution.x == 1024.0 ? 1.0 : 0.0, gl_FragCoord.y < 256.0 ? 1.0 : 0.0, resolution.y == 256.0 ? 1.0 : 0.0, 1.0); }
+    }`;
+    const [r, g, b] = await center(scene(code));
+    expect(r).toBeGreaterThan(150);
+    expect(g).toBeGreaterThan(150);
+    expect(b).toBeGreaterThan(150);
+  }, 60000);
+
+  it("makes its mipmaps after each drawing: with filter: mipmap, the texture is complete", async () => {
+    const [r, g, b] = await center(scene("@paint fill { size: 2048px; filter: mipmap; out vec4 color; void main() { color = vec4(0.0, 1.0, 0.0, 1.0); } }"));
+    expect(g).toBeGreaterThan(150);
+    expect(r).toBeLessThan(60);
+    expect(b).toBeLessThan(60);
+  }, 60000);
+
   it("draws a shader that reads time again as the time goes on", async () => {
     const [first, second] = await page.evaluate(async (compiled) => {
       const canvas = document.createElement("canvas");
       canvas.style.cssText = "width:64px;height:48px;display:block";
       document.body.append(canvas);
+      // The last image drawn stays on the canvas, whenever it is read in the frame
+      const getContext = canvas.getContext.bind(canvas) as (type: string, options?: object) => unknown;
+      (canvas as any).getContext = (type: string, options?: object) => getContext(type, { ...options, preserveDrawingBuffer: true });
       const view = (window as any).__createView(canvas, { adaptDpr: false });
       await view.show(compiled);
-      // Read in the frame that draws: a moving scene draws at every frame
       const read = () => new Promise<number>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => {
         const copy = document.createElement("canvas"); copy.width = canvas.width; copy.height = canvas.height;
         const ctx = copy.getContext("2d")!; ctx.drawImage(canvas, 0, 0);
         resolve(ctx.getImageData(copy.width >> 1, copy.height >> 1, 1, 1).data[0]);
       })));
       const first = await read();
-      await new Promise((resolve) => setTimeout(resolve, 700));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       const second = await read();
       view.destroy(); canvas.remove();
       return [first, second];
-    }, compileScene(scene("@paint fill { uniform float time; out vec4 color; void main() { color = vec4(fract(time), 0.0, 0.0, 1.0); } }")));
-    expect(Math.abs(first - second)).toBeGreaterThan(20);
+    }, compileScene(scene("@paint fill { uniform float time; out vec4 color; void main() { color = vec4(min(time / 16.0, 1.0), 0.0, 0.0, 1.0); } }")));
+    // A red that grows with the time, without wrapping around like fract(): a second later,
+    // on a slow machine too, it is at least 255 / 16 brighter
+    expect(second - first).toBeGreaterThan(10);
   }, 60000);
 
   it("throws the error of its GLSL at once, with the name of the @paint and its line in the file", async () => {

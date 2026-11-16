@@ -95,7 +95,7 @@ function ambient(): string {
 
 // shadows: the floor is in the light, and the shadow is where the light does not reach, dark.
 // A soft one fades toward its edge.
-function shadows(): string {
+function shadows(subject: string): string {
   const frame: Frame = { ...CELL, scale: 30, x: 62, y: 96 };
   const half = 1.4;
   const ground = route(frame, [[-half, 0, -half], [half, 0, -half], [half, 0, half], [-half, 0, half]], true);
@@ -103,6 +103,35 @@ function shadows(): string {
     `<path class="shade" style="opacity: ${opacity}" d="${route(frame, ringPoints([0.75, 0, -0.35], radius), true)}"/>`;
   const scene = (shadow: string) =>
     `<path class="lit-floor" d="${ground}"/>` + shadow + lines(floor(half, 0.7), frame) + `<g class="floats" style="--rise: -5px">${body(sphereAt(1.15, 0.45), frame)}</g>`;
+  // ambient-occlusion: a ball on the floor, which darkens around its foot, no shadow needed
+  if (subject === "ambient-occlusion") {
+    const resting = (dark: string) =>
+      `<path class="lit-floor" d="${ground}"/>` + dark + lines(floor(half, 0.7), frame) + body(sphereAt(0.45, 0.45), frame);
+    return cells(
+      "figure-steps",
+      [
+        ["ambient-occlusion: none;", resting("")],
+        ["ambient-occlusion: 1;", resting(`<path class="shade" style="opacity: 0.35" d="${route(frame, ringPoints([0, 0, 0], 0.5), true)}"/>` + `<path class="shade" style="opacity: 0.6" d="${route(frame, ringPoints([0, 0, 0], 0.3), true)}"/>`)],
+      ],
+      CELL,
+    );
+  }
+  // shadow-softness: the same shadow, its penumbra narrower or wider
+  if (subject === "shadow-softness")
+    return cells(
+      "figure-steps",
+      [
+        ["shadow-softness: 0.5;", scene(shade(0.52, 0.45) + shade(0.42))],
+        ["shadow-softness: 3;", scene(shade(0.8, 0.2) + shade(0.64, 0.4) + shade(0.48, 0.6) + shade(0.32))],
+      ],
+      CELL,
+    );
+  // shadow-steps: a ray toward the light that runs out of steps leaves the shadow short
+  if (subject === "shadow-steps") {
+    const cut = (reach: number) =>
+      `<path class="shade" d="${route(frame, [[0.45, 0, -0.1], [0.45 + reach, 0, -0.35], [0.45 + reach, 0, -0.6], [0.45, 0, -0.6]], true)}"/>`;
+    return cells("figure-steps", [["shadow-steps: 16;", scene(cut(0.35))], ["shadow-steps: 160;", scene(cut(0.85))]], CELL);
+  }
   return cells(
     "figure-steps",
     [
@@ -209,6 +238,15 @@ function camera(subject: string): string {
     const way = [eyeAt(40, 25, 1.3), eyeAt(40, 25, 3)];
     return stage(VIEW, base + path("guide", route(VIEW, [TARGET, way[1]])) + travel(way, "fixed")) + between("camera-distance: 4;", "camera-distance: 12;", "3.6s");
   }
+  // camera-fov: from the eye, the two edges of what it sees, narrow then wide
+  if (subject === "camera-fov") {
+    const seen = (half: number) => {
+      // Past the target, 1.4 times as far from the eye, up and down by half the height seen there
+      const at = (sign: number): Vec3 => [eye[0] * -0.4, eye[1] * -0.4 + TARGET[1] * 1.4 + sign * half, eye[2] * -0.4];
+      return path("tint", route(VIEW, [at(1), eye, at(-1)]));
+    };
+    return stage(VIEW, base + dotAt(VIEW, eye, "edge") + fade(seen(0.25), true) + fade(seen(0.9))) + between("camera-fov: 20deg;", "camera-fov: 70deg;");
+  }
   if (subject === "camera-target") {
     const other: Vec3 = [0, 1.5, 0];
     const look = (target: Vec3) => path("tint", route(VIEW, [eye, target])) + dotAt(VIEW, target);
@@ -246,7 +284,37 @@ const stairs = (step: number) => {
 const grid = (step: number) => path("ground", Array.from({ length: Math.floor(76 / step) + 1 }, (_, i) => `M${28 + i * step} 28V104M28 ${28 + i * step}H104`).join(""));
 
 const dpr = () => cells("figure-steps", [["dpr: 1;", grid(19) + path("tint", stairs(19))], ["dpr: 2;", grid(9.5) + path("tint", stairs(9.5))]], CELL);
+// antialias: the steps of the edge, then the mean of 4 rays per pixel: grays along it
+const antialias = () => cells("figure-steps", [["antialias: none;", grid(9.5) + path("tint", stairs(9.5))], ["antialias: 4x;", grid(9.5) + path("tint", stairs(9.5)) + path("ghost", smooth)]], CELL);
 const shapeRendering = () => cells("figure-steps", [["shape-rendering: auto;", path("tint", stairs(9.5))], ["shape-rendering: geometricPrecision;", path("tint", smooth)]], CELL);
+
+// --- the march: the steps of a ray, how far it goes, how close is a hit
+
+// A ray from the top left that grazes the floor: each step as long as the distance to the floor
+const grazing = (steps: number) => {
+  const dots: string[] = [];
+  let x = 18;
+  for (let i = 0; i < steps && x < 116; i++) {
+    const y = 30 + (x - 18) * 0.62;
+    dots.push(`<circle class="dot" cx="${round(x)}" cy="${round(y)}" r="2.2"/>`);
+    x += Math.max((104 - y) * 0.9, 2.4);
+  }
+  return path("ground", "M14 104H118") + path("guide", "M18 30L118 92") + dots.join("");
+};
+const raymarchSteps = () => cells("figure-steps", [["raymarch-steps: 12;", grazing(12)], ["raymarch-steps: 100;", grazing(100)]], CELL);
+
+// The camera, a ray, and a row of objects: past the end of the scene, the background
+const farRow = (far: number) =>
+  `<circle class="dot" cx="16" cy="66" r="4"/>` +
+  path("guide", `M16 66H${16 + far}`) +
+  path("ghost", `M${16 + far} 30V102`) +
+  [44, 74, 104].map((x) => path(x < 16 + far ? "tint" : "ghost", `M${x} 56h12v20h-12Z`)).join("");
+const maxDistance = () => cells("figure-steps", [["max-distance: 20;", farRow(66)], ["max-distance: 60;", farRow(108)]], CELL);
+
+// A surface, and the band above it where a ray stops: narrower, the hit is closer
+const precision = (band: number) =>
+  path("ghost", `M18 ${88 - band}C46 ${70 - band} 86 ${70 - band} 114 ${88 - band}`) + path("tint", "M18 88C46 70 86 70 114 88") + path("guide", "M66 22V74") + `<circle class="dot" cx="66" cy="${round(74.5 - band)}" r="3"/>`;
+const hitPrecision = () => cells("figure-steps", [["hit-precision: 0.01;", precision(14)], ["hit-precision: 0.0002;", precision(2)]], CELL);
 
 // --- distances: what GSS measures to draw a scene, and what joins two objects
 
@@ -262,7 +330,29 @@ function view(): string {
   const [square, disc] = [boxAt(50, 72, 22), discAt(84, 60, 24)];
   const distance = (x: number, y: number) => Math.min(square(x, y), disc(x, y));
   const rings = [7, 14, 21, 28].map((level, i) => `<g class="ripples" style="--i: ${i}">${path("guide", isolines(distance, level, AREA))}</g>`).join("");
-  return cells("figure-steps", [["view: shaded;", lines(solids, CELL)], ["view: distance;", path("edge", isolines(distance, 0, AREA)) + rings]], CELL);
+  // steps: the rays that graze an object take the most steps, around its edge
+  const steps = path("ghost", isolines(distance, 0, AREA)) + path("tint", isolines(distance, 3, AREA)) + path("guide", isolines(distance, 9, AREA));
+  return cells(
+    "figure-steps",
+    [["view: shaded;", lines(solids, CELL)], ["view: distance;", path("edge", isolines(distance, 0, AREA)) + rings], ["view: steps;", steps]],
+    CELL,
+  );
+}
+
+// @debug-panel: the axes and a grid at the origin, around the scene
+function debugPanel(): string {
+  const scene = lines(together(floor(1.4, 0.35), sphereAt(0.5, 0.4)), SCENE);
+  const axes = (
+    [
+      ["x", [1.6, 0, 0]],
+      ["y", [0, 1.6, 0]],
+      ["z", [0, 0, 1.6]],
+    ] as [string, Vec3][]
+  ).map(([name, end]) => {
+    const [x, y] = place(end, SCENE, REST_VIEW);
+    return path("tint", route(SCENE, [[0, 0, 0], end])) + text(x + 6, y + 4, name);
+  });
+  return stage(SCENE, scene + axes.join("")) + says("@debug-panel { display: open; }");
 }
 
 function operation(): string {
@@ -391,6 +481,9 @@ const SCENES: Record<string, (subject: string) => string> = {
   intensity,
   ambient,
   shadows,
+  "shadow-softness": shadows,
+  "ambient-occlusion": shadows,
+  "shadow-steps": shadows,
   fog,
   floor: floorFigure,
   background,
@@ -398,11 +491,17 @@ const SCENES: Record<string, (subject: string) => string> = {
   "camera-target": camera,
   "camera-distance": camera,
   "camera-angle": camera,
+  "camera-fov": camera,
   "camera-spin": camera,
   controls,
   dpr,
   "shape-rendering": shapeRendering,
+  antialias,
+  "raymarch-steps": raymarchSteps,
+  "max-distance": maxDistance,
+  "hit-precision": hitPrecision,
   view,
+  "at-debug-panel": debugPanel,
   operation,
   blend,
   opacity,

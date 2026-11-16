@@ -4,6 +4,11 @@ import type { Range, RangeEdge, Timeline } from "../compiler/features/timeline";
 
 const clamp01 = (value: number) => Math.min(Math.max(value, 0), 1);
 
+// Outside its timeline, a progress is -1 before it and 2 after it: the shader applies the
+// animation there only when its fill mode holds a frame, like CSS (decision 210). Two fixed
+// values: a scene scrolled far away does not draw again for each pixel of scroll.
+const beyond = (value: number) => (value < 0 ? -1 : value > 1 ? 2 : value);
+
 // scroll(): where the scroll is, from 0 at the start to 1 at the end
 export function scrollProgress(position: number, scrollSize: number, clientSize: number): number {
   const range = scrollSize - clientSize;
@@ -18,7 +23,7 @@ export function viewProgress(
   portStart: number,
   portSize: number,
 ): number {
-  return clamp01((portStart + portSize - start) / (portSize + size));
+  return beyond((portStart + portSize - start) / (portSize + size));
 }
 
 // animation-range (decision 162): the progress inside a part of the timeline, like CSS.
@@ -40,8 +45,8 @@ export function rangeProgress(position: number, length: number, subject: number,
   };
   const start = at(range.start);
   const end = at(range.end);
-  if (end <= start) return position >= end ? 1 : 0;
-  return clamp01((position - start) / (end - start));
+  if (end <= start) return position >= end ? 2 : -1;
+  return beyond((position - start) / (end - start));
 }
 
 // scroll() with animation-range: the progress inside the range, from the scroll of the page
@@ -76,46 +81,141 @@ export function findScroller(
   return null;
 }
 
+// animation-timeline: --name: the element of the page that declares the name, like CSS,
+// with view-timeline-name (its way across its scroll container) or scroll-timeline-name
+// (its own scroll). The axis and the inset are the ones of the same place in their lists.
+export type NamedTimeline = { element: Element; kind: "view" | "scroll"; axis: string; inset: string[] };
+
+const listOf = (value: string) => value.split(",").map((item) => item.trim());
+
+// The properties of the timelines of an element: from its computed style, or, in a
+// browser that does not know them (and drops them from its style sheets), from its
+// style attribute
+function timelineProperty(element: Element, property: string, style: CSSStyleDeclaration | null): string {
+  if (style) return style.getPropertyValue(property);
+  const attribute = element.getAttribute("style") ?? "";
+  const match = new RegExp(`(?:^|;)\\s*${property}\\s*:\\s*([^;]+)`).exec(attribute);
+  return match ? match[1].trim() : "";
+}
+
+export function findNamedTimeline(
+  name: string,
+  elements: Iterable<Element>,
+  styleOf: (element: Element) => CSSStyleDeclaration = getComputedStyle,
+  supported = typeof CSS !== "undefined" && CSS.supports?.("view-timeline-name", "--a"),
+): NamedTimeline | null {
+  for (const element of elements) {
+    const style = supported ? styleOf(element) : null;
+    for (const kind of ["view", "scroll"] as const) {
+      const names = listOf(timelineProperty(element, `${kind}-timeline-name`, style));
+      const at = names.indexOf(name);
+      if (at < 0) continue;
+      const axes = listOf(timelineProperty(element, `${kind}-timeline-axis`, style) || "block");
+      const insets = listOf(timelineProperty(element, "view-timeline-inset", style) || "auto");
+      return {
+        element,
+        kind,
+        axis: axes[at] ?? axes[axes.length - 1] ?? "block",
+        inset: (insets[at] ?? insets[insets.length - 1] ?? "auto").split(/\s+/),
+      };
+    }
+  }
+  return null;
+}
+
+// view-timeline-inset in pixels, start then end: auto is 0, a percentage is of the scroll
+// container, one value is both sides, like CSS
+export function insetOf(inset: string[], portSize: number): [number, number] {
+  const pixels = (value: string) =>
+    value.endsWith("%") ? (parseFloat(value) / 100) * portSize : value.endsWith("px") ? parseFloat(value) : 0;
+  return [pixels(inset[0] ?? "auto"), pixels(inset[1] ?? inset[0] ?? "auto")];
+}
+
+// The elements found for each name, checked again every frame; a name not found is
+// looked for again at most twice a second (the page may add its element later)
+const found = new Map<string, NamedTimeline>();
+const missed = new Map<string, number>();
+function namedTimeline(name: string): NamedTimeline | null {
+  const known = found.get(name);
+  if (known?.element.isConnected && findNamedTimeline(name, [known.element])) return known;
+  found.delete(name);
+  const now = performance.now();
+  if (now - (missed.get(name) ?? -Infinity) < 500) return null;
+  const result = findNamedTimeline(name, document.querySelectorAll("*"));
+  if (result) {
+    found.set(name, result);
+    missed.delete(name);
+  } else missed.set(name, now);
+  return result;
+}
+
 // GSS writes horizontally: block is the vertical axis, inline the horizontal one
-const isVertical = (timeline: Timeline) =>
+const isVertical = (timeline: { axis: string }) =>
   timeline.axis === "block" || timeline.axis === "y";
 
-function progressOf(timeline: Timeline, canvas: HTMLCanvasElement, override: number | null): number {
-  if (override !== null && !timeline.range) return override;
-  const vertical = isVertical(timeline);
-  const nearest =
-    timeline.type === "view" || timeline.scroller === "nearest"
-      ? findScroller(canvas, vertical)
-      : null;
-  const root = document.scrollingElement ?? document.documentElement;
-  if (timeline.type === "scroll") {
-    const scroller = nearest ?? root;
-    if (timeline.range) {
-      const length = vertical ? scroller.scrollHeight - scroller.clientHeight : scroller.scrollWidth - scroller.clientWidth;
-      const scrolled = vertical ? scroller.scrollTop : scroller.scrollLeft;
-      return scrollRangeProgress(scrolled, length, vertical ? scroller.clientHeight : scroller.clientWidth, override, timeline.range);
-    }
-    return vertical
-      ? scrollProgress(scroller.scrollTop, scroller.scrollHeight, scroller.clientHeight)
-      : scrollProgress(scroller.scrollLeft, scroller.scrollWidth, scroller.clientWidth);
+// The progress of a scroll container (scroll()), with its range
+function scrollOf(scroller: Element, vertical: boolean, range: Range | undefined, override: number | null): number {
+  if (range) {
+    const length = vertical ? scroller.scrollHeight - scroller.clientHeight : scroller.scrollWidth - scroller.clientWidth;
+    const scrolled = vertical ? scroller.scrollTop : scroller.scrollLeft;
+    return scrollRangeProgress(scrolled, length, vertical ? scroller.clientHeight : scroller.clientWidth, override, range);
   }
-  const box = canvas.getBoundingClientRect();
+  return vertical
+    ? scrollProgress(scroller.scrollTop, scroller.scrollHeight, scroller.clientHeight)
+    : scrollProgress(scroller.scrollLeft, scroller.scrollWidth, scroller.clientWidth);
+}
+
+// The progress of a subject crossing its scroll container (view()), with its range;
+// inset: the pixels taken off the start and the end of the container
+function viewOf(
+  subject: Element,
+  vertical: boolean,
+  range: Range | undefined,
+  override: number | null,
+  inset: string[] = ["auto"],
+): number {
+  const nearest = findScroller(subject, vertical);
+  const box = subject.getBoundingClientRect();
   const port = nearest
     ? nearest.getBoundingClientRect()
     : { top: 0, left: 0, height: window.innerHeight, width: window.innerWidth };
-  if (timeline.range) {
+  const [start, size, outerStart, outerSize] = vertical
+    ? [box.top, box.height, port.top, port.height]
+    : [box.left, box.width, port.left, port.width];
+  const [insetStart, insetEnd] = insetOf(inset, outerSize);
+  const portStart = outerStart + insetStart;
+  const portSize = Math.max(outerSize - insetStart - insetEnd, 0);
+  if (range) {
     // The slider of the playground stands in for the place of the scene along the timeline
-    const [start, subject, portStart, portSize] = vertical
-      ? [box.top, box.height, port.top, port.height]
-      : [box.left, box.width, port.left, port.width];
-    const length = subject + portSize;
+    const length = size + portSize;
     const position = override !== null ? override * length : portStart + portSize - start;
-    return rangeProgress(position, length, subject, portSize, timeline.range);
+    return rangeProgress(position, length, size, portSize, range);
   }
-  return vertical
-    ? viewProgress(box.top, box.height, port.top, port.height)
-    : viewProgress(box.left, box.width, port.left, port.width);
+  return viewProgress(start, size, portStart, portSize);
 }
+
+function progressOf(timeline: Timeline, canvas: HTMLCanvasElement, override: number | null): number {
+  if (override !== null && !timeline.range) return override;
+  if (timeline.type === "named") {
+    const named = namedTimeline(timeline.name);
+    // No element of the page declares it: the slider stands in for the scroll, as for
+    // view() of the scene; on a page, the timeline is inactive, as before it (decision 210)
+    if (!named) return override !== null ? viewOf(canvas, true, timeline.range, override) : -1;
+    const vertical = isVertical(named);
+    return named.kind === "scroll"
+      ? scrollOf(named.element, vertical, timeline.range, override)
+      : viewOf(named.element, vertical, timeline.range, override, named.inset);
+  }
+  const vertical = isVertical(timeline);
+  if (timeline.type === "scroll") {
+    const nearest = timeline.scroller === "nearest" ? findScroller(canvas, vertical) : null;
+    return scrollOf(nearest ?? document.scrollingElement ?? document.documentElement, vertical, timeline.range, override);
+  }
+  return viewOf(canvas, vertical, timeline.range, override);
+}
+
+// How many vec4 uTimeline takes: one up to 4 timelines, one per 4 past them (decision 210)
+export const timelineVectors = (count: number) => Math.max(1, Math.ceil(count / 4));
 
 // uTimeline: one component per timeline; override: one progress for all (the slider)
 export function timelineValues(
@@ -123,7 +223,7 @@ export function timelineValues(
   canvas: HTMLCanvasElement,
   override: number | null,
 ): Float32Array {
-  const values = new Float32Array(4);
+  const values = new Float32Array(4 * timelineVectors(timelines.length));
   timelines.forEach((timeline, i) => {
     values[i] = progressOf(timeline, canvas, override);
   });

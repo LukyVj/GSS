@@ -225,6 +225,13 @@ Material emissive(vec3 color, float strength) {
 Material iridescent(vec3 color, float strength) {
   return Material(color, IRIDESCENT, 0.0, strength, 1.0, 0); // frostStyle: only glass reads it
 }`,
+
+  toon: `const int TOON = 6;
+
+// Flat bands of light, like a cartoon (decision 202): the number of bands goes in density
+Material toon(vec3 color, float bands) {
+  return Material(color, TOON, 0.0, bands, 1.0, 0); // frostStyle: only glass reads it
+}`,
 };
 
 // The line of main() that lights each material
@@ -234,4 +241,5 @@ export const SHADE_CALLS: Record<string, string> = {
   glass: "    if (m.kind == GLASS) col = shadeGlass(p, n, rd, m);",
   emissive: "    if (m.kind == EMISSIVE) col = max(col, m.color * m.density);",
   iridescent: "    if (m.kind == IRIDESCENT) col = shadeIridescent(p, n, rd, m);",
+  toon: "    if (m.kind == TOON) col = shadeToon(p, n, rd, m);",
 };

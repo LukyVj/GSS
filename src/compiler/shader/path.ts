@@ -20,6 +20,94 @@ function vec2(p: Point): string {
   return `vec2(${float(p.x)}, ${float(p.y)})`;
 }
 
+// ----- Trees of boxes over the segments (or sides) of a shape -----
+// A group of 8 segments has a box, as written in the shader (rounded to 4 decimals):
+// further from the box than the nearest segment found so far (d, squared), none of its
+// segments can be nearer. 8 groups are gathered under a box that holds their boxes, 8 of
+// those under a bigger one, and so on: one test skips them all. The value of d stays the
+// same, whatever is skipped: a box holds the boxes inside it with a margin wider than the
+// rounding of 32-bit floats, so when it is too far, each box inside it is too far as well,
+// and the groups keep their order. The same for the heights of the inside test.
+const BRANCHES = 8;
+
+const round = (n: number) => Math.round(n * 10000) / 10000;
+
+export type BoxLeaf = { low: Point; high: Point; lines: string[] };
+export type RangeLeaf = { low: number; high: number; lines: string[] };
+
+// A group: the box of its points, as the shader will read it
+export function boxLeaf(points: Point[], lines: string[]): BoxLeaf {
+  const box = boxOf(points);
+  const center = { x: round(box.x + box.width / 2), y: round(box.y + box.height / 2) };
+  const half = { x: round(box.width / 2), y: round(box.height / 2) };
+  return {
+    low: { x: center.x - half.x, y: center.y - half.y },
+    high: { x: center.x + half.x, y: center.y + half.y },
+    lines: [`if (box2(q, ${vec2(center)}, ${vec2(half)}) < d) {`, ...lines.map((l) => `  ${l}`), "}"],
+  };
+}
+
+const indented = (lines: string[], depth: number) => lines.map((l) => `${"  ".repeat(depth)}${l}`).join("\n");
+
+// The groups, gathered by BRANCHES under bigger boxes until no more than BRANCHES are left
+export function boxTree(leaves: BoxLeaf[], branches = BRANCHES): string {
+  let level = leaves;
+  while (level.length > branches) {
+    const next: BoxLeaf[] = [];
+    for (let i = 0; i < level.length; i += branches) {
+      const children = level.slice(i, i + branches);
+      if (children.length === 1) {
+        next.push(children[0]);
+        continue;
+      }
+      const low = { x: Math.min(...children.map((c) => c.low.x)), y: Math.min(...children.map((c) => c.low.y)) };
+      const high = { x: Math.max(...children.map((c) => c.high.x)), y: Math.max(...children.map((c) => c.high.y)) };
+      // The margin: 32-bit floats round about 1e-7 of the size of the coordinates
+      const size = Math.max(Math.abs(low.x), Math.abs(low.y), Math.abs(high.x), Math.abs(high.y));
+      const margin = 0.0001 + size * 1e-5;
+      const center = { x: round((low.x + high.x) / 2), y: round((low.y + high.y) / 2) };
+      const up = (n: number) => Math.ceil(n * 10000) / 10000;
+      const half = { x: up((high.x - low.x) / 2 + 2 * margin), y: up((high.y - low.y) / 2 + 2 * margin) };
+      next.push({
+        low: { x: center.x - half.x, y: center.y - half.y },
+        high: { x: center.x + half.x, y: center.y + half.y },
+        lines: [
+          `if (box2(q, ${vec2(center)}, ${vec2(half)}) < d) {`,
+          ...children.flatMap((c) => c.lines.map((l) => `  ${l}`)),
+          "}",
+        ],
+      });
+    }
+    level = next;
+  }
+  return indented(level.flatMap((c) => c.lines), 1);
+}
+
+// The same for the inside test: the heights of the groups, gathered under taller ones
+export function rangeTree(leaves: RangeLeaf[], branches = BRANCHES): string {
+  const block = (low: number, high: number, inner: string[]) => [
+    `if (q.y >= ${float(low)} && q.y <= ${float(high)}) {`,
+    ...inner.map((l) => `  ${l}`),
+    "}",
+  ];
+  let level = leaves.map((leaf) => ({ ...leaf, lines: block(leaf.low, leaf.high, leaf.lines) }));
+  while (level.length > branches) {
+    const next: RangeLeaf[] = [];
+    for (let i = 0; i < level.length; i += branches) {
+      const children = level.slice(i, i + branches);
+      if (children.length === 1) {
+        next.push(children[0]);
+        continue;
+      }
+      const low = Math.min(...children.map((c) => c.low));
+      const high = Math.max(...children.map((c) => c.high));
+      next.push({ low, high, lines: block(low, high, children.flatMap((c) => c.lines)) });
+    }
+    level = next;
+  }
+  return indented(level.flatMap((c) => c.lines), 1);
+}
+
 function boxOf(points: Point[]): ViewBox {
   const xs = points.map((p) => p.x);
   const ys = points.map((p) => p.y);
@@ -57,10 +145,16 @@ export function pathFunction(
   }
 
   // Segments are grouped by 8, each group with its box: far from a group's box,
-  // its segments cannot be the nearest, and the shader skips them.
-  const groups: [Point, Point][][] = [];
-  for (let i = 0; i < segments.length; i += 8)
-    groups.push(segments.slice(i, i + 8));
+  // its segments cannot be the nearest, and the shader skips them. The groups are
+  // themselves gathered by 8 under a bigger box, and so on (boxTree()).
+  // The code is written out segment by segment, with no array and no loop:
+  // it is longer, but GPUs run it much faster than a loop over a constant array.
+  const leaves: BoxLeaf[] = [];
+  for (let i = 0; i < segments.length; i += 8) {
+    const group = segments.slice(i, i + 8);
+    leaves.push(boxLeaf(group.flat(), group.map(([a, b]) => `d = min(d, segment2(q, ${vec2(a)}, ${vec2(b)}));`)));
+  }
+  const body = boxTree(leaves);
 
   const boxCode = (points: Point[]) => {
     const box = boxOf(points);
@@ -70,19 +164,6 @@ export function pathFunction(
       half: vec2({ x: box.width / 2, y: box.height / 2 }),
     };
   };
-
-  // The code is written out segment by segment, with no array and no loop:
-  // it is longer, but GPUs run it much faster than a loop over a constant array.
-  const body = groups
-    .map((group) => {
-      const box = boxCode(group.flat());
-      const lines = group.map(
-        ([a, b]) => `    d = min(d, segment2(q, ${vec2(a)}, ${vec2(b)}));`,
-      );
-      return `  if (box2(q, ${box.center}, ${box.half}) < d) {\n${lines.join("\n")}\n  }`;
-    })
-    .join("\n");
-
   const all = boxCode(segments.flat());
   const radius = typeof strokeWidth === "number" ? float(strokeWidth / 2) : `(${strokeWidth} / 2.0)`;
 
@@ -103,22 +184,26 @@ ${body}
 function fillBody(sides: [Point, Point][]): string {
   // Sides are grouped by 8, like the segments of a path. A group is skipped for the
   // distance when its box is further than the nearest side found so far, and for the
-  // inside test when the horizontal line through q does not cross its height.
-  // Crossings are counted over every contour: a hole flips the inside back (even-odd rule).
-  const body: string[] = [];
+  // inside test when the horizontal line through q does not cross its height; the groups
+  // are gathered by 8 under a bigger box and a taller height, and so on (boxTree(),
+  // rangeTree()). Crossings are counted over every contour: a hole flips the inside back
+  // (even-odd rule).
+  const boxes: BoxLeaf[] = [];
+  const ranges: RangeLeaf[] = [];
   for (let i = 0; i < sides.length; i += 8) {
     const group = sides.slice(i, i + 8);
     const groupBox = boxOf(group.flat());
-    const center = vec2({ x: groupBox.x + groupBox.width / 2, y: groupBox.y + groupBox.height / 2 });
-    const half = vec2({ x: groupBox.width / 2, y: groupBox.height / 2 });
-    const distance = group.map(([a, b]) => `    d = min(d, segment2(q, ${vec2(a)}, ${vec2(b)}));`);
-    const crossing = group.map(([a, b]) => `    if (crosses(q, ${vec2(a)}, ${vec2(b)})) s = -s;`);
-    body.push(
-      `  if (box2(q, ${center}, ${half}) < d) {\n${distance.join("\n")}\n  }`,
-      `  if (q.y >= ${float(groupBox.y)} && q.y <= ${float(groupBox.y + groupBox.height)}) {\n${crossing.join("\n")}\n  }`,
-    );
+    boxes.push(boxLeaf(group.flat(), group.map(([a, b]) => `d = min(d, segment2(q, ${vec2(a)}, ${vec2(b)}));`)));
+    ranges.push({
+      low: round(groupBox.y),
+      high: round(groupBox.y + groupBox.height),
+      lines: group.map(([a, b]) => `if (crosses(q, ${vec2(a)}, ${vec2(b)})) s = -s;`),
+    });
   }
-  return body.join("\n");
+  // Up to BRANCHES groups there is no tree: each group's two tests, one after the other
+  if (boxes.length <= BRANCHES)
+    return boxes.map((box, i) => `${boxTree([box])}\n${rangeTree([ranges[i]])}`).join("\n");
+  return `${boxTree(boxes)}\n${rangeTree(ranges)}`;
 }
 
 // Returns the GLSL function of a "prism" object: contours, filled, then given a depth.

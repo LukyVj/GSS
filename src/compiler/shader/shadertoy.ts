@@ -31,20 +31,29 @@ ${lines.join("\n")}
 `;
 }
 
-export function toShadertoy({ shader, camera, properties }: CompiledScene): string {
+export function toShadertoy({ shader, camera, properties, hover, active, channels: glides }: CompiledScene): string {
   const channels = channelDefines(shader);
+  // the hover slots, then the pressed ones (decision 95)
+  const slots = [...hover, ...(active ?? [])];
   const body = shader
-    // 0. No picking in Shadertoy: every object stays at rest. Before step 1,
-    // which removes every uniform line
+    // 0. No picking in Shadertoy: nothing is hovered or pressed, so only the slots of
+    // :not(:hover) and :not(:active) are on (decisions 214, 218). Before step 1, which
+    // removes every uniform line
     .replace(/^uniform float uHover\[(\d+)\];.*\n/m, (_, n) => {
-      const zeros = Array(Number(n)).fill("0.0").join(", ");
-      return `const float uHover[${n}] = float[${n}](${zeros}); // :hover needs the GSS runtime\n`;
+      // a number after the slots follows its slot (a transition per property)
+      const slotOf = (i: number) => (i < slots.length ? i : (glides?.[i - slots.length]?.slot ?? i));
+      const rest = Array.from({ length: Number(n) }, (_, i) => (slots[slotOf(i)]?.includes(0) ? "1.0" : "0.0")).join(", ");
+      return `const float uHover[${n}] = float[${n}](${rest}); // :hover needs the GSS runtime\n`;
     })
     .replace(/^uniform float uStart\[(\d+)\];.*\n/m, (_, n) => {
       const zeros = Array(Number(n)).fill("0.0").join(", ");
       return `const float uStart[${n}] = float[${n}](${zeros}); // a state starts an animation with the GSS runtime\n`;
     })
     .replace(/^uniform vec4 uTimeline;.*\n/m, "const vec4 uTimeline = vec4(0.0); // scroll() needs the GSS runtime: the start\n")
+    .replace(/^uniform vec4 uTimeline\[(\d+)\];.*\n/m, (_, n) => {
+      const zeros = Array(Number(n)).fill("vec4(0.0)").join(", ");
+      return `const vec4 uTimeline[${n}] = vec4[${n}](${zeros}); // scroll() needs the GSS runtime: the start\n`;
+    })
     // @property (decision 105): the variables keep their initial values
     .replace(/^uniform vec4 uProperties\[(\d+)\];.*\n/m, (_, n) => {
       const values = (properties ?? []).map((p) => `vec4(${p.initial.map(glslFloat).join(", ")})`).join(", ");
@@ -52,6 +61,8 @@ export function toShadertoy({ shader, camera, properties }: CompiledScene): stri
     })
     .replace(/^uniform bool uPicking;.*\n/m, "const bool uPicking = false;\n")
     .replace(/^uniform vec2 uPick;.*\n/m, "const vec2 uPick = vec2(0.0);\n")
+    // hover-distance() (decision 217): no pointer, so very far
+    .replace(/^uniform vec4 uPointer;.*\n/m, "const vec4 uPointer = vec4(0.0);\n")
     // 1. What Shadertoy already writes: the header, its uniforms, the output
     .replace(/^#version.*\n/m, "")
     .replace(/^precision .*\n/m, "")

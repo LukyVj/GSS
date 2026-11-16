@@ -224,7 +224,7 @@ describe(":has(): the objects that trigger the hover", () => {
   it("refuses a property :hover cannot change", () => {
     expect(() =>
       compileScene(
-        "@scene { group#g { sphere; cube; } } #g:has(sphere:hover) cube { radius: 2; }",
+        "@scene { group#g { sphere; cube; } } #g:has(sphere:hover) cube { material: gold; }",
       ),
     ).toThrow("cannot change on :hover");
   });

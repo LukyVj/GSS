@@ -45,18 +45,34 @@ function liveSize(token: Token): string | null {
   return code === null ? null : `max(${code}, 0.0)`;
 }
 
-// readNumber(), or the GLSL of a variable set from JS
+// The sizes of a shape that :hover changes (decision 213): while a shape is written, the
+// codegen gives, for a property and a way to read one of its numbers, the GLSL that mixes
+// it with its hovered values, or null when no state changes it
+type HoverSizes = (property: string, read: (value: Token[] | undefined) => number) => string | null;
+let hoverSizes: HoverSizes | null = null;
+export function withHoverSizes<T>(sizes: HoverSizes | null, write: () => T): T {
+  hoverSizes = sizes;
+  try {
+    return write();
+  } finally {
+    hoverSizes = null;
+  }
+}
+const hovered = (value: Token[] | undefined, property: string, read: (value: Token[] | undefined) => number): string | null =>
+  hoverSizes && !value?.some((t) => t.type === "EXPR") ? hoverSizes(property, read) : null;
+
+// readNumber(), or the GLSL of a variable set from JS, or of the sizes :hover changes
 export function liveNumber(value: Token[] | undefined, property: string, fallback: number, allowZero = false): Num {
   if (value?.length === 1) {
     const live = liveSize(value[0]);
     if (live) return live;
   }
-  return readNumber(value, property, fallback, allowZero);
+  return hovered(value, property, (v) => readNumber(v, property, fallback, allowZero)) ?? readNumber(value, property, fallback, allowZero);
 }
 
 // readSize(), readFlatSize(), readRadii(): each number can be a variable set from JS
-const liveList = (read: (value: Token[] | undefined) => number[]) => (value: Token[] | undefined): Num[] => {
-  if (!value?.some((t) => t.type === "EXPR")) return read(value);
+const liveList = (read: (value: Token[] | undefined) => number[], property: string) => (value: Token[] | undefined): Num[] => {
+  if (!value?.some((t) => t.type === "EXPR")) return read(value).map((n, i) => hovered(value, property, (v) => read(v)[i]) ?? n);
   // Each variable stands in as a number of its own while the reader checks the rest and
   // repeats what it repeats (size: 2 is 2 2 2), then takes its place
   const stand = (i: number) => 1e6 + i;
@@ -66,6 +82,6 @@ const liveList = (read: (value: Token[] | undefined) => number[]) => (value: Tok
     return i >= 0 && i < value.length && value[i].type === "EXPR" ? liveSize(value[i])! : n;
   });
 };
-export const liveSize3 = liveList(readSize);
-export const liveFlatSize = liveList(readFlatSize);
-export const liveRadii = liveList(readRadii);
+export const liveSize3 = liveList(readSize, "size");
+export const liveFlatSize = liveList(readFlatSize, "size");
+export const liveRadii = liveList(readRadii, "radius");

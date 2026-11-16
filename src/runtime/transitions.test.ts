@@ -31,6 +31,11 @@ describe("createTransitions", () => {
     expect(slots.update(OFF, 10)[0]).toBe(0);
   });
 
+  it("starts from the state of each slot at rest: no glide when the page opens (decision 214)", () => {
+    const slots = createTransitions([{ enter: glide(1), leave: glide(1) }], Float32Array.of(1));
+    expect(slots.update(ON, 0)[0]).toBe(1);
+  });
+
   it("glides to 1 with the enter transition", () => {
     const slots = createTransitions([{ enter: glide(1), leave: null }]);
     expect(slots.update(ON, 1000)[0]).toBe(0);
@@ -117,5 +122,27 @@ describe("createTransitions", () => {
     const slots = createTransitions([{ enter: glide(1), leave: glide(1) }]);
     expect(slots.update(ON, 0, true)[0]).toBe(1);
     expect(slots.update(OFF, 10, true)[0]).toBe(0);
+  });
+});
+
+describe("createTransitions: a transition per property", () => {
+  it("moves the numbers after the slots with their slot, each with its own transition", () => {
+    const slots = createTransitions([{ enter: null, leave: null }], undefined, [
+      { slot: 0, enter: glide(1), leave: glide(1) },
+      { slot: 0, enter: glide(0.2), leave: glide(0.2) },
+    ]);
+    expect(Array.from(slots.update(ON, 0))).toEqual([1, 0, 0]);
+    const half = slots.update(ON, 100);
+    expect(half[0]).toBe(1);
+    expect(half[1]).toBeCloseTo(0.1);
+    expect(half[2]).toBeCloseTo(0.5);
+    expect(Array.from(slots.update(ON, 1000))).toEqual([1, 1, 1]);
+  });
+
+  it("starts each number where its slot rests: 1 for a :not(:hover)", () => {
+    const slots = createTransitions([{ enter: null, leave: null }], Float32Array.of(1), [
+      { slot: 0, enter: glide(1), leave: glide(1) },
+    ]);
+    expect(Array.from(slots.update(ON, 0))).toEqual([1, 1]);
   });
 });

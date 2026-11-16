@@ -22,7 +22,6 @@ describe(":active in a selector", () => {
   });
 
   it("is refused where :hover is refused", () => {
-    expect(() => selector("cube:not(:active)")).toThrow(/cannot hold :hover or :active/);
     expect(() => selector(":nth-child(1 of :active)")).toThrow(/cannot hold :hover or :active/);
   });
 });
@@ -59,16 +58,17 @@ describe(":active in the cascade", () => {
     expect(by("c").activeTriggers).toEqual([3]);
   });
 
-  it("refuses to style a group itself, like :hover", () => {
-    expect(() => compileScene("@scene { group#g { cube; } } #g:active { scale: 0.9; }")).toThrow(
-      /:active rule cannot style a group/,
-    );
+  it("cannot start an animation on a group yet, like :hover", () => {
+    expect(() =>
+      compileScene("@scene { group#g { cube; } } #g:active { animation: spin 1s; } @keyframes spin { to { rotate-y: 90deg; } }"),
+    ).toThrow("A :active rule on a group cannot start an animation yet: start it on its objects, like #g:active cube { animation: … }");
   });
 
-  it("changes only the animatable properties", () => {
-    expect(() => compileScene("@scene { cube; } cube:active { size: 2; }")).toThrow(
-      /"size" cannot change on :active/,
+  it("changes only the animatable properties, and the sizes of the shapes", () => {
+    expect(() => compileScene("@scene { cube; } cube:active { material: gold; }")).toThrow(
+      /"material" cannot change on :active/,
     );
+    expect(compileScene("@scene { cube; } cube:active { size: 2; }").shader).toContain("mix(1.0, 2.0, uHover[0])");
   });
 });
 
@@ -108,6 +108,36 @@ describe(":active in the compiled scene", () => {
       "@scene { cube; } cube:hover { color: #ff5a36; } cube:active { scale: 0.9; }",
     );
     expect(compiled.shader).not.toMatch(/mix\(mix\([^;]*uHover\[0\]\)[^;]*uHover\[1\]\)/);
+  });
+
+  it("presses a group: it moves, and carries what it holds", () => {
+    const compiled = compileScene(
+      "@scene { group#g { cube; sphere; } } #g { transition: 0.2s; } #g:hover { scale: 1.1; transition: 0.4s; } #g:active { scale: 0.9; transition: 0.1s; }",
+    );
+    expect(compiled.hover).toEqual([[1, 2]]);
+    expect(compiled.active).toEqual([[1, 2]]);
+    // the pressed state over the hovered one, for every object of the group
+    expect(compiled.shader).toContain("mix(mix(1.0, 1.1, uHover[0]), 0.9, uHover[1])");
+    // pressing goes with the :active transition, releasing with the hovered one
+    expect(compiled.transitions[1].enter?.duration).toBe(0.1);
+    expect(compiled.transitions[1].leave?.duration).toBe(0.4);
+  });
+
+  it("puts the pressed groups after the pressed objects", () => {
+    const compiled = compileScene("@scene { group#g { cube#a; sphere#b; } } #g:active { scale: 0.9; } #a:active { color: red; }");
+    expect(compiled.active).toEqual([[1], [1, 2]]);
+  });
+
+  it("passes the variables and the color of a pressed group to its objects", () => {
+    const [cube, sphere] = styled("@scene { group#g { cube; sphere; } } #g:active { color: red; --lift: 1; } sphere { color: blue; translate: 0 var(--lift, 0) 0; }");
+    // the groups in the pressed state, computed with the object
+    expect(cube.activeTriggers).toEqual([1, 2]);
+    expect(cube.activeGroups?.[0].color).toEqual(tokenize("red"));
+    expect(sphere.activeTriggers).toEqual([1, 2]);
+    expect(sphere.activeGroups?.[0]["--lift"]).toBeDefined();
+    expect(compileScene("@scene { group#g { cube; } } #g:active { color: #ff0000; }").shader).toContain(
+      "mix(vec3(0.9), vec3(1.0, 0.0, 0.0), uHover[0])",
+    );
   });
 
   it("validates as WGSL like :hover", () => {

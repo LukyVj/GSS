@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { scrollProgress, viewProgress, findScroller, rangeProgress, scrollRangeProgress } from "./timeline";
+import { scrollProgress, viewProgress, findScroller, rangeProgress, scrollRangeProgress, findNamedTimeline, insetOf, timelineValues } from "./timeline";
 import type { RangeEdge, RangeName } from "../compiler/features/timeline";
 
 describe("scrollProgress", () => {
@@ -33,9 +33,9 @@ describe("viewProgress", () => {
     expect(viewProgress(0, 100, 100, 400)).toBe(1);
   });
 
-  it("stays between 0 and 1", () => {
-    expect(viewProgress(2000, 200, 0, 800)).toBe(0);
-    expect(viewProgress(-900, 200, 0, 800)).toBe(1);
+  it("is -1 before the timeline and 2 after it, so that an animation can stop applying, like CSS", () => {
+    expect(viewProgress(2000, 200, 0, 800)).toBe(-1);
+    expect(viewProgress(-900, 200, 0, 800)).toBe(2);
   });
 });
 
@@ -119,14 +119,14 @@ describe("rangeProgress (animation-range)", () => {
     expect(view(150, edge("cover", 100, "px"), edge("cover", 200, "px"))).toBe(0.5);
   });
 
-  it("stays between 0 and 1 outside the range", () => {
-    expect(view(950, edge("entry", 0), edge("entry", 100))).toBe(1);
-    expect(view(10, edge("exit", 0), edge("exit", 100))).toBe(0);
+  it("is -1 before the range and 2 after it", () => {
+    expect(view(950, edge("entry", 0), edge("entry", 100))).toBe(2);
+    expect(view(10, edge("exit", 0), edge("exit", 100))).toBe(-1);
   });
 
-  it("is 1 past a range of no length", () => {
-    expect(view(300, edge("cover", 30), edge("cover", 30))).toBe(1);
-    expect(view(200, edge("cover", 30), edge("cover", 30))).toBe(0);
+  it("is after a range of no length once past it, before it otherwise", () => {
+    expect(view(300, edge("cover", 30), edge("cover", 30))).toBe(2);
+    expect(view(200, edge("cover", 30), edge("cover", 30))).toBe(-1);
   });
 });
 
@@ -136,7 +136,7 @@ describe("scrollRangeProgress (scroll() with animation-range)", () => {
 
   it("follows the scroll of the page", () => {
     expect(scrollRangeProgress(1000, 2000, 800, null, middle)).toBe(0.5);
-    expect(scrollRangeProgress(400, 2000, 800, null, middle)).toBe(0);
+    expect(scrollRangeProgress(400, 2000, 800, null, middle)).toBe(-1);
   });
 
   it("follows the slider of the playground over the length of the page", () => {
@@ -145,9 +145,75 @@ describe("scrollRangeProgress (scroll() with animation-range)", () => {
   });
 
   it("follows the slider where the page cannot scroll, as over one screen of scroll", () => {
-    expect(scrollRangeProgress(0, 0, 800, 0, middle)).toBe(0);
+    expect(scrollRangeProgress(0, 0, 800, 0, middle)).toBe(-1);
     expect(scrollRangeProgress(0, 0, 800, 0.5, middle)).toBe(0.5);
-    expect(scrollRangeProgress(0, 0, 800, 1, middle)).toBe(1);
+    expect(scrollRangeProgress(0, 0, 800, 1, middle)).toBe(2);
     expect(scrollRangeProgress(0, 0, 800, 0.25, { start: edge(100, "px"), end: edge(300, "px") })).toBe(0.5);
+  });
+});
+
+describe("findNamedTimeline (animation-timeline: --name)", () => {
+  type Fake = { styles: Record<string, string>; attribute?: string; isConnected?: boolean };
+  const element = (styles: Record<string, string>, attribute?: string): Fake => ({ styles, attribute });
+  const styleOf = (el: Element) => {
+    const fake = el as unknown as Fake;
+    return { getPropertyValue: (property: string) => fake.styles[property] ?? "" } as CSSStyleDeclaration;
+  };
+  const find = (name: string, elements: Fake[], supported = true) =>
+    findNamedTimeline(
+      name,
+      elements.map((fake) => ({ ...fake, getAttribute: () => fake.attribute ?? null }) as unknown as Element),
+      styleOf,
+      supported,
+    );
+
+  it("finds the element whose view-timeline-name holds the name, with its axis and its inset", () => {
+    const found = find("--b", [
+      element({ "view-timeline-name": "none" }),
+      element({ "view-timeline-name": "--a, --b", "view-timeline-axis": "block, inline", "view-timeline-inset": "auto, 10px 20%" }),
+    ]);
+    expect(found).toMatchObject({ kind: "view", axis: "inline", inset: ["10px", "20%"] });
+  });
+
+  it("finds a scroll timeline, scroll-timeline-name, the element itself being the scroller", () => {
+    expect(find("--log", [element({ "scroll-timeline-name": "--log", "scroll-timeline-axis": "y" })])).toMatchObject({
+      kind: "scroll",
+      axis: "y",
+    });
+  });
+
+  it("takes the first element in the order of the page", () => {
+    const first = element({ "view-timeline-name": "--a" });
+    const found = find("--a", [element({}), first, element({ "view-timeline-name": "--a" })]);
+    expect(found?.element).toMatchObject({ styles: first.styles });
+  });
+
+  it("is null when no element declares the name", () => {
+    expect(find("--c", [element({ "view-timeline-name": "--a" })])).toBeNull();
+  });
+
+  it("reads the style attribute in a browser that does not know view-timeline-name", () => {
+    const found = find("--v7", [element({}, "padding: 0; view-timeline-name: --v7; view-timeline-axis: block")], false);
+    expect(found).toMatchObject({ kind: "view", axis: "block" });
+  });
+});
+
+describe("insetOf (view-timeline-inset)", () => {
+  it("is 0 for auto, pixels as they are, a percentage of the scroll container", () => {
+    expect(insetOf(["auto", "auto"], 800)).toEqual([0, 0]);
+    expect(insetOf(["10px", "25%"], 800)).toEqual([10, 200]);
+  });
+
+  it("takes one value for both sides, like CSS", () => {
+    expect(insetOf(["50px"], 800)).toEqual([50, 50]);
+  });
+});
+
+describe("timelineValues", () => {
+  it("sends one vec4 up to four timelines, and as many as needed past four", () => {
+    const view = { type: "view", axis: "block" } as const;
+    const canvas = {} as HTMLCanvasElement;
+    expect(timelineValues([view, view], canvas, 0.5)).toHaveLength(4);
+    expect([...timelineValues(Array(6).fill(view), canvas, 0.25)]).toEqual([0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0, 0]);
   });
 });

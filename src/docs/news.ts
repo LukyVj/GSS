@@ -12,7 +12,13 @@ export function compareVersions(a: string, b: string): number {
   return 0;
 }
 
-// The newest version that added pages and is published: a version newer than the package
+// The newest version that added a value to a page after the page itself (its "updated")
+export function newestValue(values: readonly (readonly [string, string, string?])[] = []): string | undefined {
+  const versions = values.map(([, , since]) => since).filter((v): v is string => !!v);
+  return versions.length ? versions.reduce((newest, other) => (compareVersions(other, newest) > 0 ? other : newest)) : undefined;
+}
+
+// The newest version that added pages or values and is published: a version newer than the package
 // waits, the docs describe it before it is out
 export function newestVersion(versions: (string | undefined)[], published = VERSION): string | null {
   const out = versions.filter((v): v is string => !!v && compareVersions(v, published) <= 0);

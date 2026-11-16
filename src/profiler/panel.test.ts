@@ -93,6 +93,31 @@ describe("the profiler behind the panel", () => {
     expect(probe.measuring?.()).toBe(false);
   });
 
+  it("measures for the debug panel too, while it watches (decision 204)", async () => {
+    const { profile, perfRows, watchPerf } = await freshPanel();
+    const gl = fakeGl();
+    const probe = profile(gl);
+    probe.shaderBuilt(42);
+    expect(perfRows()).toBeNull(); // nothing measured yet
+    watchPerf(true);
+    expect(gl.getExtension).toHaveBeenCalledTimes(1);
+    expect(probe.measuring?.()).toBe(true);
+    expect(perfRows()!.find((row) => row.label === "shader")?.value).toBe("42 ms");
+    watchPerf(false);
+    expect(probe.measuring?.()).toBe(false);
+    expect(perfRows()).not.toBeNull(); // it keeps measuring, like the panel once opened
+  });
+
+  it("tells the debug panel each time a frame is drawn, measured or not (decision 204)", async () => {
+    const { profile, onDrawn } = await freshPanel();
+    const probe = profile(fakeGl());
+    let drawn = 0;
+    onDrawn(() => drawn++);
+    probe.drawStart();
+    probe.drawEnd();
+    expect(drawn).toBe(1);
+  });
+
   it("starts at once when the panel was left open on the last visit", async () => {
     localStorage.setItem("gss-perf-panel", "1");
     const { profile, mountPanel } = await freshPanel();

@@ -21,6 +21,7 @@ const MATERIAL_KEYWORDS: Record<string, string> = {
   ice: "glass(#cfeaff, 1.31, frosted 0.25)",
   emissive: "emissive()",
   iridescent: "iridescent()",
+  toon: "toon()",
 };
 
 // "matte(), metal(), jelly(), gold, chrome, jelly"
@@ -32,6 +33,7 @@ function availableMaterials(): string {
     "glass()",
     "emissive()",
     "iridescent()",
+    "toon()",
     ...Object.keys(MATERIAL_KEYWORDS),
   ].join(", ");
 }
@@ -166,7 +168,8 @@ export function readMaterial(value: Token[] | undefined, color: () => string): s
     call.name !== "jelly" &&
     call.name !== "glass" &&
     call.name !== "emissive" &&
-    call.name !== "iridescent"
+    call.name !== "iridescent" &&
+    call.name !== "toon"
   ) {
     throw errorAt(
       value,
@@ -233,6 +236,17 @@ export function readMaterial(value: Token[] | undefined, color: () => string): s
       { name: "strength", min: 0, max: 1, fallback: 0.7 },
     ]);
     return `iridescent(${ownColor}, ${setting(strength[0])})`;
+  }
+
+  if (call.name === "toon") {
+    // toon (decision 202): what's left is the number of bands of light, 3 when missing
+    const [bands] = readSettings(args, "toon", [
+      { name: "bands", min: 2, max: 8, fallback: 3 },
+    ]);
+    if (typeof bands === "number" && !Number.isInteger(bands))
+      throw errorAt(args[0], "toon(): bands expects a whole number, like: material: toon(#ff5a36, 3);");
+    // Set from JS: rounded on the GPU
+    return `toon(${ownColor}, ${typeof bands === "string" ? `floor(${bands} + 0.5)` : glslFloat(bands)})`;
   }
 
   if (call.name === "glass") {

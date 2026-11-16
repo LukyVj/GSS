@@ -23,8 +23,8 @@ beforeAll(async () => {
 }, 60000);
 afterAll(async () => { await browser?.close(); await server?.close(); });
 
-async function render(source: string, hover = false, set?: [string, string], html = "") {
-  return page.evaluate(async ({ compiled, hover, set, html }) => {
+async function render(source: string, hover = false, set?: [string, string], html = "", press = false) {
+  return page.evaluate(async ({ compiled, hover, set, html, press }) => {
     const createViewAsync = (window as any).__createViewAsync;
     async function capture(backend: string) {
       const canvas = document.createElement("canvas");
@@ -42,19 +42,27 @@ async function render(source: string, hover = false, set?: [string, string], htm
         const box = canvas.getBoundingClientRect();
         canvas.dispatchEvent(new PointerEvent("pointermove", { clientX: box.left + 48, clientY: box.top + 36 }));
       }
-      await new Promise<void>(resolve => {
-        let left = hover ? 12 : 3;
+      const frames = (count: number) => new Promise<void>(resolve => {
+        let left = count;
         const tick = () => --left ? requestAnimationFrame(tick) : resolve();
         requestAnimationFrame(tick);
       });
+      await frames(hover ? 12 : 3);
+      // :active: pressed on the object the picking pass found under the pointer
+      if (press) {
+        const box = canvas.getBoundingClientRect();
+        canvas.dispatchEvent(new PointerEvent("pointerdown", { clientX: box.left + 48, clientY: box.top + 36 }));
+        await frames(12);
+      }
       const copy = document.createElement("canvas"); copy.width = canvas.width; copy.height = canvas.height;
       const ctx = copy.getContext("2d")!; ctx.drawImage(canvas, 0, 0);
       const pixels = [...ctx.getImageData(0, 0, copy.width, copy.height).data];
       view.destroy(); canvas.remove();
+      if (press) window.dispatchEvent(new PointerEvent("pointerup"));
       return pixels;
     }
     return { gl: await capture("webgl"), gpu: await capture("webgpu") };
-  }, { compiled: compileScene(source), hover, set, html });
+  }, { compiled: compileScene(source), hover, set, html, press });
 }
 const cases: [string, string, boolean?][] = [
   ["matte and camera", "@scene { sphere; } sphere { color: red; translate: 0 1 0; }"],
@@ -63,6 +71,7 @@ const cases: [string, string, boolean?][] = [
   ["gradient reflection", "@scene { sphere; } scene { background: repeating-linear-gradient(45deg, red 0%, blue 25%); } sphere { translate: 0 1 0; material: chrome; }"],
   ["scene blur and bloom", "@scene { sphere; } scene { filter: blur(1px) bloom(0.4, 2px); } sphere { translate: 0 1 0; color: red; }"],
   ["object blur", "@scene { sphere; cube; } sphere { translate: -0.4 1 0; filter: blur(2px); color: red; } cube { translate: 0.4 1 0; color: blue; }"],
+  ["view: steps (decision 204)", "@scene { sphere; cube; } scene { view: steps; } sphere { translate: -0.4 1 0; } cube { translate: 0.4 1 0; rotate-y: 30deg; }"],
   ["hover picking", "@scene { sphere; } scene { camera-angle: 0deg 0deg; camera-distance: 5; camera-target: 0 0 0; floor: none; } sphere { radius: 1; color: red; } sphere:hover { color: blue; }", true],
   ["a state starts an animation", "@scene { sphere; } scene { camera-angle: 0deg 0deg; camera-distance: 5; camera-target: 0 0 0; floor: none; } sphere { radius: 1; color: red; } sphere:hover { animation: paint 1s -2s 1 forwards; } @keyframes paint { to { color: blue; } }", true],
   ["animated transforms and negative delay", "@scene { cube; } cube { translate: 0 1 0; animation: turn 2s -0.7s ease-in-out alternate; } @keyframes turn { from { rotate-y: 0deg; scale: 0.5; } to { rotate-y: 120deg; scale: 1.2; } }"],
@@ -85,6 +94,151 @@ describe("WebGPU and WebGL2 render the same scenes", () => {
     }
   }, 60000);
 });
+
+// One hover state per kind of trigger: hovering #a puts #b in the state of the :has() rule,
+// not in the state of sphere:hover, which waits for #b itself
+it("hovering one object leaves the hover state of another one alone", async () => {
+  const { gl, gpu } = await render(
+    `@scene { group#g { sphere#a; sphere#b; } } scene { camera-angle: 0deg 0deg; camera-distance: 5; camera-target: 0 0 0; floor: none; }
+    sphere { radius: 0.5; color: red; } #b { translate: 1.4 0 0; }
+    sphere:hover { color: blue; } #g:has(sphere:hover) sphere { scale: 1; }`,
+    true,
+  );
+  for (const pixels of [gl, gpu]) {
+    const center = (36 * 96 + 48) * 4;
+    expect(pixels[center + 2], "#a, hovered").toBeGreaterThan(pixels[center]);
+    // the right of the canvas, where #b is: red, not blue
+    let red = 0, blue = 0;
+    for (let y = 0; y < 72; y++) for (let x = 64; x < 96; x++) {
+      const i = (y * 96 + x) * 4;
+      if (pixels[i] > pixels[i + 2] + 30) red++;
+      if (pixels[i + 2] > pixels[i] + 30) blue++;
+    }
+    expect(red, "#b, at rest").toBeGreaterThan(20);
+    expect(blue, "#b is not blue").toBe(0);
+  }
+}, 60000);
+
+// :hover on a group (decision 211): hovering #a scales #g from its center, so #b, beside
+// #a, moves outward with it
+it("a hovered group carries the objects it holds", async () => {
+  const source = `@scene { group#g { sphere#a; sphere#b; } } scene { camera-angle: 0deg 0deg; camera-distance: 5; camera-target: 0 0 0; floor: none; }
+    sphere { radius: 0.4; color: red; } #b { translate: 1.1 0 0; } #g:hover { scale: 1.4; }`;
+  const rest = await render(source);
+  const hovered = await render(source, true);
+  // where #b is, from left to right: the mean column of the red pixels right of the middle
+  const column = (pixels: number[]) => {
+    let sum = 0, count = 0;
+    for (let y = 0; y < 72; y++) for (let x = 60; x < 96; x++) {
+      const i = (y * 96 + x) * 4;
+      if (pixels[i] > pixels[i + 2] + 30) { sum += x; count++; }
+    }
+    return sum / count;
+  };
+  for (const backend of ["gl", "gpu"] as const) expect(column(hovered[backend]), backend).toBeGreaterThan(column(rest[backend]) + 3);
+}, 60000);
+
+// The sizes of a shape on :hover (decision 213): the sphere under the mouse grows
+it("a hovered sphere takes its hovered radius", async () => {
+  const source = `@scene { sphere; } scene { camera-angle: 0deg 0deg; camera-distance: 5; camera-target: 0 0 0; floor: none; }
+    sphere { radius: 0.5; color: red; } sphere:hover { radius: 1; }`;
+  const red = (pixels: number[]) => pixels.filter((_, i) => i % 4 === 0 && pixels[i] > pixels[i + 2] + 30).length;
+  const rest = await render(source);
+  const hovered = await render(source, true);
+  for (const backend of ["gl", "gpu"] as const) expect(red(hovered[backend]), backend).toBeGreaterThan(red(rest[backend]) * 3);
+}, 60000);
+
+// :not(:hover) (decision 214): on at rest, nothing hovered; off under the mouse
+it("a :not(:hover) rule holds at rest and lets go under the mouse", async () => {
+  const source = `@scene { sphere; } scene { camera-angle: 0deg 0deg; camera-distance: 5; camera-target: 0 0 0; floor: none; }
+    sphere { radius: 1; color: red; transition: 0.5s; } sphere:not(:hover) { color: blue; }`;
+  const center = (36 * 96 + 48) * 4;
+  const rest = await render(source);
+  const hovered = await render(source, true);
+  for (const backend of ["gl", "gpu"] as const) {
+    expect(rest[backend][center + 2], `${backend} at rest`).toBeGreaterThan(rest[backend][center] + 30);
+    expect(hovered[backend][center], `${backend} hovered`).toBeGreaterThan(hovered[backend][center + 2] + 30);
+  }
+}, 60000);
+
+// The hover chain on groups (decision 218): a hovered group passes its color to the objects
+// that set none
+it("a hovered group passes its color to its objects", async () => {
+  const source = `@scene { group#g { sphere; } } scene { camera-angle: 0deg 0deg; camera-distance: 5; camera-target: 0 0 0; floor: none; }
+    sphere { radius: 1; } #g { color: red; } #g:hover { color: blue; }`;
+  const center = (36 * 96 + 48) * 4;
+  const rest = await render(source);
+  const hovered = await render(source, true);
+  for (const backend of ["gl", "gpu"] as const) {
+    expect(rest[backend][center], `${backend} at rest`).toBeGreaterThan(rest[backend][center + 2] + 30);
+    expect(hovered[backend][center + 2], `${backend} hovered`).toBeGreaterThan(hovered[backend][center] + 30);
+  }
+}, 60000);
+
+// :active on a group (decision 218): pressing #a scales #g from its center, so #b moves outward
+it("a pressed group carries the objects it holds", async () => {
+  const source = `@scene { group#g { sphere#a; sphere#b; } } scene { camera-angle: 0deg 0deg; camera-distance: 5; camera-target: 0 0 0; floor: none; }
+    sphere { radius: 0.4; color: red; } #b { translate: 1.1 0 0; } #g:active { scale: 1.4; }`;
+  const column = (pixels: number[]) => {
+    let sum = 0, count = 0;
+    for (let y = 0; y < 72; y++) for (let x = 60; x < 96; x++) {
+      const i = (y * 96 + x) * 4;
+      if (pixels[i] > pixels[i + 2] + 30) { sum += x; count++; }
+    }
+    return sum / count;
+  };
+  const hovered = await render(source, true);
+  const pressed = await render(source, true, undefined, "", true);
+  for (const backend of ["gl", "gpu"] as const) expect(column(pressed[backend]), backend).toBeGreaterThan(column(hovered[backend]) + 3);
+}, 60000);
+
+// :not(:active) (decision 218): on while nothing is pressed, off while the object is
+it("a :not(:active) rule holds until the object is pressed", async () => {
+  const source = `@scene { sphere; } scene { camera-angle: 0deg 0deg; camera-distance: 5; camera-target: 0 0 0; floor: none; }
+    sphere { radius: 1; color: red; } sphere:not(:active) { color: blue; }`;
+  const center = (36 * 96 + 48) * 4;
+  const hovered = await render(source, true);
+  const pressed = await render(source, true, undefined, "", true);
+  for (const backend of ["gl", "gpu"] as const) {
+    expect(hovered[backend][center + 2], `${backend} not pressed`).toBeGreaterThan(hovered[backend][center] + 30);
+    expect(pressed[backend][center], `${backend} pressed`).toBeGreaterThan(pressed[backend][center + 2] + 30);
+  }
+}, 60000);
+
+// hover-direction() and hover-distance() (decision 215): hovering #a pushes #b away
+it("an object moves away from the object under the pointer", async () => {
+  const source = `@scene { sphere#a; sphere#b; } scene { camera-angle: 0deg 0deg; camera-distance: 5; camera-target: 0 0 0; floor: none; }
+    sphere { radius: 0.4; color: red; } #b { translate: calc(1.1 + hover-direction(x) * 0.6 * exp(-1 * hover-distance())) 0 0; }`;
+  const rest = await render(source);
+  const hovered = await render(source, true);
+  const column = (pixels: number[]) => {
+    let sum = 0, count = 0;
+    for (let y = 0; y < 72; y++) for (let x = 60; x < 96; x++) {
+      const i = (y * 96 + x) * 4;
+      if (pixels[i] > pixels[i + 2] + 30) { sum += x; count++; }
+    }
+    return sum / count;
+  };
+  for (const backend of ["gl", "gpu"] as const) expect(column(hovered[backend]), backend).toBeGreaterThan(column(rest[backend]) + 2);
+}, 60000);
+
+// decision 217: they measure from the point under the pointer, not the hovered object: the
+// pointer over the background, in the middle, pushes the sphere on its right further right
+it("an object moves away from the point under the pointer, even over the background", async () => {
+  const source = `@scene { sphere#b; } scene { camera-angle: 0deg 0deg; camera-distance: 5; camera-target: 0 0 0; floor: none; }
+    sphere { radius: 0.4; color: red; } #b { translate: calc(1.1 + hover-direction(x) * 0.6 * exp(-1 * hover-distance())) 0 0; }`;
+  const rest = await render(source);
+  const hovered = await render(source, true);
+  const column = (pixels: number[]) => {
+    let sum = 0, count = 0;
+    for (let y = 0; y < 72; y++) for (let x = 48; x < 96; x++) {
+      const i = (y * 96 + x) * 4;
+      if (pixels[i] > pixels[i + 2] + 30) { sum += x; count++; }
+    }
+    return sum / count;
+  };
+  for (const backend of ["gl", "gpu"] as const) expect(column(hovered[backend]), backend).toBeGreaterThan(column(rest[backend]) + 2);
+}, 60000);
 
 // A variable set from JS reaches the uniform, after the hover slots, on both backends
 it("setProperty() changes the scene without compiling again (decision 105)", async () => {

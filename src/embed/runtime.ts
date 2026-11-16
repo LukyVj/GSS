@@ -28,7 +28,7 @@ export async function mountAsync(
   try { await view.show(compiled); }
   catch (error) { view.destroy(); throw error; }
   const lifecycle = observe(canvas, view);
-  return { ...lifecycle, ...variables(view), backend: view.backend, update: next => view.show(next) };
+  return { ...lifecycle, ...variables(view), stats: view.stats, backend: view.backend, update: next => view.show(next) };
 }
 
 export type MountOptions = ViewOptions;
@@ -48,6 +48,9 @@ export type GssScene = {
   setProperty(name: string, value: string | number): void;
   getPropertyValue(name: string): string;
   removeProperty(name: string): void;
+  // How fast the scene draws (decision 229): the frames of the last second, and the ratio
+  // the canvas draws at, after adaptDpr, for a page that lowers its own quality
+  stats(): { fps: number; ratio: number };
 };
 
 export function mount(
@@ -59,7 +62,7 @@ export function mount(
   // GLSL errors at once; a link error comes later, once the driver is done (decision 150)
   try { view.show(compiled).catch((error) => console.error(error)); }
   catch (error) { view.destroy(); throw error; }
-  return { ...observe(canvas, view), ...variables(view), update: next => view.show(next) };
+  return { ...observe(canvas, view), ...variables(view), stats: view.stats, update: next => view.show(next) };
 }
 
 // @property (decision 105): the variables of the scene, set from the page

@@ -135,6 +135,39 @@ function media(): string {
   );
 }
 
+// @gpu (slow): the full scene while the frames keep up, a lighter one when they stay slow
+function gpu(): string {
+  const cell: Frame = { ...CELL, scale: 24, x: 66, y: 94 };
+  const spheres = (xs: number[], radius: number) =>
+    lines(floor(1.3, 0.55), cell) +
+    xs.map((x) => `<g class="floats" style="--rise: -5px">${lines(moved(ball(REST_VIEW, radius), [x, 0.7, 0]), cell)}</g>`).join("");
+  return (
+    cells(
+      "figure-steps",
+      [
+        ["keeps up", spheres([-0.85, 0, 0.85], 0.3)],
+        ["slow frames", `<g class="tinted">${spheres([-0.5, 0.5], 0.2)}</g>`],
+      ],
+      CELL,
+    ) + says("@gpu (slow) { scene { --n: 8; } }")
+  );
+}
+
+// Keep a scene fast: objects close together in one sphere, which a ray that passes by skips;
+// objects that cross the scene get a sphere as large as it, which every ray goes through
+function fastScenes(): string {
+  const objects = (points: [number, number][]) => points.map(([x, y]) => `<circle class="edge" cx="${x}" cy="${y}" r="7"/>`).join("");
+  const sphere = (x: number, y: number, r: number) => `<circle class="guide" cx="${x}" cy="${y}" r="${r}"/>`;
+  return cells(
+    "figure-steps",
+    [
+      ["skipped", objects([[46, 82], [62, 96], [70, 76]]) + sphere(60, 85, 26) + path("tint", "M10 34L122 50")],
+      ["measured", objects([[30, 90], [66, 52], [100, 94]]) + sphere(66, 76, 52) + path("tint", "M10 34L122 50")],
+    ],
+    CELL,
+  );
+}
+
 // --- @mixin and @apply: the code is written, a cube shows what it gives
 
 // A line of code, written: its words are the code of the page
@@ -250,12 +283,14 @@ const FLOWS: Record<string, (subject: string) => string> = {
   "install-vite": installVite,
   "install-cdn": installCdn,
   "editor-support": editorSupport,
+  "fast-scenes": fastScenes,
   "set-variables": variable('scene.setProperty("--lift", "1.5");'),
   "at-property": variable('@property --lift { syntax: "<number>"; inherits: false; initial-value: 1; }'),
   "at-property-panel": variable("@property-panel { display: open; }", true),
   "fn-var": varFigure,
   "fn-if": ifFigure,
   "at-media": media,
+  "at-gpu": gpu,
   "at-mixin": mixin,
   "at-apply": apply,
   "selector-important": important,

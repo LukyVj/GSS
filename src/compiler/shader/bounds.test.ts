@@ -205,3 +205,38 @@ describe("the tree of spheres in map()", () => {
     expect(nodesOf(mapOf(spheres(["a", "b"], (i) => `${4 * i} 0.5 0`)))).toEqual([]);
   });
 });
+
+// The bounds of a value read from its GLSL by intervals: whatever the arithmetic, a value of
+// known range keeps its object's sphere (decision 219)
+describe("the spheres of objects that move", () => {
+  const TEST = /if \((?:.* && )?length\(p - vec3\([^)]*\)\) - [\d.]+ <= /g;
+  const tests = (gss: string) => (compileGSS(gss).match(TEST) ?? []).length;
+  const row = (extra: string) =>
+    `@scene { group#g { sphere.p * 6; } } .p { --i: sibling-index(); radius: 0.2; ${extra} }`;
+  const at = "calc(var(--i) * 1.5 - 5) 0.5 0";
+
+  it("keeps the tests of objects pushed by hover-distance()", () => {
+    expect(tests(row(`translate: ${at};`))).toBeGreaterThan(0);
+    const pushed = row(`translate: calc(var(--i) * 1.5 - 5 + hover-direction(x) * 0.3 * exp(-2 * hover-distance())) 0.5 0;`);
+    expect(tests(pushed)).toBe(tests(row(`translate: ${at};`)));
+  });
+
+  it("keeps the tests of objects moved on a timeline of the page, eased", () => {
+    const moved = row(`translate: ${at}; animation: lift 1s ease-in-out both; animation-timeline: --page;`) +
+      " @keyframes lift { from { translate: calc(var(--i) * 1.5 - 5) 0.5 0; } to { translate: calc(var(--i) * 1.5 - 5) 1 0; } }";
+    expect(tests(moved)).toBeGreaterThan(0);
+  });
+
+  it("keeps the tests of objects eased by a cubic-bezier(), within the hull of its handles", () => {
+    const moved = (easing: string) => row(`translate: ${at}; animation: lift 2s ${easing} infinite alternate;`) +
+      " @keyframes lift { to { translate: calc(var(--i) * 1.5 - 5) 1 0; } }";
+    expect(tests(moved("cubic-bezier(0.3, 0.1, 0.2, 1)"))).toBeGreaterThan(0);
+    // it overshoots, but never past its handles: a larger sphere
+    expect(tests(moved("cubic-bezier(0.3, -0.6, 0.2, 1.6)"))).toBeGreaterThan(0);
+  });
+
+  it("gives no test to a value of unknown range", () => {
+    const live = '@property --x { syntax: "<number>"; inherits: false; initial-value: 0; } ' + row("translate: calc(var(--i) * 1.5 - 5 + var(--x)) 0.5 0;");
+    expect(tests(live)).toBe(0);
+  });
+});

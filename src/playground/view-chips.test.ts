@@ -3,7 +3,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { mountViewChips } from "./view-chips";
 import type { View } from "../compiler/features/view";
 
-// The chips over the render (decision 131): view: shaded and view: distance switch the view
+// The chips over the render (decisions 131, 204): view: shaded, distance and steps switch the view
 // without touching the code; when the code changes its view, the code wins again.
 
 let host: HTMLElement;
@@ -22,9 +22,9 @@ beforeEach(() => {
 });
 
 describe("the view chips", () => {
-  it("show both views, the one of the code pressed", () => {
+  it("show the three views, the one of the code pressed", () => {
     const view = mountViewChips(host, target);
-    expect(chips().map((chip) => chip.textContent)).toEqual(["view: shaded", "view: distance"]);
+    expect(chips().map((chip) => chip.textContent)).toEqual(["view: shaded", "view: distance", "view: steps"]);
     expect(pressed()).toBe("view: shaded");
     view.update({ view: "distance" });
     expect(pressed()).toBe("view: distance");
@@ -68,6 +68,16 @@ describe("the view chips", () => {
     view.update({}); // the code goes back to shaded
     expect(calls).toEqual(["setView null"]);
     expect(pressed()).toBe("view: shaded");
+  });
+
+  it("compile again when the code changes to a view other than the one chosen", () => {
+    const view = mountViewChips(host, target);
+    view.update({});
+    chips()[2].click(); // the viewer chooses steps
+    calls = [];
+    view.update({ view: "distance" }); // the code asks for distance: the shader shows steps
+    expect(calls).toEqual(["setView null", "refresh"]);
+    expect(pressed()).toBe("view: distance");
   });
 
   it("keep the choice while the code compiles again with the same view", () => {

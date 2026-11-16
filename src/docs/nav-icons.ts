@@ -35,6 +35,7 @@ export const NAV_ICONS: Record<string, string> = {
   transforms: `<rect class="n" x="2" y="7" width="7" height="7" rx="1" opacity=".4"/><rect class="m" x="6.25" y="2.75" width="7" height="7" rx="1" transform="rotate(15 9.75 6.25)"/>`,
   animations: `<path class="o" d="M4 5.5 6.5 8 4 10.5 1.5 8z"/><path class="n" d="M12 5.5 14.5 8 12 10.5 9.5 8z" ${F}/><path d="M6.5 8h3"/><path d="M1.5 13.5h13" opacity=".45"/><path class="m" pathLength="1" d="M4 13.5h8"/>`,
   easings: `<path d="M1.75 12.75C7.25 12.75 8.75 3.25 14.25 3.25"/><path d="M1.75 12.75h5.5M14.25 3.25h-5.5" opacity=".5"/><circle cx="7.25" cy="12.75" r="1.1" ${F}/><circle cx="8.75" cy="3.25" r="1.1" ${F}/><circle class="m" r="1.25" opacity="0" ${F}/>`,
+  timelines: `<rect x="1.75" y="1.75" width="12.5" height="12.5" rx="1.75"/><path d="M4.5 5h4.5M4.5 8h4.5M4.5 11h3" opacity=".5"/><path class="m" d="M11.75 4.25v3"/>`,
   // Scene
   camera: `<path class="n" d="M2.75 5h2l1.25-1.75h4L11.25 5h2c.55 0 1 .45 1 1v6.75c0 .55-.45 1-1 1H2.75c-.55 0-1-.45-1-1V6c0-.55.45-1 1-1z"/><circle class="m" cx="8" cy="9.25" r="2.4"/>`,
   "scene-properties": `<g class="m"><circle cx="8" cy="6.25" r="2.25"/><path d="M8 2.5V1M10.65 3.6l1.06-1.06M5.35 3.6 4.29 2.54M11.75 6.25h1.5M4.25 6.25h-1.5"/></g><path class="n" d="M2.25 11h11.5"/><path class="o" d="M4.25 13.75h7.5"/>`,
@@ -166,6 +167,8 @@ export const NAV_ICON_MOTION: Record<string, IconMotion[]> = {
     ease: "cubic-bezier(0.42, 0, 0.58, 1)",
     style: "offset-path: path('M1.75 12.75C7.25 12.75 8.75 3.25 14.25 3.25'); offset-rotate: 0deg;",
   }],
+  // The thumb runs down the page and back
+  timelines: [{ part: ".m", frames: "50% { transform: translateY(4.5px); }", ms: 700 }],
   // The shutter closes and opens
   camera: [
     { part: ".m", frames: "40% { transform: scale(0.5); } 75% { transform: scale(1.1); }", ms: 450, style: OWN },
