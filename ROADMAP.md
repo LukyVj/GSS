@@ -148,6 +148,8 @@ All centered on their origin, dimensions as full sizes (dec. 36).
 
 ## Release 0.0.8
 
+Prepared Nov. 16, not published yet: the changelog dated 2026-11-16, the VS Code extension 0.6.0 packaged. Decisions from 193 to 235.
+
 **Theme** (Lucas, Oct. 24): interaction. The demo at the end is the cloud of the changelog page: each point reacts to the mouse (`hover-distance()`, decision 215), the shapes follow the versions (a timeline of the page, decisions 208 and 210), without `bloom()` (Lucas's choice, Oct. 24). Performance items stay in **Later**. The hover items below are in the order of work.
 
 - [x] Fix ✅ decision 200 (Lucas, Oct. 23: "on va faire un fix dans la v0.0.8"): in a scene with a `filter` (a post pass, like `bloom()`), the text of `content` on the last object can stay blank. The post pass creates its images on the texture unit of the last image of the scene, after the frame bound them and before the scene is drawn into them; a scene at rest does not draw again, so that text keeps reading the wrong image (images that download draw the scene again, which hid it). Fix: bind the images of the scene just before each draw (`view.ts`), with a GPU test of a scene at rest, without a probe. Seen in the stories of the 0.0.7 film, which hide a seventh plate to work around it.
